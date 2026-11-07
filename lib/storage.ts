@@ -11,7 +11,7 @@ export interface Save {
   sfx: boolean
   music: boolean
   touch: 'auto' | 'on' | 'off'
-  character: 'ayla' | 'kerem' | null
+  character: 'uktun' | 'kerem' | null
   seenStory: boolean
   controlSize: 'normal' | 'buyuk'
 }
@@ -24,7 +24,10 @@ export function loadSave(): Save {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return defaultSave()
-    return { ...defaultSave(), ...(JSON.parse(raw) as Partial<Save>) }
+    const s = { ...defaultSave(), ...(JSON.parse(raw) as Partial<Save>) }
+    // eski sürümdeki "ayla" seçimi Uktun'a taşınır
+    if ((s.character as string) === 'ayla') s.character = 'uktun'
+    return s
   } catch {
     return defaultSave()
   }

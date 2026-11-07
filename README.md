@@ -14,7 +14,7 @@ harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üre
 
 Her şehirde üç hatıra saklı; her biri o şehre dair doğrulanmış bir bilgi kartı açar.
 
-**Hikâye:** Ayla ya da Kerem, dedesi Yusuf’un tavan arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre
+**Hikâye:** Uktun ya da Kerem, dedesi Yusuf’un tavan arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre
 ayrılmış, her şehirde üç boş kutu var. Son sayfada tek cümle: “Yolun sonu, başladığım yer.” Yol Bayburt’ta biter.
 
 **Şehir dokusu:** simitçi arabası ve İstanbul kedileri, Mardin’de mırra ve telkari ustası, Malatya’da damda kuruyan

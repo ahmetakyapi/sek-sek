@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import TouchControls from '@/components/TouchControls'
+import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
@@ -62,7 +63,7 @@ export default function Game() {
   }, [])
 
   const level = LEVELS[levelIdx]
-  const hero = CHARACTERS[save.character ?? 'ayla']
+  const hero = CHARACTERS[save.character ?? 'uktun']
 
   /* ── kurulum ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function Game() {
     setCanFull(!!document.documentElement.requestFullscreen)
     const canvas = canvasRef.current!
     const renderer = new Renderer(canvas)
-    renderer.character = CHARACTERS[s.character ?? 'ayla']
+    renderer.character = CHARACTERS[s.character ?? 'uktun']
     const input = new InputManager()
     const sound = new Sound()
     sound.sfxOn = s.sfx
@@ -338,7 +339,7 @@ export default function Game() {
 
       {screen === 'play' && (
         <>
-          <Hud level={level} hud={hud} onPause={() => setScreen('pause')} />
+          <Hud level={level} hud={hud} hero={hero.id} onPause={() => setScreen('pause')} />
           {(hint || npc >= 0) && (
             <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
               {npc >= 0 && level.npcs[npc] ? (
@@ -372,13 +373,22 @@ export default function Game() {
       {screen === 'title' && (
         <Overlay>
           <div className="rise flex w-full max-w-3xl flex-col items-center gap-2 md:flex-row md:items-end md:gap-0">
-            <div className="relative flex shrink-0 items-end justify-center md:w-[300px]">
+            <div className="relative flex shrink-0 items-end justify-center md:mr-[-12px] md:w-[320px]">
               {save.character ? (
-                <CharacterPortrait c={hero} scale={coarse ? 7 : 10} />
+                <div className="portrait-frame w-[170px] sm:w-[260px]">
+                  <Portrait id={hero.id} className="block w-full" />
+                  <p className="portrait-tag">{hero.name}</p>
+                </div>
               ) : (
                 <div className="flex items-end">
-                  <CharacterPortrait c={CHARACTERS.ayla} scale={coarse ? 5 : 8} />
-                  <CharacterPortrait c={CHARACTERS.kerem} scale={coarse ? 5 : 8} className="-ml-8" />
+                  <div className="portrait-frame w-[130px] rotate-[-3deg] sm:w-[190px]">
+                    <Portrait id="uktun" className="block w-full" />
+                    <p className="portrait-tag">Uktun</p>
+                  </div>
+                  <div className="portrait-frame -ml-6 w-[130px] rotate-[3deg] sm:w-[190px]">
+                    <Portrait id="kerem" className="block w-full" />
+                    <p className="portrait-tag">Kerem</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -436,7 +446,7 @@ export default function Game() {
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">YOL ARKADAŞIN</p>
             <h2 className="mt-1 font-display text-3xl text-cream sm:text-4xl">Karakterini Seç</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {(['ayla', 'kerem'] as const).map((id) => {
+              {(['uktun', 'kerem'] as const).map((id) => {
                 const c = CHARACTERS[id]
                 const on = save.character === id
                 return (
@@ -445,8 +455,13 @@ export default function Game() {
                     onClick={() => pickCharacter(id)}
                     className={`group flex flex-col items-center border-2 bg-panel-2 p-4 text-left transition-colors duration-150 hover:border-accent-2 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold' : 'border-line'}`}
                   >
-                    <div className="flex h-[150px] items-end justify-center sm:h-[190px]">
-                      <CharacterPortrait c={c} scale={coarse ? 6 : 8} pose="run" />
+                    <div className="relative w-full">
+                      <div className="portrait-frame mx-auto w-[180px] sm:w-[220px]">
+                        <Portrait id={id} className="block w-full" />
+                      </div>
+                      <div className="absolute -bottom-2 right-0 sm:right-2">
+                        <CharacterPortrait c={c} scale={coarse ? 3 : 4} pose="run" />
+                      </div>
                     </div>
                     <div className="mt-2 w-full">
                       <p className="flex items-baseline justify-between font-display text-2xl text-cream">
@@ -479,7 +494,9 @@ export default function Game() {
               </p>
             </div>
             <div className="mt-3 flex items-end gap-4">
-              <CharacterPortrait c={hero} scale={4} className="shrink-0" />
+              <div className="portrait-frame w-[110px] shrink-0 sm:w-[130px]">
+                <Portrait id={hero.id} mood={storyPage === 0 ? 'calm' : 'smile'} className="block w-full" />
+              </div>
               <Notebook page={storyPage} />
             </div>
             <h2 className="mt-3 font-display text-3xl text-cream">{STORY[storyPage].title}</h2>
@@ -743,7 +760,9 @@ export default function Game() {
         <Overlay>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
             <div className="flex justify-center">
-              <CharacterPortrait c={hero} scale={6} pose="idle" />
+              <div className="portrait-frame w-[180px]">
+                <Portrait id={hero.id} className="block w-full" />
+              </div>
             </div>
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">YOLCULUK TAMAM</p>
             <h2 className="mt-2 font-display text-4xl text-cream">{ENDING.title}</h2>
@@ -784,13 +803,16 @@ function Notebook({ page }: { page: number }) {
   )
 }
 
-function Hud({ level, hud, onPause }: { level: (typeof LEVELS)[number]; hud: { time: number; deaths: number; items: boolean[] }; onPause: () => void }) {
+function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hud: { time: number; deaths: number; items: boolean[] }; hero: CharacterId; onPause: () => void }) {
   return (
     <div
       className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 px-3"
       style={{ paddingTop: 'max(10px, env(safe-area-inset-top))', paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))' }}
     >
-      <div className="flex min-w-0 items-center gap-2.5 bg-ink/55 px-2.5 py-1.5">
+      <div className="flex min-w-0 items-center gap-2.5 bg-ink/55 py-1.5 pl-1.5 pr-2.5">
+        <span className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-gold/70 bg-panel-2 min-[400px]:block">
+          <Portrait id={hero} className="-mt-1 block w-[56px] -translate-x-[8px]" />
+        </span>
         <span className="plate text-lg">
           <span>{level.plate}</span>
         </span>

@@ -54,7 +54,7 @@ export class Renderer {
   camY = 0
   private dpr = 1
   private t = 0
-  character: CharacterDef = CHARACTERS.ayla
+  character: CharacterDef = CHARACTERS.uktun
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas

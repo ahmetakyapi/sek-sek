@@ -151,3 +151,50 @@ input {
     animation: none;
   }
 }
+
+/* ── Portreler ─────────────────────────────────────────────── */
+.portrait-frame {
+  position: relative;
+  overflow: hidden;
+  border: 3px solid var(--color-line);
+  border-top-color: var(--color-accent);
+  background:
+    radial-gradient(120% 80% at 50% 25%, #4a3a62 0%, #2a2438 55%, #1e1a29 100%);
+  box-shadow:
+    0 0 0 2px var(--color-ink),
+    0 14px 30px rgb(0 0 0 / 0.45);
+}
+.portrait-tag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  background: var(--color-ink);
+  border: 2px solid var(--color-accent);
+  padding: 1px 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--color-cream);
+}
+@keyframes blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.08); }
+}
+.portrait-blink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4.2s infinite;
+}
+@keyframes sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(0.8deg); }
+}
+.portrait-sway {
+  transform-origin: 120px 60px;
+  animation: sway 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portrait-blink,
+  .portrait-sway {
+    animation: none;
+  }
+}

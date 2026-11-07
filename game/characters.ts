@@ -2,7 +2,7 @@
  * İki oynanabilir karakter. Sprite 16×20, yüzü sağa bakar.
  * Çarpışma kutusu 10×14 kalır; sprite ayakları kutunun tabanına oturur.
  */
-export type CharacterId = 'ayla' | 'kerem'
+export type CharacterId = 'uktun' | 'kerem'
 
 export interface CharacterDef {
   id: CharacterId
@@ -34,47 +34,40 @@ const SHARED = {
 }
 
 export const CHARACTERS: Record<CharacterId, CharacterDef> = {
-  ayla: {
-    id: 'ayla',
-    name: 'Ayla',
+  uktun: {
+    id: 'uktun',
+    name: 'Uktun',
     role: 'Haritacı',
-    bio: 'Ankaralı, 26 yaşında. Haritaları ezbere bilir ama hiçbir yolu dedesinin defteri kadar merak etmemiştir.',
+    bio: 'Ankaralı, 26 yaşında. Haritaları ezbere bilir ama hiçbir yolu dedesinin defteri kadar merak etmemiştir. Uzun saçlarını rüzgâra bırakır, yolu hep kendisi bulur.',
     pal: {
       ...SHARED,
-      h: '#8a3a22',
-      H: '#5e2414',
+      h: '#7a3420',
+      H: '#4e1c10',
       j: '#e0a23a',
       J: '#b47a22',
       y: '#f6d48a',
       p: '#55507e',
       P: '#3e3a62',
+      l: '#d9666e',
+      g: '#f2c14e',
     },
     body: [
       '.....HHHHH......',
       '....HhhhhhhH....',
-      '...Hhhhhhhhhh...',
-      '...HhhhhhhhhhH..',
-      '..HHhhSssshhhh..',
-      '..HhhSsesssesh..',
-      '..HhSssesssesH..',
-      '..HhSsnsssssn...',
-      '...HSSsssmss....',
-      '....SSSsss......',
-      '...rrrrrrrrr....',
-      '..KkrRjjjyjjr...',
-      '..KfJjjjyjjjj...',
-      '..KkJjjjyjjjjs..',
-      '..KkJjjjyjjjjs..',
+      '...HhhhhhhhhH...',
+      '..HhhhhhhhhhhH..',
+      '..HhhhhhSsshhH..',
+      '..HhhhSsesssesH.',
+      '.HhhhSssesssesh.',
+      '.HhhgSsnsssssnh.',
+      '.HhhhHSssslssh..',
+      '.HhhhhHSSsss.h..',
+      '.Hhhhrrrrrrrrh..',
+      '.HhhhrRjjjyjjr..',
+      '.HhhhHJjjyjjjj..',
+      '..HhhHJjjyjjjjs.',
+      '..HHhHJjjyjjjjs.',
     ],
-    tail: {
-      x: 0,
-      y: 2,
-      frames: [
-        ['..HH', '.Hhh', 'Hhh.', 'Hh..', 'H...'],
-        ['...H', '.HHh', 'Hhh.', 'hh..', '.H..'],
-        ['....', '.HHH', 'Hhhh', 'hh..', 'h...'],
-      ],
-    },
   },
   kerem: {
     id: 'kerem',
@@ -99,7 +92,7 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
       '....HhhhhhhhH...',
       '...HhhhhhhhhhH..',
       '...HhhhhhhhhhH..',
-      '...HhhSsshhShh..',
+      '...HhSHHssHHh...',
       '...HhSsessseS...',
       '...HSssessseS...',
       '...HSsnsssssn...',
