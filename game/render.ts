@@ -1,4 +1,6 @@
-import { CITY, ITEM_ART, LAYER_H, LAYER_W, PLAYER_PAL, buildLayers, disc, enemyArt, playerFrame, rect, rng, sprite, type Ctx, type Layers } from './art'
+import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
+import { CHARACTERS, frameRows, type CharacterDef, type Pose } from './characters'
+import { NPC_ART } from './npcs'
 import { CRUMBLE, EMPTY, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
@@ -52,6 +54,7 @@ export class Renderer {
   camY = 0
   private dpr = 1
   private t = 0
+  character: CharacterDef = CHARACTERS.ayla
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -557,6 +560,17 @@ export class Renderer {
           for (let i = 0; i < 6; i++) disc(b, x + 3 + i * 2, bot - 11, 1, i % 2 ? '#f39a2e' : '#ffb84a')
           break
         }
+        case 's':
+          this.drawStall(b, x, bot)
+          break
+        case 'm': {
+          // kayısı serme: damda/yerde kurutulan kayısılar
+          rect(b, x, bot - 2, T, 2, '#c9a46a')
+          for (let i = 0; i < 7; i++) {
+            rect(b, x + 1 + i * 2, bot - 3 - (i % 2), 2, 2, i % 3 ? '#e8832a' : '#f4a640')
+          }
+          break
+        }
         case 'b': {
           // direkte Türk bayrağı
           rect(b, x + 3, bot - 34, 1, 34, '#d8d8d8')
@@ -583,6 +597,115 @@ export class Renderer {
       rect(b, x + 7, bot - 14, 2, 3, '#3a2a1e')
       rect(b, x + 7, bot - 10, 2, 1, '#3a2a1e')
       if (w.nearSign === sg.index) rect(b, x + 1, bot - 17, 14, 1, '#ffd36a')
+    }
+    // şehir insanları
+    w.npcs.forEach((n, i) => {
+      const look = w.level.npcs[i]?.look ?? 'amca'
+      const art = NPC_ART[look]
+      const bob = Math.sin(this.t * 2 + i) > 0.7 ? 1 : 0
+      const faceLeft = w.player.x < n.x
+      sprite(b, bob ? ['............', ...art.rows.slice(0, -1).filter((_, k) => k !== 6), art.rows[art.rows.length - 1]] : art.rows, art.pal, n.x + 2, n.y + T - art.rows.length, faceLeft)
+      // konuşma balonu
+      const near = w.nearNpc === i
+      const by = n.y + T - art.rows.length - 9 - (near ? 0 : Math.round(Math.sin(this.t * 3 + i)))
+      rect(b, n.x + 3, by, 10, 7, near ? '#ffd36a' : '#f4ead8')
+      rect(b, n.x + 6, by + 7, 2, 2, near ? '#ffd36a' : '#f4ead8')
+      for (let d = 0; d < 3; d++) rect(b, n.x + 5 + d * 2, by + 3, 1, 1, '#2a2236')
+    })
+  }
+
+  /** Şehrin tezgâhı: simit arabası, mırra, kayısı, leblebi kazanı, Sivas halısı, saman ve kopuz */
+  private drawStall(b: Ctx, x: number, bot: number) {
+    switch (this.city) {
+      case 'istanbul': {
+        rect(b, x - 6, bot - 14, 26, 10, '#c8302a')
+        rect(b, x - 6, bot - 14, 26, 2, '#e8564a')
+        rect(b, x - 4, bot - 26, 22, 12, 'rgba(220,240,255,0.35)')
+        rect(b, x - 4, bot - 26, 22, 1, '#e8e8e8')
+        rect(b, x - 4, bot - 26, 1, 12, '#e8e8e8')
+        rect(b, x + 17, bot - 26, 1, 12, '#e8e8e8')
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
+          disc(b, x - 1 + i * 5, bot - 22 + j * 5, 2, '#b8692e')
+          rect(b, x - 1 + i * 5, bot - 22 + j * 5, 1, 1, '#f6e7c0')
+        }
+        disc(b, x - 2, bot - 3, 3, '#2a2236')
+        disc(b, x + 16, bot - 3, 3, '#2a2236')
+        rect(b, x + 20, bot - 18, 6, 1, '#5a3c26')
+        break
+      }
+      case 'mardin': {
+        rect(b, x - 6, bot - 2, 28, 2, '#a83a2a')
+        for (let i = 0; i < 28; i += 4) rect(b, x - 6 + i, bot - 2, 2, 1, '#f2c14e')
+        rect(b, x - 2, bot - 9, 20, 2, '#7a4a24')
+        rect(b, x, bot - 7, 2, 5, '#5a3c26')
+        rect(b, x + 14, bot - 7, 2, 5, '#5a3c26')
+        // cezve ve mırra fincanları
+        rect(b, x + 2, bot - 14, 5, 5, '#c87a3a')
+        rect(b, x + 7, bot - 13, 3, 1, '#c87a3a')
+        rect(b, x + 11, bot - 11, 2, 2, '#f4efe6')
+        rect(b, x + 14, bot - 11, 2, 2, '#f4efe6')
+        // buhar
+        const t = Math.floor(this.t * 3) % 3
+        rect(b, x + 4, bot - 17 - t, 1, 2, 'rgba(255,255,255,0.5)')
+        // telkari vitrin
+        rect(b, x - 8, bot - 26, 10, 14, '#5a3c26')
+        rect(b, x - 7, bot - 25, 8, 12, '#2a2236')
+        for (let i = 0; i < 3; i++) rect(b, x - 5 + (i % 2) * 3, bot - 23 + i * 4, 2, 2, '#e6ebf2')
+        break
+      }
+      case 'malatya': {
+        rect(b, x - 6, bot - 24, 30, 3, '#d9741a')
+        for (let i = 0; i < 30; i += 6) rect(b, x - 6 + i, bot - 21, 3, 2, '#f4efe6')
+        rect(b, x - 5, bot - 21, 2, 21, '#7a4a24')
+        rect(b, x + 21, bot - 21, 2, 21, '#7a4a24')
+        for (let k = 0; k < 3; k++) {
+          const cx = x - 2 + k * 8
+          rect(b, cx, bot - 8, 7, 8, '#a86a38')
+          rect(b, cx, bot - 8, 7, 1, '#d29a5a')
+          for (let i = 0; i < 4; i++) disc(b, cx + 1 + i * 2, bot - 9, 1, i % 2 ? '#f39a2e' : '#ffb84a')
+        }
+        for (let i = 0; i < 5; i++) disc(b, x + 1 + i * 4, bot - 13, 1, '#e8832a')
+        break
+      }
+      case 'corum': {
+        // leblebi kazanı + çuvallar
+        const fl = Math.floor(this.t * 8) % 2
+        rect(b, x, bot - 4, 14, 4, '#3a2a22')
+        rect(b, x + 3, bot - 7 - fl, 2, 3 + fl, '#f28c28')
+        rect(b, x + 8, bot - 6 + fl, 2, 2 + fl, '#ffd36a')
+        rect(b, x - 1, bot - 12, 16, 5, '#b87333')
+        rect(b, x - 2, bot - 13, 18, 1, '#d8955a')
+        for (let i = 0; i < 6; i++) rect(b, x + 1 + i * 2, bot - 14, 1, 1, '#f2e2b4')
+        for (const sx of [x + 17, x + 23]) {
+          rect(b, sx, bot - 10, 6, 10, '#c9b27a')
+          rect(b, sx + 1, bot - 11, 4, 1, '#a88a52')
+          rect(b, sx + 1, bot - 12, 4, 1, '#f2e2b4')
+        }
+        break
+      }
+      case 'sivas': {
+        // Sivas halısı askıda
+        rect(b, x - 4, bot - 28, 24, 1, '#5a3c26')
+        rect(b, x - 4, bot - 28, 1, 28, '#5a3c26')
+        rect(b, x + 19, bot - 28, 1, 28, '#5a3c26')
+        rect(b, x - 1, bot - 26, 18, 18, '#8a1e2a')
+        rect(b, x + 1, bot - 24, 14, 14, '#1d3f6a')
+        rect(b, x + 3, bot - 22, 10, 10, '#c9a24a')
+        rect(b, x + 6, bot - 19, 4, 4, '#8a1e2a')
+        for (let i = 0; i < 18; i += 2) rect(b, x - 1 + i, bot - 8, 1, 2, '#e8dcc0')
+        rect(b, x - 1, bot - 26, 18, 1, '#f4f8ff')
+        break
+      }
+      case 'bayburt': {
+        rect(b, x - 4, bot - 10, 14, 10, '#c9a24a')
+        rect(b, x - 4, bot - 10, 14, 1, '#e8c86a')
+        rect(b, x - 4, bot - 6, 14, 1, '#a8822a')
+        rect(b, x - 4, bot - 11, 14, 2, '#e6edf7')
+        rect(b, x + 12, bot - 12, 14, 2, '#7a5a40')
+        rect(b, x + 12, bot - 7, 14, 2, '#7a5a40')
+        for (let i = 0; i < 3; i++) rect(b, x + 12 + i * 6, bot - 14, 2, 14, '#5e4634')
+        break
+      }
     }
   }
 
@@ -780,42 +903,55 @@ export class Renderer {
 
   private drawPlayer(b: Ctx, w: World, dt: number) {
     const p = w.player
-    // atılma izi
+    const ch = this.character
+    // atılma izi: karakterin beyaz silueti
     if (p.dashTime > 0 && !p.dead) this.ghosts.push({ x: p.x, y: p.y, life: 0.22, flip: p.facing < 0 })
+    const ghostPal: Record<string, string> = {}
+    for (const k of Object.keys(ch.pal)) ghostPal[k] = '#f4ead8'
     for (const g of this.ghosts) {
       g.life -= dt
       if (g.life <= 0) continue
       b.globalAlpha = g.life * 2.5
-      sprite(b, playerFrame('jump'), { ...PLAYER_PAL, j: '#f4ead8', J: '#f4ead8', k: '#f4ead8', K: '#f4ead8', p: '#f4ead8', b: '#f4ead8', h: '#f4ead8', s: '#f4ead8', r: '#f4ead8', e: '#f4ead8' }, g.x - 1, g.y - 2, g.flip)
+      sprite(b, frameRows(ch, 'jump', 0), ghostPal, g.x + p.w / 2 - 8, g.y + p.h - 20, g.flip)
     }
     b.globalAlpha = 1
     this.ghosts = this.ghosts.filter((g) => g.life > 0)
     if (p.dead) return
 
-    let state: Parameters<typeof playerFrame>[0] = 'idle'
+    let pose: Pose = 'idle'
     let bob = 0
     if (!p.grounded) {
-      if (p.wallDir !== 0 && p.vy > 0) state = 'wall'
-      else state = p.vy < 0 ? 'jump' : 'fall'
+      if (p.wallDir !== 0 && p.vy > 0) pose = 'wall'
+      else pose = p.vy < 0 ? 'jump' : 'fall'
     } else if (Math.abs(p.vx) > 8) {
       const f = Math.floor(p.runTime * 12) % 4
-      state = (['runA', 'runB', 'runC', 'runB'] as const)[f]
+      pose = (['runA', 'runB', 'runC', 'runB'] as const)[f]
       bob = f % 2
     } else bob = Math.sin(this.t * 2.5) > 0.6 ? 1 : 0
     if (p.landTimer > 0) bob = 1
+    const blink = this.t % 3.4 < 0.12
 
-    const pal = p.canDash ? PLAYER_PAL : { ...PLAYER_PAL, r: '#7f8ca8' }
+    const pal = p.canDash ? ch.pal : { ...ch.pal, r: '#7f8ca8', R: '#5a6680' }
     const flip = p.facing < 0
-    const sx = p.x - 1
-    const sy = p.y + p.h - 16
+    const sx = Math.round(p.x + p.w / 2 - 8)
+    const sy = Math.round(p.y + p.h - 20)
+    const moving = Math.abs(p.vx) > 40 || !p.grounded
+    const wave = Math.floor(this.t * (moving ? 12 : 4)) % 3
+
+    // at kuyruğu (başın arkasında)
+    if (ch.tail) {
+      const rows = ch.tail.frames[moving ? wave : Math.floor(this.t * 2) % 2]
+      const tx = flip ? sx + 13 : sx - 1
+      sprite(b, rows, pal, tx, sy + ch.tail.y + bob, flip)
+    }
     // atkı ucu
-    const wave = Math.sin(this.t * 10) > 0 ? 1 : 0
-    const tailX = flip ? sx + 9 : sx + 1
+    const neck = sy + 10 + bob
+    const back = flip ? sx + 12 : sx + 1
     const dir = flip ? 1 : -1
-    rect(b, tailX + dir * 1, sy + 5 + bob, 2, 1, pal.r)
-    rect(b, tailX + dir * 2, sy + 6 + bob + wave, 2, 1, pal.r)
-    if (Math.abs(p.vx) > 40 || !p.grounded) rect(b, tailX + dir * 3, sy + 6 + bob - wave, 1, 1, pal.r)
-    sprite(b, playerFrame(state, bob), pal, sx, sy, flip)
+    rect(b, back + dir, neck, 2, 1, pal.r)
+    rect(b, back + dir * 2, neck + 1 + (wave === 1 ? 1 : 0), 2, 1, pal.R)
+    if (moving) rect(b, back + dir * 3, neck + 1 - (wave === 2 ? 1 : 0), 2, 1, pal.r)
+    sprite(b, frameRows(ch, pose, bob, blink), pal, sx, sy, flip)
   }
 
   private drawParticles(b: Ctx, dt: number) {

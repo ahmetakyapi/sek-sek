@@ -28,10 +28,22 @@ function join(...chunks: string[][]): string[] {
   return out
 }
 
+/** Süs ve karakter yerleştirir; hedef boş, altı zemin olmalı (yanlış yere koymayı yakalar). */
+function decorate(map: string[], items: [number, number, string][]): string[] {
+  const m = map.map((r) => r.split(''))
+  for (const [x, y, ch] of items) {
+    if (m[y][x] !== ' ') throw new Error(`süs (${x},${y}) dolu: '${m[y][x]}'`)
+    if (!'#I='.includes(m[y + 1][x])) throw new Error(`süs (${x},${y}) havada`)
+    m[y][x] = ch
+  }
+  return m.map((r) => r.join(''))
+}
+
 const ground = (w: number, n = 4) => Array.from({ length: n }, () => '#'.repeat(w))
 
 /* ───────────────────────── 34 · İSTANBUL ───────────────────────── */
-const istanbul = join(
+const istanbul = decorate(
+  join(
   chunk([
     '',
     '',
@@ -94,10 +106,13 @@ const istanbul = join(
     '########~~~~~~~~~~####~~~~~~######',
     '########~~~~~~~~~~####~~~~~~######',
   ]),
+  ),
+  [[11, 19, 's'], [13, 19, 'n'], [38, 19, 'k'], [90, 14, 'k'], [148, 19, 'n']],
 )
 
 /* ───────────────────────── 47 · MARDİN ───────────────────────── */
-const mardin = join(
+const mardin = decorate(
+  join(
   chunk([
     '',
     '                         C    ',
@@ -168,10 +183,13 @@ const mardin = join(
     '##################  k   a  E   ',
     ...ground(32, 6),
   ]),
+  ),
+  [[20, 13, 's'], [23, 11, 'n'], [62, 4, 'k'], [108, 14, 'n']],
 )
 
 /* ───────────────────────── 44 · MALATYA ───────────────────────── */
-const malatya = join(
+const malatya = decorate(
+  join(
   chunk([
     '                     C          ',
     '                        f       ',
@@ -222,10 +240,13 @@ const malatya = join(
     '########  S ^^^^#^^^^^^^   o   E  ',
     ...ground(34),
   ]),
+  ),
+  [[9, 19, 'm'], [10, 19, 'm'], [11, 19, 'm'], [22, 14, 's'], [26, 14, 'n'], [30, 14, 'm'], [31, 14, 'm'], [88, 19, 'm'], [89, 19, 'm'], [92, 19, 'n']],
 )
 
 /* ───────────────────────── 19 · ÇORUM ───────────────────────── */
-const corum = join(
+const corum = decorate(
+  join(
   chunk([
     '                         C        ',
     '                                  ',
@@ -262,10 +283,13 @@ const corum = join(
     '             F  ^^^^^^^^^^^^########',
     ...ground(36),
   ]),
+  ),
+  [[5, 19, 's'], [8, 19, 'n'], [62, 13, 'n'], [66, 13, 'k'], [97, 16, 's']],
 )
 
 /* ───────────────────────── 58 · SİVAS ───────────────────────── */
-const sivas = join(
+const sivas = decorate(
+  join(
   chunk([
     '                         C        ',
     '                        ===       ',
@@ -311,10 +335,13 @@ const sivas = join(
     '######~~~~~~~~~~~~~~~~~~~~~~~~~#####',
     '######~~~~~~~~~~~~~~~~~~~~~~~~~#####',
   ]),
+  ),
+  [[5, 19, 's'], [12, 19, 'n'], [61, 11, 'k'], [64, 11, 'n']],
 )
 
 /* ───────────────────────── 69 · BAYBURT ───────────────────────── */
-const bayburt = join(
+const bayburt = decorate(
+  join(
   chunk([
     '             C                    ',
     '                                  ',
@@ -371,6 +398,8 @@ const bayburt = join(
     '##########^^^^^^^^^^^^^^^^^^^^######',
     '####################################',
   ]),
+  ),
+  [[6, 19, 'n'], [9, 19, 's'], [20, 19, 'k'], [62, 4, 'n'], [66, 4, 'k']],
 )
 
 export const LEVELS: LevelDef[] = [
@@ -381,6 +410,13 @@ export const LEVELS: LevelDef[] = [
     plate: 34,
     subtitle: 'Boğaz Kıyısı',
     difficulty: 'Kolay',
+    note: 'Vapurdan inince bir simit al, yarısını martılarla paylaş. Galata’dan bakınca iki kıta tek nefeste görünür.',
+    npcs: [
+      { name: 'Simitçi Hasan Amca', look: 'amca', text: 'Taze simit, sıcak sıcak! Martılara kaptırma evladım, onlar da çok seviyor.' },
+      { name: 'İskele Görevlisi Selin', look: 'genc', text: 'Vapur az önce kalktı ama iskele platformu hâlâ gidip geliyor. Zamanını kolla, atla!' },
+    ],
+    medals: [45, 75, 120],
+    quips: ['Martılar bunu gördü.', 'Boğaz’ın suyu bu mevsim serin.', 'Simit bile bu kadar yuvarlanmaz.', 'Vapur beklemez, ama bayrak bekler.'],
     item: 'Simit',
     intro: 'Martıların, vapurların ve iki kıtanın şehri. Rıhtımdan Galata yokuşuna, oradan iskeleye uzanan ilk yolculuk.',
     facts: [
@@ -404,6 +440,13 @@ export const LEVELS: LevelDef[] = [
     plate: 47,
     subtitle: 'Taş Teraslar',
     difficulty: 'Orta',
+    note: 'Taş evler akşam güneşinde bal rengine döner. Abbaraların gölgesinde bir fincan mırra iç, acısına alışırsın.',
+    npcs: [
+      { name: 'Mırracı Cemil Usta', look: 'usta', text: 'Mırra acıdır, yudum yudum içilir. Fincanı masaya koyma, elime ver; yoksa fincanı altınla doldurursun derler!' },
+      { name: 'Telkari Ustası Meryem', look: 'teyze', text: 'Bu gümüş tel saç telinden ince. Sabırsız eller telkari öremez, sen de duvarlarda acele etme.' },
+    ],
+    medals: [50, 85, 130],
+    quips: ['Taşlar sabırlıdır, sen de ol.', 'Eşek bile bu yokuşu daha iyi çıkıyor.', 'Akrep güldü, duydum.', 'Abbaranın gölgesinde bir soluklan.'],
     item: 'Telkari',
     intro: 'Mezopotamya ovasına bakan bal rengi taş evler. Teras teras tırman, abbaraların altından geç.',
     facts: [
@@ -425,6 +468,14 @@ export const LEVELS: LevelDef[] = [
     plate: 44,
     subtitle: 'Kayısı Bahçeleri',
     difficulty: 'Orta',
+    nickname: 'Erik Diyarı',
+    note: 'Haziranda gel, dallar turuncuya keser. Kayısıyı damlarda güneşe sererler; bir avuç al, cebine koy.',
+    npcs: [
+      { name: 'Kayısıcı Fadime Teyze', look: 'teyze', text: 'Damda kurutuyoruz kuzum, güneş tatlandırıyor. Al bir avuç, yolda acıkırsın!' },
+      { name: 'Bahçıvan Ali', look: 'amca', text: 'Kasalara dikkat! Üstüne zıplarsan bahçenin öbür ucuna uçarsın. Arılara da bulaşma.' },
+    ],
+    medals: [45, 75, 120],
+    quips: ['Bir kayısı daha, son olsun.', 'Arılar seni çok sevdi.', 'Kasa yay gibi, sen de öyle ol.', 'Kuru kayısı da düşünce kalkar.'],
     item: 'Kayısı',
     intro: 'Haziranda dallar turuncuya keser. Kayısı kasalarından sekerek bahçeleri aş, Aslantepe’ye ulaş.',
     facts: [
@@ -445,6 +496,14 @@ export const LEVELS: LevelDef[] = [
     plate: 19,
     subtitle: 'Hattuşa Surları',
     difficulty: 'Zor',
+    nickname: 'Çorumçe',
+    note: 'Leblebi sıcakken yenir, Hattuşa’nın taşları sabırla okunur. Aslanlı Kapı’dan geçerken başını kaldır.',
+    npcs: [
+      { name: 'Leblebici Osman Usta', look: 'usta', text: 'Leblebi üç kere kavrulur, üç kere dinlenir. Acele işe şeytan karışır, okların ritmini de öyle bekle!' },
+      { name: 'Arkeolog Defne', look: 'genc', text: 'Bu tabletler üç bin yıllık. Hititçe hâlâ öğreniyorum ama “barış” kelimesini ilk ben buldum!' },
+    ],
+    medals: [45, 75, 120],
+    quips: ['Hitit okçuları hâlâ nöbette.', 'Leblebi kavrulur, sen de tecrübeyle.', 'Üç bin yıllık taş, bir saniyelik hata.', 'Tablete yazılacak bir düşüş daha.'],
     item: 'Leblebi',
     intro: 'Hititlerin başkenti Hattuşa. Ok tuzaklarını atlat, Yerkapı tünelinden geç, Aslanlı Kapı’ya var.',
     facts: [
@@ -465,6 +524,13 @@ export const LEVELS: LevelDef[] = [
     plate: 58,
     subtitle: 'Buzlu Kızılırmak',
     difficulty: 'Zor',
+    note: 'Kangallar sürüyü korur, sen de onların yolundan şaşma. Buzda acele etme, Kızılırmak buradan doğar.',
+    npcs: [
+      { name: 'Çoban Mehmet ve Karabaş', look: 'coban', text: 'Bu Kangal’ın adı Karabaş. Kurdu görse durur, seni görse kuyruk sallar. Buzda koşma, kayarsın!' },
+      { name: 'Medrese Bekçisi Zehra', look: 'teyze', text: 'Çifte Minareli 1271’den beri burada. Minarelerin arasından tırmanırsan şehri tepeden görürsün.' },
+    ],
+    medals: [50, 85, 140],
+    quips: ['Karabaş başını iki yana salladı.', 'Buz affetmez.', 'Kızılırmak bile bu kadar kıvrılmaz.', 'Kangal izliyor, utandık.'],
     item: 'Kangal rozeti',
     intro: 'Kar, buz ve Selçuklu taş işçiliği. Kaygan zeminde dengeni koru, minareler arasında tırman.',
     facts: [
@@ -485,6 +551,14 @@ export const LEVELS: LevelDef[] = [
     plate: 69,
     subtitle: 'Kale ve Fırtına',
     difficulty: 'Çok Zor',
+    nickname: 'Uktun',
+    note: 'Yolun sonu, başladığım yer. Kalenin burcundan Çoruh’a bak, beni hatırla.',
+    npcs: [
+      { name: 'Ozan Korkut Dede', look: 'ozan', text: 'Dede Korkut gibi anlat hikâyeni evlat: kopuzun teli gerilsin, söz yerini bulsun. Rüzgâra eğil, yürü.' },
+      { name: 'Kale Bekçisi Rıza', look: 'amca', text: 'Rüzgâr hep batıdan eser burada. Deden de bu burçlarda oynardı, ben hatırlarım. Hadi, son sayfa seni bekliyor.' },
+    ],
+    medals: [55, 95, 150],
+    quips: ['Rüzgâr şakacıdır.', 'Çoruh’a selam söyle.', 'Kale yüzyıllardır sabırlı.', 'Dede Korkut bunu da anlatır.'],
     item: 'Kopuz',
     intro: 'Çoruh kıyısından Bayburt Kalesi’ne. Rüzgâr batıdan eser, seni geri iter. Her şeyi öğrendin, şimdi kullan.',
     facts: [

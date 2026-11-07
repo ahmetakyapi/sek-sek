@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import TouchControls from '@/components/TouchControls'
 import TurkeyMap from '@/components/TurkeyMap'
+import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
+import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager } from '@/game/input'
 import { LEVELS } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
+import { ENDING, STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { defaultSave, formatTime, loadSave, writeSave, type Save } from '@/lib/storage'
 
-type Screen = 'title' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
+type Screen = 'title' | 'character' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
 
 interface ScoreRow {
   name: string
@@ -37,16 +40,21 @@ export default function Game() {
   const soundRef = useRef<Sound | null>(null)
   const screenRef = useRef<Screen>('title')
   const levelRef = useRef(0)
+  const freezeRef = useRef(0)
 
   const [screen, setScreenState] = useState<Screen>('title')
   const [levelIdx, setLevelIdx] = useState(0)
   const [save, setSave] = useState<Save>(defaultSave)
   const [hud, setHud] = useState({ time: 0, deaths: 0, items: [false, false, false] })
   const [hint, setHint] = useState<string | null>(null)
+  const [npc, setNpc] = useState<number>(-1)
   const [toast, setToast] = useState<(Fact & { item: string; key: number }) | null>(null)
+  const [quip, setQuip] = useState<{ text: string; key: number } | null>(null)
   const [result, setResult] = useState<Result | null>(null)
   const [coarse, setCoarse] = useState(false)
   const [ready, setReady] = useState(false)
+  const [storyPage, setStoryPage] = useState(0)
+  const [canFull, setCanFull] = useState(false)
 
   const setScreen = useCallback((s: Screen) => {
     screenRef.current = s
@@ -54,14 +62,17 @@ export default function Game() {
   }, [])
 
   const level = LEVELS[levelIdx]
+  const hero = CHARACTERS[save.character ?? 'ayla']
 
   /* ── kurulum ─────────────────────────────────────────────── */
   useEffect(() => {
     const s = loadSave()
     setSave(s)
     setCoarse(window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window)
+    setCanFull(!!document.documentElement.requestFullscreen)
     const canvas = canvasRef.current!
     const renderer = new Renderer(canvas)
+    renderer.character = CHARACTERS[s.character ?? 'ayla']
     const input = new InputManager()
     const sound = new Sound()
     sound.sfxOn = s.sfx
@@ -81,11 +92,25 @@ export default function Game() {
     setLevelIdx(startIdx)
     worldRef.current = new World(LEVELS[startIdx])
     renderer.setLevel(worldRef.current)
-    // ?debug: testler için dünyaya erişim
     if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __mk: unknown }).__mk = { world: () => worldRef.current }
     setReady(true)
     window.addEventListener('resize', fit)
     window.addEventListener('orientationchange', fit)
+
+    // uzun basışta kopyala/kaydet menüsü açılmasın
+    const noMenu = (e: Event) => {
+      if (!(e.target instanceof HTMLInputElement)) e.preventDefault()
+    }
+    document.addEventListener('contextmenu', noMenu)
+    document.addEventListener('selectstart', noMenu)
+    // iOS çift dokunuş yakınlaştırması
+    let lastTouch = 0
+    const noDoubleTap = (e: TouchEvent) => {
+      const now = Date.now()
+      if (now - lastTouch < 320 && !(e.target instanceof HTMLInputElement)) e.preventDefault()
+      lastTouch = now
+    }
+    document.addEventListener('touchend', noDoubleTap, { passive: false })
 
     let raf = 0
     let last = performance.now()
@@ -99,6 +124,12 @@ export default function Game() {
       if (!w) return
       const sc = screenRef.current
       if (sc === 'play') {
+        // vuruş anı donması: ezmede kısa bir duraksama hissi
+        if (freezeRef.current > 0) {
+          freezeRef.current -= dt
+          renderer.render(w, dt * 0.15)
+          return
+        }
         acc += dt
         let first = true
         const inp = input.sample()
@@ -110,11 +141,34 @@ export default function Game() {
         for (const e of w.events) {
           renderer.handle(e, w)
           soundRef.current?.sfx(e.type)
-          if (e.type === 'collect') {
-            const lv = w.level
-            setToast({ ...lv.facts[e.index], item: lv.item, key: Date.now() })
+          switch (e.type) {
+            case 'collect': {
+              const lv = w.level
+              setToast({ ...lv.facts[e.index], item: lv.item, key: Date.now() })
+              haptic([12, 40, 12])
+              break
+            }
+            case 'stomp':
+              freezeRef.current = 0.06
+              haptic(15)
+              break
+            case 'death': {
+              haptic(40)
+              const q = w.level.quips
+              if (Math.random() < 0.4) setQuip({ text: q[Math.floor(Math.random() * q.length)], key: Date.now() })
+              break
+            }
+            case 'checkpoint':
+              haptic(10)
+              break
+            case 'dash':
+              haptic(6)
+              break
+            case 'complete':
+              haptic([20, 60, 20, 60, 40])
+              finish()
+              break
           }
-          if (e.type === 'complete') finish()
         }
         w.events.length = 0
         hudTimer += dt
@@ -122,9 +176,9 @@ export default function Game() {
           hudTimer = 0
           setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken) })
           setHint(w.nearSign >= 0 ? (w.level.hints[w.nearSign] ?? null) : null)
+          setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls') {
-        // vitrin: dünya akar ama oyuncu beklemede
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else {
@@ -149,11 +203,13 @@ export default function Game() {
       window.removeEventListener('resize', fit)
       window.removeEventListener('orientationchange', fit)
       document.removeEventListener('visibilitychange', onVis)
+      document.removeEventListener('contextmenu', noMenu)
+      document.removeEventListener('selectstart', noMenu)
+      document.removeEventListener('touchend', noDoubleTap)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  /* ── klavye: duraklat / bayraktan dön ────────────────────── */
   useEffect(() => {
     const input = inputRef.current
     if (!input) return
@@ -172,10 +228,18 @@ export default function Game() {
     return () => clearTimeout(id)
   }, [toast])
 
+  useEffect(() => {
+    if (!quip) return
+    const id = setTimeout(() => setQuip(null), 1800)
+    return () => clearTimeout(id)
+  }, [quip])
+
   const persist = useCallback((next: Save) => {
     setSave(next)
     writeSave(next)
   }, [])
+
+  const ui = () => soundRef.current?.sfx('ui')
 
   const loadLevel = useCallback(
     (idx: number, toScreen: Screen = 'intro') => {
@@ -188,6 +252,7 @@ export default function Game() {
       setHud({ time: 0, deaths: 0, items: [false, false, false] })
       setToast(null)
       setHint(null)
+      setNpc(-1)
       setResult(null)
       setScreen(toScreen)
     },
@@ -201,6 +266,28 @@ export default function Game() {
     inputRef.current?.clear()
     setScreen('play')
   }, [setScreen])
+
+  const startJourney = () => {
+    soundRef.current?.unlock()
+    ui()
+    if (!save.character) return setScreen('character')
+    if (!save.seenStory) {
+      setStoryPage(0)
+      return setScreen('story')
+    }
+    loadLevel(Math.min(save.unlocked, LEVELS.length - 1))
+  }
+
+  const pickCharacter = (id: CharacterId) => {
+    ui()
+    const next = { ...save, character: id }
+    persist(next)
+    if (rendererRef.current) rendererRef.current.character = CHARACTERS[id]
+    if (!next.seenStory) {
+      setStoryPage(0)
+      setScreen('story')
+    } else setScreen('title')
+  }
 
   function finish() {
     const w = worldRef.current
@@ -237,7 +324,13 @@ export default function Game() {
     else snd.musicOn = next.music
   }
 
+  const fullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => {})
+  }
+
   const showTouch = save.touch === 'on' || (save.touch === 'auto' && coarse)
+  const totalFound = Object.values(save.best).reduce((a, b) => a + b.items.filter(Boolean).length, 0)
 
   return (
     <div className="game-root">
@@ -246,13 +339,25 @@ export default function Game() {
       {screen === 'play' && (
         <>
           <Hud level={level} hud={hud} onPause={() => setScreen('pause')} />
-          {hint && (
+          {(hint || npc >= 0) && (
             <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
-              <p className="rise max-w-md border-2 border-[#c79a62] bg-[#3a2a1e]/90 px-4 py-2.5 text-center text-[13px] leading-snug text-cream">{hint}</p>
+              {npc >= 0 && level.npcs[npc] ? (
+                <div key={`n${npc}`} className="rise max-w-md border-2 border-gold/70 bg-ink/90 px-4 py-2.5">
+                  <p className="font-display text-sm text-gold">{level.npcs[npc].name}</p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-cream">{level.npcs[npc].text}</p>
+                </div>
+              ) : (
+                <p className="rise max-w-md border-2 border-[#c79a62] bg-[#3a2a1e]/90 px-4 py-2.5 text-center text-[13px] leading-snug text-cream">{hint}</p>
+              )}
+            </div>
+          )}
+          {quip && (
+            <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[38%] z-10 flex justify-center px-4">
+              <p className="rise font-display text-xl text-cream [text-shadow:0_2px_0_#120f1a,0_0_12px_#120f1a]">{quip.text}</p>
             </div>
           )}
           {toast && (
-            <div key={toast.key} className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+150px)] z-10 flex justify-center px-4 sm:bottom-8">
+            <div key={toast.key} className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+160px)] z-10 flex justify-center px-4 sm:bottom-8">
               <div className="rise pixel-panel max-w-md px-4 py-3">
                 <p className="text-[11px] font-bold tracking-[0.2em] text-gold">HATIRA · {toast.item.toLocaleUpperCase('tr')}</p>
                 <p className="mt-1 font-display text-lg text-cream">{toast.title}</p>
@@ -260,37 +365,149 @@ export default function Game() {
               </div>
             </div>
           )}
-          {showTouch && inputRef.current && <TouchControls input={inputRef.current} />}
+          {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} />}
         </>
       )}
 
       {screen === 'title' && (
         <Overlay>
-          <div className="rise pixel-panel w-full max-w-md p-6 sm:p-8">
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">ŞEHİR ŞEHİR ANADOLU</p>
-            <h1 className="mt-2 font-display text-5xl leading-none text-cream sm:text-6xl">Memleket</h1>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              İstanbul’dan Bayburt’a altı şehir. Martılar, taş teraslar, kayısı kasaları, Hitit ok tuzakları, buzlu Kızılırmak ve kale rüzgârı. Her şehirde
-              üç hatıra, her hatırada bir hikâye.
-            </p>
-            <div className="mt-6 grid gap-2.5">
-              <button className="pixel-btn primary justify-center text-base" onClick={() => loadLevel(Math.min(save.unlocked, LEVELS.length - 1))} autoFocus>
-                ▶ {save.unlocked > 0 ? `Devam et: ${LEVELS[Math.min(save.unlocked, LEVELS.length - 1)].name}` : 'Yolculuğa başla'}
-              </button>
-              <div className="grid grid-cols-2 gap-2.5">
-                <button className="pixel-btn justify-center" onClick={() => setScreen('map')}>
-                  Şehirler
+          <div className="rise flex w-full max-w-3xl flex-col items-center gap-2 md:flex-row md:items-end md:gap-0">
+            <div className="relative flex shrink-0 items-end justify-center md:w-[300px]">
+              {save.character ? (
+                <CharacterPortrait c={hero} scale={coarse ? 7 : 10} />
+              ) : (
+                <div className="flex items-end">
+                  <CharacterPortrait c={CHARACTERS.ayla} scale={coarse ? 5 : 8} />
+                  <CharacterPortrait c={CHARACTERS.kerem} scale={coarse ? 5 : 8} className="-ml-8" />
+                </div>
+              )}
+            </div>
+            <div className="pixel-panel w-full max-w-md p-6 sm:p-7">
+              <p className="text-[11px] font-bold tracking-[0.3em] text-accent">ŞEHİR ŞEHİR ANADOLU</p>
+              <h1 className="mt-2 font-display text-5xl leading-none text-cream sm:text-6xl">Memleket</h1>
+              <p className="mt-3 text-sm leading-relaxed text-muted">
+                Dedenin yarım kalmış defterini tamamla. İstanbul’dan Bayburt’a altı şehir, her şehirde üç hatıra, her hatırada bir hikâye.
+              </p>
+              <div className="mt-5 grid gap-2.5">
+                <button className="pixel-btn primary justify-center text-base" onClick={startJourney} autoFocus>
+                  ▶ {save.unlocked > 0 ? `Devam Et: ${LEVELS[Math.min(save.unlocked, LEVELS.length - 1)].name}` : 'Yolculuğa Başla'}
                 </button>
-                <button className="pixel-btn justify-center" onClick={() => setScreen('scores')}>
-                  Skorlar
-                </button>
-                <button className="pixel-btn justify-center" onClick={() => setScreen('controls')}>
-                  Kontroller
-                </button>
-                <button className="pixel-btn justify-center" onClick={() => toggle('music')}>
-                  Müzik {save.music ? 'açık' : 'kapalı'}
-                </button>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('map'))}>
+                    Şehirler
+                  </button>
+                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('character'))}>
+                    Karakter
+                  </button>
+                  <button
+                    className="pixel-btn justify-center"
+                    onClick={() => {
+                      ui()
+                      setStoryPage(0)
+                      setScreen('story')
+                    }}
+                  >
+                    Hikâye
+                  </button>
+                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('scores'))}>
+                    Skorlar
+                  </button>
+                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('controls'))}>
+                    Kontroller
+                  </button>
+                  <button className="pixel-btn justify-center" onClick={() => toggle('music')}>
+                    Müzik {save.music ? 'Açık' : 'Kapalı'}
+                  </button>
+                </div>
               </div>
+              {totalFound > 0 && (
+                <p className="mt-4 text-[12px] text-muted">
+                  Defterde {totalFound} / {LEVELS.length * 3} hatıra
+                </p>
+              )}
+            </div>
+          </div>
+        </Overlay>
+      )}
+
+      {screen === 'character' && (
+        <Overlay>
+          <div className="rise pixel-panel w-full max-w-2xl p-5 sm:p-6">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">YOL ARKADAŞIN</p>
+            <h2 className="mt-1 font-display text-3xl text-cream sm:text-4xl">Karakterini Seç</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {(['ayla', 'kerem'] as const).map((id) => {
+                const c = CHARACTERS[id]
+                const on = save.character === id
+                return (
+                  <button
+                    key={id}
+                    onClick={() => pickCharacter(id)}
+                    className={`group flex flex-col items-center border-2 bg-panel-2 p-4 text-left transition-colors duration-150 hover:border-accent-2 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold' : 'border-line'}`}
+                  >
+                    <div className="flex h-[150px] items-end justify-center sm:h-[190px]">
+                      <CharacterPortrait c={c} scale={coarse ? 6 : 8} pose="run" />
+                    </div>
+                    <div className="mt-2 w-full">
+                      <p className="flex items-baseline justify-between font-display text-2xl text-cream">
+                        {c.name}
+                        <span className="text-[12px] font-bold tracking-[0.18em] text-accent">{c.role.toLocaleUpperCase('tr')}</span>
+                      </p>
+                      <p className="mt-1 text-[13px] leading-snug text-muted">{c.bio}</p>
+                      <p className="pixel-btn primary mt-3 w-full justify-center py-2 text-sm">{on ? 'Seçili' : `${c.name} ile Yola Çık`}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            {save.character && (
+              <button className="pixel-btn mt-3" onClick={() => setScreen('title')}>
+                ← Geri
+              </button>
+            )}
+          </div>
+        </Overlay>
+      )}
+
+      {screen === 'story' && (
+        <Overlay dim>
+          <div className="rise pixel-panel w-full max-w-lg p-6" key={storyPage}>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold tracking-[0.3em] text-accent">MEMLEKET DEFTERİ</p>
+              <p className="text-[11px] tabular-nums text-muted">
+                {storyPage + 1} / {STORY.length}
+              </p>
+            </div>
+            <div className="mt-3 flex items-end gap-4">
+              <CharacterPortrait c={hero} scale={4} className="shrink-0" />
+              <Notebook page={storyPage} />
+            </div>
+            <h2 className="mt-3 font-display text-3xl text-cream">{STORY[storyPage].title}</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-cream/90">{fill(STORY[storyPage].text, hero.name)}</p>
+            <div className="mt-5 flex gap-2.5">
+              <button
+                className="pixel-btn primary flex-1 justify-center"
+                autoFocus
+                onClick={() => {
+                  ui()
+                  if (storyPage + 1 < STORY.length) setStoryPage(storyPage + 1)
+                  else {
+                    persist({ ...save, seenStory: true })
+                    loadLevel(Math.min(save.unlocked, LEVELS.length - 1))
+                  }
+                }}
+              >
+                {storyPage + 1 < STORY.length ? 'Devam ▶' : 'Yola Çık ▶'}
+              </button>
+              <button
+                className="pixel-btn"
+                onClick={() => {
+                  persist({ ...save, seenStory: true })
+                  loadLevel(Math.min(save.unlocked, LEVELS.length - 1))
+                }}
+              >
+                Geç
+              </button>
             </div>
           </div>
         </Overlay>
@@ -321,14 +538,20 @@ export default function Game() {
                           <span>{l.plate}</span>
                         </span>
                         <span>
-                          <span className="block font-display text-base">{l.name}</span>
+                          <span className="block font-display text-base leading-tight">{displayName(l)}</span>
                           <span className="block text-[11px] text-muted">
                             {l.subtitle} · {l.difficulty}
                           </span>
                         </span>
                       </span>
-                      <span className="text-right text-[11px] text-muted">
-                        {locked ? 'Kilitli' : best ? `${formatTime(best.timeMs)} · ${found}/3` : 'Yeni'}
+                      <span className="flex flex-col items-end gap-1 text-[11px] text-muted">
+                        {locked ? 'Kilitli' : best ? formatTime(best.timeMs) : 'Yeni'}
+                        {best && (
+                          <span className="flex items-center gap-1.5">
+                            <MedalBadge medal={medalFor(l, best.timeMs)} />
+                            {found}/3
+                          </span>
+                        )}
                       </span>
                     </button>
                   </li>
@@ -346,17 +569,34 @@ export default function Game() {
               <span className="plate text-4xl">
                 <span>{level.plate}</span>
               </span>
-              <div>
+              <div className="min-w-0">
                 <p className="text-[11px] font-bold tracking-[0.25em] text-accent">
                   {String(levelIdx + 1).padStart(2, '0')} / {String(LEVELS.length).padStart(2, '0')} · {level.difficulty.toLocaleUpperCase('tr')}
                 </p>
                 <h2 className="font-display text-4xl leading-none text-cream">{level.name}</h2>
-                <p className="text-sm text-muted">{level.subtitle}</p>
+                <p className="text-sm text-muted">
+                  {level.nickname ? <span className="text-accent-2">({level.nickname}) </span> : null}
+                  {level.subtitle}
+                </p>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-cream/90">{level.intro}</p>
-            <p className="mt-3 text-[12px] text-muted">
-              Bu şehirde 3 <strong className="text-gold">{level.item.toLocaleLowerCase('tr')}</strong> saklı. Her biri şehre dair bir hikâye anlatır.
+            <blockquote className="mt-4 border-l-2 border-gold/70 bg-panel-2/60 px-3 py-2 text-[14px] italic leading-relaxed text-cream/90">
+              <span className="mb-1 block text-[10px] font-bold not-italic tracking-[0.2em] text-gold">DEDENİN DEFTERİNDEN</span>“{level.note}”
+            </blockquote>
+            <p className="mt-3 text-sm leading-relaxed text-muted">{level.intro}</p>
+            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
+              <span>
+                3 <strong className="text-gold">{level.item.toLocaleLowerCase('tr')}</strong> saklı
+              </span>
+              <span className="flex items-center gap-1">
+                <MedalBadge medal="altin" /> {level.medals[0]} sn
+              </span>
+              <span className="flex items-center gap-1">
+                <MedalBadge medal="gumus" /> {level.medals[1]} sn
+              </span>
+              <span className="flex items-center gap-1">
+                <MedalBadge medal="bronz" /> {level.medals[2]} sn
+              </span>
             </p>
             <div className="mt-5 grid grid-cols-[1fr_auto] gap-2.5">
               <button className="pixel-btn primary justify-center text-base" onClick={beginPlay} autoFocus>
@@ -391,26 +631,31 @@ export default function Game() {
                   setScreen('play')
                 }}
               >
-                ⚑ Bayraktan dön
+                ⚑ Bayraktan Dön
               </button>
               <button className="pixel-btn" onClick={() => loadLevel(levelIdx, 'play')}>
-                ↺ Baştan başla
+                ↺ Baştan Başla
               </button>
               <button className="pixel-btn" onClick={() => setScreen('map')}>
                 ⌖ Şehirler
               </button>
               <button className="pixel-btn" onClick={() => toggle('sfx')}>
-                Efekt {save.sfx ? 'açık' : 'kapalı'}
+                Efekt {save.sfx ? 'Açık' : 'Kapalı'}
               </button>
               <button className="pixel-btn" onClick={() => toggle('music')}>
-                Müzik {save.music ? 'açık' : 'kapalı'}
+                Müzik {save.music ? 'Açık' : 'Kapalı'}
               </button>
-              <button
-                className="pixel-btn col-span-2 justify-center"
-                onClick={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })}
-              >
-                Dokunmatik kontroller: {showTouch ? 'açık' : 'kapalı'}
+              <button className="pixel-btn" onClick={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })}>
+                Dokunmatik {showTouch ? 'Açık' : 'Kapalı'}
               </button>
+              <button className="pixel-btn" onClick={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })}>
+                Tuşlar {save.controlSize === 'buyuk' ? 'Büyük' : 'Normal'}
+              </button>
+              {canFull && (
+                <button className="pixel-btn col-span-2 justify-center" onClick={fullscreen}>
+                  ⛶ Tam Ekran
+                </button>
+              )}
             </div>
           </div>
         </Overlay>
@@ -421,6 +666,7 @@ export default function Game() {
           levelIdx={levelIdx}
           result={result}
           save={save}
+          heroName={hero.name}
           onName={(name) => persist({ ...save, name })}
           onNext={() => (levelIdx + 1 < LEVELS.length ? loadLevel(levelIdx + 1) : setScreen('end'))}
           onRetry={() => loadLevel(levelIdx, 'play')}
@@ -432,7 +678,7 @@ export default function Game() {
         <Overlay>
           <div className="rise pixel-panel w-full max-w-lg p-5 sm:p-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-3xl text-cream">Skor tablosu</h2>
+              <h2 className="font-display text-3xl text-cream">Skor Tablosu</h2>
               <button className="pixel-btn" onClick={() => setScreen('title')}>
                 ← Geri
               </button>
@@ -453,16 +699,14 @@ export default function Game() {
             </div>
             <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-                <dt className="font-bold text-gold">Klavye</dt>
+                <dt className="font-display text-gold">Klavye</dt>
                 <dd />
                 <dt className="text-muted">Yürü</dt>
                 <dd>← → / A D</dd>
                 <dt className="text-muted">Zıpla</dt>
                 <dd>Boşluk / Z / ↑</dd>
                 <dt className="text-muted">Atıl</dt>
-                <dd>X / Shift</dd>
-                <dt className="text-muted">Yön + atıl</dt>
-                <dd>8 yöne atılma</dd>
+                <dd>X / Shift (8 yön)</dd>
                 <dt className="text-muted">İn</dt>
                 <dd>↓ + Zıpla</dd>
                 <dt className="text-muted">Mola</dt>
@@ -471,15 +715,15 @@ export default function Game() {
                 <dd>R</dd>
               </dl>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-                <dt className="font-bold text-gold">Dokunmatik</dt>
+                <dt className="font-display text-gold">Dokunmatik</dt>
                 <dd />
-                <dt className="text-muted">Sol yarı</dt>
-                <dd>Joystick (nereye dokunursan orada)</dd>
-                <dt className="text-muted">ZIPLA</dt>
-                <dd>Uzun bas, yüksel</dd>
-                <dt className="text-muted">ATIL</dt>
+                <dt className="text-muted">Sol Yarı</dt>
+                <dd>Joystick, nereye dokunursan orada</dd>
+                <dt className="text-muted">Zıpla</dt>
+                <dd>Uzun bas, daha yükseğe</dd>
+                <dt className="text-muted">Atıl</dt>
                 <dd>Joystick yönünde</dd>
-                <dt className="font-bold text-gold">Oyun kolu</dt>
+                <dt className="font-display text-gold">Oyun Kolu</dt>
                 <dd />
                 <dt className="text-muted">A / Y</dt>
                 <dd>Zıpla</dd>
@@ -488,7 +732,8 @@ export default function Game() {
               </dl>
             </div>
             <p className="mt-4 text-[12px] leading-relaxed text-muted">
-              İpucu: duvara doğru basılı tutup zıplarsan aynı duvarda tırmanırsın. Atılma yere değince ya da bir düşmana basınca yenilenir; atkın kırmızıysa atılmaya hazırsın.
+              Duvara doğru basılı tutup zıplarsan aynı duvarda tırmanırsın. Atılma yere değince ya da bir düşmana basınca yenilenir: atkın kırmızıysa hazırsın, griyse
+              harcadın. Şehir insanlarının yanına gidersen seninle konuşurlar.
             </p>
           </div>
         </Overlay>
@@ -497,18 +742,21 @@ export default function Game() {
       {screen === 'end' && (
         <Overlay>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
+            <div className="flex justify-center">
+              <CharacterPortrait c={hero} scale={6} pose="idle" />
+            </div>
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">YOLCULUK TAMAM</p>
-            <h2 className="mt-2 font-display text-4xl text-cream">İstanbul’dan Bayburt’a</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              Altı şehir, {Object.values(save.best).reduce((a, b) => a + b.items.filter(Boolean).length, 0)} / {LEVELS.length * 3} hatıra. Toplam en iyi süre:{' '}
-              {formatTime(Object.values(save.best).reduce((a, b) => a + b.timeMs, 0))}. Yeni şehirler yolda.
+            <h2 className="mt-2 font-display text-4xl text-cream">{ENDING.title}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-cream/90">{fill(ENDING.text, hero.name)}</p>
+            <p className="mt-3 text-[12px] text-muted">
+              {totalFound} / {LEVELS.length * 3} hatıra · Toplam en iyi süre {formatTime(Object.values(save.best).reduce((a, b) => a + b.timeMs, 0))}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn primary justify-center" onClick={() => setScreen('map')}>
                 Şehirler
               </button>
               <button className="pixel-btn justify-center" onClick={() => setScreen('scores')}>
-                Skorlar
+                Skor Tablosu
               </button>
             </div>
           </div>
@@ -520,13 +768,18 @@ export default function Game() {
 
 /* ── Parçalar ───────────────────────────────────────────────── */
 
-function Overlay({ children, dim = false }: { children: React.ReactNode; dim?: boolean }) {
+function Notebook({ page }: { page: number }) {
   return (
-    <div
-      className={`absolute inset-0 z-20 flex items-center justify-center overflow-y-auto p-4 ${dim ? 'bg-ink/55' : 'bg-gradient-to-b from-ink/40 via-ink/20 to-ink/60'}`}
-      style={{ paddingTop: 'max(16px, env(safe-area-inset-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
-    >
-      {children}
+    <div className="relative min-h-[96px] flex-1 border-2 border-[#5a3c26] bg-[#e9dcc0] p-2 text-[#3a2a1e] shadow-[inset_0_-3px_0_rgba(0,0,0,0.15)]">
+      <p className="font-display text-[13px] leading-none">Memleket</p>
+      <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3">
+        {LEVELS.map((l) => (
+          <span key={l.id} className={`truncate border border-[#5a3c26]/40 px-1 text-[9px] leading-4 ${page >= 1 ? 'opacity-100' : 'opacity-40'}`}>
+            {l.plate} {l.name}
+          </span>
+        ))}
+      </div>
+      {page === 2 && <p className="mt-1 text-[10px] italic">“Yolun sonu, başladığım yer.”</p>}
     </div>
   )
 }
@@ -537,16 +790,16 @@ function Hud({ level, hud, onPause }: { level: (typeof LEVELS)[number]; hud: { t
       className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 px-3"
       style={{ paddingTop: 'max(10px, env(safe-area-inset-top))', paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))' }}
     >
-      <div className="flex items-center gap-2.5 bg-ink/55 px-2.5 py-1.5">
+      <div className="flex min-w-0 items-center gap-2.5 bg-ink/55 px-2.5 py-1.5">
         <span className="plate text-lg">
           <span>{level.plate}</span>
         </span>
-        <div className="leading-tight">
-          <p className="font-display text-base text-cream sm:text-lg">{level.name}</p>
-          <p className="text-[10px] font-bold tracking-[0.18em] text-muted">{level.difficulty.toLocaleUpperCase('tr')}</p>
+        <div className="min-w-0 leading-tight">
+          <p className="truncate font-display text-base text-cream sm:text-lg">{level.name}</p>
+          <p className="truncate text-[10px] font-bold tracking-[0.06em] text-muted">{(level.nickname ?? level.difficulty).toLocaleUpperCase('tr')}</p>
         </div>
       </div>
-      <div className="pointer-events-auto flex items-center gap-2">
+      <div className="pointer-events-auto flex shrink-0 items-center gap-2">
         <div className="flex items-center gap-3 bg-ink/55 px-3 py-2 text-sm font-semibold tabular-nums text-cream">
           <span className="flex gap-1" aria-label={`${hud.items.filter(Boolean).length} / 3 hatıra`}>
             {hud.items.map((v, i) => (
@@ -554,11 +807,11 @@ function Hud({ level, hud, onPause }: { level: (typeof LEVELS)[number]; hud: { t
             ))}
           </span>
           <span aria-label="Düşüş">✕ {hud.deaths}</span>
-          <span aria-label="Süre" className="hidden min-[360px]:inline">
+          <span aria-label="Süre" className="hidden min-[380px]:inline">
             {formatTime(hud.time * 1000).slice(0, -2)}
           </span>
         </div>
-        <button className="pixel-btn h-10 w-10 justify-center p-0" aria-label="Mola" onClick={onPause}>
+        <button className="pixel-btn h-11 w-11 justify-center p-0" aria-label="Mola" onClick={onPause}>
           ❚❚
         </button>
       </div>
@@ -570,6 +823,7 @@ function Complete({
   levelIdx,
   result,
   save,
+  heroName,
   onName,
   onNext,
   onRetry,
@@ -578,18 +832,20 @@ function Complete({
   levelIdx: number
   result: Result
   save: Save
+  heroName: string
   onName: (n: string) => void
   onNext: () => void
   onRetry: () => void
   onMap: () => void
 }) {
   const level = LEVELS[levelIdx]
-  const [name, setName] = useState(save.name)
+  const [name, setName] = useState(save.name || heroName)
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [err, setErr] = useState('')
   const [refresh, setRefresh] = useState(0)
   const found = result.items.filter(Boolean).length
   const best = save.best[level.id]
+  const medal = medalFor(level, result.timeMs)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -625,16 +881,17 @@ function Complete({
             </p>
             <p className="text-[12px] text-muted">{result.newBest ? 'Yeni kişisel rekor!' : best ? `Rekorun: ${formatTime(best.timeMs)}` : ''}</p>
           </div>
+          {medal ? <MedalBadge medal={medal} size="lg" /> : <span className="text-[12px] text-muted">Bronz için {level.medals[2]} sn</span>}
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-[1.1fr_1fr]">
           <div className="grid content-start gap-2">
-            <p className="text-[11px] font-bold tracking-[0.2em] text-gold">HATIRALAR</p>
+            <p className="text-[11px] font-bold tracking-[0.2em] text-gold">DEFTERE EKLENEN HATIRALAR</p>
             {level.facts.map((f, i) => {
               const have = result.items[i] || best?.items[i]
               return (
                 <div key={i} className={`border-2 px-3 py-2 ${have ? 'border-line bg-panel-2' : 'border-dashed border-line/70'}`}>
-                  <p className="font-display text-sm text-cream">{have ? f.title : 'Bulunamadı'}</p>
+                  <p className="font-display text-sm text-cream">{have ? f.title : 'Boş Sayfa'}</p>
                   <p className="text-[12px] leading-snug text-muted">{have ? f.text : `Bu ${level.item.toLocaleLowerCase('tr')} şehirde bir yerde saklı. Tekrar oyna ve bul.`}</p>
                 </div>
               )
@@ -655,7 +912,7 @@ function Complete({
                   minLength={2}
                   required
                   placeholder="Adın"
-                  className="min-w-0 flex-1 border-2 border-line bg-ink px-3 py-2 text-sm text-cream outline-none focus:border-gold"
+                  className="min-w-0 flex-1 border-2 border-line bg-ink px-3 py-2 text-base text-cream outline-none focus:border-gold"
                 />
                 <button className="pixel-btn primary" disabled={status === 'sending'}>
                   {status === 'sending' ? '…' : 'Gönder'}
@@ -670,7 +927,7 @@ function Complete({
 
         <div className="mt-5 flex flex-wrap gap-2.5">
           <button className="pixel-btn primary" onClick={onNext} autoFocus>
-            {levelIdx + 1 < LEVELS.length ? `▶ Sıradaki: ${LEVELS[levelIdx + 1].name}` : '▶ Yolculuğu bitir'}
+            {levelIdx + 1 < LEVELS.length ? `▶ Sıradaki: ${displayName(LEVELS[levelIdx + 1])}` : '▶ Defteri Kapat'}
           </button>
           <button className="pixel-btn" onClick={onRetry}>
             ↺ Tekrar

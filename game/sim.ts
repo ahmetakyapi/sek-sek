@@ -141,6 +141,7 @@ export class World {
   readonly checkpoints: Checkpoint[] = []
   readonly springs: Spring[] = []
   readonly signs: Sign[] = []
+  readonly npcs: Sign[] = []
   readonly decor: Decor[] = []
   readonly exit: Box
   readonly start: { x: number; y: number }
@@ -153,6 +154,7 @@ export class World {
   complete = false
   windNow = 0
   nearSign = -1
+  nearNpc = -1
   events: GameEvent[] = []
 
   constructor(level: LevelDef) {
@@ -224,6 +226,9 @@ export class World {
           case '?':
             this.signs.push({ x: px, y: py, w: T, h: T, index: signIdx++ })
             break
+          case 'n':
+            this.npcs.push({ x: px, y: py, w: T, h: T, index: 0 })
+            break
           case 'M':
           case 'N': {
             if (row[tx - 1] === ch) break // aynı platformun devamı
@@ -241,6 +246,8 @@ export class World {
           case 'l':
           case 'o':
           case 'r':
+          case 's':
+          case 'm':
           case 't':
           case 'w':
           case 'z':
@@ -259,6 +266,7 @@ export class World {
     byX(this.pickups)
     byX(this.checkpoints)
     byX(this.signs)
+    byX(this.npcs)
     this.start = start
     this.spawn = { ...start }
     this.exit = exit
@@ -784,6 +792,11 @@ export class World {
     this.nearSign = -1
     for (const s of this.signs) {
       if (Math.abs(p.x + p.w / 2 - (s.x + T / 2)) < 22 && Math.abs(p.y + p.h - (s.y + T)) < 24) this.nearSign = s.index
+    }
+
+    this.nearNpc = -1
+    for (const n of this.npcs) {
+      if (Math.abs(p.x + p.w / 2 - (n.x + T / 2)) < 28 && Math.abs(p.y + p.h - (n.y + T)) < 28) this.nearNpc = n.index
     }
 
     if (overlap(p, this.exit)) {

@@ -502,49 +502,6 @@ export function buildLayers(city: CityKey): Layers {
   }
 }
 
-/* ── Oyuncu: kırmızı atkılı yolcu ─────────────────────────────── */
-export const PLAYER_PAL: Record<string, string> = {
-  h: '#3b2a20',
-  s: '#f0c29a',
-  e: '#1d1a22',
-  r: '#d6403a',
-  j: '#2f6a8a',
-  J: '#245470',
-  k: '#8a5a35',
-  K: '#6b4428',
-  p: '#3a3550',
-  b: '#20182a',
-}
-
-const BODY = [
-  '....hhhh....',
-  '...hhhhhhh..',
-  '...hhsssss..',
-  '...hssses...',
-  '....sssss...',
-  '...rrrrrr...',
-  '.kKjjjjjj...',
-  '.kKjjjjjjs..',
-  '.kKjjjjjj...',
-  '.kKJjjjjj...',
-  '...JJJJJJ...',
-]
-
-const LEGS: Record<string, string[]> = {
-  idle: ['...pp..pp...', '...pp..pp...', '...pp..pp...', '...pp..pp...', '..bbb..bbb..'],
-  runA: ['...pp...pp..', '..pp.....pp.', '..pp.....pp.', '.pp......bb.', '.bb.........'],
-  runB: ['....pppp....', '....pp.pp...', '....pp.pp...', '....pp.pp...', '....bb.bb...'],
-  runC: ['...pp..pp...', '...pp...pp..', '..pp.....pp.', '..pp.....bb.', '..bb........'],
-  jump: ['...pppp.....', '..pp..pp....', '..pp...pp...', '..bb....pp..', '........bb..'],
-  fall: ['...pp..pp...', '..pp....pp..', '..pp....pp..', '.bb......bb.', '............'],
-  wall: ['...pp.pp....', '...pp..pp...', '...pp..pp...', '...bb...bb..', '............'],
-}
-
-export function playerFrame(state: keyof typeof LEGS, bob = 0): string[] {
-  const body = bob ? ['............', ...BODY.slice(0, -1)] : BODY
-  return [...body, ...LEGS[state]]
-}
-
 /* ── Düşmanlar ────────────────────────────────────────────────── */
 export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string, string> }> = {
   gull: {

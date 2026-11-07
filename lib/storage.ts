@@ -11,11 +11,14 @@ export interface Save {
   sfx: boolean
   music: boolean
   touch: 'auto' | 'on' | 'off'
+  character: 'ayla' | 'kerem' | null
+  seenStory: boolean
+  controlSize: 'normal' | 'buyuk'
 }
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto' })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal' })
 
 export function loadSave(): Save {
   try {

@@ -7,6 +7,12 @@ export interface Fact {
   text: string
 }
 
+export interface Npc {
+  name: string
+  look: 'amca' | 'teyze' | 'usta' | 'genc' | 'coban' | 'ozan'
+  text: string
+}
+
 export interface LevelDef {
   id: string
   city: CityKey
@@ -20,6 +26,16 @@ export interface LevelDef {
   intro: string
   facts: [Fact, Fact, Fact]
   hints: string[]
+  /** parantez içinde gösterilen yerel ad: Çorum (Çorumçe) */
+  nickname?: string
+  /** dedenin defterindeki not (hikâye) */
+  note: string
+  /** haritadaki n karakterleri, soldan sağa */
+  npcs: Npc[]
+  /** madalya süreleri (saniye): altın, gümüş, bronz */
+  medals: [number, number, number]
+  /** düşünce ara sıra çıkan esprili satırlar */
+  quips: string[]
   /** yatay rüzgâr ivmesi (px/s²); periyodik esintiyle çarpılır */
   wind?: number
   map: string[]

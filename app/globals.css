@@ -24,6 +24,20 @@ body {
   overscroll-behavior: none;
 }
 
+* {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+canvas,
+button,
+.touch-layer,
+.touch-layer * {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
 body {
   overflow: hidden;
   font-family: var(--font-mono);
@@ -35,6 +49,13 @@ body {
 input {
   -webkit-user-select: text;
   user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* menü kaydırılabilsin */
+.overlay-scroll,
+.overlay-scroll button {
+  touch-action: pan-y;
 }
 
 .game-root {

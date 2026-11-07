@@ -7,12 +7,19 @@ harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üre
 |---|-------|-------|--------|--------------|--------|
 | 1 | İstanbul · Boğaz Kıyısı | 34 | Kolay | Zıplama, tek yönlü platform, iskele, atılma | Simit |
 | 2 | Mardin · Taş Teraslar | 47 | Orta | Akrepler, çatlak taş, duvar tırmanışı | Telkari |
-| 3 | Malatya · Kayısı Bahçeleri | 44 | Orta | Kayısı kasası (yay), dikey platform, arılar | Kayısı |
-| 4 | Çorum · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
+| 3 | Malatya (Erik Diyarı) · Kayısı Bahçeleri | 44 | Orta | Kayısı kasası (yay), dikey platform, arılar | Kayısı |
+| 4 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
 | 5 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, minareler arası tırmanış, kuzgunlar | Kangal rozeti |
-| 6 | Bayburt · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, hepsi bir arada | Kopuz |
+| 6 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, hepsi bir arada | Kopuz |
 
 Her şehirde üç hatıra saklı; her biri o şehre dair doğrulanmış bir bilgi kartı açar.
+
+**Hikâye:** Ayla ya da Kerem, dedesi Yusuf’un tavan arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre
+ayrılmış, her şehirde üç boş kutu var. Son sayfada tek cümle: “Yolun sonu, başladığım yer.” Yol Bayburt’ta biter.
+
+**Şehir dokusu:** simitçi arabası ve İstanbul kedileri, Mardin’de mırra ve telkari ustası, Malatya’da damda kuruyan
+kayısılar, Çorum’da leblebi kazanı ve arkeolog, Sivas’ta çoban ve Kangal’ı Karabaş, Bayburt’ta ozan Korkut Dede.
+Her şehirde yanına gidince konuşan iki kişi, altın/gümüş/bronz süre madalyaları.
 
 ## Kontroller
 
