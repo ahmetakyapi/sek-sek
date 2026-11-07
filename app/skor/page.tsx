@@ -43,7 +43,7 @@ export default async function SkorPage({ searchParams }: Props) {
           <>
             <p className="text-[12px] font-bold tracking-[0.3em] text-accent">SKOR KARTI</p>
             <h1 className="mt-2 font-display text-4xl text-cream">
-              {d.name || 'Bir yolcu'} {l.name} şehrini geçti
+              {d.name || 'Bir Yolcu'} {l.name} Şehrini Geçti
             </h1>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/skor/kart?${shareQuery(d)}`} alt={`${l.name}: ${formatTime(d.timeMs)}, ${d.deaths} düşüş, ${d.items}/3 hatıra`} width={1200} height={630} className="pixel-panel mt-6 h-auto w-full p-0" />
@@ -58,7 +58,7 @@ export default async function SkorPage({ searchParams }: Props) {
           </>
         ) : (
           <>
-            <h1 className="font-display text-4xl">Bu skor kartı açılamadı</h1>
+            <h1 className="font-display text-4xl">Bu Skor Kartı Açılamadı</h1>
             <p className="mt-3 text-muted">Bağlantı eksik ya da bozuk olabilir. Oyuna buradan başlayabilirsin.</p>
             <Link href="/" className="pixel-btn primary mt-6 px-6 py-3">
               ▶ Hemen Oyna

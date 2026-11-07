@@ -380,7 +380,7 @@ export default function Game() {
                 {String(level.plate).padStart(2, '0')} · {level.subtitle.toLocaleUpperCase('tr')}
               </p>
               <p className="font-display text-6xl text-cream [text-shadow:0_4px_0_#120f1a] sm:text-7xl">{level.name}</p>
-              <p className="mt-1 text-[13px] text-cream/80 [text-shadow:0_2px_0_#120f1a]">Hareket edince süre başlar</p>
+              <p className="mt-1 text-[13px] text-cream/80 [text-shadow:0_2px_0_#120f1a]">Hareket Edince Süre Başlar</p>
               <div className="kilim mt-3 w-[min(520px,80vw)]" />
             </div>
           )}
@@ -408,7 +408,7 @@ export default function Game() {
                   <ItemIcon city={level.city} taken size={20} />
                 </span>
                 <span className="truncate">
-                  <strong className="font-display text-gold">{toast.item} bulundu</strong>
+                  <strong className="font-display text-gold">{toast.item} Bulundu</strong>
                   <span className="text-muted"> · {toast.title}</span>
                 </span>
               </p>
@@ -594,8 +594,9 @@ export default function Game() {
               className="mt-3 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline"
               onClick={() => (save.player ? setScreen('title') : afterName({ ...save, skippedName: true }))}
             >
-              {save.player ? '← Vazgeç' : 'Şimdilik Geç (skorların kaydedilmez)'}
+              {save.player ? '← Vazgeç' : 'Şimdilik Geç'}
             </button>
+            {!save.player && <p className="mt-1 text-[11px] text-muted">Ad seçmezsen skorların tabloya yazılmaz; sonra menüden belirleyebilirsin.</p>}
           </div>
         </Overlay>
       )}
@@ -720,7 +721,7 @@ export default function Game() {
                     <MedalBadge medal={m} />
                     {level.medals[k]}
                   </p>
-                  <p className="mt-1 text-[10px] text-muted">saniye</p>
+                  <p className="mt-1 text-[10px] text-muted">Saniye</p>
                 </div>
               ))}
             </div>
@@ -749,9 +750,9 @@ export default function Game() {
             <CityBanner level={level} eyebrow="MOLA" height={110} />
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
-                [formatTime(hud.time * 1000), 'süre'],
-                [String(hud.deaths), 'düşüş'],
-                [`${hud.items.filter(Boolean).length}/3`, level.item.toLocaleLowerCase('tr')],
+                [formatTime(hud.time * 1000), 'Süre'],
+                [String(hud.deaths), 'Düşüş'],
+                [`${hud.items.filter(Boolean).length}/3`, level.item],
               ].map(([v, k]) => (
                 <div key={k} className="border-2 border-line bg-ink/40 py-2">
                   <p className="font-display text-xl leading-none text-cream tabular-nums">{v}</p>
@@ -1131,7 +1132,7 @@ function Complete({
               <p className="mt-2 text-[12px] text-accent-2">
                 {err}{' '}
                 <button className="underline" onClick={() => void submit(player)}>
-                  Tekrar dene
+                  Tekrar Dene
                 </button>
               </p>
             ) : status === 'sent' ? (
