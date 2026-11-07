@@ -1,0 +1,61 @@
+export const T = 16
+
+export type CityKey = 'istanbul' | 'mardin' | 'malatya' | 'corum' | 'sivas' | 'bayburt'
+
+export interface Fact {
+  title: string
+  text: string
+}
+
+export interface LevelDef {
+  id: string
+  city: CityKey
+  name: string
+  /** il plaka kodu */
+  plate: number
+  subtitle: string
+  difficulty: 'Kolay' | 'Orta' | 'Zor' | 'Çok Zor'
+  /** collectible adı (tekil) */
+  item: string
+  intro: string
+  facts: [Fact, Fact, Fact]
+  hints: string[]
+  /** yatay rüzgâr ivmesi (px/s²); periyodik esintiyle çarpılır */
+  wind?: number
+  map: string[]
+}
+
+export interface Input {
+  left: boolean
+  right: boolean
+  up: boolean
+  down: boolean
+  jump: boolean
+  jumpPressed: boolean
+  dashPressed: boolean
+}
+
+export const emptyInput = (): Input => ({
+  left: false,
+  right: false,
+  up: false,
+  down: false,
+  jump: false,
+  jumpPressed: false,
+  dashPressed: false,
+})
+
+export type GameEvent =
+  | { type: 'jump' }
+  | { type: 'walljump' }
+  | { type: 'dash' }
+  | { type: 'land' }
+  | { type: 'death'; x: number; y: number }
+  | { type: 'respawn' }
+  | { type: 'checkpoint'; index: number }
+  | { type: 'collect'; index: number }
+  | { type: 'spring' }
+  | { type: 'stomp'; x: number; y: number }
+  | { type: 'crumble' }
+  | { type: 'shoot' }
+  | { type: 'complete' }
