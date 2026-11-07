@@ -464,7 +464,7 @@ export default function Game() {
                 </div>
               </div>
               <p className="text-[15px] leading-relaxed text-cream/85">Dedenin yarım kalmış defterini tamamla.</p>
-              <p className="text-[14px] leading-relaxed text-muted">Sekiz şehir. Yirmi dört hatıra. Tek yolculuk.</p>
+              <p className="text-[14px] leading-relaxed text-muted">On bir şehir. Otuz üç hatıra. Tek yolculuk.</p>
               <div className="mt-5 grid gap-2.5">
                 <button className="pixel-btn primary justify-center text-base" onClick={startJourney} autoFocus>
                   ▶ {save.unlocked > 0 || resumeIdx > 0 ? `Devam Et: ${LEVELS[resumeIdx].name}` : 'Yolculuğa Başla'}

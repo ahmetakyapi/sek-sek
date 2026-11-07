@@ -101,6 +101,25 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'gull',
     animal: 'cat',
   },
+  kocaeli: {
+    sky: ['#2a3f6e', '#c47a7a', '#f2c08a'],
+    sun: { x: 0.3, y: 0.55, r: 16, color: '#ffe2a8', glow: 'rgba(255,200,150,0.25)' },
+    far: '#8892b4',
+    mid: '#5a5878',
+    near: '#363450',
+    tileTop: '#c9a08a',
+    tile: '#9a5a48',
+    tileDark: '#6a3a30',
+    tileLight: '#b87460',
+    plank: '#6a6a78',
+    accent: '#e8794a',
+    water: ['#2e6a98', '#1f4f78', '#b0dcf0'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'gulls',
+    enemyGround: 'crab',
+    enemyFly: 'gull',
+    animal: 'cat',
+  },
   izmir: {
     sky: ['#2c4f86', '#e98f6a', '#ffd6a0'],
     sun: { x: 0.18, y: 0.62, r: 18, color: '#ffe0a0', glow: 'rgba(255,190,130,0.28)' },
@@ -138,6 +157,25 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyGround: 'goat',
     enemyFly: 'pigeon',
     animal: 'angora',
+  },
+  adana: {
+    sky: ['#3f78b8', '#f0b070', '#ffe2a0'],
+    sun: { x: 0.65, y: 0.3, r: 18, color: '#fff2b0', glow: 'rgba(255,220,140,0.32)' },
+    far: '#c8a878',
+    mid: '#9a7a5a',
+    near: '#6a5040',
+    tileTop: '#e8cfa0',
+    tile: '#c4a070',
+    tileDark: '#8a6a44',
+    tileLight: '#dcbc8a',
+    plank: '#8a5a34',
+    accent: '#d9502a',
+    water: ['#3a8a8a', '#256a6e', '#b8ecec'],
+    spike: ['#e86a2a', '#8a3a1a'],
+    weather: 'dust',
+    enemyGround: 'scorpion',
+    enemyFly: 'mosquito',
+    animal: 'cat',
   },
   mardin: {
     sky: ['#3d6f9e', '#e9b07a', '#f7d9a4'],
@@ -214,6 +252,25 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyGround: 'wolf',
     enemyFly: 'raven',
     animal: 'kangal',
+  },
+  ardahan: {
+    sky: ['#3a4a72', '#9aaccc', '#e4ecf6'],
+    sun: { x: 0.25, y: 0.35, r: 12, color: '#fbfbf0', glow: 'rgba(240,245,255,0.3)' },
+    far: '#b4c2da',
+    mid: '#7a88a8',
+    near: '#4c5670',
+    tileTop: '#f6faff',
+    tile: '#5a5868',
+    tileDark: '#3c3a48',
+    tileLight: '#77748a',
+    plank: '#6a4a34',
+    accent: '#4aa0d8',
+    water: ['#6aa8cc', '#4a88b0', '#e4f6ff'],
+    spike: ['#dff3ff', '#8fc3e0'],
+    weather: 'snow',
+    enemyGround: 'wolf',
+    enemyFly: 'raven',
+    animal: 'horse',
   },
   bayburt: {
     sky: ['#121628', '#2c3550', '#5a6782'],
@@ -355,6 +412,47 @@ export function buildLayers(city: CityKey): Layers {
           rect(c, 0, base, LAYER_W, 40, s.near)
         }),
       }
+    case 'kocaeli':
+      return {
+        far: layer((c) => {
+          // Kartepe: karlı dağlar, önünde körfez
+          hills(c, s.far, B - 110, 30, 2, 41)
+          snowCaps(c, '#f4f8ff', B - 110, 30, 2, 41)
+          rect(c, 0, B - 78, LAYER_W, 78, '#3e6a98')
+          for (let i = 0; i < 30; i++) rect(c, (i * 47) % LAYER_W, B - 74 + ((i * 13) % 30), 10 + (i % 3) * 6, 1, 'rgba(255,220,180,0.35)')
+        }),
+        mid: layer((c) => {
+          const base = B - 62
+          const r = rng(411)
+          for (let x = 0; x < LAYER_W; x += 12 + Math.floor(r() * 8)) house(c, x, base, 10 + Math.floor(r() * 8), 10 + Math.floor(r() * 10), s.mid, null, r, 'flat')
+          // SEKA: testere dişi çatılı fabrika ve bacalar
+          rect(c, 120, base - 30, 120, 30, s.mid)
+          for (let i = 0; i < 6; i++) for (let k = 0; k < 10; k++) rect(c, 120 + i * 20 + k, base - 30 - k, 1, k, s.mid)
+          for (const bx of [140, 190, 230]) rect(c, bx, base - 78, 8, 50, s.mid)
+          for (const bx of [140, 190, 230]) rect(c, bx - 1, base - 80, 10, 3, s.mid)
+          // İzmit Saat Kulesi
+          const tx = 420
+          rect(c, tx - 6, base - 46, 12, 46, s.mid)
+          rect(c, tx - 8, base - 52, 16, 6, s.mid)
+          disc(c, tx, base - 38, 3, s.near)
+          for (let i = 0; i < 8; i++) rect(c, tx - 7 + i, base - 52 - i, 14 - i * 2, 1, s.mid)
+          // liman vinci
+          rect(c, 540, base - 70, 4, 70, s.mid)
+          rect(c, 520, base - 72, 60, 3, s.mid)
+          rect(c, 576, base - 70, 1, 22, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(412)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          for (let x = 0; x < LAYER_W; x += 4) rect(c, x, base - 6, 1, 6, s.near)
+          rect(c, 0, base - 7, LAYER_W, 1, s.near)
+          for (let x = 30; x < LAYER_W; x += 90 + Math.floor(r() * 40)) {
+            rect(c, x + 6, base - 14, 3, 14, s.near)
+            disc(c, x + 7, base - 20, 9, s.near)
+          }
+        }),
+      }
     case 'izmir':
       return {
         far: layer((c) => {
@@ -442,6 +540,44 @@ export function buildLayers(city: CityKey): Layers {
             for (let k = 0; k < 3; k++) rect(c, x + 1 + k * 9, base - 31, 5, 7, '#7a4a2a')
             for (let i = 0; i < 15; i++) rect(c, x - 4 + i * 2, base - 36 - Math.floor(i < 8 ? i / 2 : (15 - i) / 2), 2, 2, '#9a3a2a')
           }
+        }),
+      }
+    case 'adana':
+      return {
+        far: layer((c) => {
+          // Toroslar uzakta, önde Çukurova düzlüğü
+          hills(c, s.far, B - 120, 22, 3, 1)
+          rect(c, 0, B - 96, LAYER_W, 96, '#b89a6a')
+        }),
+        mid: layer((c) => {
+          const base = B - 66
+          // Seyhan ve Taşköprü kemerleri
+          rect(c, 0, base, LAYER_W, 66, '#3a7a80')
+          rect(c, 0, base - 14, LAYER_W, 6, s.mid)
+          for (let x = 8; x < LAYER_W; x += 40) {
+            rect(c, x, base - 8, 30, 8, s.mid)
+            disc(c, x + 35, base, 8, '#3a7a80', true)
+          }
+          // Sabancı Merkez Camii: büyük kubbe ve altı minare
+          const cx = 360
+          rect(c, cx - 40, base - 44, 80, 30, s.mid)
+          dome(c, cx, base - 44, 22, s.mid)
+          dome(c, cx - 26, base - 44, 9, s.mid, false)
+          dome(c, cx + 26, base - 44, 9, s.mid, false)
+          for (const mx of [-58, -48, 46, 56]) minaret(c, cx + mx, base - 14, 72, s.mid)
+          for (const mx of [-70, 68]) minaret(c, cx + mx, base - 14, 56, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(12)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // portakal bahçeleri ve palmiyeler
+          for (let x = 0; x < LAYER_W; x += 22 + Math.floor(r() * 12)) {
+            rect(c, x + 5, base - 10, 3, 10, '#4a3020')
+            disc(c, x + 6, base - 16, 8, '#3f6a34')
+            for (let i = 0; i < 5; i++) rect(c, x + Math.floor(r() * 12), base - 22 + Math.floor(r() * 12), 2, 2, '#f2a030')
+          }
+          for (let x = 60; x < LAYER_W; x += 160) palm(c, x, base, s.near)
         }),
       }
     case 'mardin':
@@ -595,6 +731,48 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    case 'ardahan':
+      return {
+        far: layer((c) => {
+          hills(c, s.far, B - 110, 26, 2, 75)
+          snowCaps(c, '#f8fbff', B - 110, 26, 2, 75)
+          // donmuş Çıldır Gölü
+          rect(c, 0, B - 84, LAYER_W, 84, '#cfe2f2')
+          for (let i = 0; i < 24; i++) rect(c, (i * 61) % LAYER_W, B - 80 + ((i * 17) % 40), 18 + (i % 4) * 8, 1, '#a8c8e2')
+        }),
+        mid: layer((c) => {
+          const base = B - 70
+          // kayalık üstünde Şeytan Kalesi
+          for (let x = 380; x < 560; x++) {
+            const h = base - 40 + Math.abs(x - 470) * 0.45
+            rect(c, x, h, 1, B - h, s.mid)
+          }
+          rect(c, 430, base - 62, 80, 22, s.mid)
+          for (let x = 430; x < 510; x += 6) rect(c, x, base - 66, 3, 4, s.mid)
+          rect(c, 440, base - 80, 14, 18, s.mid)
+          rect(c, 488, base - 74, 12, 12, s.mid)
+          // atlı kızak gölge silueti
+          rect(c, 120, base + 30, 30, 3, s.mid)
+          rect(c, 116, base + 33, 38, 1, s.mid)
+          rect(c, 156, base + 20, 14, 8, s.mid)
+          rect(c, 166, base + 14, 4, 8, s.mid)
+          rect(c, 158, base + 28, 2, 6, s.mid)
+          rect(c, 166, base + 28, 2, 6, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(752)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // ahşap köy evleri, bacadan duman
+          for (let x = 0; x < LAYER_W; x += 40 + Math.floor(r() * 20)) {
+            rect(c, x, base - 14, 22, 14, '#5a4030')
+            for (let i = 0; i < 12; i++) rect(c, x - 2 + i, base - 14 - Math.floor(i / 2), 26 - i * 2, 1, '#e6edf7')
+            rect(c, x + 4, base - 10, 3, 4, 'rgba(255,200,110,0.75)')
+            rect(c, x + 16, base - 24, 3, 6, '#3a2a20')
+            for (let k = 0; k < 4; k++) rect(c, x + 16 + k, base - 28 - k * 3, 3, 2, 'rgba(230,236,245,0.5)')
+          }
+        }),
+      }
     case 'bayburt':
       return {
         far: layer((c) => {
@@ -660,6 +838,13 @@ export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string,
       ['............', '............', '....kkkk....', '.kkkkkkkekk.', 'kk.kkkkkkook', 'k...kk.....k', '............', '............'],
     ],
   },
+  mosquito: {
+    pal: { k: '#2a2430', g: '#5a5468', w: 'rgba(220,235,255,0.75)', r: '#c8302a' },
+    frames: [
+      ['..ww..ww....', '...ww.ww....', '....kkk.....', 'r..kgkkk....', '.rrkkkkkk...', '...k.k.k....', '..k..k..k...', '............'],
+      ['............', '.ww....ww...', '..wwkkkww...', 'r..kgkkk....', '.rrkkkkkk...', '..k..k..k...', '.k...k...k..', '............'],
+    ],
+  },
   crab: {
     pal: { r: '#e0503a', R: '#a8302a', e: '#1d1a22', w: '#f4efe6' },
     frames: [
@@ -707,6 +892,18 @@ export const ITEM_ART: Record<CityKey, { rows: string[]; pal: Record<string, str
   istanbul: {
     pal: { b: '#b8692e', B: '#8a4a1e', s: '#f6e7c0' },
     rows: ['...bbbb...', '..bsbbsb..', '.bb....bb.', '.b......b.', '.bs....sb.', '.b......b.', '.bb....bB.', '..bsbbsB..', '...BBBB...', '..........'],
+  },
+  kocaeli: {
+    pal: { w: '#fbf6ec', W: '#e6d8bc', p: '#e88aa0', P: '#b85a70' },
+    rows: ['..........', '.PPPPPPPP.', '.PppppppP.', '.PwWwWwWP.', '.PWwWwWwP.', '.PwWwWwWP.', '.PWwWwWwP.', '.PppppppP.', '.PPPPPPPP.', '..........'],
+  },
+  adana: {
+    pal: { w: '#ffffff', W: '#d8dce4', g: '#6a8a3a', b: '#7a5030' },
+    rows: ['...w.ww...', '..wwwwww..', '.wwWwwwww.', 'wwwwwWwwww', 'wWwwwwwWww', '.wwwWwwww.', '..gwwwwg..', '.gg.bb.gg.', '....bb....', '....bb....'],
+  },
+  ardahan: {
+    pal: { g: '#e3b03a', G: '#a8781e', k: '#2a2220', r: '#c8302a' },
+    rows: ['....rr....', '....GG....', '...gggg...', '..gggggg..', '..gGgggg..', '.gGgggggg.', '.gGggggggG', 'GGGGGGGGGG', '....kk....', '..........'],
   },
   izmir: {
     pal: { b: '#e0a040', B: '#a86a20', y: '#ffd27a', d: '#7a4a18' },

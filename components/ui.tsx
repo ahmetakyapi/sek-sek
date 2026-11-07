@@ -8,7 +8,7 @@ import type { LevelDef } from '@/game/types'
 export function Overlay({ children, dim = false }: { children: React.ReactNode; dim?: boolean }) {
   return (
     <div
-      className={`overlay-scroll absolute inset-0 z-20 flex overflow-y-auto p-4 ${dim ? 'bg-ink/60' : 'bg-gradient-to-b from-ink/50 via-ink/25 to-ink/70'}`}
+      className={`overlay-scroll absolute inset-0 z-20 flex overflow-y-auto p-4 ${dim ? 'bg-ink/60' : 'bg-ink/35'}`}
       style={{ paddingTop: 'max(16px, env(safe-area-inset-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
     >
       <div className="m-auto flex w-full justify-center">{children}</div>

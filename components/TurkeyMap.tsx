@@ -13,12 +13,15 @@ const OUTLINE: [number, number][] = [
 
 const COORDS: Record<string, [number, number]> = {
   istanbul: [28.98, 41.01],
+  kocaeli: [29.92, 40.77],
   izmir: [27.14, 38.42],
   ankara: [32.86, 39.93],
+  adana: [35.32, 37.0],
   mardin: [40.73, 37.31],
   malatya: [38.31, 38.35],
   corum: [34.95, 40.55],
   sivas: [37.02, 39.75],
+  ardahan: [42.7, 41.11],
   bayburt: [40.23, 40.26],
 }
 
@@ -29,7 +32,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
   const pts = OUTLINE.map(([lo, la]) => `${X(lo).toFixed(1)},${Y(la).toFixed(1)}`).join(' ')
   const route = LEVELS.map((l) => COORDS[l.id])
   return (
-    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label="Yolculuk rotası: İstanbul, İzmir, Ankara, Mardin, Malatya, Çorum, Sivas, Bayburt">
+    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label="Yolculuk rotası: İstanbul, Kocaeli, İzmir, Ankara, Adana, Mardin, Malatya, Çorum, Sivas, Ardahan, Bayburt">
       <polygon points={pts} fill="#2a2438" stroke="#4a4160" strokeWidth="1.5" strokeLinejoin="round" />
       <polyline
         points={route.map(([lo, la]) => `${X(lo)},${Y(la)}`).join(' ')}
@@ -51,7 +54,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
             aria-label={`${l.name}${locked ? ' (kilitli)' : ''}`}
           >
             <circle cx={X(lo)} cy={Y(la)} r={on ? 6 : 4.5} fill={locked ? '#4a4160' : on ? '#f2c14e' : '#e8794a'} stroke="#120f1a" strokeWidth="1.5" />
-            <text x={X(lo)} y={Y(la) - 8} textAnchor="middle" fontSize="8" fill={locked ? '#7d7392' : '#f4ead8'} fontFamily="var(--font-pixel)">
+            <text x={X(lo)} y={l.id === 'kocaeli' ? Y(la) + 14 : Y(la) - 8} textAnchor="middle" fontSize="8" fill={locked ? '#7d7392' : '#f4ead8'} fontFamily="var(--font-pixel)">
               {l.name}
             </text>
           </g>

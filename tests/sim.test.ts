@@ -23,12 +23,15 @@ describe('bölüm verisi', () => {
   it('il plakaları doğru', () => {
     expect(LEVELS.map((l) => [l.name, l.plate])).toEqual([
       ['İstanbul', 34],
+      ['Kocaeli', 41],
       ['İzmir', 35],
       ['Ankara', 6],
+      ['Adana', 1],
       ['Mardin', 47],
       ['Malatya', 44],
       ['Çorum', 19],
       ['Sivas', 58],
+      ['Ardahan', 75],
       ['Bayburt', 69],
     ])
   })

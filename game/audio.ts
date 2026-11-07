@@ -4,10 +4,14 @@ import type { CityKey } from './types'
 const SCALES: Record<CityKey, { root: number; steps: number[]; meter: number[]; tempo: number }> = {
   // Hicaz (Re)
   istanbul: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 2, 2], tempo: 0.22 },
+  // Nihavend'e yakın
+  kocaeli: { root: 60, steps: [0, 2, 3, 5, 7, 8, 11, 12], meter: [2, 2, 2, 2], tempo: 0.2 },
   // Rast, zeybek usulü 9/8
   izmir: { root: 60, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.19 },
   // Kürdi, Ankara havası
   ankara: { root: 62, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.16 },
+  // Hicaz, Çukurova türküsü havası
+  adana: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.17 },
   // Hicaz (La)
   mardin: { root: 57, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.2 },
   // Uşşak'a yakın (Re)
@@ -16,6 +20,8 @@ const SCALES: Record<CityKey, { root: number; steps: number[]; meter: number[]; 
   corum: { root: 55, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 2], tempo: 0.21 },
   // Hüseyni'ye yakın (La)
   sivas: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.16 },
+  // Kafkas havası, Uşşak'a yakın
+  ardahan: { root: 57, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.15 },
   // Saba'ya yakın (Re)
   bayburt: { root: 50, steps: [0, 2, 3, 4, 7, 8, 10, 12], meter: [3, 2, 2], tempo: 0.19 },
 }

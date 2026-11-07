@@ -8,12 +8,15 @@ import { LEVELS } from '@/game/levels'
 
 const FEATURES: Record<string, string> = {
   istanbul: 'Zıplama, iskele platformu, ilk atılma',
+  kocaeli: 'Körfez kıyısı, SEKA fabrikası çatısı, sal',
   izmir: 'Kordon yengeçleri, körfez vapuru, Tarihi Asansör',
   ankara: 'Cumbalı balkonlar, kale surlarında tırmanış',
+  adana: 'Taşköprü, Seyhan, pamuk balyaları, sivrisinekler',
   mardin: 'Taş teraslar, dağılan taşlar, duvar sekmesi',
   malatya: 'Kayısı kasaları, arılar, Aslantepe',
   corum: 'Hitit ok tuzakları, Yerkapı, Aslanlı Kapı',
   sivas: 'Kaygan buz, minareler, kurtlar',
+  ardahan: 'Donmuş Çıldır Gölü, kaygan buz, Şeytan Kalesi',
   bayburt: 'Karşı rüzgâr, kale burcuna son tırmanış',
 }
 
@@ -23,7 +26,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 8 şehir, 24 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 11 şehir, 33 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 
@@ -32,7 +35,7 @@ export default function Hakkinda() {
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
       {/* ── üst bar */}
-      <header className="sticky top-0 z-30 border-b-2 border-line bg-ink/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b-2 border-line bg-ink">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link href="/" aria-label="Oyuna dön">
             <Logo size={36} />
@@ -76,7 +79,7 @@ export default function Hakkinda() {
             <p className="mt-7 max-w-md text-[17px] leading-relaxed text-cream/85">
               Dedenin yarım kalmış defterini tamamla.
               <br />
-              <span className="text-muted">Sekiz şehir. Yirmi dört hatıra. Tek yolculuk.</span>
+              <span className="text-muted">On bir şehir. Otuz üç hatıra. Tek yolculuk.</span>
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link href="/" className="pixel-btn primary px-7 py-3.5 text-lg">
@@ -171,7 +174,7 @@ export default function Hakkinda() {
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-end">
             <div>
               <p className="text-[12px] font-bold tracking-[0.3em] text-accent">ROTA</p>
-              <h2 className="mt-2 font-display text-4xl text-cream">Sekiz Şehir, Artan Zorluk</h2>
+              <h2 className="mt-2 font-display text-4xl text-cream">On Bir Şehir, Artan Zorluk</h2>
               <p className="mt-3 leading-relaxed text-muted">
                 Her şehir yeni bir şey öğretir, bir sonraki onu bekler. Kolay İstanbul’dan Çok Zor Bayburt’a; her şehirde üç hatıra, altın-gümüş-bronz süre madalyaları
                 ve konuşmayı seven yerel insanlar.

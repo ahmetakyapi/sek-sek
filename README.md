@@ -8,10 +8,15 @@ harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üre
 | # | Şehir | Plaka | Zorluk | Yeni mekanik | Hatıra |
 |---|-------|-------|--------|--------------|--------|
 | 1 | İstanbul · Boğaz Kıyısı | 34 | Kolay | Zıplama, tek yönlü platform, iskele, atılma | Simit |
+| 2 | Kocaeli · Körfez ve SEKA | 41 | Kolay | Fabrika merdivenleri, sal, yengeçler | Pişmaniye |
+| 3 | İzmir · Kordon Boyu | 35 | Kolay | Körfez vapuru, Tarihi Asansör | Boyoz |
+| 4 | Ankara · Kale ve Cumbalar | 06 | Orta | Cumbalar, kale surlarında tırmanış | Tiftik |
+| 5 | Adana · Seyhan ve Taşköprü | 01 | Orta | Kırılan köprü taşları, pamuk balyası, sivrisinek | Pamuk |
 | 2 | Mardin · Taş Teraslar | 47 | Orta | Akrepler, çatlak taş, duvar tırmanışı | Telkari |
 | 3 | Malatya (Erik Diyarı) · Kayısı Bahçeleri | 44 | Orta | Kayısı kasası (yay), dikey platform, arılar | Kayısı |
 | 4 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
 | 5 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, minareler arası tırmanış, kuzgunlar | Kangal rozeti |
+| 6 | Ardahan · Donmuş Çıldır | 75 | Zor | Kırılan göl buzu, kaygan adacıklar, rüzgâr | Kızak Çanı |
 | 6 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, hepsi bir arada | Kopuz |
 
 Her şehirde üç hatıra saklı; her biri o şehre dair doğrulanmış bir bilgi kartı açar.

@@ -172,6 +172,32 @@ export class Renderer {
         }
         break
       }
+      case 'kocaeli': {
+        // fabrika tuğlası: koyu kırmızı, ince derz
+        const off = ty % 2 ? 4 : 0
+        for (let by = 0; by < 16; by += 4) {
+          rect(c, x, y + by + 3, T, 1, s.tileDark)
+          const o = (by / 4) % 2 ? off : 4 - off
+          for (let bx = o; bx < 16; bx += 8) rect(c, x + bx, y + by, 1, 3, s.tileDark)
+        }
+        if (open) {
+          rect(c, x, y, T, 3, s.tileTop)
+          rect(c, x, y + 3, T, 1, s.tileDark)
+        }
+        break
+      }
+      case 'adana': {
+        // Taşköprü'nün kesme taşı
+        rect(c, x, y + 7, T, 1, s.tileDark)
+        rect(c, x + (ty % 2 ? 5 : 11), y, 1, 7, s.tileDark)
+        rect(c, x + (ty % 2 ? 12 : 3), y + 8, 1, 8, s.tileDark)
+        rect(c, x + 1, y + 1, 5, 1, s.tileLight)
+        if (open) {
+          rect(c, x, y, T, 3, s.tileTop)
+          rect(c, x, y + 3, T, 1, s.tileDark)
+        }
+        break
+      }
       case 'izmir': {
         // Kordon taşı: iri dikdörtgen kaplama
         rect(c, x, y + 8, T, 1, s.tileDark)
@@ -240,6 +266,7 @@ export class Renderer {
         break
       }
       case 'sivas':
+      case 'ardahan':
       case 'bayburt': {
         rect(c, x, y + 7, T, 1, s.tileDark)
         rect(c, x, y + 15, T, 1, s.tileDark)
@@ -421,12 +448,18 @@ export class Renderer {
       b.fillRect(0, 0, this.viewW, this.viewH)
     }
 
-    // vinyet
-    const vg = b.createRadialGradient(this.viewW / 2, this.viewH / 2, Math.min(this.viewW, this.viewH) * 0.35, this.viewW / 2, this.viewH / 2, Math.max(this.viewW, this.viewH) * 0.75)
+    // vinyet: ekran oranına göre elips; dikey ekranda üstü karartıp bulanık göstermesin
+    b.save()
+    const vw = this.viewW
+    const vh = this.viewH
+    b.translate(vw / 2, vh / 2)
+    b.scale(1, vh / vw)
+    const vg = b.createRadialGradient(0, 0, vw * 0.42, 0, 0, vw * 0.78)
     vg.addColorStop(0, 'rgba(0,0,0,0)')
-    vg.addColorStop(1, 'rgba(10,6,20,0.45)')
+    vg.addColorStop(1, 'rgba(10,6,20,0.28)')
     b.fillStyle = vg
-    b.fillRect(0, 0, this.viewW, this.viewH)
+    b.fillRect(-vw / 2, -vw / 2, vw, vw)
+    b.restore()
 
     // büyüt
     const c = this.ctx
@@ -658,6 +691,53 @@ export class Renderer {
         disc(b, x - 2, bot - 3, 3, '#2a2236')
         disc(b, x + 16, bot - 3, 3, '#2a2236')
         rect(b, x + 20, bot - 18, 6, 1, '#5a3c26')
+        break
+      }
+      case 'kocaeli': {
+        // pişmaniye tezgâhı: pembe kutular
+        rect(b, x - 4, bot - 10, 26, 10, '#7a5a40')
+        rect(b, x - 4, bot - 10, 26, 1, '#a07a58')
+        for (let i = 0; i < 4; i++) {
+          rect(b, x - 2 + i * 6, bot - 16, 5, 6, '#e88aa0')
+          rect(b, x - 1 + i * 6, bot - 15, 3, 3, '#fbf6ec')
+        }
+        for (let i = 0; i < 3; i++) {
+          rect(b, x + 1 + i * 6, bot - 21, 5, 5, '#d8708a')
+          rect(b, x + 2 + i * 6, bot - 20, 3, 2, '#fbf6ec')
+        }
+        rect(b, x - 6, bot - 28, 30, 3, '#e86a8a')
+        for (let i = 0; i < 30; i += 6) rect(b, x - 6 + i, bot - 25, 3, 2, '#fbf6ec')
+        break
+      }
+      case 'adana': {
+        // kebap mangalı ve şalgam şişeleri
+        const fl = Math.floor(this.t * 8) % 2
+        rect(b, x - 2, bot - 10, 22, 4, '#3a3440')
+        rect(b, x, bot - 6, 2, 6, '#2a2430')
+        rect(b, x + 16, bot - 6, 2, 6, '#2a2430')
+        for (let i = 0; i < 5; i++) rect(b, x + i * 4, bot - 11 - fl, 3, 1, i % 2 ? '#f28c28' : '#ffd36a')
+        for (let i = 0; i < 3; i++) {
+          rect(b, x - 1, bot - 14 - i * 2, 22, 1, '#9aa3b5')
+          rect(b, x + 3 + i * 2, bot - 15 - i * 2, 10, 2, '#8a3a24')
+        }
+        for (let k = 0; k < 4; k++) rect(b, x + 6 + k * 2, bot - 20 - k * 3 - fl, 2, 2, 'rgba(230,230,230,0.45)')
+        for (let i = 0; i < 2; i++) {
+          rect(b, x + 24 + i * 4, bot - 10, 3, 10, '#6a1a3a')
+          rect(b, x + 25 + i * 4, bot - 12, 1, 2, '#6a1a3a')
+        }
+        break
+      }
+      case 'ardahan': {
+        // odun yığını ve semaver
+        for (let r = 0; r < 3; r++) for (let i = 0; i < 4 - r; i++) {
+          disc(b, x + i * 6 + r * 3, bot - 3 - r * 5, 3, '#6a4a30')
+          rect(b, x + i * 6 + r * 3, bot - 3 - r * 5, 1, 1, '#c8a070')
+        }
+        rect(b, x - 2, bot - 18, 26, 2, '#f6faff')
+        rect(b, x + 26, bot - 14, 8, 14, '#c88a3a')
+        rect(b, x + 27, bot - 18, 6, 4, '#a86a24')
+        rect(b, x + 29, bot - 21, 2, 3, '#a86a24')
+        rect(b, x + 34, bot - 8, 3, 1, '#a86a24')
         break
       }
       case 'izmir': {
@@ -1050,13 +1130,16 @@ export class Renderer {
 }
 
 const NEXT_CITY: Record<CityKey, string | null> = {
-  istanbul: 'İZMİR',
+  istanbul: 'KOCAELİ',
+  kocaeli: 'İZMİR',
   izmir: 'ANKARA',
-  ankara: 'MARDİN',
+  ankara: 'ADANA',
+  adana: 'MARDİN',
   mardin: 'MALATYA',
   malatya: 'ÇORUM',
   corum: 'SİVAS',
-  sivas: 'BAYBURT',
+  sivas: 'ARDAHAN',
+  ardahan: 'BAYBURT',
   bayburt: null,
 }
 
