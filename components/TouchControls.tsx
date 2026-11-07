@@ -7,7 +7,7 @@ import type { InputManager } from '@/game/input'
  * Sol yarıda yüzen joystick, sağda ATIL ve ZIPLA.
  * Tuşların dokunma alanı görünen dairelerden geniştir; kaçırılan basış olmasın.
  */
-export default function TouchControls({ input, big = false }: { input: InputManager; big?: boolean }) {
+export default function TouchControls({ input, big = false, canDash = true }: { input: InputManager; big?: boolean; canDash?: boolean }) {
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null)
   const [pressed, setPressed] = useState({ jump: false, dash: false })
   const stickId = useRef<number | null>(null)
@@ -109,7 +109,7 @@ export default function TouchControls({ input, big = false }: { input: InputMana
       >
         <button type="button" aria-label="Atıl" className="pointer-events-auto p-2" {...btn('dash')}>
           <span
-            className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#3a3250]' : 'border-white/30 bg-[#2a2438]/85'}`}
+            className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#3a3250]' : canDash ? 'border-[#d6403a] bg-[#2a2438]/85 shadow-[0_0_12px_rgba(214,64,58,0.45)]' : 'border-white/20 bg-[#2a2438]/60 opacity-60'}`}
             style={{ width: dashD, height: dashD }}
           >
             <span className="text-xl leading-none">»</span>

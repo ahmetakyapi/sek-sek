@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
           {/* posta damgası */}
           <div style={{ position: 'absolute', left: 520, top: 70, width: 150, height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 75, border: '4px solid rgba(244,234,216,0.55)', transform: 'rotate(-14deg)' }}>
             <div style={{ width: 124, height: 124, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 62, border: '2px solid rgba(244,234,216,0.55)', color: 'rgba(244,234,216,0.8)' }}>
-              <div style={{ display: 'flex', fontFamily: 'Pixel', fontSize: 22 }}>SEKSEK</div>
+              <div style={{ display: 'flex', fontFamily: 'Pixel', fontSize: 22 }}>SEK-SEK</div>
               <div style={{ display: 'flex', width: 96, height: 2, background: 'rgba(244,234,216,0.55)', margin: '6px 0' }} />
               <div style={{ display: 'flex', fontSize: 15, letterSpacing: 2 }}>{`${plate} · ${level.name.toLocaleUpperCase('tr')}`}</div>
             </div>

@@ -22,8 +22,8 @@ const DIFF_COLOR: Record<string, string> = { Kolay: '#7fc97a', Orta: '#f2c14e', 
 const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
-  title: 'Oyun Hakkında · Seksek',
-  description: 'Seksek nedir: İstanbul’dan Bayburt’a 8 şehir, 24 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
+  title: 'Oyun Hakkında · Sek-Sek',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 8 şehir, 24 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 

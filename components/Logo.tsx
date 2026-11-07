@@ -9,7 +9,7 @@ export default function Logo({ size = 40 }: { size?: number }) {
     <span className="inline-flex items-center gap-2.5">
       <Emblem size={size} />
       <span className="font-display leading-none text-cream" style={{ fontSize: size * 0.62 }}>
-        Seksek
+        Sek-Sek
       </span>
     </span>
   )

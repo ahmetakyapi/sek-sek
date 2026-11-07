@@ -5,6 +5,7 @@ import TouchControls from '@/components/TouchControls'
 import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import CityBanner, { Toggle } from '@/components/CityBanner'
+import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
 import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
@@ -48,7 +49,9 @@ export default function Game() {
   const [screen, setScreenState] = useState<Screen>('title')
   const [levelIdx, setLevelIdx] = useState(0)
   const [save, setSave] = useState<Save>(defaultSave)
-  const [hud, setHud] = useState({ time: 0, deaths: 0, items: [false, false, false] })
+  const [hud, setHud] = useState({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
+  const [cpToast, setCpToast] = useState(0)
+  const idleRef = useRef(0)
   const [hint, setHint] = useState<string | null>(null)
   const [npc, setNpc] = useState<number>(-1)
   const [toast, setToast] = useState<(Fact & { item: string; key: number }) | null>(null)
@@ -171,6 +174,7 @@ export default function Game() {
             }
             case 'checkpoint':
               haptic(10)
+              setCpToast(Date.now())
               break
             case 'dash':
               haptic(6)
@@ -185,7 +189,9 @@ export default function Game() {
         hudTimer += dt
         if (hudTimer > 0.1) {
           hudTimer = 0
-          setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken) })
+          const moving = Math.abs(w.player.vx) > 5 || !w.player.grounded
+          idleRef.current = moving ? 0 : idleRef.current + 0.1
+          setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken), canDash: w.player.canDash, idle: w.time < 6 || idleRef.current > 1.5 })
           setHint(w.nearSign >= 0 ? (w.level.hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
@@ -260,7 +266,7 @@ export default function Game() {
       worldRef.current = w
       rendererRef.current?.setLevel(w)
       inputRef.current?.clear()
-      setHud({ time: 0, deaths: 0, items: [false, false, false] })
+      setHud({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
       setToast(null)
       setHint(null)
       setNpc(-1)
@@ -389,7 +395,15 @@ export default function Game() {
               </div>
             </div>
           )}
-          {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} />}
+          {cpToast > 0 && Date.now() - cpToast < 1800 && (
+            <div key={cpToast} className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center">
+              <p className="flex items-center gap-2 bg-ink/85 px-3 py-1.5 font-display text-sm text-cream [box-shadow:0_-2px_0_0_#e30a17,0_2px_0_0_#e30a17,-2px_0_0_0_#e30a17,2px_0_0_0_#e30a17]">
+                <span className="text-[#e30a17]">⚑</span> Bayrak Alındı
+              </p>
+            </div>
+          )}
+          {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} canDash={hud.canDash} />}
+          {!showTouch && save.keyHints && <KeyHints canDash={hud.canDash} idle={hud.idle} />}
         </>
       )}
 
@@ -427,7 +441,7 @@ export default function Game() {
                 <div className="absolute bottom-1 left-7 flex items-end gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/logo-emblem.png" width={56} height={56} alt="" style={{ imageRendering: 'pixelated' }} className="mb-1 drop-shadow-[0_3px_0_#120f1a]" />
-                  <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Seksek</h1>
+                  <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Sek-Sek</h1>
                 </div>
               </div>
               <p className="text-[15px] leading-relaxed text-cream/85">Dedenin yarım kalmış defterini tamamla.</p>
@@ -647,6 +661,13 @@ export default function Game() {
                 </div>
               ))}
             </div>
+            {!showTouch && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-muted">
+                <span className="flex items-center gap-1.5"><Key>←</Key><Key>→</Key> Yürü</span>
+                <span className="flex items-center gap-1.5"><Key>↑</Key> Zıpla</span>
+                <span className="flex items-center gap-1.5 text-gold"><Key wide>Space</Key> Atıl</span>
+              </div>
+            )}
             <div className="mt-5 grid grid-cols-[1fr_auto] gap-3">
               <button className="pixel-btn primary justify-center text-base" onClick={beginPlay} autoFocus>
                 ▶ Başla
@@ -706,6 +727,7 @@ export default function Game() {
                 <Toggle label="Ses Efektleri" on={save.sfx} onChange={() => toggle('sfx')} />
                 <Toggle label="Müzik" on={save.music} onChange={() => toggle('music')} />
                 <Toggle label="Dokunmatik Kontroller" on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
+                {!showTouch && <Toggle label="Tuş İpuçları" hint="Ekranın altında klavye rehberi" on={save.keyHints} onChange={() => persist({ ...save, keyHints: !save.keyHints })} />}
                 <Toggle label="Büyük Tuşlar" hint="Telefonda daha geniş dokunma alanı" on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
               </div>
               {canFull && (
@@ -764,7 +786,7 @@ export default function Game() {
                 <dt className="text-muted">Zıpla</dt>
                 <dd>↑ / W / Z</dd>
                 <dt className="text-muted">Atıl</dt>
-                <dd>Boşluk / X / Shift (8 yön)</dd>
+                <dd className="text-gold">Space (Boşluk) / X / Shift</dd>
                 <dt className="text-muted">İn</dt>
                 <dd>↓ (ince platformdan)</dd>
                 <dt className="text-muted">Mola</dt>
@@ -844,7 +866,7 @@ function Notebook({ page }: { page: number }) {
   )
 }
 
-function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hud: { time: number; deaths: number; items: boolean[] }; hero: CharacterId; onPause: () => void }) {
+function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hud: { time: number; deaths: number; items: boolean[]; canDash: boolean; idle: boolean }; hero: CharacterId; onPause: () => void }) {
   return (
     <div
       className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 px-3"
@@ -866,7 +888,7 @@ function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hu
         <div className="flex items-center gap-3 bg-ink/55 px-3 py-2 text-sm font-semibold tabular-nums text-cream">
           <span className="flex gap-1" aria-label={`${hud.items.filter(Boolean).length} / 3 hatıra`}>
             {hud.items.map((v, i) => (
-              <span key={i} className={`inline-block h-2.5 w-2.5 rotate-45 border ${v ? 'border-gold bg-gold' : 'border-muted/60'}`} />
+              <ItemIcon key={i} city={level.city} taken={v} />
             ))}
           </span>
           <span aria-label="Düşüş">✕ {hud.deaths}</span>
@@ -914,12 +936,12 @@ function Complete({
   const [copied, setCopied] = useState(false)
   const shareUrl = () =>
     `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: name.trim() })}`
-  const shareText = `Seksek’te ${level.name} şehrini ${formatTime(result.timeMs)} sürede geçtim (${result.deaths} düşüş, ${found}/3 hatıra). Sen de dene!`
+  const shareText = `Sek-Sek’te ${level.name} şehrini ${formatTime(result.timeMs)} sürede geçtim (${result.deaths} düşüş, ${found}/3 hatıra). Sen de dene!`
   const share = async () => {
     const url = shareUrl()
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Seksek skor kartım', text: shareText, url })
+        await navigator.share({ title: 'Sek-Sek skor kartım', text: shareText, url })
         return
       } catch {
         /* vazgeçildi */

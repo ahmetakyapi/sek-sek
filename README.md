@@ -1,6 +1,6 @@
-# Seksek · Şehir Şehir Anadolu
+# Sek-Sek · Şehir Şehir Anadolu
 
-**Canlı:** https://seksek.vercel.app
+**Canlı:** https://sek-sek.vercel.app
 
 İstanbul’dan Bayburt’a, her şehri kendi dokusuyla aşan bir piksel platform oyunu. Mobilde ve webde oynanır;
 harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üretilir.

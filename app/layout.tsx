@@ -5,29 +5,29 @@ import './globals.css'
 const pixel = Pixelify_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-pixel', weight: ['500', '700'] })
 const plex = IBM_Plex_Mono({ subsets: ['latin', 'latin-ext'], variable: '--font-plex', weight: ['400', '600', '700'] })
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://seksek.vercel.app'
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sek-sek.vercel.app'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
-  title: 'Seksek · Şehir Şehir Anadolu',
+  title: 'Sek-Sek · Şehir Şehir Anadolu',
   keywords: ['platform oyunu', 'piksel oyun', 'Türkiye şehirleri', 'mobil oyun', 'tarayıcı oyunu', 'İstanbul', 'Bayburt'],
   alternates: { canonical: '/' },
   twitter: {
     card: 'summary_large_image',
-    title: 'Seksek · Şehir Şehir Anadolu',
+    title: 'Sek-Sek · Şehir Şehir Anadolu',
     description: 'İstanbul’dan Bayburt’a 8 şehirlik piksel platform oyunu. Simitçiden kale burcuna tek defterde bir yolculuk.',
   },
   description: 'İstanbul’dan Bayburt’a 8 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir piksel platform oyunu.',
-  applicationName: 'Seksek',
+  applicationName: 'Sek-Sek',
   openGraph: {
-    title: 'Seksek · Şehir Şehir Anadolu',
+    title: 'Sek-Sek · Şehir Şehir Anadolu',
     description: 'İstanbul’dan Bayburt’a 8 şehir ve 24 hatıra. Martılar, cumbalar, kayısı kasaları ve Hitit ok tuzakları seni bekliyor.',
     locale: 'tr_TR',
     type: 'website',
-    siteName: 'Seksek',
+    siteName: 'Sek-Sek',
     url: '/',
   },
-  appleWebApp: { capable: true, title: 'Seksek', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Sek-Sek', statusBarStyle: 'black-translucent' },
 }
 
 export const viewport: Viewport = {

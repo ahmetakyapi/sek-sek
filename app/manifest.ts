@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Seksek · Şehir Şehir Anadolu',
-    short_name: 'Seksek',
+    name: 'Sek-Sek · Şehir Şehir Anadolu',
+    short_name: 'Sek-Sek',
     description: 'İstanbul’dan Bayburt’a 8 şehirlik piksel platform oyunu.',
     start_url: '/',
     display: 'fullscreen',

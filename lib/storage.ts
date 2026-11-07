@@ -14,11 +14,12 @@ export interface Save {
   character: 'uktun' | 'memo' | null
   seenStory: boolean
   controlSize: 'normal' | 'buyuk'
+  keyHints: boolean
 }
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal' })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true })
 
 export function loadSave(): Save {
   try {
