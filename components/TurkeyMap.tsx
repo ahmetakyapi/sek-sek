@@ -13,6 +13,8 @@ const OUTLINE: [number, number][] = [
 
 const COORDS: Record<string, [number, number]> = {
   istanbul: [28.98, 41.01],
+  izmir: [27.14, 38.42],
+  ankara: [32.86, 39.93],
   mardin: [40.73, 37.31],
   malatya: [38.31, 38.35],
   corum: [34.95, 40.55],
@@ -23,11 +25,11 @@ const COORDS: Record<string, [number, number]> = {
 const X = (lon: number) => (lon - 25.4) * 20
 const Y = (lat: number) => (42.4 - lat) * 20
 
-export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: number; selected: number; onSelect: (i: number) => void }) {
+export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: number; selected: number; onSelect?: (i: number) => void }) {
   const pts = OUTLINE.map(([lo, la]) => `${X(lo).toFixed(1)},${Y(la).toFixed(1)}`).join(' ')
   const route = LEVELS.map((l) => COORDS[l.id])
   return (
-    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label="Yolculuk rotası: İstanbul, Mardin, Malatya, Çorum, Sivas, Bayburt">
+    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label="Yolculuk rotası: İstanbul, İzmir, Ankara, Mardin, Malatya, Çorum, Sivas, Bayburt">
       <polygon points={pts} fill="#2a2438" stroke="#4a4160" strokeWidth="1.5" strokeLinejoin="round" />
       <polyline
         points={route.map(([lo, la]) => `${X(lo)},${Y(la)}`).join(' ')}
@@ -44,8 +46,8 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
         return (
           <g
             key={l.id}
-            onClick={() => !locked && onSelect(i)}
-            style={{ cursor: locked ? 'not-allowed' : 'pointer' }}
+            onClick={() => !locked && onSelect?.(i)}
+            style={{ cursor: locked ? 'not-allowed' : onSelect ? 'pointer' : 'default' }}
             aria-label={`${l.name}${locked ? ' (kilitli)' : ''}`}
           >
             <circle cx={X(lo)} cy={Y(la)} r={on ? 6 : 4.5} fill={locked ? '#4a4160' : on ? '#f2c14e' : '#e8794a'} stroke="#120f1a" strokeWidth="1.5" />

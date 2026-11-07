@@ -1,5 +1,7 @@
 # Memleket · Şehir Şehir Anadolu
 
+**Canlı:** https://memleket-game.vercel.app
+
 İstanbul’dan Bayburt’a, her şehri kendi dokusuyla aşan bir piksel platform oyunu. Mobilde ve webde oynanır;
 harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üretilir.
 
@@ -14,7 +16,7 @@ harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üre
 
 Her şehirde üç hatıra saklı; her biri o şehre dair doğrulanmış bir bilgi kartı açar.
 
-**Hikâye:** Uktun ya da Kerem, dedesi Yusuf’un tavan arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre
+**Hikâye:** İstanbullu Uktun ya da Diyarbakırlı Memo Çelik, dedesi Yusuf’un tavan arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre
 ayrılmış, her şehirde üç boş kutu var. Son sayfada tek cümle: “Yolun sonu, başladığım yer.” Yol Bayburt’ta biter.
 
 **Şehir dokusu:** simitçi arabası ve İstanbul kedileri, Mardin’de mırra ve telkari ustası, Malatya’da damda kuruyan
@@ -23,7 +25,7 @@ Her şehirde yanına gidince konuşan iki kişi, altın/gümüş/bronz süre mad
 
 ## Kontroller
 
-- **Klavye:** ← → / A D yürü · Boşluk / Z / ↑ zıpla · X / Shift atıl (yönle 8 yöne) · ↓ + zıpla in · Esc mola · R bayraktan dön
+- **Klavye:** ← → / A D yürü · ↑ / W / Z zıpla · Boşluk / X / Shift atıl (yönle 8 yöne) · ↓ ince platformdan in · Esc mola · R bayraktan dön
 - **Dokunmatik:** sol yarıda yüzen joystick, sağda ZIPLA ve ATIL
 - **Oyun kolu:** A/Y zıpla, X/B/RT atıl
 

@@ -2,11 +2,13 @@
  * İki oynanabilir karakter. Sprite 16×20, yüzü sağa bakar.
  * Çarpışma kutusu 10×14 kalır; sprite ayakları kutunun tabanına oturur.
  */
-export type CharacterId = 'uktun' | 'kerem'
+export type CharacterId = 'uktun' | 'memo'
 
 export interface CharacterDef {
   id: CharacterId
   name: string
+  /** hikâye ve diyaloglarda kısa ad */
+  short: string
   role: string
   bio: string
   pal: Record<string, string>
@@ -37,8 +39,9 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   uktun: {
     id: 'uktun',
     name: 'Uktun',
+    short: 'Uktun',
     role: 'Haritacı',
-    bio: 'Ankaralı, 26 yaşında. Haritaları ezbere bilir ama hiçbir yolu dedesinin defteri kadar merak etmemiştir. Uzun saçlarını rüzgâra bırakır, yolu hep kendisi bulur.',
+    bio: 'İstanbullu, 26 yaşında. Kadıköy vapurlarında büyüdü, haritaları ezbere bilir ama hiçbir yolu dedesinin defteri kadar merak etmedi. Uzun saçlarını rüzgâra bırakır, yolu hep kendisi bulur.',
     pal: {
       ...SHARED,
       h: '#7a3420',
@@ -69,11 +72,12 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
       '..HHhHJjjyjjjjs.',
     ],
   },
-  kerem: {
-    id: 'kerem',
-    name: 'Kerem',
+  memo: {
+    id: 'memo',
+    name: 'Memo Çelik',
+    short: 'Memo',
     role: 'Fotoğrafçı',
-    bio: 'İstanbullu, 28 yaşında. Boynunda eski bir fotoğraf makinesi, cebinde dedesinin defteri. Her şehri bir kareye sığdırmak istiyor.',
+    bio: 'Diyarbakırlı, 28 yaşında. Surların dibinde, Dicle’nin kıyısında büyüdü. Boynunda eski bir fotoğraf makinesi, cebinde dedesinin defteri; her şehri bir kareye sığdırmak istiyor.',
     pal: {
       ...SHARED,
       h: '#2e2219',

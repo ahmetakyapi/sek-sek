@@ -18,15 +18,8 @@ export function Overlay({ children, dim = false }: { children: React.ReactNode; 
 
 export const displayName = (l: LevelDef) => (l.nickname ? `${l.name} (${l.nickname})` : l.name)
 
-export type Medal = 'altin' | 'gumus' | 'bronz'
-
-export function medalFor(l: LevelDef, timeMs: number): Medal | null {
-  const s = timeMs / 1000
-  if (s <= l.medals[0]) return 'altin'
-  if (s <= l.medals[1]) return 'gumus'
-  if (s <= l.medals[2]) return 'bronz'
-  return null
-}
+export { medalFor, type Medal } from '@/components/medal'
+import type { Medal } from '@/components/medal'
 
 const MEDAL: Record<Medal, { label: string; color: string; ring: string }> = {
   altin: { label: 'Altın', color: '#f2c14e', ring: '#b8862a' },

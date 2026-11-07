@@ -10,7 +10,7 @@ export const STORY: StoryPage[] = [
   },
   {
     title: 'Yarım Kalan Sayfalar',
-    text: 'Her sayfa bir şehre ayrılmıştı: İstanbul, Mardin, Malatya, Çorum, Sivas, Bayburt. Her sayfada dededen kısa bir not ve üç boş kutu vardı. Her şehirden üç hatıra… Yolculuk yarım kalmıştı.',
+    text: 'Her sayfa bir şehre ayrılmıştı: İstanbul, İzmir, Ankara, Mardin, Malatya, Çorum, Sivas, Bayburt. Her sayfada dededen kısa bir not ve üç boş kutu vardı. Her şehirden üç hatıra… Yolculuk yarım kalmıştı.',
   },
   {
     title: 'Son Satır',
@@ -20,7 +20,7 @@ export const STORY: StoryPage[] = [
 
 export const ENDING: StoryPage = {
   title: 'Defter Tamamlandı',
-  text: '{name}, Bayburt Kalesi’nin burcunda defterin son sayfasını açtı. Dede Yusuf burada doğmuş, ilk kopuz sesini Çoruh kıyısında duymuştu. Altı şehir geride kaldı. Yol bitti ama memleket bitmez: sıradaki şehirler yolda.',
+  text: '{name}, Bayburt Kalesi’nin burcunda defterin son sayfasını açtı. Dede Yusuf burada doğmuş, ilk kopuz sesini Çoruh kıyısında duymuştu. Sekiz şehir geride kaldı. Yol bitti ama memleket bitmez: sıradaki şehirler yolda.',
 }
 
 export const fill = (t: string, name: string) => t.replaceAll('{name}', name)

@@ -26,6 +26,8 @@ export class InputManager {
     if (k === 'KeyR') this.onRetry?.()
   }
   private up = (e: KeyboardEvent) => {
+    // boşluk odaktaki bir düğmeyi tetiklemesin
+    if (e.code === 'Space' && !(e.target instanceof HTMLInputElement)) e.preventDefault()
     this.keys.delete(e.code)
   }
   private blur = () => this.keys.clear()
@@ -108,5 +110,5 @@ export class InputManager {
   }
 }
 
-const JUMP_KEYS = ['Space', 'KeyZ', 'KeyK', 'ArrowUp', 'KeyW', 'KeyC']
-const DASH_KEYS = ['KeyX', 'ShiftLeft', 'ShiftRight', 'KeyJ', 'KeyL']
+const JUMP_KEYS = ['ArrowUp', 'KeyW', 'KeyZ', 'KeyK', 'KeyC']
+const DASH_KEYS = ['Space', 'KeyX', 'ShiftLeft', 'ShiftRight', 'KeyJ', 'KeyL']

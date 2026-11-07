@@ -71,8 +71,9 @@ export class Renderer {
     this.canvas.height = devH
     const portrait = cssH > cssW
     // dikeyde ~13 tile genişlik, yatayda ~15 tile yükseklik
-    const target = portrait ? Math.min(devW / (13 * T), devH / (20 * T)) : Math.min(devW / (22 * T), devH / (15 * T))
-    this.scale = Math.max(1, Math.floor(target))
+    const target = portrait ? Math.min(devW / (13 * T), devH / (20 * T)) : Math.min(devW / (20 * T), devH / (13 * T))
+    // yatayda en yakın tam sayı: karakter masaüstünde de okunur kalsın
+    this.scale = Math.max(1, portrait ? Math.floor(target) : Math.round(target))
     this.viewW = Math.ceil(devW / this.scale)
     this.viewH = Math.ceil(devH / this.scale)
     this.buf.width = this.viewW
@@ -168,6 +169,32 @@ export class Renderer {
           rect(c, x, y, T, 4, s.tileTop)
           rect(c, x, y + 4, T, 1, s.tileDark)
           for (let i = 0; i < 16; i += 4) rect(c, x + i, y + 1, 1, 2, s.tileLight)
+        }
+        break
+      }
+      case 'izmir': {
+        // Kordon taşı: iri dikdörtgen kaplama
+        rect(c, x, y + 8, T, 1, s.tileDark)
+        rect(c, x + (ty % 2 ? 6 : 12), y, 1, 8, s.tileDark)
+        rect(c, x + (ty % 2 ? 13 : 4), y + 9, 1, 7, s.tileDark)
+        rect(c, x + 1, y + 1, 4, 1, s.tileLight)
+        if (open) {
+          rect(c, x, y, T, 3, s.tileTop)
+          rect(c, x, y + 3, T, 1, s.tileDark)
+        }
+        break
+      }
+      case 'ankara': {
+        // andezit: kırmızımsı gri bloklar
+        rect(c, x, y + 5, T, 1, s.tileDark)
+        rect(c, x, y + 11, T, 1, s.tileDark)
+        rect(c, x + (ty % 2 ? 3 : 9), y, 1, 5, s.tileDark)
+        rect(c, x + (ty % 2 ? 11 : 5), y + 6, 1, 5, s.tileDark)
+        rect(c, x + (ty % 2 ? 7 : 13), y + 12, 1, 4, s.tileDark)
+        if (r() > 0.7) rect(c, x + 2 + Math.floor(r() * 10), y + 7, 2, 2, s.tileLight)
+        if (open) {
+          rect(c, x, y, T, 3, s.tileTop)
+          for (let i = 0; i < 16; i += 3) if (r() > 0.6) rect(c, x + i, y - 1, 1, 1, '#b8a058')
         }
         break
       }
@@ -633,6 +660,31 @@ export class Renderer {
         rect(b, x + 20, bot - 18, 6, 1, '#5a3c26')
         break
       }
+      case 'izmir': {
+        // boyoz tezgâhı: tepsiler, yumurtalar, çay
+        rect(b, x - 4, bot - 12, 24, 3, '#8a6a4a')
+        rect(b, x - 2, bot - 9, 2, 9, '#5a3c26')
+        rect(b, x + 16, bot - 9, 2, 9, '#5a3c26')
+        rect(b, x - 3, bot - 15, 22, 3, '#c8c4cc')
+        for (let i = 0; i < 6; i++) disc(b, x + i * 3, bot - 16, 1, '#e0a040')
+        for (let i = 0; i < 3; i++) rect(b, x + 1 + i * 3, bot - 19, 2, 3, '#f4efe6')
+        rect(b, x + 13, bot - 20, 3, 4, 'rgba(200,60,40,0.9)')
+        rect(b, x + 13, bot - 20, 3, 1, '#f4efe6')
+        break
+      }
+      case 'ankara': {
+        // Kale kuruyemişçisi: çuvallar
+        const cols = ['#c87a3a', '#e0b050', '#8a4a2a', '#d8c8a0']
+        for (let i = 0; i < 4; i++) {
+          const sx = x - 6 + i * 8
+          rect(b, sx, bot - 10, 7, 10, '#b8a078')
+          rect(b, sx, bot - 11, 7, 2, cols[i])
+          rect(b, sx + 1, bot - 12, 5, 1, cols[i])
+        }
+        rect(b, x - 7, bot - 24, 34, 2, '#c8302a')
+        for (let i = 0; i < 34; i += 6) rect(b, x - 7 + i, bot - 22, 3, 2, '#f4efe6')
+        break
+      }
       case 'mardin': {
         rect(b, x - 6, bot - 2, 28, 2, '#a83a2a')
         for (let i = 0; i < 28; i += 4) rect(b, x - 6 + i, bot - 2, 2, 1, '#f2c14e')
@@ -714,6 +766,12 @@ export class Renderer {
     switch (CITY[this.city].animal) {
       case 'cat':
         sprite(b, ['.o.o......', '.ooo......', '.oeo.....' + (tail ? 'o' : '.'), '.oooo...o' + (tail ? '.' : 'o'), '..ooooooo.', '..ooOooOo.', '..o.o..o..'], { o: '#e0903a', O: '#b06a24', e: '#2a2a2a' }, x + 2, bot - 7)
+        break
+      case 'flamingo':
+        sprite(b, ['..pp...', '.pppk..', '..p....', '..p....', '.ppp...', 'ppppp..', '.pppp..', '...l...', '...l...', '...l...', '..ll...'], { p: '#f29aa8', k: '#2a2220', l: '#d8707a' }, x + 4, bot - 11, tail > 0)
+        break
+      case 'angora':
+        sprite(b, ['.w.w......', '.www......', '.bwg.....' + (tail ? 'w' : '.'), '.wwww...w' + (tail ? '.' : 'w'), '..wwwwwww.', '..wwWwwWw.', '..w.w..w..'], { w: '#f8f6f0', W: '#dcd8d0', b: '#4a8ad8', g: '#e0b040' }, x + 2, bot - 7)
         break
       case 'donkey':
         sprite(b, ['g...........', 'gg..........', 'ggg.........', '.ggggggggg..', '..gggggggggg', '..wggggggg.g', '..g.g...g.g.', '..g.g...g.g.'], { g: '#7d7480', w: '#d8d0d4' }, x, bot - 8)
@@ -995,7 +1053,9 @@ export class Renderer {
 }
 
 const NEXT_CITY: Record<CityKey, string | null> = {
-  istanbul: 'MARDİN',
+  istanbul: 'İZMİR',
+  izmir: 'ANKARA',
+  ankara: 'MARDİN',
   mardin: 'MALATYA',
   malatya: 'ÇORUM',
   corum: 'SİVAS',

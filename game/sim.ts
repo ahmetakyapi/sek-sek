@@ -152,6 +152,9 @@ export class World {
   time = 0
   deaths = 0
   complete = false
+  /** süre ilk hareketle başlar (madalya adaletli olsun) */
+  started = false
+  private prevDown = false
   windNow = 0
   nearSign = -1
   nearNpc = -1
@@ -355,7 +358,8 @@ export class World {
   step(dt: number, input: Input) {
     const p = this.player
     if (this.complete) return
-    this.time += dt
+    if (!this.started && (input.left || input.right || input.jump || input.jumpPressed || input.dashPressed || input.up || input.down)) this.started = true
+    if (this.started) this.time += dt
 
     this.updatePlatforms(dt)
     this.updateCrumbles(dt)
@@ -440,8 +444,10 @@ export class World {
     const iy = (input.down ? 1 : 0) - (input.up ? 1 : 0)
     if (ix !== 0 && p.dashTime <= 0) p.facing = ix > 0 ? 1 : -1
 
-    // aşağı + zıpla: tek yönlü platformdan in
-    if (input.down && input.jumpPressed && p.grounded && this.standingOnOneway()) {
+    // aşağıya basınca tek yönlü platformdan in (eski "aşağı + zıpla" da çalışır)
+    const downPressed = input.down && !this.prevDown
+    this.prevDown = input.down
+    if ((downPressed || (input.down && input.jumpPressed)) && p.grounded && this.standingOnOneway()) {
       p.dropTimer = 0.22
       p.buffer = 0
       p.grounded = false

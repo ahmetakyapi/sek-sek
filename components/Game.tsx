@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import TouchControls from '@/components/TouchControls'
 import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
+import CityBanner, { Toggle } from '@/components/CityBanner'
 import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
@@ -13,6 +14,7 @@ import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
 import { ENDING, STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
+import { shareQuery } from '@/lib/share'
 import { defaultSave, formatTime, loadSave, writeSave, type Save } from '@/lib/storage'
 
 type Screen = 'title' | 'character' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
@@ -56,6 +58,7 @@ export default function Game() {
   const [ready, setReady] = useState(false)
   const [storyPage, setStoryPage] = useState(0)
   const [canFull, setCanFull] = useState(false)
+  const [titleCard, setTitleCard] = useState(0)
 
   const setScreen = useCallback((s: Screen) => {
     screenRef.current = s
@@ -68,6 +71,12 @@ export default function Game() {
   /* ── kurulum ─────────────────────────────────────────────── */
   useEffect(() => {
     const s = loadSave()
+    const qs = new URLSearchParams(location.search)
+    const qc = qs.get('karakter')
+    if ((qc === 'uktun' || qc === 'memo') && !s.character) {
+      s.character = qc
+      writeSave(s)
+    }
     setSave(s)
     setCoarse(window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window)
     setCanFull(!!document.documentElement.requestFullscreen)
@@ -88,7 +97,8 @@ export default function Game() {
       if (worldRef.current) renderer.setLevel(worldRef.current)
     }
     fit()
-    const startIdx = Math.min(s.unlocked, LEVELS.length - 1)
+    const qCity = LEVELS.findIndex((l) => l.id === qs.get('sehir'))
+    const startIdx = qCity >= 0 && qCity <= s.unlocked ? qCity : Math.min(s.unlocked, LEVELS.length - 1)
     levelRef.current = startIdx
     setLevelIdx(startIdx)
     worldRef.current = new World(LEVELS[startIdx])
@@ -265,6 +275,8 @@ export default function Game() {
     snd?.unlock()
     snd?.setMusic(LEVELS[levelRef.current].city)
     inputRef.current?.clear()
+    setTitleCard(Date.now())
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
     setScreen('play')
   }, [setScreen])
 
@@ -340,6 +352,17 @@ export default function Game() {
       {screen === 'play' && (
         <>
           <Hud level={level} hud={hud} hero={hero.id} onPause={() => setScreen('pause')} />
+          {titleCard > 0 && hud.time < 0.05 && (
+            <div key={titleCard} className="title-card pointer-events-none absolute inset-x-0 top-[30%] z-10 flex flex-col items-center">
+              <div className="kilim w-[min(520px,80vw)]" />
+              <p className="mt-3 text-[12px] font-bold tracking-[0.4em] text-accent-2 [text-shadow:0_2px_0_#120f1a]">
+                {String(level.plate).padStart(2, '0')} · {level.subtitle.toLocaleUpperCase('tr')}
+              </p>
+              <p className="font-display text-6xl text-cream [text-shadow:0_4px_0_#120f1a] sm:text-7xl">{level.name}</p>
+              <p className="mt-1 text-[13px] text-cream/80 [text-shadow:0_2px_0_#120f1a]">Hareket edince süre başlar</p>
+              <div className="kilim mt-3 w-[min(520px,80vw)]" />
+            </div>
+          )}
           {(hint || npc >= 0) && (
             <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
               {npc >= 0 && level.npcs[npc] ? (
@@ -386,8 +409,8 @@ export default function Game() {
                     <p className="portrait-tag">Uktun</p>
                   </div>
                   <div className="portrait-frame -ml-6 w-[130px] rotate-[3deg] sm:w-[190px]">
-                    <Portrait id="kerem" className="block w-full" />
-                    <p className="portrait-tag">Kerem</p>
+                    <Portrait id="memo" className="block w-full" />
+                    <p className="portrait-tag">Memo Çelik</p>
                   </div>
                 </div>
               )}
@@ -396,7 +419,7 @@ export default function Game() {
               <p className="text-[11px] font-bold tracking-[0.3em] text-accent">ŞEHİR ŞEHİR ANADOLU</p>
               <h1 className="mt-2 font-display text-5xl leading-none text-cream sm:text-6xl">Memleket</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">
-                Dedenin yarım kalmış defterini tamamla. İstanbul’dan Bayburt’a altı şehir, her şehirde üç hatıra, her hatırada bir hikâye.
+                Dedenin yarım kalmış defterini tamamla. İstanbul’dan Bayburt’a sekiz şehir, her şehirde üç hatıra, her hatırada bir hikâye.
               </p>
               <div className="mt-5 grid gap-2.5">
                 <button className="pixel-btn primary justify-center text-base" onClick={startJourney} autoFocus>
@@ -430,11 +453,16 @@ export default function Game() {
                   </button>
                 </div>
               </div>
-              {totalFound > 0 && (
-                <p className="mt-4 text-[12px] text-muted">
-                  Defterde {totalFound} / {LEVELS.length * 3} hatıra
-                </p>
-              )}
+              <div className="mt-4 flex items-center justify-between text-[12px] text-muted">
+                <a href="/" className="underline-offset-4 hover:text-cream hover:underline">
+                  ← Ana Sayfa
+                </a>
+                {totalFound > 0 && (
+                  <span>
+                    Defterde {totalFound} / {LEVELS.length * 3} hatıra
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </Overlay>
@@ -446,7 +474,7 @@ export default function Game() {
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">YOL ARKADAŞIN</p>
             <h2 className="mt-1 font-display text-3xl text-cream sm:text-4xl">Karakterini Seç</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {(['uktun', 'kerem'] as const).map((id) => {
+              {(['uktun', 'memo'] as const).map((id) => {
                 const c = CHARACTERS[id]
                 const on = save.character === id
                 return (
@@ -500,7 +528,7 @@ export default function Game() {
               <Notebook page={storyPage} />
             </div>
             <h2 className="mt-3 font-display text-3xl text-cream">{STORY[storyPage].title}</h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-cream/90">{fill(STORY[storyPage].text, hero.name)}</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-cream/90">{fill(STORY[storyPage].text, hero.short)}</p>
             <div className="mt-5 flex gap-2.5">
               <button
                 className="pixel-btn primary flex-1 justify-center"
@@ -542,33 +570,37 @@ export default function Game() {
             <div className="mt-3">
               <TurkeyMap unlocked={save.unlocked} selected={levelIdx} onSelect={(i) => loadLevel(i)} />
             </div>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <ul className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {LEVELS.map((l, i) => {
                 const locked = i > save.unlocked
                 const best = save.best[l.id]
                 const found = best?.items.filter(Boolean).length ?? 0
                 return (
                   <li key={l.id}>
-                    <button className="pixel-btn w-full justify-between text-left" disabled={locked} onClick={() => loadLevel(i)}>
-                      <span className="flex items-center gap-3">
-                        <span className="plate text-sm">
-                          <span>{l.plate}</span>
+                    <button className="pixel-btn w-full items-stretch gap-0 overflow-hidden p-0 text-left" disabled={locked} onClick={() => loadLevel(i)}>
+                      <span className="relative w-[92px] shrink-0 overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/sehirler/${l.id}.webp`} alt="" className={`h-full w-full object-cover ${locked ? 'opacity-30 grayscale' : ''}`} style={{ imageRendering: 'pixelated' }} />
+                        <span className="plate absolute bottom-1 left-1 text-[11px]">
+                          <span>{String(l.plate).padStart(2, '0')}</span>
                         </span>
-                        <span>
-                          <span className="block font-display text-base leading-tight">{displayName(l)}</span>
-                          <span className="block text-[11px] text-muted">
+                      </span>
+                      <span className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2.5">
+                        <span className="min-w-0">
+                          <span className="block truncate font-display text-base leading-tight">{displayName(l)}</span>
+                          <span className="block truncate text-[11px] text-muted">
                             {l.subtitle} · {l.difficulty}
                           </span>
                         </span>
-                      </span>
-                      <span className="flex flex-col items-end gap-1 text-[11px] text-muted">
-                        {locked ? 'Kilitli' : best ? formatTime(best.timeMs) : 'Yeni'}
-                        {best && (
-                          <span className="flex items-center gap-1.5">
-                            <MedalBadge medal={medalFor(l, best.timeMs)} />
-                            {found}/3
-                          </span>
-                        )}
+                        <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-muted">
+                          {locked ? 'Kilitli' : best ? formatTime(best.timeMs) : 'Yeni'}
+                          {best && (
+                            <span className="flex items-center gap-1.5">
+                              <MedalBadge medal={medalFor(l, best.timeMs)} />
+                              {found}/3
+                            </span>
+                          )}
+                        </span>
                       </span>
                     </button>
                   </li>
@@ -581,41 +613,30 @@ export default function Game() {
 
       {screen === 'intro' && (
         <Overlay>
-          <div className="rise pixel-panel w-full max-w-md p-6">
-            <div className="flex items-center gap-4">
-              <span className="plate text-4xl">
-                <span>{level.plate}</span>
-              </span>
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold tracking-[0.25em] text-accent">
-                  {String(levelIdx + 1).padStart(2, '0')} / {String(LEVELS.length).padStart(2, '0')} · {level.difficulty.toLocaleUpperCase('tr')}
-                </p>
-                <h2 className="font-display text-4xl leading-none text-cream">{level.name}</h2>
-                <p className="text-sm text-muted">
-                  {level.nickname ? <span className="text-accent-2">({level.nickname}) </span> : null}
-                  {level.subtitle}
-                </p>
+          <div className="rise pixel-panel w-full max-w-md overflow-hidden px-6 pb-6">
+            <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={150} />
+            <p className="-mt-1 text-sm text-muted">{level.subtitle}</p>
+            <figure className="notebook mt-4 rotate-[-0.6deg] px-4 py-3">
+              <figcaption className="text-[10px] font-bold tracking-[0.22em] text-[#8a3a24]">DEDENİN DEFTERİNDEN</figcaption>
+              <blockquote className="mt-1 text-[14px] italic leading-relaxed">“{level.note}”</blockquote>
+            </figure>
+            <p className="mt-4 text-[14px] leading-relaxed text-cream/85">{level.intro}</p>
+            <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+              <div className="border-2 border-line bg-ink/40 px-1 py-2">
+                <p className="font-display text-lg leading-none text-gold">3</p>
+                <p className="mt-1 truncate text-[10px] text-muted">{level.item}</p>
               </div>
+              {(['altin', 'gumus', 'bronz'] as const).map((m, k) => (
+                <div key={m} className="border-2 border-line bg-ink/40 px-1 py-2">
+                  <p className="flex items-center justify-center gap-1.5 font-display text-lg leading-none text-cream">
+                    <MedalBadge medal={m} />
+                    {level.medals[k]}
+                  </p>
+                  <p className="mt-1 text-[10px] text-muted">saniye</p>
+                </div>
+              ))}
             </div>
-            <blockquote className="mt-4 border-l-2 border-gold/70 bg-panel-2/60 px-3 py-2 text-[14px] italic leading-relaxed text-cream/90">
-              <span className="mb-1 block text-[10px] font-bold not-italic tracking-[0.2em] text-gold">DEDENİN DEFTERİNDEN</span>“{level.note}”
-            </blockquote>
-            <p className="mt-3 text-sm leading-relaxed text-muted">{level.intro}</p>
-            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
-              <span>
-                3 <strong className="text-gold">{level.item.toLocaleLowerCase('tr')}</strong> saklı
-              </span>
-              <span className="flex items-center gap-1">
-                <MedalBadge medal="altin" /> {level.medals[0]} sn
-              </span>
-              <span className="flex items-center gap-1">
-                <MedalBadge medal="gumus" /> {level.medals[1]} sn
-              </span>
-              <span className="flex items-center gap-1">
-                <MedalBadge medal="bronz" /> {level.medals[2]} sn
-              </span>
-            </p>
-            <div className="mt-5 grid grid-cols-[1fr_auto] gap-2.5">
+            <div className="mt-5 grid grid-cols-[1fr_auto] gap-3">
               <button className="pixel-btn primary justify-center text-base" onClick={beginPlay} autoFocus>
                 ▶ Başla
               </button>
@@ -629,48 +650,56 @@ export default function Game() {
 
       {screen === 'pause' && (
         <Overlay dim>
-          <div className="rise pixel-panel w-full max-w-md p-6">
-            <p className="text-[11px] font-bold tracking-[0.25em] text-accent">
-              {level.difficulty.toLocaleUpperCase('tr')} · {level.name.toLocaleUpperCase('tr')}
-            </p>
-            <h2 className="mt-1 font-display text-5xl text-cream">Mola</h2>
-            <p className="mt-1 text-sm text-muted">
-              {formatTime(hud.time * 1000)} · {hud.deaths} düşüş · {hud.items.filter(Boolean).length}/3 {level.item.toLocaleLowerCase('tr')}
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <button className="pixel-btn primary" onClick={() => setScreen('play')} autoFocus>
-                ▶ Devam
-              </button>
+          <div className="rise pixel-panel w-full max-w-md overflow-hidden px-6 pb-5">
+            <CityBanner level={level} eyebrow="MOLA" height={110} />
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[
+                [formatTime(hud.time * 1000), 'süre'],
+                [String(hud.deaths), 'düşüş'],
+                [`${hud.items.filter(Boolean).length}/3`, level.item.toLocaleLowerCase('tr')],
+              ].map(([v, k]) => (
+                <div key={k} className="border-2 border-line bg-ink/40 py-2">
+                  <p className="font-display text-xl leading-none text-cream tabular-nums">{v}</p>
+                  <p className="mt-1 text-[10px] text-muted">{k}</p>
+                </div>
+              ))}
+            </div>
+            <button className="pixel-btn primary mt-4 w-full justify-center py-3 text-lg" onClick={() => setScreen('play')} autoFocus>
+              ▶ Devam Et
+            </button>
+            <div className="mt-3 grid grid-cols-3 gap-3">
               <button
-                className="pixel-btn"
+                className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[12px]"
                 onClick={() => {
                   worldRef.current?.retryFromCheckpoint()
                   setScreen('play')
                 }}
               >
-                ⚑ Bayraktan Dön
+                <span className="text-lg leading-none">⚑</span>
+                Bayraktan Dön
               </button>
-              <button className="pixel-btn" onClick={() => loadLevel(levelIdx, 'play')}>
-                ↺ Baştan Başla
+              <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[12px]" onClick={() => loadLevel(levelIdx, 'play')}>
+                <span className="text-lg leading-none">↺</span>
+                Baştan Başla
               </button>
-              <button className="pixel-btn" onClick={() => setScreen('map')}>
-                ⌖ Şehirler
+              <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[12px]" onClick={() => setScreen('map')}>
+                <span className="text-lg leading-none">⌖</span>
+                Şehirler
               </button>
-              <button className="pixel-btn" onClick={() => toggle('sfx')}>
-                Efekt {save.sfx ? 'Açık' : 'Kapalı'}
-              </button>
-              <button className="pixel-btn" onClick={() => toggle('music')}>
-                Müzik {save.music ? 'Açık' : 'Kapalı'}
-              </button>
-              <button className="pixel-btn" onClick={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })}>
-                Dokunmatik {showTouch ? 'Açık' : 'Kapalı'}
-              </button>
-              <button className="pixel-btn" onClick={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })}>
-                Tuşlar {save.controlSize === 'buyuk' ? 'Büyük' : 'Normal'}
-              </button>
+            </div>
+            <div className="mt-5">
+              <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+                AYARLAR <span className="kilim h-[6px] flex-1 opacity-50" />
+              </p>
+              <div className="mt-1 grid divide-y-2 divide-line/60">
+                <Toggle label="Ses Efektleri" on={save.sfx} onChange={() => toggle('sfx')} />
+                <Toggle label="Müzik" on={save.music} onChange={() => toggle('music')} />
+                <Toggle label="Dokunmatik Kontroller" on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
+                <Toggle label="Büyük Tuşlar" hint="Telefonda daha geniş dokunma alanı" on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
+              </div>
               {canFull && (
-                <button className="pixel-btn col-span-2 justify-center" onClick={fullscreen}>
-                  ⛶ Tam Ekran
+                <button className="mt-2 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={fullscreen}>
+                  ⛶ Tam Ekrana Geç
                 </button>
               )}
             </div>
@@ -683,7 +712,8 @@ export default function Game() {
           levelIdx={levelIdx}
           result={result}
           save={save}
-          heroName={hero.name}
+          heroName={hero.short}
+          heroId={hero.id}
           onName={(name) => persist({ ...save, name })}
           onNext={() => (levelIdx + 1 < LEVELS.length ? loadLevel(levelIdx + 1) : setScreen('end'))}
           onRetry={() => loadLevel(levelIdx, 'play')}
@@ -721,11 +751,11 @@ export default function Game() {
                 <dt className="text-muted">Yürü</dt>
                 <dd>← → / A D</dd>
                 <dt className="text-muted">Zıpla</dt>
-                <dd>Boşluk / Z / ↑</dd>
+                <dd>↑ / W / Z</dd>
                 <dt className="text-muted">Atıl</dt>
-                <dd>X / Shift (8 yön)</dd>
+                <dd>Boşluk / X / Shift (8 yön)</dd>
                 <dt className="text-muted">İn</dt>
-                <dd>↓ + Zıpla</dd>
+                <dd>↓ (ince platformdan)</dd>
                 <dt className="text-muted">Mola</dt>
                 <dd>Esc / P</dd>
                 <dt className="text-muted">Bayrak</dt>
@@ -766,7 +796,7 @@ export default function Game() {
             </div>
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">YOLCULUK TAMAM</p>
             <h2 className="mt-2 font-display text-4xl text-cream">{ENDING.title}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-cream/90">{fill(ENDING.text, hero.name)}</p>
+            <p className="mt-3 text-sm leading-relaxed text-cream/90">{fill(ENDING.text, hero.short)}</p>
             <p className="mt-3 text-[12px] text-muted">
               {totalFound} / {LEVELS.length * 3} hatıra · Toplam en iyi süre {formatTime(Object.values(save.best).reduce((a, b) => a + b.timeMs, 0))}
             </p>
@@ -794,7 +824,7 @@ function Notebook({ page }: { page: number }) {
       <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3">
         {LEVELS.map((l) => (
           <span key={l.id} className={`truncate border border-[#5a3c26]/40 px-1 text-[9px] leading-4 ${page >= 1 ? 'opacity-100' : 'opacity-40'}`}>
-            {l.plate} {l.name}
+            {String(l.plate).padStart(2, "0")} {l.name}
           </span>
         ))}
       </div>
@@ -811,10 +841,10 @@ function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hu
     >
       <div className="flex min-w-0 items-center gap-2.5 bg-ink/55 py-1.5 pl-1.5 pr-2.5">
         <span className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-gold/70 bg-panel-2 min-[400px]:block">
-          <Portrait id={hero} className="-mt-1 block w-[56px] -translate-x-[8px]" />
+          <Portrait id={hero} className="-mt-[6px] w-[60px] -translate-x-[10px]" />
         </span>
         <span className="plate text-lg">
-          <span>{level.plate}</span>
+          <span>{String(level.plate).padStart(2, "0")}</span>
         </span>
         <div className="min-w-0 leading-tight">
           <p className="truncate font-display text-base text-cream sm:text-lg">{level.name}</p>
@@ -846,6 +876,7 @@ function Complete({
   result,
   save,
   heroName,
+  heroId,
   onName,
   onNext,
   onRetry,
@@ -855,6 +886,7 @@ function Complete({
   result: Result
   save: Save
   heroName: string
+  heroId: CharacterId
   onName: (n: string) => void
   onNext: () => void
   onRetry: () => void
@@ -868,6 +900,31 @@ function Complete({
   const found = result.items.filter(Boolean).length
   const best = save.best[level.id]
   const medal = medalFor(level, result.timeMs)
+  const [copied, setCopied] = useState(false)
+  const shareUrl = () =>
+    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: name.trim() })}`
+  const shareText = `Memleket’te ${level.name} şehrini ${formatTime(result.timeMs)} sürede geçtim (${result.deaths} düşüş, ${found}/3 hatıra). Sen de dene!`
+  const share = async () => {
+    const url = shareUrl()
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Memleket skor kartım', text: shareText, url })
+        return
+      } catch {
+        /* vazgeçildi */
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${url}`)}`, '_blank', 'noopener')
+  }
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      /* izin yok */
+    }
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -891,19 +948,22 @@ function Complete({
 
   return (
     <Overlay dim>
-      <div className="rise pixel-panel w-full max-w-2xl p-5 sm:p-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="plate text-3xl">
-            <span>{level.plate}</span>
-          </span>
-          <div className="flex-1">
-            <p className="text-[11px] font-bold tracking-[0.25em] text-accent">{level.name.toLocaleUpperCase('tr')} GEÇİLDİ</p>
-            <p className="font-display text-3xl text-cream">
-              {formatTime(result.timeMs)} <span className="text-lg text-muted">· {result.deaths} düşüş · {found}/3</span>
-            </p>
-            <p className="text-[12px] text-muted">{result.newBest ? 'Yeni kişisel rekor!' : best ? `Rekorun: ${formatTime(best.timeMs)}` : ''}</p>
+      <div className="rise pixel-panel w-full max-w-2xl overflow-hidden px-6 pb-6">
+        <CityBanner level={level} eyebrow={result.newBest ? 'GEÇİLDİ · YENİ REKOR' : 'GEÇİLDİ'} height={130} />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            [formatTime(result.timeMs), result.newBest ? 'yeni rekor' : best ? `rekor ${formatTime(best.timeMs)}` : 'süre'],
+            [String(result.deaths), 'düşüş'],
+            [`${found}/3`, level.item.toLocaleLowerCase('tr')],
+          ].map(([v, k]) => (
+            <div key={k} className="border-2 border-line bg-ink/40 px-2 py-2.5 text-center">
+              <p className="font-display text-2xl leading-none tabular-nums text-cream">{v}</p>
+              <p className="mt-1 truncate text-[10px] text-muted">{k}</p>
+            </div>
+          ))}
+          <div className="flex items-center justify-center border-2 border-line bg-ink/40 px-2 py-2">
+            {medal ? <MedalBadge medal={medal} size="lg" /> : <span className="text-center text-[11px] leading-tight text-muted">Bronz için {level.medals[2]} sn</span>}
           </div>
-          {medal ? <MedalBadge medal={medal} size="lg" /> : <span className="text-[12px] text-muted">Bronz için {level.medals[2]} sn</span>}
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-[1.1fr_1fr]">
@@ -912,9 +972,9 @@ function Complete({
             {level.facts.map((f, i) => {
               const have = result.items[i] || best?.items[i]
               return (
-                <div key={i} className={`border-2 px-3 py-2 ${have ? 'border-line bg-panel-2' : 'border-dashed border-line/70'}`}>
-                  <p className="font-display text-sm text-cream">{have ? f.title : 'Boş Sayfa'}</p>
-                  <p className="text-[12px] leading-snug text-muted">{have ? f.text : `Bu ${level.item.toLocaleLowerCase('tr')} şehirde bir yerde saklı. Tekrar oyna ve bul.`}</p>
+                <div key={i} className={have ? 'notebook px-3 py-2' : 'border-2 border-dashed border-line/70 px-3 py-2'} style={have ? { transform: `rotate(${[-0.6, 0.5, -0.3][i]}deg)` } : undefined}>
+                  <p className={`font-display text-sm ${have ? '' : 'text-cream'}`}>{have ? f.title : 'Boş Sayfa'}</p>
+                  <p className={`text-[12px] leading-snug ${have ? 'opacity-80' : 'text-muted'}`}>{have ? f.text : `Bu ${level.item.toLocaleLowerCase('tr')} şehirde bir yerde saklı. Tekrar oyna ve bul.`}</p>
                 </div>
               )
             })}
@@ -947,7 +1007,23 @@ function Complete({
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2.5">
+        <div className="mt-4 flex flex-wrap items-center gap-2.5 border-t-2 border-line pt-4">
+          <p className="mr-auto text-[11px] font-bold tracking-[0.2em] text-gold">SKOR KARTINI PAYLAŞ</p>
+          <button className="pixel-btn py-2 text-sm" onClick={share}>
+            ↗ Paylaş
+          </button>
+          <a className="pixel-btn py-2 text-sm" href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} onClick={(e) => { e.preventDefault(); window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl()}`)}`, '_blank', 'noopener') }}>
+            WhatsApp
+          </a>
+          <button className="pixel-btn py-2 text-sm" onClick={copy}>
+            {copied ? 'Kopyalandı' : 'Bağlantıyı Kopyala'}
+          </button>
+          <a className="pixel-btn py-2 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: name.trim() })}`} download={`memleket-${level.id}.png`}>
+            Kartı İndir
+          </a>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2.5">
           <button className="pixel-btn primary" onClick={onNext} autoFocus>
             {levelIdx + 1 < LEVELS.length ? `▶ Sıradaki: ${displayName(LEVELS[levelIdx + 1])}` : '▶ Defteri Kapat'}
           </button>
@@ -1003,7 +1079,7 @@ function ScoreBoard({ initial }: { initial: number }) {
       <div className="mt-3 flex flex-wrap gap-1.5">
         {LEVELS.map((l, i) => (
           <button key={l.id} className={`pixel-btn px-2.5 py-1.5 text-[12px] ${i === idx ? 'primary' : ''}`} onClick={() => setIdx(i)}>
-            {l.plate} {l.name}
+            {String(l.plate).padStart(2, "0")} {l.name}
           </button>
         ))}
       </div>

@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // skor kartı görseli fontları ve amblemi dosyadan okur
+  outputFileTracingIncludes: { '/skor/kart': ['./assets/**'] },
   async headers() {
     return [
       {
