@@ -4,6 +4,12 @@ export interface Best {
   items: boolean[]
 }
 
+export interface Player {
+  id: string
+  name: string
+  token: string
+}
+
 export interface Save {
   unlocked: number
   best: Record<string, Best>
@@ -15,11 +21,13 @@ export interface Save {
   seenStory: boolean
   controlSize: 'normal' | 'buyuk'
   keyHints: boolean
+  player: Player | null
+  skippedName: boolean
 }
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false })
 
 export function loadSave(): Save {
   try {

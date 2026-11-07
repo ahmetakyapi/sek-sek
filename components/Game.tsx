@@ -5,6 +5,7 @@ import TouchControls from '@/components/TouchControls'
 import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import CityBanner, { Toggle } from '@/components/CityBanner'
+import NameForm from '@/components/NameForm'
 import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
 import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
@@ -16,15 +17,16 @@ import { World } from '@/game/sim'
 import { ENDING, STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
-import { defaultSave, formatTime, loadSave, writeSave, type Save } from '@/lib/storage'
+import { defaultSave, formatTime, loadSave, writeSave, type Player, type Save } from '@/lib/storage'
 
-type Screen = 'title' | 'character' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
+type Screen = 'title' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
 
 interface ScoreRow {
   name: string
   timeMs: number
   deaths: number
   items: number
+  cities?: number
 }
 
 interface Result {
@@ -62,6 +64,7 @@ export default function Game() {
   const [storyPage, setStoryPage] = useState(0)
   const [canFull, setCanFull] = useState(false)
   const [titleCard, setTitleCard] = useState(0)
+  const [resumeIdx, setResumeIdx] = useState(0)
 
   const setScreen = useCallback((s: Screen) => {
     screenRef.current = s
@@ -104,6 +107,7 @@ export default function Game() {
     const startIdx = qCity >= 0 && qCity <= s.unlocked ? qCity : Math.min(s.unlocked, LEVELS.length - 1)
     levelRef.current = startIdx
     setLevelIdx(startIdx)
+    setResumeIdx(startIdx)
     worldRef.current = new World(LEVELS[startIdx])
     renderer.setLevel(worldRef.current)
     if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __mk: unknown }).__mk = { world: () => worldRef.current }
@@ -195,7 +199,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (w.level.hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else {
@@ -290,11 +294,12 @@ export default function Game() {
     soundRef.current?.unlock()
     ui()
     if (!save.character) return setScreen('character')
+    if (!save.player && !save.skippedName) return setScreen('name')
     if (!save.seenStory) {
       setStoryPage(0)
       return setScreen('story')
     }
-    loadLevel(Math.min(save.unlocked, LEVELS.length - 1))
+    loadLevel(resumeIdx)
   }
 
   const pickCharacter = (id: CharacterId) => {
@@ -302,6 +307,15 @@ export default function Game() {
     const next = { ...save, character: id }
     persist(next)
     if (rendererRef.current) rendererRef.current.character = CHARACTERS[id]
+    if (!next.player && !next.skippedName) setScreen('name')
+    else if (!next.seenStory) {
+      setStoryPage(0)
+      setScreen('story')
+    } else setScreen('title')
+  }
+
+  const afterName = (next: Save) => {
+    persist(next)
     if (!next.seenStory) {
       setStoryPage(0)
       setScreen('story')
@@ -327,6 +341,7 @@ export default function Game() {
         },
       }
       writeSave(next)
+      setResumeIdx(next.unlocked)
       setResult({ timeMs, deaths: w.deaths, items, newBest })
       return next
     })
@@ -448,7 +463,7 @@ export default function Game() {
               <p className="text-[14px] leading-relaxed text-muted">Sekiz şehir. Yirmi dört hatıra. Tek yolculuk.</p>
               <div className="mt-5 grid gap-2.5">
                 <button className="pixel-btn primary justify-center text-base" onClick={startJourney} autoFocus>
-                  ▶ {save.unlocked > 0 ? `Devam Et: ${LEVELS[Math.min(save.unlocked, LEVELS.length - 1)].name}` : 'Yolculuğa Başla'}
+                  ▶ {save.unlocked > 0 || resumeIdx > 0 ? `Devam Et: ${LEVELS[resumeIdx].name}` : 'Yolculuğa Başla'}
                 </button>
                 <div className="grid grid-cols-2 gap-2.5">
                   <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('map'))}>
@@ -479,6 +494,15 @@ export default function Game() {
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between text-[12px] text-muted">
+                <button className="flex items-center gap-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('name'))}>
+                  {save.player ? (
+                    <>
+                      <span className="text-gold">◆</span> Yolcu: <strong className="font-semibold text-cream">{save.player.name}</strong>
+                    </>
+                  ) : (
+                    'Yolcu Adı Belirle'
+                  )}
+                </button>
                 <a href="/hakkinda" className="underline-offset-4 hover:text-cream hover:underline">
                   Oyun Hakkında →
                 </a>
@@ -537,6 +561,41 @@ export default function Game() {
         </Overlay>
       )}
 
+      {screen === 'name' && (
+        <Overlay>
+          <div className="rise pixel-panel w-full max-w-md px-6 pb-6">
+            <div className="flex items-end gap-4">
+              <figure className="polaroid relative w-[96px] shrink-0 rotate-[-5deg]">
+                <span className="tape" />
+                <Portrait id={hero.id} className="w-full" />
+                <figcaption>{hero.short}</figcaption>
+              </figure>
+              <div className="min-w-0 pb-2">
+                <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{save.player ? 'ADINI DEĞİŞTİR' : 'DEFTERİN SAHİBİ'}</p>
+                <h2 className="mt-1 font-display text-3xl leading-tight text-cream">Yolcu Adın</h2>
+                <p className="mt-1 text-[13px] leading-snug text-muted">Skor tablosunda ve paylaştığın kartlarda bu adla görünürsün.</p>
+              </div>
+            </div>
+            <div className="mt-5">
+              <NameForm
+                player={save.player}
+                suggestion={hero.short}
+                onDone={(p: Player) => {
+                  ui()
+                  afterName({ ...save, player: p, skippedName: false })
+                }}
+              />
+            </div>
+            <button
+              className="mt-3 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline"
+              onClick={() => (save.player ? setScreen('title') : afterName({ ...save, skippedName: true }))}
+            >
+              {save.player ? '← Vazgeç' : 'Şimdilik Geç (skorların kaydedilmez)'}
+            </button>
+          </div>
+        </Overlay>
+      )}
+
       {screen === 'story' && (
         <Overlay dim>
           <div className="rise pixel-panel w-full max-w-lg p-6" key={storyPage}>
@@ -563,7 +622,7 @@ export default function Game() {
                   if (storyPage + 1 < STORY.length) setStoryPage(storyPage + 1)
                   else {
                     persist({ ...save, seenStory: true })
-                    loadLevel(Math.min(save.unlocked, LEVELS.length - 1))
+                    loadLevel(resumeIdx)
                   }
                 }}
               >
@@ -573,7 +632,7 @@ export default function Game() {
                 className="pixel-btn"
                 onClick={() => {
                   persist({ ...save, seenStory: true })
-                  loadLevel(Math.min(save.unlocked, LEVELS.length - 1))
+                  loadLevel(resumeIdx)
                 }}
               >
                 Geç
@@ -747,7 +806,7 @@ export default function Game() {
           save={save}
           heroName={hero.short}
           heroId={hero.id}
-          onName={(name) => persist({ ...save, name })}
+          onPlayer={(p) => persist({ ...save, player: p, skippedName: false })}
           onNext={() => (levelIdx + 1 < LEVELS.length ? loadLevel(levelIdx + 1) : setScreen('end'))}
           onRetry={() => loadLevel(levelIdx, 'play')}
           onMap={() => setScreen('map')}
@@ -763,7 +822,7 @@ export default function Game() {
                 ← Geri
               </button>
             </div>
-            <ScoreBoard initial={levelIdx} />
+            <ScoreBoard initial={levelIdx} me={save.player?.name ?? ''} />
           </div>
         </Overlay>
       )}
@@ -910,7 +969,7 @@ function Complete({
   save,
   heroName,
   heroId,
-  onName,
+  onPlayer,
   onNext,
   onRetry,
   onMap,
@@ -920,22 +979,25 @@ function Complete({
   save: Save
   heroName: string
   heroId: CharacterId
-  onName: (n: string) => void
+  onPlayer: (p: Player) => void
   onNext: () => void
   onRetry: () => void
   onMap: () => void
 }) {
   const level = LEVELS[levelIdx]
-  const [name, setName] = useState(save.name || heroName)
+  const player = save.player
+  const name = player?.name ?? heroName
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [err, setErr] = useState('')
+  const [rank, setRank] = useState<number | null>(null)
+  const [improved, setImproved] = useState(true)
   const [refresh, setRefresh] = useState(0)
   const found = result.items.filter(Boolean).length
   const best = save.best[level.id]
   const medal = medalFor(level, result.timeMs)
   const [copied, setCopied] = useState(false)
   const shareUrl = () =>
-    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: name.trim() })}`
+    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '' })}`
   const shareText = `Sek-Sek’te ${level.name} şehrini ${formatTime(result.timeMs)} sürede geçtim (${result.deaths} düşüş, ${found}/3 hatıra). Sen de dene!`
   const share = async () => {
     const url = shareUrl()
@@ -959,18 +1021,18 @@ function Complete({
     }
   }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const submit = async (p: Player) => {
     setStatus('sending')
-    onName(name.trim())
     try {
       const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ level: level.id, name: name.trim(), timeMs: result.timeMs, deaths: result.deaths, items: found }),
+        body: JSON.stringify({ level: level.id, playerId: p.id, token: p.token, timeMs: result.timeMs, deaths: result.deaths, items: found }),
       })
-      const j = (await res.json()) as { error?: string }
+      const j = (await res.json()) as { error?: string; rank?: number; improved?: boolean }
       if (!res.ok) throw new Error(j.error ?? 'Gönderilemedi')
+      setRank(j.rank ?? null)
+      setImproved(j.improved ?? true)
       setStatus('sent')
       setRefresh((r) => r + 1)
     } catch (e2) {
@@ -979,64 +1041,101 @@ function Complete({
     }
   }
 
+  // ad varsa skor kendiliğinden kaydedilir
+  useEffect(() => {
+    if (player && status === 'idle') void submit(player)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player])
+
   return (
     <Overlay dim>
       <div className="rise pixel-panel w-full max-w-2xl overflow-hidden px-6 pb-6">
         <CityBanner level={level} eyebrow={result.newBest ? 'GEÇİLDİ · YENİ REKOR' : 'GEÇİLDİ'} height={130} />
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {[
-            [formatTime(result.timeMs), result.newBest ? 'yeni rekor' : best ? `rekor ${formatTime(best.timeMs)}` : 'süre'],
-            [String(result.deaths), 'düşüş'],
-            [`${found}/3`, level.item.toLocaleLowerCase('tr')],
-          ].map(([v, k]) => (
-            <div key={k} className="border-2 border-line bg-ink/40 px-2 py-2.5 text-center">
-              <p className="font-display text-2xl leading-none tabular-nums text-cream">{v}</p>
-              <p className="mt-1 truncate text-[10px] text-muted">{k}</p>
-            </div>
-          ))}
-          <div className="flex items-center justify-center border-2 border-line bg-ink/40 px-2 py-2">
-            {medal ? <MedalBadge medal={medal} size="lg" /> : <span className="text-center text-[11px] leading-tight text-muted">Bronz için {level.medals[2]} sn</span>}
+        {/* sonuç: polaroid + büyük süre + mühür */}
+        <div className="flex items-center gap-4">
+          <figure className="polaroid relative w-[84px] shrink-0 rotate-[-4deg] sm:w-[100px]">
+            <span className="tape" />
+            <Portrait id={heroId} className="w-full" />
+            <figcaption className="!text-[12px]">{heroName}</figcaption>
+          </figure>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold tracking-[0.22em] text-muted">{result.newBest ? 'YENİ REKOR' : best ? `REKORUN ${formatTime(best.timeMs)}` : 'SÜRE'}</p>
+            <p className="font-display text-5xl leading-none tabular-nums text-cream sm:text-6xl">{formatTime(result.timeMs)}</p>
+            <p className="mt-1.5 text-[13px] text-muted">
+              {result.deaths} düşüş · {found}/3 {level.item.toLocaleLowerCase('tr')}
+            </p>
           </div>
+          <Seal medal={medal} bronze={level.medals[2]} />
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-[1.1fr_1fr]">
-          <div className="grid content-start gap-2">
-            <p className="text-[11px] font-bold tracking-[0.2em] text-gold">DEFTERE EKLENEN HATIRALAR</p>
+        {/* hatıralar: büyük piksel simgeler */}
+        <p className="mt-5 flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+          HATIRALAR <span className="kilim h-[6px] flex-1 opacity-50" />
+        </p>
+        <div className="mt-2 grid grid-cols-3 gap-3">
+          {level.facts.map((f, i) => {
+            const now = result.items[i]
+            const have = now || best?.items[i]
+            return (
+              <div key={i} className={`relative flex flex-col items-center px-2 pb-2.5 pt-3 text-center ${have ? 'notebook' : 'border-2 border-dashed border-line/70'}`} style={have ? { transform: `rotate(${[-1.2, 0.8, -0.5][i]}deg)` } : undefined}>
+                <div className={`relative flex h-[68px] w-[68px] items-center justify-center rounded-full ${have ? 'bg-[#2a2438] shadow-[0_0_0_3px_#d9a441,0_4px_0_3px_rgba(0,0,0,0.25)]' : 'bg-ink/50'}`}>
+                  <ItemIcon city={level.city} taken={!!have} size={48} />
+                  {!have && <span className="absolute inset-0 flex items-center justify-center font-display text-2xl text-muted">?</span>}
+                </div>
+                <p className={`mt-1.5 font-display text-[15px] leading-tight ${have ? '' : 'text-muted'}`}>{level.item}</p>
+                <p className={`text-[10px] font-bold tracking-[0.12em] ${have ? 'text-[#8a3a24]' : 'text-muted'}`}>{have ? f.title.toLocaleUpperCase('tr') : 'SAKLI'}</p>
+                {now && <span className="absolute -right-2 -top-2 rotate-[12deg] border-2 border-[#c8302a] bg-[#f4ead8] px-1 text-[9px] font-bold tracking-[0.1em] text-[#c8302a]">BULUNDU</span>}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-5 grid gap-5 md:grid-cols-[1.1fr_1fr]">
+          <div className="grid content-start gap-2.5">
+            <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+              DEFTERE YAZILANLAR <span className="kilim h-[6px] flex-1 opacity-50" />
+            </p>
             {level.facts.map((f, i) => {
               const have = result.items[i] || best?.items[i]
+              if (!have) return null
               return (
-                <div key={i} className={have ? 'notebook px-3 py-2' : 'border-2 border-dashed border-line/70 px-3 py-2'} style={have ? { transform: `rotate(${[-0.6, 0.5, -0.3][i]}deg)` } : undefined}>
-                  <p className={`font-display text-sm ${have ? '' : 'text-cream'}`}>{have ? f.title : 'Boş Sayfa'}</p>
-                  <p className={`text-[12px] leading-snug ${have ? 'opacity-80' : 'text-muted'}`}>{have ? f.text : `Bu ${level.item.toLocaleLowerCase('tr')} şehirde bir yerde saklı. Tekrar oyna ve bul.`}</p>
+                <div key={i} className="notebook flex gap-3 px-3 py-2.5" style={{ transform: `rotate(${[-0.5, 0.4, -0.3][i]}deg)` }}>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2a2438] shadow-[0_0_0_2px_#d9a441]">
+                    <ItemIcon city={level.city} taken size={26} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-display text-[15px] leading-tight">{f.title}</p>
+                    <p className="mt-0.5 text-[12px] leading-snug opacity-80">{f.text}</p>
+                  </div>
                 </div>
               )
             })}
+            {found === 0 && !best?.items.some(Boolean) && (
+              <p className="border-2 border-dashed border-line/70 px-3 py-3 text-[12px] text-muted">Bu şehirde üç {level.item.toLocaleLowerCase('tr')} saklı. Bul, defterine yazılsın.</p>
+            )}
           </div>
           <div>
             <p className="text-[11px] font-bold tracking-[0.2em] text-gold">SKOR TABLOSU</p>
-            {status !== 'sent' && (
-              <form onSubmit={submit} className="mt-2 flex gap-2">
-                <label className="sr-only" htmlFor="nm">
-                  Adın
-                </label>
-                <input
-                  id="nm"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={16}
-                  minLength={2}
-                  required
-                  placeholder="Adın"
-                  className="min-w-0 flex-1 border-2 border-line bg-ink px-3 py-2 text-base text-cream outline-none focus:border-gold"
-                />
-                <button className="pixel-btn primary" disabled={status === 'sending'}>
-                  {status === 'sending' ? '…' : 'Gönder'}
+            {!player ? (
+              <div className="mt-2">
+                <p className="mb-2 text-[12px] text-muted">Skorunu tabloya yazmak için bir yolcu adı seç.</p>
+                <NameForm player={null} suggestion={heroName} submitLabel="Kaydet" autoFocus={false} onDone={(p) => onPlayer(p)} />
+              </div>
+            ) : status === 'sending' ? (
+              <p className="mt-2 text-[12px] text-muted">Skorun kaydediliyor…</p>
+            ) : status === 'error' ? (
+              <p className="mt-2 text-[12px] text-accent-2">
+                {err}{' '}
+                <button className="underline" onClick={() => void submit(player)}>
+                  Tekrar dene
                 </button>
-              </form>
-            )}
-            {status === 'error' && <p className="mt-1 text-[12px] text-accent-2">{err}</p>}
-            {status === 'sent' && <p className="mt-2 text-[12px] text-gold">Skorun kaydedildi.</p>}
-            <Top level={level.id} refresh={refresh} highlight={status === 'sent' ? name.trim() : ''} />
+              </p>
+            ) : status === 'sent' ? (
+              <p className="mt-2 text-[13px] text-gold">
+                {improved ? `${name}, skorun kaydedildi.` : `${name}, en iyi süren değişmedi.`} {rank ? <strong>Sıralaman: {rank}.</strong> : null}
+              </p>
+            ) : null}
+            <Top level={level.id} refresh={refresh} highlight={player?.name ?? ''} />
           </div>
         </div>
 
@@ -1051,7 +1150,7 @@ function Complete({
           <button className="pixel-btn py-2 text-sm" onClick={copy}>
             {copied ? 'Kopyalandı' : 'Bağlantıyı Kopyala'}
           </button>
-          <a className="pixel-btn py-2 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: name.trim() })}`} download={`memleket-${level.id}.png`}>
+          <a className="pixel-btn py-2 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '' })}`} download={`memleket-${level.id}.png`}>
             Kartı İndir
           </a>
         </div>
@@ -1072,6 +1171,26 @@ function Complete({
   )
 }
 
+function Seal({ medal, bronze }: { medal: 'altin' | 'gumus' | 'bronz' | null; bronze: number }) {
+  const look = medal ? { altin: ['ALTIN', '#e3a92c', '#9a6a12', '#3a2408'], gumus: ['GÜMÜŞ', '#c9d0da', '#7c8696', '#232a36'], bronz: ['BRONZ', '#c97a44', '#7a4220', '#2a1408'] }[medal] : null
+  if (!look)
+    return (
+      <div className="flex h-[76px] w-[76px] shrink-0 rotate-[-8deg] flex-col items-center justify-center rounded-full border-2 border-dashed border-line text-center text-[10px] leading-tight text-muted">
+        Bronz
+        <br />
+        {bronze} sn
+      </div>
+    )
+  return (
+    <div className="flex h-[84px] w-[84px] shrink-0 rotate-[-10deg] items-center justify-center rounded-full shadow-[0_5px_0_rgba(0,0,0,0.35)]" style={{ background: look[1], border: `5px solid ${look[2]}` }} title={`${look[0]} madalya`}>
+      <div className="flex h-[60px] w-[60px] flex-col items-center justify-center rounded-full border-2 border-dashed" style={{ borderColor: look[2], color: look[3] }}>
+        <span className="font-display text-[17px] leading-none">{look[0]}</span>
+        <span className="mt-0.5 text-[8px] font-bold tracking-[0.12em]">MADALYA</span>
+      </div>
+    </div>
+  )
+}
+
 function Top({ level, refresh, highlight }: { level: string; refresh: number; highlight: string }) {
   const [rows, setRows] = useState<ScoreRow[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -1089,15 +1208,14 @@ function Top({ level, refresh, highlight }: { level: string; refresh: number; hi
   if (failed) return <p className="mt-2 text-[12px] text-muted">Skor tablosuna şu an ulaşılamıyor.</p>
   if (!rows) return <p className="mt-2 text-[12px] text-muted">Yükleniyor…</p>
   if (!rows.length) return <p className="mt-2 text-[12px] text-muted">Henüz skor yok. İlk sen ol!</p>
+  const mine = rows.findIndex((r) => highlight && r.name.toLocaleLowerCase('tr') === highlight.toLocaleLowerCase('tr'))
   return (
     <ol className="mt-2 grid gap-1 text-[13px] tabular-nums">
       {rows.map((r, i) => (
-        <li key={`${r.name}-${i}`} className={`grid grid-cols-[1.6rem_1fr_auto_auto] gap-2 px-2 py-1 ${r.name === highlight ? 'bg-accent/25' : i % 2 ? '' : 'bg-panel-2/60'}`}>
-          <span className="text-muted">{i + 1}.</span>
+        <li key={`${r.name}-${i}`} className={`grid grid-cols-[1.6rem_1fr_auto_auto] gap-2 px-2 py-1 ${i === mine ? 'bg-accent/25 outline outline-2 outline-accent/60' : i % 2 ? '' : 'bg-panel-2/60'}`}>
+          <span className={i < 3 ? 'font-bold text-gold' : 'text-muted'}>{i + 1}.</span>
           <span className="truncate text-cream">{r.name}</span>
-          <span className="text-muted">
-            ✕{r.deaths} · {r.items}/3
-          </span>
+          <span className="text-muted">{r.cities !== undefined ? `${r.cities} şehir · ${r.items} hatıra` : `✕${r.deaths} · ${r.items}/3`}</span>
           <span className="text-cream">{formatTime(r.timeMs)}</span>
         </li>
       ))}
@@ -1105,18 +1223,23 @@ function Top({ level, refresh, highlight }: { level: string; refresh: number; hi
   )
 }
 
-function ScoreBoard({ initial }: { initial: number }) {
-  const [idx, setIdx] = useState(initial)
+function ScoreBoard({ initial, me }: { initial: number; me: string }) {
+  const [idx, setIdx] = useState(-1)
+  void initial
   return (
     <div>
       <div className="mt-3 flex flex-wrap gap-1.5">
+        <button className={`pixel-btn px-2.5 py-1.5 text-[12px] ${idx === -1 ? 'primary' : ''}`} onClick={() => setIdx(-1)}>
+          ★ Genel
+        </button>
         {LEVELS.map((l, i) => (
           <button key={l.id} className={`pixel-btn px-2.5 py-1.5 text-[12px] ${i === idx ? 'primary' : ''}`} onClick={() => setIdx(i)}>
             {String(l.plate).padStart(2, "0")} {l.name}
           </button>
         ))}
       </div>
-      <Top level={LEVELS[idx].id} refresh={0} highlight="" />
+      {idx === -1 && <p className="mt-3 text-[12px] text-muted">Bitirilen şehir sayısı, sonra toplam süre.</p>}
+      <Top level={idx === -1 ? 'genel' : LEVELS[idx].id} refresh={0} highlight={me} />
     </div>
   )
 }
