@@ -77,8 +77,8 @@ export class InputManager {
     i.jump = JUMP_KEYS.some((c) => k.has(c)) || this.touch.jump
 
     // dokunmatik joystick
-    if (this.touch.x < -0.35) i.left = true
-    if (this.touch.x > 0.35) i.right = true
+    if (this.touch.x < -0.28) i.left = true
+    if (this.touch.x > 0.28) i.right = true
     if (this.touch.y < -0.5) i.up = true
     if (this.touch.y > 0.5) i.down = true
 

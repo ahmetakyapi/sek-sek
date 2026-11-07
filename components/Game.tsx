@@ -245,13 +245,13 @@ export default function Game() {
 
   useEffect(() => {
     if (!toast) return
-    const id = setTimeout(() => setToast(null), 6500)
+    const id = setTimeout(() => setToast(null), 2600)
     return () => clearTimeout(id)
   }, [toast])
 
   useEffect(() => {
     if (!quip) return
-    const id = setTimeout(() => setQuip(null), 1800)
+    const id = setTimeout(() => setQuip(null), 1400)
     return () => clearTimeout(id)
   }, [quip])
 
@@ -384,30 +384,34 @@ export default function Game() {
               <div className="kilim mt-3 w-[min(520px,80vw)]" />
             </div>
           )}
-          {(hint || npc >= 0) && (
+          {!toast && (hint || npc >= 0) && (
             <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
               {npc >= 0 && level.npcs[npc] ? (
-                <div key={`n${npc}`} className="rise max-w-md border-2 border-gold/70 bg-ink/90 px-4 py-2.5">
-                  <p className="font-display text-sm text-gold">{level.npcs[npc].name}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-cream">{level.npcs[npc].text}</p>
+                <div key={`n${npc}`} className="rise max-w-sm border-2 border-gold/70 bg-ink/90 px-3 py-2 sm:max-w-md sm:px-4 sm:py-2.5">
+                  <p className="font-display text-[13px] text-gold sm:text-sm">{level.npcs[npc].name}</p>
+                  <p className="mt-0.5 text-[12px] leading-snug text-cream sm:text-[13px]">{level.npcs[npc].text}</p>
                 </div>
               ) : (
-                <p className="rise max-w-md border-2 border-[#c79a62] bg-[#3a2a1e]/90 px-4 py-2.5 text-center text-[13px] leading-snug text-cream">{hint}</p>
+                <p className="rise max-w-sm border-2 border-[#c79a62] bg-[#3a2a1e]/90 px-3 py-2 text-center text-[12px] leading-snug text-cream sm:max-w-md sm:px-4 sm:py-2.5 sm:text-[13px]">{hint}</p>
               )}
             </div>
           )}
           {quip && (
             <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[38%] z-10 flex justify-center px-4">
-              <p className="rise font-display text-xl text-cream [text-shadow:0_2px_0_#120f1a,0_0_12px_#120f1a]">{quip.text}</p>
+              <p className="rise font-display text-base text-cream/90 [text-shadow:0_2px_0_#120f1a,0_0_12px_#120f1a] sm:text-xl">{quip.text}</p>
             </div>
           )}
           {toast && (
-            <div key={toast.key} className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+160px)] z-10 flex justify-center px-4 sm:bottom-8">
-              <div className="rise pixel-panel max-w-md px-4 py-3">
-                <p className="text-[11px] font-bold tracking-[0.2em] text-gold">HATIRA · {toast.item.toLocaleUpperCase('tr')}</p>
-                <p className="mt-1 font-display text-lg text-cream">{toast.title}</p>
-                <p className="mt-1 text-[13px] leading-snug text-muted">{toast.text}</p>
-              </div>
+            <div key={toast.key} className="toast-strip pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+62px)] z-10 flex justify-center px-4">
+              <p className="flex max-w-[92vw] items-center gap-2 bg-ink/85 py-1.5 pl-1.5 pr-3 text-[12px] text-cream [box-shadow:0_-2px_0_0_#d9a441,0_2px_0_0_#d9a441,-2px_0_0_0_#d9a441,2px_0_0_0_#d9a441] sm:text-[13px]">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2a2438]">
+                  <ItemIcon city={level.city} taken size={20} />
+                </span>
+                <span className="truncate">
+                  <strong className="font-display text-gold">{toast.item} bulundu</strong>
+                  <span className="text-muted"> · {toast.title}</span>
+                </span>
+              </p>
             </div>
           )}
           {cpToast > 0 && Date.now() - cpToast < 1800 && (
@@ -935,16 +939,16 @@ function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hu
         <span className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-gold/70 bg-panel-2 min-[400px]:block">
           <Portrait id={hero} className="-mt-[9px] w-[66px] -translate-x-[13px]" />
         </span>
-        <span className="plate text-lg">
+        <span className="plate text-[15px] sm:text-lg">
           <span>{String(level.plate).padStart(2, "0")}</span>
         </span>
         <div className="min-w-0 leading-tight">
-          <p className="truncate font-display text-base text-cream sm:text-lg">{level.name}</p>
+          <p className="truncate font-display text-[15px] text-cream sm:text-lg">{level.name}</p>
           <p className="truncate text-[10px] font-bold tracking-[0.06em] text-muted">{(level.nickname ?? level.difficulty).toLocaleUpperCase('tr')}</p>
         </div>
       </div>
       <div className="pointer-events-auto flex shrink-0 items-center gap-2">
-        <div className="flex items-center gap-3 bg-ink/55 px-3 py-2 text-sm font-semibold tabular-nums text-cream">
+        <div className="flex items-center gap-2 bg-ink/55 px-2 py-2 text-sm font-semibold tabular-nums text-cream sm:gap-3 sm:px-3">
           <span className="flex gap-1" aria-label={`${hud.items.filter(Boolean).length} / 3 hatıra`}>
             {hud.items.map((v, i) => (
               <ItemIcon key={i} city={level.city} taken={v} />

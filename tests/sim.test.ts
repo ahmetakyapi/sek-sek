@@ -93,3 +93,28 @@ describe('fizik', () => {
     expect(w.complete).toBe(true)
   })
 })
+
+describe('kenar yardımı', () => {
+  it('kenardan bilerek yürüyen oyuncu geri çekilmez', () => {
+    const w = new World({ ...LEVELS[0], map: ['            ', ' P          ', '#####       ', '#####       ', '            ', '            ', '            ', '            '] })
+    for (let i = 0; i < 120; i++) w.step(1 / 120, { ...emptyInput(), right: true })
+    expect(w.player.y).toBeGreaterThan(3 * 16)
+  })
+
+  it('zemini birkaç piksel ıskalayan düşüş kenara konar', () => {
+    const map = ['                ', '                ', ' P              ', '        ########', '        ########']
+    const w = new World({ ...LEVELS[0], map })
+    const ledgeX = 8 * 16
+    const p = w.player
+    // kutunun sağ kenarı zeminin 3 piksel solunda, zeminin hemen üstünden düşüyor
+    p.x = ledgeX - p.w - 3
+    p.y = 3 * 16 - p.h - 2
+    p.vx = 0
+    p.vy = 160
+    p.facing = 1
+    p.grounded = false
+    for (let i = 0; i < 6; i++) w.step(1 / 120, emptyInput())
+    expect(p.grounded).toBe(true)
+    expect(p.x + p.w).toBeGreaterThan(ledgeX)
+  })
+})

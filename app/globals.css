@@ -385,3 +385,12 @@ figcaption {
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
   }
 }
+
+@keyframes toast-strip {
+  0% { opacity: 0; transform: translateY(-6px); }
+  10%, 82% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+.toast-strip {
+  animation: toast-strip 2.6s ease-out both;
+}

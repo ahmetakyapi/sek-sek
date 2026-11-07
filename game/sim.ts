@@ -25,8 +25,12 @@ export const PHYS = {
   decelIce: 70,
   jumpV: 312,
   lowJumpMul: 1.9,
-  coyote: 0.1,
-  buffer: 0.13,
+  coyote: 0.12,
+  buffer: 0.16,
+  /** kenar yardımı: kıl payı kaçırılan zemine yatayda bu kadar piksel çekilir */
+  ledgeAssist: 4,
+  /** tavan köşesine kafa sürtünce bu kadar piksel yana kayar */
+  cornerAssist: 4,
   wallJumpVX: 150,
   wallJumpVY: 292,
   wallLock: 0.14,
@@ -124,7 +128,8 @@ interface CrumbleState {
   respawn: number
 }
 
-const PW = 10
+// sprite gövdesiyle aynı genişlik: ayak görünürde zemindeyse fizikte de zeminde
+const PW = 12
 const PH = 14
 
 export class World {
@@ -593,35 +598,21 @@ export class World {
     p.x = nx
   }
 
-  private moveY(dy: number, prevBottom: number) {
+  /** Verilen x için iniş noktası (katı zemin, tek yönlü tile, hareketli platform) */
+  private landingAt(x: number, ny: number, prevBottom: number): { y: number; plat: Platform | null } | null {
     const p = this.player
-    let ny = p.y + dy
-    if (dy < 0) {
-      if (this.boxHitsSolid(p.x, ny, p.w, p.h)) {
-        ny = Math.floor(ny / T) * T + T
-        if (this.boxHitsSolid(p.x, ny, p.w, p.h)) ny = p.y
-        p.vy = 0
-        if (p.dashTime > 0) p.dashTime = 0
-      }
-      p.y = ny
-      p.onPlatform = null
-      return
-    }
-
-    // aşağı / sabit
     const bottom = ny + p.h
     let landY: number | null = null
     let landPlat: Platform | null = null
-
-    if (this.boxHitsSolid(p.x, ny, p.w, p.h)) {
-      landY = Math.floor(bottom / T) * T - p.h
-      if (this.boxHitsSolid(p.x, landY, p.w, p.h)) landY = p.y
+    if (this.boxHitsSolid(x, ny, p.w, p.h)) {
+      const cand = Math.floor(bottom / T) * T - p.h
+      // yalnızca tepesine düşülen zemin sayılır (yandan çarpma iniş değildir)
+      if (cand + p.h >= prevBottom - 0.5 && !this.boxHitsSolid(x, cand, p.w, p.h)) landY = cand
+      else if (x === p.x) landY = this.boxHitsSolid(x, cand, p.w, p.h) ? p.y : cand
     }
-
-    // tek yönlü tile'lar
     if (p.dropTimer <= 0) {
-      const x0 = Math.floor(p.x / T)
-      const x1 = Math.floor((p.x + p.w - 0.001) / T)
+      const x0 = Math.floor(x / T)
+      const x1 = Math.floor((x + p.w - 0.001) / T)
       const tyB = Math.floor((bottom - 0.001) / T)
       for (let tx = x0; tx <= x1; tx++) {
         if (this.tile(tx, tyB) === ONEWAY) {
@@ -632,9 +623,8 @@ export class World {
           }
         }
       }
-      // hareketli platformlar
       for (const pl of this.platforms) {
-        if (p.x + p.w <= pl.x || p.x >= pl.x + pl.w) continue
+        if (x + p.w <= pl.x || x >= pl.x + pl.w) continue
         const top = pl.y
         if (prevBottom <= top + Math.max(1, Math.abs(pl.dy) + 1) && bottom >= top) {
           const cand = top - p.h
@@ -645,15 +635,61 @@ export class World {
         }
       }
     }
+    return landY === null ? null : { y: landY, plat: landPlat }
+  }
 
-    if (landY !== null) {
-      p.y = landY
+  private moveY(dy: number, prevBottom: number) {
+    const p = this.player
+    let ny = p.y + dy
+    if (dy < 0) {
+      if (this.boxHitsSolid(p.x, ny, p.w, p.h)) {
+        // köşe düzeltmesi: kafa yalnızca tavanın köşesine değiyorsa yana kay, yükselmeye devam et
+        let slid = false
+        for (let n = 1; n <= PHYS.cornerAssist && !slid; n++) {
+          for (const dir of [1, -1]) {
+            if (!this.boxHitsSolid(p.x + dir * n, ny, p.w, p.h) && !this.boxHitsSolid(p.x + dir * n, p.y, p.w, p.h)) {
+              p.x += dir * n
+              slid = true
+              break
+            }
+          }
+        }
+        if (!slid) {
+          ny = Math.floor(ny / T) * T + T
+          if (this.boxHitsSolid(p.x, ny, p.w, p.h)) ny = p.y
+          p.vy = 0
+          if (p.dashTime > 0) p.dashTime = 0
+        }
+      }
+      p.y = ny
+      p.onPlatform = null
+      return
+    }
+
+    let hit = this.landingAt(p.x, ny, prevBottom)
+    // kenar yardımı: düşerken zemini birkaç piksel ıskaladıysan üstüne al
+    // yalnızca belirgin düşüşte ve gidilen yöne doğru: kenardan bilerek inen geri çekilmez
+    if (!hit && p.vy > 60 && p.dashTime <= 0) {
+      const dir = Math.abs(p.vx) > 5 ? Math.sign(p.vx) : p.facing
+      for (let n = 1; n <= PHYS.ledgeAssist; n++) {
+        const nx = p.x + dir * n
+        if (this.boxHitsSolid(nx, p.y, p.w, p.h)) break
+        const h = this.landingAt(nx, ny, prevBottom)
+        if (h) {
+          p.x = nx
+          hit = h
+          break
+        }
+      }
+    }
+
+    if (hit) {
+      p.y = hit.y
       p.vy = 0
       p.grounded = true
-      p.onPlatform = landPlat
+      p.onPlatform = hit.plat
       if (p.dashTime > 0 && p.dashDir[1] > 0) p.dashTime = 0
-      // buz kontrolü
-      if (!landPlat) {
+      if (!hit.plat) {
         const ty = Math.floor((p.y + p.h + 1) / T)
         const cx = Math.floor((p.x + p.w / 2) / T)
         p.onIce = this.tile(cx, ty) === ICE
