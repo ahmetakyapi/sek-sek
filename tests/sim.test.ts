@@ -30,6 +30,7 @@ describe('bölüm verisi', () => {
       ['Mardin', 47],
       ['Malatya', 44],
       ['Çorum', 19],
+      ['Ordu', 52],
       ['Sivas', 58],
       ['Ardahan', 75],
       ['Bayburt', 69],

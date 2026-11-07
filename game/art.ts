@@ -75,7 +75,7 @@ export interface CityStyle {
   accent: string
   water: [string, string, string]
   spike: [string, string]
-  weather: 'gulls' | 'dust' | 'petals' | 'leaves' | 'snow' | 'storm'
+  weather: 'gulls' | 'dust' | 'petals' | 'leaves' | 'snow' | 'storm' | 'rain'
   enemyGround: string
   enemyFly: string
   animal: string
@@ -233,6 +233,25 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyGround: 'scorpion',
     enemyFly: 'bee',
     animal: 'lion',
+  },
+  ordu: {
+    sky: ['#46606e', '#86a2a6', '#cfdcd2'],
+    sun: null,
+    far: '#5c7e6c',
+    mid: '#40624e',
+    near: '#2a4436',
+    tileTop: '#5aa04a',
+    tile: '#5a4a3a',
+    tileDark: '#3e3228',
+    tileLight: '#7a6450',
+    plank: '#6a5040',
+    accent: '#d6403a',
+    water: ['#2a5a6a', '#1c4250', '#a8d4dc'],
+    spike: ['#3a5a2a', '#1e3216'],
+    weather: 'rain',
+    enemyGround: 'boar',
+    enemyFly: 'gull',
+    animal: 'cow',
   },
   sivas: {
     sky: ['#3a4a6e', '#8ea3c4', '#d8e2ee'],
@@ -690,6 +709,45 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    case 'ordu':
+      return {
+        far: layer((c) => {
+          hills(c, s.far, B - 120, 40, 3, 52)
+          rect(c, 0, B - 74, LAYER_W, 74, '#2f5866')
+          for (let i = 0; i < 26; i++) rect(c, (i * 53) % LAYER_W, B - 70 + ((i * 11) % 40), 14 + (i % 3) * 8, 1, 'rgba(220,240,240,0.35)')
+        }),
+        mid: layer((c) => {
+          // Boztepe ve teleferik hattı
+          const r = rng(521)
+          for (let x = 0; x < LAYER_W; x++) {
+            const h = B - 70 - Math.max(0, 70 - Math.abs(x - 470) * 0.5)
+            rect(c, x, h, 1, B - h, s.mid)
+          }
+          for (let x = 60; x < 470; x += 2) rect(c, x, B - 120 - (x - 60) * 0.08, 2, 1, '#2a3a30')
+          for (const cx of [160, 300]) {
+            const y = B - 120 - (cx - 60) * 0.08
+            rect(c, cx, y, 1, 6, '#2a3a30')
+            rect(c, cx - 5, y + 6, 11, 8, '#d6403a')
+            rect(c, cx - 4, y + 8, 9, 3, '#cfe8f0')
+          }
+          // fındık bahçesi sıraları
+          for (let row = 0; row < 4; row++) for (let x = (row * 13) % 20; x < 360; x += 14) disc(c, x, B - 60 + row * 10 + Math.floor(r() * 3), 5, '#3a6a3a')
+          // Yason Burnu kilisesi
+          rect(c, 560, B - 92, 20, 18, s.mid)
+          for (let i = 0; i < 8; i++) rect(c, 560 + i * 1.2, B - 92 - i, 20 - i * 2.4, 1, s.mid)
+          rect(c, 569, B - 108, 2, 8, s.mid)
+          rect(c, 566, B - 105, 8, 2, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(522)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          for (let x = 0; x < LAYER_W; x += 16 + Math.floor(r() * 10)) {
+            disc(c, x + 8, base - 8, 9, s.near)
+            for (let i = 0; i < 4; i++) rect(c, x + 2 + Math.floor(r() * 12), base - 14 + Math.floor(r() * 8), 2, 2, '#8a5a2a')
+          }
+        }),
+      }
     case 'sivas':
       return {
         far: layer((c) => {
@@ -845,6 +903,13 @@ export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string,
       ['............', '.ww....ww...', '..wwkkkww...', 'r..kgkkk....', '.rrkkkkkk...', '..k..k..k...', '.k...k...k..', '............'],
     ],
   },
+  boar: {
+    pal: { b: '#5a4030', B: '#3a2a20', w: '#f4efe6', e: '#e8c84a', k: '#1d1a22' },
+    frames: [
+      ['.B..........', 'BBbbbbbbbB..', 'kebbbbbbbbB.', 'wbbbbbbbbbbB', '.wbbbbbbbbB.', '..B.B..B.B..', '..k.k..k.k..', '............', '............', '............'],
+      ['.B..........', 'BBbbbbbbbB..', 'kebbbbbbbbB.', 'wbbbbbbbbbbB', '.wbbbbbbbbB.', '.B..B.B...B.', '.k...k.k..k.', '............', '............', '............'],
+    ],
+  },
   crab: {
     pal: { r: '#e0503a', R: '#a8302a', e: '#1d1a22', w: '#f4efe6' },
     frames: [
@@ -924,6 +989,10 @@ export const ITEM_ART: Record<CityKey, { rows: string[]; pal: Record<string, str
   corum: {
     pal: { c: '#f2e2b4', C: '#cdb37a', d: '#a88a52' },
     rows: ['..........', '..cc..cc..', '.ccCccccC.', '.cCdcCCdc.', '..cc.ccc..', '.cc.cc.cc.', 'ccCcCCcCCc', '.cdc.cdc..', '..........', '..........'],
+  },
+  ordu: {
+    pal: { b: '#a8682c', B: '#7a4418', l: '#d89a5a', g: '#5a9a3a', G: '#3a6a24' },
+    rows: ['...gGg....', '..gGGgg...', '...Gg.....', '...bbbb...', '..blllbb..', '.bllbbbbB.', '.blbbbbbB.', '.bbbbbbBB.', '..BbbbBB..', '...BBBB...'],
   },
   sivas: {
     pal: { g: '#d9a441', G: '#a87a22', k: '#2a2220', w: '#e8d6a8' },

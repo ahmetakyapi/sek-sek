@@ -241,7 +241,8 @@ export class Renderer {
         }
         break
       }
-      case 'malatya': {
+      case 'malatya':
+      case 'ordu': {
         for (let i = 0; i < 3; i++) rect(c, x + Math.floor(r() * 14), y + Math.floor(r() * 14), 2, 1, i ? s.tileDark : s.tileLight)
         if (open) {
           rect(c, x, y, T, 4, s.tileTop)
@@ -529,6 +530,11 @@ export class Renderer {
           a.vy = 8 + Math.cos(a.phase * 1.5) * 4
           color = a.size > 1 ? 'rgba(255,240,245,0.9)' : 'rgba(255,190,120,0.9)'
           break
+        case 'rain':
+          a.vx = -30
+          a.vy = 180 + a.size * 40
+          color = 'rgba(190,215,235,0.55)'
+          break
         case 'leaves':
           a.vx = 12 + Math.sin(a.phase * 2) * 8
           a.vy = 6 + Math.cos(a.phase) * 4
@@ -539,7 +545,8 @@ export class Renderer {
       a.y += a.vy * dt
       const px = (((a.x - cx * 0.6) % W) + W) % W
       const py = (((a.y - cy * 0.6) % Hh) + Hh) % Hh
-      rect(b, px, py, a.size, a.size, color)
+      if (s.weather === 'rain') rect(b, px, py, 1, 4 + a.size * 2, color)
+      else rect(b, px, py, a.size, a.size, color)
     }
     if (s.weather === 'storm') {
       // ikinci, daha yoğun kar katmanı
@@ -580,7 +587,11 @@ export class Renderer {
           break
         }
         case 't': {
-          if (this.city === 'sivas' || this.city === 'bayburt') {
+          if (this.city === 'izmir' || this.city === 'adana') {
+            for (let i = 0; i < 26; i++) rect(b, x + 7 + Math.round(Math.sin(i / 9) * 2), bot - i, 2, 1, '#6a4a30')
+            for (const [dx, dy] of [[-1, 0], [1, 0], [-1, 0.6], [1, 0.6], [-0.3, -0.7], [0.3, -0.7]] as const)
+              for (let k = 0; k < 10; k++) rect(b, x + 8 + dx * k, bot - 26 + dy * k + (k * k) / 22, 2, 1, '#3f7a3a')
+          } else if (this.city === 'sivas' || this.city === 'bayburt' || this.city === 'ardahan') {
             for (let i = 0; i < 26; i++) {
               const hw = Math.floor((i / 26) * 9)
               rect(b, x + 8 - hw, bot - 30 + i, hw * 2 + 1, 1, '#2f4a3e')
@@ -597,6 +608,9 @@ export class Renderer {
         }
         case 'k':
           this.drawAnimal(b, x, bot)
+          break
+        case 'z':
+          this.drawLandmarkProp(b, x, bot)
           break
         case 'w': {
           rect(b, x + 4, bot - 12, 8, 10, s.tileDark)
@@ -707,6 +721,16 @@ export class Renderer {
         }
         rect(b, x - 6, bot - 28, 30, 3, '#e86a8a')
         for (let i = 0; i < 30; i += 6) rect(b, x - 6 + i, bot - 25, 3, 2, '#fbf6ec')
+        break
+      }
+      case 'ordu': {
+        // fındık çuvalları ve harman
+        rect(b, x - 8, bot - 2, 34, 2, '#7a8a9a')
+        for (let i = 0; i < 14; i++) rect(b, x - 6 + i * 2, bot - 4 - (i % 2), 2, 2, i % 3 ? '#a8682c' : '#7a4418')
+        for (const sx of [x + 14, x + 20]) {
+          rect(b, sx, bot - 12, 6, 10, '#c8b48a')
+          rect(b, sx + 1, bot - 13, 4, 1, '#a8682c')
+        }
         break
       }
       case 'adana': {
@@ -841,11 +865,116 @@ export class Renderer {
     }
   }
 
+  /** Şehrin kendine özgü küçük nesnesi: bölümü her yerde o şehre bağlar. */
+  private drawLandmarkProp(b: Ctx, x: number, bot: number) {
+    switch (this.city) {
+      case 'istanbul': {
+        // çay masası: ince belli bardaklar
+        rect(b, x + 1, bot - 9, 14, 2, '#8a5a3a')
+        rect(b, x + 7, bot - 7, 2, 7, '#5a3c26')
+        for (const cx of [x + 3, x + 10]) {
+          rect(b, cx, bot - 14, 3, 5, 'rgba(230,240,255,0.6)')
+          rect(b, cx, bot - 12, 3, 3, '#b8381e')
+          rect(b, cx - 1, bot - 10, 5, 1, '#e8e2d8')
+        }
+        break
+      }
+      case 'kocaeli':
+        for (let i = 0; i < 3; i++) {
+          disc(b, x + 4 + i * 5, bot - 4, 4, '#f2ece0')
+          disc(b, x + 4 + i * 5, bot - 4, 1, '#a8a090')
+        }
+        disc(b, x + 7, bot - 11, 4, '#e8e0d0')
+        disc(b, x + 7, bot - 11, 1, '#a8a090')
+        break
+      case 'izmir':
+        // Kordon bankı
+        rect(b, x - 2, bot - 8, 20, 2, '#8a5a3a')
+        rect(b, x - 2, bot - 12, 20, 2, '#8a5a3a')
+        rect(b, x, bot - 6, 2, 6, '#3a3440')
+        rect(b, x + 14, bot - 6, 2, 6, '#3a3440')
+        break
+      case 'ankara':
+        // taş çeşme
+        rect(b, x, bot - 18, 16, 18, '#a6887e')
+        rect(b, x + 3, bot - 15, 10, 9, '#5c4844')
+        disc(b, x + 8, bot - 15, 5, '#5c4844', true)
+        rect(b, x + 7, bot - 9, 2, 3, '#9aa3b5')
+        rect(b, x + 7, bot - 6 + (Math.floor(this.t * 6) % 2), 1, 3, '#8ad0f0')
+        rect(b, x - 1, bot - 19, 18, 2, '#c2b0a6')
+        break
+      case 'adana':
+        // pamuk balyası yığını
+        for (const [dx, dy] of [[0, 0], [9, 0], [4, 7]] as const) {
+          rect(b, x + dx, bot - 7 - dy, 9, 7, '#f4f2ec')
+          rect(b, x + dx, bot - 5 - dy, 9, 1, '#c8b48a')
+          rect(b, x + dx + 3, bot - 7 - dy, 1, 7, '#c8b48a')
+        }
+        break
+      case 'mardin':
+        // asılı kilim
+        rect(b, x, bot - 26, 16, 1, '#5a3c26')
+        rect(b, x + 1, bot - 25, 14, 20, '#a8302a')
+        rect(b, x + 3, bot - 23, 10, 16, '#e0a23a')
+        rect(b, x + 6, bot - 19, 4, 8, '#2a3a6a')
+        for (let i = 1; i < 15; i += 2) rect(b, x + i, bot - 5, 1, 2, '#e8dcc0')
+        break
+      case 'malatya':
+        for (let i = 0; i < 3; i++) {
+          rect(b, x + i * 5, bot - 6, 4, 6, '#a86a38')
+          disc(b, x + 2 + i * 5, bot - 7, 1, '#f39a2e')
+        }
+        break
+      case 'corum':
+        // Hitit stelinde güneş kursu
+        rect(b, x + 3, bot - 22, 10, 22, '#8a7a5a')
+        rect(b, x + 2, bot - 2, 12, 2, '#6e6250')
+        disc(b, x + 8, bot - 15, 4, '#b8a058')
+        disc(b, x + 8, bot - 15, 2, '#8a7a5a')
+        for (let i = 0; i < 4; i++) rect(b, x + 5 + i * 2, bot - 8, 1, 4, '#6e6250')
+        break
+      case 'ordu':
+        for (const dx of [0, 7]) {
+          rect(b, x + dx, bot - 10, 7, 10, '#c8b48a')
+          rect(b, x + dx + 1, bot - 11, 5, 1, '#a8682c')
+          rect(b, x + dx + 2, bot - 12, 3, 1, '#7a4418')
+        }
+        break
+      case 'sivas':
+        // Divriği taş işlemesi pano
+        rect(b, x, bot - 20, 16, 20, '#9a9fb0')
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) disc(b, x + 3 + i * 3.5, bot - 16 + j * 4, 1, '#555a6a')
+        rect(b, x - 1, bot - 21, 18, 2, '#f4f8ff')
+        break
+      case 'ardahan':
+        // kardan adam
+        disc(b, x + 8, bot - 5, 5, '#f6faff')
+        disc(b, x + 8, bot - 13, 4, '#f6faff')
+        rect(b, x + 7, bot - 14, 1, 1, '#1d1a22')
+        rect(b, x + 9, bot - 14, 1, 1, '#1d1a22')
+        rect(b, x + 10, bot - 13, 3, 1, '#f28c28')
+        rect(b, x + 4, bot - 10, 9, 2, '#d6403a')
+        rect(b, x + 5, bot - 20, 7, 3, '#2a2420')
+        break
+      case 'bayburt':
+        // tabure üstünde kopuz
+        rect(b, x + 2, bot - 6, 12, 2, '#5e4634')
+        rect(b, x + 3, bot - 4, 2, 4, '#5e4634')
+        rect(b, x + 11, bot - 4, 2, 4, '#5e4634')
+        disc(b, x + 6, bot - 10, 4, '#a8693a')
+        rect(b, x + 9, bot - 18, 2, 8, '#7a4a24')
+        break
+    }
+  }
+
   private drawAnimal(b: Ctx, x: number, bot: number) {
     const tail = Math.sin(this.t * 3) > 0 ? 1 : 0
     switch (CITY[this.city].animal) {
       case 'cat':
         sprite(b, ['.o.o......', '.ooo......', '.oeo.....' + (tail ? 'o' : '.'), '.oooo...o' + (tail ? '.' : 'o'), '..ooooooo.', '..ooOooOo.', '..o.o..o..'], { o: '#e0903a', O: '#b06a24', e: '#2a2a2a' }, x + 2, bot - 7)
+        break
+      case 'cow':
+        sprite(b, ['kk..........', 'kwk.........', 'wwwwkwwwkww.', '.wwkkwwwkkww' + (tail ? 'k' : '.'), '..wwwwwwwwww', '..wkw...wkw.', '..k.k...k.k.'], { w: '#f4efe6', k: '#2a2420' }, x, bot - 7)
         break
       case 'flamingo':
         sprite(b, ['..pp...', '.pppk..', '..p....', '..p....', '.ppp...', 'ppppp..', '.pppp..', '...l...', '...l...', '...l...', '..ll...'], { p: '#f29aa8', k: '#2a2220', l: '#d8707a' }, x + 4, bot - 11, tail > 0)
@@ -947,6 +1076,13 @@ export class Renderer {
       rect(b, pl.x, pl.y, pl.w, 1, lighten(s.plank))
       rect(b, pl.x, pl.y + 5, pl.w, 1, 'rgba(0,0,0,0.4)')
       for (let i = 4; i < pl.w; i += 8) rect(b, pl.x + i, pl.y + 2, 1, 2, 'rgba(0,0,0,0.25)')
+      if (this.city === 'ordu') {
+        // teleferik kabini: askı ve kırmızı gövde
+        rect(b, pl.x + pl.w / 2 - 1, pl.y - 30, 2, 30, '#2a3a30')
+        rect(b, pl.x - 30, pl.y - 31, pl.w + 60, 1, '#2a3a30')
+        rect(b, pl.x + 4, pl.y + 6, pl.w - 8, 10, '#d6403a')
+        rect(b, pl.x + 7, pl.y + 8, pl.w - 14, 4, '#cfe8f0')
+      }
       if (this.city === 'istanbul') {
         // iskele dubaları
         rect(b, pl.x + 2, pl.y + 6, 6, 3, '#e8794a')
@@ -1137,7 +1273,8 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   adana: 'MARDİN',
   mardin: 'MALATYA',
   malatya: 'ÇORUM',
-  corum: 'SİVAS',
+  corum: 'ORDU',
+  ordu: 'SİVAS',
   sivas: 'ARDAHAN',
   ardahan: 'BAYBURT',
   bayburt: null,

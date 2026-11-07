@@ -18,6 +18,8 @@ const SCALES: Record<CityKey, { root: number; steps: number[]; meter: number[]; 
   malatya: { root: 62, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.15 },
   // Rast'a yakın (Sol)
   corum: { root: 55, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 2], tempo: 0.21 },
+  // Karadeniz horonu, 7/8
+  ordu: { root: 62, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 3], tempo: 0.13 },
   // Hüseyni'ye yakın (La)
   sivas: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.16 },
   // Kafkas havası, Uşşak'a yakın

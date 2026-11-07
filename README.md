@@ -15,6 +15,7 @@ harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üre
 | 2 | Mardin · Taş Teraslar | 47 | Orta | Akrepler, çatlak taş, duvar tırmanışı | Telkari |
 | 3 | Malatya (Erik Diyarı) · Kayısı Bahçeleri | 44 | Orta | Kayısı kasası (yay), dikey platform, arılar | Kayısı |
 | 4 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
+| 4 | Ordu · Fındık ve Boztepe | 52 | Zor | Dalgalı sahil, yaban domuzları, Boztepe teleferiği | Fındık |
 | 5 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, minareler arası tırmanış, kuzgunlar | Kangal rozeti |
 | 6 | Ardahan · Donmuş Çıldır | 75 | Zor | Kırılan göl buzu, kaygan adacıklar, rüzgâr | Kızak Çanı |
 | 6 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, hepsi bir arada | Kopuz |

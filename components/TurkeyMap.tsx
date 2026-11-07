@@ -20,6 +20,7 @@ const COORDS: Record<string, [number, number]> = {
   mardin: [40.73, 37.31],
   malatya: [38.31, 38.35],
   corum: [34.95, 40.55],
+  ordu: [37.88, 40.98],
   sivas: [37.02, 39.75],
   ardahan: [42.7, 41.11],
   bayburt: [40.23, 40.26],
@@ -32,7 +33,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
   const pts = OUTLINE.map(([lo, la]) => `${X(lo).toFixed(1)},${Y(la).toFixed(1)}`).join(' ')
   const route = LEVELS.map((l) => COORDS[l.id])
   return (
-    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label="Yolculuk rotası: İstanbul, Kocaeli, İzmir, Ankara, Adana, Mardin, Malatya, Çorum, Sivas, Ardahan, Bayburt">
+    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label="Yolculuk rotası: İstanbul, Kocaeli, İzmir, Ankara, Adana, Mardin, Malatya, Çorum, Ordu, Sivas, Ardahan, Bayburt">
       <polygon points={pts} fill="#2a2438" stroke="#4a4160" strokeWidth="1.5" strokeLinejoin="round" />
       <polyline
         points={route.map(([lo, la]) => `${X(lo)},${Y(la)}`).join(' ')}

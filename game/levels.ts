@@ -605,6 +605,92 @@ const corum = decorate(
   [[5, 19, 's'], [8, 19, 'n'], [62, 13, 'n'], [66, 13, 'k'], [97, 16, 's']],
 )
 
+/* ───────────────────────── 52 · ORDU ───────────────────────── */
+const ordu = join(
+  chunk([
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                  C             ',
+    '                 ===            ',
+    ' P  ?  sn    t     e       t    ',
+    '##########~~~##########~~~~#####',
+    '##########~~~##########~~~~#####',
+    '##########~~~##########~~~~#####',
+    '##########~~~##########~~~~#####',
+  ]),
+  chunk([
+    '                         C        ',
+    '                              F   ',
+    '                     #############',
+    '                     #############',
+    '                 e   #############',
+    '               ###################',
+    '           e   ###################',
+    '         #########################',
+    '         #########################',
+    '   ###############################',
+    '   ###############################',
+    '##################################',
+    '##################################',
+    '##################################',
+    '##################################',
+  ]),
+  chunk([
+    '                                  ',
+    '                                  ',
+    '                                  ',
+    '                                  ',
+    '                                  ',
+    '                                  ',
+    '                                  ',
+    '                    f             ',
+    '                                  ',
+    '          C                    F  ',
+    '               |MMM         |  ####',
+    '                              ####',
+    '####|MMM        |              ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+    '####                          ####',
+  ]),
+  chunk([
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '####                            ',
+    '####                            ',
+    '####   ===                      ',
+    '####                            ',
+    '####         ===                ',
+    '####                            ',
+    '####               ===          ',
+    '####                            ',
+    '####                            ',
+    '####  ^^^^^  e   ^^^   n    E   ',
+    '################################',
+    '################################',
+    '################################',
+    '################################',
+  ]),
+)
+
 /* ───────────────────────── 58 · SİVAS ───────────────────────── */
 const sivas = decorate(
   join(
@@ -828,6 +914,46 @@ const bayburt = decorate(
   [[6, 19, 'n'], [9, 19, 's'], [20, 19, 'k'], [62, 4, 'n'], [66, 4, 'k']],
 )
 
+/** Şehre göre sokak süsleri; z: şehrin kendine özgü nesnesi. */
+const DECOR_CYCLE: Record<string, string> = {
+  istanbul: 'lzt',
+  kocaeli: 'lzt',
+  izmir: 'tlz',
+  ankara: 'zlt',
+  adana: 'tzl',
+  mardin: 'wzao',
+  malatya: 'tmzo',
+  corum: 'zol',
+  ordu: 'tzl',
+  sivas: 'tzl',
+  ardahan: 'ztl',
+  bayburt: 'tzl',
+}
+
+/** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
+function enrich(map: string[], city: string): string[] {
+  const m = map.map((r) => r.split(''))
+  const cycle = DECOR_CYCLE[city] ?? 'tl'
+  const busy = (x: number, y: number) => m[y]?.[x] !== undefined && m[y][x] !== ' '
+  let k = 0
+  let last = -99
+  for (let x = 3; x < m[0].length - 3; x++) {
+    if (x - last < 10) continue
+    for (let y = 2; y < m.length - 1; y++) {
+      if (m[y][x] !== ' ' || !'#I'.includes(m[y + 1][x])) continue
+      // komşular boş olmalı: tabela, karakter, düşman, diken, bayrak, çıkışla çakışmasın
+      let ok = true
+      for (let dx = -2; dx <= 2 && ok; dx++) for (let dy = -2; dy <= 0 && ok; dy++) if (busy(x + dx, y + dy)) ok = false
+      for (let dx = -1; dx <= 1 && ok; dx++) if (!'#I'.includes(m[y + 1][x + dx] ?? ' ')) ok = false
+      if (!ok) continue
+      m[y][x] = cycle[k++ % cycle.length]
+      last = x
+      break
+    }
+  }
+  return m.map((r) => r.join(''))
+}
+
 export const LEVELS: LevelDef[] = [
   {
     id: 'istanbul',
@@ -1047,6 +1173,30 @@ export const LEVELS: LevelDef[] = [
     map: corum,
   },
   {
+    id: 'ordu',
+    city: 'ordu',
+    name: 'Ordu',
+    plate: 52,
+    subtitle: 'Fındık ve Boztepe',
+    difficulty: 'Zor',
+    note: 'Boztepe’den Karadeniz’e bak; fındık bahçeleri yamaçlara tırmanır. Yağmur eksik olmaz, kayıp düşme.',
+    npcs: [
+      { name: 'Fındıkçı Hatice Teyze', look: 'teyze', text: 'Fındık ağustosta toplanır, harmanda kurutulur. Bir avuç al, enerjin olsun; yaban domuzları da bizim kadar sever!' },
+      { name: 'Teleferik Görevlisi Murat', look: 'genc', text: 'Boztepe’ye teleferikle çıkılır. Kabinler gidip gelir, zamanını kolla, birinden ötekine atla.' },
+    ],
+    medals: [60, 95, 150],
+    quips: ['Karadeniz dalgası güldü.', 'Fındık kabuğu gibi çatladın.', 'Yaban domuzu kaçtı mı, sen mi?', 'Teleferik beklemez.'],
+    item: 'Fındık',
+    intro: 'Karadeniz’in yeşil yamaçları. Dalgalı sahilden fındık bahçelerine, Boztepe teleferiğinden Yason Burnu’na.',
+    facts: [
+      { title: 'Fındık', text: 'Türkiye dünyanın en büyük fındık üreticisidir ve en çok fındık yetiştiren il Ordu’dur. Fındık ağustosta toplanıp harmanda kurutulur.' },
+      { title: 'Boztepe', text: 'Boztepe şehre ve Karadeniz’e tepeden bakan bir seyir noktasıdır. Sahilden teleferikle çıkılır.' },
+      { title: 'Yason Burnu', text: 'Yason Burnu, Argonotlar efsanesiyle anılan bir Karadeniz burnudur. Ucunda küçük, tarihi bir kilise durur.' },
+    ],
+    hints: ['Yamaçlarda yaban domuzları dolaşır: üstlerine zıpla ya da atılarak geç. Sahildeki boşluklar geniş: zıpla, en tepede atıl.'],
+    map: ordu,
+  },
+  {
     id: 'sivas',
     city: 'sivas',
     name: 'Sivas',
@@ -1125,5 +1275,7 @@ export const LEVELS: LevelDef[] = [
     map: bayburt,
   },
 ]
+
+for (const l of LEVELS) l.map = enrich(l.map, l.city)
 
 export const levelIndex = (id: string) => LEVELS.findIndex((l) => l.id === id)

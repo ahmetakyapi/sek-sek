@@ -29,5 +29,13 @@
     "typescript": "5.9",
     "vitest": "^5.1.0"
   },
-  "type": "module"
+  "type": "module",
+  "browserslist": [
+    "chrome >= 80",
+    "safari >= 13",
+    "ios_saf >= 13",
+    "firefox >= 78",
+    "edge >= 80",
+    "samsung >= 12"
+  ]
 }
