@@ -427,7 +427,7 @@ export default function Game() {
                 <div className="absolute bottom-1 left-7 flex items-end gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/logo-emblem.png" width={56} height={56} alt="" style={{ imageRendering: 'pixelated' }} className="mb-1 drop-shadow-[0_3px_0_#120f1a]" />
-                  <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Memleket</h1>
+                  <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Seksek</h1>
                 </div>
               </div>
               <p className="text-[15px] leading-relaxed text-cream/85">Dedenin yarım kalmış defterini tamamla.</p>
@@ -852,7 +852,7 @@ function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hu
     >
       <div className="flex min-w-0 items-center gap-2.5 bg-ink/55 py-1.5 pl-1.5 pr-2.5">
         <span className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-gold/70 bg-panel-2 min-[400px]:block">
-          <Portrait id={hero} className="-mt-[6px] w-[60px] -translate-x-[10px]" />
+          <Portrait id={hero} className="-mt-[9px] w-[66px] -translate-x-[13px]" />
         </span>
         <span className="plate text-lg">
           <span>{String(level.plate).padStart(2, "0")}</span>
@@ -914,12 +914,12 @@ function Complete({
   const [copied, setCopied] = useState(false)
   const shareUrl = () =>
     `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: name.trim() })}`
-  const shareText = `Memleket’te ${level.name} şehrini ${formatTime(result.timeMs)} sürede geçtim (${result.deaths} düşüş, ${found}/3 hatıra). Sen de dene!`
+  const shareText = `Seksek’te ${level.name} şehrini ${formatTime(result.timeMs)} sürede geçtim (${result.deaths} düşüş, ${found}/3 hatıra). Sen de dene!`
   const share = async () => {
     const url = shareUrl()
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Memleket skor kartım', text: shareText, url })
+        await navigator.share({ title: 'Seksek skor kartım', text: shareText, url })
         return
       } catch {
         /* vazgeçildi */

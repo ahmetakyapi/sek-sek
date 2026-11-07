@@ -1,6 +1,6 @@
-# Memleket · Şehir Şehir Anadolu
+# Seksek · Şehir Şehir Anadolu
 
-**Canlı:** https://memleket-game.vercel.app
+**Canlı:** https://seksek.vercel.app
 
 İstanbul’dan Bayburt’a, her şehri kendi dokusuyla aşan bir piksel platform oyunu. Mobilde ve webde oynanır;
 harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üretilir.

@@ -773,9 +773,6 @@ export class Renderer {
       case 'angora':
         sprite(b, ['.w.w......', '.www......', '.bwg.....' + (tail ? 'w' : '.'), '.wwww...w' + (tail ? '.' : 'w'), '..wwwwwww.', '..wwWwwWw.', '..w.w..w..'], { w: '#f8f6f0', W: '#dcd8d0', b: '#4a8ad8', g: '#e0b040' }, x + 2, bot - 7)
         break
-      case 'donkey':
-        sprite(b, ['g...........', 'gg..........', 'ggg.........', '.ggggggggg..', '..gggggggggg', '..wggggggg.g', '..g.g...g.g.', '..g.g...g.g.'], { g: '#7d7480', w: '#d8d0d4' }, x, bot - 8)
-        break
       case 'kangal':
         sprite(b, ['kk.........', 'kek........', 'kkwwwwwww..', '.wwwwwwwww' + (tail ? 'w' : '.'), '..wwwwwwww.', '..w.w..w.w.', '..w.w..w.w.'], { w: '#d9c49a', k: '#2a2420', e: '#f2d34a' }, x + 1, bot - 7)
         break

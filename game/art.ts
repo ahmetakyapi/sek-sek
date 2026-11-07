@@ -156,7 +156,7 @@ export const CITY: Record<CityKey, CityStyle> = {
     weather: 'dust',
     enemyGround: 'scorpion',
     enemyFly: 'gull',
-    animal: 'donkey',
+    animal: 'cat',
   },
   malatya: {
     sky: ['#4f9bd6', '#9fd0ef', '#e7f3e0'],

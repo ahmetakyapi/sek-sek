@@ -5,29 +5,29 @@ import './globals.css'
 const pixel = Pixelify_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-pixel', weight: ['500', '700'] })
 const plex = IBM_Plex_Mono({ subsets: ['latin', 'latin-ext'], variable: '--font-plex', weight: ['400', '600', '700'] })
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://memleket-ten.vercel.app'
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://seksek.vercel.app'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
-  title: 'Memleket · Şehir Şehir Anadolu',
+  title: 'Seksek · Şehir Şehir Anadolu',
   keywords: ['platform oyunu', 'piksel oyun', 'Türkiye şehirleri', 'mobil oyun', 'tarayıcı oyunu', 'İstanbul', 'Bayburt'],
   alternates: { canonical: '/' },
   twitter: {
     card: 'summary_large_image',
-    title: 'Memleket · Şehir Şehir Anadolu',
-    description: 'İstanbul’dan Bayburt’a 8 şehirlik piksel platform oyunu. Mobilde ve webde ücretsiz oyna.',
+    title: 'Seksek · Şehir Şehir Anadolu',
+    description: 'İstanbul’dan Bayburt’a 8 şehirlik piksel platform oyunu. Simitçiden kale burcuna tek defterde bir yolculuk.',
   },
-  description: 'İstanbul’dan Bayburt’a 8 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir piksel platform oyunu. Mobilde ve webde ücretsiz oynanır.',
-  applicationName: 'Memleket',
+  description: 'İstanbul’dan Bayburt’a 8 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir piksel platform oyunu.',
+  applicationName: 'Seksek',
   openGraph: {
-    title: 'Memleket · Şehir Şehir Anadolu',
-    description: 'İstanbul’dan Bayburt’a 8 şehir, 24 hatıra. Martılar, cumbalar, kayısı kasaları, Hitit ok tuzakları. Mobilde ve webde ücretsiz oyna.',
+    title: 'Seksek · Şehir Şehir Anadolu',
+    description: 'İstanbul’dan Bayburt’a 8 şehir ve 24 hatıra. Martılar, cumbalar, kayısı kasaları ve Hitit ok tuzakları seni bekliyor.',
     locale: 'tr_TR',
     type: 'website',
-    siteName: 'Memleket',
+    siteName: 'Seksek',
     url: '/',
   },
-  appleWebApp: { capable: true, title: 'Memleket', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Seksek', statusBarStyle: 'black-translucent' },
 }
 
 export const viewport: Viewport = {

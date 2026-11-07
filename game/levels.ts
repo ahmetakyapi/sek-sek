@@ -357,11 +357,11 @@ const mardin = decorate(
     '##########    e        a       ',
     '##################             ',
     '##################             ',
-    '##################  k   a  E   ',
+    '##################      a  E   ',
     ...ground(32, 6),
   ]),
   ),
-  [[20, 13, 's'], [23, 11, 'n'], [62, 4, 'k'], [108, 14, 'n']],
+  [[20, 13, 's'], [23, 11, 'n'], [108, 14, 'n']],
 )
 
 /* ───────────────────────── 44 · MALATYA ───────────────────────── */
@@ -747,7 +747,7 @@ export const LEVELS: LevelDef[] = [
       { name: 'Telkari Ustası Meryem', look: 'teyze', text: 'Bu gümüş tel saç telinden ince. Sabırsız eller telkari öremez, sen de duvarlarda acele etme.' },
     ],
     medals: [50, 85, 130],
-    quips: ['Taşlar sabırlıdır, sen de ol.', 'Eşek bile bu yokuşu daha iyi çıkıyor.', 'Akrep güldü, duydum.', 'Abbaranın gölgesinde bir soluklan.'],
+    quips: ['Taşlar sabırlıdır, sen de ol.', 'Teraslar seni bekliyor, acele etme.', 'Akrep güldü, duydum.', 'Abbaranın gölgesinde bir soluklan.'],
     item: 'Telkari',
     intro: 'Mezopotamya ovasına bakan bal rengi taş evler. Teras teras tırman, abbaraların altından geç.',
     facts: [

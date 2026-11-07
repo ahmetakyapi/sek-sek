@@ -36,7 +36,7 @@ export default function Portrait({ id, className = '' }: { id: CharacterId; clas
   }, [id])
   const name = id === 'uktun' ? 'Uktun' : 'Memo Çelik'
   return (
-    <span className={`relative block aspect-[48/56] ${className}`} role="img" aria-label={`${name} portresi`}>
+    <span className={`relative block aspect-[64/76] ${className}`} role="img" aria-label={`${name} portresi`}>
       {src && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}

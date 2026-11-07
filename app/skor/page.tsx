@@ -9,9 +9,9 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const d = parseShare(await searchParams)
-  if (!d) return { title: 'Skor Kartı · Memleket' }
+  if (!d) return { title: 'Skor Kartı · Seksek' }
   const l = LEVELS.find((x) => x.id === d.level)!
-  const title = `${d.name || 'Bir yolcu'} ${l.name}’u ${formatTime(d.timeMs)} sürede geçti · Memleket`
+  const title = `${d.name || 'Bir yolcu'} ${l.name}’u ${formatTime(d.timeMs)} sürede geçti · Seksek`
   const description = `${d.deaths} düşüş, ${d.items}/3 hatıra. İstanbul’dan Bayburt’a 8 şehirlik piksel platform oyunu: sen de dene!`
   const image = `/skor/kart?${shareQuery(d)}`
   return {
