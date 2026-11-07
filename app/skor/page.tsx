@@ -33,7 +33,7 @@ export default async function SkorPage({ searchParams }: Props) {
           <Link href="/">
             <Logo size={32} />
           </Link>
-          <Link href="/oyna" className="pixel-btn primary py-2 text-sm">
+          <Link href="/" className="pixel-btn primary py-2 text-sm">
             ▶ Hemen Oyna
           </Link>
         </div>
@@ -48,10 +48,10 @@ export default async function SkorPage({ searchParams }: Props) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/skor/kart?${shareQuery(d)}`} alt={`${l.name}: ${formatTime(d.timeMs)}, ${d.deaths} düşüş, ${d.items}/3 hatıra`} width={1200} height={630} className="pixel-panel mt-6 h-auto w-full p-0" />
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href={`/oyna?sehir=${l.id}`} className="pixel-btn primary px-6 py-3">
+              <Link href={`/?sehir=${l.id}`} className="pixel-btn primary px-6 py-3">
                 ▶ {l.name} Rekorunu Kır
               </Link>
-              <Link href="/" className="pixel-btn px-6 py-3">
+              <Link href="/hakkinda" className="pixel-btn px-6 py-3">
                 Oyunu Tanı
               </Link>
             </div>
@@ -60,7 +60,7 @@ export default async function SkorPage({ searchParams }: Props) {
           <>
             <h1 className="font-display text-4xl">Bu skor kartı açılamadı</h1>
             <p className="mt-3 text-muted">Bağlantı eksik ya da bozuk olabilir. Oyuna buradan başlayabilirsin.</p>
-            <Link href="/oyna" className="pixel-btn primary mt-6 px-6 py-3">
+            <Link href="/" className="pixel-btn primary mt-6 px-6 py-3">
               ▶ Hemen Oyna
             </Link>
           </>

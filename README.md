@@ -57,6 +57,7 @@ game/
   input.ts    → klavye, oyun kolu, dokunmatik
   audio.ts    → WebAudio efektleri + makam esintili prosedürel müzik
 components/   → React arayüzü (menüler, HUD, dokunmatik kontroller, Türkiye rota haritası)
+app/          → / oyun · /hakkinda tanıtım · /skor paylaşım sayfası · /skor/kart kartpostal görseli
 app/api/scores → skor tablosu (Neon + Drizzle)
 scripts/      → verify-levels (çözücü), migrate
 ```

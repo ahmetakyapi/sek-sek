@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Memleket · Şehir Şehir Anadolu',
     short_name: 'Memleket',
     description: 'İstanbul’dan Bayburt’a 8 şehirlik piksel platform oyunu.',
-    start_url: '/oyna',
+    start_url: '/',
     display: 'fullscreen',
     orientation: 'any',
     background_color: '#120f1a',

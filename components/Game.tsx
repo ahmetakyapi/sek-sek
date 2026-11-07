@@ -395,32 +395,43 @@ export default function Game() {
 
       {screen === 'title' && (
         <Overlay>
-          <div className="rise flex w-full max-w-3xl flex-col items-center gap-2 md:flex-row md:items-end md:gap-0">
-            <div className="relative flex shrink-0 items-end justify-center md:mr-[-12px] md:w-[320px]">
+          <div className="rise flex w-full max-w-3xl flex-col items-center gap-0 md:flex-row md:items-center">
+            <div className="relative h-[170px] w-full max-w-[320px] shrink-0 sm:h-[300px] md:mr-[-28px] md:h-[360px] md:w-[320px]">
               {save.character ? (
-                <div className="portrait-frame w-[170px] sm:w-[260px]">
-                  <Portrait id={hero.id} className="block w-full" />
-                  <p className="portrait-tag">{hero.name}</p>
-                </div>
+                <figure className="polaroid absolute left-1/2 top-3 w-[118px] -translate-x-1/2 rotate-[-4deg] sm:w-[200px] md:top-10 md:w-[220px]">
+                  <span className="tape" />
+                  <Portrait id={hero.id} className="w-full" />
+                  <figcaption>{hero.name}</figcaption>
+                </figure>
               ) : (
-                <div className="flex items-end">
-                  <div className="portrait-frame w-[130px] rotate-[-3deg] sm:w-[190px]">
-                    <Portrait id="uktun" className="block w-full" />
-                    <p className="portrait-tag">Uktun</p>
-                  </div>
-                  <div className="portrait-frame -ml-6 w-[130px] rotate-[3deg] sm:w-[190px]">
-                    <Portrait id="memo" className="block w-full" />
-                    <p className="portrait-tag">Memo Çelik</p>
-                  </div>
-                </div>
+                <>
+                  <figure className="polaroid absolute left-[8%] top-4 w-[118px] rotate-[-7deg] sm:w-[170px] md:left-0 md:top-12 md:w-[170px]">
+                    <span className="tape" />
+                    <Portrait id="uktun" className="w-full" />
+                    <figcaption>Uktun</figcaption>
+                  </figure>
+                  <figure className="polaroid absolute right-[8%] top-0 w-[118px] rotate-[6deg] sm:w-[170px] md:right-6 md:top-2 md:w-[170px]">
+                    <span className="tape" />
+                    <Portrait id="memo" className="w-full" />
+                    <figcaption>Memo Çelik</figcaption>
+                  </figure>
+                </>
               )}
             </div>
-            <div className="pixel-panel w-full max-w-md p-6 sm:p-7">
-              <p className="text-[11px] font-bold tracking-[0.3em] text-accent">ŞEHİR ŞEHİR ANADOLU</p>
-              <h1 className="mt-2 font-display text-5xl leading-none text-cream sm:text-6xl">Memleket</h1>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Dedenin yarım kalmış defterini tamamla. İstanbul’dan Bayburt’a sekiz şehir, her şehirde üç hatıra, her hatırada bir hikâye.
-              </p>
+            <div className="pixel-panel relative z-10 w-full max-w-md overflow-hidden px-6 pb-6 sm:px-7">
+              <div className="relative -mx-7 -mt-[calc(14px+1.25rem)] mb-4 h-[120px] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/sehirler/istanbul.webp" alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_75%]" style={{ imageRendering: 'pixelated' }} />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1e1a29]/20 to-[#1e1a29]" />
+                <div className="kilim absolute inset-x-0 top-0" />
+                <div className="absolute bottom-1 left-7 flex items-end gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo-emblem.png" width={56} height={56} alt="" style={{ imageRendering: 'pixelated' }} className="mb-1 drop-shadow-[0_3px_0_#120f1a]" />
+                  <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Memleket</h1>
+                </div>
+              </div>
+              <p className="text-[15px] leading-relaxed text-cream/85">Dedenin yarım kalmış defterini tamamla.</p>
+              <p className="text-[14px] leading-relaxed text-muted">Sekiz şehir. Yirmi dört hatıra. Tek yolculuk.</p>
               <div className="mt-5 grid gap-2.5">
                 <button className="pixel-btn primary justify-center text-base" onClick={startJourney} autoFocus>
                   ▶ {save.unlocked > 0 ? `Devam Et: ${LEVELS[Math.min(save.unlocked, LEVELS.length - 1)].name}` : 'Yolculuğa Başla'}
@@ -454,8 +465,8 @@ export default function Game() {
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between text-[12px] text-muted">
-                <a href="/" className="underline-offset-4 hover:text-cream hover:underline">
-                  ← Ana Sayfa
+                <a href="/hakkinda" className="underline-offset-4 hover:text-cream hover:underline">
+                  Oyun Hakkında →
                 </a>
                 {totalFound > 0 && (
                   <span>
