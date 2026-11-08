@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        level: [istanbul, kocaeli, izmir, ankara, konya, nevsehir, adana, gaziantep, mardin, malatya, corum, ordu, sivas, ardahan, bayburt]
+        level: [istanbul, kocaeli, izmir, ankara, konya, nevsehir, adana, gaziantep, mardin, malatya, corum, ordu, trabzon, sivas, ardahan, bayburt]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

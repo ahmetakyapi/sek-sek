@@ -73,13 +73,15 @@ export interface Player extends Box {
 }
 
 export interface Platform extends Box {
-  /** x/y: gidip gelir · o: çember çizer (sema) · b: binince yükselen balon */
-  axis: 'x' | 'y' | 'o' | 'b'
+  /** x/y: gidip gelir · o: çember çizer (sema) · b: binince yükselen balon · h: horon halkası (ritimle zıplar) */
+  axis: 'x' | 'y' | 'o' | 'b' | 'h'
   /** çember için merkez, yarıçap, başlangıç açısı */
   cx?: number
   cy?: number
   r?: number
   a0?: number
+  /** horon halkası mı, koçari mi (koçari daha ağır ve yavaş vurur) */
+  dance?: 'horon' | 'kocari'
   min: number
   max: number
   dir: 1 | -1
@@ -120,6 +122,11 @@ export interface Hammer {
   bottom: number
   offset: number
 }
+
+/** horon halkası: zıplama yüksekliği (px) ve ritim (rad/s); |sin| periyodu ≈ 0,87 sn */
+export const HORON = { lift: 20, beat: 3.6 }
+/** koçari: daha ağır, yavaş ve alçak; yere vuruş uzun sürer */
+export const KOCARI = { lift: 26, beat: 2.2 }
 
 export const HAMMER = { rest: 1.1, warn: 0.4, fall: 0.16, hold: 0.45, rise: 1.0 }
 export const HAMMER_CYCLE = HAMMER.rest + HAMMER.warn + HAMMER.fall + HAMMER.hold + HAMMER.rise
@@ -342,11 +349,18 @@ export class World {
           case 'M':
           case 'N':
           case 'O':
-          case 'B': {
+          case 'B':
+          case 'H':
+          case 'J': {
             if (row[tx - 1] === ch) break // aynı platformun devamı
             let n = 1
             while (row[tx + n] === ch) n++
-            this.platforms.push(this.makePlatform(map, tx, ty, n, ch === 'M' ? 'x' : ch === 'N' ? 'y' : ch === 'O' ? 'o' : 'b'))
+            const plat = this.makePlatform(map, tx, ty, n, ch === 'M' ? 'x' : ch === 'N' ? 'y' : ch === 'O' ? 'o' : ch === 'H' || ch === 'J' ? 'h' : 'b')
+            if (ch === 'J') {
+              plat.dance = 'kocari'
+              plat.min = plat.max - KOCARI.lift
+            } else if (ch === 'H') plat.dance = 'horon'
+            this.platforms.push(plat)
             break
           }
           case 'Y': {
@@ -369,6 +383,7 @@ export class World {
           case 't':
           case 'w':
           case 'z':
+          case 'q':
             this.decor.push({ tx, ty, ch })
             if (ch === 'k') this.friends.push({ x: px - 2, y: py + 4, w: 20, h: 12, cool: 0 })
             break
@@ -406,6 +421,10 @@ export class World {
       const dir = tx % 4 < 2 ? 1 : -1
       const r = 2 * T
       return { x: cx + Math.cos(a0) * r - w / 2, y: cy + Math.sin(a0) * r, w, h: 6, axis, min: 0, max: 0, dir, speed: 1.35, dx: 0, dy: 0, cx, cy, r, a0 }
+    }
+    if (axis === 'h') {
+      // horon: kol kola oyuncuların elleri; hepsi aynı ritimde zıplar
+      return { x, y, w, h: 6, axis, min: y - HORON.lift, max: y, dir: 1, speed: 0, dx: 0, dy: 0 }
     }
     if (axis === 'b') {
       let u = ty - 1
@@ -520,10 +539,13 @@ export class World {
     const p = this.player
     this.clock += dt
     for (const pl of this.platforms) {
-      if (pl.axis === 'o' || pl.axis === 'b') {
+      if (pl.axis === 'o' || pl.axis === 'b' || pl.axis === 'h') {
         let nx = pl.x
         let ny = pl.y
-        if (pl.axis === 'o') {
+        if (pl.axis === 'h') {
+          const d = pl.dance === 'kocari' ? KOCARI : HORON
+          ny = pl.max - Math.abs(Math.sin(this.clock * d.beat)) * d.lift
+        } else if (pl.axis === 'o') {
           const a = pl.a0! + pl.dir * pl.speed * this.clock
           nx = pl.cx! + Math.cos(a) * pl.r! - pl.w / 2
           ny = pl.cy! + Math.sin(a) * pl.r!

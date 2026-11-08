@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import TouchControls from '@/components/TouchControls'
-import Portrait from '@/components/Portrait'
+import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
@@ -455,7 +455,7 @@ export default function Game() {
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t("DEFTERE YENİ SAYFALAR")}</p>
             <h2 id="harita-notu" className="mt-1 font-display text-3xl text-cream">{t("Haritalar Yenilendi")}</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-cream/85">
-              {t("Konya, Nevşehir ve Gaziantep yola eklendi. Eski şehirler uzadı, yeni bulmacalar ve gizli köşeler geldi.")}
+              {t('Trabzon yola eklendi: horon, kemençe, Sümela ve Hamsiköy sütlacı. İstanbul, Mardin ve Çorum’a yeni insanlar ve yeni detaylar geldi.')}
             </p>
             <p className="mt-2 text-[14px] leading-relaxed text-muted">
               {t('Yeni haritaları baştan yaşamak istersen yolculuğa İstanbul’dan başla. Rekorların ve pulların sıfırlanır; adın, karakterin ve ayarların kalır.')}
@@ -479,7 +479,7 @@ export default function Game() {
                 className="pixel-btn justify-center"
                 onClick={() => {
                   ui()
-                  persist({ ...save, mapVersion: MAP_VERSION })
+                  persist({ ...save, mapVersion: MAP_VERSION, migrated: false })
                   setMapNotice(false)
                 }}
               >
@@ -1031,8 +1031,8 @@ function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hu
       style={{ paddingTop: 'max(10px, env(safe-area-inset-top))', paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))' }}
     >
       <div className="flex min-w-0 items-center gap-2.5 bg-ink/80 py-1.5 pl-1.5 pr-2.5 [box-shadow:0_0_0_2px_rgba(61,53,80,0.8)]">
-        <span className="hidden h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-gold/70 bg-panel-2 min-[400px]:block">
-          <Portrait id={hero} className="-mt-[9px] w-[66px] -translate-x-[13px]" />
+        <span className="hidden min-[400px]:block">
+          <PortraitFace id={hero} />
         </span>
         <span className="plate text-[15px] sm:text-lg">
           <span>{String(level.plate).padStart(2, "0")}</span>

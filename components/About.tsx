@@ -25,6 +25,7 @@ const ICONS: Record<string, { rows: string[]; pal: Record<string, string> }> = {
   orbit: { pal: { g: '#f2c14e', w: '#f4ead8', t: '#2f9a94', T: '#7ad8cc' }, rows: ['....g.....', '....w.....', '.....w....', '......w...', '.......w..', '.....TTTTT', '.....ttttt', '..........', '..........', '..........'] },
   balloon: { pal: { r: '#e8604a', y: '#f2c14e', b: '#3fa8c8', k: '#8a5a35', l: '#5a3c26' }, rows: ['..rryybb..', '.rrryybbb.', 'rrrryybbbb', 'rrrryybbbb', '.rrryybbb.', '..rryybb..', '..l....l..', '...l..l...', '...kkkk...', '...kkkk...'] },
   hammer: { pal: { w: '#5a3c26', c: '#b8682e', C: '#e8904a', d: '#7a3a14' }, rows: ['....ww....', '....ww....', '....ww....', '....ww....', '.CCCCCCCC.', '.cccccccc.', '.cccccccc.', '.dddddddd.', '..........', '..........'] },
+  horon: { pal: { k: '#1d1a22', s: '#e0a880', g: '#c8d0dc', r: '#a8302a' }, rows: ['ssssssssss', 's...s...s.', '.kk..kk..k', '.sk..sk..s', '.kg..kg..k', '.kk..kk..k', '.kk..rr..k', '.k.k.r.r.k', '.k.k.r.r.k', 'kk.kkr.rkk'] },
   wind: { pal: { w: '#e6edf7' }, rows: ['..........', 'wwwwww....', '......w...', '.wwwwww...', '..........', 'wwwwwwww..', '........w.', '..wwwwww..', '..........', '..........'] },
   heart: { pal: { p: '#ff6a8a', P: '#ffb0c0' }, rows: ['..........', '.pp...pp..', 'pPpp.pppp.', 'pppppppp..', 'pppppppp..', '.pppppp...', '..pppp....', '...pp.....', '..........', '..........'] },
 }
@@ -58,6 +59,7 @@ const MECHANICS: [string, string, string][] = [
   ['orbit', 'Sema Halkası', 'Konya’da bir merkezin etrafında döner. Ritmini yakala, tepede atla.'],
   ['balloon', 'Balon', 'Kapadokya’da sepete binince yükselir, inince yavaşça çöker.'],
   ['hammer', 'Bakır Tokmak', 'Gaziantep’te titreyip iner. Bekle, kalkarken altından geç.'],
+  ['horon', 'Horon ve Koçari', 'Trabzon’da oyuncular kol kola zıplar; ellerine bin, en tepede atla. Koçari daha ağır vurur.'],
   ['wind', 'Rüzgâr', 'Doğuda rüzgâr seni geri iter. Uzun boşluklarda tepede atıl.'],
   ['heart', 'Dost ve Düşman', 'Şehrin hayvanları dosttur: yanına git, sev. Kırmızı hatla parlayan canlılar tehlikelidir.'],
 ]

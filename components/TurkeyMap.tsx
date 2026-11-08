@@ -24,6 +24,7 @@ const COORDS: Record<string, [number, number]> = {
   malatya: [38.31, 38.35],
   corum: [34.95, 40.55],
   ordu: [37.88, 40.98],
+  trabzon: [39.72, 41.0],
   sivas: [37.02, 39.75],
   ardahan: [42.7, 41.11],
   bayburt: [40.23, 40.26],

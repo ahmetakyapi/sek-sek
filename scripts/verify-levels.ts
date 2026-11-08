@@ -75,7 +75,7 @@ function key(s: Snapshot, w: World) {
   // sema halkaları ve tokmaklar ortak saate bağlı: konumları yerine saatin evresi yeter
   const near = s.platforms.map((q, i) => ({ q, a: w.platforms[i].axis })).filter(({ q }) => Math.abs(q.x - p.x) < 260 && Math.abs(q.y - p.y) < 200)
   const plats = near.filter(({ a }) => a === 'x' || a === 'y' || a === 'b').map(({ q, a }) => (a === 'b' ? `b${Math.round(q.y / 16)}` : `${Math.round((q.x + q.y) / 12)}${q.dir}`))
-  const clocked = near.some(({ q, a }) => a === 'o' && Math.abs(q.x - p.x) < 120) || w.hammers.some((h) => Math.abs(h.x - p.x) < 40 && p.y > h.top - 8)
+  const clocked = near.some(({ q, a }) => (a === 'o' || a === 'h') && Math.abs(q.x - p.x) < 120) || w.hammers.some((h) => Math.abs(h.x - p.x) < 40 && p.y > h.top - 8)
   const phase = clocked ? Math.floor(((s.clock * 1.35) / (Math.PI * 2)) * 8) % 8 + '/' + Math.floor((s.clock % 3.11) * 4) : ''
   return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.checkpointIndex, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
 }
@@ -180,7 +180,7 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
     }
   }
   loop(Number(process.env.BUDGET ?? 15000), allDone)
-  const goals = () => [...w.pickups.filter((p) => !picks.has(p.index)), ...w.checkpoints.filter((c) => !cps.has(c.index)), ...(!stamp && w.stampBox ? [w.stampBox] : []), ...(!gotKey && w.keyBox ? [w.keyBox] : [])]
+  const goals = () => [...w.pickups.filter((p) => !picks.has(p.index)), ...w.checkpoints.filter((c) => !cps.has(c.index)), ...(!stamp && w.stampBox ? [w.stampBox] : []), ...(!gotKey && w.keyBox ? [w.keyBox] : []), ...(!won ? [w.exit] : [])]
   for (const g of goals()) {
     target = { x: g.x, y: g.y }
     queue.length = 0

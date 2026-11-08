@@ -15,11 +15,11 @@ export interface Signature {
 
 export const SIGNATURES: Record<string, Signature> = {
   istanbul: {
-    en: { hints: ["Ferry run: two ferries, two rhythms. Hop from one to the other and watch the gulls."], npcs: [{"name": "Captain Nuri of the Ferry", "text": "Forty years I have sailed between Karaköy and Kadıköy. The waves are rough and the gulls are cheeky, but every crossing is beautiful in its own way."}] },
+    en: { hints: ["Ferry run: two ferries, two rhythms. Hop from one to the other and watch the gulls."], npcs: [{"name": "Kenan the Fish Sandwich Cook", "text": "In Eminönü the fish sandwiches are grilled right on the boats, and the grill sways with every wave. Add a pickle juice and you are all set!"}, {"name": "Captain Nuri of the Ferry", "text": "Forty years I have sailed between Karaköy and Kadıköy. The waves are rough and the gulls are cheeky, but every crossing is beautiful in its own way."}] },
     at: 174,
     medal: 15,
     hints: ["Vapur seferi: iki vapur, iki ritim. Birinden ötekine geç, martılara dikkat."],
-    npcs: [{ name: "Vapur Kaptanı Nuri", look: "amca", text: "Kırk yıldır Karaköy ile Kadıköy arasında gidip gelirim. Dalga sert, martı arsız; ama her sefer bir başka güzel." }],
+    npcs: [{ name: "Balık-Ekmekçi Kenan", look: "usta", text: "Eminönü’nde balık ekmek teknede pişer, dalga vurdukça ızgara sallanır. Yanına bir turşu suyu, keyfine diyecek yok!" }, { name: "Vapur Kaptanı Nuri", look: "amca", text: "Kırk yıldır Karaköy ile Kadıköy arasında gidip gelirim. Dalga sert, martı arsız; ama her sefer bir başka güzel." }],
     rows: [
       '                                      ',
       '                                      ',
@@ -40,7 +40,7 @@ export const SIGNATURES: Record<string, Signature> = {
       '                 |  MMMM         |    ',
       '                                      ',
       '    | MMMM         |                  ',
-      ' ?                                  n ',
+      ' ? n                                n ',
       '####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####',
       '####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####',
       '####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~####',
@@ -180,11 +180,11 @@ export const SIGNATURES: Record<string, Signature> = {
     ],
   },
   mardin: {
-    en: { hints: ["The stones of Kasımiye are old: each one crumbles under you, so keep hopping!"], npcs: [] },
+    en: { hints: ["The stones of Kasımiye are old: each one crumbles under you, so keep hopping!"], npcs: [{"name": "Aziz the Stonemason", "text": "Mardin stone comes out of the quarry soft and hardens in the air. My great-grandfather built these arches; if the stone under you is old, take it slow."}] },
     at: 168,
     medal: 15,
     hints: ["Kasımiye’nin taşları eski: bastığın taş dağılır, durmadan sek!"],
-    npcs: [],
+    npcs: [{ name: "Taş Ustası Aziz", look: "usta", text: "Mardin taşı ocaktan yumuşak çıkar, havayla sertleşir. Bu kemerleri dedemin dedesi ördü; bastığın taş eskiyse acele etme." }],
     rows: [
       '                                    ',
       '                                    ',
@@ -203,7 +203,7 @@ export const SIGNATURES: Record<string, Signature> = {
       '         XX          XX             ',
       '                                    ',
       '     XX                  XX         ',
-      ' ?                                e ',
+      ' ? n                              e ',
       '####^^^^^^^^^^^^^^^^^^^^^^^^^^^^####',
       '####################################',
       '####################################',
@@ -246,11 +246,11 @@ export const SIGNATURES: Record<string, Signature> = {
     ],
   },
   corum: {
-    en: { hints: ["Yerkapı: the Hittites’ stone tunnel. Wait for the rhythm of the arrow traps and hop over the arrows."], npcs: [] },
+    en: { hints: ["Yerkapı: the Hittites’ stone tunnel. Wait for the rhythm of the arrow traps and hop over the arrows."], npcs: [{"name": "Recep the Dolma Cook", "text": "İskilip dolma cooks overnight in a copper pot over a low fire; it is the pride of every wedding table. I saved you a plate at the end of the tunnel, do not skip it!"}] },
     at: 168,
     medal: 15,
     hints: ["Yerkapı: Hititlerin taş tüneli. Ok tuzaklarının ritmini bekle, okun üstünden sek."],
-    npcs: [],
+    npcs: [{ name: "Dolma Ustası Recep", look: "usta", text: "İskilip dolması bakır kazanda, geceden ağır ateşte pişer; düğün sofrasının baş tacıdır. Tünelin sonunda bir tabak ayırdım, sakın atlama!" }],
     rows: [
       '                                    ',
       '                                    ',
@@ -267,7 +267,7 @@ export const SIGNATURES: Record<string, Signature> = {
       '    #                               ',
       '    #                          <    ',
       '    >                               ',
-      ' ?  #                               ',
+      ' ?  #                             n ',
       '###########^^^#######^^^############',
       '####################################',
       '####################################',

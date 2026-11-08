@@ -1029,6 +1029,43 @@ def npc(look):
     return base
 
 
+# ───────────────────────── Uktun: klasik yüz, yeni sahne ─────────────────────────
+def uktun_classic(blink=False):
+    """Elle çizilmiş klasik Uktun figürü, boyanmış İstanbul gün batımının önüne konur.
+    Sol kenara sıcak ışık, saça ışıltı ve küçük bir altın küpe eklenir."""
+    import os
+    src = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uktun_classic.json')))
+    rows, pal = src['rows'], src['pal']
+    if blink:
+        rows = [r.translate(str.maketrans({c: 'D' for c in 'wiIp*x'})) for r in rows]
+    cv = Canvas()
+    bg_istanbul(cv)
+    grid = [[cv.color(x, y) for x in range(W)] for y in range(H)]
+    fig = [[rows[y][x] != '.' for x in range(W)] for y in range(H)]
+    for y in range(H):
+        for x in range(W):
+            if fig[y][x]:
+                grid[y][x] = pal[rows[y][x]]
+    hair = set('abcdef')
+    for y in range(H):
+        for x in range(W):
+            if not fig[y][x]:
+                continue
+            ch = rows[y][x]
+            # gün batımı kenar ışığı: solu boşluk olan kenar pikselleri ısınır
+            if x > 0 and not fig[y][x - 1] and y < 62:
+                grid[y][x] = hexmix(grid[y][x], '#ffc890', 0.55)
+            # saçta tepe ışıltısı: alnın üstünde ince bir parıltı halkası
+            if ch in 'bc' and 17 <= x <= 29 and y == round(16 + (x - 23) ** 2 / 18):
+                grid[y][x] = pal['a']
+            if ch in hair and 18 <= y <= 40 and x in (13, 14) and y % 4 == 0:
+                grid[y][x] = pal['a']
+    # altın küpe, saçın arasından görünür
+    for (x, y, c) in [(19, 49, '#ffda72'), (19, 50, '#c98824'), (18, 51, '#ffda72'), (20, 51, '#c98824'), (19, 52, '#ffda72')]:
+        grid[y][x] = c
+    return grid
+
+
 # ───────────────────────── çıktı ─────────────────────────
 CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,-/:;<=>?@[]^_{|}~'
 
@@ -1046,8 +1083,11 @@ def encode(grids):
 
 
 def build(name, spec_fn):
-    open_ = paint(spec_fn())
-    closed = paint(spec_fn(), blink=True)
+    if name == 'uktun':
+        open_, closed = uktun_classic(), uktun_classic(blink=True)
+    else:
+        open_ = paint(spec_fn())
+        closed = paint(spec_fn(), blink=True)
     pal, (ro, rc) = encode([open_, closed])
     return {'pal': pal, 'rows': ro, 'closed': rc}
 
@@ -1070,7 +1110,7 @@ if __name__ == '__main__':
     for look in ['amca', 'teyze', 'usta', 'genc', 'coban', 'ozan']:
         specs[look] = (lambda lk: (lambda: npc(lk)))(look)
     for k, fn in specs.items():
-        g = paint(fn())
+        g = uktun_classic() if k == 'uktun' else paint(fn())
         save_png(g, os.path.join(here, f'{k}.png'))
         out[k] = build(k, fn)
         print(k, len(out[k]['pal']), 'renk')

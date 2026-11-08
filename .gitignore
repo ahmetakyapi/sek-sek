@@ -5,4 +5,8 @@ node_modules
 .vercel
 *.tsbuildinfo
 next-env.d.ts
-scripts/art/*.json
+scripts/art/newcities.json
+scripts/art/sig.json
+scripts/art/*.png
+scripts/art/portraits.json
+scripts/art/sprites.json

@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 15 şehrini gezen piksel platform oyunu. Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 16 şehrini gezen piksel platform oyunu. Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -22,15 +22,15 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
-  sim.ts         fizik + dünya: zıplama, duvar, atılma, düşmanlar, bulmaca nesneleri, sema/balon/tokmak
-  levels.ts      15 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend() ve addSignature() burada
+  sim.ts         fizik + dünya: zıplama, duvar, atılma, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
+  levels.ts      16 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend() ve addSignature() burada
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
   content.en.ts  bütün bölüm metinlerinin İngilizcesi
   art.ts         şehir paletleri, arka plan katmanları, eşya ve düşman sprite'ları, canlı adları
   render.ts      düşük çözünürlüklü tampon, parallax, parçacık, karakter, NPC
   characters.ts  Uktun ve Memo sprite'ları (baş + saç + gövde + bacak katmanları)
-  portraits.ts   64x76 portreler (scripts/art/painter.py üretir, elle düzenleme)
+  portraits.ts   64x76 portreler (scripts/art/painter.py üretir; Uktun'un yüzü elle çizilmiş scripts/art/uktun_classic.json'dan gelir)
   audio.ts       WebAudio efektleri + şehir makamında üretilen müzik
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), i18n + ui.en (TR/EN), share, db

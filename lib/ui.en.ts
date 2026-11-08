@@ -205,4 +205,7 @@ export const UI_EN: Record<string, string> = {
   Yeni: 'New',
   'Ses Efektleri': 'Sound Effects',
   'Dokunmatik Kontroller': 'Touch Controls',
+  'Trabzon yola eklendi: horon, kemençe, Sümela ve Hamsiköy sütlacı. İstanbul, Mardin ve Çorum’a yeni insanlar ve yeni detaylar geldi.': 'Trabzon has joined the road: horon, kemençe, Sümela and Hamsiköy rice pudding. Istanbul, Mardin and Çorum have new people and new details.',
+  'Horon ve Koçari': 'Horon and Koçari',
+  'Trabzon’da oyuncular kol kola zıplar; ellerine bin, en tepede atla. Koçari daha ağır vurur.': 'In Trabzon the dancers jump arm in arm; ride their hands and leap at the top. The koçari stomps slower and heavier.',
 }

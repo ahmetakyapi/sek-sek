@@ -8,6 +8,7 @@ const SCALES: Record<CityKey, { root: number; steps: number[]; meter: number[]; 
   konya: { root: 57, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [3, 3, 2], tempo: 0.24 },
   nevsehir: { root: 59, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.18 },
   gaziantep: { root: 60, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.15 },
+  trabzon: { root: 62, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.11 },
   kocaeli: { root: 60, steps: [0, 2, 3, 5, 7, 8, 11, 12], meter: [2, 2, 2, 2], tempo: 0.2 },
   // Rast, zeybek usulü 9/8
   izmir: { root: 60, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.19 },

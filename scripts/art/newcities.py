@@ -225,8 +225,68 @@ def gaziantep():
     return m.rows()
 
 
+def trabzon():
+    m = Map(214)
+    # A — Meydan: çay teraslarının ilk basamakları, kemençeci
+    m.put(2, 19, 'P')
+    m.put(6, 19, '?')
+    m.put(12, 18, '===')
+    m.put(17, 17, '===')
+    m.put(24, 19, 'n')
+    m.put(30, 19, 'k')
+    # B — horon terasları: oyuncuların elleri seni yukarı taşır
+    m.put(36, 19, '?')
+    m.put(38, 18, 'HHH')                 # yerdeki halka (ayaklar zeminde)
+    m.fill(42, 15, 49, 19, '#')          # 1. teras
+    m.put(43, 13, 'HHH')                 # teras üstündeki halka
+    m.fill(47, 10, 54, 14, '#')          # 2. teras
+    m.put(48, 8, 'HHH')
+    m.fill(52, 5, 60, 9, '#')            # 3. teras
+    m.put(56, 3, 'C')
+    m.put(66, 9, 'f')
+    m.fill(61, 20, 74, 20, '^')          # teraslardan inişte dikenli çit
+    m.put(64, 17, '===')
+    m.put(69, 15, '===')
+    m.put(80, 19, 'n')
+    m.put(83, 19, 'F')
+    # C — Sümela: kayalığa tırman, anahtar manastırın önünde
+    m.put(92, 19, '?')
+    m.fill(98, 6, 124, 19, '#')
+    m.put(93, 16, 'XX')
+    m.put(95, 12, 'XX')
+    m.put(108, 3, 'C')
+    m.put(115, 5, 'K')
+    m.put(120, 4, 'f')
+    # D — Hamsiköy düğün meydanı: koçari halkası seni düğün sofrasına taşır
+    m.put(127, 19, '?')
+    m.put(130, 18, 'JJJ')
+    m.put(134, 15, '=====')
+    m.put(136, 14, 'n')
+    m.fill(143, 13, 152, 19, '#')
+    m.fill(143, 17, 143, 19, '%')
+    m.fill(144, 17, 151, 19, ' ')
+    m.put(150, 19, '$')
+    m.put(155, 19, 'e')
+    m.fill(160, 0, 162, 19, '#')
+    m.fill(160, 16, 162, 19, 'D')
+    # E — Uzungöl: kayıklarla göl, son hatıra havada
+    m.put(166, 19, 'F')
+    m.put(170, 19, '?')
+    m.fill(174, 20, 203, 23, '~')
+    m.put(174, 18, '|')
+    m.put(176, 18, 'MMM')
+    m.put(189, 18, '|')
+    m.put(184, 16, '|')
+    m.put(198, 16, 'MMM')
+    m.put(203, 16, '|')
+    m.put(189, 12, 'C')
+    m.put(182, 10, 'f')
+    m.put(210, 19, 'E')
+    return m.rows()
+
+
 if __name__ == '__main__':
-    out = {'konya': konya(), 'nevsehir': nevsehir(), 'gaziantep': gaziantep()}
+    out = {'konya': konya(), 'nevsehir': nevsehir(), 'gaziantep': gaziantep(), 'trabzon': trabzon()}
     for k, v in out.items():
         print(k, len(v[0]), sum(r.count('C') for r in v), 'C', sum(r.count('F') for r in v), 'F', sum(r.count('n') for r in v), 'n', sum(r.count('?') for r in v), '?')
     json.dump(out, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'newcities.json'), 'w'))

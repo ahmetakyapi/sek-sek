@@ -82,6 +82,25 @@ export interface CityStyle {
 }
 
 export const CITY: Record<CityKey, CityStyle> = {
+  trabzon: {
+    sky: ['#3c5468', '#7e98a0', '#c8d6d0'],
+    sun: null,
+    far: '#7c9690',
+    mid: '#4e6a62',
+    near: '#2c4440',
+    tileTop: '#6aa04a',
+    tile: '#5c6670',
+    tileDark: '#3a424c',
+    tileLight: '#78828c',
+    plank: '#6a4a32',
+    accent: '#d6403a',
+    water: ['#2e6a7a', '#1e4a58', '#a8d8e0'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'rain',
+    enemyGround: 'crab',
+    enemyFly: 'gull',
+    animal: 'cow',
+  },
   konya: {
     sky: ['#34386a', '#d4866a', '#f6d49a'],
     sun: { x: 0.66, y: 0.6, r: 18, color: '#ffe2a6', glow: 'rgba(255,205,150,0.25)' },
@@ -436,6 +455,45 @@ export function buildLayers(city: CityKey): Layers {
   const s = CITY[city]
   const B = LAYER_H
   switch (city) {
+    case 'trabzon':
+      return {
+        far: layer((c) => {
+          // sisli, sık ormanlı dağlar; zirvede bulut
+          hills(c, s.far, B - 130, 46, 3, 61)
+          for (let i = 0; i < 24; i++) rect(c, (i * 71) % LAYER_W, B - 150 + ((i * 17) % 40), 40 + (i % 3) * 20, 3, 'rgba(230,240,240,0.35)')
+        }),
+        mid: layer((c) => {
+          const r = rng(611)
+          const base = B - 56
+          // çay terasları: yamaçta yatay şeritler
+          for (let row = 0; row < 5; row++) for (let x = 0; x < LAYER_W; x += 6) rect(c, x, base - 40 - row * 10 + Math.round(Math.sin((x + row * 30) / 40) * 3), 4, 3, '#3e5e48')
+          // Sümela: dik kayalığa oyulmuş manastır, pencere sıraları
+          rect(c, 420, base - 120, 70, 120, '#3e4e4a')
+          rect(c, 430, base - 92, 50, 34, '#c8b898')
+          for (let i = 0; i < 6; i++) rect(c, 434 + i * 8, base - 86, 3, 5, '#3a2a24')
+          for (let i = 0; i < 6; i++) rect(c, 434 + i * 8, base - 74, 3, 5, '#3a2a24')
+          rect(c, 428, base - 96, 54, 4, '#8a6a4a')
+          // Karadeniz evleri: beyaz duvar, kırmızı kiremit, ahşap balkon
+          for (let x = 0; x < LAYER_W; x += 26 + Math.floor(r() * 16)) {
+            if (x > 400 && x < 500) continue
+            const h = 14 + Math.floor(r() * 12)
+            rect(c, x, base - h, 18, h, '#d8d4c8')
+            for (let i = 0; i < 9; i++) rect(c, x - 1 + i, base - h - i / 2, 20 - i * 2, 1, '#a8402a')
+            rect(c, x + 2, base - h + 6, 14, 1, '#6a4a32')
+            rect(c, x + 4, base - h + 3, 3, 3, '#3a3a40')
+            rect(c, x + 11, base - h + 3, 3, 3, '#3a3a40')
+          }
+          rect(c, 0, base, LAYER_W, 60, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(612)
+          const base = B - 24
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // çay çalıları: yuvarlak, sıra sıra
+          for (let x = 0; x < LAYER_W; x += 9) disc(c, x + 4, base - 3 - Math.floor(r() * 2), 5, '#2e5236')
+          for (let x = 0; x < LAYER_W; x += 9) rect(c, x + 2, base - 7, 2, 1, '#5a8a4a')
+        }),
+      }
     case 'konya':
       return {
         far: layer((c) => {
@@ -798,6 +856,13 @@ export function buildLayers(city: CityKey): Layers {
           dome(c, 392, base - 12, 7, s.mid)
           dome(c, 408, base - 12, 7, s.mid)
           minaret(c, 300, B - 120, 70, s.mid, 5)
+          // Mardin Kalesi: şehrin tepesinde surlar ve beyaz radar kubbeleri
+          const kb = B - 196
+          for (let x = 120; x < 560; x++) rect(c, x, kb - Math.round(Math.sin(((x - 120) / 440) * Math.PI) * 10), 1, 30, s.mid)
+          for (let x = 140; x < 540; x += 8) rect(c, x, kb - 14 - Math.round(Math.sin(((x - 120) / 440) * Math.PI) * 10), 4, 4, s.mid)
+          dome(c, 330, kb - 18, 8, '#e8e4dc', false)
+          dome(c, 352, kb - 16, 6, '#e8e4dc', false)
+          rect(c, 322, kb - 18, 16, 4, '#e8e4dc')
         }),
         near: layer((c) => {
           const r = rng(4701)
@@ -846,7 +911,11 @@ export function buildLayers(city: CityKey): Layers {
       }
     case 'corum':
       return {
-        far: layer((c) => hills(c, s.far, B - 100, 16, 2, 19)),
+        far: layer((c) => {
+          hills(c, s.far, B - 100, 16, 2, 19)
+          // Yazılıkaya: kaya açık hava tapınağının yuvarlak kaya kümeleri
+          for (const [x, r] of [[80, 18], [104, 14], [122, 20], [380, 16], [402, 22]] as const) disc(c, x, B - 100, r, s.far)
+        }),
         mid: layer((c) => {
           hills(c, s.mid, B - 64, 10, 3, 190)
           // Hattuşa surları ve kuleler
@@ -863,6 +932,19 @@ export function buildLayers(city: CityKey): Layers {
             const hw = Math.round(8 * Math.sqrt(y / 26))
             rect(c, gx - hw, base - 26 + y, hw * 2, 1, s.far)
           }
+          // aslanlar kapının iki yanında
+          for (const lx of [gx - 20, gx + 12]) {
+            rect(c, lx, base - 14, 8, 6, s.near)
+            rect(c, lx + (lx < gx ? 6 : 0), base - 18, 3, 4, s.near)
+          }
+          // Çorum Saat Kulesi: kare gövde, kadranlı üst, kurşun külah
+          const tx = 520
+          rect(c, tx - 7, base - 78, 14, 78, s.mid)
+          rect(c, tx - 9, base - 84, 18, 6, s.mid)
+          disc(c, tx, base - 70, 4, '#e8dcc0')
+          rect(c, tx, base - 72, 1, 2, '#3a2a24')
+          rect(c, tx, base - 70, 2, 1, '#3a2a24')
+          dome(c, tx, base - 84, 8, s.mid)
         }),
         near: layer((c) => {
           const r = rng(1902)
@@ -1191,6 +1273,11 @@ export function enemyArt(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' |
 
 /* ── Hatıralar (toplanabilir) ─────────────────────────────────── */
 export const ITEM_ART: Record<CityKey, { rows: string[]; pal: Record<string, string> }> = {
+  trabzon: {
+    // Hamsiköy sütlacı: toprak kâsede, fırında kızarmış üst ve fındık
+    pal: { k: '#a8602e', K: '#7a4220', w: '#f6ecd8', b: '#c88a4a', n: '#8a5a2a', N: '#5a3a1a' },
+    rows: ['..........', '...nN.n...', '..bbbbbb..', '.bwbbbwbb.', 'kwwwwwwwwk', 'kkkkkkkkkk', '.kKkkkkKk.', '..kkkkkk..', '...KKKK...', '..........'],
+  },
   konya: {
     pal: { c: '#c8a070', C: '#ecd0a2', d: '#8a6a44', k: '#5a4028' },
     rows: ['...cccc...', '..cCcccc..', '..cCcccd..', '..cCcccd..', '..cCcccd..', '..cCcccd..', '.ccCccccd.', '.cCccccdd.', '.kkkkkkkk.', '..........'],

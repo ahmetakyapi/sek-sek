@@ -51,6 +51,7 @@ m.put(20, 16, 'MMMM')
 m.put(33, 16, '|')
 m.put(12, 12, 'f')
 m.put(26, 10, 'f')
+m.put(3, 19, 'n')
 m.put(36, 19, 'n')
 add('istanbul', 174, 20, m, ['Vapur seferi: iki vapur, iki ritim. Birinden ötekine geç, martılara dikkat.'],
     [{'name': 'Vapur Kaptanı Nuri', 'look': 'amca', 'text': 'Kırk yıldır Karaköy ile Kadıköy arasında gidip gelirim. Dalga sert, martı arsız; ama her sefer bir başka güzel.'}])
@@ -110,6 +111,7 @@ m.pit(4, 31)
 for x, y in [(5, 18), (9, 16), (13, 14), (17, 14), (21, 16), (25, 18)]:
     m.put(x, y, 'XX')
 m.put(34, 19, 'e')
+m.put(3, 19, 'n')
 add('mardin', 168, 18, m, ['Kasımiye’nin taşları eski: bastığın taş dağılır, durmadan sek!'], [])
 
 # 7 Malatya — kayısı kasaları
@@ -136,6 +138,7 @@ m.put(31, 17, '<')
 m.fill(31, 18, 31, 18, ' ')
 m.pit(11, 13)
 m.pit(21, 23)
+m.put(34, 19, 'n')
 add('corum', 168, 16, m, ['Yerkapı: Hititlerin taş tüneli. Ok tuzaklarının ritmini bekle, okun üstünden sek.'], [])
 
 # 9 Ordu — Boztepe teleferiği

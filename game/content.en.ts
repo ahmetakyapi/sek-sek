@@ -15,6 +15,31 @@ export interface LevelEn {
 }
 
 export const LEVELS_EN: Record<string, LevelEn> = {
+  trabzon: {
+    subtitle: 'Horon and Highlands',
+    item: 'Rice Pudding',
+    intro: 'The sound of the kemençe, horon dancers and rain that never stops. From the square to the tea terraces, from the Sümela cliff to Hamsiköy and on to Lake Uzungöl.',
+    note: 'Once the kemençe starts, no feet stay still; join the horon, shoulder to shoulder. On the Maçka road stop at Hamsiköy and have them sprinkle hazelnuts on your rice pudding.',
+    facts: [
+      { title: 'Horon', text: 'Horon is the folk dance of the Black Sea. It is danced arm in arm, shoulder to shoulder, with fast, shimmying steps to the kemençe.' },
+      { title: 'Sümela Monastery', text: 'Sümela Monastery is carved into a steep cliff in the Altındere Valley in Maçka. According to tradition it was founded in the 4th century.' },
+      { title: 'Hamsiköy Rice Pudding', text: 'Made in Hamsiköy in Maçka, this rice pudding is browned in the oven, served with hazelnuts and registered as a geographical indication.' },
+    ],
+    secret: { title: 'Uzungöl', text: 'Uzungöl in Çaykara is a lake formed when a landslide from the mountain dammed the valley.' },
+    hints: [
+      'Welcome to Trabzon! Climb the tea terraces and listen to the kemençe player.',
+      'The horon line: the dancers jump together. Stand on their joined hands and leap to the next terrace at the top.',
+      'The Sümela cliff: cracked stones crumble, press against the wall to climb. The key is in front of the monastery.',
+      'The wedding square: the koçari line stomps slowly and stays up longer. Time it to reach the table.',
+      'Uzungöl: hop from boat to boat and watch out for the gulls.',
+    ],
+    npcs: [
+      { name: 'Uncle Cemal the Kemençe Player', text: 'The kemençe has only three strings but never runs out of things to say, my lad! Now let me play “Taşacak Bu Deniz” so the dancers jump; jump too when you are at the top.' },
+      { name: 'Yusuf the Horon Dancer', text: 'In the horon we link arms and shimmy shoulder to shoulder. At weddings guests sometimes strike up a koçari too; we keep up with them all!' },
+      { name: 'Sister Fadime the Pudding Maker', text: 'Welcome to the wedding table! Hamsiköy rice pudding is browned in the oven and topped with hazelnuts. They are dancing the koçari down there, join a line!' },
+    ],
+    quips: ['The horon never stops, neither should you!', 'Easy there, lad!', 'Even an anchovy does not slip like that.', 'Here the rain is not a guest, it lives here.'],
+  },
   istanbul: {
     subtitle: 'On the Bosphorus',
     item: 'Simit',
@@ -730,7 +755,7 @@ export const STORY_EN: { title: string; text: string }[] = [
   },
   {
     title: 'The Unfinished Pages',
-    text: 'Each page was given to a city: İstanbul, Kocaeli, İzmir, Ankara, Konya, Nevşehir, Adana, Gaziantep, Mardin, Malatya, Çorum, Ordu, Sivas, Ardahan, Bayburt. Every page had a short note from Grandpa and three empty boxes. Three keepsakes from every city… The journey had been left unfinished.',
+    text: 'Each page was given to a city: İstanbul, Kocaeli, İzmir, Ankara, Konya, Nevşehir, Adana, Gaziantep, Mardin, Malatya, Çorum, Ordu, Trabzon, Sivas, Ardahan, Bayburt. Every page had a short note from Grandpa and three empty boxes. Three keepsakes from every city… The journey had been left unfinished.',
   },
   {
     title: 'The Last Line',
@@ -740,7 +765,7 @@ export const STORY_EN: { title: string; text: string }[] = [
 
 export const ENDING_EN: { title: string; text: string } = {
   title: 'The Notebook Is Complete',
-  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. Grandpa Yusuf was born here and heard his first kopuz on the banks of the Çoruh. Fifteen cities lie behind. The road has ended, but the homeland never does: the next cities are on their way.',
+  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. Grandpa Yusuf was born here and heard his first kopuz on the banks of the Çoruh. Sixteen cities lie behind. The road has ended, but the homeland never does: the next cities are on their way.',
 }
 
 export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string }> = {

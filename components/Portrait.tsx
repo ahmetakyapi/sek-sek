@@ -48,3 +48,32 @@ export default function Portrait({ id, className = '' }: { id: CharacterId; clas
     </span>
   )
 }
+
+/** Yüz bölgesi (alın, gözler, çene) */
+const FACE = { x: 13, y: 16, w: 38, h: 38 }
+
+/**
+ * Göstergedeki küçük portre: yüz bölgesi 1:1 kırpılır, CSS pikseline tam oturur (retinada 2x/3x keskin kalır).
+ * Altın çerçeveli bir posta pulu gibi durur, arada göz kırpar.
+ */
+export function PortraitFace({ id, scale = 1 }: { id: CharacterId; scale?: 1 | 2 }) {
+  const [src, setSrc] = useState<{ open: string; closed: string } | null>(null)
+  useEffect(() => {
+    const p = PORTRAITS[id]
+    const crop = (rows: string[]) => rows.slice(FACE.y, FACE.y + FACE.h).map((r) => r.slice(FACE.x, FACE.x + FACE.w))
+    setSrc({ open: toUrl(crop(p.rows), p.pal), closed: toUrl(crop(p.closed), p.pal) })
+  }, [id])
+  const size = FACE.w * scale
+  return (
+    <span className="relative block shrink-0 bg-[#f4ead8] p-[2px] [box-shadow:0_0_0_2px_#d9a441,0_2px_0_2px_rgba(0,0,0,0.35)]" style={{ width: size + 4, height: size + 4 }} aria-hidden>
+      {src && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src.open} alt="" width={size} height={size} className="absolute left-[2px] top-[2px]" style={{ imageRendering: 'pixelated', width: size, height: size }} draggable={false} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src.closed} alt="" width={size} height={size} className="portrait-blink-img absolute left-[2px] top-[2px]" style={{ imageRendering: 'pixelated', width: size, height: size }} draggable={false} />
+        </>
+      )}
+    </span>
+  )
+}

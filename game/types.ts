@@ -1,6 +1,6 @@
 export const T = 16
 
-export type CityKey = 'istanbul' | 'kocaeli' | 'izmir' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'mardin' | 'malatya' | 'corum' | 'ordu' | 'sivas' | 'ardahan' | 'bayburt'
+export type CityKey = 'istanbul' | 'kocaeli' | 'izmir' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'mardin' | 'malatya' | 'corum' | 'ordu' | 'trabzon' | 'sivas' | 'ardahan' | 'bayburt'
 
 export interface Fact {
   title: string

@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Dedenin yarım kalmış defterini tamamla. On beş şehir, kırk beş hatıra, tek yolculuk.**
+**Dedenin yarım kalmış defterini tamamla. On altı şehir, kırk sekiz hatıra, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir piksel platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -19,7 +19,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
 
-- **15 Şehir, Her Biri Kendine Has.** Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+- **16 Şehir, Her Biri Kendine Has.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
   Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr.
 - **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
   **gizli pul** deftere gizli bir sayfa ekler.
@@ -35,11 +35,11 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 ## Rota
 
-<img src="docs/img/cities.png" alt="On beş şehrin oyun içinden görüntüleri" width="100%">
+<img src="docs/img/cities.png" alt="On altı şehrin oyun içinden görüntüleri" width="100%">
 
 | # | Şehir | Plaka | Zorluk | Kendine Has | Hatıra |
 |---|-------|:-----:|--------|-------------|--------|
-| 1 | İstanbul · Boğaz Kıyısı | 34 | Kolay | İskele, kristal, Vapur Seferi | Simit |
+| 1 | İstanbul · Boğaz Kıyısı | 34 | Kolay | İskele, kristal, Vapur Seferi, nostaljik tramvay | Simit |
 | 2 | Kocaeli · Körfez ve SEKA | 41 | Kolay | Anahtarlı depo, çürük kâğıt bobinleri | Pişmaniye |
 | 3 | İzmir · Kordon Boyu | 35 | Kolay | Körfez vapuru, Tarihi Asansör, Kemeraltı tenteleri | Boyoz |
 | 4 | Ankara · Kale ve Cumbalar | 06 | Orta | Kale burcunda tırmanış, koç | Tiftik |
@@ -47,13 +47,14 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 6 | Nevşehir · Kapadokya | 50 | Orta | Binince yükselen balonlar, Derinkuyu tünelleri | Testi |
 | 7 | Adana · Seyhan ve Taşköprü | 01 | Orta | Seyhan bentleri, sivrisinekler | Pamuk |
 | 8 | Gaziantep · Bakırcılar Çarşısı | 27 | Orta | Bakırcı tokmakları, fıstık bahçesi, Zeugma bilmecesi | Baklava |
-| 9 | Mardin · Taş Teraslar | 47 | Orta | Dağılan Kasımiye taşları, gizli mahzen | Telkari |
+| 9 | Mardin · Taş Teraslar | 47 | Orta | Dağılan Kasımiye taşları, gizli mahzen, kale ve güvercinler | Telkari |
 | 10 | Malatya (Erik Diyarı) · Kayısı Bahçeleri | 44 | Orta | Kayısı kasaları, arılar | Kayısı |
-| 11 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
+| 11 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli, güneş kursu, Saat Kulesi | Leblebi |
 | 12 | Ordu · Fındık ve Boztepe | 52 | Zor | Boztepe teleferiği, yaban domuzları | Fındık |
-| 13 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, kurtlar, Gök Medrese bilmecesi | Kangal rozeti |
-| 14 | Ardahan · Donmuş Çıldır | 75 | Zor | Buz delikleri, kırılan göl buzu, rüzgâr | Kızak Çanı |
-| 15 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları | Kopuz |
+| 13 | Trabzon · Horon ve Yayla | 61 | Zor | Horon halkası, çay terasları, Sümela kayalığı, Uzungöl | Sütlaç |
+| 14 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, kurtlar, Gök Medrese bilmecesi | Kangal rozeti |
+| 15 | Ardahan · Donmuş Çıldır | 75 | Zor | Buz delikleri, kırılan göl buzu, rüzgâr | Kızak Çanı |
+| 16 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları | Kopuz |
 
 ## Yolcular ve Şehir İnsanları
 

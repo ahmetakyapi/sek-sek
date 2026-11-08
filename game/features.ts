@@ -12,6 +12,7 @@ export const FEATURES: Record<string, { tr: string; en: string }> = {
   malatya: { tr: 'Kayısı kasaları, arılar, Aslantepe', en: 'Apricot crates, bees, Arslantepe' },
   corum: { tr: 'Hitit ok tuzakları, Yerkapı tüneli, Aslanlı Kapı', en: 'Hittite arrow traps, the Yerkapı tunnel, the Lion Gate' },
   ordu: { tr: 'Dalgalı sahil, fındık yamaçları, Boztepe teleferiği', en: 'A wavy shore, hazelnut slopes, the Boztepe cable car' },
+  trabzon: { tr: 'Horon halkası, çay terasları, Sümela kayalığı, Uzungöl', en: 'Horon dancers, tea terraces, the Sümela cliff, Lake Uzungöl' },
   sivas: { tr: 'Kaygan buz, kurtlar, Gök Medrese bilmecesi', en: 'Slippery ice, wolves, the Gök Madrasa riddle' },
   ardahan: { tr: 'Donmuş Çıldır Gölü, buz delikleri, rüzgâr', en: 'Frozen Lake Çıldır, ice holes, wind' },
   bayburt: { tr: 'Karşı rüzgâr, Çoruh salları, kale burcu', en: 'Headwind, Çoruh rafts, the castle bastion' },
