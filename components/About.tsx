@@ -122,7 +122,7 @@ export default function About({ onClose, onPlay, heroName }: { onClose: () => vo
               const en = characterFor(lang, id)
               return (
                 <article key={id} className="flex gap-4">
-                  <figure className={`polaroid w-[112px] shrink-0 sm:w-[132px] ${k ? 'rotate-[3deg]' : 'rotate-[-3deg]'}`}>
+                  <figure className={`polaroid w-[112px] shrink-0 self-start sm:w-[132px] ${k ? 'rotate-[3deg]' : 'rotate-[-3deg]'}`}>
                     <span className="tape" />
                     <Portrait id={id} className="w-full" />
                     <figcaption>{c.short}</figcaption>

@@ -277,7 +277,7 @@ def bg_plain(cv, top='#2a2238', mid='#46304a', low='#6a3e4c'):
 
 # ───────────────────────── yüz geometrisi ─────────────────────────
 PROFILES = {
-    'f': [(20, 9.5), (23, 13.2), (28, 14.8), (36, 15.0), (41, 14.4), (45, 13.0), (48, 11.2), (51, 8.6), (53, 6.0), (54.6, 3.0)],
+    'f': [(20, 9.5), (23, 13.0), (28, 14.4), (35, 14.6), (39, 14.0), (43, 12.4), (46, 10.2), (49, 7.4), (51, 4.6), (52.4, 2.2)],
     'm': [(19, 10.5), (22, 14.0), (28, 15.4), (36, 15.6), (42, 15.2), (46, 14.4), (49, 13.0), (52, 10.6), (54, 7.4), (55.6, 3.6)],
     'old': [(19, 10.5), (22, 14.0), (28, 15.2), (36, 15.4), (42, 15.0), (46, 14.0), (49, 12.4), (52, 10.0), (54, 7.0), (55.4, 3.4)],
 }
@@ -404,10 +404,21 @@ def paint(spec, blink=False):
                             t -= 1
                         cv.put(x, y, skin, t, FACE)
     # ── yüz ──
+    soft = spec['face'] == 'f'
     for y in range(18, 57):
         for x in range(W):
             if in_face(x, y):
-                cv.put(x, y, skin, skin_tone(face_light(x, y, hw)), FACE)
+                I = face_light(x, y, hw) + (0.06 if soft else 0)
+                tn = skin_tone(I)
+                if soft:
+                    # ışık daha önden: iki yanak arasında sert dikiş kalmasın, gölge yalnız kenarda
+                    I = face_light(x, y, lambda yy: hw(yy) * 1.6) + 0.04
+                    tn = max(2, skin_tone(I))
+                cv.put(x, y, skin, tn, FACE)
+    if soft:
+        # çene ucunda ışık, çene altında yumuşak gölge
+        cv.put(31, 49, skin, 5, FACE)
+        cv.put(32, 49, skin, 4, FACE)
     # çene altı gölgesi boyunda
     for y in range(46, 63):
         for x in range(W):
@@ -428,7 +439,8 @@ def paint(spec, blink=False):
         for bx in (CX - 7.5, CX + 7.5):
             for y in range(40, 46):
                 for x in range(W):
-                    if in_face(x, y) and ((x + 0.5 - bx) / 3.2) ** 2 + ((y + 0.5 - 43) / 1.4) ** 2 < 1:
+                    d = ((x + 0.5 - bx) / 3.0) ** 2 + ((y + 0.5 - 41.5) / 1.3) ** 2
+                    if in_face(x, y) and d < 0.75:
                         m, t = cv.get(x, y)
                         cv.put(x, y, blush, t, FACE)
 
@@ -441,21 +453,26 @@ def paint(spec, blink=False):
         for y in range(32, 40):
             for x in range(W):
                 if ((x + 0.5 - ex) / 5) ** 2 + ((y + 0.5 - 36) / 2.8) ** 2 < 1 and cv.get(x, y)[1] >= 4:
-                    sk(x, y, -1)
+                    if spec['eye'] != 'f' or x + 0.5 > ex + 2:
+                        sk(x, y, -1)
 
     # burun
     nose = spec.get('nose', 'f')
-    nlen = 1 if nose == 'm' else 0
+    nlen = 1 if nose == 'm' else -1
     for y in range(37, 43 + nlen):
         sk(33, y, -1)
     sk(32, 42 + nlen, +1)
     cv.put(31, 41 + nlen, skin, 5, FACE)
-    cv.put(30, 44 + nlen, skin, 1, FACE)
-    cv.put(33, 44 + nlen, skin, 1, FACE)
+    cv.put(30, 44 + nlen, skin, 1 if nose == 'm' else 2, FACE)
+    cv.put(33, 44 + nlen, skin, 1 if nose == 'm' else 2, FACE)
     cv.put(31, 44 + nlen, skin, 2, FACE)
     cv.put(32, 44 + nlen, skin, 2, FACE)
     sk(34, 43 + nlen, -1)
     sk(29, 43 + nlen, -1)
+    if nose != 'm':
+        # burun ucunun gölge yanı ve kemerin ince çizgisi
+        sk(33, 42 + nlen, -1)
+        sk(33, 40 + nlen, -1)
     if nose == 'm':
         sk(34, 42, -1)
 
@@ -467,7 +484,7 @@ def paint(spec, blink=False):
     if blink:
         Lft = ['.KKKKK..', 'LKKKKKK.', '.LLLLL..', '........']
     elif eye == 'f':
-        Lft = ['KKKKK...', 'LLLLLL..', 'LshpIw..', '.sIiIw..', '..KKK...']
+        Lft = ['..KKKK..', '.LLLLLL.', 'LwhIiwL.', 'LwIpIws.', '.sIiIs..', '..KKK...']
     elif eye == 'old':
         Lft = ['.KKKK...', '.LLLLL..', 'KshpIwK.', '.KiIiK..', 'K.KKK...']
     else:
@@ -483,8 +500,7 @@ def paint(spec, blink=False):
     for (ex0, sprite) in ((CX - 9.5, Lft), (CX + 2.5, Rgt)):
         x0 = int(round(ex0))
         for j, r in enumerate(sprite):
-            y = 34 + j - (1 if j == 0 else 0) * 0
-            y = 33 + j
+            y = (32 if eye == 'f' and not blink else 33) + j
             for i, ch in enumerate(r):
                 x = x0 + i
                 if ch == '.':
@@ -502,10 +518,10 @@ def paint(spec, blink=False):
                 elif ch == 'i':
                     cv.put(x, y, 'fix', iris[2], 3)
     if flick:
-        cv.put(int(round(CX - 9.5)) - 1, 33, 'fix', 'L', 3)
-        cv.put(int(round(CX + 2.5)) + 7, 33, 'fix', 'L', 3)
-        cv.put(int(round(CX - 9.5)) - 1, 34, 'fix', 'L', 3)
-        cv.put(int(round(CX + 2.5)) + 7, 34, 'fix', 'L', 3)
+        lx = int(round(CX - 9.5))
+        rx = int(round(CX + 2.5))
+        cv.put(lx - 1, 33, 'fix', 'L', 3)
+        cv.put(rx + 7, 33, 'fix', 'L', 3)
     if spec.get('wrinkles'):
         for (x, y) in [(20, 36), (20, 38), (43, 36), (43, 38)]:
             sk(x, y, -1)
@@ -536,7 +552,8 @@ def paint(spec, blink=False):
     brows = spec['brows']
     br = brows['ramp']
     if brows['style'] == 'f':
-        pts = [(22, 31, 2), (23, 30, 2), (24, 30, 3), (25, 29, 3), (26, 29, 3), (27, 29, 3), (28, 30, 2), (29, 30, 2)]
+        # içte kalın ve alçak, dış üçte birde tepe, kuyruk incelir
+        pts = [(29, 30, 3), (28, 30, 3), (27, 30, 3), (26, 29, 3), (25, 29, 3), (24, 29, 3), (23, 29, 2), (22, 30, 2)]
     elif brows['style'] == 'bushy':
         pts = [(21, 31, 3), (22, 30, 3), (23, 30, 4), (24, 29, 4), (25, 29, 4), (26, 29, 4), (27, 29, 3), (28, 30, 3), (29, 30, 2), (22, 31, 2), (23, 31, 2), (24, 30, 3), (26, 30, 3)]
     else:
@@ -549,20 +566,28 @@ def paint(spec, blink=False):
     # ağız
     mouth = spec['mouth']
     if mouth == 'f':
+        my = 45
+        # üst dudak: ortada küçük çukur (cupid yayı)
+        for x in (29, 30, 33, 34):
+            cv.put(x, my, 'fix', 'lipU', 3)
+        cv.put(30, my - 1, 'fix', 'lipU', 3)
+        cv.put(33, my - 1, 'fix', 'lipU', 3)
+        cv.put(31, my, 'fix', 'lipD', 3)
+        cv.put(32, my, 'fix', 'lipD', 3)
+        # ağız çizgisi, köşeler hafif yukarı (gülümseme)
         for x in range(29, 35):
-            cv.put(x, 47, 'fix', 'lipU', 3)
-        cv.put(31, 46, 'fix', 'lipU', 3)
-        cv.put(32, 46, 'fix', 'lipU', 3)
+            cv.put(x, my + 1, 'fix', 'lipLine', 3)
+        cv.put(28, my, 'fix', 'lipLine', 3)
+        cv.put(35, my, 'fix', 'lipLine', 3)
+        # alt dudak dolgun, ışık solda
         for x in range(29, 35):
-            cv.put(x, 48, 'fix', 'lipLine', 3)
-        cv.put(28, 47, 'fix', 'lipLine', 3)
-        cv.put(35, 47, 'fix', 'lipLine', 3)
-        for x in range(29, 35):
-            cv.put(x, 49, 'fix', 'lipD', 3)
-        cv.put(30, 49, 'fix', 'lipH', 3)
-        cv.put(31, 49, 'fix', 'lipH', 3)
+            cv.put(x, my + 2, 'fix', 'lipD', 3)
         for x in range(30, 34):
-            sk(x, 50, -1)
+            cv.put(x, my + 3, 'fix', 'lipU', 3)
+        cv.put(30, my + 2, 'fix', 'lipH', 3)
+        cv.put(31, my + 2, 'fix', 'lipH', 3)
+        for x in range(30, 34):
+            sk(x, my + 4, -1)
     else:
         for x in range(29, 35):
             cv.put(x, 48, 'fix', 'lipLineM', 3)
