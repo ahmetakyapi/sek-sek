@@ -29,7 +29,8 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   content.en.ts  bütün bölüm metinlerinin İngilizcesi
   art.ts         şehir paletleri, arka plan katmanları, eşya ve düşman sprite'ları, canlı adları
   render.ts      düşük çözünürlüklü tampon, parallax, parçacık, karakter, NPC
-  characters.ts  Uktun ve Memo sprite'ları (baş + saç + gövde + bacak katmanları)
+  characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
+  heroFrames.ts  20x24 animasyonlu karakter kareleri: bekleme, göz kırpma, 8 karelik koşu, zıplama, duvar, atılma (scripts/art/hero.py üretir)
   portraits.ts   64x76 portreler (scripts/art/painter.py üretir; Uktun'un yüzü elle çizilmiş scripts/art/uktun_classic.json'dan gelir)
   audio.ts       WebAudio efektleri + şehir makamında üretilen müzik
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik

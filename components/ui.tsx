@@ -3,7 +3,8 @@
 import { useT } from '@/lib/i18n'
 import { useEffect, useRef } from 'react'
 import { sprite } from '@/game/art'
-import { frameRows, type CharacterDef, type Pose } from '@/game/characters'
+import type { CharacterDef } from '@/game/characters'
+import { HERO, HERO_H, HERO_W, type HeroFrame } from '@/game/heroFrames'
 import type { LevelDef } from '@/game/types'
 
 export function Overlay({ children, dim = false }: { children: React.ReactNode; dim?: boolean }) {
@@ -49,13 +50,14 @@ export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?:
   )
 }
 
-/** Karakteri büyük ölçekte çizen canlı önizleme (göz kırpma, saç ve atkı sallanır). */
-export function CharacterPortrait({ c, scale = 6, pose = 'idle', className = '' }: { c: CharacterDef; scale?: number; pose?: Pose | 'run'; className?: string }) {
+/** Karakteri büyük ölçekte çizen canlı önizleme: nefes alır, göz kırpar, koşarken 8 kare döner, atkı dalgalanır. */
+export function CharacterPortrait({ c, scale = 6, pose = 'idle', className = '' }: { c: CharacterDef; scale?: number; pose?: 'idle' | 'run'; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const cv = ref.current
     if (!cv) return
     const ctx = cv.getContext('2d')!
+    const hero = HERO[c.id]
     let raf = 0
     const t0 = performance.now()
     const draw = (now: number) => {
@@ -66,27 +68,23 @@ export function CharacterPortrait({ c, scale = 6, pose = 'idle', className = '' 
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
       ctx.imageSmoothingEnabled = false
       const running = pose === 'run'
-      const f = Math.floor(t * 10) % 4
-      const p: Pose = running ? (['runA', 'runB', 'runC', 'runD'] as const)[f] : (pose as Pose)
-      const bob = running ? f % 2 : Math.sin(t * 2.5) > 0.6 ? 1 : 0
-      const blink = t % 3.4 < 0.12
-      const ox = 4
-      const oy = 2
-      // gölge
+      const frame: HeroFrame = running ? (`run${Math.floor(t * 12) % 8}` as HeroFrame) : t % 3.4 < 0.12 ? 'blink' : Math.floor(t / 0.7) % 2 ? 'idle1' : 'idle0'
+      const ox = 2
+      const oy = 1
       ctx.fillStyle = 'rgba(0,0,0,0.3)'
-      ctx.fillRect(ox + 3, oy + 20, 10, 1)
+      ctx.fillRect(ox + 5, oy + HERO_H - 1, 10, 1)
       const wave = Math.floor(t * (running ? 12 : 3)) % 3
-      if (c.tail) sprite(ctx, c.tail.frames[running ? wave : wave % 2], c.pal, ox - 1, oy + c.tail.y + bob)
-      ctx.fillStyle = c.pal.r
-      ctx.fillRect(ox, oy + 10 + bob, 2, 1)
-      ctx.fillStyle = c.pal.R
-      ctx.fillRect(ox - 1, oy + 11 + bob + (wave === 1 ? 1 : 0), 2, 1)
-      sprite(ctx, frameRows(c, p, bob, blink), c.pal, ox, oy)
+      const lean = running ? 1 : 0
+      ctx.fillStyle = hero.pal.r
+      ctx.fillRect(ox + 5 + lean, oy + 9, 2, 1)
+      ctx.fillStyle = hero.pal.R
+      ctx.fillRect(ox + 4 + lean, oy + 10 + (wave === 1 ? 1 : 0), 2, 1)
+      sprite(ctx, hero.frames[frame], hero.pal, ox, oy)
     }
     raf = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(raf)
   }, [c, scale, pose])
-  return <canvas ref={ref} width={24 * scale} height={23 * scale} className={className} style={{ imageRendering: 'pixelated' }} aria-label={`${c.name} karakteri`} />
+  return <canvas ref={ref} width={(HERO_W + 4) * scale} height={(HERO_H + 2) * scale} className={className} style={{ imageRendering: 'pixelated' }} aria-label={`${c.name} karakteri`} />
 }
 
 export function haptic(ms: number | number[]) {
