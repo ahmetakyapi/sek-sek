@@ -1,3 +1,11 @@
+import { LEVELS } from '@/game/levels'
+
+/** Haritalar değişince artar: oyuncuya "yenilendi" notu gösterilir, baştan başlama önerilir. */
+export const MAP_VERSION = 2
+
+/** v1'deki şehir sırası: açılan şehir dizinini yeni sıraya taşımak için */
+const ORDER_V1 = ['istanbul', 'kocaeli', 'izmir', 'ankara', 'adana', 'mardin', 'malatya', 'corum', 'ordu', 'sivas', 'ardahan', 'bayburt']
+
 export interface Best {
   timeMs: number
   deaths: number
@@ -24,17 +32,29 @@ export interface Save {
   player: Player | null
   skippedName: boolean
   stamps: Record<string, boolean>
+  /** kaydın ait olduğu harita sürümü */
+  mapVersion: number
+  /** arayüz dili */
+  lang: 'tr' | 'en'
 }
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false, stamps: {} })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr' })
 
 export function loadSave(): Save {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return defaultSave()
-    const s = { ...defaultSave(), ...(JSON.parse(raw) as Partial<Save>) }
+    const parsed = JSON.parse(raw) as Partial<Save>
+    const s = { ...defaultSave(), ...parsed }
+    if (parsed.mapVersion === undefined) {
+      // v1 kaydı: açılan şehri kimliğiyle yeni sıraya taşı
+      s.mapVersion = 1
+      const id = ORDER_V1[Math.min(s.unlocked, ORDER_V1.length - 1)]
+      const idx = LEVELS.findIndex((l) => l.id === id)
+      s.unlocked = idx >= 0 ? idx : 0
+    }
     // eski sürümdeki "ayla" seçimi Uktun'a taşınır
     if ((s.character as string) === 'ayla') s.character = 'uktun'
     if ((s.character as string) === 'kerem') s.character = 'memo'
@@ -43,6 +63,12 @@ export function loadSave(): Save {
     return defaultSave()
   }
 }
+
+/** Eski haritalarda ilerlemesi olan oyuncu: "haritalar yenilendi" notunu görmeli */
+export const needsMapNotice = (s: Save) => s.mapVersion < MAP_VERSION && (s.unlocked > 0 || Object.keys(s.best).length > 0)
+
+/** Baştan başla: ilerleme sıfırlanır; ad, karakter ve ayarlar kalır */
+export const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, mapVersion: MAP_VERSION })
 
 export function writeSave(s: Save) {
   try {

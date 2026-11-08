@@ -1,13 +1,20 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { useEffect, useRef } from 'react'
 import { sprite } from '@/game/art'
 import { frameRows, type CharacterDef, type Pose } from '@/game/characters'
 import type { LevelDef } from '@/game/types'
 
 export function Overlay({ children, dim = false }: { children: React.ReactNode; dim?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null)
+  // her ekran en üstten açılır
+  useEffect(() => {
+    ref.current?.scrollTo(0, 0)
+  }, [])
   return (
     <div
+      ref={ref}
       className={`overlay-scroll absolute inset-0 z-20 flex overflow-y-auto p-4 ${dim ? 'bg-ink/60' : 'bg-ink/35'}`}
       style={{ paddingTop: 'max(16px, env(safe-area-inset-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
     >
@@ -28,15 +35,16 @@ const MEDAL: Record<Medal, { label: string; color: string; ring: string }> = {
 }
 
 export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?: 'sm' | 'lg' }) {
+  const t = useT()
   if (!medal) return null
   const m = MEDAL[medal]
   const d = size === 'lg' ? 'h-9 w-9 text-[10px]' : 'h-4 w-4 text-[0px]'
   return (
-    <span className="inline-flex items-center gap-1.5" title={`${m.label} Madalya`}>
+    <span className="inline-flex items-center gap-1.5" title={t('{m} Madalya', { m: t(m.label) })}>
       <span className={`inline-flex items-center justify-center rounded-full border-2 font-bold text-ink ${d}`} style={{ background: m.color, borderColor: m.ring }}>
         {size === 'lg' ? '★' : ''}
       </span>
-      {size === 'lg' && <span className="font-display text-base text-cream">{m.label} Madalya</span>}
+      {size === 'lg' && <span className="font-display text-base text-cream">{t('{m} Madalya', { m: t(m.label) })}</span>}
     </span>
   )
 }
@@ -59,7 +67,7 @@ export function CharacterPortrait({ c, scale = 6, pose = 'idle', className = '' 
       ctx.imageSmoothingEnabled = false
       const running = pose === 'run'
       const f = Math.floor(t * 10) % 4
-      const p: Pose = running ? (['runA', 'runB', 'runC', 'runB'] as const)[f] : (pose as Pose)
+      const p: Pose = running ? (['runA', 'runB', 'runC', 'runD'] as const)[f] : (pose as Pose)
       const bob = running ? f % 2 : Math.sin(t * 2.5) > 0.6 ? 1 : 0
       const blink = t % 3.4 < 0.12
       const ox = 4

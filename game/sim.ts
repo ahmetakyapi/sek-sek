@@ -73,7 +73,13 @@ export interface Player extends Box {
 }
 
 export interface Platform extends Box {
-  axis: 'x' | 'y'
+  /** x/y: gidip gelir · o: çember çizer (sema) · b: binince yükselen balon */
+  axis: 'x' | 'y' | 'o' | 'b'
+  /** çember için merkez, yarıçap, başlangıç açısı */
+  cx?: number
+  cy?: number
+  r?: number
+  a0?: number
   min: number
   max: number
   dir: 1 | -1
@@ -105,6 +111,32 @@ export interface Crystal extends Box {
 
 export interface Plate extends Box {
   pressed: boolean
+}
+
+/** Bakırcı tokmağı: tavandan iner, yere vurur, yavaşça kalkar. Konumu saatin fonksiyonu. */
+export interface Hammer {
+  x: number
+  top: number
+  bottom: number
+  offset: number
+}
+
+export const HAMMER = { rest: 1.1, warn: 0.4, fall: 0.16, hold: 0.45, rise: 1.0 }
+export const HAMMER_CYCLE = HAMMER.rest + HAMMER.warn + HAMMER.fall + HAMMER.hold + HAMMER.rise
+
+/** 0: yukarıda bekler, 1: titrer (uyarı), 2: iner, 3: yerde, 4: kalkar — ve başın üst kenarı */
+export function hammerState(h: Hammer, clock: number): { phase: 0 | 1 | 2 | 3 | 4; y: number } {
+  let t = (clock + h.offset) % HAMMER_CYCLE
+  const span = h.bottom - h.top
+  if (t < HAMMER.rest) return { phase: 0, y: h.top }
+  t -= HAMMER.rest
+  if (t < HAMMER.warn) return { phase: 1, y: h.top }
+  t -= HAMMER.warn
+  if (t < HAMMER.fall) return { phase: 2, y: h.top + span * (t / HAMMER.fall) ** 2 }
+  t -= HAMMER.fall
+  if (t < HAMMER.hold) return { phase: 3, y: h.bottom }
+  t -= HAMMER.hold
+  return { phase: 4, y: h.bottom - span * (t / HAMMER.rise) }
 }
 
 export interface Turret {
@@ -160,6 +192,9 @@ export class World {
   readonly tiles: Uint8Array
   readonly player: Player
   readonly platforms: Platform[] = []
+  readonly hammers: Hammer[] = []
+  /** bölüm açıldığından beri geçen süre (oyuncu başlamasa da akar): saat tabanlı tuzaklar için */
+  clock = 0
   readonly enemies: Enemy[] = []
   readonly turrets: Turret[] = []
   projectiles: Projectile[] = []
@@ -177,6 +212,8 @@ export class World {
   /** false: [ blokları katı · true: ] blokları katı */
   switchOn = false
   readonly decor: Decor[] = []
+  /** şehrin dost hayvanları: dokununca sevinir, zarar vermez */
+  readonly friends: Array<Box & { cool: number }> = []
   readonly exit: Box
   readonly start: { x: number; y: number }
   readonly crumbles = new Map<number, CrumbleState>()
@@ -303,11 +340,19 @@ export class World {
             this.npcs.push({ x: px, y: py, w: T, h: T, index: 0 })
             break
           case 'M':
-          case 'N': {
+          case 'N':
+          case 'O':
+          case 'B': {
             if (row[tx - 1] === ch) break // aynı platformun devamı
             let n = 1
             while (row[tx + n] === ch) n++
-            this.platforms.push(this.makePlatform(map, tx, ty, n, ch === 'M' ? 'x' : 'y'))
+            this.platforms.push(this.makePlatform(map, tx, ty, n, ch === 'M' ? 'x' : ch === 'N' ? 'y' : ch === 'O' ? 'o' : 'b'))
+            break
+          }
+          case 'Y': {
+            let d = ty + 1
+            while (d < map.length && !'#I=X'.includes(map[d][tx] ?? ' ')) d++
+            this.hammers.push({ x: px, top: py, bottom: (d - 1) * T, offset: (tx * 0.37) % HAMMER_CYCLE })
             break
           }
           case 'a':
@@ -325,6 +370,7 @@ export class World {
           case 'w':
           case 'z':
             this.decor.push({ tx, ty, ch })
+            if (ch === 'k') this.friends.push({ x: px - 2, y: py + 4, w: 20, h: 12, cool: 0 })
             break
           default:
             break
@@ -346,12 +392,28 @@ export class World {
     this.player = this.freshPlayer(start.x, start.y)
   }
 
-  private makePlatform(map: string[], tx: number, ty: number, n: number, axis: 'x' | 'y'): Platform {
+  private makePlatform(map: string[], tx: number, ty: number, n: number, axis: Platform['axis']): Platform {
     const w = n * T
     const x = tx * T
     const y = ty * T
     let min: number
     let max: number
+    if (axis === 'o') {
+      // merkez yerleştirilen yerde; 2 karo yarıçapla döner, komşular ters yönde
+      const cx = x + w / 2
+      const cy = y + 4
+      const a0 = (tx % 2) * Math.PI
+      const dir = tx % 4 < 2 ? 1 : -1
+      const r = 2 * T
+      return { x: cx + Math.cos(a0) * r - w / 2, y: cy + Math.sin(a0) * r, w, h: 6, axis, min: 0, max: 0, dir, speed: 1.35, dx: 0, dy: 0, cx, cy, r, a0 }
+    }
+    if (axis === 'b') {
+      let u = ty - 1
+      while (u >= 0 && map[u][tx] !== ':' && !'#X'.includes(map[u][tx])) u--
+      // tavanla arasında oyuncuya yer kalsın
+      min = Math.min(y, (u + 1) * T + (map[u]?.[tx] === ':' ? 0 : 2 * T))
+      return { x, y, w, h: 6, axis, min, max: y, dir: 1, speed: 34, dx: 0, dy: 0 }
+    }
     if (axis === 'x') {
       let l = tx - 1
       while (l >= 0 && map[ty][l] !== '|' && map[ty][l] !== '#') l--
@@ -404,7 +466,9 @@ export class World {
 
   tile(tx: number, ty: number): number {
     if (tx < 0 || tx >= this.cols) return SOLID
-    if (ty < 0 || ty >= this.rows) return EMPTY
+    // tepeye dayanan duvar göğe kadar sürer: üstünden tırmanıp aşılmaz
+    if (ty < 0) return this.tiles[tx] === SOLID ? SOLID : EMPTY
+    if (ty >= this.rows) return EMPTY
     return this.tiles[ty * this.cols + tx]
   }
 
@@ -454,7 +518,29 @@ export class World {
 
   private updatePlatforms(dt: number) {
     const p = this.player
+    this.clock += dt
     for (const pl of this.platforms) {
+      if (pl.axis === 'o' || pl.axis === 'b') {
+        let nx = pl.x
+        let ny = pl.y
+        if (pl.axis === 'o') {
+          const a = pl.a0! + pl.dir * pl.speed * this.clock
+          nx = pl.cx! + Math.cos(a) * pl.r! - pl.w / 2
+          ny = pl.cy! + Math.sin(a) * pl.r!
+        } else {
+          const ridden = !p.dead && p.onPlatform === pl
+          ny = ridden ? Math.max(pl.min, pl.y - pl.speed * dt) : Math.min(pl.max, pl.y + 22 * dt)
+        }
+        pl.dx = nx - pl.x
+        pl.dy = ny - pl.y
+        pl.x = nx
+        pl.y = ny
+        if (!p.dead && p.onPlatform === pl) {
+          if (pl.dx !== 0 && !this.boxHitsSolid(p.x + pl.dx, p.y, p.w, p.h)) p.x += pl.dx
+          p.y = pl.y - p.h
+        }
+        continue
+      }
       const before = pl.axis === 'x' ? pl.x : pl.y
       let next = before + pl.dir * pl.speed * dt
       if (next >= pl.max) {
@@ -976,6 +1062,23 @@ export class World {
       }
     }
 
+    // bakırcı tokmakları: inerken ya da yerdeyken başın altında kalan ezilir
+    for (const h of this.hammers) {
+      const st = hammerState(h, this.clock)
+      if (st.phase < 2) continue
+      const head = { x: h.x + 1, y: st.y + 2, w: T - 2, h: T - 2 }
+      if (overlap(shrink(p, 2), head)) return this.kill()
+    }
+
+    // dost hayvanlar: dokununca sevinir
+    for (const f of this.friends) {
+      f.cool = Math.max(0, f.cool - 1 / 120)
+      if (f.cool === 0 && overlap(p, f)) {
+        f.cool = 2.5
+        this.events.push({ type: 'pet', x: f.x + 10, y: f.y })
+      }
+    }
+
     // yaylar
     for (const s of this.springs) {
       s.squash = Math.max(0, s.squash - 1 / 60)
@@ -1064,6 +1167,7 @@ export class World {
       c.active = true
       c.timer = 0
     }
+    for (const pl of this.platforms) if (pl.axis === 'b') pl.y = pl.max
     this.projectiles = []
     this.crumbles.clear()
     for (const t of this.turrets) t.timer = 0.9 + ((t.tx * 7 + t.ty * 3) % 10) / 10
@@ -1107,6 +1211,7 @@ export interface Snapshot {
   switchOn: boolean
   stampTaken: boolean
   crystals: Array<[boolean, number]>
+  clock: number
 }
 
 export function snapshot(w: World): Snapshot {
@@ -1126,6 +1231,7 @@ export function snapshot(w: World): Snapshot {
     switchOn: w.switchOn,
     stampTaken: w.stampTaken,
     crystals: w.crystals.map((c) => [c.active, c.timer]),
+    clock: w.clock,
   }
 }
 
@@ -1146,6 +1252,7 @@ export function restore(w: World, s: Snapshot) {
   w.switchOn = s.switchOn
   w.stampTaken = s.stampTaken
   s.crystals.forEach(([a, t], i) => Object.assign(w.crystals[i], { active: a, timer: t }))
+  w.clock = s.clock
   w.plates.forEach((pl) => (pl.pressed = false))
   w.projectiles = []
   w.events = []

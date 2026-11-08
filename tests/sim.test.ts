@@ -26,7 +26,10 @@ describe('bölüm verisi', () => {
       ['Kocaeli', 41],
       ['İzmir', 35],
       ['Ankara', 6],
+      ['Konya', 42],
+      ['Nevşehir', 50],
       ['Adana', 1],
+      ['Gaziantep', 27],
       ['Mardin', 47],
       ['Malatya', 44],
       ['Çorum', 19],
@@ -162,5 +165,41 @@ describe('bulmaca ve yeni düşmanlar', () => {
     const w = mk(['          ', ' P        ', '          ', '   x      ', '##########'])
     run(w, 1.5, { right: true })
     expect(w.player.dead || w.deaths > 0).toBe(true)
+  })
+})
+
+describe('yeni şehir mekanikleri', () => {
+  it('balon binince yükselir, inince geri çöker', () => {
+    const w = mk(['          ', '          ', '          ', '          ', '   P      ', '          ', '   BB     ', '##########'])
+    const y0 = w.platforms[0].y
+    run(w, 1.4)
+    expect(w.player.onPlatform).toBe(w.platforms[0])
+    expect(w.platforms[0].y).toBeLessThan(y0 - 20)
+    run(w, 0.4, { right: true })
+    run(w, 3)
+    expect(w.platforms[0].y).toBe(y0)
+  })
+
+  it('sema platformu çember çizer', () => {
+    const w = mk(['          ', '          ', '          ', '    OO    ', '          ', '          ', ' P        ', '##########'])
+    const pl = w.platforms[0]
+    const pts: [number, number][] = []
+    for (let i = 0; i < 4; i++) {
+      run(w, 0.6)
+      pts.push([pl.x, pl.y])
+    }
+    const cx = pl.cx! - pl.w / 2
+    for (const [x, y] of pts) expect(Math.hypot(x - cx, y - pl.cy!)).toBeCloseTo(32, 0)
+  })
+
+  it('tokmak altında kalan ezilir, beklerken geçen kurtulur', () => {
+    const w = mk(['          ', '    Y     ', '          ', '          ', ' P        ', '##########'])
+    run(w, 0.2)
+    w.player.x = 4 * 16 + 2
+    w.clock = w.hammers[0].offset > 0 ? -w.hammers[0].offset : 0
+    run(w, 0.5)
+    expect(w.deaths).toBe(0)
+    run(w, 1.6)
+    expect(w.deaths).toBeGreaterThan(0)
   })
 })

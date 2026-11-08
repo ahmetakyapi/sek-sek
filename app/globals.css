@@ -409,8 +409,11 @@ figcaption {
 .dlg-pos[data-touch] { bottom: calc(env(safe-area-inset-bottom) + 168px); }
 @media (orientation: landscape) and (max-height: 520px) {
   .dlg-pos[data-touch] {
-    bottom: calc(env(safe-area-inset-bottom) + 8px);
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
     padding-inline: calc(env(safe-area-inset-left) + 160px) calc(env(safe-area-inset-right) + 250px);
   }
-  .dlg-pos[data-touch] .dlg-avatar { width: 36px; height: 45px; }
+  .dlg-pos[data-touch] .dlg-avatar { width: 48px; height: 57px; }
 }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

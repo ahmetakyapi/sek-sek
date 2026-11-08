@@ -1,7 +1,7 @@
 import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
 import { CHARACTERS, frameRows, type CharacterDef, type Pose } from './characters'
 import { NPC_ART } from './npcs'
-import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, type World } from './sim'
+import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -52,7 +52,6 @@ export class Renderer {
   viewH = 180
   camX = 0
   camY = 0
-  private dpr = 1
   private t = 0
   character: CharacterDef = CHARACTERS.uktun
 
@@ -64,7 +63,6 @@ export class Renderer {
   }
 
   resize(cssW: number, cssH: number, dpr: number) {
-    this.dpr = dpr
     const devW = Math.round(cssW * dpr)
     const devH = Math.round(cssH * dpr)
     this.canvas.width = devW
@@ -111,7 +109,7 @@ export class Renderer {
         const x = tx * T
         const y = ty * T
         const open = ty > 0 && !solidish(tx, ty - 1) && w.tile(tx, ty - 1) !== CRUMBLE
-        if (t === SOLID || t === TURRET || t === FAKE) this.solidTile(c, x, y, tx, ty, open, !solidish(tx - 1, ty), !solidish(tx + 1, ty), r)
+        if (t === SOLID || t === TURRET || t === FAKE) this.solidTile(c, x, y, ty, open, !solidish(tx - 1, ty), !solidish(tx + 1, ty), r)
         if (t === FAKE) {
           // dikkatli bakan görür: ince bir çatlak
           rect(c, x + 6, y + 4, 1, 3, 'rgba(0,0,0,0.25)')
@@ -157,7 +155,7 @@ export class Renderer {
     return cv
   }
 
-  private solidTile(c: Ctx, x: number, y: number, tx: number, ty: number, open: boolean, openL: boolean, openR: boolean, r: () => number) {
+  private solidTile(c: Ctx, x: number, y: number, ty: number, open: boolean, openL: boolean, openR: boolean, r: () => number) {
     const s = CITY[this.city]
     rect(c, x, y, T, T, s.tile)
     switch (this.city) {
@@ -271,6 +269,49 @@ export class Renderer {
         }
         break
       }
+      case 'konya': {
+        // Selçuklu kesme taşı; açık yüzde turkuaz çini şerit
+        rect(c, x, y + 7, T, 1, s.tileDark)
+        rect(c, x, y + 15, T, 1, s.tileDark)
+        rect(c, x + (ty % 2 ? 7 : 15), y, 1, 7, s.tileDark)
+        rect(c, x + (ty % 2 ? 15 : 7), y + 8, 1, 7, s.tileDark)
+        rect(c, x + 1, y + 1, 5, 1, s.tileLight)
+        if (open) {
+          rect(c, x, y, T, 4, '#2f9a94')
+          rect(c, x, y + 4, T, 1, '#1e6a66')
+          for (let i = 1; i < 16; i += 4) {
+            rect(c, x + i, y + 1, 2, 2, '#f4ead8')
+            rect(c, x + i + 1, y + 1, 1, 1, '#2a6ab8')
+          }
+        }
+        break
+      }
+      case 'nevsehir': {
+        // yumuşak tüf: yuvarlak oyuklar, dalgalı katmanlar
+        for (let i = 0; i < 16; i++) rect(c, x + i, y + 9 + Math.round(Math.sin((x + i) / 5) * 1.5), 1, 1, s.tileDark)
+        if (r() > 0.7) {
+          disc(c, x + 5 + Math.floor(r() * 6), y + 5, 2, s.tileDark)
+        }
+        rect(c, x + 2, y + 2, 4, 1, s.tileLight)
+        if (open) {
+          rect(c, x, y, T, 3, s.tileTop)
+          for (let i = 0; i < 16; i += 2) rect(c, x + i, y + 3, 1, 1 + Math.floor(r() * 2), s.tileTop)
+        }
+        break
+      }
+      case 'gaziantep': {
+        // havara taşı: krem, geniş derz; üstte bakır kenar
+        rect(c, x, y + 7, T, 1, s.tileDark)
+        rect(c, x + (ty % 2 ? 4 : 12), y, 1, 7, s.tileDark)
+        rect(c, x + (ty % 2 ? 11 : 3), y + 8, 1, 8, s.tileDark)
+        rect(c, x + 1, y + 1, 6, 1, s.tileLight)
+        if (r() > 0.85) rect(c, x + 8, y + 10, 3, 2, '#a8805a')
+        if (open) {
+          rect(c, x, y, T, 3, s.tileTop)
+          rect(c, x, y + 3, T, 1, '#b8682e')
+        }
+        break
+      }
       case 'sivas':
       case 'ardahan':
       case 'bayburt': {
@@ -342,6 +383,10 @@ export class Renderer {
         break
       case 'switch':
         this.shake = Math.max(this.shake, 1.5)
+        break
+      case 'pet':
+        for (let i = 0; i < 6; i++) this.particles.push({ x: e.x - 4 + Math.random() * 8, y: e.y - 2, vx: (Math.random() - 0.5) * 30, vy: -30 - Math.random() * 25, life: 1.1, max: 1.1, color: i % 2 ? '#ff6a8a' : '#ffb0c0', size: 2, grav: -8 })
+        this.petTimer = 0.5
         break
       default:
         break
@@ -629,7 +674,7 @@ export class Renderer {
           break
         }
         case 'k': {
-          this.drawAnimal(b, x, bot)
+          this.drawAnimal(b, x, bot - (this.petTimer > 0.2 ? 2 : 0))
           const pl = w.player
           const near = Math.abs(pl.x + pl.w / 2 - (x + 8)) < 22 && Math.abs(pl.y + pl.h - bot) < 6
           if (near && pl.grounded && Math.abs(pl.vx) < 5 && !pl.dead && Math.random() < 0.05)
@@ -715,9 +760,74 @@ export class Renderer {
     })
   }
 
+  /** Kapadokya balonu: sepet platform, üstünde renkli zarf; yükselirken alev yanar */
+  private drawBalloon(b: Ctx, pl: { x: number; y: number; w: number; dy: number }) {
+    const cx = pl.x + pl.w / 2
+    const top = pl.y - 46
+    const cols = ['#e8604a', '#f2c14e', '#3fa8c8', '#f4ead8']
+    for (let yy = 0; yy < 30; yy++) {
+      const t = yy / 30
+      const hw = Math.round(Math.sin(Math.min(1, t * 1.25) * Math.PI * 0.62 + 0.25) * 16)
+      for (let xx = -hw; xx <= hw; xx++) {
+        const band = Math.floor(((xx + hw) / (hw * 2 + 1)) * 5)
+        rect(b, cx + xx, top + yy, 1, 1, cols[band % cols.length])
+      }
+      rect(b, cx - hw, top + yy, 1, 1, 'rgba(0,0,0,0.25)')
+      rect(b, cx + hw, top + yy, 1, 1, 'rgba(0,0,0,0.35)')
+    }
+    rect(b, cx - 6, top + 30, 12, 2, '#a84a2a')
+    // ipler
+    for (const dx of [-6, 5]) for (let yy = top + 32; yy < pl.y; yy += 2) rect(b, cx + dx + (dx < 0 ? (yy - top - 32) / 6 : -(yy - top - 32) / 6), yy, 1, 1, '#5a3c26')
+    // sepet
+    rect(b, pl.x + 2, pl.y, pl.w - 4, 7, '#8a5a35')
+    rect(b, pl.x + 2, pl.y, pl.w - 4, 1, '#b07a48')
+    for (let i = pl.x + 4; i < pl.x + pl.w - 3; i += 3) rect(b, i, pl.y + 2, 1, 4, '#6b4428')
+    if (pl.dy < -0.05) {
+      rect(b, cx - 1, top + 32, 3, 3, '#ffd36a')
+      rect(b, cx, top + 31, 1, 2, '#ffffff')
+    }
+  }
+
   /** Şehrin tezgâhı: simit arabası, mırra, kayısı, leblebi kazanı, Sivas halısı, saman ve kopuz */
   private drawStall(b: Ctx, x: number, bot: number) {
     switch (this.city) {
+      case 'konya': {
+        // etli ekmek fırını: taş fırın, uzun kürek, ekmek
+        rect(b, x - 4, bot - 18, 24, 18, '#8a6a4a')
+        disc(b, x + 8, bot - 18, 12, '#8a6a4a', true)
+        rect(b, x + 3, bot - 12, 10, 8, '#2a1a14')
+        disc(b, x + 8, bot - 12, 5, '#2a1a14', true)
+        rect(b, x + 4, bot - 8, 8, 2, '#f28c28')
+        rect(b, x + 5, bot - 9, 6, 1, '#ffd36a')
+        rect(b, x + 14, bot - 6, 18, 1, '#a07a58')
+        rect(b, x + 26, bot - 8, 10, 3, '#e0a860')
+        rect(b, x + 27, bot - 8, 8, 1, '#c86a3a')
+        break
+      }
+      case 'nevsehir': {
+        // Avanos çömlekçisi: çark ve testiler
+        rect(b, x - 2, bot - 6, 14, 6, '#6a4a3a')
+        disc(b, x + 5, bot - 8, 5, '#3a2a24')
+        rect(b, x + 2, bot - 16, 6, 8, '#c8603a')
+        rect(b, x + 3, bot - 18, 4, 2, '#a84a2a')
+        for (let i = 0; i < 3; i++) {
+          rect(b, x + 14 + i * 6, bot - 9, 5, 9, '#c8603a')
+          rect(b, x + 15 + i * 6, bot - 11, 3, 2, '#a84a2a')
+          rect(b, x + 14 + i * 6, bot - 6, 5, 1, '#f0c890')
+        }
+        break
+      }
+      case 'gaziantep': {
+        // baklava tepsisi ve fıstık çuvalı
+        rect(b, x - 4, bot - 10, 24, 10, '#5a3c26')
+        rect(b, x - 4, bot - 10, 24, 1, '#7a5638')
+        disc(b, x + 8, bot - 13, 11, '#b8682e', true)
+        for (let i = 0; i < 9; i++) for (let j = 0; j < 2; j++) rect(b, x - 1 + i * 2 + j, bot - 15 + j * 2, 2, 2, (i + j) % 2 ? '#eab24a' : '#86c040')
+        rect(b, x + 22, bot - 12, 10, 12, '#c8a878')
+        rect(b, x + 23, bot - 14, 8, 3, '#86c040')
+        rect(b, x + 22, bot - 12, 10, 1, '#a88858')
+        break
+      }
       case 'istanbul': {
         rect(b, x - 6, bot - 14, 26, 10, '#c8302a')
         rect(b, x - 6, bot - 14, 26, 2, '#e8564a')
@@ -895,6 +1005,38 @@ export class Renderer {
   /** Şehrin kendine özgü küçük nesnesi: bölümü her yerde o şehre bağlar. */
   private drawLandmarkProp(b: Ctx, x: number, bot: number) {
     switch (this.city) {
+      case 'konya': {
+        // dönen semazen: tennure açılır kapanır
+        const k = Math.sin(this.t * 6)
+        const skirt = 5 + Math.round(Math.abs(k) * 3)
+        rect(b, x + 7, bot - 22, 3, 6, '#c8a070')
+        rect(b, x + 7, bot - 16, 3, 3, '#f0d0b0')
+        rect(b, x + 6, bot - 13, 5, 5, '#f4f0e8')
+        rect(b, x + 8 - skirt, bot - 8, skirt * 2 + 1, 8, '#f4f0e8')
+        rect(b, x + 8 - skirt, bot - 1, skirt * 2 + 1, 1, '#d8d0c4')
+        rect(b, x + 2, bot - 14 - Math.round(k), 4, 1, '#f4f0e8')
+        rect(b, x + 11, bot - 14 + Math.round(k), 4, 1, '#f4f0e8')
+        break
+      }
+      case 'nevsehir': {
+        // güvercinlik: kaya duvarına oyulmuş boyalı delikler
+        rect(b, x, bot - 20, 16, 20, '#c89a7a')
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
+          rect(b, x + 2 + i * 5, bot - 17 + j * 8, 3, 4, '#3a2420')
+          rect(b, x + 1 + i * 5, bot - 18 + j * 8, 5, 1, j ? '#e8604a' : '#f4ead8')
+        }
+        rect(b, x + 6, bot - 22 + Math.round(Math.sin(this.t * 4)), 3, 2, '#c8ccd8')
+        break
+      }
+      case 'gaziantep': {
+        // bakır kazan ve cezve
+        disc(b, x + 7, bot - 6, 6, '#c8682e')
+        rect(b, x + 1, bot - 6, 13, 6, '#c8682e')
+        rect(b, x + 1, bot - 12, 13, 1, '#e8904a')
+        rect(b, x + 3, bot - 10, 3, 5, '#f0a868')
+        rect(b, x + 14, bot - 7, 4, 1, '#8a4a20')
+        break
+      }
       case 'istanbul': {
         // çay masası: ince belli bardaklar
         rect(b, x + 1, bot - 9, 14, 2, '#8a5a3a')
@@ -997,6 +1139,12 @@ export class Renderer {
   private drawAnimal(b: Ctx, x: number, bot: number) {
     const tail = Math.sin(this.t * 3) > 0 ? 1 : 0
     switch (CITY[this.city].animal) {
+      case 'partridge': {
+        // keklik: kafeste değil, özgür; kırmızı gaga, çizgili yan
+        const peck = Math.sin(this.t * 2) > 0.8 ? 1 : 0
+        sprite(b, ['..gg......', '.gegr.....', '.ggg......', 'gwwgggg...', '.gkgkgggg.', '..gggggg..', '...o..o...'], { g: '#a8a090', w: '#f4ead8', k: '#3a2a20', e: '#1d1a22', r: '#e0303a', o: '#e06a3a' }, x + 3, bot - 7 + peck)
+        break
+      }
       case 'cat':
         sprite(b, ['.o.o......', '.ooo......', '.oeo.....' + (tail ? 'o' : '.'), '.oooo...o' + (tail ? '.' : 'o'), '..ooooooo.', '..ooOooOo.', '..o.o..o..'], { o: '#e0903a', O: '#b06a24', e: '#2a2a2a' }, x + 2, bot - 7)
         break
@@ -1146,6 +1294,23 @@ export class Renderer {
     const s = CITY[this.city]
     // platformlar
     for (const pl of w.platforms) {
+      if (pl.axis === 'b') {
+        this.drawBalloon(b, pl)
+        continue
+      }
+      if (pl.axis === 'o') {
+        // sema halkası: merkeze ince ip, turkuaz dönen tepsi
+        const cx = Math.round(pl.cx!)
+        const cy = Math.round(pl.cy!)
+        disc(b, cx, cy, 2, '#f2c14e')
+        const n = 8
+        for (let k = 1; k < n; k++) rect(b, cx + ((pl.x + pl.w / 2 - cx) * k) / n, cy + ((pl.y + 3 - cy) * k) / n, 1, 1, 'rgba(244,234,216,0.55)')
+        rect(b, pl.x, pl.y, pl.w, 5, '#2f9a94')
+        rect(b, pl.x, pl.y, pl.w, 1, '#7ad8cc')
+        rect(b, pl.x, pl.y + 4, pl.w, 1, '#1e6a66')
+        for (let i = 2; i < pl.w; i += 5) rect(b, pl.x + i, pl.y + 2, 2, 1, '#f4ead8')
+        continue
+      }
       rect(b, pl.x, pl.y, pl.w, 6, s.plank)
       rect(b, pl.x, pl.y, pl.w, 1, lighten(s.plank))
       rect(b, pl.x, pl.y + 5, pl.w, 1, 'rgba(0,0,0,0.4)')
@@ -1162,6 +1327,27 @@ export class Renderer {
         rect(b, pl.x + 2, pl.y + 6, 6, 3, '#e8794a')
         rect(b, pl.x + pl.w - 8, pl.y + 6, 6, 3, '#e8794a')
       }
+    }
+    // bakırcı tokmakları
+    for (const h of w.hammers) {
+      const st = hammerState(h, w.clock)
+      const shake = st.phase === 1 ? Math.round(Math.sin(this.t * 70)) : 0
+      const hx = h.x + shake
+      // sap: tavana kadar
+      let topY = h.top - T
+      while (topY > 0 && !w.isSolid(Math.floor((h.x + 8) / T), Math.floor(topY / T))) topY -= T
+      rect(b, hx + 7, topY + T, 2, st.y - topY - T + 2, '#5a3c26')
+      rect(b, hx + 6, topY + T, 4, 2, '#3a2a1e')
+      // baş: bakır, alt yüzü parlak
+      rect(b, hx, st.y + 2, T, T - 2, '#b8682e')
+      rect(b, hx, st.y + 2, T, 2, '#e8904a')
+      rect(b, hx, st.y + T - 2, T, 2, '#7a3a14')
+      rect(b, hx + 2, st.y + 5, 3, 6, '#f0b070')
+      if (st.phase === 1) {
+        // uyarı: yerde gölge ve kıvılcım
+        rect(b, h.x + 1, h.bottom + T - 1, T - 2, 1, 'rgba(255,80,60,0.6)')
+      }
+      if (st.phase === 3 && Math.random() < 0.3) this.particles.push({ x: h.x + Math.random() * T, y: h.bottom + T - 1, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 40, life: 0.3, max: 0.3, color: '#ffd36a', size: 1, grav: 300 })
     }
     // yaylar (Malatya'da kayısı kasası)
     for (const sp of w.springs) {
@@ -1222,7 +1408,8 @@ export class Renderer {
       if (e.kind !== 'fly' && e.kind !== 'bat') rect(b, e.x + 1, e.y + e.h - 1, e.w - 2, 1, 'rgba(0,0,0,0.3)')
       // tehlike dış hattı: arka plandan ayrışsın
       const outline: Record<string, string> = {}
-      for (const k of Object.keys(art.pal)) outline[k] = e.kind === 'spiky' ? '#ff4a3a' : '#5a0f1a'
+      const pulse = Math.sin(this.t * 5 + e.ox * 0.1) > 0.2
+      for (const k of Object.keys(art.pal)) outline[k] = e.kind === 'spiky' ? '#ff4a3a' : pulse ? '#e8283a' : '#5a0f1a'
       for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) sprite(b, rows, outline, sx + ox, sy + oy, flip)
       sprite(b, rows, art.pal, sx, sy, flip)
       // uyarı: hücumdan önce ünlem
@@ -1345,7 +1532,7 @@ export class Renderer {
       else pose = p.vy < 0 ? 'jump' : 'fall'
     } else if (Math.abs(p.vx) > 8) {
       const f = Math.floor(p.runTime * 12) % 4
-      pose = (['runA', 'runB', 'runC', 'runB'] as const)[f]
+      pose = (['runA', 'runB', 'runC', 'runD'] as const)[f]
       bob = f % 2
     } else bob = Math.sin(this.t * 2.5) > 0.6 ? 1 : 0
     if (p.landTimer > 0) bob = 1
@@ -1401,6 +1588,7 @@ export class Renderer {
     b.imageSmoothingEnabled = false
     b.drawImage(pc, Math.round(footX - dw / 2), Math.round(footY - (oy + 20) * ky), dw, dh)
 
+    this.petTimer = Math.max(0, this.petTimer - dt)
     // koşu tozu ve duvar kayma kıvılcımı
     this.dustTimer -= dt
     if (this.dustTimer <= 0) {
@@ -1416,6 +1604,7 @@ export class Renderer {
 
   private pc: HTMLCanvasElement | null = null
   private dustTimer = 0
+  private petTimer = 0
   private playerCanvas() {
     if (!this.pc) {
       this.pc = document.createElement('canvas')
@@ -1469,8 +1658,11 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   istanbul: 'KOCAELİ',
   kocaeli: 'İZMİR',
   izmir: 'ANKARA',
-  ankara: 'ADANA',
-  adana: 'MARDİN',
+  ankara: 'KONYA',
+  konya: 'NEVŞEHİR',
+  nevsehir: 'ADANA',
+  adana: 'GAZİANTEP',
+  gaziantep: 'MARDİN',
   mardin: 'MALATYA',
   malatya: 'ÇORUM',
   corum: 'ORDU',

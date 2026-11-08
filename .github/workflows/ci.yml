@@ -15,5 +15,20 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npm run verify:levels
       - run: npm run build
+
+  # her bölüm gerçek fizikle ayrı ayrı oynanır; yavaş şehirler birbirini beklemez
+  levels:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        level: [istanbul, kocaeli, izmir, ankara, konya, nevsehir, adana, gaziantep, mardin, malatya, corum, ordu, sivas, ardahan, bayburt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/verify-levels.ts ${{ matrix.level }}

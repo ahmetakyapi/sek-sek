@@ -1,4 +1,5 @@
 import { EXTENSIONS } from './extensions'
+import { SIGNATURES } from './signatures'
 import type { LevelDef } from './types'
 
 /**
@@ -915,12 +916,99 @@ const bayburt = decorate(
   [[6, 19, 'n'], [9, 19, 's'], [20, 19, 'k'], [62, 4, 'n'], [66, 4, 'k']],
 )
 
+/* ───────── 42 · KONYA · 50 · NEVŞEHİR · 27 · GAZİANTEP ─────────
+   scripts/art/newcities.py ile çizildi: her bölüm kendi mekaniğini önce güvenli yerde öğretir,
+   sonra dikenin üstünde sınar. O: sema halkası · B: balon (: tavanı) · Y: bakırcı tokmağı */
+const konya = [
+  '                                                                                                                                           ###                                                                        ',
+  '                                                                                                                                           ###                                                                        ',
+  '                                                                                              f                                            ###                                                                        ',
+  '                                                                                      C                                                    ###                                                                        ',
+  '                                                                                                                                #########  ###                                                                        ',
+  '                                                                                        ##########                              #       #  ###                                                                        ',
+  '                                                                                    OO  ##########======                        %       #  ###                                                                        ',
+  '                                                                                        ##########                              %    $  #  ###                                                                        ',
+  '                                                                                        ##########          ##################################                           f                                            ',
+  '                                                                                        ##########          #                              ###                f                                                       ',
+  '                                                                                        ##########          #                              ###                                                      C                 ',
+  '                                                    f                            OO     ##########          #                              ###                                                                        ',
+  '                                                                                        ##########          #                              ###                                                                        ',
+  '                        C                                                               ##########          #        K                     ###                                                                        ',
+  '                                                                                        ##########          #                              ###                                                                        ',
+  '                                                                                        ##########          #      ====                    ###              OO             OO                    OO                   ',
+  '                    ########                                                OO          ##########                                         DDD         OO             OO                                              ',
+  '               OO   ########                 OO        OO                               ##########            ====                         DDD                   ##                                                   ',
+  '                    ########                                                            ##########                                         DDD                   ##                                                   ',
+  '  P   ?             ########   k                                   F      ?             ##########      ?                      n    e      DDD                   ##                F    ?   e            n       E    ',
+  '########################################^^^^^^^^^^^^^^^^^^^^^^^^###################################################################################^^^^^^^^^^^^^^##^^^^^^^^^^^^^^#####################################',
+  '######################################################################################################################################################################################################################',
+  '######################################################################################################################################################################################################################',
+  '######################################################################################################################################################################################################################',
+]
+
+const nevsehir = [
+  '                                                                                 #############################################                                                                                        ',
+  '                                                                                 #############################################                                                                                        ',
+  '                                                                                 #############################################                                                                                        ',
+  '                                                                                 #############################################                                                               :                        ',
+  '                                                        C          :             #############################################                                                                                        ',
+  '                                                    :                                            %      ######################                                                                                  E     ',
+  '                                          :                                 F                    %    $ ######################                                                                   f  ##################',
+  '                                                                f       #######################  #############################                                                                      ##################',
+  '             :                                                          #######################  #############################                                                                      ##################',
+  '                     C                                     ####         #######################  #############################                                                   :                  ##################',
+  '                   #####                       f           ####         #######################  #############################                                                        #####         ##################',
+  '                   #####                                   ####         #######################  #############################                   f                                    #####         ##################',
+  '                   #####                                   ####         ############                 u        D      #########                                                        #####         ##################',
+  '                   #####                                   ####         ############ K    n                   D      #########                                                        #####         ##################',
+  '                   #####                                   ####         ###########################################  #########                                                        #####         ##################',
+  '                   #####                                   ####         ##########################                                                                                    #####         ##################',
+  '                   #####                                   ####         ##########################       C                                                                            #####         ##################',
+  '                   #####                                   ####         ##########################                                             XXX      XX                            #####         ##################',
+  '            BBB    #####                 BBB       BBB     ####   BBB   ##########################                    e                   XXX       XXX                         BBB   ##### BBB     ##################',
+  '  P   ?            #####   n    k                          ####         #################################^^###################  F                             ?  n    e               #####         ##################',
+  '######################################^^^^^^^^^^^^^^^^^^^^^####^^^^^^^^^^^##############################################################~~~~~~~~~~~~~~~~~~~~#######################^^^#########^^^^^##################',
+  '########################################################################################################################################~~~~~~~~~~~~~~~~~~~~##########################################################',
+  '########################################################################################################################################~~~~~~~~~~~~~~~~~~~~##########################################################',
+  '########################################################################################################################################~~~~~~~~~~~~~~~~~~~~##########################################################',
+]
+
+const gaziantep = [
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                         f                                                                                                            ',
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                 f                                                                                                                    ',
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                                                                                                                                      ',
+  '                                                                                                              K                                                                                                       ',
+  '                                                                                                           ======               #########################################                                             ',
+  '                                                                                                     C                          #           [                  ]      #                                               ',
+  '                                                                                                   ======                       #           [                  ]      #                                               ',
+  '                        C                                         $                                                             #           [                  ]      #         ###########################           ',
+  '              ##############         #######################%%%##################          ======                               #           [                  ]      #         ###########################           ',
+  '              ##############         #######################%%%##################                                               #           [                  ]      #             Y   Y       Y       Y             ',
+  '          ===     Y    Y                Y   Y  Y    Y  Y  Y     ==Y   Y  Y   Y                                                              [                  ]      D                                               ',
+  '                                                                                                                                            [                  ]      D                       C                       ',
+  '      ===                                                  ====                                                                             [                  ]      D         ##  ##  ##  ##  ##  ##  ##            ',
+  '  P     ?                     k   n              e            e                    F ?   S     e                    e    S  ?      n   _    [    ]]]]]]]]   _  ]      D     F   ##  ##  ##  ##  ##  ##  ##   n    E   ',
+  '#################################################################################################################################################^^^^^^^^#########################^^##^^##^^##^^##^^##^^##^###########',
+  '######################################################################################################################################################################################################################',
+  '######################################################################################################################################################################################################################',
+  '######################################################################################################################################################################################################################',
+]
+
 /** Şehre göre sokak süsleri; z: şehrin kendine özgü nesnesi. */
 const DECOR_CYCLE: Record<string, string> = {
   istanbul: 'lzt',
   kocaeli: 'lzt',
   izmir: 'tlz',
   ankara: 'zlt',
+  konya: 'zls',
+  nevsehir: 'tzs',
+  gaziantep: 'szl',
   adana: 'tzl',
   mardin: 'wzao',
   malatya: 'tmzo',
@@ -1070,6 +1158,66 @@ export const LEVELS: LevelDef[] = [
     map: ankara,
   },
   {
+    id: 'konya',
+    city: 'konya',
+    name: 'Konya',
+    plate: 42,
+    subtitle: 'Mevlâna’nın Şehri',
+    difficulty: 'Orta',
+    note: 'Konya’da “Gel, ne olursan ol, yine gel” derler. Bir etli ekmek ye, sonra semaya bak: dönen her şey bir merkeze bağlıdır.',
+    npcs: [
+      { name: 'Çini Ustası Nurten', look: 'teyze', text: 'Karatay’ın kubbesindeki çiniler yıldız gibi dizilir. Anahtar yukarıda, merdiven yok: halkanın dönüşünü kolla.' },
+      { name: 'Semazen Ali', look: 'genc', text: 'Sema dönerken bir el göğe, bir el yere bakar. Halkalar da öyle döner; acele etme, kendini ritme bırak.' },
+    ],
+    medals: [75, 115, 175],
+    quips: ['Halka döner, sen de dön.', 'Bozkır rüzgârı sabırlıdır.', 'Etli ekmek soğumadan kalk!', 'Sema bir ritimdir.'],
+    item: 'Sikke',
+    intro: 'Selçuklu’nun başkenti. Bozkırdan Alaeddin Tepesi’ne, Karatay Medresesi’nden Mevlâna’nın turkuaz kubbesine.',
+    facts: [
+      { title: 'Selçuklu Başkenti', text: 'Konya, 12. ve 13. yüzyılda Anadolu Selçuklu Devleti’nin başkentiydi. Alaeddin Tepesi ve camisi o dönemden kalır.' },
+      { title: 'Mevlâna', text: 'Mevlâna Celâleddin Rûmî 1273’te Konya’da vefat etti. Türbesi, turkuaz çinili kubbesiyle bugün Mevlâna Müzesi’dir.' },
+      { title: 'Etli Ekmek', text: 'Konya’nın meşhur etli ekmeği, ince ve uzun açılan hamurun kıymayla taş fırında pişirilmesiyle yapılır.' },
+    ],
+    secret: { title: 'Çatalhöyük', text: 'Konya’daki Çatalhöyük yaklaşık 9.000 yıllık bir Neolitik yerleşimdir. 2012’de UNESCO Dünya Mirası Listesi’ne alındı.' },
+    hints: [
+      'Sema halkası: turkuaz tepsi bir merkezin etrafında döner. Üstüne bin, en tepeye çıkınca sete atla.',
+      'Alaeddin Tepesi: halkadan halkaya tırman. Biri inerken öbürü çıkar, ritmi bekle.',
+      'Karatay Medresesi: anahtarı al, kapıyı aç. Dama giden köprüden yürürsen çatlak bir duvar görürsün.',
+      'Yılan ısırır: üstüne bas ya da atılarak geç. Son hatıra yüksekte, halkayı kolla.',
+    ],
+    map: konya,
+  },
+  {
+    id: 'nevsehir',
+    city: 'nevsehir',
+    name: 'Nevşehir',
+    plate: 50,
+    subtitle: 'Kapadokya',
+    difficulty: 'Orta',
+    note: 'Sabah erken kalk: gökyüzü balonla dolar. Peri bacalarına “şapkalı taşlar” derdik. Toprağın altı da bir şehirdir, unutma.',
+    npcs: [
+      { name: 'Balon Pilotu Deniz', look: 'genc', text: 'Sepete bin, balon yükselir; inersen yavaşça geri çöker. Ne kadar yüksekte kalacağın senin elinde.' },
+      { name: 'Yeraltı Rehberi Elif', look: 'teyze', text: 'Derinkuyu’da evler, ahırlar, kiler var. Kapılar değirmen taşı gibi yuvarlanır. Anahtarı soldaki dehlizde bıraktım.' },
+      { name: 'Çömlekçi Hasan Usta', look: 'usta', text: 'Avanos’un çamuru Kızılırmak’tan gelir. Köprünün taşları çatlak, üstünde oyalanma!' },
+    ],
+    medals: [80, 120, 180],
+    quips: ['Balon da sabırlıdır.', 'Peri bacası sana gülümsedi.', 'Yeraltında yankı bile dikkatlidir.', 'Testi kırılmadan dön.'],
+    item: 'Testi',
+    intro: 'Peri bacaları, gökyüzünde yüzlerce balon ve yerin altında bir şehir. Göreme’den Derinkuyu’ya, Avanos’tan Uçhisar’a.',
+    facts: [
+      { title: 'Peri Bacaları', text: 'Peri bacaları, yanardağ küllerinden oluşan yumuşak tüfün rüzgâr ve yağmurla aşınmasıyla oluşur. Üstteki sert kaya, altını bir şapka gibi korur.' },
+      { title: 'Derinkuyu', text: 'Derinkuyu Yeraltı Şehri birçok kat aşağı iner. Geçitler, içeriden yuvarlanan değirmen taşı biçimli kapılarla kapatılabiliyordu.' },
+      { title: 'Avanos Çömlekleri', text: 'Avanos’ta çömlekçilik, Kızılırmak’ın kırmızı kiliyle binlerce yıldır sürüyor.' },
+    ],
+    secret: { title: 'Güzel Atlar Ülkesi', text: 'Kapadokya adının, Pers dilinde “güzel atlar ülkesi” anlamına gelen Katpatuka’dan geldiği söylenir.' },
+    hints: [
+      'Balon: sepete bin, yükselir. İnersen yavaşça geri çöker. Tepeye varınca peri bacasına atla.',
+      'Kızılırmak köprüsünün taşları çatlak: üstünde durma, koş!',
+      'Uçhisar: iki balonla kaleye çık. Güvercinlere dikkat.',
+    ],
+    map: nevsehir,
+  },
+  {
     id: 'adana',
     city: 'adana',
     name: 'Adana',
@@ -1093,6 +1241,36 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Varda Köprüsü', text: 'Karaisalı’daki Varda Köprüsü 1912’de Bağdat Demiryolu için yapıldı. Üzerinden hâlâ trenler geçer.' },
     hints: ['Pamuk balyası yay gibidir: üstüne düşünce seni fırlatır. Sivrisineklere dikkat!'],
     map: adana,
+  },
+  {
+    id: 'gaziantep',
+    city: 'gaziantep',
+    name: 'Gaziantep',
+    plate: 27,
+    subtitle: 'Bakırcılar Çarşısı',
+    difficulty: 'Orta',
+    note: 'Bakırcılar çarşısında çekiç sesi hiç susmaz; ritmini dinle, öyle geç. Baklavayı fıstıklısından al, şerbeti hafif olsun.',
+    npcs: [
+      { name: 'Bakırcı Mehmet Usta', look: 'usta', text: 'Tokmak iner, bekler, yavaşça kalkar. Gölgesi kızarınca dur, kalkarken geç. Bakır sabır ister!' },
+      { name: 'Müze Rehberi Zeynep', look: 'genc', text: 'Zeugma’nın mozaikleri Fırat’ın sularından kurtarıldı. İki düğme, iki duvar: hangisine ne zaman bastığın önemli.' },
+      { name: 'Kale Bekçisi Şükrü', look: 'amca', text: 'Antep’e Gazi unvanı 1921’de verildi; bu kale şehrin direnişini gördü. Hadi evlat, defterin sayfası tamam.' },
+    ],
+    medals: [80, 120, 180],
+    quips: ['Tokmak beklemez.', 'Bakır kızardı, sen kızarma.', 'Arılar baklavayı sever.', 'Fıstık yeşili sana yakışır.'],
+    item: 'Baklava',
+    intro: 'Bakırcıların çekiç sesi, fıstık bahçeleri ve Zeugma’nın mozaikleri. Kale kapısından çarşıya, çarşıdan müzeye.',
+    facts: [
+      { title: 'Antep Baklavası', text: 'Antep baklavası 2013’te Avrupa Birliği’nde coğrafi işaret alan ilk Türk ürünü oldu.' },
+      { title: 'Zeugma Mozaikleri', text: 'Zeugma Mozaik Müzesi’nde Fırat kıyısındaki antik kentten kurtarılan mozaikler sergilenir. En ünlüsü “Çingene Kızı”dır.' },
+      { title: 'Bakırcılar Çarşısı', text: 'Gaziantep’te bakırcılık yüzyıllardır sürer. Ustalar kazanları, cezveleri ve tepsileri hâlâ elde döver.' },
+    ],
+    secret: { title: 'Gastronomi Şehri', text: 'Gaziantep, 2015’te UNESCO Yaratıcı Şehirler Ağı’na gastronomi alanında katıldı.' },
+    hints: [
+      'Bakırcı tokmağı: inmeden önce titrer, gölgesi kızarır. Bekle, kalkınca geç.',
+      'Fıstık bahçesi: yay seni ağaçlara fırlatır. Anahtar en yüksek dalda, arılara dikkat.',
+      'Zeugma Müzesi: düğmeler duvarları ve köprüyü değiştirir. Sıra önemli.',
+    ],
+    map: gaziantep,
   },
   {
     id: 'mardin',
@@ -1313,9 +1491,24 @@ function extend(l: LevelDef) {
   l.medals = l.medals.map((m) => m + ext.medal) as [number, number, number]
 }
 
+/** İmza bölümü: şehrin bir köşesini anlatan parça, verilen sütuna eklenir; tabela ipucu ve şehir insanı sırasına oturur. */
+function addSignature(l: LevelDef) {
+  const sig = SIGNATURES[l.id]
+  if (!sig) return
+  const count = (ch: string) => l.map.reduce((n, r) => n + [...r.slice(0, sig.at)].filter((c) => c === ch).length, 0)
+  const signs = count('?')
+  const people = count('n')
+  l.map = l.map.map((r, y) => r.slice(0, sig.at) + sig.rows[y] + r.slice(sig.at))
+  l.hints = [...l.hints.slice(0, signs), ...sig.hints, ...l.hints.slice(signs)]
+  l.npcs = [...l.npcs.slice(0, people), ...sig.npcs, ...l.npcs.slice(people)]
+  sig.hintAt = signs
+  sig.npcAt = people
+  l.medals = l.medals.map((m) => m + sig.medal) as [number, number, number]
+}
+
 for (const l of LEVELS) {
   extend(l)
+  addSignature(l)
   l.map = enrich(l.map, l.city)
 }
 
-export const levelIndex = (id: string) => LEVELS.findIndex((l) => l.id === id)

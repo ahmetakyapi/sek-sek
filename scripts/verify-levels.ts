@@ -70,9 +70,14 @@ function inputAt(m: Macro, t: number, prev: { jump: boolean; dash: boolean }): I
   return i
 }
 
-function key(s: Snapshot) {
+function key(s: Snapshot, w: World) {
   const p = s.player
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), s.platforms.filter((q) => Math.abs(q.x - p.x) < 260 && Math.abs(q.y - p.y) < 200).map((q) => `${Math.round((q.x + q.y) / 12)}${q.dir}`).join(','), s.checkpointIndex, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
+  // sema halkaları ve tokmaklar ortak saate bağlı: konumları yerine saatin evresi yeter
+  const near = s.platforms.map((q, i) => ({ q, a: w.platforms[i].axis })).filter(({ q }) => Math.abs(q.x - p.x) < 260 && Math.abs(q.y - p.y) < 200)
+  const plats = near.filter(({ a }) => a === 'x' || a === 'y' || a === 'b').map(({ q, a }) => (a === 'b' ? `b${Math.round(q.y / 16)}` : `${Math.round((q.x + q.y) / 12)}${q.dir}`))
+  const clocked = near.some(({ q, a }) => a === 'o' && Math.abs(q.x - p.x) < 120) || w.hammers.some((h) => Math.abs(h.x - p.x) < 40 && p.y > h.top - 8)
+  const phase = clocked ? Math.floor(((s.clock * 1.35) / (Math.PI * 2)) * 8) % 8 + '/' + Math.floor((s.clock % 3.11) * 4) : ''
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.checkpointIndex, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
 }
 
 let failed = false
@@ -84,10 +89,14 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const ms = macros()
   let far = { x: 0, y: 0 }
   const start = snapshot(w)
-  const seen = new Set<string>([key(start)])
+  const seen = new Set<string>([key(start, w)])
   const queue: Snapshot[] = [start]
-  const pri = (q: Snapshot) => q.player.x - q.player.y * 0.3 + Math.random() * 40
-  const push = (q: Snapshot) => {
+  // hedefli tur: eksik kalan bir hedefe en yakın durumlar önce açılır
+  let target: { x: number; y: number } | null = null
+  const pool: Snapshot[] = []
+  const pri = (q: Snapshot) => (target ? -Math.hypot(q.player.x - target.x, q.player.y - target.y) : q.player.x - q.player.y * 0.3 + ((q.player.x * 7 + q.player.y * 13) % 40))
+  const push = (q: Snapshot, keep = true) => {
+    if (keep) pool.push(q)
     ;(q as Snapshot & { pr: number }).pr = pri(q)
     queue.push(q)
     let i = queue.length - 1
@@ -124,47 +133,62 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   let gotKey = !w.keyBox
   let expanded = 0
   const t0 = Date.now()
-  while (queue.length && expanded < Number(process.env.BUDGET ?? 15000) && !(won && stamp && picks.size === w.pickups.length && cps.size === w.checkpoints.length)) {
-    const s = pop()
-    expanded++
-    for (const m of ms) {
-      restore(w, s)
-      const prev = { jump: false, dash: false }
-      const deaths = w.deaths
-      let t = 0
-      let air = false
-      const limit = m.wait > 0 ? m.wait : 2.6
-      while (t < limit) {
-        w.step(DT, inputAt(m, t, prev))
-        t += DT
-        for (const e of w.events) {
-          if (e.type === 'collect') picks.add(e.index)
-          if (e.type === 'checkpoint') cps.add(e.index)
-          if (e.type === 'stamp') stamp = true
-          if (e.type === "key") gotKey = true
+  const allDone = () => won && stamp && gotKey && picks.size === w.pickups.length && cps.size === w.checkpoints.length
+  const loop = (budget: number, done: () => boolean) => {
+    let n = 0
+    while (queue.length && n < budget && !done()) {
+      const s = pop()
+      expanded++
+      n++
+      for (const m of ms) {
+        restore(w, s)
+        const prev = { jump: false, dash: false }
+        const deaths = w.deaths
+        let t = 0
+        let air = false
+        const limit = m.wait > 0 ? m.wait : 2.6
+        while (t < limit) {
+          w.step(DT, inputAt(m, t, prev))
+          t += DT
+          for (const e of w.events) {
+            if (e.type === 'collect') picks.add(e.index)
+            if (e.type === 'checkpoint') cps.add(e.index)
+            if (e.type === 'stamp') stamp = true
+            if (e.type === "key") gotKey = true
+          }
+          w.events.length = 0
+          if (w.complete) break
+          if (w.deaths > deaths) break
+          if (!w.player.grounded) air = true
+          const jumping = m.jump > 0 || m.dashAt > 0
+          if (m.wait === 0 && w.player.grounded && t > 0.05) {
+            if (jumping && air && !m.repeat && (m.jump2 === 0 || t > m.jump2 + 0.05)) break
+            if (m.repeat && air && t > 0.6) break
+            if (!jumping && (t >= m.hold || air) && (air || Math.abs(w.player.vx) < 1)) break
+          }
         }
-        w.events.length = 0
-        if (w.complete) break
-        if (w.deaths > deaths) break
-        if (!w.player.grounded) air = true
-        const jumping = m.jump > 0 || m.dashAt > 0
-        if (m.wait === 0 && w.player.grounded && t > 0.05) {
-          if (jumping && air && !m.repeat && (m.jump2 === 0 || t > m.jump2 + 0.05)) break
-          if (m.repeat && air && t > 0.6) break
-          if (!jumping && (t >= m.hold || air) && (air || Math.abs(w.player.vx) < 1)) break
+        if (w.complete) won = true
+        if (w.deaths > deaths || w.complete || !w.player.grounded) continue
+        if (w.player.x > far.x) far = { x: w.player.x, y: w.player.y }
+        const ns = snapshot(w)
+        const k = key(ns, w)
+        if (!seen.has(k)) {
+          seen.add(k)
+          push(ns)
         }
-      }
-      if (w.complete) won = true
-      if (w.deaths > deaths || w.complete || !w.player.grounded) continue
-      if (w.player.x > far.x) far = { x: w.player.x, y: w.player.y }
-      const ns = snapshot(w)
-      const k = key(ns)
-      if (!seen.has(k)) {
-        seen.add(k)
-        push(ns)
       }
     }
   }
+  loop(Number(process.env.BUDGET ?? 15000), allDone)
+  const goals = () => [...w.pickups.filter((p) => !picks.has(p.index)), ...w.checkpoints.filter((c) => !cps.has(c.index)), ...(!stamp && w.stampBox ? [w.stampBox] : []), ...(!gotKey && w.keyBox ? [w.keyBox] : [])]
+  for (const g of goals()) {
+    target = { x: g.x, y: g.y }
+    queue.length = 0
+    for (const q of [...pool]) push(q, false)
+    loop(6000, () => !goals().includes(g))
+  }
+  target = null
+
   const ok = won && stamp && gotKey && picks.size === w.pickups.length && cps.size === w.checkpoints.length
   if (!ok) failed = true
   const missing = w.pickups.filter((p) => !picks.has(p.index)).map((p) => `C@${Math.floor(p.x / T)},${Math.floor(p.y / T)}`)

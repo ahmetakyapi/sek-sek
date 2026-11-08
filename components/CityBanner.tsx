@@ -1,8 +1,11 @@
+import { useLang, useT } from '@/lib/i18n'
 import type { LevelDef } from '@/game/types'
 
 /** Panel başlığı: şehrin piksel sahnesi, posta pulu biçiminde plaka ve şehir adı. */
 export default function CityBanner({ level, index, total, eyebrow, height = 120 }: { level: LevelDef; index?: number; total?: number; eyebrow?: string; height?: number }) {
   const plate = String(level.plate).padStart(2, '0')
+  const t = useT()
+  const lang = useLang()
   return (
     <div className="relative -mx-6 -mt-[calc(14px+1.25rem)] mb-4 overflow-hidden" style={{ height }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -18,12 +21,12 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120 
       <div className="absolute bottom-2 left-6 right-28">
         {eyebrow || index !== undefined ? (
           <p className="text-[11px] font-bold tracking-[0.25em] text-accent-2 [text-shadow:0_1px_0_#120f1a]">
-            {eyebrow ?? `${String((index ?? 0) + 1).padStart(2, '0')} / ${String(total ?? 0).padStart(2, '0')} · ${level.difficulty.toLocaleUpperCase('tr')}`}
+            {eyebrow ?? `${String((index ?? 0) + 1).padStart(2, '0')} / ${String(total ?? 0).padStart(2, '0')} · ${t(level.difficulty).toLocaleUpperCase(lang)}`}
           </p>
         ) : null}
         <h2 className="font-display text-4xl leading-none text-cream [text-shadow:0_3px_0_#120f1a]">
           {level.name}
-          {level.nickname ? <span className="ml-2 text-xl text-accent-2">({level.nickname})</span> : null}
+          {level.nickname ? <span className="ml-2 whitespace-nowrap text-xl text-accent-2">({level.nickname})</span> : null}
         </h2>
       </div>
     </div>

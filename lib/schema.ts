@@ -25,4 +25,3 @@ export const scores = pgTable(
   (t) => [index('memleket_scores_level_time_idx').on(t.level, t.timeMs), uniqueIndex('memleket_scores_level_player_idx').on(t.level, t.playerId)],
 )
 
-export type Score = typeof scores.$inferSelect

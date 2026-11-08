@@ -1,3 +1,8 @@
+# Ajanlar için
+
+Bu depoda çalışan her ajan önce **CLAUDE.md**’yi okur: kurallar (tek commit, doğrulamadan push yok, sırlar),
+proje haritası ve öğrenilmiş tasarım tuzakları orada. Bölüm tasarımı için `.claude/agents/level-designer.md`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

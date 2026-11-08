@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { CharacterId } from '@/game/characters'
-import { PORTRAITS, blinkRows } from '@/game/portraits'
+import { PORTRAITS } from '@/game/portraits'
 
 /** Piksel portreyi tek seferde PNG'ye çevirip önbelleğe alır (açık + kırpık göz). */
 const cache = new Map<string, { open: string; closed: string }>()
@@ -23,13 +23,13 @@ function toUrl(rows: string[], pal: Record<string, string>) {
   return cv.toDataURL('image/png')
 }
 
-export default function Portrait({ id, className = '' }: { id: CharacterId; className?: string; mood?: 'smile' | 'calm' }) {
+export default function Portrait({ id, className = '' }: { id: CharacterId; className?: string }) {
   const [src, setSrc] = useState<{ open: string; closed: string } | null>(null)
   useEffect(() => {
     let v = cache.get(id)
     if (!v) {
       const p = PORTRAITS[id]
-      v = { open: toUrl(p.rows, p.pal), closed: toUrl(blinkRows(p.rows), p.pal) }
+      v = { open: toUrl(p.rows, p.pal), closed: toUrl(p.closed, p.pal) }
       cache.set(id, v)
     }
     setSrc(v)

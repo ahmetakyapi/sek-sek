@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { useRef, useState } from 'react'
 import type { InputManager } from '@/game/input'
 
@@ -60,6 +61,7 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
 
   const dir = stick ? (stick.x < -R * 0.35 ? 'left' : stick.x > R * 0.35 ? 'right' : null) : null
 
+  const t = useT()
   return (
     <div className="touch-layer pointer-events-none absolute inset-0 z-10" onContextMenu={block}>
       {/* joystick bölgesi: sol yarının alt %60'ı */}
@@ -107,22 +109,22 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
         className="pointer-events-none absolute flex items-end gap-3"
         style={{ right: 'max(14px, env(safe-area-inset-right))', bottom: 'max(22px, env(safe-area-inset-bottom))' }}
       >
-        <button type="button" aria-label="Atıl" className="pointer-events-auto p-2" {...btn('dash')}>
+        <button type="button" aria-label={t("Atıl")} className="pointer-events-auto p-2" {...btn('dash')}>
           <span
             className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#3a3250]' : canDash ? 'border-[#d6403a] bg-[#2a2438]/85 shadow-[0_0_12px_rgba(214,64,58,0.45)]' : 'border-white/20 bg-[#2a2438]/60 opacity-60'}`}
             style={{ width: dashD, height: dashD }}
           >
             <span className="text-xl leading-none">»</span>
-            ATIL
+            {t('ATIL')}
           </span>
         </button>
-        <button type="button" aria-label="Zıpla" className="pointer-events-auto mb-8 p-2" {...btn('jump')}>
+        <button type="button" aria-label={t("Zıpla")} className="pointer-events-auto mb-8 p-2" {...btn('jump')}>
           <span
             className={`flex flex-col items-center justify-center rounded-full border-2 border-[#f5a571] font-display text-base text-ink shadow-[inset_0_-5px_0_rgba(0,0,0,0.3)] transition-transform duration-75 ${pressed.jump ? 'translate-y-0.5 scale-95 bg-accent-2' : 'bg-accent/90'}`}
             style={{ width: jumpD, height: jumpD }}
           >
             <span className="text-2xl leading-none">▲</span>
-            ZIPLA
+            {t('ZIPLA')}
           </span>
         </button>
       </div>

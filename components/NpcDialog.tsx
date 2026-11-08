@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { NPC_ART } from '@/game/npcs'
+import { NPC_PORTRAITS } from '@/game/portraits'
 import type { Npc } from '@/game/types'
 
 /** Konuşan kişinin piksel avatarı (4 kat). */
 function useAvatar(look: Npc['look']) {
   return useMemo(() => {
     if (typeof document === 'undefined') return ''
-    const art = NPC_ART[look]
+    const art = NPC_PORTRAITS[look]
     const w = art.rows[0].length
     const h = art.rows.length
     const cv = document.createElement('canvas')
@@ -50,7 +50,7 @@ export function NpcDialog({ npc, touch }: { npc: Npc; touch: boolean }) {
         <div className="shrink-0 bg-[#2a2438] p-1.5 [box-shadow:0_0_0_2px_#3d3550]">
           {avatar && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatar} alt="" width={48} height={60} className="dlg-avatar h-[60px] w-[48px] sm:h-[75px] sm:w-[60px]" style={{ imageRendering: 'pixelated' }} />
+            <img src={avatar} alt="" width={64} height={76} className="dlg-avatar h-[76px] w-[64px] sm:h-[90px] sm:w-[76px]" style={{ imageRendering: 'pixelated' }} />
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -60,7 +60,6 @@ export function NpcDialog({ npc, touch }: { npc: Npc; touch: boolean }) {
             <span className="opacity-0">{npc.text.slice(shown)}</span>
           </p>
         </div>
-        <span className="absolute -bottom-[3px] right-4 h-0 w-0 translate-y-full border-x-[8px] border-t-[8px] border-x-transparent border-t-[#d9a441]" />
       </div>
     </div>
   )

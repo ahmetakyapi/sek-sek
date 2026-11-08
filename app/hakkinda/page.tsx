@@ -4,22 +4,10 @@ import Logo from '@/components/Logo'
 import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { CHARACTERS } from '@/game/characters'
+import { FEATURES as FEATURE_TEXT } from '@/game/features'
 import { LEVELS } from '@/game/levels'
 
-const FEATURES: Record<string, string> = {
-  istanbul: 'Zıplama, iskele platformu, ilk atılma',
-  kocaeli: 'Körfez kıyısı, SEKA fabrikası çatısı, sal',
-  izmir: 'Kordon yengeçleri, körfez vapuru, Tarihi Asansör',
-  ankara: 'Cumbalı balkonlar, kale surlarında tırmanış',
-  adana: 'Taşköprü, Seyhan, pamuk balyaları, sivrisinekler',
-  mardin: 'Taş teraslar, dağılan taşlar, duvar sekmesi',
-  malatya: 'Kayısı kasaları, arılar, Aslantepe',
-  corum: 'Hitit ok tuzakları, Yerkapı, Aslanlı Kapı',
-  ordu: 'Dalgalı sahil, fındık yamaçları, Boztepe teleferiği',
-  sivas: 'Kaygan buz, minareler, kurtlar',
-  ardahan: 'Donmuş Çıldır Gölü, kaygan buz, Şeytan Kalesi',
-  bayburt: 'Karşı rüzgâr, kale burcuna son tırmanış',
-}
+const FEATURES = Object.fromEntries(Object.entries(FEATURE_TEXT).map(([k, v]) => [k, v.tr]))
 
 const DIFF_COLOR: Record<string, string> = { Kolay: '#7fc97a', Orta: '#f2c14e', Zor: '#f08a4a', 'Çok Zor': '#e5484d' }
 
@@ -27,12 +15,11 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 12 şehir, 36 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 15 şehir, 45 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 
 export default function Hakkinda() {
-  const hero = LEVELS[0]
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
       {/* ── üst bar */}
@@ -80,7 +67,7 @@ export default function Hakkinda() {
             <p className="mt-7 max-w-md text-[17px] leading-relaxed text-cream/85">
               Dedenin yarım kalmış defterini tamamla.
               <br />
-              <span className="text-muted">On iki şehir. Otuz altı hatıra. Tek yolculuk.</span>
+              <span className="text-muted">On beş şehir. Kırk beş hatıra. Tek yolculuk.</span>
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link href="/" className="pixel-btn primary px-7 py-3.5 text-lg">
@@ -175,7 +162,7 @@ export default function Hakkinda() {
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-end">
             <div>
               <p className="text-[12px] font-bold tracking-[0.3em] text-accent">ROTA</p>
-              <h2 className="mt-2 font-display text-4xl text-cream">On İki Şehir, Artan Zorluk</h2>
+              <h2 className="mt-2 font-display text-4xl text-cream">On Beş Şehir, Artan Zorluk</h2>
               <p className="mt-3 leading-relaxed text-muted">
                 Her şehir yeni bir şey öğretir, bir sonraki onu bekler. Kolay İstanbul’dan Çok Zor Bayburt’a; her şehirde üç hatıra, altın-gümüş-bronz süre madalyaları
                 ve konuşmayı seven yerel insanlar.

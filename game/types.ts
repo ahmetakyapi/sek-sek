@@ -1,6 +1,6 @@
 export const T = 16
 
-export type CityKey = 'istanbul' | 'kocaeli' | 'izmir' | 'ankara' | 'adana' | 'mardin' | 'malatya' | 'corum' | 'ordu' | 'sivas' | 'ardahan' | 'bayburt'
+export type CityKey = 'istanbul' | 'kocaeli' | 'izmir' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'mardin' | 'malatya' | 'corum' | 'ordu' | 'sivas' | 'ardahan' | 'bayburt'
 
 export interface Fact {
   title: string
@@ -81,3 +81,5 @@ export type GameEvent =
   | { type: 'key' }
   | { type: 'stamp' }
   | { type: 'switch' }
+  /** dost bir hayvanı sevdin */
+  | { type: 'pet'; x: number; y: number }

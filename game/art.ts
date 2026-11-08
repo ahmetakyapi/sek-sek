@@ -82,6 +82,63 @@ export interface CityStyle {
 }
 
 export const CITY: Record<CityKey, CityStyle> = {
+  konya: {
+    sky: ['#34386a', '#d4866a', '#f6d49a'],
+    sun: { x: 0.66, y: 0.6, r: 18, color: '#ffe2a6', glow: 'rgba(255,205,150,0.25)' },
+    far: '#a08eaa',
+    mid: '#6c6084',
+    near: '#3e3656',
+    tileTop: '#e0cca2',
+    tile: '#ac8a5e',
+    tileDark: '#6e5434',
+    tileLight: '#ccaa7a',
+    plank: '#2f9a94',
+    accent: '#3fb8a8',
+    water: ['#3a7a9a', '#24566e', '#a8d8e8'],
+    spike: ['#e0d6c4', '#7a6e5e'],
+    weather: 'petals',
+    enemyGround: 'snake',
+    enemyFly: 'raven',
+    animal: 'cat',
+  },
+  nevsehir: {
+    sky: ['#2c4c8c', '#e8a07a', '#ffe2b4'],
+    sun: { x: 0.24, y: 0.7, r: 16, color: '#fff0c4', glow: 'rgba(255,220,170,0.3)' },
+    far: '#dcae92',
+    mid: '#b8826c',
+    near: '#7a5048',
+    tileTop: '#f4dcbc',
+    tile: '#d8a87e',
+    tileDark: '#9a6a4e',
+    tileLight: '#f0c898',
+    plank: '#8a5a3a',
+    accent: '#e8604a',
+    water: ['#3a6a8a', '#244a66', '#a8d0e8'],
+    spike: ['#ecdcc4', '#8a6a50'],
+    weather: 'dust',
+    enemyGround: 'lizard',
+    enemyFly: 'pigeon',
+    animal: 'horse',
+  },
+  gaziantep: {
+    sky: ['#38284a', '#c8604a', '#f2b060'],
+    sun: { x: 0.8, y: 0.56, r: 18, color: '#ffd890', glow: 'rgba(255,180,110,0.28)' },
+    far: '#a87a6a',
+    mid: '#7a5050',
+    near: '#4a3038',
+    tileTop: '#e8d2aa',
+    tile: '#c09870',
+    tileDark: '#7a5a3a',
+    tileLight: '#dcbc8c',
+    plank: '#b8682e',
+    accent: '#d8862e',
+    water: ['#3a6a8a', '#244a66', '#a8d0e8'],
+    spike: ['#ecc890', '#8a5a30'],
+    weather: 'dust',
+    enemyGround: 'rat',
+    enemyFly: 'wasp',
+    animal: 'partridge',
+  },
   istanbul: {
     sky: ['#2b2350', '#b0577a', '#f2a65a'],
     sun: { x: 0.72, y: 0.58, r: 18, color: '#ffd38a', glow: 'rgba(255,190,120,0.25)' },
@@ -97,7 +154,7 @@ export const CITY: Record<CityKey, CityStyle> = {
     water: ['#2e5d8a', '#1f3f66', '#9fd0e8'],
     spike: ['#c9ced8', '#6c7080'],
     weather: 'gulls',
-    enemyGround: 'cat',
+    enemyGround: 'crab',
     enemyFly: 'gull',
     animal: 'cat',
   },
@@ -154,7 +211,7 @@ export const CITY: Record<CityKey, CityStyle> = {
     water: ['#3c7aa0', '#2a5878', '#a8dcef'],
     spike: ['#9aa3b0', '#5a606c'],
     weather: 'leaves',
-    enemyGround: 'goat',
+    enemyGround: 'lizard',
     enemyFly: 'pigeon',
     animal: 'angora',
   },
@@ -379,6 +436,117 @@ export function buildLayers(city: CityKey): Layers {
   const s = CITY[city]
   const B = LAYER_H
   switch (city) {
+    case 'konya':
+      return {
+        far: layer((c) => {
+          // bozkır: alçak, geniş tepeler; ufukta Takkeli Dağ
+          hills(c, s.far, B - 66, 8, 1, 42)
+          for (let i = 0; i < 40; i++) rect(c, 300 + i, B - 66 - 26 + Math.abs(i - 20), 1, 30, s.far)
+        }),
+        mid: layer((c) => {
+          const r = rng(421)
+          const base = B - 54
+          for (let x = 0; x < LAYER_W; x += 10 + Math.floor(r() * 10)) house(c, x, base, 10 + Math.floor(r() * 10), 8 + Math.floor(r() * 10), s.mid, null, r, 'flat')
+          // Mevlâna Türbesi: dilimli turkuaz külah
+          const mx = 200
+          rect(c, mx - 30, base - 18, 60, 18, s.mid)
+          dome(c, mx - 18, base - 18, 8, s.mid, false)
+          dome(c, mx + 18, base - 18, 8, s.mid, false)
+          rect(c, mx - 7, base - 46, 14, 28, '#2f9a94')
+          for (let i = 0; i < 14; i++) rect(c, mx - 7 + i / 2, base - 46 - i, 14 - i, 1, '#2f9a94')
+          for (let k = 0; k < 4; k++) rect(c, mx - 6 + k * 4, base - 46, 1, 28, '#24807a')
+          rect(c, mx - 1, base - 66, 2, 6, '#f2c14e')
+          minaret(c, mx + 40, base, 50, s.mid)
+          // Alaeddin Tepesi ve camisi
+          for (let x = 380; x < 520; x++) rect(c, x, base - 10 - Math.round(Math.sin(((x - 380) / 140) * Math.PI) * 14), 1, 30, s.mid)
+          rect(c, 420, base - 38, 50, 14, s.mid)
+          dome(c, 445, base - 38, 7, s.mid)
+          minaret(c, 476, base - 14, 34, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(422)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // buğday tarlası ve leylek yuvalı direkler
+          for (let x = 0; x < LAYER_W; x += 2) rect(c, x, base - 3 - Math.floor(r() * 4), 1, 4, s.near)
+          for (let x = 60; x < LAYER_W; x += 150 + Math.floor(r() * 50)) {
+            rect(c, x, base - 46, 2, 46, s.near)
+            rect(c, x - 5, base - 50, 12, 4, s.near)
+            rect(c, x - 2, base - 56, 4, 6, s.near)
+          }
+        }),
+      }
+    case 'nevsehir':
+      return {
+        far: layer((c) => {
+          // Erciyes ufukta, karlı
+          hills(c, s.far, B - 80, 12, 2, 50)
+          for (let i = 0; i < 70; i++) rect(c, 420 + i, B - 160 + Math.abs(i - 35) * 2, 1, 120, s.far)
+          for (let i = 0; i < 20; i++) rect(c, 445 + i, B - 160 + Math.abs(i - 10) * 2, 1, 6, '#f6f2ec')
+        }),
+        mid: layer((c) => {
+          const r = rng(501)
+          const base = B - 50
+          // peri bacaları: gövde + şapka taşı
+          for (let x = 0; x < LAYER_W; x += 22 + Math.floor(r() * 26)) {
+            const h = 30 + Math.floor(r() * 50)
+            const w = 8 + Math.floor(r() * 6)
+            for (let i = 0; i < h; i++) rect(c, x + Math.round((i / h) * 2), base - i, w - Math.round((i / h) * 4), 1, s.mid)
+            rect(c, x - 2, base - h - 4, w + 2, 5, '#8a5a50')
+            if (r() > 0.5) rect(c, x + 3, base - h / 2, 2, 3, '#4a2e2a')
+          }
+          // Uçhisar Kalesi
+          for (let x = 560; x < 630; x++) rect(c, x, base - 70 + Math.abs(x - 595) * 1.2, 1, 90, s.mid)
+          for (let i = 0; i < 6; i++) rect(c, 575 + i * 7, base - 50 + (i % 2) * 8, 3, 4, '#4a2e2a')
+          rect(c, 0, base, LAYER_W, 60, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(502)
+          const base = B - 24
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          for (let x = 20; x < LAYER_W; x += 60 + Math.floor(r() * 40)) {
+            // asma kütükleri ve kaya evlerin kapı-pencereleri
+            rect(c, x, base - 8, 2, 8, s.near)
+            rect(c, x - 3, base - 10, 8, 3, '#5a7a3a')
+          }
+        }),
+      }
+    case 'gaziantep':
+      return {
+        far: layer((c) => {
+          hills(c, s.far, B - 72, 10, 2, 27)
+          // fıstık bahçeleri: yuvarlak ağaç sıraları
+          for (let x = 0; x < LAYER_W; x += 16) disc(c, x + 6, B - 74 + ((x * 7) % 9), 6, '#8a7a5a')
+        }),
+        mid: layer((c) => {
+          const r = rng(271)
+          const base = B - 56
+          for (let x = 0; x < LAYER_W; x += 10 + Math.floor(r() * 8)) house(c, x, base, 10 + Math.floor(r() * 8), 10 + Math.floor(r() * 16), s.mid, null, r, 'flat')
+          // Gaziantep Kalesi: höyük üstünde yuvarlak burçlar
+          for (let x = 60; x < 300; x++) rect(c, x, base - 14 - Math.round(Math.sin(((x - 60) / 240) * Math.PI) * 18), 1, 40, s.mid)
+          rect(c, 100, base - 58, 160, 26, s.mid)
+          for (const bx of [100, 150, 200, 250]) {
+            rect(c, bx - 6, base - 70, 16, 40, s.mid)
+            for (let k = 0; k < 16; k += 4) rect(c, bx - 6 + k, base - 74, 2, 4, s.mid)
+          }
+          // çarşı kubbeleri ve minare
+          for (const cx of [380, 420, 460]) dome(c, cx, base - 16, 10, s.mid, false)
+          rect(c, 360, base - 16, 120, 16, s.mid)
+          minaret(c, 520, base, 54, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(272)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // bakırcı tezgâhları: asılı kazanlar
+          for (let x = 30; x < LAYER_W; x += 80 + Math.floor(r() * 30)) {
+            rect(c, x, base - 30, 40, 2, s.near)
+            for (let k = 0; k < 4; k++) disc(c, x + 5 + k * 10, base - 22, 4, '#6a4a3a')
+            rect(c, x, base - 30, 2, 30, s.near)
+            rect(c, x + 38, base - 30, 2, 30, s.near)
+          }
+        }),
+      }
     case 'istanbul':
       return {
         far: layer((c) => {
@@ -875,6 +1043,34 @@ export function buildLayers(city: CityKey): Layers {
 
 /* ── Düşmanlar ────────────────────────────────────────────────── */
 export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string, string> }> = {
+  snake: {
+    pal: { g: '#5a9a3a', G: '#c8d85a', e: '#ffd23a', r: '#e0303a', k: '#1d1a22' },
+    frames: [
+      ['............', '............', '............', '.kkg........', 'ggegg.......', 'r.gGg...ggg.', '...ggg.gGGGg', '....gGgGg..g', '.....gggg...', '............'],
+      ['............', '............', '............', '.kkg........', 'ggegg.......', '.r.gg..ggg..', '....ggggGGg.', '.....gGGg.gg', '......gg....', '............'],
+    ],
+  },
+  lizard: {
+    pal: { l: '#c8803a', L: '#f0b864', e: '#1d1a22', k: '#7a4a1e' },
+    frames: [
+      ['............', '............', '............', '............', '.ll.........', 'lell.......l', 'lllllllll.l.', '.lLLLLLlll..', '.k.k...k.k..', '............'],
+      ['............', '............', '............', '............', '.ll.........', 'lell......l.', 'lllllllll..l', '.lLLLLLlll..', 'k...k.k...k.', '............'],
+    ],
+  },
+  rat: {
+    pal: { g: '#8a8490', G: '#bcb6c0', p: '#f0a0a8', e: '#1d1a22', k: '#e87a8a' },
+    frames: [
+      ['............', '............', '............', '............', '.pp.........', '.pgggg......', 'kegggggg.ppp', '.ggggGgg....', '..g.g.g.g...', '............'],
+      ['............', '............', '............', '............', '.pp.........', '.pgggg.....p', 'kegggggg.pp.', '.ggggGgg....', '.g.g...g.g..', '............'],
+    ],
+  },
+  wasp: {
+    pal: { y: '#f2c42e', k: '#1d1a22', w: '#e8f2ff', r: '#e0303a' },
+    frames: [
+      ['....ww.ww...', '....wwwww...', '.kyykyykyy..', 'ekyykyykyyr.', '.kyykyykyy..', '............', '............', '............'],
+      ['............', '...wwwwww...', '.kyykyykyy..', 'ekyykyykyyr.', '.kyykyykyy..', '....ww.ww...', '............', '............'],
+    ],
+  },
   gull: {
     pal: { w: '#f4f4f0', g: '#9aa3b0', o: '#f0a030', e: '#1d1a22' },
     frames: [
@@ -995,6 +1191,18 @@ export function enemyArt(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' |
 
 /* ── Hatıralar (toplanabilir) ─────────────────────────────────── */
 export const ITEM_ART: Record<CityKey, { rows: string[]; pal: Record<string, string> }> = {
+  konya: {
+    pal: { c: '#c8a070', C: '#ecd0a2', d: '#8a6a44', k: '#5a4028' },
+    rows: ['...cccc...', '..cCcccc..', '..cCcccd..', '..cCcccd..', '..cCcccd..', '..cCcccd..', '.ccCccccd.', '.cCccccdd.', '.kkkkkkkk.', '..........'],
+  },
+  nevsehir: {
+    pal: { r: '#c8603a', R: '#f0c890', h: '#8a3a20', w: '#5a2a18' },
+    rows: ['...wwww...', '...rrrr...', '....rr.hh.', '...rrrr..h', '..rRrRrr.h', '.rrrrrrrrh', '.rRrRrRrr.', '.rrrrrrrr.', '..rrhhrr..', '...hhhh...'],
+  },
+  gaziantep: {
+    pal: { y: '#eab24a', Y: '#b07424', g: '#86c040', G: '#4a7a20' },
+    rows: ['..........', '....gg....', '...gGgg...', '..yyGyyy..', '.yYyyyyYy.', 'yyyyyyyyyy', 'yYYYYYYYYy', 'yyyyyyyyyy', '.YYYYYYYY.', '..........'],
+  },
   istanbul: {
     pal: { b: '#b8692e', B: '#8a4a1e', s: '#f6e7c0' },
     rows: ['...bbbb...', '..bsbbsb..', '.bb....bb.', '.b......b.', '.bs....sb.', '.b......b.', '.bb....bB.', '..bsbbsB..', '...BBBB...', '..........'],
@@ -1043,4 +1251,12 @@ export const ITEM_ART: Record<CityKey, { rows: string[]; pal: Record<string, str
     pal: { w: '#a8693a', W: '#7a4a24', s: '#f0e2c0', k: '#2a2220' },
     rows: ['........kk', '.......ks.', '......ws..', '.....ws...', '..wwwWs...', '.wwkkwW....', 'wwkkkkwW..', 'wwwkkwwW..', '.wwwwWW...', '..WWWW....'],
   },
+}
+
+/** Rehberde görünen adlar */
+export const CREATURE_NAMES: Record<string, string> = {
+  gull: 'Martı', bee: 'Arı', raven: 'Kuzgun', mosquito: 'Sivrisinek', frog: 'Kurbağa', hare: 'Tavşan', ram: 'Koç', bat: 'Yarasa',
+  hedgehog: 'Kirpi', boar: 'Yaban Domuzu', crab: 'Yengeç', pigeon: 'Güvercin', goat: 'Keçi', scorpion: 'Akrep', wolf: 'Kurt',
+  snake: 'Yılan', lizard: 'Kertenkele', rat: 'Fare', wasp: 'Eşek Arısı',
+  cat: 'Sokak Kedisi', flamingo: 'Flamingo', angora: 'Ankara Keçisi', lion: 'Hitit Aslanı', cow: 'İnek', kangal: 'Kangal', horse: 'At', partridge: 'Keklik',
 }

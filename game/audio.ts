@@ -5,6 +5,9 @@ const SCALES: Record<CityKey, { root: number; steps: number[]; meter: number[]; 
   // Hicaz (Re)
   istanbul: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 2, 2], tempo: 0.22 },
   // Nihavend'e yakın
+  konya: { root: 57, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [3, 3, 2], tempo: 0.24 },
+  nevsehir: { root: 59, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.18 },
+  gaziantep: { root: 60, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.15 },
   kocaeli: { root: 60, steps: [0, 2, 3, 5, 7, 8, 11, 12], meter: [2, 2, 2, 2], tempo: 0.2 },
   // Rast, zeybek usulü 9/8
   izmir: { root: 60, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.19 },
@@ -130,6 +133,11 @@ export class Sound {
         return this.noise(0.06, 0.06, 2600)
       case 'complete':
         ;[523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 'triangle', 0.14), i * 110))
+        return
+      case 'pet':
+        // küçük, sevimli iki nota
+        this.tone(880, 0.07, 'sine', 0.08)
+        setTimeout(() => this.tone(1175, 0.1, 'sine', 0.07), 70)
         return
       case 'crystal':
         this.tone(1046, 0.08, 'triangle', 0.12)

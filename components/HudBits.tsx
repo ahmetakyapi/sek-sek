@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { ITEM_ART } from '@/game/art'
 import type { CityKey } from '@/game/types'
@@ -61,6 +62,7 @@ export function Key({ children, wide = false, dim = false }: { children: React.R
 
 /** Masaüstü tuş ipuçları: oyuncu hareketsiz kaldıkça belirginleşir; atılma tuşu hazır olunca parlar. */
 export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean }) {
+  const t = useT()
   return (
     <div
       className={`pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 transition-opacity duration-500 ${idle ? 'opacity-100' : 'opacity-30'}`}
@@ -70,22 +72,22 @@ export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean })
         <span className="flex items-center gap-1.5">
           <Key>←</Key>
           <Key>→</Key>
-          Yürü
+          {t('Yürü')}
         </span>
         <span className="flex items-center gap-1.5">
           <Key>↑</Key>
-          Zıpla
+          {t('Zıpla')}
         </span>
         <span className={`flex items-center gap-1.5 ${canDash ? 'text-gold' : 'text-muted'}`}>
           <Key wide dim={!canDash}>
             Space
           </Key>
-          Atıl
+          {t('Atıl')}
           <span className={`inline-block h-2 w-2 ${canDash ? 'bg-[#d6403a] shadow-[0_0_6px_#d6403a]' : 'bg-[#7f8ca8]'}`} />
         </span>
         <span className="flex items-center gap-1.5">
           <Key>Esc</Key>
-          Mola
+          {t('Mola')}
         </span>
       </div>
     </div>

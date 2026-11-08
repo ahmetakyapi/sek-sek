@@ -1,39 +1,96 @@
+<div align="center">
+
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Canlı:** https://sek-sek.vercel.app
+**Dedenin yarım kalmış defterini tamamla. On beş şehir, kırk beş hatıra, tek yolculuk.**
 
-İstanbul’dan Bayburt’a, her şehri kendi dokusuyla aşan bir piksel platform oyunu. Mobilde ve webde oynanır;
-harici görsel ya da ses dosyası yoktur: bütün çizimler ve müzik kodla üretilir.
+İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir piksel platform oyunu.<br>
+Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
-| # | Şehir | Plaka | Zorluk | Yeni mekanik | Hatıra |
-|---|-------|-------|--------|--------------|--------|
-| 1 | İstanbul · Boğaz Kıyısı | 34 | Kolay | Zıplama, tek yönlü platform, iskele, atılma | Simit |
-| 2 | Kocaeli · Körfez ve SEKA | 41 | Kolay | Fabrika merdivenleri, sal, yengeçler | Pişmaniye |
-| 3 | İzmir · Kordon Boyu | 35 | Kolay | Körfez vapuru, Tarihi Asansör | Boyoz |
-| 4 | Ankara · Kale ve Cumbalar | 06 | Orta | Cumbalar, kale surlarında tırmanış | Tiftik |
-| 5 | Adana · Seyhan ve Taşköprü | 01 | Orta | Kırılan köprü taşları, pamuk balyası, sivrisinek | Pamuk |
-| 2 | Mardin · Taş Teraslar | 47 | Orta | Akrepler, çatlak taş, duvar tırmanışı | Telkari |
-| 3 | Malatya (Erik Diyarı) · Kayısı Bahçeleri | 44 | Orta | Kayısı kasası (yay), dikey platform, arılar | Kayısı |
-| 4 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
-| 4 | Ordu · Fındık ve Boztepe | 52 | Zor | Dalgalı sahil, yaban domuzları, Boztepe teleferiği | Fındık |
-| 5 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, minareler arası tırmanış, kuzgunlar | Kangal rozeti |
-| 6 | Ardahan · Donmuş Çıldır | 75 | Zor | Kırılan göl buzu, kaygan adacıklar, rüzgâr | Kızak Çanı |
-| 6 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, hepsi bir arada | Kopuz |
+[**▶ Hemen Oyna · sek-sek.vercel.app**](https://sek-sek.vercel.app)
 
-Her şehirde üç hatıra saklı; her biri o şehre dair doğrulanmış bir bilgi kartı açar.
+<img src="docs/img/title.png" alt="Sek-Sek başlık ekranı: Uktun'un portresi ve oyunun menüsü" width="860">
 
-**Hikâye:** İstanbullu Uktun ya da Diyarbakırlı Memo Çelik, dedesi Yusuf’un tavan arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre
-ayrılmış, her şehirde üç boş kutu var. Son sayfada tek cümle: “Yolun sonu, başladığım yer.” Yol Bayburt’ta biter.
+</div>
 
-**Şehir dokusu:** simitçi arabası ve İstanbul kedileri, Mardin’de mırra ve telkari ustası, Malatya’da damda kuruyan
-kayısılar, Çorum’da leblebi kazanı ve arkeolog, Sivas’ta çoban ve Kangal’ı Karabaş, Bayburt’ta ozan Korkut Dede.
-Her şehirde yanına gidince konuşan iki kişi, altın/gümüş/bronz süre madalyaları.
+---
+
+## Bir Bakışta
+
+<img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
+
+- **15 Şehir, Her Biri Kendine Has.** Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+  Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr.
+- **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
+  **gizli pul** deftere gizli bir sayfa ekler.
+- **Konuşan Şehir.** Simitçiden vapur kaptanına, mırracıdan kangal sahibine 30’u aşkın şehir insanı.
+  Dost hayvanları sevebilirsin; kırmızı hatla parlayan canlılar tehlikelidir.
+- **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, kristallerle havada ikinci atılma.
+- **Artbook Havası.** Işıkla boyanmış portreler, kilim çerçeveler, defter kâğıdı kartlar, paylaşılabilir kartpostallar.
+- **Skor Tablosu.** Şehir başına ve genel sıralama; altın, gümüş ve bronz süre madalyaları.
+
+<br clear="right">
+
+<img src="docs/img/mechanics.png" alt="Konya'da Sema Halkası, Nevşehir'de Balon, Gaziantep'te Bakırcı Tokmağı" width="100%">
+
+## Rota
+
+<img src="docs/img/cities.png" alt="On beş şehrin oyun içinden görüntüleri" width="100%">
+
+| # | Şehir | Plaka | Zorluk | Kendine Has | Hatıra |
+|---|-------|:-----:|--------|-------------|--------|
+| 1 | İstanbul · Boğaz Kıyısı | 34 | Kolay | İskele, kristal, Vapur Seferi | Simit |
+| 2 | Kocaeli · Körfez ve SEKA | 41 | Kolay | Anahtarlı depo, çürük kâğıt bobinleri | Pişmaniye |
+| 3 | İzmir · Kordon Boyu | 35 | Kolay | Körfez vapuru, Tarihi Asansör, Kemeraltı tenteleri | Boyoz |
+| 4 | Ankara · Kale ve Cumbalar | 06 | Orta | Kale burcunda tırmanış, koç | Tiftik |
+| 5 | Konya · Mevlâna’nın Şehri | 42 | Orta | Dönen sema halkaları, Karatay’ın anahtarı | Sikke |
+| 6 | Nevşehir · Kapadokya | 50 | Orta | Binince yükselen balonlar, Derinkuyu tünelleri | Testi |
+| 7 | Adana · Seyhan ve Taşköprü | 01 | Orta | Seyhan bentleri, sivrisinekler | Pamuk |
+| 8 | Gaziantep · Bakırcılar Çarşısı | 27 | Orta | Bakırcı tokmakları, fıstık bahçesi, Zeugma bilmecesi | Baklava |
+| 9 | Mardin · Taş Teraslar | 47 | Orta | Dağılan Kasımiye taşları, gizli mahzen | Telkari |
+| 10 | Malatya (Erik Diyarı) · Kayısı Bahçeleri | 44 | Orta | Kayısı kasaları, arılar | Kayısı |
+| 11 | Çorum (Çorumçe) · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli | Leblebi |
+| 12 | Ordu · Fındık ve Boztepe | 52 | Zor | Boztepe teleferiği, yaban domuzları | Fındık |
+| 13 | Sivas · Buzlu Kızılırmak | 58 | Zor | Buz, kurtlar, Gök Medrese bilmecesi | Kangal rozeti |
+| 14 | Ardahan · Donmuş Çıldır | 75 | Zor | Buz delikleri, kırılan göl buzu, rüzgâr | Kızak Çanı |
+| 15 | Bayburt (Uktun) · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları | Kopuz |
+
+## Yolcular ve Şehir İnsanları
+
+<img src="docs/img/portraits.png" alt="Uktun, Memo Çelik ve şehir insanlarının piksel portreleri" width="100%">
+
+**Uktun**, İstanbullu bir haritacı; **Memo Çelik**, Diyarbakırlı bir telefoncu. İkisinden biri, dedesi Yusuf’un tavan
+arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre ayrılmış, son sayfada tek bir cümle var:
+“Yolun sonu, başladığım yer.”
+
+Portreler `scripts/art/painter.py` ile boyanır: sol üstten vuran gün batımı ışığı, sıcak ışık ve soğuk gölge,
+seçici dış hat, kenar ışığı ve her yolcunun kendi şehri arka planda.
+
+## Ekranlar
+
+<table>
+<tr>
+<td width="50%"><img src="docs/img/intro.png" alt="Gaziantep giriş ekranı: dedenin notu ve şehirdeki dost ile tehlikeler"><br><sub>Her şehrin girişinde dedenin notu ve <b>Bu Şehirde</b> rehberi: kim dost, kim tehlikeli.</sub></td>
+<td width="50%"><img src="docs/img/complete.png" alt="Bölüm sonu: süre, madalya, hatıralar, kartpostal ve skor tablosu"><br><sub>Bölüm sonu: süre ve madalya, bulunan hatıralar, kartpostal, skor tablosu.</sub></td>
+</tr>
+<tr>
+<td><img src="docs/img/mobile-dialog.png" alt="Telefonda yatay ekranda Mardin'de bir şehir insanıyla konuşma"><br><sub>Telefonda yatay: diyalog iki kontrolün arasına oturur, karakteri kapatmaz.</sub></td>
+<td><img src="docs/img/about.png" alt="Oyun içi Hakkında ekranı, artbook düzeninde"><br><sub>“Oyun Hakkında” menüden açılan bir artbook: Hikâye, Yolcular, Rota, Küçük Bir Sözlük.</sub></td>
+</tr>
+</table>
+
+<p align="center"><img src="docs/img/title-en.png" alt="İngilizce başlık ekranı" width="640"><br><sub>Başlık ekranındaki TR / EN düğmesiyle bütün oyun İngilizceye geçer.</sub></p>
 
 ## Kontroller
 
-- **Klavye:** ← → / A D yürü · ↑ / W / Z zıpla · Boşluk / X / Shift atıl (yönle 8 yöne) · ↓ ince platformdan in · Esc mola · R bayraktan dön
-- **Dokunmatik:** sol yarıda yüzen joystick, sağda ZIPLA ve ATIL
-- **Oyun kolu:** A/Y zıpla, X/B/RT atıl
+| | Hareket | Zıpla | Atıl | Diğer |
+|---|---|---|---|---|
+| **Klavye** | ← → · A D | ↑ · W · Z (basılı tut, daha yükseğe) | Space · X · Shift (8 yöne) | ↓ ince platformdan in · Esc mola · R bayraktan dön |
+| **Dokunmatik** | Sol yarıda yüzen joystick | ZIPLA | ATIL (joystick yönünde) | Büyük tuş seçeneği |
+| **Oyun kolu** | Sol çubuk | A · Y | X · B · RT | |
+
+Duvara doğru basılı tutup zıplarsan tırmanırsın. Atılma yere değince ya da bir düşmana basınca yenilenir:
+atkın kırmızıysa hazırsın, griyse harcadın.
 
 ## Geliştirme
 
@@ -44,33 +101,30 @@ npm run db:migrate           # yalnızca memleket_* tablolarını oluşturur
 npm run dev
 ```
 
-| Komut | Ne yapar |
+| Komut | Ne Yapar |
 |-------|----------|
 | `npm run typecheck` | TypeScript |
-| `npm test` | Fizik ve bölüm verisi testleri (vitest) |
-| `npm run verify:levels` | Her bölümü gerçek fizik motoruyla oynayan çözücü: çıkış, her hatıra, her bayrak ulaşılabilir mi |
+| `npm test` | Fizik, mekanik ve bölüm verisi testleri (vitest) |
+| `npm run verify:levels` | Her bölümü gerçek fizik motoruyla oynayan çözücü: çıkış, her hatıra, bayrak, anahtar ve gizli pul ulaşılabilir mi |
 | `npm run build` | Üretim derlemesi |
 
-## Yapı
+Claude ya da başka bir ajanla çalışıyorsan önce **[CLAUDE.md](CLAUDE.md)**: kurallar, proje haritası, yeni şehir
+ekleme adımları ve öğrenilmiş tasarım tuzakları orada. Bölüm tasarımı için `.claude/agents/level-designer.md`.
 
 ```text
-game/
-  types.ts    → tipler, sabitler
-  sim.ts      → fizik ve dünya (DOM'suz, testlenebilir): coyote time, zıplama tamponu, duvar sekmesi, atılma
-  levels.ts   → bölüm haritaları (ASCII, lejant dosyanın başında) + şehir bilgileri
-  art.ts      → şehir paletleri, arka plan siluetleri, piksel sprite'lar
-  render.ts   → düşük çözünürlüklü tampon + parallax + parçacık + kamera
-  input.ts    → klavye, oyun kolu, dokunmatik
-  audio.ts    → WebAudio efektleri + makam esintili prosedürel müzik
-components/   → React arayüzü (menüler, HUD, dokunmatik kontroller, Türkiye rota haritası)
-app/          → / oyun · /hakkinda tanıtım · /skor paylaşım sayfası · /skor/kart kartpostal görseli
-app/api/scores → skor tablosu (Neon + Drizzle)
-scripts/      → verify-levels (çözücü), migrate
+game/          DOM'suz oyun çekirdeği: fizik (sim), bölümler, çizim, ses, karakterler, portreler, İngilizce metinler
+components/    React arayüzü: bütün ekranlar, artbook, şehir rehberi, diyalog, HUD, dokunmatik kontroller
+lib/           kayıt ve harita sürümü, TR/EN, paylaşım, veritabanı
+app/           / oyun · /hakkinda · /skor paylaşım sayfası · /skor/kart kartpostal · /api skor ve oyuncu
+scripts/       verify-levels çözücü, migrate, art/ (portre ressamı, harita üreteçleri)
+tests/         fizik ve mekanik testleri
 ```
 
-## Yeni şehir eklemek
+Her şey kodla üretilir: harici sprite ya da ses dosyası yoktur. Müzik her şehrin makamında, oynarken WebAudio ile çalınır.
 
-1. `game/levels.ts` → yeni `chunk([...])` parçaları ve `LEVELS` dizisine kayıt (plaka, zorluk, 3 bilgi, ipuçları)
-2. `game/art.ts` → `CITY` paleti, `buildLayers` silueti, `ITEM_ART` hatıra çizimi
-3. `game/audio.ts` → `SCALES` makamı
-4. `npm run verify:levels` geçmeden birleştirme
+**Teknoloji:** Next.js 16 · React 19.2 · TypeScript · Tailwind CSS v4 · kendi canvas motoru (120 Hz sabit adım) ·
+Neon + Drizzle · Vercel.
+
+---
+
+<div align="center"><sub>Tasarım ve geliştirme: Ahmet Akyapı</sub></div>
