@@ -36,7 +36,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-levels (çözücü), migrate, art/ (portre ressamı, harita üreteçleri, sync)
+scripts/         verify-levels (çözücü), migrate, art/ (portre ressamı, karakter kareleri hero.py, ikon ve favicon icons.py, harita üreteçleri, sync)
 tests/           sim.test.ts (fizik ve mekanik testleri)
 ```
 
