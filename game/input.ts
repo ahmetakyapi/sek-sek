@@ -80,7 +80,8 @@ export class InputManager {
     if (this.touch.x < -0.28) i.left = true
     if (this.touch.x > 0.28) i.right = true
     if (this.touch.y < -0.5) i.up = true
-    if (this.touch.y > 0.5) i.down = true
+    // aşağı yalnızca bilinçli ve dike yakın bir itişle: koşarken başparmak kayınca ince platformdan düşmesin
+    if (this.touch.y > 0.72 && Math.abs(this.touch.x) < this.touch.y * 0.7) i.down = true
 
     // oyun kolu
     const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : []

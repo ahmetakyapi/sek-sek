@@ -1556,15 +1556,29 @@ export class Renderer {
           }
           continue
         }
-        const shakeX = st ? Math.round((Math.random() - 0.5) * 2) : 0
+        // kırılmaya ne kadar kaldı: titreme artar, çatlak büyür, taş hafifçe çöker, toz dökülür
+        const k = st ? Math.min(1, st.t / 0.42) : 0
+        const shakeX = st ? Math.round((Math.random() - 0.5) * (1 + k * 2)) : 0
+        const sink = Math.round(k * 2)
         const x = tx * T + shakeX
-        const y = ty * T
-        rect(b, x, y, T, 10, s.tileLight)
+        const y = ty * T + sink
+        rect(b, x, y, T, 14 - sink, s.tileLight)
         rect(b, x, y, T, 2, s.tileTop)
-        rect(b, x, y + 10, T, 2, s.tileDark)
+        rect(b, x, y + 12 - sink, T, 2, s.tileDark)
+        rect(b, x + 1, y + 2, 4, 1, 'rgba(255,240,210,0.35)')
         rect(b, x + 5, y + 2, 1, 4, s.tileDark)
         rect(b, x + 6, y + 5, 3, 1, s.tileDark)
         rect(b, x + 11, y + 4, 1, 5, s.tileDark)
+        if (k > 0.3) {
+          rect(b, x + 2, y + 6, 1, 5, s.tileDark)
+          rect(b, x + 8, y + 7, 1, 4, s.tileDark)
+          rect(b, x + 3, y + 9, 4, 1, s.tileDark)
+        }
+        if (k > 0.65) {
+          rect(b, x + 7, y, 1, 12, s.tileDark)
+          rect(b, x + 12, y + 8, 3, 1, s.tileDark)
+        }
+        if (st && Math.random() < 0.25 + k * 0.4) this.particles.push({ x: tx * T + Math.random() * T, y: ty * T + 13, vx: (Math.random() - 0.5) * 10, vy: 10, life: 0.5, max: 0.5, color: s.tileLight, size: 1, grav: 200 })
       }
   }
 
@@ -1859,8 +1873,9 @@ export class Renderer {
         const rows = ch.tail.frames[moving ? wave : Math.floor(this.t * 2) % 2]
         sprite(c, rows, palette, (flip ? ox + 13 : ox - 1) + dx, oy + ch.tail.y + bob + dy, flip)
       }
-      const neck = oy + 10 + bob + dy
-      const back = (flip ? ox + 12 : ox + 1) + dx
+      // atkının arka ucu ensede başlar (yüz sağa bakarken 5. sütun)
+      const neck = oy + 9 + bob + dy
+      const back = (flip ? ox + 10 : ox + 5) + dx
       const dir = flip ? 1 : -1
       rect(c, back + dir, neck, 2, 1, palette.r)
       rect(c, back + dir * 2, neck + 1 + (wave === 1 ? 1 : 0), 2, 1, palette.R)
