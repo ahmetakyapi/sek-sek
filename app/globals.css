@@ -74,6 +74,8 @@ input {
   position: fixed;
   inset: 0;
   touch-action: none;
+  /* durum çubuğu şeridi düz koyu kalır; iOS'un kenar karartması düz renkte görünmez */
+  background: #120f1a;
 }
 
 @layer components {

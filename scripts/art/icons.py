@@ -5,6 +5,7 @@
 - app/favicon.ico: 32x32; güneşin önünde küçük Uktun, sekmede 16 px'te de okunur
 
     python3 scripts/art/icons.py
+    python3 scripts/art/icons.py --og-scene out.png    # paylaşım görselinin arka planı (scripts/art/og.cjs yazıyı dizer)
 """
 import math
 import os
@@ -23,6 +24,7 @@ RED = (214, 64, 58)
 RED_D = (150, 38, 40)
 GOLD = (242, 193, 78)
 GOLD_L = (255, 230, 150)
+GOLD_D = (214, 138, 52)
 ORANGE = (232, 129, 74)
 SIL = (36, 24, 56)
 TOWER = (40, 28, 58)
@@ -251,6 +253,48 @@ def favicon():
     return c
 
 
+def og_scene(path):
+    """Paylaşım görselinin arka planı: 300x158 ızgara, 4 kat = 1200x632. Sol yarı yazıya ayrılır."""
+    c = C(300)
+    c.gradient(0, 96, DUSK)
+    for x, y in ((14, 8), (40, 20), (66, 6), (98, 14), (130, 4), (226, 10), (262, 22), (288, 6), (200, 18)):
+        c.put(x, y, CREAM)
+    c.disc(206, 62, 40, ORANGE, dither=DUSK[4])
+    c.disc(206, 62, 34, GOLD, dither=ORANGE)
+    c.disc(206, 62, 26, GOLD_L, dither=GOLD)
+    # karşı kıyı: alçak tepeler
+    for x in range(300):
+        top = 88 + int(3 * math.sin(x / 17) + 2 * math.sin(x / 7))
+        c.rect(x, top, 1, 96 - top, (58, 36, 78))
+    c.gradient(96, 158, SEA)
+    for k, y in enumerate(range(99, 150, 3)):
+        w = max(4, 46 - k * 2)
+        x0 = 206 - w // 2 + (3 if k % 2 else -3)
+        c.rect(x0, y, w, 1, GOLD if k < 9 else GOLD_D)
+    # Kız Kulesi
+    c.rect(144, 98, 22, 4, TOWER)
+    c.rect(150, 78, 9, 20, TOWER)
+    c.rect(148, 82, 13, 2, TOWER)
+    tri(c, 154, 68, 78, 5, TOWER)
+    c.put(154, 66, TOWER)
+    c.put(154, 67, TOWER)
+    c.rect(153, 86, 2, 3, GOLD)
+    # vapur
+    c.rect(246, 92, 40, 7, CREAM)
+    c.rect(244, 97, 44, 4, SIL)
+    c.rect(252, 86, 22, 6, CREAM_D)
+    for x in range(254, 272, 4):
+        c.rect(x, 88, 2, 2, GOLD)
+    c.rect(262, 79, 4, 7, RED)
+    c.rect(262, 78, 4, 1, INK)
+    for gx, gy in ((140, 26), (150, 20), (240, 34), (120, 44), (270, 48)):
+        c.stamp(['#...#', '.#.#.'], {'#': CREAM}, gx, gy)
+    c.layer(hero_sprite('jump', 'uktun'), 180, 30)
+    c.layer(hero_sprite('jump', 'memo'), 206, 38)
+    im = c.image().crop((0, 0, 300, 158))
+    im.resize((1200, 632), Image.NEAREST).crop((0, 0, 1200, 630)).save(path)
+
+
 def main():
     full = Image.new('RGBA', (60, 60), INK + (255,))
     full.alpha_composite(icon().image())
@@ -262,4 +306,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if '--og-scene' in sys.argv:
+        og_scene(sys.argv[sys.argv.index('--og-scene') + 1])
+    else:
+        main()

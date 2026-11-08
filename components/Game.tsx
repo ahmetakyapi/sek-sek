@@ -116,7 +116,8 @@ export default function Game() {
     input.attach()
 
     const fit = () => {
-      renderer.resize(window.innerWidth, window.innerHeight, Math.min(window.devicePixelRatio || 1, 3))
+      // tuval durum çubuğunun altından başlar (iOS orayı karartıp bulanıklaştırır); ölçü tuvalin kendisinden
+      renderer.resize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, Math.min(window.devicePixelRatio || 1, 3))
       if (worldRef.current) renderer.setLevel(worldRef.current)
     }
     fit()
@@ -402,7 +403,7 @@ export default function Game() {
   return (
     <LangProvider value={lang}>
     <div className="game-root">
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" style={{ imageRendering: 'pixelated' }} aria-label={t("Oyun alanı")} />
+      <canvas ref={canvasRef} className="absolute inset-x-0 bottom-0 w-full" style={{ imageRendering: 'pixelated', top: 'env(safe-area-inset-top)', height: 'calc(100% - env(safe-area-inset-top))' }} aria-label={t("Oyun alanı")} />
 
       {screen === 'play' && (
         <>
