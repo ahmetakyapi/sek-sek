@@ -22,6 +22,9 @@ import { World } from '@/game/sim'
 import { ENDING, STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
+import { FLAG_MOMENTS } from '@/game/flagMoments'
+import { record } from '@/game/ghost'
+import { loadGhost, saveGhost } from '@/lib/ghost'
 import { defaultSave, formatTime, loadSave, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
@@ -61,6 +64,9 @@ export default function Game() {
   const soundRef = useRef<Sound | null>(null)
   const screenRef = useRef<Screen>('title')
   const relaxedRef = useRef(false)
+  const ghostOnRef = useRef(true)
+  /** bu koşunun hayalet kaydı */
+  const ghostRecRef = useRef<number[]>([])
   const levelRef = useRef(0)
   const freezeRef = useRef(0)
 
@@ -68,7 +74,7 @@ export default function Game() {
   const [levelIdx, setLevelIdx] = useState(0)
   const [save, setSave] = useState<Save>(defaultSave)
   const [hud, setHud] = useState({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
-  const [cpToast, setCpToast] = useState(0)
+  const [cpToast, setCpToast] = useState<{ at: number; text: string } | null>(null)
   const idleRef = useRef(0)
   const [hint, setHint] = useState<string | null>(null)
   const [npc, setNpc] = useState<number>(-1)
@@ -97,7 +103,9 @@ export default function Game() {
   /* ── kurulum ─────────────────────────────────────────────── */
   useEffect(() => {
     relaxedRef.current = save.relaxed
-  }, [save.relaxed])
+    ghostOnRef.current = save.ghost
+    if (!save.ghost && rendererRef.current) rendererRef.current.ghostRun = null
+  }, [save.relaxed, save.ghost])
 
   useEffect(() => {
     const s = loadSave()
@@ -183,6 +191,7 @@ export default function Game() {
           first = false
           acc -= STEP
         }
+        if (w.started && !w.complete) record(ghostRecRef.current, w)
         for (const e of w.events) {
           renderer.handle(e, w)
           soundRef.current?.sfx(e.type)
@@ -203,10 +212,13 @@ export default function Game() {
               if (Math.random() < 0.4) setQuip({ text: q[Math.floor(Math.random() * q.length)], key: Date.now() })
               break
             }
-            case 'checkpoint':
+            case 'checkpoint': {
               haptic(10)
-              setCpToast(Date.now())
+              const moments = FLAG_MOMENTS[w.level.city]
+              const m = moments[e.index % moments.length]
+              setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0] })
               break
+            }
             case 'stamp': {
               haptic([30, 40, 30, 40, 60])
               const lv = localize(w.level, langRef.current)
@@ -306,7 +318,11 @@ export default function Game() {
       setLevelIdx(idx)
       const w = new World(LEVELS[idx])
       worldRef.current = w
-      rendererRef.current?.setLevel(w)
+      ghostRecRef.current = []
+      if (rendererRef.current) {
+        rendererRef.current.setLevel(w)
+        rendererRef.current.ghostRun = ghostOnRef.current ? loadGhost(LEVELS[idx].id) : null
+      }
       inputRef.current?.clear()
       setHud({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
       setToast(null)
@@ -376,6 +392,7 @@ export default function Game() {
     setSave((prev) => {
       const best = prev.best[w.level.id]
       const newBest = !best || timeMs < best.timeMs
+      if (newBest) saveGhost(w.level.id, { hero: prev.character ?? 'uktun', data: ghostRecRef.current })
       const mergedItems = items.map((v, i) => v || !!best?.items[i])
       const next: Save = {
         ...prev,
@@ -454,11 +471,14 @@ export default function Game() {
               </p>
             </div>
           )}
-          {cpToast > 0 && Date.now() - cpToast < 1800 && (
-            <div key={cpToast} className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center">
-              <p className="flex items-center gap-2 bg-ink/85 px-3 py-1.5 font-display text-sm text-cream [box-shadow:0_-2px_0_0_#e30a17,0_2px_0_0_#e30a17,-2px_0_0_0_#e30a17,2px_0_0_0_#e30a17]">
-                <span className="text-[#e30a17]">⚑</span> {t("Bayrak Alındı")}
-              </p>
+          {cpToast && Date.now() - cpToast.at < 3200 && (
+            <div key={cpToast.at} className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
+              <div className="max-w-[min(92vw,420px)] bg-ink/85 px-3.5 py-2 text-center [box-shadow:0_-2px_0_0_#e30a17,0_2px_0_0_#e30a17,-2px_0_0_0_#e30a17,2px_0_0_0_#e30a17]">
+                <p className="flex items-center justify-center gap-2 font-display text-sm text-cream">
+                  <span className="text-[#e30a17]">⚑</span> {t("Bayrak Alındı")}
+                </p>
+                <p className="mt-0.5 text-[12px] italic leading-snug text-gold [text-wrap:balance]">{cpToast.text}</p>
+              </div>
             </div>
           )}
           {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} canDash={hud.canDash} />}
@@ -921,6 +941,7 @@ export default function Game() {
                 <Toggle label={t("Dokunmatik Kontroller")} on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
                 {!showTouch && <Toggle label={t("Tuş İpuçları")} hint={t("Ekranın altında klavye rehberi")} on={save.keyHints} onChange={() => persist({ ...save, keyHints: !save.keyHints })} />}
                 <Toggle label={t("Büyük Tuşlar")} hint={t("Telefonda daha geniş dokunma alanı")} on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
+                <Toggle label={t("Hayalet Koşu")} hint={t("En iyi koşunun soluk hayaleti seninle birlikte koşar.")} on={save.ghost} onChange={() => persist({ ...save, ghost: !save.ghost })} />
                 <Toggle label={t("Rahat Mod")} hint={t("Oyun %80 hızda akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.")} on={save.relaxed} onChange={() => persist({ ...save, relaxed: !save.relaxed })} />
               </div>
               {canFull && (

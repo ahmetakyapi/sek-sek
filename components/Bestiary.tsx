@@ -60,6 +60,7 @@ export function bestiary(level: LevelDef): Entry[] {
   if (has('c')) out.push(enemyEntry('c', 'ram', 'Görünce hücum eder', ENEMY_ART.ram))
   if (has('u')) out.push(enemyEntry('u', 'bat', 'Dalgalanarak uçar', ENEMY_ART.bat))
   if (has('x')) out.push(enemyEntry('x', 'hedgehog', 'Dikenli: üstüne basma!', ENEMY_ART.hedgehog))
+  if (has('j')) out.push(enemyEntry('j', 'magpie', 'Daldan sana dalar: kanat çırpınca kaç', ENEMY_ART.magpie))
   if (has('Y'))
     out.push({
       id: 'Y',

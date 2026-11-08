@@ -33,7 +33,9 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
   heroFrames.ts  20x24 animasyonlu karakter kareleri: bekleme, göz kırpma, 8 karelik koşu, zıplama, duvar, atılma (scripts/art/hero.py üretir)
   portraits.ts   64x76 portreler (scripts/art/painter.py üretir; Uktun'un yüzü elle çizilmiş scripts/art/uktun_classic.json'dan gelir)
-  audio.ts       WebAudio efektleri + şehir makamında üretilen müzik
+  audio.ts       WebAudio efektleri + şehir makamında üretilen müzik (bayrak sesi de şehrin makamından)
+  flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
+  ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
@@ -62,6 +64,7 @@ yetim satır bırakma.
 - Oyuncu her duvara tırmanabilir: bir alanı kapatan duvar haritanın en üst satırına kadar çıkmalı.
 - Alçak tavanlı koridorda zıplama kısalır; dikenli çukur 2 karoyu geçmesin.
 - Dost hayvan ile düşman aynı tür olmasın (kedi dostsa düşman kedi olmaz). Düşmanlar kırmızı hatla parlar.
+  Şehre özgü düşman: Ordu saksağanı (`j`), dalda tüner, altından geçene uyarıp dalar.
 - Telefonda yatay ekranda diyalog ve ipucu kutusu iki kontrolün arasına oturur; yeni kutu eklersen karakteri ve tuşları kapatmasın.
 - Çözücü (`verify-levels`) yavaşsa önce haritayı sadeleştir: dönen platformlar ve tokmaklar durum sayısını katlar.
 - Her yaştan oyuncu düşün: bayraklar arası **en çok 75 karo** (test bekler), boşluklar 3 karoyu geçmesin; "atıl + kristal + atıl"

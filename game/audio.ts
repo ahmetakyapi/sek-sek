@@ -118,11 +118,12 @@ export class Sound {
         this.tone(784, 0.1, 'triangle', 0.14)
         setTimeout(() => this.tone(1046, 0.18, 'triangle', 0.14), 80)
         return
-      case 'checkpoint':
-        this.tone(523, 0.12, 'triangle', 0.12)
-        setTimeout(() => this.tone(659, 0.12, 'triangle', 0.12), 90)
-        setTimeout(() => this.tone(784, 0.2, 'triangle', 0.12), 180)
+      case 'checkpoint': {
+        // şehrin makamından yükselen dört nota: bayrak göndere çıkarken
+        const sc = SCALES[this.city]
+        ;[0, 2, 4, 7].forEach((d, i) => setTimeout(() => this.tone(mtof(sc.root + 12 + sc.steps[d]), i === 3 ? 0.3 : 0.12, 'triangle', 0.12), i * 95))
         return
+      }
       case 'spring':
         return this.tone(200, 0.25, 'triangle', 0.14, 500)
       case 'stomp':

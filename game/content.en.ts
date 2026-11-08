@@ -780,7 +780,7 @@ export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string
 }
 
 export const CREATURE_NAMES_EN: Record<string, string> = {
-  gull: 'Gull', bee: 'Bee', raven: 'Raven', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
+  gull: 'Gull', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
   hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Wolf',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',
   cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge',

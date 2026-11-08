@@ -34,6 +34,8 @@ export interface Save {
   keyHints: boolean
   /** Rahat Mod: dünya %80 hızda; skorlar tabloya yazılmaz */
   relaxed: boolean
+  /** en iyi koşunun hayaleti görünsün mü */
+  ghost: boolean
   player: Player | null
   skippedName: boolean
   stamps: Record<string, boolean>
@@ -49,7 +51,7 @@ export interface Save {
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, relaxed: false, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
 
 export function loadSave(): Save {
   try {

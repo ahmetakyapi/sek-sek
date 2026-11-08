@@ -137,6 +137,28 @@ describe('kenar yardımı', () => {
 })
 
 describe('bulmaca ve yeni düşmanlar', () => {
+  it('saksağan altından geçene uyarıp dalar, 6 karo ötedeki tüneğe konar', () => {
+    const w = mk([
+      '                              ',
+      '        j                     ',
+      '                              ',
+      '                              ',
+      '                              ',
+      '  P                          E',
+      '##############################',
+    ])
+    const m = w.enemies[0]
+    expect(m.kind).toBe('magpie')
+    const x0 = m.x
+    run(w, 0.6, { right: true })
+    expect(['windup', 'charge']).toContain(m.state)
+    // dalışın yalnız uçuşunu ölç: oyuncu yoldan çekilir (isabet etseydi düşmanlar başa dönerdi)
+    w.player.x = 26 * 16
+    run(w, 2, {})
+    expect(Math.abs(Math.round(m.x - x0))).toBe(96)
+    expect(m.state === 'stun' || m.state === 'idle').toBe(true)
+  })
+
   it('kristal atılmayı geri doldurur ve kaybolur', () => {
     const w = mk(['          ', ' *        ', '          ', ' P        ', '##########'])
     run(w, 0.2)

@@ -1167,6 +1167,15 @@ export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string,
       ['............', '..ww...ww...', '..yykyykyy..', '.yykyykyyye.', '.yykyykyyy..', '..yykyykk...', '............', '............'],
     ],
   },
+  magpie: {
+    // Ordu saksağanı: siyah gövde, beyaz karın ve kanat lekesi, mavi-yeşil parlayan uzun kuyruk
+    pal: { k: '#16141e', K: '#2e5a78', G: '#3a8a7a', w: '#f4f2ea', e: '#e8e2d0', b: '#3a3640' },
+    frames: [
+      ['............', '.......kkk..', '......kkkek.', '..GKkkwwkkkb', '.GKKkwwwwk..', 'GK..kkkkk...', 'K....k.k....', '............'],
+      ['.kw......wk.', '..kw....wk..', '...kkkkkkek.', 'GKKkkwwwkkkb', 'K...kwwwk...', '.....kk.....', '............', '............'],
+      ['............', '............', '...kkkkkkek.', 'GKKkkwwwkkkb', 'K.kwwwwwwk..', '.kw......wk.', '............', '............'],
+    ],
+  },
   raven: {
     pal: { k: '#1b1a24', g: '#3a3850', o: '#c9a24a', e: '#e8e2d0' },
     frames: [
@@ -1262,8 +1271,9 @@ export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string,
 
 const SNOWY: CityKey[] = ['sivas', 'ardahan', 'bayburt']
 
-export function enemyArt(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky', city: CityKey) {
+export function enemyArt(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie', city: CityKey) {
   const s = CITY[city]
+  if (kind === 'magpie') return ENEMY_ART.magpie
   if (kind === 'hopper') return SNOWY.includes(city) ? ENEMY_ART.hare : ENEMY_ART.frog
   if (kind === 'charger') return ENEMY_ART.ram
   if (kind === 'bat') return ENEMY_ART.bat
@@ -1344,6 +1354,6 @@ export const ITEM_ART: Record<CityKey, { rows: string[]; pal: Record<string, str
 export const CREATURE_NAMES: Record<string, string> = {
   gull: 'Martı', bee: 'Arı', raven: 'Kuzgun', mosquito: 'Sivrisinek', frog: 'Kurbağa', hare: 'Tavşan', ram: 'Koç', bat: 'Yarasa',
   hedgehog: 'Kirpi', boar: 'Yaban Domuzu', crab: 'Yengeç', pigeon: 'Güvercin', goat: 'Keçi', scorpion: 'Akrep', wolf: 'Kurt',
-  snake: 'Yılan', lizard: 'Kertenkele', rat: 'Fare', wasp: 'Eşek Arısı',
+  snake: 'Yılan', lizard: 'Kertenkele', rat: 'Fare', wasp: 'Eşek Arısı', magpie: 'Saksağan',
   cat: 'Sokak Kedisi', flamingo: 'Flamingo', angora: 'Ankara Keçisi', lion: 'Hitit Aslanı', cow: 'İnek', kangal: 'Kangal', horse: 'At', partridge: 'Keklik',
 }

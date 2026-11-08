@@ -90,7 +90,7 @@ export interface Platform extends Box {
   dy: number
 }
 
-export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky'
+export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie'
 
 export interface Enemy extends Box {
   kind: EnemyKind
@@ -316,6 +316,10 @@ export class World {
           case 'x':
             this.enemies.push(enemy('spiky', px + 2, py + 7, 12, 9))
             break
+          case 'j':
+            // Ordu saksağanı: dalda bekler, altından geçene dalar
+            this.enemies.push({ ...enemy('magpie', px + 2, py + 6, 12, 9), timer: 0.4 })
+            break
           case '*':
             this.crystals.push({ x: px + 3, y: py + 3, w: 10, h: 10, active: true, timer: 0 })
             break
@@ -404,8 +408,6 @@ export class World {
     this.start = start
     this.spawn = { ...start }
     this.exit = exit
-    // harita satır satır tarandı: bayraklar soldan sağa numaralansın (farklı satırdaki bayrak sırayı bozmasın)
-    this.checkpoints.sort((a, b) => a.x - b.x).forEach((c, i) => (c.index = i))
     this.player = this.freshPlayer(start.x, start.y)
   }
 
@@ -932,6 +934,45 @@ export class World {
           const nx = e.ox + Math.sin(e.phase * 0.7) * T * 1.5
           e.dir = nx > e.x ? 1 : -1
           e.x = nx
+          break
+        }
+        case 'magpie': {
+          // tünek → kanat çırpıp uyarır → kavis çizerek dalar, 6 karo ötedeki yeni tüneğe konar → dinlenir
+          const D = T * 6
+          if (e.state === 'idle') {
+            e.y = e.oy + Math.round(Math.sin(e.phase * 2) * 0.6)
+            e.timer -= dt
+            const dx = p.x + p.w / 2 - (e.x + e.w / 2)
+            if (!p.dead && e.timer <= 0 && Math.abs(dx) < T * 5 && p.y > e.y + T) {
+              e.state = 'windup'
+              e.timer = 0.5
+              e.dir = dx > 0 ? 1 : -1
+              // dalış derinliği oyuncunun yüksekliğine göre, 2–6 karo
+              e.vy = Math.max(T * 2, Math.min(T * 6, p.y + p.h / 2 - e.oy))
+            }
+          } else if (e.state === 'windup') {
+            e.timer -= dt
+            if (e.timer <= 0) {
+              e.state = 'charge'
+              e.timer = 0
+            }
+          } else if (e.state === 'charge') {
+            e.timer += dt / 1.1
+            const k = Math.min(1, e.timer)
+            e.x = e.ox + e.dir * D * k
+            e.y = e.oy + e.vy * 4 * k * (1 - k)
+            if (k >= 1) {
+              e.ox = e.x
+              e.state = 'stun'
+              e.timer = 1.4
+            }
+          } else {
+            e.timer -= dt
+            if (e.timer <= 0) {
+              e.state = 'idle'
+              e.timer = 0.6
+            }
+          }
           break
         }
         case 'hopper': {

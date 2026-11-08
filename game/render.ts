@@ -1,6 +1,7 @@
 import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
 import { CHARACTERS, type CharacterDef } from './characters'
 import { HERO, HERO_H, HERO_W, type HeroFrame } from './heroFrames'
+import { GHOST_HZ, type GhostRun } from './ghost'
 import { NPC_ART } from './npcs'
 import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
@@ -58,6 +59,9 @@ export class Renderer {
   camY = 0
   private t = 0
   character: CharacterDef = CHARACTERS.uktun
+  /** en iyi koşunun hayaleti (yoksa null) */
+  ghostRun: GhostRun | null = null
+  private ghostPal: { hero: string; pal: Record<string, string> } | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -258,6 +262,49 @@ export class Renderer {
         depth++
       }
     }
+    // okunurluk ve doku: açık kenarlara koyu kontur + arka plana gölge; şehre göre çatlak, çakıl, yosun
+    const green = this.city === 'ordu' || this.city === 'trabzon' || this.city === 'kocaeli'
+    for (let ty = 0; ty < w.rows; ty++)
+      for (let tx = 0; tx < w.cols; tx++) {
+        const t = w.tile(tx, ty)
+        if (t !== SOLID && t !== TURRET && t !== FAKE) continue
+        const x = tx * T
+        const y = ty * T
+        const up = ty > 0 && !solidish(tx, ty - 1) && w.tile(tx, ty - 1) === 0
+        const L = tx > 0 && w.tile(tx - 1, ty) === 0
+        const R = tx < w.cols - 1 && w.tile(tx + 1, ty) === 0
+        if (up) rect(c, x, y - 1, T, 1, 'rgba(18,10,30,0.42)')
+        if (L) {
+          rect(c, x, y, 1, T, 'rgba(18,10,30,0.4)')
+          for (let k = 1; k <= 3; k++) rect(c, x - k, y, 1, T, `rgba(14,8,26,${(0.16 - k * 0.04).toFixed(2)})`)
+        }
+        if (R) {
+          rect(c, x + T - 1, y, 1, T, 'rgba(18,10,30,0.5)')
+          for (let k = 0; k < 3; k++) rect(c, x + T + k, y, 1, T, `rgba(14,8,26,${(0.18 - k * 0.05).toFixed(2)})`)
+        }
+        const roll = r()
+        if (roll < 0.1) {
+          // ince çatlak: iki üç piksel, kırık çizgi
+          const cx2 = x + 3 + Math.floor(r() * 9)
+          const cy2 = y + 4 + Math.floor(r() * 7)
+          rect(c, cx2, cy2, 1, 2, 'rgba(10,6,20,0.35)')
+          rect(c, cx2 + 1, cy2 + 2, 1, 2, 'rgba(10,6,20,0.3)')
+          rect(c, cx2 + 1, cy2, 1, 1, 'rgba(255,240,210,0.18)')
+        } else if (roll < 0.18) {
+          // çakıl: ışıklı üst, gölgeli alt
+          const px2 = x + 2 + Math.floor(r() * 11)
+          const py2 = y + 3 + Math.floor(r() * 10)
+          rect(c, px2, py2, 2, 1, 'rgba(255,240,210,0.22)')
+          rect(c, px2, py2 + 1, 2, 1, 'rgba(10,6,20,0.25)')
+        }
+        if (green && up && r() < 0.55) {
+          // yosun: üst kenardan sarkan yeşil uçlar
+          for (let k = 0; k < 3; k++) {
+            const mx = x + Math.floor(r() * 15)
+            rect(c, mx, y + 1, 1, 1 + Math.floor(r() * 3), k % 2 ? '#4a8a3a' : '#3a6e30')
+          }
+        }
+      }
     return cv
   }
 
@@ -625,9 +672,12 @@ export class Renderer {
       b.fillRect(0, 0, this.viewW, this.viewH)
       if (this.city === 'istanbul') this.drawBosphorus(b, layerY(0.13) + LAYER_H - 70, cx)
       drawLayer(this.layers.mid, 0.25, 0.18)
-      b.fillStyle = hexA(s.sky[2], 0.1)
+      b.fillStyle = hexA(s.sky[2], 0.16)
       b.fillRect(0, 0, this.viewW, this.viewH)
       drawLayer(this.layers.near, 0.45, 0.32)
+      // yakın katman da hafifçe geri çekilir: oyuncunun bastığı zemin öne çıksın
+      b.fillStyle = hexA(s.sky[2], 0.12)
+      b.fillRect(0, 0, this.viewW, this.viewH)
     }
 
     this.drawAmbient(b, dt, cx, cy, w)
@@ -648,6 +698,7 @@ export class Renderer {
     this.drawCrumbles(b, w, cx, cy)
     this.drawWater(b, w, cx, cy)
     this.drawEntities(b, w)
+    this.drawGhostRun(b, w)
     this.drawPlayer(b, w, dt)
     this.drawParticles(b, dt)
     b.restore()
@@ -1602,20 +1653,48 @@ export class Renderer {
     const s = CITY[this.city]
     const x0 = Math.floor(cx / T)
     const x1 = Math.ceil((cx + this.viewW) / T)
-    for (let ty = 0; ty < w.rows; ty++)
-      for (let tx = x0; tx <= x1; tx++) {
-        if (w.tile(tx, ty) !== WATER) continue
-        const surface = w.tile(tx, ty - 1) !== WATER
+    for (let tx = x0; tx <= x1; tx++) {
+      let depth = 0
+      for (let ty = 0; ty < w.rows; ty++) {
+        if (w.tile(tx, ty) !== WATER) {
+          depth = 0
+          continue
+        }
+        const surface = depth === 0
         const x = tx * T
         const y = ty * T
         rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), s.water[ty % 2 ? 1 : 0])
+        // derinlik: aşağı indikçe koyulaşır
+        const dk = Math.min(0.42, depth * 0.11)
+        if (dk > 0) rect(b, x, y, T, T, `rgba(8,14,36,${dk.toFixed(2)})`)
+        else rect(b, x, y + 12, T, 4, 'rgba(8,14,36,0.06)')
         if (surface) {
           for (let i = 0; i < 16; i++) {
             const h = Math.round(Math.sin(this.t * 3 + (x + i) * 0.35) * 1.2)
             rect(b, x + i, y + 6 + h, 1, 2, s.water[2])
+            // dalga tepesinde köpük
+            if (h < 0) rect(b, x + i, y + 6 + h, 1, 1, 'rgba(240,250,255,0.75)')
           }
+          // kayan pırıltılar
+          for (let g = 0; g < 2; g++) {
+            const gx = Math.floor((this.t * (14 + g * 6) + tx * 37 + g * 9) % 16)
+            if ((Math.floor(this.t * 2 + tx + g) & 3) !== 0) rect(b, x + gx, y + 9 + g * 3, 2, 1, 'rgba(255,255,255,0.55)')
+          }
+          // kıyıya vuran köpük
+          const shoreL = w.tile(tx - 1, ty) !== WATER && w.tile(tx - 1, ty) !== 0
+          const shoreR = w.tile(tx + 1, ty) !== WATER && w.tile(tx + 1, ty) !== 0
+          const surf = Math.round((Math.sin(this.t * 2.2 + tx) + 1) * 1.5)
+          if (shoreL) rect(b, x, y + 5, 2 + surf, 2, 'rgba(240,250,255,0.7)')
+          if (shoreR) rect(b, x + T - 2 - surf, y + 5, 2 + surf, 2, 'rgba(240,250,255,0.7)')
+        } else if (((tx * 7 + ty * 3 + Math.floor(this.t * 1.5)) % 5) === 0) {
+          // derinde ışık oyunu
+          const lx = Math.floor((this.t * 6 + tx * 11) % 14)
+          rect(b, x + lx, y + 4, 3, 1, 'rgba(200,235,255,0.08)')
+          rect(b, x + lx + 2, y + 5, 3, 1, 'rgba(200,235,255,0.06)')
         }
+        depth++
       }
+    }
     void cy
   }
 
@@ -1717,7 +1796,8 @@ export class Renderer {
       if (!e.alive) continue
       const art = enemyArt(e.kind, this.city)
       const speed = e.kind === 'fly' || e.kind === 'bat' ? 8 : e.state === 'charge' ? 14 : 6
-      const f = Math.abs(Math.floor(e.phase * speed)) % art.frames.length
+      // saksağan: tünekte kanatlar kapalı, uyarı ve dalışta hızlı çırpar
+      const f = e.kind === 'magpie' ? (e.state === 'idle' || e.state === 'stun' ? 0 : 1 + (Math.floor(this.t * 14) % 2)) : Math.abs(Math.floor(e.phase * speed)) % art.frames.length
       const rows = art.frames[f]
       const shake = e.state === 'windup' ? Math.round(Math.sin(this.t * 60)) : 0
       const squash = e.kind === 'hopper' && e.state === 'windup' ? 2 : 0
@@ -1725,7 +1805,7 @@ export class Renderer {
       const sy = e.y + squash + (e.state === 'stun' ? 1 : 0)
       const flip = e.dir > 0
       // gölge
-      if (e.kind !== 'fly' && e.kind !== 'bat') rect(b, e.x + 1, e.y + e.h - 1, e.w - 2, 1, 'rgba(0,0,0,0.3)')
+      if (e.kind !== 'fly' && e.kind !== 'bat' && e.kind !== 'magpie') rect(b, e.x + 1, e.y + e.h - 1, e.w - 2, 1, 'rgba(0,0,0,0.3)')
       // tehlike dış hattı: arka plandan ayrışsın
       const outline: Record<string, string> = {}
       const pulse = Math.sin(this.t * 5 + e.ox * 0.1) > 0.2
@@ -1879,6 +1959,35 @@ export class Renderer {
       }
     }
     if (this.city === 'sivas') for (let i = 0; i < 6; i++) rect(b, cx - 11 + i * 4, bot - 34, 2, 2, s.tileLight)
+  }
+
+  /** En iyi koşunun soluk mavi hayaleti: zamanlayıcıyla aynı anda, aynı yerden geçer. */
+  private drawGhostRun(b: Ctx, w: World) {
+    const g = this.ghostRun
+    if (!g || !w.started) return
+    const n = g.data.length / 3
+    const f = w.time * GHOST_HZ
+    const i = Math.floor(f)
+    if (i >= n - 1) return
+    const k = f - i
+    const x = g.data[i * 3] + (g.data[i * 3 + 3] - g.data[i * 3]) * k
+    const y = g.data[i * 3 + 1] + (g.data[i * 3 + 4] - g.data[i * 3 + 1]) * k
+    // oyuncuyla üst üste binince silikleşir, göz yormasın
+    const near = Math.hypot(x - w.player.x, y - w.player.y)
+    const alpha = near < 10 ? 0.15 : 0.46
+    const code = g.data[i * 3 + 2]
+    const pose = code & 7
+    const flip = code >= 8
+    const hero = HERO[g.hero]
+    if (!this.ghostPal || this.ghostPal.hero !== g.hero) {
+      const pal: Record<string, string> = {}
+      for (const [c, v] of Object.entries(hero.pal)) pal[c] = mixHex(v, '#cfe6ff', 0.55)
+      this.ghostPal = { hero: g.hero, pal }
+    }
+    const frame: HeroFrame = pose === 4 ? 'dash' : pose === 2 ? 'jump' : pose === 3 ? 'fall' : pose === 1 ? (`run${Math.floor(w.time * 15) % 8}` as HeroFrame) : 'idle0'
+    b.globalAlpha = alpha
+    sprite(b, hero.frames[frame], this.ghostPal.pal, Math.round(x + 6 - HERO_W / 2), Math.round(y + 14 - HERO_H), flip)
+    b.globalAlpha = 1
   }
 
   private drawPlayer(b: Ctx, w: World, dt: number) {

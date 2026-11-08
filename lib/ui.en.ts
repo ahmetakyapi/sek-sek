@@ -237,4 +237,7 @@ export const UI_EN: Record<string, string> = {
   'Rahat Mod': 'Relaxed Mode',
   'Oyun %80 hızda akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.': 'The game runs at 80% speed, leaving more time for each jump. Scores are not posted in this mode.',
   'Rahat Mod’da oynadın: bu skor tabloya yazılmadı. Ayarlardan kapatıp yarışabilirsin.': 'You played in Relaxed Mode, so this score was not posted. Turn it off in settings to compete.',
+  'Hayalet Koşu': 'Ghost Run',
+  'En iyi koşunun soluk hayaleti seninle birlikte koşar.': 'A faint ghost of your best run races alongside you.',
+  'Daldan sana dalar: kanat çırpınca kaç': 'Swoops from its perch: run when it flaps',
 }
