@@ -1,3 +1,4 @@
+import { applyAssists } from './assists'
 import { EXTENSIONS } from './extensions'
 import { SIGNATURES } from './signatures'
 import type { LevelDef } from './types'
@@ -1569,6 +1570,6 @@ function addSignature(l: LevelDef) {
 for (const l of LEVELS) {
   extend(l)
   addSignature(l)
-  l.map = enrich(l.map, l.city)
+  l.map = applyAssists(l.id, enrich(l.map, l.city))
 }
 

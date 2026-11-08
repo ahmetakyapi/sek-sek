@@ -35,6 +35,9 @@ interface Ambient {
 
 const GROUND_Y = 20 * T
 
+/** bayraktaki beş köşeli yıldız (5x5) */
+const STAR = ['..#..', '..#..', '#####', '.###.', '.#.#.']
+
 export class Renderer {
   private canvas: HTMLCanvasElement
   private ctx: Ctx
@@ -84,6 +87,7 @@ export class Renderer {
     this.layers = buildLayers(this.city)
     this.tilesLayer = this.buildTiles(world)
     this.particles = []
+    this.raised.clear()
     this.ghosts = []
     this.initAmbient()
     const p = world.player
@@ -91,6 +95,9 @@ export class Renderer {
     this.camY = p.y - this.viewH / 2
     this.clampCam(world)
   }
+
+  /** bayrak göndere çekildiği an (index → t) */
+  private raised = new Map<number, number>()
 
   private skyCache: { key: string; cv: HTMLCanvasElement } | null = null
 
@@ -469,9 +476,17 @@ export class Renderer {
       case 'collect':
         this.burst(p.x + p.w / 2, p.y + p.h / 2, 18, '#ffd36a', 90, 1)
         break
-      case 'checkpoint':
-        this.burst(p.x + p.w / 2, p.y, 14, s.accent, 70, 1)
+      case 'checkpoint': {
+        this.raised.set(e.index, this.t)
+        const cp = w.checkpoints.find((c) => c.index === e.index)
+        // bayrak göndere çekilirken direğin tepesinden kırmızı-beyaz konfeti
+        if (cp) {
+          this.burst(cp.x + 4, cp.y + cp.h - 28, 16, '#e30a17', 80, 1)
+          this.burst(cp.x + 4, cp.y + cp.h - 28, 10, '#ffffff', 70, 1)
+        }
+        this.burst(p.x + p.w / 2, p.y, 8, s.accent, 60, 1)
         break
+      }
       case 'spring':
         this.burst(p.x + p.w / 2, p.y + p.h, 8, '#ffd36a', 50, 1)
         break
@@ -1694,23 +1709,7 @@ export class Renderer {
       if (Math.sin(this.t * 5 + c.index * 2) > 0.92) rect(b, c.x + 8, c.y + bob - 1, 1, 1, '#ffffff')
     }
     // bayraklar
-    for (const cp of w.checkpoints) {
-      const x = cp.x
-      const bot = cp.y + cp.h
-      rect(b, x + 3, bot - 28, 2, 28, '#c8c4cc')
-      rect(b, x + 1, bot - 2, 6, 2, '#5a5468')
-      if (cp.active) {
-        const wv = Math.sin(this.t * 6) > 0 ? 1 : 0
-        rect(b, x + 5, bot - 28, 10, 7, '#e30a17')
-        rect(b, x + 15, bot - 27 + wv, 1, 5, '#e30a17')
-        disc(b, x + 9, bot - 25, 2, '#ffffff')
-        disc(b, x + 10, bot - 25, 1, '#e30a17')
-        rect(b, x + 12, bot - 25, 1, 1, '#ffffff')
-      } else {
-        rect(b, x + 5, bot - 14, 9, 6, '#6f7a86')
-        rect(b, x + 14, bot - 13, 1, 4, '#6f7a86')
-      }
-    }
+    for (const cp of w.checkpoints) this.drawFlag(b, cp)
     // çıkış kapısı
     this.drawExit(b, w)
     // düşmanlar
@@ -1801,6 +1800,60 @@ export class Renderer {
       rect(b, pr.vx > 0 ? pr.x + 5 : pr.x, pr.y, 1, 3, '#9aa3b5')
       rect(b, pr.vx > 0 ? pr.x : pr.x + 5, pr.y, 1, 3, '#c8553d')
     }
+  }
+
+  /** Bayrak: taş kaide, gölgeli direk, altın topuz. Dokunulunca bez göndere çekilir ve sütun sütun dalgalanır. */
+  private drawFlag(b: Ctx, cp: { x: number; y: number; h: number; index: number; active: boolean }) {
+    const x = cp.x
+    const bot = cp.y + cp.h
+    const top = bot - 37
+    if (cp.active) {
+      const glow = 0.1 + Math.sin(this.t * 2.4 + cp.index) * 0.04
+      disc(b, x + 4, bot - 2, 11, `rgba(255,190,110,${glow.toFixed(3)})`)
+    }
+    // kaide
+    rect(b, x, bot - 3, 9, 3, '#5a5068')
+    rect(b, x, bot - 3, 9, 1, '#8a7f96')
+    rect(b, x + 1, bot, 8, 1, 'rgba(0,0,0,0.3)')
+    // direk: ışıklı sol, gölgeli sağ
+    rect(b, x + 3, top, 1, 34, '#ece6da')
+    rect(b, x + 4, top, 1, 34, '#9a94a2')
+    disc(b, x + 4, top - 1, 1.8, '#f2c14e')
+    rect(b, x + 3, top - 2, 1, 1, '#fff1c0')
+    if (!cp.active) {
+      // direğe sarılı, solgun bez
+      for (let j = 0; j < 12; j++) rect(b, x + 5, top + 2 + j, 2, 1, j % 3 === 0 ? '#6a2a30' : '#8a3a42')
+      rect(b, x + 5, top + 14, 1, 2, '#6a2a30')
+      return
+    }
+    // göndere çekiliş: 0,6 sn'de aşağıdan yukarı (yumuşak duruş)
+    const since = this.raised.has(cp.index) ? this.t - this.raised.get(cp.index)! : 9
+    const k = Math.min(1, since / 0.6)
+    const lift = Math.round((1 - (1 - k) * (1 - k)) * 20)
+    const y0 = top + 1 + (20 - lift)
+    const W = 17
+    const H = 11
+    for (let i = 0; i < W; i++) {
+      // dalga direkte sıfır, uca doğru büyür; eğim ışığı belirler
+      const amp = (i / W) * 2
+      const ph = this.t * 6 - i * 0.55
+      const off = Math.round(Math.sin(ph) * amp)
+      const slope = Math.cos(ph)
+      const red = slope > 0.45 ? '#ff3b3b' : slope < -0.45 ? '#b0060f' : '#e30a17'
+      for (let j = 0; j < H; j++) {
+        // ay: büyük beyaz daireden kaydırılmış kırmızı daire çıkar; yıldız: küçük artı
+        const cx = i + 0.5
+        const cy = j + 0.5
+        // TS 2994 oranları küçültülmüş: ay dış çember 0,5H, iç 0,4H; yıldız ayın açık tarafında
+        const inMoon = Math.hypot(cx - 6, cy - 5.5) <= 3.6 && Math.hypot(cx - 7, cy - 5.5) > 2.9
+        const inStar = STAR[j - 3]?.[i - 9] === '#'
+        let col = inMoon || inStar ? '#ffffff' : red
+        if (j === H - 1 && !inMoon && !inStar) col = '#9a0510'
+        rect(b, x + 5 + i, y0 + j + off, 1, 1, col)
+      }
+    }
+    // pırıltı
+    if (k === 1 && Math.sin(this.t * 3.1 + cp.index * 1.7) > 0.97) rect(b, x + 4, top - 3, 1, 1, '#ffffff')
   }
 
   private drawExit(b: Ctx, w: World) {

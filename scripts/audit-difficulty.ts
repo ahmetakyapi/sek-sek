@@ -6,7 +6,7 @@
  *     Takıldığı yer kusursuz zamanlama ya da kıl payı mesafe isteyen yerdir.
  *  3. Tehlike yoğunluğu: bayraklar arası en uzun yol ve o yoldaki diken, çukur, düşman, ok, tokmak.
  *
- * Kullanım: npx tsx scripts/audit-difficulty.ts [şehir]
+ * Kullanım: npx tsx scripts/audit-difficulty.ts [şehir] [--teknik]   (--teknik: yalnız yürü+zıpla testi de, yavaş)
  */
 import { LEVELS } from '../game/levels'
 import { CRUMBLE, PHYS, SPIKE_DOWN, SPIKE_UP, World } from '../game/sim'
@@ -18,7 +18,8 @@ const base = { ...phys }
 const nerf = () => Object.assign(phys, { jumpV: base.jumpV * 0.95, wallJumpVY: base.wallJumpVY * 0.95, run: base.run * 0.92, dashSpeed: base.dashSpeed * 0.92 })
 const reset = () => Object.assign(phys, base)
 
-const only = process.argv[2]
+const only = process.argv.slice(2).find((a) => !a.startsWith('--'))
+const technique = process.argv.includes('--teknik')
 for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const w = new World(level)
   const exitX = Math.floor(w.exit.x / T)
@@ -47,7 +48,7 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   for (const h of w.hammers) if (seg[segOf(Math.floor(h.x / T))]) seg[segOf(Math.floor(h.x / T))].hammers++
   for (const p of w.platforms) if ((p.axis === 'o' || p.axis === 'h') && seg[segOf(Math.floor(p.x / T))]) seg[segOf(Math.floor(p.x / T))].clocked++
 
-  const basic = solve(level, { moves: 'basic', exitOnly: true, budget: 8000 })
+  const basic = technique ? solve(level, { moves: 'basic', exitOnly: true, budget: 8000 }) : null
   nerf()
   const weak = solve(level, { exitOnly: true, budget: 12000 })
   reset()
@@ -55,7 +56,7 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const longest = Math.max(...marks.slice(1).map((m, i) => m - marks[i]))
   const where = (r: { won: boolean; far: { x: number; y: number } }) => (r.won ? 'geçer' : `takılır @${Math.floor(r.far.x / T)},${Math.floor(r.far.y / T)} (bölüm ${segOf(Math.floor(r.far.x / T)) + 1})`)
   console.log(`\n${level.name} · ${w.cols} karo · bayrak ${w.checkpoints.length} · en uzak bayrak arası ${longest} karo`)
-  console.log(`  yürü+zıpla: ${where(basic)}   zayıf oyuncu: ${where(weak)}`)
+  console.log(`${basic ? `  yürü+zıpla: ${where(basic)}` : ''}  zayıf oyuncu: ${where(weak)}`)
   seg.forEach((s, i) => {
     const len = marks[i + 1] - marks[i]
     const load = s.spikes + s.pits * 1.5 + s.crumble * 0.3 + s.enemies * 2 + s.turrets * 3 + s.hammers * 3 + s.clocked * 1.5

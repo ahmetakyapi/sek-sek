@@ -20,6 +20,15 @@ describe('bölüm verisi', () => {
     expect(w.signs.length).toBeLessThanOrEqual(l.hints.length)
   })
 
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: bayraklar arası en çok 75 karo, soldan sağa numaralı', (_n, l) => {
+    const w = new World(l)
+    const xs = w.checkpoints.map((c) => c.x / 16)
+    const marks = [0, ...xs, w.exit.x / 16]
+    for (let i = 1; i < marks.length; i++) expect(marks[i] - marks[i - 1]).toBeLessThanOrEqual(75)
+    expect(w.checkpoints.map((c) => c.index)).toEqual(w.checkpoints.map((_, i) => i))
+    expect(xs).toEqual([...xs].sort((a, b) => a - b))
+  })
+
   it('il plakaları doğru', () => {
     expect(LEVELS.map((l) => [l.name, l.plate])).toEqual([
       ['İstanbul', 34],

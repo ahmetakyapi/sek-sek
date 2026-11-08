@@ -81,7 +81,8 @@ function key(s: Snapshot, w: World) {
   const plats = near.filter(({ a }) => a === 'x' || a === 'y' || a === 'b').map(({ q, a }) => (a === 'b' ? `b${Math.round(q.y / 16)}` : `${Math.round((q.x + q.y) / 12)}${q.dir}`))
   const clocked = near.some(({ q, a }) => (a === 'o' || a === 'h') && Math.abs(q.x - p.x) < 120) || w.hammers.some((h) => Math.abs(h.x - p.x) < 40 && p.y > h.top - 8)
   const phase = clocked ? Math.floor(((s.clock * 1.35) / (Math.PI * 2)) * 8) % 8 + '/' + Math.floor((s.clock % 3.11) * 4) : ''
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.checkpointIndex, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
+  // bayrak numarası anahtarda yok: çözücü ölen dalı atar, bayraktan hiç doğmaz; bayrak eklemek aramayı katlamasın
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
 }
 
 export interface SolveResult {

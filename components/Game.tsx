@@ -47,6 +47,8 @@ interface Result {
   deaths: number
   items: boolean[]
   newBest: boolean
+  /** Rahat Mod'da bitirildi: skor tabloya yazılmaz */
+  relaxed: boolean
 }
 
 const STEP = 1 / 120
@@ -58,6 +60,7 @@ export default function Game() {
   const inputRef = useRef<InputManager | null>(null)
   const soundRef = useRef<Sound | null>(null)
   const screenRef = useRef<Screen>('title')
+  const relaxedRef = useRef(false)
   const levelRef = useRef(0)
   const freezeRef = useRef(0)
 
@@ -92,6 +95,10 @@ export default function Game() {
   const hero = CHARACTERS[save.character ?? 'uktun']
 
   /* ── kurulum ─────────────────────────────────────────────── */
+  useEffect(() => {
+    relaxedRef.current = save.relaxed
+  }, [save.relaxed])
+
   useEffect(() => {
     const s = loadSave()
     const qs = new URLSearchParams(location.search)
@@ -167,7 +174,8 @@ export default function Game() {
           renderer.render(w, dt * 0.15)
           return
         }
-        acc += dt
+        // Rahat Mod: dünya %80 hızda akar
+        acc += relaxedRef.current ? dt * 0.8 : dt
         let first = true
         const inp = input.sample()
         while (acc >= STEP) {
@@ -379,7 +387,7 @@ export default function Game() {
       }
       writeSave(next)
       setResumeIdx(next.unlocked)
-      setResult({ timeMs, deaths: w.deaths, items, newBest })
+      setResult({ timeMs, deaths: w.deaths, items, newBest, relaxed: relaxedRef.current })
       return next
     })
     setScreen('complete')
@@ -913,6 +921,7 @@ export default function Game() {
                 <Toggle label={t("Dokunmatik Kontroller")} on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
                 {!showTouch && <Toggle label={t("Tuş İpuçları")} hint={t("Ekranın altında klavye rehberi")} on={save.keyHints} onChange={() => persist({ ...save, keyHints: !save.keyHints })} />}
                 <Toggle label={t("Büyük Tuşlar")} hint={t("Telefonda daha geniş dokunma alanı")} on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
+                <Toggle label={t("Rahat Mod")} hint={t("Oyun %80 hızda akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.")} on={save.relaxed} onChange={() => persist({ ...save, relaxed: !save.relaxed })} />
               </div>
               {canFull && (
                 <button className="mt-2 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={fullscreen}>
@@ -1185,7 +1194,7 @@ function Complete({
 
   // ad varsa skor kendiliğinden kaydedilir
   useEffect(() => {
-    if (player && status === 'idle') void submit(player)
+    if (player && status === 'idle' && !result.relaxed) void submit(player)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player])
 
@@ -1298,7 +1307,9 @@ function Complete({
               <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
                 {t('SKOR TABLOSU')} <span className="kilim h-[6px] flex-1 opacity-50" />
               </p>
-              {!player ? (
+              {result.relaxed ? (
+                <p className="mt-2 text-[12px] text-muted">{t('Rahat Mod’da oynadın: bu skor tabloya yazılmadı. Ayarlardan kapatıp yarışabilirsin.')}</p>
+              ) : !player ? (
                 <div className="mt-2.5">
                   <p className="mb-2 text-[12px] text-muted">{t('Skorunu tabloya yazmak için üye ol ya da giriş yap.')}</p>
                   <AuthForm suggestion={heroName} autoFocus={false} onDone={(p) => onPlayer(p)} />

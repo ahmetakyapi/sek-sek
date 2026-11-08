@@ -26,6 +26,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   levels.ts      16 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend() ve addSignature() burada
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
+  assists.ts     kolaylık yamaları: birleşmiş haritaya en son yazılır (araya bayrak, çukura basamak); kayarsa hata verir
   content.en.ts  bütün bölüm metinlerinin İngilizcesi
   art.ts         şehir paletleri, arka plan katmanları, eşya ve düşman sprite'ları, canlı adları
   render.ts      düşük çözünürlüklü tampon, parallax, parçacık, karakter, NPC
@@ -36,7 +37,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-levels (çözücü), migrate, art/ (portre ressamı, karakter kareleri hero.py, ikon ve favicon icons.py, harita üreteçleri, sync)
+scripts/         verify-levels (çözücü, solver.ts), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, karakter kareleri hero.py, ikon ve favicon icons.py, harita üreteçleri, sync)
 tests/           sim.test.ts (fizik ve mekanik testleri)
 ```
 
@@ -63,6 +64,9 @@ yetim satır bırakma.
 - Dost hayvan ile düşman aynı tür olmasın (kedi dostsa düşman kedi olmaz). Düşmanlar kırmızı hatla parlar.
 - Telefonda yatay ekranda diyalog ve ipucu kutusu iki kontrolün arasına oturur; yeni kutu eklersen karakteri ve tuşları kapatmasın.
 - Çözücü (`verify-levels`) yavaşsa önce haritayı sadeleştir: dönen platformlar ve tokmaklar durum sayısını katlar.
+- Her yaştan oyuncu düşün: bayraklar arası **en çok 75 karo** (test bekler), boşluklar 3 karoyu geçmesin; "atıl + kristal + atıl"
+  zinciri isteğe bağlı kestirme olsun, zorunlu yol olmasın. Değişiklikten sonra `npx tsx scripts/audit-difficulty.ts <id>`:
+  zayıf oyuncu (zıplama ~%10 alçak, koşu %8 yavaş) geçebilmeli.
 
 ## Yayın
 

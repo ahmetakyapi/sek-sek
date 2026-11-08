@@ -234,4 +234,7 @@ export const UI_EN: Record<string, string> = {
   'Sıralama': 'Sort',
   'Bu senin adın.': 'That is your name.',
   'Bu ad alınmış, başka bir ad dene.': 'This name is taken, try another.',
+  'Rahat Mod': 'Relaxed Mode',
+  'Oyun %80 hızda akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.': 'The game runs at 80% speed, leaving more time for each jump. Scores are not posted in this mode.',
+  'Rahat Mod’da oynadın: bu skor tabloya yazılmadı. Ayarlardan kapatıp yarışabilirsin.': 'You played in Relaxed Mode, so this score was not posted. Turn it off in settings to compete.',
 }

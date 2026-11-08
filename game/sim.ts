@@ -404,6 +404,8 @@ export class World {
     this.start = start
     this.spawn = { ...start }
     this.exit = exit
+    // harita satır satır tarandı: bayraklar soldan sağa numaralansın (farklı satırdaki bayrak sırayı bozmasın)
+    this.checkpoints.sort((a, b) => a.x - b.x).forEach((c, i) => (c.index = i))
     this.player = this.freshPlayer(start.x, start.y)
   }
 
