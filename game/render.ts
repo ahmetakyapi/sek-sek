@@ -91,6 +91,39 @@ export class Renderer {
     this.clampCam(world)
   }
 
+  private skyCache: { key: string; cv: HTMLCanvasElement } | null = null
+
+  private skyCanvas(sky: [string, string, string]) {
+    const key = `${this.viewW}x${this.viewH}:${sky.join()}`
+    if (this.skyCache?.key === key) return this.skyCache.cv
+    const cv = document.createElement('canvas')
+    cv.width = this.viewW
+    cv.height = this.viewH
+    const c = cv.getContext('2d')!
+    const N = 12
+    const at = (t: number) => (t < 0.6 ? mixHex(sky[0], sky[1], t / 0.6) : mixHex(sky[1], sky[2], (t - 0.6) / 0.4))
+    const bands = Array.from({ length: N }, (_, i) => at(i / (N - 1)).match(/\d+/g)!.map(Number))
+    const B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
+    const img = c.createImageData(cv.width, cv.height)
+    const d = img.data
+    for (let y = 0; y < cv.height; y++) {
+      const f = (y / Math.max(1, cv.height - 1)) * (N - 1)
+      const i = Math.min(N - 2, Math.floor(f))
+      const fr = f - i
+      for (let x = 0; x < cv.width; x++) {
+        const col = fr > (B4[y % 4][x % 4] + 0.5) / 16 ? bands[i + 1] : bands[i]
+        const k = (y * cv.width + x) * 4
+        d[k] = col[0]
+        d[k + 1] = col[1]
+        d[k + 2] = col[2]
+        d[k + 3] = 255
+      }
+    }
+    c.putImageData(img, 0, 0)
+    this.skyCache = { key, cv }
+    return cv
+  }
+
   /* ── Statik tile katmanı ──────────────────────────────────── */
   private buildTiles(w: World): HTMLCanvasElement {
     const cv = document.createElement('canvas')
@@ -165,6 +198,40 @@ export class Renderer {
           }
         }
       }
+    }
+    // kabartma: her taş bloğunun üst ve sol kenarı ışık, alt ve sağ kenarı gölge alır
+    {
+      const dark = s.tileDark
+      const dr = parseInt(dark.slice(1, 3), 16)
+      const dg = parseInt(dark.slice(3, 5), 16)
+      const db = parseInt(dark.slice(5, 7), 16)
+      const img = c.getImageData(0, 0, cv.width, cv.height)
+      const d = img.data
+      const W2 = cv.width
+      const isMortar = (i: number) => d[i] === dr && d[i + 1] === dg && d[i + 2] === db && d[i + 3] === 255
+      const out = new Uint8ClampedArray(d)
+      for (let y = 1; y < cv.height - 1; y++) {
+        const ty = Math.floor(y / T)
+        for (let x = 1; x < W2 - 1; x++) {
+          if (!solidish(Math.floor(x / T), ty)) continue
+          const i = (y * W2 + x) * 4
+          if (d[i + 3] !== 255 || isMortar(i)) continue
+          let k = 0
+          if (isMortar(i - W2 * 4)) k += 0.16
+          if (isMortar(i - 4)) k += 0.08
+          if (isMortar(i + W2 * 4)) k -= 0.2
+          if (isMortar(i + 4)) k -= 0.1
+          if (!k) continue
+          // ton kaydırma: ışık sıcağa, gölge mor-maviye
+          const to = k > 0 ? [255, 240, 205] : [42, 26, 60]
+          const a = Math.abs(k)
+          out[i] = d[i] + (to[0] - d[i]) * a
+          out[i + 1] = d[i + 1] + (to[1] - d[i + 1]) * a
+          out[i + 2] = d[i + 2] + (to[2] - d[i + 2]) * a
+        }
+      }
+      img.data.set(out)
+      c.putImageData(img, 0, 0)
     }
     // derinlik: yüzeyden aşağı indikçe taş yumuşakça kararır (4 piksellik bantlarla)
     for (let tx = 0; tx < w.cols; tx++) {
@@ -490,13 +557,25 @@ export class Renderer {
     const cx = Math.round(this.camX + sx)
     const cy = Math.round(this.camY + sy)
 
-    // gökyüzü
-    const g = b.createLinearGradient(0, 0, 0, this.viewH)
-    g.addColorStop(0, s.sky[0])
-    g.addColorStop(0.6, s.sky[1])
-    g.addColorStop(1, s.sky[2])
-    b.fillStyle = g
-    b.fillRect(0, 0, this.viewW, this.viewH)
+    // gökyüzü: 12 bant, sınırlarda 4x4 Bayer geçişi (el işi gradyan)
+    b.drawImage(this.skyCanvas(s.sky), 0, 0)
+    // güneşli şehirlerde süzülen ışık huzmeleri
+    if (s.sun) {
+      const sunX = this.viewW * s.sun.x
+      b.save()
+      for (let i = 0; i < 5; i++) {
+        const a = -0.9 + i * 0.42 + Math.sin(this.t * 0.15 + i) * 0.05
+        const len = this.viewH * 1.4
+        b.fillStyle = `rgba(255,232,190,${0.035 + (i % 2) * 0.015})`
+        b.beginPath()
+        b.moveTo(sunX, 20)
+        b.lineTo(sunX + Math.sin(a - 0.05) * len, 20 + Math.cos(a - 0.05) * len)
+        b.lineTo(sunX + Math.sin(a + 0.05) * len, 20 + Math.cos(a + 0.05) * len)
+        b.closePath()
+        b.fill()
+      }
+      b.restore()
+    }
 
     const lh = w.rows * T
     // katmanların tabanı bölümün zemin çizgisine (satır 20) oturur, dikeyde parallax
@@ -525,8 +604,13 @@ export class Renderer {
         }
       }
       drawLayer(this.layers.far, 0.12, 0.08)
+      // hava perspektifi: uzak katman gökyüzünün rengine yaslanır
+      b.fillStyle = hexA(s.sky[2], 0.22)
+      b.fillRect(0, 0, this.viewW, this.viewH)
       if (this.city === 'istanbul') this.drawBosphorus(b, layerY(0.13) + LAYER_H - 70, cx)
       drawLayer(this.layers.mid, 0.25, 0.18)
+      b.fillStyle = hexA(s.sky[2], 0.1)
+      b.fillRect(0, 0, this.viewW, this.viewH)
       drawLayer(this.layers.near, 0.45, 0.32)
     }
 
@@ -1787,6 +1871,28 @@ export class Renderer {
     for (const k of Object.keys(pal)) ink[k] = '#120f1a'
     for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) drawBody(ink, dx, dy)
     drawBody(pal, 0, 0)
+    // hacim: üstü dış hatla biten pikseller ışık, altı dış hatla bitenler gölge alır
+    {
+      const img = c.getImageData(0, 0, pc.width, pc.height)
+      const d = img.data
+      const Wp = pc.width
+      const edge = (i: number) => d[i + 3] === 0 || (d[i] === 0x12 && d[i + 1] === 0x0f && d[i + 2] === 0x1a)
+      const out = new Uint8ClampedArray(d)
+      for (let y = 1; y < pc.height - 1; y++)
+        for (let x = 1; x < Wp - 1; x++) {
+          const i = (y * Wp + x) * 4
+          if (edge(i)) continue
+          let k = 0
+          if (edge(i - Wp * 4)) k = 0.2
+          else if (edge(i + Wp * 4)) k = -0.22
+          if (!k) continue
+          const to = k > 0 ? [255, 244, 220] : [30, 18, 44]
+          const a = Math.abs(k)
+          for (let j = 0; j < 3; j++) out[i + j] = d[i + j] + (to[j] - d[i + j]) * a
+        }
+      img.data.set(out)
+      c.putImageData(img, 0, 0)
+    }
 
     // esneme: zıplarken incelip uzar, konarken basılır (hacim korunur, abartısız)
     let kx = 1
@@ -1892,6 +1998,11 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   sivas: 'ARDAHAN',
   ardahan: 'BAYBURT',
   bayburt: null,
+}
+
+function hexA(hex: string, a: number) {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
 }
 
 /* ── Ortak sprite dili: üstte ışık, altta gölge, yumuşak dış hat ─────────── */
