@@ -1,8 +1,8 @@
 import { index, integer, pgTable, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
-/** Paylaşılan Neon veritabanında çakışmasın diye tablo adı memleket_ önekli. */
+/** Tablo adları seksek_ önekli (8 Kasım'a dek ortak veritabanında memleket_ önekliydi; oyun artık kendi Neon veritabanında). */
 /** Hesaplar: kullanıcı adı (büyük/küçük harf duyarsız tekil) + scrypt ile saklanan şifre. */
-export const players = pgTable('memleket_players', {
+export const players = pgTable('seksek_players', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   nameKey: text('name_key').notNull().unique(),
@@ -11,7 +11,7 @@ export const players = pgTable('memleket_players', {
 })
 
 /** Oturumlar: her cihaz kendi anahtarını taşır, çıkış yapana kadar girişli kalır. */
-export const sessions = pgTable('memleket_sessions', {
+export const sessions = pgTable('seksek_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   playerId: uuid('player_id')
     .notNull()
@@ -21,7 +21,7 @@ export const sessions = pgTable('memleket_sessions', {
 })
 
 export const scores = pgTable(
-  'memleket_scores',
+  'seksek_scores',
   {
     id: serial('id').primaryKey(),
     level: text('level').notNull(),
@@ -32,6 +32,6 @@ export const scores = pgTable(
     playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index('memleket_scores_level_time_idx').on(t.level, t.timeMs), uniqueIndex('memleket_scores_level_player_idx').on(t.level, t.playerId)],
+  (t) => [index('seksek_scores_level_time_idx').on(t.level, t.timeMs), uniqueIndex('seksek_scores_level_player_idx').on(t.level, t.playerId)],
 )
 

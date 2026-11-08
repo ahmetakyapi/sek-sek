@@ -27,7 +27,7 @@ async function load(ad: string) {
       deaths: scores.deaths,
       items: scores.items,
       createdAt: scores.createdAt,
-      rank: sql<number>`(select count(*)::int + 1 from memleket_scores o where o.level = ${scores.level} and o.time_ms < ${scores.timeMs})`,
+      rank: sql<number>`(select count(*)::int + 1 from seksek_scores o where o.level = ${scores.level} and o.time_ms < ${scores.timeMs})`,
     })
     .from(scores)
     .where(eq(scores.playerId, player.id))

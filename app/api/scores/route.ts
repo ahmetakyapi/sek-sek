@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       const rows = await db().execute(sql`
         select p.name as name, count(*)::int as cities, sum(s.time_ms)::int as "timeMs",
                sum(s.deaths)::int as deaths, sum(s.items)::int as items
-        from memleket_scores s join memleket_players p on p.id = s.player_id
+        from seksek_scores s join seksek_players p on p.id = s.player_id
         group by p.id, p.name
         order by ${order}
         limit 20`)
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     else if (timeMs < prev.timeMs) await d.update(scores).set({ timeMs, deaths, items, name: me.name, createdAt: new Date() }).where(eq(scores.id, prev.id))
     else improved = false
     const best = improved ? timeMs : prev!.timeMs
-    const rank = await d.execute(sql`select count(*)::int + 1 as rank from memleket_scores where level = ${level} and time_ms < ${best}`)
+    const rank = await d.execute(sql`select count(*)::int + 1 as rank from seksek_scores where level = ${level} and time_ms < ${best}`)
     return NextResponse.json({ ok: true, improved, rank: (rank.rows[0] as { rank: number }).rank })
   } catch {
     return bad('Skor kaydedilemedi', 503)

@@ -98,7 +98,7 @@ atkın kırmızıysa hazırsın, griyse harcadın.
 ```bash
 npm install
 cp .env.example .env.local   # DATABASE_URL (Neon)
-npm run db:migrate           # yalnızca memleket_* tablolarını oluşturur
+npm run db:migrate           # seksek_* tablolarını oluşturur (oyunun kendi Neon veritabanı)
 npm run dev
 ```
 

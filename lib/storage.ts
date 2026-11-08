@@ -49,13 +49,22 @@ export interface Save {
   accountVersion?: number
 }
 
-const KEY = 'memleket:v1'
+const KEY = 'seksek:v1'
+/** 8 Kasım'a dek anahtar `memleket:v1`di; ilk açılışta yeni anahtara taşınır, ilerleme kaybolmaz. */
+const LEGACY_KEY = 'memleket:v1'
 
 export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
 
 export function loadSave(): Save {
   try {
-    const raw = localStorage.getItem(KEY)
+    let raw = localStorage.getItem(KEY)
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_KEY)
+      if (raw) {
+        localStorage.setItem(KEY, raw)
+        localStorage.removeItem(LEGACY_KEY)
+      }
+    }
     if (!raw) return defaultSave()
     const parsed = JSON.parse(raw) as Partial<Save>
     const s = { ...defaultSave(), ...parsed }

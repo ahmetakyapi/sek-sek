@@ -1,4 +1,4 @@
-/** Yalnızca memleket_ tablolarını oluşturur (idempotent). Kullanım: npm run db:migrate */
+/** seksek_ tablolarını oluşturur (idempotent). Kullanım: npm run db:migrate */
 import { neon } from '@neondatabase/serverless'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
