@@ -41,11 +41,13 @@ export interface Save {
   lang: 'tr' | 'en'
   /** eski sıradan yeni sıraya taşındı mı (aynı sürümde iki kez taşınmasın) */
   migrated?: boolean
+  /** hesap sürümü: 2 = kullanıcı adı + şifre; eski şifresiz kimlikler geçersiz */
+  accountVersion?: number
 }
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr' })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
 
 export function loadSave(): Save {
   try {
@@ -61,6 +63,12 @@ export function loadSave(): Save {
       const idx = LEVELS.findIndex((l) => l.id === id)
       s.unlocked = idx >= 0 ? idx : 0
       s.migrated = true
+    }
+    // şifresiz eski yolcu kimlikleri silindi: oyuncu bir kez üye olur ya da giriş yapar
+    if ((parsed.accountVersion ?? 1) < 2) {
+      s.player = null
+      s.skippedName = false
+      s.accountVersion = 2
     }
     // eski sürümdeki "ayla" seçimi Uktun'a taşınır
     if ((s.character as string) === 'ayla') s.character = 'uktun'

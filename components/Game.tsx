@@ -6,6 +6,7 @@ import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
+import AuthForm from '@/components/AuthForm'
 import { NpcDialog, SignHint } from '@/components/NpcDialog'
 import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
 import About from '@/components/About'
@@ -343,6 +344,13 @@ export default function Game() {
     } else setScreen('title')
   }
 
+  const signOut = async () => {
+    const p = save.player
+    persist({ ...save, player: null, skippedName: true })
+    setScreen('title')
+    if (p) await fetch('/api/players', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, token: p.token }) }).catch(() => {})
+  }
+
   const afterName = (next: Save) => {
     persist(next)
     if (!next.seenStory) {
@@ -568,10 +576,10 @@ export default function Game() {
                     <span className="text-gold">◆</span>
                     {save.player ? (
                       <span>
-                        {t("Yolcu:")} <strong className="font-semibold text-cream">{save.player.name}</strong>
+                        {t("Hesap:")} <strong className="font-semibold text-cream">{save.player.name}</strong>
                       </span>
                     ) : (
-                      t('Yolcu Adı Belirle')
+                      t('Üye Ol ya da Giriş Yap')
                     )}
                   </button>
                   <span className="flex items-center gap-3 tabular-nums">
@@ -652,7 +660,7 @@ export default function Game() {
 
       {screen === 'name' && (
         <Overlay>
-          <div className="rise pixel-panel w-full max-w-md px-6 pb-6">
+          <div className="rise pixel-panel max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto px-6 pb-6">
             <div className="flex items-end gap-4">
               <figure className="polaroid relative w-[96px] shrink-0 rotate-[-5deg]">
                 <span className="tape" />
@@ -660,28 +668,54 @@ export default function Game() {
                 <figcaption>{hero.short}</figcaption>
               </figure>
               <div className="min-w-0 pb-2">
-                <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{save.player ? t('ADINI DEĞİŞTİR') : t('DEFTERİN SAHİBİ')}</p>
-                <h2 className="mt-1 font-display text-3xl leading-tight text-cream">{t("Yolcu Adın")}</h2>
-                <p className="mt-1 text-[13px] leading-snug text-muted">{t("Skor tablosunda ve paylaştığın kartlarda bu adla görünürsün.")}</p>
+                <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{save.player ? t('HESABIM') : t('DEFTERİN SAHİBİ')}</p>
+                <h2 className="mt-1 font-display text-3xl leading-tight text-cream">{save.player ? save.player.name : t('Yolcu Hesabı')}</h2>
+                <p className="mt-1 text-[13px] leading-snug text-muted">
+                  {save.player ? t('Bu cihazda girişlisin; tekrar giriş yapman gerekmez.') : t('Üye ol ya da giriş yap: skorların tabloya yazılır, her cihazdan devam edersin.')}
+                </p>
               </div>
             </div>
             <div className="mt-5">
-              <NameForm
-                player={save.player}
-                suggestion={hero.short}
-                onDone={(p: Player) => {
-                  ui()
-                  afterName({ ...save, player: p, skippedName: false })
-                }}
-              />
+              {save.player ? (
+                <div className="grid gap-4">
+                  <a href={`/oyuncu/${encodeURIComponent(save.player.name)}`} className="pixel-btn primary justify-center">
+                    {t('Kullanıcı Sayfamı Aç')}
+                  </a>
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-bold tracking-[0.2em] text-muted">{t('ADINI DEĞİŞTİR')}</p>
+                    <NameForm
+                      player={save.player}
+                      onDone={(p: Player) => {
+                        ui()
+                        persist({ ...save, player: p })
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between border-t-2 border-line pt-3">
+                    <button className="pixel-btn" onClick={() => setScreen('title')}>
+                      {t('← Geri')}
+                    </button>
+                    <button className="text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => void signOut()}>
+                      {t('Çıkış Yap')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <AuthForm
+                    suggestion={hero.short}
+                    onDone={(p: Player) => {
+                      ui()
+                      afterName({ ...save, player: p, skippedName: false })
+                    }}
+                  />
+                  <button className="mt-3 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => afterName({ ...save, skippedName: true })}>
+                    {t('Şimdilik Geç')}
+                  </button>
+                  <p className="mt-1 text-[11px] text-muted">{t('Hesapsız da oynarsın; skorların yalnız bu cihazda kalır. Sonra menüden üye olabilirsin.')}</p>
+                </>
+              )}
             </div>
-            <button
-              className="mt-3 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline"
-              onClick={() => (save.player ? setScreen('title') : afterName({ ...save, skippedName: true }))}
-            >
-              {save.player ? t('← Vazgeç') : t('Şimdilik Geç')}
-            </button>
-            {!save.player && <p className="mt-1 text-[11px] text-muted">{t('Ad seçmezsen skorların tabloya yazılmaz; sonra menüden belirleyebilirsin.')}</p>}
           </div>
         </Overlay>
       )}
@@ -897,7 +931,7 @@ export default function Game() {
           save={save}
           heroName={hero.short}
           heroId={hero.id}
-          onPlayer={(p) => persist({ ...save, player: p, skippedName: false })}
+          onPlayer={(p) => persist({ ...save, player: p, skippedName: !p })}
           onNext={() => (levelIdx + 1 < LEVELS.length ? loadLevel(levelIdx + 1) : setScreen('end'))}
           onRetry={() => loadLevel(levelIdx, 'play')}
           onMap={() => setScreen('map')}
@@ -1079,7 +1113,7 @@ function Complete({
   save: Save
   heroName: string
   heroId: CharacterId
-  onPlayer: (p: Player) => void
+  onPlayer: (p: Player | null) => void
   onNext: () => void
   onRetry: () => void
   onMap: () => void
@@ -1132,6 +1166,12 @@ function Complete({
         body: JSON.stringify({ level: level.id, playerId: p.id, token: p.token, timeMs: result.timeMs, deaths: result.deaths, items: found }),
       })
       const j = (await res.json()) as { error?: string; rank?: number; improved?: boolean }
+      if (res.status === 401) {
+        // oturum artık geçerli değil (hesap silinmiş ya da çıkış yapılmış): yeniden giriş istenir
+        setStatus('idle')
+        onPlayer(null)
+        return
+      }
       if (!res.ok) throw new Error(j.error ?? t('Gönderilemedi'))
       setRank(j.rank ?? null)
       setImproved(j.improved ?? true)
@@ -1260,8 +1300,8 @@ function Complete({
               </p>
               {!player ? (
                 <div className="mt-2.5">
-                  <p className="mb-2 text-[12px] text-muted">{t('Skorunu tabloya yazmak için bir yolcu adı seç.')}</p>
-                  <NameForm player={null} suggestion={heroName} submitLabel={t('Kaydet')} autoFocus={false} onDone={(p) => onPlayer(p)} />
+                  <p className="mb-2 text-[12px] text-muted">{t('Skorunu tabloya yazmak için üye ol ya da giriş yap.')}</p>
+                  <AuthForm suggestion={heroName} autoFocus={false} onDone={(p) => onPlayer(p)} />
                 </div>
               ) : status === 'sending' ? (
                 <p className="mt-2 text-[12px] text-muted">{t('Skorun kaydediliyor…')}</p>
@@ -1321,7 +1361,7 @@ function Seal({ medal, bronze }: { medal: 'altin' | 'gumus' | 'bronz' | null; br
   )
 }
 
-function Top({ level, refresh, highlight }: { level: string; refresh: number; highlight: string }) {
+function Top({ level, refresh, highlight, sort = '' }: { level: string; refresh: number; highlight: string; sort?: string }) {
   const t = useT()
   const lng = useLang()
   const [rows, setRows] = useState<ScoreRow[] | null>(null)
@@ -1329,14 +1369,14 @@ function Top({ level, refresh, highlight }: { level: string; refresh: number; hi
   useEffect(() => {
     let live = true
     setFailed(false)
-    fetch(`/api/scores?level=${level}`)
+    fetch(`/api/scores?level=${level}${sort ? `&sort=${sort}` : ''}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
       .then((j: { scores: ScoreRow[] }) => live && setRows(j.scores))
       .catch(() => live && setFailed(true))
     return () => {
       live = false
     }
-  }, [level, refresh])
+  }, [level, refresh, sort])
   if (failed) return <p className="mt-2 text-[12px] text-muted">{t("Skor tablosuna şu an ulaşılamıyor.")}</p>
   if (!rows) return <p className="mt-2 text-[12px] text-muted">{t("Yükleniyor…")}</p>
   if (!rows.length) return <p className="mt-2 text-[12px] text-muted">{t("Henüz skor yok. İlk sen ol!")}</p>
@@ -1347,12 +1387,14 @@ function Top({ level, refresh, highlight }: { level: string; refresh: number; hi
         <li key={`${r.name}-${i}`} className={`grid grid-cols-[1.6rem_minmax(0,1fr)_auto] items-baseline gap-x-2 px-2 py-1.5 ${i === mine ? 'bg-accent/25 outline outline-2 outline-accent/60' : i % 2 ? '' : 'bg-panel-2/60'}`}>
           <span className={i < 3 ? 'font-bold text-gold' : 'text-muted'}>{i + 1}.</span>
           <span className="min-w-0">
-            <span className="block truncate text-cream">{r.name}</span>
+            <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className="block truncate text-cream underline-offset-4 hover:underline">
+              {r.name}
+            </a>
             <span className="block text-[11px] text-muted">
               {r.cities !== undefined
                 ? lng === 'en'
-                  ? `${r.cities} ${r.cities === 1 ? 'city' : 'cities'} · ${r.items} ${r.items === 1 ? 'keepsake' : 'keepsakes'}`
-                  : t('{cities} şehir · {items} hatıra', { cities: r.cities, items: r.items })
+                  ? `${r.cities} ${r.cities === 1 ? 'city' : 'cities'} · ${r.items} ${r.items === 1 ? 'keepsake' : 'keepsakes'} · ✕${r.deaths}`
+                  : t('{cities} şehir · {items} hatıra · ✕{deaths}', { cities: r.cities, items: r.items, deaths: r.deaths })
                 : `✕${r.deaths} · ${r.items}/3`}
             </span>
           </span>
@@ -1367,7 +1409,12 @@ function ScoreBoard({ me }: { me: string }) {
   const t = useT()
   const lng = useLang()
   const [idx, setIdx] = useState(-1)
+  const [sort, setSort] = useState('')
   const strip = useRef<HTMLDivElement>(null)
+  const sorts: [string, string][] =
+    idx === -1
+      ? [['', t('Şehir')], ['deaths', t('En Az Düşüş')], ['items', t('Hatıra')]]
+      : [['', t('Süre')], ['deaths', t('En Az Düşüş')], ['items', t('Hatıra')]]
   // seçili sekme şeridin ortasına kayar; sayfa dikeyde kıpırdamaz
   useEffect(() => {
     const st = strip.current
@@ -1396,9 +1443,28 @@ function ScoreBoard({ me }: { me: string }) {
         </button>
       </div>
       <p className="mt-3 font-display text-xl text-gold">{idx === -1 ? t('Genel Sıralama') : displayName(LEVELS[idx])}</p>
-      <p className="text-[12px] text-muted">{idx === -1 ? t('Bitirilen şehir sayısı, sonra toplam süre.') : t('{subtitle} · en iyi on süre', { subtitle: localize(LEVELS[idx], lng).subtitle })}</p>
+      <p className="text-[12px] text-muted">
+        {idx === -1
+          ? sort === 'deaths'
+            ? t('Bitirilen şehir sayısı, sonra en az düşüş.')
+            : sort === 'items'
+              ? t('En çok hatıra, sonra toplam süre.')
+              : t('Bitirilen şehir sayısı, sonra toplam süre.')
+          : sort === 'deaths'
+            ? t('{subtitle} · en az düşüş', { subtitle: localize(LEVELS[idx], lng).subtitle })
+            : sort === 'items'
+              ? t('{subtitle} · en çok hatıra', { subtitle: localize(LEVELS[idx], lng).subtitle })
+              : t('{subtitle} · en iyi on süre', { subtitle: localize(LEVELS[idx], lng).subtitle })}
+      </p>
+      <div className="mt-2 flex gap-1.5" role="group" aria-label={t('Sıralama')}>
+        {sorts.map(([k, label]) => (
+          <button key={k || 'default'} aria-pressed={sort === k} className={`pixel-btn px-2.5 py-1 text-[12px] ${sort === k ? 'primary' : ''}`} onClick={() => setSort(k)}>
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="mt-1 min-h-[160px] flex-1 overflow-y-auto overscroll-contain">
-        <Top level={idx === -1 ? 'genel' : LEVELS[idx].id} refresh={0} highlight={me} />
+        <Top level={idx === -1 ? 'genel' : LEVELS[idx].id} refresh={0} highlight={me} sort={sort} />
       </div>
     </div>
   )

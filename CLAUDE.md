@@ -34,8 +34,8 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   portraits.ts   64x76 portreler (scripts/art/painter.py üretir; Uktun'un yüzü elle çizilmiş scripts/art/uktun_classic.json'dan gelir)
   audio.ts       WebAudio efektleri + şehir makamında üretilen müzik
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
-lib/             storage (kayıt + harita sürümü), i18n + ui.en (TR/EN), share, db
-app/             / oyun · /hakkinda tanıtım · /skor paylaşım · /skor/kart kartpostal · /api/*
+lib/             storage (kayıt + harita sürümü), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
+app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
 scripts/         verify-levels (çözücü), migrate, art/ (portre ressamı, karakter kareleri hero.py, ikon ve favicon icons.py, harita üreteçleri, sync)
 tests/           sim.test.ts (fizik ve mekanik testleri)
 ```

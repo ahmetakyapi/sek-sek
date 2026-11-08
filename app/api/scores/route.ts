@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
@@ -10,28 +10,43 @@ export const dynamic = 'force-dynamic'
 const LEVEL_IDS = new Set(LEVELS.map((l) => l.id))
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status })
 
-/** GET ?level=<şehir>  → şehrin ilk 10'u;  ?level=genel → bitirilen şehir sayısı, sonra toplam süre */
+/**
+ * GET ?level=<şehir>&sort=time|deaths|items → şehrin ilk 10'u
+ * GET ?level=genel&sort=cities|deaths|items  → oyuncu başına toplamlar (önce bitirilen şehir sayısı)
+ */
 export async function GET(req: NextRequest) {
   const level = req.nextUrl.searchParams.get('level') ?? ''
+  const sort = req.nextUrl.searchParams.get('sort') ?? ''
   try {
     if (level === 'genel') {
+      const order =
+        sort === 'deaths'
+          ? sql`count(*) desc, sum(s.deaths) asc, sum(s.time_ms) asc`
+          : sort === 'items'
+            ? sql`sum(s.items) desc, sum(s.time_ms) asc`
+            : sql`count(*) desc, sum(s.time_ms) asc`
       const rows = await db().execute(sql`
-        select coalesce(p.name, s.name) as name, count(*)::int as cities, sum(s.time_ms)::int as "timeMs",
+        select p.name as name, count(*)::int as cities, sum(s.time_ms)::int as "timeMs",
                sum(s.deaths)::int as deaths, sum(s.items)::int as items
-        from memleket_scores s left join memleket_players p on p.id = s.player_id
-        where s.player_id is not null
-        group by s.player_id, p.name, s.name
-        order by count(*) desc, sum(s.time_ms) asc
+        from memleket_scores s join memleket_players p on p.id = s.player_id
+        group by p.id, p.name
+        order by ${order}
         limit 20`)
       return NextResponse.json({ scores: rows.rows }, { headers: { 'Cache-Control': 'no-store' } })
     }
     if (!LEVEL_IDS.has(level)) return bad('Geçersiz bölüm')
+    const order =
+      sort === 'deaths'
+        ? [asc(scores.deaths), asc(scores.timeMs)]
+        : sort === 'items'
+          ? [desc(scores.items), asc(scores.timeMs)]
+          : [asc(scores.timeMs), asc(scores.deaths), asc(scores.createdAt)]
     const rows = await db()
-      .select({ name: sql<string>`coalesce(${players.name}, ${scores.name})`, timeMs: scores.timeMs, deaths: scores.deaths, items: scores.items })
+      .select({ name: players.name, timeMs: scores.timeMs, deaths: scores.deaths, items: scores.items })
       .from(scores)
-      .leftJoin(players, eq(players.id, scores.playerId))
+      .innerJoin(players, eq(players.id, scores.playerId))
       .where(eq(scores.level, level))
-      .orderBy(asc(scores.timeMs), asc(scores.deaths), asc(scores.createdAt))
+      .orderBy(...order)
       .limit(10)
     return NextResponse.json({ scores: rows }, { headers: { 'Cache-Control': 'no-store' } })
   } catch {
@@ -52,7 +67,7 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(items) || items < 0 || items > 3) return bad('Geçersiz hatıra sayısı')
   try {
     const me = await verifyPlayer(b.playerId, b.token)
-    if (!me) return bad('Yolcu doğrulanamadı', 401)
+    if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
     const d = db()
     const prev = (await d.select({ id: scores.id, timeMs: scores.timeMs }).from(scores).where(and(eq(scores.level, level), eq(scores.playerId, me.id))).limit(1))[0]
     let improved = true
