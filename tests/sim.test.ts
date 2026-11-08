@@ -122,3 +122,45 @@ describe('kenar yardımı', () => {
     expect(p.x + p.w).toBeGreaterThan(ledgeX)
   })
 })
+
+describe('bulmaca ve yeni düşmanlar', () => {
+  it('kristal atılmayı geri doldurur ve kaybolur', () => {
+    const w = mk(['          ', ' *        ', '          ', ' P        ', '##########'])
+    run(w, 0.2)
+    run(w, 0.05, { jump: true, jumpPressed: true })
+    w.player.canDash = false
+    run(w, 0.3, { jump: true })
+    expect(w.player.canDash).toBe(true)
+    expect(w.crystals[0].active).toBe(false)
+  })
+
+  it('anahtar kapıyı açar', () => {
+    const map = ['          ', '          ', '        D ', ' P K    D ', '##########']
+    const w = mk(map)
+    run(w, 0.2)
+    expect(w.hasKey).toBe(false)
+    run(w, 1.2, { right: true })
+    expect(w.hasKey).toBe(true)
+    expect(w.player.x).toBeGreaterThan(8 * 16)
+  })
+
+  it('anahtarsız kapı geçit vermez', () => {
+    const w = mk(['          ', '          ', '        D ', ' P      D ', '##########'])
+    run(w, 1.2, { right: true })
+    expect(w.player.x).toBeLessThan(8 * 16)
+  })
+
+  it('basamak düğmesi blokları değiştirir', () => {
+    const w = mk(['          ', '          ', '          ', ' P _    [ ', '##########'])
+    run(w, 0.2)
+    expect(w.switchOn).toBe(false)
+    run(w, 0.5, { right: true })
+    expect(w.switchOn).toBe(true)
+  })
+
+  it('dikenli düşmana basılmaz', () => {
+    const w = mk(['          ', ' P        ', '          ', '   x      ', '##########'])
+    run(w, 1.5, { right: true })
+    expect(w.player.dead || w.deaths > 0).toBe(true)
+  })
+})

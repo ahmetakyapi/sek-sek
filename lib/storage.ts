@@ -23,11 +23,12 @@ export interface Save {
   keyHints: boolean
   player: Player | null
   skippedName: boolean
+  stamps: Record<string, boolean>
 }
 
 const KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, player: null, skippedName: false, stamps: {} })
 
 export function loadSave(): Save {
   try {

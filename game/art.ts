@@ -903,6 +903,41 @@ export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string,
       ['............', '.ww....ww...', '..wwkkkww...', 'r..kgkkk....', '.rrkkkkkk...', '..k..k..k...', '.k...k...k..', '............'],
     ],
   },
+  frog: {
+    pal: { g: '#5aa83a', G: '#3a7a24', y: '#e8e070', e: '#1d1a22', w: '#f4efe6', r: '#c8302a' },
+    frames: [
+      ['............', '..ww....ww..', '.gweg..gweg.', '.gggggggggg.', 'gGgggyyggggG', 'gGggyyyyggGg', '.GG.gggg.GG.', 'GG..GGGG..GG', '............', '............'],
+      ['..ww....ww..', '.gweg..gweg.', '.gggggggggg.', 'gGgggyyggggG', 'gGggyyyyggGg', '.GGgggggggG.', '..GG....GG..', '.GG......GG.', '............', '............'],
+    ],
+  },
+  hare: {
+    pal: { w: '#f4f6fa', W: '#c8d0dc', p: '#e8a0b0', e: '#1d1a22' },
+    frames: [
+      ['..w.w.......', '..wpwp......', '..wwww......', '.wwewww.....', '.wwwwwwwww..', '..wwwwwwwwW.', '..WwwwwwwW..', '..W.W..W.W..', '............', '............'],
+      ['..w.w.......', '..wpwp......', '..wwww......', '.wwewww.....', '.wwwwwwwww..', '..wwwwwwwwW.', '.W.WwwwwW.W.', 'W...W..W...W', '............', '............'],
+    ],
+  },
+  ram: {
+    pal: { w: '#e8e0cc', W: '#b8ac90', h: '#8a6a3a', H: '#5a4022', e: '#c8302a', k: '#2a2420' },
+    frames: [
+      ['.hhh..........', 'hHHhh.........', 'hHkHwwwwwwww..', '.hkewwwwwwwwww', '..kwwwwwwwwwwW', '...wwwwwwwwwW.', '...W.W...W.W..', '...k.k...k.k..', '..............', '..............', '..............', '..............'],
+      ['.hhh..........', 'hHHhh.........', 'hHkHwwwwwwww..', '.hkewwwwwwwwww', '..kwwwwwwwwwwW', '...wwwwwwwwwW.', '..W..W.W...W..', '..k...k.k..k..', '..............', '..............', '..............', '..............'],
+    ],
+  },
+  bat: {
+    pal: { k: '#2a1e34', K: '#4a3a5a', r: '#e84a4a', w: '#f4efe6' },
+    frames: [
+      ['k..........k', 'kk...kk...kk', 'kKk.kkkk.kKk', '.kKkkrkrkKk.', '..kkkkkkkk..', '....kwwk....', '............', '............'],
+      ['............', '.....kk.....', '....kkkk....', 'kKkkkrkrkkKk', 'kk.kkkkkk.kk', 'k...kwwk...k', '............', '............'],
+    ],
+  },
+  hedgehog: {
+    pal: { b: '#6a4a30', B: '#3a2618', s: '#d8c8a8', e: '#1d1a22', n: '#2a2020', w: '#f4efe6' },
+    frames: [
+      ['..B.B.B.B...', '.BbBbBbBbB..', 'BbBbBbBbBbB.', 'BbbbbbbbbBss', 'BbbbbbbbbsesB', '.BbbbbbbbsssN', '..s.s..s.s..', '............', '............'],
+      ['...B.B.B.B..', '.BbBbBbBbB..', 'BbBbBbBbBbB.', 'BbbbbbbbbBss', 'BbbbbbbbbsesB', '.BbbbbbbbsssN', '.s..s.s...s.', '............', '............'],
+    ],
+  },
   boar: {
     pal: { b: '#5a4030', B: '#3a2a20', w: '#f4efe6', e: '#e8c84a', k: '#1d1a22' },
     frames: [
@@ -947,8 +982,14 @@ export const ENEMY_ART: Record<string, { frames: string[][]; pal: Record<string,
   },
 }
 
-export function enemyArt(kind: 'ground' | 'fly', city: CityKey) {
+const SNOWY: CityKey[] = ['sivas', 'ardahan', 'bayburt']
+
+export function enemyArt(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky', city: CityKey) {
   const s = CITY[city]
+  if (kind === 'hopper') return SNOWY.includes(city) ? ENEMY_ART.hare : ENEMY_ART.frog
+  if (kind === 'charger') return ENEMY_ART.ram
+  if (kind === 'bat') return ENEMY_ART.bat
+  if (kind === 'spiky') return ENEMY_ART.hedgehog
   return ENEMY_ART[kind === 'ground' ? s.enemyGround : s.enemyFly] ?? ENEMY_ART.scorpion
 }
 

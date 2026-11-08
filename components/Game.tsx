@@ -6,6 +6,7 @@ import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
+import { NpcDialog, SignHint } from '@/components/NpcDialog'
 import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
 import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
@@ -180,6 +181,17 @@ export default function Game() {
               haptic(10)
               setCpToast(Date.now())
               break
+            case 'stamp': {
+              haptic([30, 40, 30, 40, 60])
+              const lv = w.level
+              setToast({ ...lv.secret, item: 'Gizli Pul', key: Date.now() })
+              setSave((prev) => {
+                const next = { ...prev, stamps: { ...prev.stamps, [lv.id]: true } }
+                writeSave(next)
+                return next
+              })
+              break
+            }
             case 'dash':
               haptic(6)
               break
@@ -384,18 +396,7 @@ export default function Game() {
               <div className="kilim mt-3 w-[min(520px,80vw)]" />
             </div>
           )}
-          {!toast && (hint || npc >= 0) && (
-            <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
-              {npc >= 0 && level.npcs[npc] ? (
-                <div key={`n${npc}`} className="rise max-w-sm border-2 border-gold/70 bg-ink/90 px-3 py-2 sm:max-w-md sm:px-4 sm:py-2.5">
-                  <p className="font-display text-[13px] text-gold sm:text-sm">{level.npcs[npc].name}</p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-cream sm:text-[13px]">{level.npcs[npc].text}</p>
-                </div>
-              ) : (
-                <p className="rise max-w-sm border-2 border-[#c79a62] bg-[#3a2a1e]/90 px-3 py-2 text-center text-[12px] leading-snug text-cream sm:max-w-md sm:px-4 sm:py-2.5 sm:text-[13px]">{hint}</p>
-              )}
-            </div>
-          )}
+          {npc >= 0 && level.npcs[npc] ? <NpcDialog key={`npc-${levelIdx}-${npc}`} npc={level.npcs[npc]} touch={showTouch} /> : hint ? <SignHint key={hint} text={hint} touch={showTouch} /> : null}
           {quip && (
             <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[38%] z-10 flex justify-center px-4">
               <p className="rise font-display text-base text-cream/90 [text-shadow:0_2px_0_#120f1a,0_0_12px_#120f1a] sm:text-xl">{quip.text}</p>
@@ -408,7 +409,7 @@ export default function Game() {
                   <ItemIcon city={level.city} taken size={20} />
                 </span>
                 <span className="truncate">
-                  <strong className="font-display text-gold">{toast.item} Bulundu</strong>
+                  <strong className="font-display text-gold">{toast.item === 'Gizli Pul' ? 'Gizli Pul Bulundu!' : `${toast.item} Bulundu`}</strong>
                   <span className="text-muted"> · {toast.title}</span>
                 </span>
               </p>
@@ -497,24 +498,30 @@ export default function Game() {
                   </button>
                 </div>
               </div>
-              <div className="mt-4 flex items-center justify-between text-[12px] text-muted">
-                <button className="flex items-center gap-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('name'))}>
-                  {save.player ? (
-                    <>
-                      <span className="text-gold">◆</span> Yolcu: <strong className="font-semibold text-cream">{save.player.name}</strong>
-                    </>
-                  ) : (
-                    'Yolcu Adı Belirle'
-                  )}
-                </button>
-                <a href="/hakkinda" className="underline-offset-4 hover:text-cream hover:underline">
+              <div className="mt-4 grid gap-2 border-t-2 border-line pt-3 text-[12px] text-muted">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                  <button className="flex items-center gap-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('name'))}>
+                    <span className="text-gold">◆</span>
+                    {save.player ? (
+                      <span>
+                        Yolcu: <strong className="font-semibold text-cream">{save.player.name}</strong>
+                      </span>
+                    ) : (
+                      'Yolcu Adı Belirle'
+                    )}
+                  </button>
+                  <span className="flex items-center gap-3 tabular-nums">
+                    <span>
+                      Hatıra <strong className="text-cream">{totalFound}</strong>/{LEVELS.length * 3}
+                    </span>
+                    <span>
+                      Gizli Pul <strong className="text-cream">{Object.values(save.stamps ?? {}).filter(Boolean).length}</strong>/{LEVELS.length}
+                    </span>
+                  </span>
+                </div>
+                <a href="/hakkinda" className="justify-self-start underline-offset-4 hover:text-cream hover:underline">
                   Oyun Hakkında →
                 </a>
-                {totalFound > 0 && (
-                  <span>
-                    Defterde {totalFound} / {LEVELS.length * 3} hatıra
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -1115,6 +1122,15 @@ function Complete({
                 </div>
               )
             })}
+            {save.stamps?.[level.id] ? (
+              <div className="relative border-2 border-[#d9a441] bg-[#2a2438] px-3 py-2.5" style={{ transform: 'rotate(0.4deg)' }}>
+                <span className="absolute -right-2 -top-3 rotate-[8deg] bg-[#f4ead8] px-1.5 py-0.5 font-display text-[11px] text-[#c8302a] [box-shadow:0_0_0_2px_#c8302a]">GİZLİ SAYFA</span>
+                <p className="font-display text-[15px] leading-tight text-gold">{level.secret.title}</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-cream/85">{level.secret.text}</p>
+              </div>
+            ) : (
+              <p className="border-2 border-dashed border-line/70 px-3 py-2 text-[12px] text-muted">Bu şehirde bir gizli pul var. Sahte duvarlara, çatlak zeminlere ve zor ulaşılan köşelere bak.</p>
+            )}
             {found === 0 && !best?.items.some(Boolean) && (
               <p className="border-2 border-dashed border-line/70 px-3 py-3 text-[12px] text-muted">Bu şehirde üç {level.item.toLocaleLowerCase('tr')} saklı. Bul, defterine yazılsın.</p>
             )}
@@ -1144,8 +1160,22 @@ function Complete({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2.5 border-t-2 border-line pt-4">
-          <p className="mr-auto text-[11px] font-bold tracking-[0.2em] text-gold">SKOR KARTINI PAYLAŞ</p>
+        <div className="mt-5 border-t-2 border-line pt-4">
+          <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+            KARTPOSTALIN <span className="kilim h-[6px] flex-1 opacity-50" />
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '' })}`}
+            alt={`${level.name} skor kartı`}
+            width={1200}
+            height={630}
+            loading="lazy"
+            className="mt-3 h-auto w-full rotate-[-0.6deg] [box-shadow:0_0_0_3px_#3d3550,0_14px_30px_rgba(0,0,0,0.5)]"
+          />
+        </div>
+        <div className="mt-4 grid grid-cols-2 items-center gap-2.5 sm:flex sm:flex-wrap">
+          <p className="col-span-2 text-[11px] font-bold tracking-[0.2em] text-gold sm:mr-auto">PAYLAŞ</p>
           <button className="pixel-btn py-2 text-sm" onClick={share}>
             ↗ Paylaş
           </button>
@@ -1161,7 +1191,7 @@ function Complete({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2.5">
-          <button className="pixel-btn primary" onClick={onNext} autoFocus>
+          <button className="pixel-btn primary w-full text-balance sm:w-auto" onClick={onNext} autoFocus>
             {levelIdx + 1 < LEVELS.length ? `▶ Sıradaki: ${displayName(LEVELS[levelIdx + 1])}` : '▶ Defteri Kapat'}
           </button>
           <button className="pixel-btn" onClick={onRetry}>

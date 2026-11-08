@@ -1,3 +1,4 @@
+import { EXTENSIONS } from './extensions'
 import type { LevelDef } from './types'
 
 /**
@@ -425,8 +426,8 @@ const mardin = decorate(
     '                    ##   #######',
     '                    ##   #######',
     '                    ##   #######',
-    '          C         ##   #######',
-    '                         #######',
+    '                    ##   #######',
+    '          C              #######',
     '  ?            F ?       #######',
     '######XXXXXXXX##################',
     '######        ##################',
@@ -976,6 +977,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Galata Kulesi', text: 'Galata Kulesi 1348’de Cenevizliler tarafından inşa edildi. Yüzyıllar boyunca yangın gözetleme kulesi olarak da kullanıldı.' },
       { title: 'Simit', text: 'Simit, 16. yüzyıl Osmanlı kayıtlarında geçen köklü bir sokak lezzetidir. Pekmeze batırılıp susama bulanarak fırınlanır.' },
     ],
+    secret: { title: 'Kız Kulesi', text: 'Kız Kulesi, Boğaz’ın girişinde küçük bir adacığın üzerindedir. Yüzyıllar boyunca deniz feneri ve gözetleme kulesi olarak kullanıldı.' },
     hints: [
       '← → ile yürü, ↑ ya da ZIPLA ile atla. Uzun basılı tutarsan daha yükseğe çıkarsın.',
       'Boğaz’ın suyu soğuk, düşme! Martıların üstüne basarak onları uzaklaştırabilirsin.',
@@ -1006,6 +1008,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'SEKA', text: 'Türkiye’nin ilk kâğıt fabrikası SEKA 1936’da İzmit’te açıldı. Bugün yerinde SEKA Park ve Kâğıt Müzesi var.' },
       { title: 'Kartepe', text: 'Kartepe, İzmit Körfezi’ne bakan bir kayak merkezidir. Kışın tepeler karla örtülürken aşağıda deniz görünür.' },
     ],
+    secret: { title: 'Maşukiye', text: 'Kartepe eteklerindeki Maşukiye, şelaleleri ve dere kenarındaki alabalık sofralarıyla bilinir.' },
     hints: ['Fabrika merdivenleri tek yönlüdür: alttan zıpla, çatıya çık. Yengeçlerin üstüne basabilirsin.'],
     map: kocaeli,
   },
@@ -1030,6 +1033,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Tarihi Asansör', text: 'Karataş’taki Tarihi Asansör 1907’de Nesim Levi tarafından yaptırıldı. Dik yokuşun iki yakasını birbirine bağlar.' },
       { title: 'Boyoz', text: 'Boyoz, Sefarad Yahudileriyle İzmir’e gelen bir hamur işidir. Geleneksel olarak haşlanmış yumurtayla yenir.' },
     ],
+    secret: { title: 'Efes', text: 'İzmir’in Selçuk ilçesindeki Efes Antik Kenti 2015’te UNESCO Dünya Mirası Listesi’ne alındı.' },
     hints: [
       'Kordon’da yengeçler dolaşır. Üstlerine zıpla ya da atılarak geç.',
       'Körfez vapuru: hareketli iskeleye bin, martılara dikkat.',
@@ -1058,6 +1062,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Anıtkabir', text: 'Atatürk’ün anıt mezarı Anıtkabir 1953’te tamamlandı. Şehrin ortasında, Rasattepe’de yükselir.' },
       { title: 'Tiftik', text: 'Ankara keçisinin yününe tiftik denir. Parlak ve yumuşak bu lif yüzyıllarca ünlü Ankara sofunun dokunmasında kullanıldı.' },
     ],
+    secret: { title: 'Anıtkabir’in Taşları', text: 'Anıtkabir’in yapımında Türkiye’nin farklı bölgelerinden getirilen taşlar kullanıldı; her renk bir yöreyi temsil eder.' },
     hints: [
       'Cumbaların balkonları tek yönlüdür: alttan zıpla, üstüne çık. Çatlak tahtalar dağılır!',
       'Kale surları: iki duvar arasında seke seke tırman. Güvercinlere dikkat.',
@@ -1085,6 +1090,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Adana Kebabı', text: 'Adana kebabı coğrafi işaretle tescillidir. Zırh denen geniş bıçakla kıyılan kuzu etiyle yapılır.' },
       { title: 'Çukurova', text: 'Çukurova Türkiye’nin en bereketli ovalarındandır; pamuk ve narenciye burada yetişir. Yaşar Kemal’in romanlarına da konu olmuştur.' },
     ],
+    secret: { title: 'Varda Köprüsü', text: 'Karaisalı’daki Varda Köprüsü 1912’de Bağdat Demiryolu için yapıldı. Üzerinden hâlâ trenler geçer.' },
     hints: ['Pamuk balyası yay gibidir: üstüne düşünce seni fırlatır. Sivrisineklere dikkat!'],
     map: adana,
   },
@@ -1099,6 +1105,7 @@ export const LEVELS: LevelDef[] = [
     npcs: [
       { name: 'Mırracı Cemil Usta', look: 'usta', text: 'Mırra acıdır, yudum yudum içilir. Fincanı masaya koyma, elime ver; yoksa fincanı altınla doldurursun derler!' },
       { name: 'Telkari Ustası Meryem', look: 'teyze', text: 'Bu gümüş tel saç telinden ince. Sabırsız eller telkari öremez, sen de duvarlarda acele etme.' },
+      { name: 'Mahzen Bekçisi Gabriel', look: 'amca', text: 'Deyrulzafaran’ın taşları güneşte safran rengine döner, adı da oradan gelir derler. Kafesin plakasını bul, anahtar içeride.' },
     ],
     medals: [50, 85, 130],
     quips: ['Taşlar sabırlıdır, sen de ol.', 'Teraslar seni bekliyor, acele etme.', 'Akrep güldü, duydum.', 'Abbaranın gölgesinde bir soluklan.'],
@@ -1109,6 +1116,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Telkari', text: 'Telkari, ince gümüş tellerin bükülüp kaynatılmasıyla yapılan bir kuyumculuk sanatıdır. Midyat telkarisi bu sanatın en bilinen örneklerindendir.' },
       { title: 'Kasımiye Medresesi', text: 'Kasımiye Medresesi Akkoyunlular döneminde, 15. yüzyılın sonlarında tamamlandı. Avlusundaki su kanalı, insan ömrünü simgeleyen bir yolculuğa benzetilir.' },
     ],
+    secret: { title: 'Deyrulzafaran', text: 'Deyrulzafaran Manastırı yüzyıllar boyunca Süryani Ortodoks Patrikliği’nin merkezi oldu. Mardin; Süryani, Arap, Kürt ve Türk kültürlerinin bir arada yaşadığı bir şehirdir.' },
     hints: [
       'Akrepler terasta dolaşır. Üstlerine zıpla ya da atılarak çarp.',
       'Çatlak taşlar basınca dağılır. Durmadan koş!',
@@ -1138,6 +1146,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Aslantepe Höyüğü', text: 'Aslantepe Höyüğü 2021’de UNESCO Dünya Mirası Listesi’ne girdi. Höyükte bilinen en eski devlet yapılanmalarından birine ait izler bulundu.' },
       { title: 'Battalgazi Ulu Camii', text: 'Battalgazi’deki Ulu Camii 13. yüzyıl Anadolu Selçuklu dönemine aittir. Tuğla ve çini işçiliğiyle dönemin önemli eserlerindendir.' },
     ],
+    secret: { title: 'Kayısı Festivali', text: 'Malatya’da her yaz kayısı festivali düzenlenir; hasat şenlikle karşılanır.' },
     hints: [
       'Kayısı kasası yay gibidir: üstüne düşünce seni fırlatır.',
       'Arılar havada salınır. Üstlerine bas ya da atılarak geç. Kasalar arasında atılmak seni uzağa taşır.',
@@ -1166,6 +1175,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Kadeş Antlaşması', text: 'Hititler ile Mısır arasında MÖ 13. yüzyılda yapılan Kadeş Antlaşması, bilinen en eski yazılı barış antlaşmalarındandır. Hititçe kopyası Hattuşa’da bulunan kil tabletlerdedir.' },
       { title: 'Çorum Leblebisi', text: 'Çorum, leblebisiyle ünlüdür. Nohut birkaç kez kavrulup dinlendirilerek leblebiye dönüşür; bu iş günler sürebilir.' },
     ],
+    secret: { title: 'Kadeş’in Kopyası', text: 'Kadeş Antlaşması tabletinin bir kopyası New York’taki Birleşmiş Milletler binasında sergilenir.' },
     hints: [
       'Hitit ok tuzakları düzenli aralıkla atar. Ritmi izle, okun üstünden atla.',
       'Yerkapı: surun altından geçen taş tünel. Tavan alçak, kısa zıpla!',
@@ -1193,6 +1203,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Boztepe', text: 'Boztepe şehre ve Karadeniz’e tepeden bakan bir seyir noktasıdır. Sahilden teleferikle çıkılır.' },
       { title: 'Yason Burnu', text: 'Yason Burnu, Argonotlar efsanesiyle anılan bir Karadeniz burnudur. Ucunda küçük, tarihi bir kilise durur.' },
     ],
+    secret: { title: 'Yason Kilisesi', text: 'Yason Burnu’ndaki küçük kilise 19. yüzyılda yapıldı. Denize uzanan burnun ucunda tek başına durur.' },
     hints: ['Yamaçlarda yaban domuzları dolaşır: üstlerine zıpla ya da atılarak geç. Sahildeki boşluklar geniş: zıpla, en tepede atıl.'],
     map: ordu,
   },
@@ -1217,6 +1228,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Sivas Kongresi', text: 'Sivas Kongresi 4–11 Eylül 1919’da toplandı. Milli Mücadele’nin dönüm noktalarından biridir.' },
       { title: 'Kangal Köpeği', text: 'Kangal çoban köpeği adını Sivas’ın Kangal ilçesinden alır. Sürüyü kurda karşı koruyan sakin ve güçlü bir bekçidir.' },
     ],
+    secret: { title: 'Gök Medrese', text: 'Sivas’taki Gök Medrese 1271’de yapıldı. Çinili cephesi Selçuklu mimarisinin önemli örneklerindendir.' },
     hints: [
       'Buz kaygandır! Durmak için ters yöne bas.',
       'Çifte Minareli Medrese: minarelerin arasında duvardan duvara sekerek tırman.',
@@ -1244,6 +1256,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Damal’daki Siluet', text: 'Damal’da her yıl haziran sonuna doğru dağın gölgesi Atatürk’ün yüzüne benzer bir siluet oluşturur ve binlerce kişi izlemeye gelir.' },
       { title: 'Ardahan Kalesi', text: 'Ardahan Kalesi Kura Nehri kıyısında yükselir. Şehrin en bilinen tarihi yapılarındandır.' },
     ],
+    secret: { title: 'Çıldır’ın Yüksekliği', text: 'Çıldır Gölü deniz seviyesinden yaklaşık 1960 metre yüksektedir ve Doğu Anadolu’nun büyük göllerindendir.' },
     hints: ['Ardahan’da rüzgâr seni geri iter. Buz kaygandır, durmak için ters yöne bas.', 'Donmuş göl: çatlak buz basınca kırılır. Durmadan koş, deliklerin üstünden atla.'],
     wind: -120,
     map: ardahan,
@@ -1270,12 +1283,39 @@ export const LEVELS: LevelDef[] = [
       { title: 'Dede Korkut', text: 'Dede Korkut’un mezarının Bayburt’un Masat köyünde olduğuna inanılır. Şehirde her yıl Dede Korkut adına kültür şöleni düzenlenir.' },
       { title: 'Baksı Müzesi', text: 'Bayburt’un bir köyünde kurulan Baksı Müzesi, 2014’te Avrupa Konseyi Müze Ödülü’nü kazandı.' },
     ],
+    secret: { title: 'Cirit', text: 'Bayburt’ta cirit geleneği sürer: atlı oyuncular birbirine tahta mızrak atarak yarışır.' },
     hints: ['Rüzgâr seni geri itiyor. Uzun boşluklarda zıpla, en tepede atıl.'],
     wind: -210,
     map: bayburt,
   },
 ]
 
-for (const l of LEVELS) l.map = enrich(l.map, l.city)
+/** Yeni parçaları bölüme ekler: sona (çıkış taşınır) ya da finalden önceye. */
+function extend(l: LevelDef) {
+  const ext = EXTENSIONS[l.id]
+  if (!ext) return
+  const d = 20 - ext.base
+  const parts = ext.chunks.map((c) => {
+    const rows = chunk(c)
+    // tabanı yukarı kaydır: alttaki satır tekrar eder (çukur çukur, zemin zemin kalır)
+    return d > 0 ? [...rows.slice(d), ...Array.from({ length: d }, () => rows[rows.length - 1])] : rows
+  })
+  const add = join(...parts)
+  if (ext.mode === 'append') {
+    const base = l.map.map((r) => r.replace('E', ' '))
+    l.map = base.map((r, y) => r + add[y])
+  } else {
+    const at = ext.at ?? l.map[0].length
+    // araya giren parçanın çıkışı olmaz: bölümün finali yerinde kalır
+    l.map = l.map.map((r, y) => r.slice(0, at) + add[y].replace('E', ' ') + r.slice(at))
+  }
+  l.hints = [...l.hints, ...ext.hints]
+  l.medals = l.medals.map((m) => m + ext.medal) as [number, number, number]
+}
+
+for (const l of LEVELS) {
+  extend(l)
+  l.map = enrich(l.map, l.city)
+}
 
 export const levelIndex = (id: string) => LEVELS.findIndex((l) => l.id === id)

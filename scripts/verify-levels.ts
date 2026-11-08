@@ -72,7 +72,7 @@ function inputAt(m: Macro, t: number, prev: { jump: boolean; dash: boolean }): I
 
 function key(s: Snapshot) {
   const p = s.player
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), s.platforms.filter((q) => Math.abs(q.x - p.x) < 260 && Math.abs(q.y - p.y) < 200).map((q) => `${Math.round((q.x + q.y) / 12)}${q.dir}`).join(','), s.checkpointIndex].join('|')
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), s.platforms.filter((q) => Math.abs(q.x - p.x) < 260 && Math.abs(q.y - p.y) < 200).map((q) => `${Math.round((q.x + q.y) / 12)}${q.dir}`).join(','), s.checkpointIndex, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
 }
 
 let failed = false
@@ -120,9 +120,11 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const picks = new Set<number>()
   const cps = new Set<number>()
   let won = false
+  let stamp = !w.stampBox
+  let gotKey = !w.keyBox
   let expanded = 0
   const t0 = Date.now()
-  while (queue.length && expanded < 5000 && !(won && picks.size === w.pickups.length && cps.size === w.checkpoints.length)) {
+  while (queue.length && expanded < Number(process.env.BUDGET ?? 15000) && !(won && stamp && picks.size === w.pickups.length && cps.size === w.checkpoints.length)) {
     const s = pop()
     expanded++
     for (const m of ms) {
@@ -138,6 +140,8 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
         for (const e of w.events) {
           if (e.type === 'collect') picks.add(e.index)
           if (e.type === 'checkpoint') cps.add(e.index)
+          if (e.type === 'stamp') stamp = true
+          if (e.type === "key") gotKey = true
         }
         w.events.length = 0
         if (w.complete) break
@@ -161,10 +165,10 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
       }
     }
   }
-  const ok = won && picks.size === w.pickups.length && cps.size === w.checkpoints.length
+  const ok = won && stamp && gotKey && picks.size === w.pickups.length && cps.size === w.checkpoints.length
   if (!ok) failed = true
   const missing = w.pickups.filter((p) => !picks.has(p.index)).map((p) => `C@${Math.floor(p.x / T)},${Math.floor(p.y / T)}`)
   const missingCp = w.checkpoints.filter((p) => !cps.has(p.index)).map((p) => `F@${Math.floor(p.x / T)},${Math.floor(p.y / T) + 1}`)
-  console.log(`${ok ? 'OK  ' : 'FAIL'} ${level.name.padEnd(9)} ${w.cols}x${w.rows} çıkış:${won ? 'evet' : 'HAYIR'} hatıra:${picks.size}/${w.pickups.length} bayrak:${cps.size}/${w.checkpoints.length} durum:${expanded} ${Date.now() - t0}ms ${[...missing, ...missingCp].join(' ')} en uzak:${Math.floor(far.x / T)},${Math.floor(far.y / T)}`)
+  console.log(`${ok ? 'OK  ' : 'FAIL'} ${level.name.padEnd(9)} ${w.cols}x${w.rows} çıkış:${won ? 'evet' : 'HAYIR'} hatıra:${picks.size}/${w.pickups.length} bayrak:${cps.size}/${w.checkpoints.length} pul:${stamp ? 'evet' : 'HAYIR'} anahtar:${gotKey ? 'evet' : 'HAYIR'} durum:${expanded} ${Date.now() - t0}ms ${[...missing, ...missingCp].join(' ')} en uzak:${Math.floor(far.x / T)},${Math.floor(far.y / T)}`)
 }
 process.exit(failed ? 1 : 0)

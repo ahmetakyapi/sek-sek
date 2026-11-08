@@ -25,6 +25,8 @@ export interface LevelDef {
   item: string
   intro: string
   facts: [Fact, Fact, Fact]
+  /** gizli pulla açılan bonus sayfa */
+  secret: Fact
   hints: string[]
   /** parantez içinde gösterilen yerel ad: Çorum (Çorumçe) */
   nickname?: string
@@ -75,3 +77,7 @@ export type GameEvent =
   | { type: 'crumble' }
   | { type: 'shoot' }
   | { type: 'complete' }
+  | { type: 'crystal' }
+  | { type: 'key' }
+  | { type: 'stamp' }
+  | { type: 'switch' }

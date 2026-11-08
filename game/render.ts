@@ -1,7 +1,7 @@
 import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
 import { CHARACTERS, frameRows, type CharacterDef, type Pose } from './characters'
 import { NPC_ART } from './npcs'
-import { CRUMBLE, EMPTY, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, type World } from './sim'
+import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -103,7 +103,7 @@ export class Renderer {
     const r = rng(w.cols * 31 + w.rows)
     const solidish = (tx: number, ty: number) => {
       const t = w.tile(tx, ty)
-      return t === SOLID || t === TURRET || t === ICE
+      return t === SOLID || t === TURRET || t === ICE || t === FAKE
     }
     for (let ty = 0; ty < w.rows; ty++) {
       for (let tx = 0; tx < w.cols; tx++) {
@@ -111,7 +111,12 @@ export class Renderer {
         const x = tx * T
         const y = ty * T
         const open = ty > 0 && !solidish(tx, ty - 1) && w.tile(tx, ty - 1) !== CRUMBLE
-        if (t === SOLID || t === TURRET) this.solidTile(c, x, y, tx, ty, open, !solidish(tx - 1, ty), !solidish(tx + 1, ty), r)
+        if (t === SOLID || t === TURRET || t === FAKE) this.solidTile(c, x, y, tx, ty, open, !solidish(tx - 1, ty), !solidish(tx + 1, ty), r)
+        if (t === FAKE) {
+          // dikkatli bakan görür: ince bir çatlak
+          rect(c, x + 6, y + 4, 1, 3, 'rgba(0,0,0,0.25)')
+          rect(c, x + 7, y + 7, 1, 2, 'rgba(0,0,0,0.25)')
+        }
         if (t === TURRET) {
           rect(c, x + 2, y + 2, 12, 12, s.tileDark)
           rect(c, x + 3, y + 3, 10, 10, s.tile)
@@ -322,6 +327,22 @@ export class Renderer {
         break
       case 'crumble':
         break
+      case 'crystal':
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 16, '#7ad8ff', 90, 1)
+        this.flash = 0.05
+        break
+      case 'key':
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 20, '#f2c14e', 100, 2)
+        this.shake = Math.max(this.shake, 2)
+        break
+      case 'stamp':
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 30, '#f4ead8', 120, 2)
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 16, s.accent, 90, 2)
+        this.flash = 0.1
+        break
+      case 'switch':
+        this.shake = Math.max(this.shake, 1.5)
+        break
       default:
         break
     }
@@ -433,6 +454,7 @@ export class Renderer {
       if (sw > 0 && sh > 0) b.drawImage(this.tilesLayer, sx0, sy0, sw, sh, sx0, sy0, sw, sh)
     }
     this.drawUnderground(b, w, cx, cy)
+    this.drawDynamicTiles(b, w, cx, cy)
     this.drawCrumbles(b, w, cx, cy)
     this.drawWater(b, w, cx, cy)
     this.drawEntities(b, w)
@@ -606,9 +628,14 @@ export class Renderer {
           }
           break
         }
-        case 'k':
+        case 'k': {
           this.drawAnimal(b, x, bot)
+          const pl = w.player
+          const near = Math.abs(pl.x + pl.w / 2 - (x + 8)) < 22 && Math.abs(pl.y + pl.h - bot) < 6
+          if (near && pl.grounded && Math.abs(pl.vx) < 5 && !pl.dead && Math.random() < 0.05)
+            this.particles.push({ x: x + 6 + Math.random() * 6, y: bot - 12, vx: (Math.random() - 0.5) * 10, vy: -28, life: 1, max: 1, color: '#ff6a8a', size: 2, grav: -10 })
           break
+        }
         case 'z':
           this.drawLandmarkProp(b, x, bot)
           break
@@ -1017,6 +1044,53 @@ export class Renderer {
     b.fillRect(cx, lh, this.viewW, h)
   }
 
+  private drawDynamicTiles(b: Ctx, w: World, cx: number, cy: number) {
+    const x0 = Math.max(0, Math.floor(cx / T))
+    const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T))
+    const y0 = Math.max(0, Math.floor(cy / T))
+    const y1 = Math.min(w.rows - 1, Math.ceil((cy + this.viewH) / T))
+    for (let ty = y0; ty <= y1; ty++)
+      for (let tx = x0; tx <= x1; tx++) {
+        const t = w.tile(tx, ty)
+        const x = tx * T
+        const y = ty * T
+        if (t === DOOR) {
+          if (w.hasKey) {
+            b.globalAlpha = 0.15
+            rect(b, x + 2, y, 12, T, '#c88a3a')
+            b.globalAlpha = 1
+          } else {
+            rect(b, x + 1, y, 14, T, '#7a4a24')
+            rect(b, x + 2, y, 2, T, '#9a6a3a')
+            rect(b, x + 7, y, 2, T, '#9a6a3a')
+            rect(b, x + 12, y, 2, T, '#9a6a3a')
+            rect(b, x + 1, y + 6, 14, 2, '#3a3440')
+            if (w.tile(tx, ty - 1) !== DOOR) {
+              rect(b, x + 5, y + 9, 6, 5, '#f2c14e')
+              rect(b, x + 7, y + 10, 2, 3, '#120f1a')
+            }
+          }
+        }
+        if (t === BLOCK_A || t === BLOCK_B) {
+          const solid = t === BLOCK_A ? !w.switchOn : w.switchOn
+          const col = t === BLOCK_A ? '#e8794a' : '#4aa8e0'
+          if (solid) {
+            rect(b, x, y, T, T, col)
+            rect(b, x + 1, y + 1, T - 2, T - 2, t === BLOCK_A ? '#c8582a' : '#2a7ab0')
+            rect(b, x + 3, y + 3, T - 6, T - 6, col)
+            rect(b, x + 1, y + 1, T - 2, 1, 'rgba(255,255,255,0.35)')
+          } else {
+            for (let i = 0; i < T; i += 4) {
+              rect(b, x + i, y, 2, 1, col)
+              rect(b, x + i, y + T - 1, 2, 1, col)
+              rect(b, x, y + i, 1, 2, col)
+              rect(b, x + T - 1, y + i, 1, 2, col)
+            }
+          }
+        }
+      }
+  }
+
   private drawCrumbles(b: Ctx, w: World, cx: number, cy: number) {
     const s = CITY[this.city]
     const x0 = Math.floor(cx / T)
@@ -1136,8 +1210,83 @@ export class Renderer {
     for (const e of w.enemies) {
       if (!e.alive) continue
       const art = enemyArt(e.kind, this.city)
-      const f = Math.abs(Math.floor(e.phase * (e.kind === "fly" ? 8 : 6))) % art.frames.length
-      sprite(b, art.frames[f], art.pal, e.x, e.y - (e.kind === 'ground' ? 0 : 0), e.dir > 0)
+      const speed = e.kind === 'fly' || e.kind === 'bat' ? 8 : e.state === 'charge' ? 14 : 6
+      const f = Math.abs(Math.floor(e.phase * speed)) % art.frames.length
+      const rows = art.frames[f]
+      const shake = e.state === 'windup' ? Math.round(Math.sin(this.t * 60)) : 0
+      const squash = e.kind === 'hopper' && e.state === 'windup' ? 2 : 0
+      const sx = e.x + shake
+      const sy = e.y + squash + (e.state === 'stun' ? 1 : 0)
+      const flip = e.dir > 0
+      // gölge
+      if (e.kind !== 'fly' && e.kind !== 'bat') rect(b, e.x + 1, e.y + e.h - 1, e.w - 2, 1, 'rgba(0,0,0,0.3)')
+      // tehlike dış hattı: arka plandan ayrışsın
+      const outline: Record<string, string> = {}
+      for (const k of Object.keys(art.pal)) outline[k] = e.kind === 'spiky' ? '#ff4a3a' : '#5a0f1a'
+      for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) sprite(b, rows, outline, sx + ox, sy + oy, flip)
+      sprite(b, rows, art.pal, sx, sy, flip)
+      // uyarı: hücumdan önce ünlem
+      if (e.state === 'windup') {
+        const ex = e.x + e.w / 2 - 1
+        rect(b, ex - 2, e.y - 13, 6, 10, '#120f1a')
+        rect(b, ex, e.y - 12, 2, 5, '#ff4a3a')
+        rect(b, ex, e.y - 6, 2, 2, '#ff4a3a')
+      }
+      if (e.state === 'stun') for (let k = 0; k < 3; k++) rect(b, e.x + e.w / 2 + Math.cos(this.t * 6 + k * 2.1) * 6, e.y - 4 + Math.sin(this.t * 6 + k * 2.1) * 2, 2, 2, '#ffd36a')
+    }
+    // atılma kristalleri
+    for (const c of w.crystals) {
+      const cx = c.x + 5
+      const cy = c.y + 5 + Math.round(Math.sin(this.t * 3 + c.x) * 1.5)
+      if (!c.active) {
+        b.globalAlpha = 0.3
+        rect(b, cx - 1, cy - 4, 2, 8, '#7ad8ff')
+        b.globalAlpha = 1
+        continue
+      }
+      disc(b, cx, cy, 8, 'rgba(122,216,255,0.18)')
+      for (let k = 0; k < 6; k++) rect(b, cx - k * 0.7, cy - 6 + k, 1 + k * 1.4, 1, k < 2 ? '#e8faff' : '#7ad8ff')
+      for (let k = 0; k < 6; k++) rect(b, cx - (5 - k) * 0.7, cy + k, 1 + (5 - k) * 1.4, 1, k > 3 ? '#2a7ab0' : '#4aa8e0')
+      if (Math.sin(this.t * 4 + c.x) > 0.8) rect(b, cx - 3, cy - 3, 1, 1, '#ffffff')
+    }
+    // anahtar
+    if (w.keyBox && !w.hasKey) {
+      const k = w.keyBox
+      const ky = k.y + Math.round(Math.sin(this.t * 3) * 2)
+      disc(b, k.x + 5, ky + 5, 9, 'rgba(255,210,100,0.2)')
+      disc(b, k.x + 3, ky + 4, 3, '#f2c14e')
+      disc(b, k.x + 3, ky + 4, 1, '#120f1a')
+      rect(b, k.x + 5, ky + 3, 6, 2, '#f2c14e')
+      rect(b, k.x + 8, ky + 5, 1, 2, '#f2c14e')
+      rect(b, k.x + 10, ky + 5, 1, 3, '#f2c14e')
+    }
+    // gizli pul
+    if (w.stampBox && !w.stampTaken) {
+      const st = w.stampBox
+      const sy2 = st.y + Math.round(Math.sin(this.t * 2) * 1.5)
+      disc(b, st.x + 6, sy2 + 6, 11, 'rgba(255,240,200,0.18)')
+      rect(b, st.x, sy2, 12, 12, '#f4ead8')
+      for (let i = 0; i < 12; i += 2) {
+        rect(b, st.x + i, sy2 - 1, 1, 1, '#f4ead8')
+        rect(b, st.x + i, sy2 + 12, 1, 1, '#f4ead8')
+      }
+      rect(b, st.x + 2, sy2 + 2, 8, 6, CITY[this.city].accent)
+      rect(b, st.x + 3, sy2 + 9, 6, 1, '#3a2a1e')
+    }
+    // basınç plakaları
+    for (const pl of w.plates) {
+      rect(b, pl.x, pl.y + (pl.pressed ? 2 : 0), pl.w, pl.pressed ? 2 : 4, w.switchOn ? '#4aa8e0' : '#e8794a')
+      rect(b, pl.x - 1, pl.y + 3, pl.w + 2, 1, '#2a2438')
+    }
+    // ok tuzağı yükleniyor: atıştan hemen önce yarık kızarır
+    for (const tr of w.turrets) {
+      if (tr.timer < 0.5) {
+        const a = 1 - tr.timer / 0.5
+        b.globalAlpha = 0.4 + a * 0.6
+        rect(b, tr.tx * T + 3, tr.ty * T + 6, 10, 3, '#ff4a3a')
+        disc(b, tr.tx * T + (tr.dir > 0 ? 15 : 1), tr.ty * T + 7, 2 + Math.round(a * 2), 'rgba(255,90,60,0.5)')
+        b.globalAlpha = 1
+      }
     }
     // oklar
     for (const pr of w.projectiles) {
@@ -1204,25 +1353,76 @@ export class Renderer {
 
     const pal = p.canDash ? ch.pal : { ...ch.pal, r: '#7f8ca8', R: '#5a6680' }
     const flip = p.facing < 0
-    const sx = Math.round(p.x + p.w / 2 - 8)
-    const sy = Math.round(p.y + p.h - 20)
     const moving = Math.abs(p.vx) > 40 || !p.grounded
     const wave = Math.floor(this.t * (moving ? 12 : 4)) % 3
 
-    // at kuyruğu (başın arkasında)
-    if (ch.tail) {
-      const rows = ch.tail.frames[moving ? wave : Math.floor(this.t * 2) % 2]
-      const tx = flip ? sx + 13 : sx - 1
-      sprite(b, rows, pal, tx, sy + ch.tail.y + bob, flip)
+    // karakter önce küçük bir tuvale çizilir: koyu dış hat + gövde, sonra esnetilerek sahneye konur
+    const pc = this.playerCanvas()
+    const c = pc.getContext('2d')!
+    c.clearRect(0, 0, pc.width, pc.height)
+    const ox = 6
+    const oy = 4
+    const drawBody = (palette: Record<string, string>, dx: number, dy: number) => {
+      if (ch.tail) {
+        const rows = ch.tail.frames[moving ? wave : Math.floor(this.t * 2) % 2]
+        sprite(c, rows, palette, (flip ? ox + 13 : ox - 1) + dx, oy + ch.tail.y + bob + dy, flip)
+      }
+      const neck = oy + 10 + bob + dy
+      const back = (flip ? ox + 12 : ox + 1) + dx
+      const dir = flip ? 1 : -1
+      rect(c, back + dir, neck, 2, 1, palette.r)
+      rect(c, back + dir * 2, neck + 1 + (wave === 1 ? 1 : 0), 2, 1, palette.R)
+      if (moving) rect(c, back + dir * 3, neck + 1 - (wave === 2 ? 1 : 0), 2, 1, palette.r)
+      sprite(c, frameRows(ch, pose, bob, blink), palette, ox + dx, oy + dy, flip)
     }
-    // atkı ucu
-    const neck = sy + 10 + bob
-    const back = flip ? sx + 12 : sx + 1
-    const dir = flip ? 1 : -1
-    rect(b, back + dir, neck, 2, 1, pal.r)
-    rect(b, back + dir * 2, neck + 1 + (wave === 1 ? 1 : 0), 2, 1, pal.R)
-    if (moving) rect(b, back + dir * 3, neck + 1 - (wave === 2 ? 1 : 0), 2, 1, pal.r)
-    sprite(b, frameRows(ch, pose, bob, blink), pal, sx, sy, flip)
+    const ink: Record<string, string> = {}
+    for (const k of Object.keys(pal)) ink[k] = '#120f1a'
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) drawBody(ink, dx, dy)
+    drawBody(pal, 0, 0)
+
+    // esneme: zıplarken incelip uzar, konarken basılır (hacim korunur, abartısız)
+    let kx = 1
+    let ky = 1
+    if (p.landTimer > 0) {
+      const a = p.landTimer / 0.12
+      kx = 1 + 0.18 * a
+      ky = 1 - 0.14 * a
+    } else if (!p.grounded && p.vy < -150) {
+      kx = 0.9
+      ky = 1.1
+    } else if (p.dashTime > 0) {
+      kx = Math.abs(p.dashDir[0]) > 0.5 ? 1.15 : 0.88
+      ky = Math.abs(p.dashDir[0]) > 0.5 ? 0.88 : 1.15
+    }
+    const footX = p.x + p.w / 2
+    const footY = p.y + p.h
+    const dw = Math.round(pc.width * kx)
+    const dh = Math.round(pc.height * ky)
+    b.imageSmoothingEnabled = false
+    b.drawImage(pc, Math.round(footX - dw / 2), Math.round(footY - (oy + 20) * ky), dw, dh)
+
+    // koşu tozu ve duvar kayma kıvılcımı
+    this.dustTimer -= dt
+    if (this.dustTimer <= 0) {
+      if (p.grounded && Math.abs(p.vx) > 60) {
+        this.particles.push({ x: footX - p.facing * 5, y: footY - 1, vx: -p.facing * 20, vy: -18, life: 0.35, max: 0.35, color: 'rgba(230,220,200,0.7)', size: 1, grav: 40 })
+        this.dustTimer = 0.09
+      } else if (!p.grounded && p.wallDir !== 0 && p.vy > 20) {
+        this.particles.push({ x: p.wallDir > 0 ? p.x + p.w : p.x, y: p.y + 4, vx: -p.wallDir * 15, vy: 10, life: 0.3, max: 0.3, color: 'rgba(255,240,200,0.8)', size: 1, grav: 60 })
+        this.dustTimer = 0.06
+      }
+    }
+  }
+
+  private pc: HTMLCanvasElement | null = null
+  private dustTimer = 0
+  private playerCanvas() {
+    if (!this.pc) {
+      this.pc = document.createElement('canvas')
+      this.pc.width = 28
+      this.pc.height = 28
+    }
+    return this.pc
   }
 
   private drawParticles(b: Ctx, dt: number) {

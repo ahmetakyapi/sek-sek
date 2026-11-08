@@ -10,6 +10,10 @@ export const CRUMBLE = 5
 export const WATER = 6
 export const SPIKE_DOWN = 7
 export const TURRET = 8
+export const DOOR = 9
+export const FAKE = 10
+export const BLOCK_A = 11
+export const BLOCK_B = 12
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 export const PHYS = {
@@ -78,13 +82,29 @@ export interface Platform extends Box {
   dy: number
 }
 
+export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky'
+
 export interface Enemy extends Box {
-  kind: 'ground' | 'fly'
+  kind: EnemyKind
   ox: number
   oy: number
   dir: 1 | -1
   alive: boolean
   phase: number
+  vx: number
+  vy: number
+  /** idle · windup (uyarı) · charge · stun · air */
+  state: 'idle' | 'windup' | 'charge' | 'stun' | 'air'
+  timer: number
+}
+
+export interface Crystal extends Box {
+  active: boolean
+  timer: number
+}
+
+export interface Plate extends Box {
+  pressed: boolean
 }
 
 export interface Turret {
@@ -130,6 +150,7 @@ interface CrumbleState {
 
 // sprite gövdesiyle aynı genişlik: ayak görünürde zemindeyse fizikte de zeminde
 const PW = 12
+const enemy = (kind: EnemyKind, x: number, y: number, w: number, h: number): Enemy => ({ kind, x, y, w, h, ox: x, oy: y, dir: -1, alive: true, phase: x * 0.05, vx: 0, vy: 0, state: 'idle', timer: 1 + ((x / 16) % 5) * 0.2 })
 const PH = 14
 
 export class World {
@@ -147,6 +168,14 @@ export class World {
   readonly springs: Spring[] = []
   readonly signs: Sign[] = []
   readonly npcs: Sign[] = []
+  readonly crystals: Crystal[] = []
+  readonly plates: Plate[] = []
+  keyBox: Box | null = null
+  stampBox: Box | null = null
+  hasKey = false
+  stampTaken = false
+  /** false: [ blokları katı · true: ] blokları katı */
+  switchOn = false
   readonly decor: Decor[] = []
   readonly exit: Box
   readonly start: { x: number; y: number }
@@ -226,10 +255,46 @@ export class World {
             this.springs.push({ x: px + 1, y: py + 8, w: 14, h: 8, squash: 0 })
             break
           case 'e':
-            this.enemies.push({ kind: 'ground', x: px + 2, y: py + 6, w: 12, h: 10, ox: px + 2, oy: py + 6, dir: -1, alive: true, phase: 0 })
+            this.enemies.push(enemy('ground', px + 2, py + 6, 12, 10))
             break
           case 'f':
-            this.enemies.push({ kind: 'fly', x: px + 2, y: py + 4, w: 12, h: 8, ox: px + 2, oy: py + 4, dir: -1, alive: true, phase: tx * 0.7 })
+            this.enemies.push({ ...enemy('fly', px + 2, py + 4, 12, 8), phase: tx * 0.7 })
+            break
+          case 'h':
+            this.enemies.push(enemy('hopper', px + 2, py + 6, 12, 10))
+            break
+          case 'c':
+            this.enemies.push(enemy('charger', px + 1, py + 4, 14, 12))
+            break
+          case 'u':
+            this.enemies.push({ ...enemy('bat', px + 2, py + 4, 12, 8), phase: tx * 0.9 })
+            break
+          case 'x':
+            this.enemies.push(enemy('spiky', px + 2, py + 7, 12, 9))
+            break
+          case '*':
+            this.crystals.push({ x: px + 3, y: py + 3, w: 10, h: 10, active: true, timer: 0 })
+            break
+          case 'K':
+            this.keyBox = { x: px + 3, y: py + 3, w: 10, h: 10 }
+            break
+          case '$':
+            this.stampBox = { x: px + 2, y: py + 2, w: 12, h: 12 }
+            break
+          case 'D':
+            this.set(tx, ty, DOOR)
+            break
+          case '%':
+            this.set(tx, ty, FAKE)
+            break
+          case '[':
+            this.set(tx, ty, BLOCK_A)
+            break
+          case ']':
+            this.set(tx, ty, BLOCK_B)
+            break
+          case '_':
+            this.plates.push({ x: px + 1, y: py + 12, w: 14, h: 4, pressed: false })
             break
           case '?':
             this.signs.push({ x: px, y: py, w: T, h: T, index: signIdx++ })
@@ -347,6 +412,9 @@ export class World {
     const t = this.tile(tx, ty)
     if (t === SOLID || t === ICE || t === TURRET) return true
     if (t === CRUMBLE) return !this.crumbles.get(ty * this.cols + tx)?.broken
+    if (t === DOOR) return !this.hasKey
+    if (t === BLOCK_A) return !this.switchOn
+    if (t === BLOCK_B) return this.switchOn
     return false
   }
 
@@ -378,6 +446,7 @@ export class World {
     }
 
     this.updatePlayer(dt, input)
+    this.updateObjects(dt)
     this.updateEnemies(dt)
     this.updateTurrets(dt)
     this.interactions()
@@ -714,30 +783,153 @@ export class World {
     }
   }
 
+  private groundAhead(x: number, y: number, h: number) {
+    const ty = Math.floor((y + h + 2) / T)
+    const tx = Math.floor(x / T)
+    return this.isSolid(tx, ty) || this.tile(tx, ty) === ONEWAY
+  }
+
   private updateEnemies(dt: number) {
+    const p = this.player
     for (const e of this.enemies) {
       if (!e.alive) continue
       e.phase += dt
-      if (e.kind === 'ground') {
-        const speed = 30
-        const nx = e.x + e.dir * speed * dt
-        const frontX = e.dir > 0 ? nx + e.w : nx
-        const ftx = Math.floor(frontX / T)
-        const midTy = Math.floor((e.y + e.h / 2) / T)
-        const footTy = Math.floor((e.y + e.h + 2) / T)
-        const wall = this.isSolid(ftx, midTy) || this.tile(ftx, midTy) === SPIKE_UP
-        const groundAhead = this.isSolid(ftx, footTy) || this.tile(ftx, footTy) === ONEWAY
-        if (wall || !groundAhead) e.dir = e.dir > 0 ? -1 : 1
-        else e.x = nx
-      } else {
-        const speed = 38
-        const nx = e.x + e.dir * speed * dt
-        const frontX = e.dir > 0 ? nx + e.w : nx
-        const blocked = this.isSolid(Math.floor(frontX / T), Math.floor((e.y + e.h / 2) / T))
-        if (blocked || Math.abs(nx - e.ox) > T * 4) e.dir = e.dir > 0 ? -1 : 1
-        else e.x = nx
-        e.y = e.oy + Math.sin(e.phase * 3) * 5
+      switch (e.kind) {
+        case 'ground':
+        case 'spiky': {
+          const speed = e.kind === 'spiky' ? 20 : 30
+          const nx = e.x + e.dir * speed * dt
+          const frontX = e.dir > 0 ? nx + e.w : nx
+          const midTy = Math.floor((e.y + e.h / 2) / T)
+          const ftx = Math.floor(frontX / T)
+          const wall = this.isSolid(ftx, midTy) || this.tile(ftx, midTy) === SPIKE_UP
+          if (wall || !this.groundAhead(frontX, e.y, e.h)) e.dir = e.dir > 0 ? -1 : 1
+          else e.x = nx
+          break
+        }
+        case 'fly': {
+          const nx = e.x + e.dir * 38 * dt
+          const frontX = e.dir > 0 ? nx + e.w : nx
+          const blocked = this.isSolid(Math.floor(frontX / T), Math.floor((e.y + e.h / 2) / T))
+          if (blocked || Math.abs(nx - e.ox) > T * 4) e.dir = e.dir > 0 ? -1 : 1
+          else e.x = nx
+          e.y = e.oy + Math.sin(e.phase * 3) * 5
+          break
+        }
+        case 'bat': {
+          // dikey dalga + yavaş yatay sürüklenme
+          e.y = e.oy + Math.sin(e.phase * 2.2) * T * 1.6
+          const nx = e.ox + Math.sin(e.phase * 0.7) * T * 1.5
+          e.dir = nx > e.x ? 1 : -1
+          e.x = nx
+          break
+        }
+        case 'hopper': {
+          // çömel (uyarı) → oyuncuya doğru sıçra → kon
+          if (e.state === 'air') {
+            e.vy = Math.min(PHYS.fallMax, e.vy + PHYS.gravity * dt)
+            const nx = e.x + e.vx * dt
+            if (!this.boxHitsSolid(nx, e.y, e.w, e.h)) e.x = nx
+            else e.vx = 0
+            const ny = e.y + e.vy * dt
+            if (e.vy > 0 && this.boxHitsSolid(e.x, ny, e.w, e.h)) {
+              e.y = Math.floor((ny + e.h) / T) * T - e.h
+              e.vy = 0
+              e.state = 'idle'
+              e.timer = 1.1
+            } else if (e.vy < 0 && this.boxHitsSolid(e.x, ny, e.w, e.h)) e.vy = 0
+            else e.y = ny
+            if (e.y > this.rows * T + 32) {
+              e.alive = false
+            }
+          } else if (e.state === 'windup') {
+            e.timer -= dt
+            if (e.timer <= 0) {
+              e.state = 'air'
+              e.vy = -290
+              e.dir = p.x + p.w / 2 > e.x + e.w / 2 ? 1 : -1
+              e.vx = e.dir * 55
+            }
+          } else {
+            e.timer -= dt
+            if (e.timer <= 0 && Math.abs(p.x - e.x) < T * 9) {
+              e.state = 'windup'
+              e.timer = 0.4
+            }
+          }
+          break
+        }
+        case 'charger': {
+          // devriye → oyuncuyu görünce ünlem → hücum → duvara çarpınca sersem
+          const sameRow = Math.abs(p.y + p.h - (e.y + e.h)) < 20
+          const ahead = (p.x - e.x) * e.dir > 0 && Math.abs(p.x - e.x) < T * 7
+          if (e.state === 'idle') {
+            const nx = e.x + e.dir * 22 * dt
+            const frontX = e.dir > 0 ? nx + e.w : nx
+            const ftx = Math.floor(frontX / T)
+            const midTy = Math.floor((e.y + e.h / 2) / T)
+            if (this.isSolid(ftx, midTy) || !this.groundAhead(frontX, e.y, e.h)) e.dir = e.dir > 0 ? -1 : 1
+            else e.x = nx
+            if (!p.dead && sameRow && ahead) {
+              e.state = 'windup'
+              e.timer = 0.5
+            }
+          } else if (e.state === 'windup') {
+            e.timer -= dt
+            if (e.timer <= 0) e.state = 'charge'
+          } else if (e.state === 'charge') {
+            const nx = e.x + e.dir * 165 * dt
+            const frontX = e.dir > 0 ? nx + e.w : nx
+            const ftx = Math.floor(frontX / T)
+            const midTy = Math.floor((e.y + e.h / 2) / T)
+            if (this.isSolid(ftx, midTy) || !this.groundAhead(frontX, e.y, e.h)) {
+              e.state = 'stun'
+              e.timer = 0.9
+              this.events.push({ type: 'stomp', x: e.x + e.w / 2, y: e.y + e.h / 2 })
+            } else e.x = nx
+          } else if (e.state === 'stun') {
+            e.timer -= dt
+            if (e.timer <= 0) {
+              e.state = 'idle'
+              e.dir = e.dir > 0 ? -1 : 1
+            }
+          }
+          break
+        }
       }
+    }
+  }
+
+  private updateObjects(dt: number) {
+    const p = this.player
+    for (const c of this.crystals) {
+      if (!c.active) {
+        c.timer -= dt
+        if (c.timer <= 0) c.active = true
+      } else if (!p.dead && !p.canDash && overlap(p, c)) {
+        c.active = false
+        c.timer = 2.5
+        p.canDash = true
+        this.events.push({ type: 'crystal' })
+      }
+    }
+    if (this.keyBox && !this.hasKey && !p.dead && overlap(p, this.keyBox)) {
+      this.hasKey = true
+      this.events.push({ type: 'key' })
+    }
+    if (this.stampBox && !this.stampTaken && !p.dead && overlap(p, this.stampBox)) {
+      this.stampTaken = true
+      this.events.push({ type: 'stamp' })
+    }
+    for (const pl of this.plates) {
+      const on = !p.dead && p.grounded && overlap({ x: p.x, y: p.y + 2, w: p.w, h: p.h }, pl)
+      if (on && !pl.pressed) {
+        // blokları değiştir: oyuncunun içine katı blok gelmesin
+        this.switchOn = !this.switchOn
+        if (this.boxHitsSolid(p.x, p.y, p.w, p.h)) this.switchOn = !this.switchOn
+        else this.events.push({ type: 'switch' })
+      }
+      pl.pressed = on
     }
   }
 
@@ -803,7 +995,7 @@ export class World {
     for (const e of this.enemies) {
       if (!e.alive || !overlap(shrink(p, 1), e)) continue
       const stomp = p.vy > 0 && p.y + p.h - e.y < 8
-      if (stomp || p.dashTime > 0) {
+      if (e.kind !== 'spiky' && (stomp || p.dashTime > 0)) {
         e.alive = false
         p.vy = -PHYS.stompV
         p.canDash = true
@@ -863,6 +1055,14 @@ export class World {
       e.x = e.ox
       e.y = e.oy
       e.dir = -1
+      e.vx = 0
+      e.vy = 0
+      e.state = 'idle'
+      e.timer = 1
+    }
+    for (const c of this.crystals) {
+      c.active = true
+      c.timer = 0
     }
     this.projectiles = []
     this.crumbles.clear()
@@ -903,6 +1103,10 @@ export interface Snapshot {
   checkpointIndex: number
   cps: boolean[]
   picks: boolean[]
+  hasKey: boolean
+  switchOn: boolean
+  stampTaken: boolean
+  crystals: Array<[boolean, number]>
 }
 
 export function snapshot(w: World): Snapshot {
@@ -918,6 +1122,10 @@ export function snapshot(w: World): Snapshot {
     checkpointIndex: w.checkpointIndex,
     cps: w.checkpoints.map((c) => c.active),
     picks: w.pickups.map((c) => c.taken),
+    hasKey: w.hasKey,
+    switchOn: w.switchOn,
+    stampTaken: w.stampTaken,
+    crystals: w.crystals.map((c) => [c.active, c.timer]),
   }
 }
 
@@ -934,6 +1142,11 @@ export function restore(w: World, s: Snapshot) {
   w.checkpointIndex = s.checkpointIndex
   s.cps.forEach((a, i) => (w.checkpoints[i].active = a))
   s.picks.forEach((a, i) => (w.pickups[i].taken = a))
+  w.hasKey = s.hasKey
+  w.switchOn = s.switchOn
+  w.stampTaken = s.stampTaken
+  s.crystals.forEach(([a, t], i) => Object.assign(w.crystals[i], { active: a, timer: t }))
+  w.plates.forEach((pl) => (pl.pressed = false))
   w.projectiles = []
   w.events = []
 }

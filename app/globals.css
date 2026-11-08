@@ -394,3 +394,23 @@ figcaption {
 .toast-strip {
   animation: toast-strip 2.6s ease-out both;
 }
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.dialog-in {
+  animation: dialog-in 160ms ease-out both;
+}
+
+/* Diyalog konumu: masaüstünde tuş ipuçlarının üstünde; telefonda yatayken iki kontrolün arasındaki boşlukta
+   (karakteri kapatmaz), dikeyken kontrollerin üstünde. */
+.dlg-pos { bottom: 72px; }
+.dlg-pos[data-touch] { bottom: calc(env(safe-area-inset-bottom) + 168px); }
+@media (orientation: landscape) and (max-height: 520px) {
+  .dlg-pos[data-touch] {
+    bottom: calc(env(safe-area-inset-bottom) + 8px);
+    padding-inline: calc(env(safe-area-inset-left) + 160px) calc(env(safe-area-inset-right) + 250px);
+  }
+  .dlg-pos[data-touch] .dlg-avatar { width: 36px; height: 45px; }
+}
