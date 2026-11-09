@@ -1,6 +1,6 @@
 import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
 import { CHARACTERS, type CharacterDef } from './characters'
-import { HERO, HERO_H, HERO_W, type HeroFrame } from './heroFrames'
+import { HERO, HERO_BOB, HERO_H, HERO_W, type HeroFrame } from './heroFrames'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import { NPC_ART } from './npcs'
 import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, hammerState, type World } from './sim'
@@ -61,6 +61,15 @@ export class Renderer {
   character: CharacterDef = CHARACTERS.uktun
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
+  /** sahnedeki yazıların dili */
+  lang: 'tr' | 'en' = 'tr'
+  /** yüzen kısa yazılar: kombo, duvar zinciri, +1 */
+  private pops: Pop[] = []
+  private stompChain = 0
+  private wallChain = 0
+  /** havadaki en yüksek düşüş hızı: sert inişte toz ve sarsıntı */
+  private airVy = 0
+  private idleT = 0
   private ghostPal: { hero: string; pal: Record<string, string> } | null = null
 
   constructor(canvas: HTMLCanvasElement) {
@@ -91,6 +100,9 @@ export class Renderer {
     this.layers = buildLayers(this.city)
     this.tilesLayer = this.buildTiles(world)
     this.particles = []
+    this.pops = []
+    this.stompChain = 0
+    this.wallChain = 0
     this.raised.clear()
     this.ghosts = []
     this.initAmbient()
@@ -505,12 +517,22 @@ export class Renderer {
     const s = CITY[this.city]
     switch (e.type) {
       case 'jump':
-      case 'walljump':
         this.burst(p.x + p.w / 2, p.y + p.h, 5, 'rgba(240,230,210,0.8)', 30, 1)
         break
-      case 'land':
-        this.burst(p.x + p.w / 2, p.y + p.h, 4, 'rgba(240,230,210,0.7)', 25, 1)
+      case 'walljump':
+        this.burst(p.x + p.w / 2, p.y + p.h, 5, 'rgba(240,230,210,0.8)', 30, 1)
+        this.wallChain++
+        if (this.wallChain >= 3) this.pop(p.x + p.w / 2, p.y - 6, this.wallChain === 3 ? (this.lang === 'en' ? 'Wall Master!' : 'Duvar Ustası!') : `×${this.wallChain}`, '#7ad8ff')
         break
+      case 'land': {
+        const hard = this.airVy > 260
+        this.burst(p.x + p.w / 2, p.y + p.h, hard ? 10 : 4, 'rgba(240,230,210,0.7)', hard ? 45 : 25, 1)
+        if (hard) this.shake = Math.max(this.shake, 1.2)
+        this.airVy = 0
+        this.stompChain = 0
+        this.wallChain = 0
+        break
+      }
       case 'dash':
         this.flash = 0.06
         this.shake = Math.max(this.shake, 1.5)
@@ -522,6 +544,7 @@ export class Renderer {
         break
       case 'collect':
         this.burst(p.x + p.w / 2, p.y + p.h / 2, 18, '#ffd36a', 90, 1)
+        this.pop(p.x + p.w / 2, p.y - 6, '+1', '#ffd36a')
         break
       case 'checkpoint': {
         this.raised.set(e.index, this.t)
@@ -537,9 +560,19 @@ export class Renderer {
       case 'spring':
         this.burst(p.x + p.w / 2, p.y + p.h, 8, '#ffd36a', 50, 1)
         break
-      case 'stomp':
+      case 'stomp': {
         this.shake = Math.max(this.shake, 2)
         this.burst(e.x, e.y, 12, '#f4f0e6', 70, 1)
+        // yere değmeden art arda ezdikçe yazı büyür
+        this.stompChain++
+        const words = this.lang === 'en' ? ['Hop!', 'Double!', 'Triple!'] : ['Hop!', 'Çifte!', 'Üçleme!']
+        const n = this.stompChain
+        this.pop(e.x, e.y - 8, n <= 3 ? words[n - 1] : `${this.lang === 'en' ? 'Legend' : 'Efsane'} ×${n}`, n >= 3 ? '#ffd36a' : '#f4f0e6', n >= 2)
+        break
+      }
+      case 'respawn':
+        this.stompChain = 0
+        this.wallChain = 0
         break
       case 'crumble':
         break
@@ -566,6 +599,11 @@ export class Renderer {
       default:
         break
     }
+  }
+
+  private pop(x: number, y: number, text: string, color: string, big = false) {
+    this.pops.push({ x, y, text, color, life: 0.9, big })
+    if (this.pops.length > 6) this.pops.shift()
   }
 
   private burst(x: number, y: number, n: number, color: string, speed: number, size: number) {
@@ -2008,14 +2046,21 @@ export class Renderer {
     this.ghosts = this.ghosts.filter((g) => g.life > 0)
     if (p.dead) return
 
+    // uzun bekleyince ekrana el sallar; sert iniş için düşüş hızı izlenir
+    const still = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0
+    this.idleT = still ? this.idleT + dt : 0
+    if (!p.grounded) this.airVy = Math.max(this.airVy, p.vy)
+
     // kare seçimi: 8 karelik koşu, nefes alan bekleme, zıplama, düşme, duvar ve atılma
     let frame: HeroFrame = 'idle0'
     if (!p.grounded) {
       if (p.dashTime > 0) frame = 'dash'
       else if (p.wallDir !== 0 && p.vy > 0) frame = 'wall'
-      else frame = p.vy < -40 ? 'jump' : 'fall'
+      else frame = p.vy < -70 ? 'jump' : p.vy < 70 ? 'apex' : 'fall'
     } else if (p.dashTime > 0) frame = 'dash'
+    else if (p.landTimer > 0.05) frame = 'land'
     else if (Math.abs(p.vx) > 8) frame = `run${Math.floor(p.runTime * 15) % 8}` as HeroFrame
+    else if (this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) frame = Math.floor(this.idleT / 0.22) % 2 ? 'wave1' : 'wave0'
     else frame = this.t % 3.4 < 0.12 ? 'blink' : Math.floor(this.t / 0.7) % 2 ? 'idle1' : 'idle0'
     const lean = frame.startsWith('run') ? 1 : frame === 'dash' ? 2 : 0
 
@@ -2032,7 +2077,7 @@ export class Renderer {
     const oy = 4
     const drawBody = (palette: Record<string, string>, dx: number, dy: number) => {
       // atkının arka ucu ensede başlar ve rüzgârda dalgalanır
-      const neck = oy + 9 + dy + (frame === 'idle1' ? 1 : 0)
+      const neck = oy + 9 + dy + HERO_BOB[frame]
       const back = (flip ? ox + HERO_W - 7 - lean : ox + 6 + lean) + dx
       const dir = flip ? 1 : -1
       rect(c, back + dir, neck, 2, 1, palette.r)
@@ -2126,6 +2171,41 @@ export class Renderer {
     }
     b.globalAlpha = 1
     this.particles = this.particles.filter((p) => p.life > 0)
+    for (const pp of this.pops) pp.life -= dt
+    this.pops = this.pops.filter((p) => p.life > 0)
+  }
+
+  private popFamily: string | null = null
+  /** sayfanın piksel başlık fontu (next/font değişkeni); bulunamazsa eş aralıklı */
+  private popFont() {
+    if (this.popFamily === null) {
+      const v = typeof document !== 'undefined' ? getComputedStyle(document.body).getPropertyValue('--font-pixel').trim() : ''
+      this.popFamily = v ? `${v}, ui-monospace, monospace` : 'ui-monospace, monospace'
+    }
+    return this.popFamily
+  }
+
+  /** Kombo ve +1 yazıları: büyüyerek belirir, süzülerek kaybolur; ana tuvalde net çizilir */
+  private drawPops(c: Ctx, cx: number, cy: number, sc: number) {
+    if (!this.pops.length) return
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.lineJoin = 'round'
+    for (const pp of this.pops) {
+      const age = 0.9 - pp.life
+      const grow = Math.min(1, age / 0.12)
+      const size = Math.round(sc * (pp.big ? 6 : 4.5) * (0.6 + 0.4 * grow + (age < 0.18 ? 0.15 * Math.sin((age / 0.18) * Math.PI) : 0)))
+      const x = (pp.x - cx) * sc
+      const y = (pp.y - cy - age * 16) * sc
+      c.globalAlpha = Math.min(1, pp.life / 0.3)
+      c.font = `700 ${size}px ${this.popFont()}`
+      c.lineWidth = Math.max(2, sc * 1.1)
+      c.strokeStyle = '#120f1a'
+      c.strokeText(pp.text, x, y)
+      c.fillStyle = pp.color
+      c.fillText(pp.text, x, y)
+    }
+    c.globalAlpha = 1
   }
 
   /** Dünya koordinatındaki etiketler net görünsün diye ana tuvalde çizilir */
@@ -2136,8 +2216,9 @@ export class Renderer {
     const next = NEXT_CITY[w.level.city]
     const ex = (e.x + T / 2 - cx) * sc
     const ey = (e.y + e.h - 46 - cy) * sc
+    this.drawPops(c, cx, cy, sc)
     if (ex > -200 && ex < this.canvas.width + 200) {
-      const label = next ? `${next} →` : 'SON DURAK'
+      const label = next ? `${next} →` : this.lang === 'en' ? 'LAST STOP' : 'SON DURAK'
       c.font = `700 ${Math.round(sc * 5)}px ui-monospace, monospace`
       const tw = c.measureText(label).width
       const pad = sc * 3
@@ -2152,6 +2233,15 @@ export class Renderer {
       c.fillText(label, ex, ey - sc * 1.5)
     }
   }
+}
+
+interface Pop {
+  x: number
+  y: number
+  text: string
+  color: string
+  life: number
+  big: boolean
 }
 
 const NEXT_CITY: Record<CityKey, string | null> = {

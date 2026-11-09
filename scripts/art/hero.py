@@ -87,128 +87,52 @@ TORSO = [
 ]
 
 
-# ── bacaklar: elle çizilmiş 7 satır (18..24. satır), eski 16x20 üslubun büyük hali ──
-# p: yakın bacak, P: uzak bacak/gölge kenarı, b/B: çizme ve taban. Sütun 0 = tuvalde 2 + eğim.
-LEGS = {
-    'idle': [
-        '.....pppPP......',
-        '.....PP.pP......',
-        '.....PP.pP......',
-        '.....PP.pP......',
-        '.....PP.pP......',
-        '.....BBbbbB.....',
-        '....BBBBBBBB....',
-    ],
-    'jump': [
-        '.....pppPP......',
-        '.....PP.ppP.....',
-        '....PP...pP.....',
-        '....PP..pP......',
-        '....BBB.bbB.....',
-        '...BBB..BBBB....',
-        '................',
-    ],
-    'fall': [
-        '.....pppPP......',
-        '....PP...pP.....',
-        '...PP.....pP....',
-        '...PP.....pP....',
-        '..BBB.....bbB...',
-        '.BBBB.....BBBB..',
-        '................',
-    ],
-    'wall': [
-        '.....pppPP......',
-        '......PPppP.....',
-        '......PP.pP.....',
-        '......PP..bbB...',
-        '.....BBB..BBBB..',
-        '.....BBBB.......',
-        '................',
-    ],
-    'dash': [
-        '.....pppPPp.....',
-        '...PPP...ppP....',
-        '.BBPP......pP...',
-        'BBB.........pP..',
-        '.............bbB',
-        '............BBBB',
-        '................',
-    ],
-    # koşu: temas → çöküş → geçiş → yükselme, sonra öbür bacakla aynısı
-    'run0': [
-        '.....pppPP......',
-        '....PP...pP.....',
-        '...PP.....pP....',
-        '..PP.......pP...',
-        '.BBB........pP..',
-        'BBB.........bbB.',
-        '...........BBBB.',
-    ],
-    'run1': [
-        '.....pppPP......',
-        '....PP...pP.....',
-        '...PP.....pP....',
-        '...PP.....pP....',
-        '..BBB.....pP....',
-        '..BB......bbB...',
-        '.........BBBB...',
-    ],
-    'run2': [
-        '.....pppPP......',
-        '.....PPPpP......',
-        '......PPpP......',
-        '.....BBBpP......',
-        '.....BB.pP......',
-        '........bbB.....',
-        '.......BBBB.....',
-    ],
-    'run3': [
-        '.....pppPP......',
-        '.....pP.PP......',
-        '....pP...PP.....',
-        '...pP....BBB....',
-        '..pP.....BB.....',
-        '.bbB............',
-        'BBB.............',
-    ],
-    'run4': [
-        '.....pppPP......',
-        '....pP...PP.....',
-        '...pP.....PP....',
-        '..pP.......PP...',
-        '.bbB........PP..',
-        'BBB.........BBB.',
-        '...........BBBB.',
-    ],
-    'run5': [
-        '.....pppPP......',
-        '....pP...PP.....',
-        '...pP.....PP....',
-        '...pP.....PP....',
-        '..bbB.....PP....',
-        '..BB......BBB...',
-        '.........BBBB...',
-    ],
-    'run6': [
-        '.....pppPP......',
-        '......pPPP......',
-        '......pPPP......',
-        '.....bbBPP......',
-        '.....BB.PP......',
-        '........BBB.....',
-        '.......BBBB.....',
-    ],
-    'run7': [
-        '.....pppPP......',
-        '.....PP.pP......',
-        '....PP...pP.....',
-        '...PP....bbB....',
-        '..PP.....BB.....',
-        '.BBB............',
-        'BBB.............',
-    ],
-}
+# ── bacaklar da kollar gibi eklem açılarıyla çizilir: kalça → diz → bilek → bot.
+# Uyluk 3, baldır 2 piksel; bot iki satır (üst + taban). Yerdeki pozlarda en alttaki taban
+# tuvalin son satırına oturtulur, gövde aradaki farkı "bob" olarak alır: adım açılınca kalça iner.
+THIGH, SHIN = 3.0, 2.0
+HIP_Y = 16.0
+GROUND = H - 1
+
+
+def leg_points(hx, hy, thigh, bend):
+    """Açılar dikeyden derece, pozitif = ileri. Diz yalnız geriye kırılır (baldır = uyluk - bükülme)."""
+    kx = hx + math.sin(math.radians(thigh)) * THIGH
+    ky = hy + math.cos(math.radians(thigh)) * THIGH
+    shin = thigh - bend
+    ax = kx + math.sin(math.radians(shin)) * SHIN
+    ay = ky + math.cos(math.radians(shin)) * SHIN
+    return (kx, ky), (ax, ay), shin
+
+
+def draw_leg(g, hx, hy, thigh, bend, near):
+    (kx, ky), (ax, ay), shin = leg_points(hx, hy, thigh, bend)
+    ch = 'p' if near else 'P'
+    line(g, hx, hy, kx, ky, ch)
+    line(g, kx, ky, ax, ay, ch)
+    x, y = int(round(ax)), int(round(ay))
+    top, sole = ('b', 'B') if near else ('B', 'B')
+    if shin < -55:
+        # ayak arkaya kalkık: burun aşağı bakar
+        for dx, dy, c in ((0, 0, top), (1, 0, top), (-1, 1, sole), (0, 1, sole)):
+            dot(g, x + dx, y + dy, c)
+    elif shin > 60:
+        # ayak öne uzanmış: taban öne döner
+        for dx, dy, c in ((1, 0, top), (1, -1, sole), (2, 0, sole), (1, 1, sole)):
+            dot(g, x + dx, y + dy, c)
+    else:
+        for dx, dy, c in ((0, 1, top), (1, 1, top), (0, 2, sole), (1, 2, sole), (2, 2, sole), (-1, 2, sole)):
+            dot(g, x + dx, y + dy, c)
+
+
+# iki bacak da aynı kalça noktasından çıkar (yandan görünüş); uzak bacak yarım piksel geride
+HIPS = (-1.0, -0.5)
+
+
+def ground_bob(legs, lean):
+    """Yerdeki pozda tabanı zemine oturtan dikey kayma (aşağı pozitif)."""
+    low = max(leg_points(10 + lean + dx, HIP_Y, t, k)[1][1] for (t, k), dx in zip(legs, HIPS))
+    return int(round(GROUND - 2 - low))
 
 
 def canvas():
@@ -259,9 +183,11 @@ def hand(g, x, y):
 # ── pozlar: (gövde eğimi, zıplama, uzak bacak, yakın bacak, uzak kol, yakın kol) ─
 def pose_frame(cid, pose):
     g = canvas()
-    bob = pose.get('bob', 0)
     lean = pose.get('lean', 0)
-    hx, hy = 10 + lean, 15 + bob                # kalça
+    bob = pose_bob(pose)
+    # nefes: üst gövde bir piksel iner, bacaklar yerinde kalır
+    breath = pose.get('breath', 0)
+    hx = 10 + lean                              # kalça
     sx, sy = 10 + lean, 10 + bob                # omuz hizası
     # saç arkası
     if HAIR_BACK[cid]:
@@ -270,46 +196,80 @@ def pose_frame(cid, pose):
     fa = pose['arms'][0]
     ax, ay = limb(g, sx - 2, sy + 1, fa[0], 3, fa[1], 2, 'J')
     dot(g, ax, ay, 'S')
+    (ft, fk), (nt, nk) = pose['legs']
+    draw_leg(g, hx + HIPS[0], HIP_Y + bob - breath, ft, fk, False)
     # gövde
     stamp(g, TORSO, sx - 5, sy - 1)
     # yakın bacak ve kol (açık)
-    stamp(g, LEGS[pose['legs']], 2 + lean, 17)
+    draw_leg(g, hx + HIPS[1], HIP_Y + bob - breath, nt, nk, True)
     if pose.get('item'):
         # elde eşya: Uktun harita rulosu, Memo telefon
         dot(g, sx + 3, sy + 4, 'X')
         dot(g, sx + 3, sy + 3, 'X' if cid == 'uktun' else 'x')
     na = pose['arms'][1]
-    ax, ay = limb(g, sx + 2, sy + 1, na[0], 3, na[1], 2, 'j')
-    hand(g, ax, ay)
+
+    def near_arm():
+        ax, ay = limb(g, sx + 2, sy + 1, na[0], 3, na[1], 2, 'j')
+        hand(g, ax, ay)
+
+    if not pose.get('arm_front'):
+        near_arm()
     # kafa
     head = HEAD[cid]
     if pose.get('blink'):
         head = [r.replace('e', 'S').replace('w', 's') for r in head]
     stamp(g, head, 3 + lean, bob - 1 + pose.get('hy', 0))
+    # el sallarken kol yüzün önünden kalkar
+    if pose.get('arm_front'):
+        near_arm()
     return [''.join(r) for r in g]
 
 
 def gait(i, n=8):
-    """Koşu döngüsü: bacaklar zıt fazda, diz geri kırılır; kollar bacaklara zıt sallanır."""
-    ph = (i / n) * math.tau
-    s = math.sin(ph)
-    # kol: üst kol zıt fazda sallanır, ön kol yalnız öne giderken bükülür
-    arm_n = (-28 * s, -28 * s + 20 + 25 * max(0, -s))
-    arm_f = (28 * s, 28 * s + 20 + 25 * max(0, s))
-    bob = 1 if i % 4 == 1 else 0
-    return {'legs': f'run{i}', 'arms': (arm_f, arm_n), 'bob': bob, 'lean': 1, 'hair': -1 if bob else 0}
+    """Koşu döngüsü: kare 0 ve 4 temas (adım en açık, kalça en alçak), 2 ve 6 geçiş (salınan bacağın
+    dizi en yüksekte, kalça yukarıda). Salınan bacak dizden çok kırılır, basan bacak hafifçe esner;
+    kollar bacaklara zıt sallanır."""
+    ph = (i / n) * math.tau + math.pi / 2
+    s, c = math.sin(ph), math.cos(ph)
+
+    def leg(sign):
+        t = 30 * s * sign
+        v = -c * sign                      # >0: bacak öne salınıyor (havada)
+        bend = 8 + 62 * max(0, v) ** 1.2 if v > 0 else 6 + 10 * (-v)
+        return (t, bend)
+
+    # dirsek hep yarı bükük; öne gelen kolda biraz daha kırılır (yumruk göğüs hizasına çıkmaz)
+    arm_n = (-22 * s, -22 * s + 30 + 18 * max(0, -s))
+    arm_f = (22 * s, 22 * s + 30 + 18 * max(0, s))
+    return {'legs': (leg(-1), leg(1)), 'arms': (arm_f, arm_n), 'lean': 1, 'ground': True, 'hair': -1 if i % 4 == 0 else 0}
 
 
 POSES = {
-    'idle0': {'legs': 'idle', 'arms': ((6, 10), (-4, 8))},
-    'idle1': {'legs': 'idle', 'arms': ((6, 12), (-4, 10)), 'bob': 1},
-    'jump': {'legs': 'jump', 'arms': ((-140, -150), (150, 160)), 'hy': 0, 'hair': 1},
-    'fall': {'legs': 'fall', 'arms': ((-110, -100), (110, 100)), 'hair': 1},
-    'wall': {'legs': 'wall', 'arms': ((60, 80), (150, 170))},
-    'dash': {'legs': 'dash', 'arms': ((-70, -80), (-80, -90)), 'lean': 2, 'hair': -1},
+    'idle0': {'legs': ((-9, 2), (8, 2)), 'arms': ((6, 10), (-4, 8)), 'ground': True},
+    'idle1': {'legs': ((-9, 2), (8, 2)), 'arms': ((6, 14), (-4, 12)), 'ground': True, 'breath': 1},
+    # kalkış: yakın diz göğse çekilir, uzak bacak itişi bitirip geride uzar; yakın kol yukarı
+    'jump': {'legs': ((-16, 12), (58, 95)), 'arms': ((-55, -35), (150, 165)), 'hair': 1},
+    # tepe noktası: iki diz toplanır, kollar dengede açık
+    'apex': {'legs': ((28, 80), (52, 95)), 'arms': ((-95, -75), (105, 120)), 'hair': 1, 'bob': -1},
+    # düşüş: bacaklar zemine uzanır, kollar havada
+    'fall': {'legs': ((-22, 26), (20, 34)), 'arms': ((-115, -135), (115, 140)), 'hair': 2},
+    # iniş: dizler bükük, gövde çöker (esnemeyle birlikte)
+    'land': {'legs': ((24, 70), (44, 88)), 'arms': ((-40, -20), (50, 75)), 'ground': True, 'hair': 1},
+    # uzun beklemede ekrana el sallar
+    'wave0': {'legs': ((-9, 2), (8, 2)), 'arms': ((6, 10), (80, 140)), 'ground': True, 'arm_front': True},
+    'wave1': {'legs': ((-9, 2), (8, 2)), 'arms': ((6, 12), (80, 175)), 'ground': True, 'arm_front': True},
+    'wall': {'legs': ((8, 30), (42, 70)), 'arms': ((60, 80), (150, 170))},
+    'dash': {'legs': ((-78, 10), (-52, 40)), 'arms': ((-70, -80), (-80, -90)), 'lean': 2, 'hair': -1},
 }
 for k in range(8):
     POSES[f'run{k}'] = gait(k)
+
+
+def pose_bob(pose):
+    bob = pose.get('bob', 0)
+    if pose.get('ground'):
+        bob += ground_bob(pose['legs'], pose.get('lean', 0))
+    return bob + pose.get('breath', 0)
 
 
 def frames(cid):
@@ -338,17 +298,22 @@ def write_ts(path):
         lines.append('    },')
         lines.append('  },')
     lines.append('}')
+    lines.append('')
+    lines.append('/** Her karede gövdenin dikey kayması (aşağı pozitif): atkı ensede kalsın diye çizer bunu okur */')
+    lines.append('export const HERO_BOB: Record<HeroFrame, number> = {')
+    lines += [f'  {n}: {pose_bob(POSES[n if n != "blink" else "idle0"])},' for n in data['uktun']['frames']]
+    lines.append('}')
     open(path, 'w').write('\n'.join(lines) + '\n')
 
 
-def preview(path, scale=8):
+def preview(path, scale=8, names=None, only=None):
     from PIL import Image
-    names = ['idle0', 'run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7', 'jump', 'fall', 'wall', 'dash']
+    names = names or ['idle0', 'idle1', 'run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7', 'jump', 'apex', 'fall', 'land', 'wave0', 'wave1', 'wall', 'dash']
     hexrgb = lambda h: tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
     mix = lambda c, t, a: tuple(round(c[i] + (t[i] - c[i]) * a) for i in range(3))
     im = Image.new('RGB', ((W + 3) * scale * len(names), (H + 3) * scale * 2), (110, 138, 176))
     px = im.load()
-    for ci, cid in enumerate(['uktun', 'memo']):
+    for ci, cid in enumerate(only or ['uktun', 'memo']):
         fr = frames(cid)
         for ni, n in enumerate(names):
             rows = fr[n]

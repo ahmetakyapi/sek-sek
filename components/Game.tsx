@@ -184,12 +184,16 @@ export default function Game() {
         }
         // Rahat Mod: dünya %80 hızda akar
         acc += relaxedRef.current ? dt * 0.8 : dt
-        let first = true
-        const inp = input.sample()
-        while (acc >= STEP) {
-          w.step(STEP, first ? inp : { ...inp, jumpPressed: false, dashPressed: false })
-          first = false
-          acc -= STEP
+        // girdi yalnızca en az bir adım koşacaksa okunur: 120/144 Hz ekranda adımsız karede basış tüketilip kaybolmasın
+        if (acc >= STEP) {
+          const inp = input.sample()
+          const rest = { ...inp, jumpPressed: false, dashPressed: false }
+          let first = true
+          while (acc >= STEP) {
+            w.step(STEP, first ? inp : rest)
+            first = false
+            acc -= STEP
+          }
         }
         if (w.started && !w.complete) record(ghostRecRef.current, w)
         for (const e of w.events) {
@@ -428,7 +432,8 @@ export default function Game() {
   langRef.current = save.lang ?? 'tr'
   useEffect(() => {
     document.documentElement.lang = save.lang ?? 'tr'
-  }, [save.lang])
+    if (rendererRef.current) rendererRef.current.lang = save.lang ?? 'tr'
+  }, [save.lang, ready])
 
   const showTouch = save.touch === 'on' || (save.touch === 'auto' && coarse)
   const totalFound = Object.values(save.best).reduce((a, b) => a + b.items.filter(Boolean).length, 0)
@@ -529,22 +534,23 @@ export default function Game() {
 
       {screen === 'title' && (
         <Overlay>
-          <div className="rise flex w-full max-w-3xl flex-col items-center gap-0 md:flex-row md:items-center">
-            <div className="relative h-[170px] w-full max-w-[320px] shrink-0 sm:h-[300px] md:mr-[-28px] md:h-[360px] md:w-[320px]">
+          <div className="rise flex w-full max-w-3xl flex-col items-center gap-0 md:flex-row md:items-center [@media(max-height:500px)_and_(min-width:560px)]:flex-row [@media(max-height:500px)_and_(min-width:560px)]:items-start">
+            {/* yatay telefonda polaroid yana geçer: menü düğmeleri ekranın altına itilmesin */}
+            <div className="relative h-[170px] w-full max-w-[320px] shrink-0 sm:h-[300px] md:mr-[-28px] md:h-[360px] md:w-[320px] [@media(max-height:500px)_and_(min-width:560px)]:mr-[-20px] [@media(max-height:500px)_and_(min-width:560px)]:h-[240px] [@media(max-height:500px)_and_(min-width:560px)]:w-[190px]">
               {save.character ? (
-                <figure className="polaroid absolute left-1/2 top-3 w-[118px] -translate-x-1/2 rotate-[-4deg] sm:w-[200px] md:top-10 md:w-[220px]">
+                <figure className="polaroid absolute left-1/2 top-3 w-[118px] -translate-x-1/2 rotate-[-4deg] sm:w-[200px] md:top-10 md:w-[220px] [@media(max-height:500px)_and_(min-width:560px)]:top-8 [@media(max-height:500px)_and_(min-width:560px)]:w-[150px]">
                   <span className="tape" />
                   <Portrait id={hero.id} className="w-full" />
                   <figcaption>{hero.name}</figcaption>
                 </figure>
               ) : (
                 <>
-                  <figure className="polaroid absolute left-[8%] top-4 w-[118px] rotate-[-7deg] sm:w-[170px] md:left-0 md:top-12 md:w-[170px]">
+                  <figure className="polaroid absolute left-[8%] top-4 w-[118px] rotate-[-7deg] sm:w-[170px] md:left-0 md:top-12 md:w-[170px] [@media(max-height:500px)_and_(min-width:560px)]:left-0 [@media(max-height:500px)_and_(min-width:560px)]:top-6 [@media(max-height:500px)_and_(min-width:560px)]:w-[120px]">
                     <span className="tape" />
                     <Portrait id="uktun" className="w-full" />
                     <figcaption>Uktun</figcaption>
                   </figure>
-                  <figure className="polaroid absolute right-[8%] top-0 w-[118px] rotate-[6deg] sm:w-[170px] md:right-6 md:top-2 md:w-[170px]">
+                  <figure className="polaroid absolute right-[8%] top-0 w-[118px] rotate-[6deg] sm:w-[170px] md:right-6 md:top-2 md:w-[170px] [@media(max-height:500px)_and_(min-width:560px)]:right-0 [@media(max-height:500px)_and_(min-width:560px)]:top-24 [@media(max-height:500px)_and_(min-width:560px)]:w-[120px]">
                     <span className="tape" />
                     <Portrait id="memo" className="w-full" />
                     <figcaption>Memo Çelik</figcaption>
@@ -553,7 +559,7 @@ export default function Game() {
               )}
             </div>
             <div className="pixel-panel relative z-10 w-full max-w-md overflow-hidden px-6 pb-6 sm:px-7">
-              <div className="relative -mx-7 -mt-[calc(14px+1.25rem)] mb-4 h-[120px] overflow-hidden">
+              <div className="relative -mx-7 -mt-[calc(14px+1.25rem)] mb-4 h-[120px] overflow-hidden [@media(max-height:500px)]:h-[88px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/sehirler/istanbul.webp" alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_75%]" style={{ imageRendering: 'pixelated' }} />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1e1a29]/20 to-[#1e1a29]" />

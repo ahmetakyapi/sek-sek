@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { HERO, HERO_H, HERO_W } from '../game/heroFrames'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput, type LevelDef } from '../game/types'
@@ -234,4 +235,18 @@ describe('yeni şehir mekanikleri', () => {
     run(w, 1.6)
     expect(w.deaths).toBeGreaterThan(0)
   })
+})
+
+describe('karakter kareleri', () => {
+  const grounded = ['idle0', 'idle1', 'blink', 'land', 'wave0', 'wave1', ...Array.from({ length: 8 }, (_, i) => `run${i}`)]
+  for (const [id, hero] of Object.entries(HERO)) {
+    it(`${id}: her kare 20x24, yerdeki karelerde bot tabanı zemine oturur`, () => {
+      for (const [name, rows] of Object.entries(hero.frames)) {
+        expect(rows.length, name).toBe(HERO_H)
+        for (const r of rows) expect(r.length, name).toBe(HERO_W)
+        const last = rows[HERO_H - 1]
+        if (grounded.includes(name)) expect(last, name).toMatch(/B/)
+      }
+    })
+  }
 })

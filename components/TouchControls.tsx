@@ -4,6 +4,8 @@ import { useT } from '@/lib/i18n'
 import { useRef, useState } from 'react'
 import type { InputManager } from '@/game/input'
 
+type Kind = 'jump' | 'dash'
+
 /**
  * Sol yarıda yüzen joystick, sağda ATIL ve ZIPLA.
  * Tuşların dokunma alanı görünen dairelerden geniştir; kaçırılan basış olmasın.
@@ -38,24 +40,42 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
 
   const block = (e: React.SyntheticEvent) => e.preventDefault()
 
-  const btn = (kind: 'jump' | 'dash') => ({
+  // her parmak hangi tuşta: başparmak ZIPLA'dan ATIL'a kayınca kaldırmadan geçiş olur
+  const fingers = useRef(new Map<number, Kind>())
+  const sync = () => {
+    const on = [...fingers.current.values()]
+    const jump = on.includes('jump')
+    const dash = on.includes('dash')
+    if (jump && !input.touch.jump) input.pressJump()
+    if (!jump && input.touch.jump) input.releaseJump()
+    if (dash && !input.touch.dash) input.pressDash()
+    if (!dash && input.touch.dash) input.releaseDash()
+    setPressed((p) => (p.jump === jump && p.dash === dash ? p : { jump, dash }))
+  }
+  const lift = (e: React.PointerEvent) => {
+    fingers.current.delete(e.pointerId)
+    sync()
+  }
+
+  const btn = (kind: Kind) => ({
+    'data-btn': kind,
     onPointerDown: (e: React.PointerEvent) => {
       e.preventDefault()
       e.currentTarget.setPointerCapture(e.pointerId)
-      if (kind === 'jump') input.pressJump()
-      else input.pressDash()
-      setPressed((p) => ({ ...p, [kind]: true }))
+      fingers.current.set(e.pointerId, kind)
+      sync()
     },
-    onPointerUp: () => {
-      if (kind === 'jump') input.releaseJump()
-      else input.releaseDash()
-      setPressed((p) => ({ ...p, [kind]: false }))
+    onPointerMove: (e: React.PointerEvent) => {
+      if (!fingers.current.has(e.pointerId)) return
+      const over = (document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-btn]') as HTMLElement | null)?.dataset.btn as Kind | undefined
+      if (over && over !== fingers.current.get(e.pointerId)) {
+        fingers.current.set(e.pointerId, over)
+        sync()
+      }
     },
-    onPointerCancel: () => {
-      if (kind === 'jump') input.releaseJump()
-      else input.releaseDash()
-      setPressed((p) => ({ ...p, [kind]: false }))
-    },
+    onPointerUp: lift,
+    onPointerCancel: lift,
+    onLostPointerCapture: lift,
     onContextMenu: block,
   })
 

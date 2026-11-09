@@ -18,8 +18,9 @@ export class InputManager {
     if (e.target instanceof HTMLInputElement) return
     const k = e.code
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(k)) e.preventDefault()
-    if (e.repeat) return
+    // tekrar olayı da tuşu basılı sayar: odak kayıp geri gelince ilk basış kaçmışsa yürüyüş sürsün
     this.keys.add(k)
+    if (e.repeat) return
     if (JUMP_KEYS.includes(k)) this.jumpLatch = true
     if (DASH_KEYS.includes(k)) this.dashLatch = true
     if (k === 'Escape' || k === 'KeyP') this.onPause?.()
@@ -29,19 +30,26 @@ export class InputManager {
     // boşluk odaktaki bir düğmeyi tetiklemesin
     if (e.code === 'Space' && !(e.target instanceof HTMLInputElement)) e.preventDefault()
     this.keys.delete(e.code)
+    // macOS'ta ⌘ basılıyken öteki tuşların bırakılışı gelmez: ⌘ kalkınca takılı tuş kalmasın
+    if (e.key === 'Meta') this.keys.clear()
   }
-  private blur = () => this.keys.clear()
+  private blur = () => {
+    this.keys.clear()
+    this.touch = { x: 0, y: 0, jump: false, dash: false }
+  }
 
   attach() {
     window.addEventListener('keydown', this.down)
     window.addEventListener('keyup', this.up)
     window.addEventListener('blur', this.blur)
+    document.addEventListener('visibilitychange', this.blur)
   }
 
   detach() {
     window.removeEventListener('keydown', this.down)
     window.removeEventListener('keyup', this.up)
     window.removeEventListener('blur', this.blur)
+    document.removeEventListener('visibilitychange', this.blur)
   }
 
   pressJump() {
