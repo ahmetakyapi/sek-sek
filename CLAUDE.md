@@ -31,7 +31,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   art.ts         şehir paletleri, arka plan katmanları, eşya ve düşman sprite'ları, canlı adları
   render.ts      düşük çözünürlüklü tampon, parallax, parçacık, karakter, NPC
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
-  heroFrames.ts  20x24 animasyonlu karakter kareleri: bekleme, göz kırpma, 8 karelik koşu, zıplama, duvar, atılma (scripts/art/hero.py üretir)
+  heroDraw.ts    elle çizilmiş görünümlü karakterler: vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
   portraits.ts   64x76 portreler (scripts/art/painter.py üretir; Uktun'un yüzü elle çizilmiş scripts/art/uktun_classic.json'dan gelir)
   audio.ts       WebAudio efektleri + şehir makamında üretilen müzik (bayrak sesi de şehrin makamından)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
@@ -39,7 +39,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-levels (çözücü, solver.ts), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, karakter kareleri hero.py, ikon ve favicon icons.py, harita üreteçleri, sync)
+scripts/         verify-levels (çözücü, solver.ts), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, ikon ve favicon icons.py, harita üreteçleri, sync)
 tests/           sim.test.ts (fizik ve mekanik testleri)
 ```
 

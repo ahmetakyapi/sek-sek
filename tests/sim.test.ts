@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HERO, HERO_H, HERO_W } from '../game/heroFrames'
+import { POSES, gait, groundBob } from '../game/heroDraw'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput, type LevelDef } from '../game/types'
@@ -237,16 +237,15 @@ describe('yeni şehir mekanikleri', () => {
   })
 })
 
-describe('karakter kareleri', () => {
-  const grounded = ['idle0', 'idle1', 'blink', 'land', 'wave0', 'wave1', ...Array.from({ length: 8 }, (_, i) => `run${i}`)]
-  for (const [id, hero] of Object.entries(HERO)) {
-    it(`${id}: her kare 20x24, yerdeki karelerde bot tabanı zemine oturur`, () => {
-      for (const [name, rows] of Object.entries(hero.frames)) {
-        expect(rows.length, name).toBe(HERO_H)
-        for (const r of rows) expect(r.length, name).toBe(HERO_W)
-        const last = rows[HERO_H - 1]
-        if (grounded.includes(name)) expect(last, name).toMatch(/B/)
-      }
-    })
-  }
+describe('karakter çizimi', () => {
+  it('yerdeki her pozda ayak tabanı zemine oturur, koşunun her anında adım açılınca kalça iner', () => {
+    const grounded = [POSES.idle, POSES.land, POSES.wave, ...Array.from({ length: 16 }, (_, i) => gait(i / 16))]
+    for (const p of grounded) expect(Number.isFinite(groundBob(p))).toBe(true)
+    // temas anı (adım en açık) geçiş anından daha alçak
+    expect(groundBob(gait(0))).toBeGreaterThan(groundBob(gait(0.25)))
+  })
+  it('koşu döngüsü kapanır: faz 0 ile 1 aynı poz', () => {
+    expect(gait(1).legs[0][0]).toBeCloseTo(gait(0).legs[0][0], 6)
+    expect(gait(1).arms[1][1]).toBeCloseTo(gait(0).arms[1][1], 6)
+  })
 })

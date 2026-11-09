@@ -12,7 +12,7 @@ import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
 import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
 import { LangProvider, characterFor, endingFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
-import { CharacterPortrait, MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
+import { MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager } from '@/game/input'
@@ -663,13 +663,8 @@ export default function Game() {
                     onClick={() => pickCharacter(id)}
                     className={`group flex flex-col items-center border-2 bg-panel-2 p-4 text-left transition-colors duration-150 hover:border-accent-2 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold' : 'border-line'}`}
                   >
-                    <div className="relative w-full">
-                      <div className="portrait-frame mx-auto w-[180px] sm:w-[220px]">
-                        <Portrait id={id} className="block w-full" />
-                      </div>
-                      <div className="absolute -bottom-2 right-0 sm:right-2">
-                        <CharacterPortrait c={c} scale={coarse ? 3 : 4} pose="run" />
-                      </div>
+                    <div className="portrait-frame mx-auto w-[180px] sm:w-[220px]">
+                      <Portrait id={id} className="block w-full" />
                     </div>
                     <div className="mt-2 w-full">
                       <p className="flex items-baseline justify-between font-display text-2xl text-cream">

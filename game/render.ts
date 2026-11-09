@@ -1,6 +1,6 @@
 import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
 import { CHARACTERS, type CharacterDef } from './characters'
-import { HERO, HERO_BOB, HERO_H, HERO_W, type HeroFrame } from './heroFrames'
+import { POSES, drawHero, gait, type Pose } from './heroDraw'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import { NPC_ART } from './npcs'
 import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, hammerState, type World } from './sim'
@@ -70,7 +70,8 @@ export class Renderer {
   /** havadaki en yüksek düşüş hızı: sert inişte toz ve sarsıntı */
   private airVy = 0
   private idleT = 0
-  private ghostPal: { hero: string; pal: Record<string, string> } | null = null
+  /** bu karede çizilecek karakterler (hayalet, atılma izi, oyuncu): dünya tamponundan sonra ana tuvalde */
+  private heroes: HeroDraw[] = []
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -736,8 +737,8 @@ export class Renderer {
     this.drawCrumbles(b, w, cx, cy)
     this.drawWater(b, w, cx, cy)
     this.drawEntities(b, w)
-    this.drawGhostRun(b, w)
-    this.drawPlayer(b, w, dt)
+    this.drawGhostRun(w)
+    this.drawPlayer(w, dt)
     this.drawParticles(b, dt)
     b.restore()
 
@@ -768,6 +769,7 @@ export class Renderer {
     c.imageSmoothingEnabled = false
     c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, 0, 0, this.viewW * this.scale, this.viewH * this.scale)
 
+    this.drawHeroes(cx, cy)
     this.drawLabels(w, cx, cy)
   }
 
@@ -2000,7 +2002,7 @@ export class Renderer {
   }
 
   /** En iyi koşunun soluk mavi hayaleti: zamanlayıcıyla aynı anda, aynı yerden geçer. */
-  private drawGhostRun(b: Ctx, w: World) {
+  private drawGhostRun(w: World) {
     const g = this.ghostRun
     if (!g || !w.started) return
     const n = g.data.length / 3
@@ -2015,102 +2017,57 @@ export class Renderer {
     const alpha = near < 10 ? 0.15 : 0.46
     const code = g.data[i * 3 + 2]
     const pose = code & 7
-    const flip = code >= 8
-    const hero = HERO[g.hero]
-    if (!this.ghostPal || this.ghostPal.hero !== g.hero) {
-      const pal: Record<string, string> = {}
-      for (const [c, v] of Object.entries(hero.pal)) pal[c] = mixHex(v, '#cfe6ff', 0.55)
-      this.ghostPal = { hero: g.hero, pal }
-    }
-    const frame: HeroFrame = pose === 4 ? 'dash' : pose === 2 ? 'jump' : pose === 3 ? 'fall' : pose === 1 ? (`run${Math.floor(w.time * 15) % 8}` as HeroFrame) : 'idle0'
-    b.globalAlpha = alpha
-    sprite(b, hero.frames[frame], this.ghostPal.pal, Math.round(x + 6 - HERO_W / 2), Math.round(y + 14 - HERO_H), flip)
-    b.globalAlpha = 1
+    const run = gait((w.time * 15) / 8 % 1)
+    const body: Pose = pose === 4 ? POSES.dash : pose === 2 ? POSES.jump : pose === 3 ? POSES.fall : pose === 1 ? run : POSES.idle
+    this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1, sx: 1, sy: 1 })
   }
 
-  private drawPlayer(b: Ctx, w: World, dt: number) {
+  /** Karakterler büyütülmüş ana tuvalde, ekran çözünürlüğünde: oyun dünyası piksel, karakter elle çizilmiş */
+  private drawHeroes(cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    for (const h of this.heroes) {
+      c.save()
+      c.globalAlpha = h.alpha
+      if (h.ghost) c.filter = 'saturate(0.35) brightness(1.25)'
+      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, HERO_SIZE * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS })
+      c.restore()
+    }
+    this.heroes = []
+  }
+
+  private drawPlayer(w: World, dt: number) {
     const p = w.player
-    const ch = this.character
-    // atılma izi: karakterin beyaz silueti
+    const look = this.character.id
+    // atılma izi: karakterin soluk kopyaları
     if (p.dashTime > 0 && !p.dead) this.ghosts.push({ x: p.x, y: p.y, life: 0.22, flip: p.facing < 0 })
-    const hero = HERO[ch.id]
-    const ghostPal: Record<string, string> = {}
-    for (const k of Object.keys(hero.pal)) ghostPal[k] = '#f4ead8'
     for (const g of this.ghosts) {
       g.life -= dt
-      if (g.life <= 0) continue
-      b.globalAlpha = g.life * 2.5
-      sprite(b, hero.frames.dash, ghostPal, g.x + p.w / 2 - HERO_W / 2, g.y + p.h - HERO_H, g.flip)
+      if (g.life > 0) this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: g.life * 2, ghost: true, moving: true, sx: 1, sy: 1 })
     }
-    b.globalAlpha = 1
     this.ghosts = this.ghosts.filter((g) => g.life > 0)
     if (p.dead) return
 
-    // uzun bekleyince ekrana el sallar; sert iniş için düşüş hızı izlenir
+    // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir
     const still = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0
     this.idleT = still ? this.idleT + dt : 0
     if (!p.grounded) this.airVy = Math.max(this.airVy, p.vy)
 
-    // kare seçimi: 8 karelik koşu, nefes alan bekleme, zıplama, düşme, duvar ve atılma
-    let frame: HeroFrame = 'idle0'
-    if (!p.grounded) {
-      if (p.dashTime > 0) frame = 'dash'
-      else if (p.wallDir !== 0 && p.vy > 0) frame = 'wall'
-      else frame = p.vy < -70 ? 'jump' : p.vy < 70 ? 'apex' : 'fall'
-    } else if (p.dashTime > 0) frame = 'dash'
-    else if (p.landTimer > 0.05) frame = 'land'
-    else if (Math.abs(p.vx) > 8) frame = `run${Math.floor(p.runTime * 15) % 8}` as HeroFrame
-    else if (this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) frame = Math.floor(this.idleT / 0.22) % 2 ? 'wave1' : 'wave0'
-    else frame = this.t % 3.4 < 0.12 ? 'blink' : Math.floor(this.t / 0.7) % 2 ? 'idle1' : 'idle0'
-    const lean = frame.startsWith('run') ? 1 : frame === 'dash' ? 2 : 0
-
-    const pal = p.canDash ? hero.pal : { ...hero.pal, r: '#7f8ca8', R: '#5a6680' }
-    const flip = p.facing < 0
-    const moving = Math.abs(p.vx) > 40 || !p.grounded
-    const wave = Math.floor(this.t * (moving ? 12 : 4)) % 3
-
-    // karakter önce küçük bir tuvale çizilir: koyu dış hat + gövde, sonra esnetilerek sahneye konur
-    const pc = this.playerCanvas()
-    const c = pc.getContext('2d', { willReadFrequently: true })!
-    c.clearRect(0, 0, pc.width, pc.height)
-    const ox = 6
-    const oy = 4
-    const drawBody = (palette: Record<string, string>, dx: number, dy: number) => {
-      // atkının arka ucu ensede başlar ve rüzgârda dalgalanır
-      const neck = oy + 9 + dy + HERO_BOB[frame]
-      const back = (flip ? ox + HERO_W - 7 - lean : ox + 6 + lean) + dx
-      const dir = flip ? 1 : -1
-      rect(c, back + dir, neck, 2, 1, palette.r)
-      rect(c, back + dir * 2, neck + 1 + (wave === 1 ? 1 : 0), 2, 1, palette.R)
-      if (moving) rect(c, back + dir * 3, neck + 1 - (wave === 2 ? 1 : 0), 2, 1, palette.r)
-      sprite(c, hero.frames[frame], palette, ox + dx, oy + dy, flip)
+    // poz: koşu, koşu süresinden sürekli hesaplanır (kare atlamadan akar)
+    let pose: Pose
+    if (p.dashTime > 0) pose = POSES.dash
+    else if (!p.grounded) pose = p.wallDir !== 0 && p.vy > 0 ? POSES.wall : p.vy < -70 ? POSES.jump : p.vy < 70 ? POSES.apex : POSES.fall
+    else if (p.landTimer > 0.05) pose = POSES.land
+    else if (Math.abs(p.vx) > 8) pose = gait(((p.runTime * 15) / 8) % 1)
+    else if (this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) {
+      const wv = Math.sin(this.idleT * 13) * 22
+      pose = { ...POSES.wave, arms: [POSES.wave.arms[0], [POSES.wave.arms[1][0], POSES.wave.arms[1][1] + wv]] }
+    } else {
+      // nefes: dizler hafifçe esner, gövde iner kalkar
+      const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
+      pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
     }
-    const ink: Record<string, string> = {}
-    for (const k of Object.keys(pal)) ink[k] = '#120f1a'
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) drawBody(ink, dx, dy)
-    drawBody(pal, 0, 0)
-    // hacim: üstü dış hatla biten pikseller ışık, altı dış hatla bitenler gölge alır
-    {
-      const img = c.getImageData(0, 0, pc.width, pc.height)
-      const d = img.data
-      const Wp = pc.width
-      const edge = (i: number) => d[i + 3] === 0 || (d[i] === 0x12 && d[i + 1] === 0x0f && d[i + 2] === 0x1a)
-      const out = new Uint8ClampedArray(d)
-      for (let y = 1; y < pc.height - 1; y++)
-        for (let x = 1; x < Wp - 1; x++) {
-          const i = (y * Wp + x) * 4
-          if (edge(i)) continue
-          let k = 0
-          if (edge(i - Wp * 4)) k = 0.2
-          else if (edge(i + Wp * 4)) k = -0.22
-          if (!k) continue
-          const to = k > 0 ? [255, 244, 220] : [30, 18, 44]
-          const a = Math.abs(k)
-          for (let j = 0; j < 3; j++) out[i + j] = d[i + j] + (to[j] - d[i + j]) * a
-        }
-      img.data.set(out)
-      c.putImageData(img, 0, 0)
-    }
+    pose = { ...pose, blink: this.t % 3.4 < 0.12 }
 
     // esneme: zıplarken incelip uzar, konarken basılır (hacim korunur, abartısız)
     let kx = 1
@@ -2120,18 +2077,18 @@ export class Renderer {
       kx = 1 + 0.18 * a
       ky = 1 - 0.14 * a
     } else if (!p.grounded && p.vy < -150) {
-      kx = 0.9
-      ky = 1.1
+      kx = 0.92
+      ky = 1.08
     } else if (p.dashTime > 0) {
-      kx = Math.abs(p.dashDir[0]) > 0.5 ? 1.15 : 0.88
-      ky = Math.abs(p.dashDir[0]) > 0.5 ? 0.88 : 1.15
+      kx = Math.abs(p.dashDir[0]) > 0.5 ? 1.12 : 0.9
+      ky = Math.abs(p.dashDir[0]) > 0.5 ? 0.9 : 1.12
     }
     const footX = p.x + p.w / 2
     const footY = p.y + p.h
-    const dw = Math.round(pc.width * kx)
-    const dh = Math.round(pc.height * ky)
-    b.imageSmoothingEnabled = false
-    b.drawImage(pc, Math.round(footX - dw / 2), Math.round(footY - (oy + HERO_H) * ky), dw, dh)
+    const moving = Math.abs(p.vx) > 40 || !p.grounded
+    // atılma hakkı bitince atkı soluklaşır: ne zaman yeniden atılabileceğin görünür
+    const spent = !p.canDash
+    this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : undefined, scarfS: spent ? '#5a6680' : undefined })
 
     this.petTimer = Math.max(0, this.petTimer - dt)
     // koşu tozu ve duvar kayma kıvılcımı
@@ -2147,18 +2104,8 @@ export class Renderer {
     }
   }
 
-  private pc: HTMLCanvasElement | null = null
   private dustTimer = 0
   private petTimer = 0
-  private playerCanvas() {
-    if (!this.pc) {
-      this.pc = document.createElement('canvas')
-      this.pc.width = 32
-      this.pc.height = 32
-    }
-    return this.pc
-  }
-
   private drawParticles(b: Ctx, dt: number) {
     for (const pt of this.particles) {
       pt.life -= dt
@@ -2233,6 +2180,25 @@ export class Renderer {
       c.fillText(label, ex, ey - sc * 1.5)
     }
   }
+}
+
+/** karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar) */
+const HERO_SIZE = 29
+
+interface HeroDraw {
+  look: 'uktun' | 'memo'
+  pose: Pose
+  /** ayak tabanı orta noktası (dünya) */
+  x: number
+  y: number
+  flip: boolean
+  alpha: number
+  ghost: boolean
+  moving: boolean
+  sx: number
+  sy: number
+  scarf?: string
+  scarfS?: string
 }
 
 interface Pop {

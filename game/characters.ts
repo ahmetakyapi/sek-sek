@@ -1,6 +1,6 @@
 /**
- * İki oynanabilir karakterin kimliği. Animasyonlu 20×24 kareler game/heroFrames.ts'te
- * (scripts/art/hero.py üretir); çarpışma kutusu 12×14 kalır, ayaklar kutunun tabanına oturur.
+ * İki oynanabilir karakterin kimliği. Oyun içi çizim game/heroDraw.ts'te
+ * (vektör çizim); çarpışma kutusu 12×14 kalır, ayaklar kutunun tabanına oturur.
  */
 export type CharacterId = 'uktun' | 'memo'
 
