@@ -78,7 +78,7 @@ export const LOOKS: Record<Look, Skin> = {
     coat: '#2f8d9a', coatS: '#1f6472', coatL: '#58b8c0', shirt: '#f2eee6',
     scarf: '#d83c36', scarfS: '#9e2430', pants: '#3e3e4e', pantsS: '#2a2a36',
     boot: '#6a3e2a', bootS: '#3e2418', brow: '#241612',
-    stubble: 'rgba(48,32,26,0.34)',
+    stubble: 'rgba(48,32,26,0.46)',
   },
   // ── şehir insanları: aynı çizgi, başka kılık
   amca: {

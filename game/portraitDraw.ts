@@ -702,7 +702,7 @@ const STUBBLE: number[] = (() => {
     return seed / 2147483647
   }
   const inside = (x: number, y: number, cx: number, cy: number, rx: number, ry: number) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1
-  for (let i = 0; i < 2400 && out.length < 3 * 250; i++) {
+  for (let i = 0; i < 4200 && out.length < 3 * 420; i++) {
     const x = 28 + rnd() * 48
     const y = 57 + rnd() * 29
     const lean = (x - 56) * 0.014 + (rnd() - 0.5) * 0.24
@@ -713,7 +713,7 @@ const STUBBLE: number[] = (() => {
 })()
 
 /**
- * Memo'nun kirli sakalı: bir iki günlük tıraşsızlık. Önce yumuşak kenarlı gölge (favoriden çeneye ince hat, dudak üstü,
+ * Memo'nun kirli sakalı: üç dört günlük tıraşsızlık. Önce yumuşak kenarlı gölge (favoriden çeneye ince hat, dudak üstü,
  * çene ucu), üstüne kılın çıkış yönüne yatan kısa teller. Çene hattı ve ağız açıkta kalır; ağız bunun üstüne çizilir.
  */
 function stubble(c: Ctx) {
@@ -724,7 +724,7 @@ function stubble(c: Ctx) {
   c.clip()
   // çene hattı: iç içe üç şerit, kenarı yumuşak
   c.lineCap = 'butt'
-  for (const [w, a] of [[13, 0.09], [8.5, 0.1], [4.5, 0.11]]) {
+  for (const [w, a] of [[15, 0.16], [10, 0.18], [5.5, 0.2]]) {
     c.beginPath()
     c.moveTo(30.4, 57)
     c.bezierCurveTo(32.6, 72.6, 44, 85, 56, 85)
@@ -734,17 +734,17 @@ function stubble(c: Ctx) {
     c.stroke()
   }
   // favorinin sakala karıştığı yer, dudak üstü, çene ucu ve dudak altı
-  soft(c, 31.6, 60, 2, 3.6, tone(0.3))
-  soft(c, 56.8, 71, 5.6, 1.2, tone(0.34))
-  soft(c, 56.6, 81.8, 6.4, 2.8, tone(0.26))
-  soft(c, 56.6, 78.6, 1.7, 0.9, tone(0.24))
+  soft(c, 31.6, 60, 2.2, 3.8, tone(0.38))
+  soft(c, 56.8, 71, 6.2, 1.5, tone(0.46))
+  soft(c, 56.6, 81.8, 7.4, 3.2, tone(0.36))
+  soft(c, 56.6, 78.6, 2, 1, tone(0.32))
   c.beginPath()
   for (let i = 0; i < STUBBLE.length; i += 3) {
     c.moveTo(STUBBLE[i], STUBBLE[i + 1])
-    c.lineTo(STUBBLE[i] + STUBBLE[i + 2], STUBBLE[i + 1] + 0.62)
+    c.lineTo(STUBBLE[i] + STUBBLE[i + 2], STUBBLE[i + 1] + 0.74)
   }
-  c.strokeStyle = tone(0.4)
-  c.lineWidth = 0.36
+  c.strokeStyle = tone(0.58)
+  c.lineWidth = 0.42
   c.lineCap = 'round'
   c.stroke()
   c.restore()
