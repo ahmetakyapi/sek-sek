@@ -369,3 +369,17 @@ describe('yeni mekanikler: sandık ve ıslak taş', () => {
     expect(slide('i')).toBeLessThan(slide('I') - 10)
   })
 })
+
+describe('ok tuzakları adil', () => {
+  it('hiçbir ok bayrağın, tabelanın, şehir insanının ya da başlangıcın durduğu yere kadar uçmaz', () => {
+    // ok katı bir karoya çarpana dek uçar: okuyan, konuşan ya da yeni doğan oyuncuyu vurmamalı
+    for (const l of LEVELS) {
+      const w = new World(l)
+      for (const t of w.turrets) {
+        for (let x = t.tx + t.dir; x >= 0 && x < w.cols && !w.isSolid(x, t.ty); x += t.dir) {
+          expect('?nPF&'.includes(l.map[t.ty][x]), `${l.id}: ${t.tx},${t.ty} oku ${x},${t.ty} (${l.map[t.ty][x]}) üstünden geçiyor`).toBe(false)
+        }
+      }
+    }
+  })
+})

@@ -9,7 +9,7 @@ import { emptyInput, type Input } from '../game/types'
 
 const DT = 1 / 120
 
-interface Macro {
+export interface Macro {
   dir: -1 | 0 | 1
   hold: number // yön tutma süresi
   jump: number // zıpla basılı süre (0: zıplama yok)
@@ -23,7 +23,7 @@ interface Macro {
 /** basic: yürü + zıpla · dash: + dash · all: + duvar sekmesi ve ardışık zıplama */
 export type MoveSet = 'basic' | 'dash' | 'all'
 
-function macros(set: MoveSet): Macro[] {
+export function macros(set: MoveSet): Macro[] {
   const out: Macro[] = []
   for (const dir of [-1, 0, 1] as const) {
     for (const hold of dir === 0 ? [0] : [0.12, 0.35, 2.5]) out.push({ dir, hold, jump: 0, jump2: 0, dashAt: 0, dashDir: [0, 0], wait: 0 })
@@ -74,6 +74,38 @@ function inputAt(m: Macro, t: number, prev: { jump: boolean; dash: boolean }): I
   return i
 }
 
+/** Bir makroyu dünyada oynatır: iniş, ölüm ya da bitişte durur. each: her adımdan sonra (olayları okuyup boşaltmak için). */
+export function runMacro(w: World, m: Macro, each: () => void) {
+  const prev = { jump: false, dash: false }
+  const deaths = w.deaths
+  let t = 0
+  let air = false
+  const limit = m.wait > 0 ? m.wait : 2.6
+  while (t < limit) {
+    w.step(DT, inputAt(m, t, prev))
+    t += DT
+    each()
+    if (w.complete) break
+    if (w.deaths > deaths) break
+    if (!w.player.grounded) air = true
+    const jumping = m.jump > 0 || m.dashAt > 0
+    if (m.wait === 0 && w.player.grounded && t > 0.05) {
+      if (jumping && air && !m.repeat && (m.jump2 === 0 || t > m.jump2 + 0.05)) break
+      if (m.repeat && air && t > 0.6) break
+      if (!jumping && (t >= m.hold || air) && (air || Math.abs(w.player.vx) < 1)) break
+    }
+  }
+}
+
+/**
+ * restore() plakaları "basılı değil" bırakır: plakada duran oyuncu bir sonraki adımda düğmeyi yeniden çevirir.
+ * Oyunda bu ancak inip yeniden basınca olur. İz çıkarılırken plakalar oyundaki gibi tutulur ki yol aynen oynanabilsin.
+ */
+export function holdPlates(w: World) {
+  const p = w.player
+  for (const pl of w.plates) pl.pressed = !p.dead && p.grounded && p.x < pl.x + pl.w && p.x + p.w > pl.x && p.y + 2 < pl.y + pl.h && p.y + 2 + p.h > pl.y
+}
+
 function key(s: Snapshot, w: World) {
   const p = s.player
   // sema halkaları ve tokmaklar ortak saate bağlı: konumları yerine saatin evresi yeter
@@ -101,11 +133,15 @@ export interface SolveResult {
   far: { x: number; y: number }
   /** her bayrağa (ve meydan kapısının varışına, index -1) varıldığı an: düğme/anahtar durumu başına bir görüntü */
   arrivals: Array<{ index: number; switchOn: boolean; hasKey: boolean; snap: Snapshot }>
+  /** trace istenirse: başlangıçtan çıkışa giden makro dizisi (çıkışa varılamadıysa boş) */
+  path: Macro[]
 }
 
 /** exitOnly: yalnızca çıkışa giden yol aranır (anahtar kapısı varsa anahtar da, çünkü yol ona bağlı) */
 /** start: aramayı bu durumdan başlat (bayraktan yeniden doğuş denetimi için) */
-export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot } = {}): SolveResult {
+/** trace: çıkışa giden yolu da döndür (verify-enemies yol gösterici olarak kullanır); kapalıyken hiçbir şey saklanmaz */
+/** goal: çıkış yerine bu koşulu sağlayan ilk yere varmak yeter (yere basılı durumda sınanır); arama (x, y) noktasına yakın durumlardan açılır */
+export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot; trace?: boolean; goal?: { x: number; y: number; reached: (w: World) => boolean } } = {}): SolveResult {
   const w = new World(level)
   w.enemies.length = 0
   w.turrets.length = 0
@@ -120,10 +156,12 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
     if (!arrivals.some((a) => a.index === index && a.switchOn === w.switchOn && a.hasKey === w.hasKey)) arrivals.push({ index, switchOn: w.switchOn, hasKey: w.hasKey, snap: snapshot(w) })
   }
   const start = snapshot(w)
+  const links = new Map<Snapshot, { from: Snapshot; via: Macro }>()
+  let goal: { from: Snapshot; via: Macro } | null = null
   const seen = new Set<string>([key(start, w)])
   const queue: (Snapshot & { pr?: number })[] = [start]
   // hedefli tur: eksik kalan bir hedefe en yakın durumlar önce açılır
-  let target: { x: number; y: number } | null = null
+  let target: { x: number; y: number } | null = opts.goal ?? null
   const pool: Snapshot[] = []
   const pri = (q: Snapshot) => (target ? -Math.hypot(q.player.x - target.x, q.player.y - target.y) : q.player.x - q.player.y * 0.3 + ((q.player.x * 7 + q.player.y * 13) % 40))
   const push = (q: Snapshot & { pr?: number }, keep = true) => {
@@ -174,14 +212,9 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
       n++
       for (const m of ms) {
         restore(w, s)
-        const prev = { jump: false, dash: false }
+        if (opts.trace) holdPlates(w)
         const deaths = w.deaths
-        let t = 0
-        let air = false
-        const limit = m.wait > 0 ? m.wait : 2.6
-        while (t < limit) {
-          w.step(DT, inputAt(m, t, prev))
-          t += DT
+        runMacro(w, m, () => {
           for (const e of w.events) {
             if (e.type === 'collect') picks.add(e.index)
             if (e.type === 'checkpoint') {
@@ -194,23 +227,17 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
             if (e.type === 'key') gotKey = true
           }
           w.events.length = 0
-          if (w.complete) break
-          if (w.deaths > deaths) break
-          if (!w.player.grounded) air = true
-          const jumping = m.jump > 0 || m.dashAt > 0
-          if (m.wait === 0 && w.player.grounded && t > 0.05) {
-            if (jumping && air && !m.repeat && (m.jump2 === 0 || t > m.jump2 + 0.05)) break
-            if (m.repeat && air && t > 0.6) break
-            if (!jumping && (t >= m.hold || air) && (air || Math.abs(w.player.vx) < 1)) break
-          }
-        }
-        if (w.complete) won = true
+        })
+        const hit = w.complete || (opts.goal !== undefined && w.deaths === deaths && w.player.grounded && opts.goal.reached(w))
+        if (hit && !goal) goal = { from: s, via: m }
+        if (hit) won = true
         if (w.deaths > deaths || w.complete || !w.player.grounded) continue
         if (w.player.x > far.x) far = { x: w.player.x, y: w.player.y }
         const ns = snapshot(w)
         const k = key(ns, w)
         if (!seen.has(k)) {
           seen.add(k)
+          if (opts.trace) links.set(ns, { from: s, via: m })
           push(ns)
         }
       }
@@ -227,5 +254,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
     for (const q of [...pool]) push(q, false)
     loop(6000, () => !goals().includes(g))
   }
-  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals }
+  const path: Macro[] = []
+  if (opts.trace) for (let g = goal as { from: Snapshot; via: Macro } | null | undefined; g; g = links.get(g.from)) path.unshift(g.via)
+  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals, path }
 }

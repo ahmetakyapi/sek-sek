@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Tam doğrulama zinciri: tip → test → her şehir için bölüm, yeniden doğuş ve boss (paralel) → derleme.
+# Tam doğrulama zinciri: tip → test → her şehir için bölüm, yeniden doğuş, boss ve düşmanlı oynayış (paralel) → derleme.
 # Kullanım: bash scripts/verify-all.sh [şehir ...]     (şehir verilmezse hepsi)
-#           HIZLI=1 bash scripts/verify-all.sh istanbul  (derlemeyi ve tam test takımını atlar)
+#           HIZLI=1 bash scripts/verify-all.sh istanbul  (derlemeyi ve tam test takımını atlar; düşman adımı yine koşar:
+#           harita değişikliğinin en kolay bozduğu şey odur, çözücü yolu $OUT/yol altında önbelleklenir)
 # Çıktı: şehir başına tek satır; biri FAIL ise çıkış kodu 1. Ayrıntılar: $OUT/<şehir>.log
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -21,16 +22,17 @@ if [ -z "${HIZLI:-}" ]; then
   npm test >/dev/null 2>&1 || fail=1
 fi
 
-echo "▸ ${#cities[@]} şehir, $JOBS süreç: meydan yolu · bölüm · yeniden doğuş · boss"
+echo "▸ ${#cities[@]} şehir, $JOBS süreç: meydan yolu · bölüm · yeniden doğuş · boss · düşman"
 printf '%s\n' "${cities[@]}" | xargs -P "$JOBS" -I{} sh -c '
   { npx tsx scripts/verify-prelude.ts {}; echo "PRELUDE $?"
     npx tsx scripts/verify-levels.ts {};  echo "LEVELS $?"
     npx tsx scripts/verify-respawn.ts {}; echo "RESPAWN $?"
-    npx tsx scripts/bossbot.ts {};        echo "BOSS $?"; } > "'"$OUT"'/{}.log" 2>&1'
+    npx tsx scripts/bossbot.ts {};        echo "BOSS $?"
+    npx tsx scripts/verify-enemies.ts {}; echo "ENEMIES $?"; } > "'"$OUT"'/{}.log" 2>&1'
 
 for c in "${cities[@]}"; do
   line=""
-  for k in PRELUDE LEVELS RESPAWN BOSS; do
+  for k in PRELUDE LEVELS RESPAWN BOSS ENEMIES; do
     code=$(grep -E "^$k " "$OUT/$c.log" | awk '{print $2}')
     if [ "$code" = "0" ]; then line+=" $k ✓"; else line+=" $k ✗"; fail=1; fi
   done

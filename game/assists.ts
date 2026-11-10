@@ -56,10 +56,13 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 100, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 160, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 194, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
+    { x: 86, y: 19, from: ['^^'], to: ['  '], why: 'Direk üstündeki yaydan sonraki 7 karoluk diken tarlasını zayıf oyuncu (koşu %8 yavaş) aşamıyordu: son iki diken kalktı, iniş payı 2 karo' },
   ],
   corum: [
+    { x: 10, y: 19, from: [' '], to: ['#'], why: 'İlk ok yerden başlangıç noktasına dek uçuyordu: tabelayı ya da Leblebici’yi okuyan vuruluyordu. Araya oku durduran taş; oyuncu taşı aşınca okla tanışır' },
     { x: 134, y: 15, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 208, y: 15, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
+    { x: 211, y: 15, from: [' '], to: ['#'], why: 'Meydan kapısının yanındaki ok bayrağa (208) ve Kale Bekçisi’ne (202) dek uçuyordu: bayrakta doğan ya da konuşan vuruluyordu. Bayrağın sağına oku durduran taş' },
   ],
   ordu: [
     { x: 136, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },

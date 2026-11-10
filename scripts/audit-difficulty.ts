@@ -60,6 +60,8 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const where = (r: { won: boolean; far: { x: number; y: number } }) => (r.won ? 'geçer' : `takılır @${Math.floor(r.far.x / T)},${Math.floor(r.far.y / T)} (bölüm ${segOf(Math.floor(r.far.x / T)) + 1})`)
   console.log(`\n${level.name} · ${w.cols} karo · bayrak ${w.checkpoints.length} · en uzak bayrak arası ${longest} karo`)
   console.log(`${basic ? `  yürü+zıpla: ${where(basic)}` : ''}  zayıf oyuncu: ${where(weak)}`)
+  // zayıf oyuncu geçemiyorsa bölüm bitmemiştir: zincir bunu çıkış koduyla görür
+  if (!weak.won) process.exitCode = 1
   seg.forEach((s, i) => {
     const len = marks[i + 1] - marks[i]
     const load = s.spikes + s.pits * 1.5 + s.crumble * 0.3 + s.enemies * 2 + s.turrets * 3 + s.hammers * 3 + s.clocked * 1.5
