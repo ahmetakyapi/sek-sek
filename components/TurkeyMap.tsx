@@ -33,6 +33,25 @@ const COORDS: Record<string, [number, number]> = {
   bayburt: [40.23, 40.26],
 }
 
+/** Etiketin düğüme göre yeri (dx, dy): komşu şehirlerin adları üst üste binmesin, harita dışına taşmasın */
+const LABEL: Record<string, [number, number]> = {
+  kocaeli: [10, 14],
+  canakkale: [6, -8],
+  izmir: [4, 15],
+  sinop: [0, 15],
+  corum: [-14, 13],
+  ordu: [-4, -8],
+  trabzon: [4, -8],
+  bayburt: [10, 14],
+  sivas: [-6, 15],
+  malatya: [-16, 12],
+  diyarbakir: [6, -8],
+  mardin: [12, 14],
+  gaziantep: [4, 15],
+  adana: [-4, 15],
+  konya: [-4, 15],
+}
+
 const X = (lon: number) => (lon - 25.4) * 20
 const Y = (lat: number) => (42.4 - lat) * 20
 
@@ -40,7 +59,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
   const pts = OUTLINE.map(([lo, la]) => `${X(lo).toFixed(1)},${Y(la).toFixed(1)}`).join(' ')
   const route = LEVELS.map((l) => COORDS[l.id])
   return (
-    <svg viewBox="0 0 400 140" className="h-auto w-full" role="img" aria-label={`Yolculuk rotası: ${LEVELS.map((l) => l.name).join(', ')}`}>
+<svg viewBox="0 -6 400 152" className="h-auto w-full" role="img" aria-label={`Yolculuk rotası: ${LEVELS.map((l) => l.name).join(', ')}`}>
       <polygon points={pts} fill="#2a2438" stroke="#4a4160" strokeWidth="1.5" strokeLinejoin="round" />
       <polyline
         points={route.map(([lo, la]) => `${X(lo)},${Y(la)}`).join(' ')}
@@ -62,7 +81,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
             aria-label={`${l.name}${locked ? ' (kilitli)' : ''}`}
           >
             <circle cx={X(lo)} cy={Y(la)} r={on ? 6 : 4.5} fill={locked ? '#4a4160' : on ? '#f2c14e' : '#e8794a'} stroke="#120f1a" strokeWidth="1.5" />
-            <text x={X(lo)} y={l.id === 'kocaeli' ? Y(la) + 14 : Y(la) - 8} textAnchor="middle" fontSize="8" fill={locked ? '#7d7392' : '#f4ead8'} fontFamily="var(--font-pixel)">
+            <text x={X(lo) + (LABEL[l.id]?.[0] ?? 0)} y={Y(la) + (LABEL[l.id]?.[1] ?? -8)} textAnchor="middle" fontSize="8" fill={locked ? '#9a90b0' : '#f4ead8'} stroke="#1a1626" strokeWidth="2.4" paintOrder="stroke" fontFamily="var(--font-pixel)">
               {l.name}
             </text>
           </g>

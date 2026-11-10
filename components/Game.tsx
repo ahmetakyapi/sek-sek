@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import TouchControls from '@/components/TouchControls'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
+import { BossFigure, HeroFigure } from '@/components/Figures'
 import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
@@ -16,6 +17,7 @@ import { MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager } from '@/game/input'
+import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
@@ -33,6 +35,14 @@ const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş',
 const trCount = (n: number) => {
   const t = [TENS[Math.floor(n / 10)], ONES[n % 10]].filter(Boolean).join(' ')
   return t.charAt(0).toLocaleUpperCase('tr') + t.slice(1)
+}
+
+/** zorluk rozeti: yeşilden kırmızıya */
+const DIFF_TONE: Record<string, string> = {
+  Kolay: 'border-[#6aa04a] text-[#a8d88a]',
+  Orta: 'border-[#d9a441] text-[#f2c86a]',
+  Zor: 'border-[#e8794a] text-[#f5a571]',
+  'Çok Zor': 'border-[#d6403a] text-[#f08a80]',
 }
 
 type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
@@ -468,7 +478,7 @@ export default function Game() {
   return (
     <LangProvider value={lang}>
     <div className="game-root">
-      <canvas ref={canvasRef} className="absolute inset-x-0 bottom-0 w-full" style={{ imageRendering: 'pixelated', top: 'env(safe-area-inset-top)', height: 'calc(100% - env(safe-area-inset-top))' }} aria-label={t("Oyun alanı")} />
+      <canvas ref={canvasRef} className="absolute inset-x-0 bottom-0 w-full" style={{ imageRendering: 'pixelated', top: 'env(safe-area-inset-top)', height: 'calc(100% - env(safe-area-inset-top))' }} aria-label={t("Oyun Alanı")} />
 
       {screen === 'play' && (
         <>
@@ -567,7 +577,7 @@ export default function Game() {
               {save.character ? (
                 <figure className="polaroid absolute left-1/2 top-3 w-[118px] -translate-x-1/2 rotate-[-4deg] sm:w-[200px] md:top-10 md:w-[220px] [@media(max-height:500px)_and_(min-width:560px)]:top-8 [@media(max-height:500px)_and_(min-width:560px)]:w-[150px]">
                   <span className="tape" />
-                  <Portrait id={hero.id} className="w-full" />
+                  <HeroFigure look={hero.id} className="block aspect-[64/76] w-full" />
                   <figcaption>{hero.name}</figcaption>
                 </figure>
               ) : (
@@ -856,7 +866,8 @@ export default function Game() {
                         <span className="min-w-0">
                           <span className="block font-display text-base leading-tight [overflow-wrap:anywhere]">{displayName(l)}</span>
                           <span className="block text-[11px] leading-snug text-muted">
-                            {localize(l, lang).subtitle} · {t(l.difficulty)}
+                            {localize(l, lang).subtitle}
+                            <span className={`ml-2 inline-block border px-1.5 py-px align-middle text-[11px] font-bold ${DIFF_TONE[l.difficulty]}`}>{t(l.difficulty)}</span>
                           </span>
                         </span>
                         <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-muted">
@@ -884,15 +895,23 @@ export default function Game() {
             <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={150} />
             <p className="-mt-1 text-sm text-muted">{level.subtitle}</p>
             <figure className="notebook mt-4 rotate-[-0.6deg] px-4 py-3">
-              <figcaption className="text-[10px] font-bold tracking-[0.22em] text-[#8a3a24]">{t("DEDENİN DEFTERİNDEN")}</figcaption>
+              <figcaption className="text-[11px] font-bold tracking-[0.22em] text-[#8a3a24]">{t("DEDENİN DEFTERİNDEN")}</figcaption>
               <blockquote className="mt-1 text-[14px] italic leading-relaxed">“{level.note}”</blockquote>
             </figure>
             <p className="mt-4 text-[14px] leading-relaxed text-cream/85">{level.intro}</p>
             <Bestiary level={level} />
+            <div className="mt-4 flex items-center gap-3 border-2 border-line bg-ink/40 px-3 py-2">
+              <BossFigure city={level.city} className="h-[64px] w-[72px] shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold tracking-[0.2em] text-accent-2">{t('MEYDANIN BEKÇİSİ')}</p>
+                <p className="font-display text-xl leading-tight text-cream">{lang === 'en' ? BOSSES[level.city].nameEn : BOSSES[level.city].name}</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-muted">{t('İşaretini bekle, yorulunca üstüne bas.')}</p>
+              </div>
+            </div>
             <div className="mt-4 grid grid-cols-4 gap-2 text-center">
               <div className="border-2 border-line bg-ink/40 px-1 py-2">
                 <p className="font-display text-lg leading-none text-gold">3</p>
-                <p className="mt-1 truncate text-[10px] text-muted">{level.item}</p>
+                <p className="mt-1 truncate text-[11px] text-muted">{level.item}</p>
               </div>
               {(['altin', 'gumus', 'bronz'] as const).map((m, k) => (
                 <div key={m} className="border-2 border-line bg-ink/40 px-1 py-2">
@@ -900,7 +919,7 @@ export default function Game() {
                     <MedalBadge medal={m} />
                     {level.medals[k]}
                   </p>
-                  <p className="mt-1 text-[10px] text-muted">{t("Saniye")}</p>
+                  <p className="mt-1 text-[11px] text-muted">{t("Saniye")}</p>
                 </div>
               ))}
             </div>
@@ -935,7 +954,7 @@ export default function Game() {
               ].map(([v, k]) => (
                 <div key={k} className="border-2 border-line bg-ink/40 py-2">
                   <p className="font-display text-xl leading-none text-cream tabular-nums">{v}</p>
-                  <p className="mt-1 text-[10px] text-muted">{k}</p>
+                  <p className="mt-1 text-[11px] text-muted">{k}</p>
                 </div>
               ))}
             </div>
@@ -963,7 +982,7 @@ export default function Game() {
               </button>
             </div>
             <div className="mt-5">
-              <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+              <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
                 {t("AYARLAR")} <span className="kilim h-[6px] flex-1 opacity-50" />
               </p>
               <div className="mt-1 grid divide-y-2 divide-line/60">
@@ -1108,12 +1127,12 @@ function Notebook({ page }: { page: number }) {
       <p className="font-display text-[13px] leading-none">Memleket</p>
       <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3">
         {LEVELS.map((l) => (
-          <span key={l.id} className={`truncate border border-[#5a3c26]/40 px-1 text-[9px] leading-4 ${page >= 1 ? 'opacity-100' : 'opacity-40'}`}>
+          <span key={l.id} className={`truncate border border-[#5a3c26]/40 px-1 text-[10px] leading-4 ${page >= 1 ? 'opacity-100' : 'opacity-40'}`}>
             {String(l.plate).padStart(2, "0")} {l.name}
           </span>
         ))}
       </div>
-      {page === 2 && <p className="mt-1 text-[10px] italic">{t("“Yolun sonu, başladığım yer.”")}</p>}
+      {page === 2 && <p className="mt-1 text-[11px] italic">{t("“Yolun sonu, başladığım yer.”")}</p>}
     </div>
   )
 }
@@ -1135,7 +1154,7 @@ function Hud({ level, hud, hero, onPause }: { level: (typeof LEVELS)[number]; hu
         </span>
         <div className="min-w-0 leading-tight">
           <p className="truncate font-display text-[15px] text-cream sm:text-lg">{level.name}</p>
-          <p className="truncate text-[10px] font-bold tracking-[0.06em] text-muted">{(level.nickname ?? t(level.difficulty)).toLocaleUpperCase(lng)}</p>
+          <p className="truncate text-[11px] font-bold tracking-[0.06em] text-muted">{(level.nickname ?? t(level.difficulty)).toLocaleUpperCase(lng)}</p>
         </div>
       </div>
       <div className="pointer-events-auto flex shrink-0 items-center gap-2">
@@ -1264,14 +1283,14 @@ function Complete({
                 <figcaption className="!text-[12px]">{heroName}</figcaption>
               </figure>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold tracking-[0.22em] text-muted">{result.newBest ? t('YENİ REKOR') : best ? t('REKORUN {time}', { time: formatTime(best.timeMs) }) : t('SÜRE')}</p>
+                <p className="text-[11px] font-bold tracking-[0.22em] text-muted">{result.newBest ? t('YENİ REKOR') : best ? t('REKORUN {time}', { time: formatTime(best.timeMs) }) : t('SÜRE')}</p>
                 <p className="font-display text-5xl leading-none tabular-nums text-cream sm:text-6xl">{formatTime(result.timeMs)}</p>
                 <p className="mt-1.5 text-[13px] text-muted">{t('{deaths} düşüş · {found}/3 {item}', { deaths: result.deaths, found, item: level.item })}</p>
               </div>
               <Seal medal={medal} bronze={level.medals[2]} />
             </div>
 
-            <p className="mt-5 flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+            <p className="mt-5 flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
               {t('HATIRALAR')} <span className="kilim h-[6px] flex-1 opacity-50" />
             </p>
             <div className="mt-2 grid grid-cols-3 gap-3">
@@ -1285,14 +1304,14 @@ function Complete({
                       {!have && <span className="absolute inset-0 flex items-center justify-center font-display text-2xl text-muted">?</span>}
                     </div>
                     <p className={`mt-1.5 font-display text-[15px] leading-tight ${have ? '' : 'text-muted'}`}>{level.item}</p>
-                    <p className={`text-[10px] font-bold tracking-[0.12em] ${have ? 'text-[#8a3a24]' : 'text-muted'}`}>{have ? f.title.toLocaleUpperCase(lng) : t('SAKLI')}</p>
-                    {now && <span className="absolute -right-2 -top-2 rotate-[12deg] border-2 border-[#c8302a] bg-[#f4ead8] px-1 text-[9px] font-bold tracking-[0.1em] text-[#c8302a]">{t('BULUNDU')}</span>}
+                    <p className={`text-[11px] font-bold tracking-[0.12em] ${have ? 'text-[#8a3a24]' : 'text-muted'}`}>{have ? f.title.toLocaleUpperCase(lng) : t('SAKLI')}</p>
+                    {now && <span className="absolute -right-2 -top-2 rotate-[12deg] border-2 border-[#c8302a] bg-[#f4ead8] px-1 text-[10px] font-bold tracking-[0.1em] text-[#c8302a]">{t('BULUNDU')}</span>}
                   </div>
                 )
               })}
             </div>
 
-            <p className="mt-5 flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+            <p className="mt-5 flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
               {t('DEFTERE YAZILANLAR')} <span className="kilim h-[6px] flex-1 opacity-50" />
             </p>
             <div className="mt-2 grid gap-2.5">
@@ -1331,7 +1350,7 @@ function Complete({
 
           {/* ── sağ: kartpostal, paylaşım, skor tablosu */}
           <div className="min-w-0">
-            <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+            <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
               {t('KARTPOSTALIN')} <span className="kilim h-[6px] flex-1 opacity-50" />
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1359,7 +1378,7 @@ function Complete({
             </div>
 
             <div className="mt-5 border-2 border-line bg-ink/40 p-3.5">
-              <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-gold">
+              <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
                 {t('SKOR TABLOSU')} <span className="kilim h-[6px] flex-1 opacity-50" />
               </p>
               {result.relaxed ? (
@@ -1411,7 +1430,7 @@ function Seal({ medal, bronze }: { medal: 'altin' | 'gumus' | 'bronz' | null; br
   const look = medal ? { altin: [t('ALTIN'), '#e3a92c', '#9a6a12', '#3a2408'], gumus: [t('GÜMÜŞ'), '#c9d0da', '#7c8696', '#232a36'], bronz: [t('BRONZ'), '#c97a44', '#7a4220', '#2a1408'] }[medal] : null
   if (!look)
     return (
-      <div className="flex h-[76px] w-[76px] shrink-0 rotate-[-8deg] flex-col items-center justify-center rounded-full border-2 border-dashed border-line text-center text-[10px] leading-tight text-muted">
+      <div className="flex h-[76px] w-[76px] shrink-0 rotate-[-8deg] flex-col items-center justify-center rounded-full border-2 border-dashed border-line text-center text-[11px] leading-tight text-muted">
         {t("Bronz")}
         <br />
         {bronze} sn
@@ -1491,7 +1510,7 @@ function ScoreBoard({ me }: { me: string }) {
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2">
-        <button aria-label={t("Önceki şehir")} className="pixel-btn shrink-0 px-2.5 py-1.5" onClick={() => step(-1)}>
+        <button aria-label={t("Önceki Şehir")} className="pixel-btn shrink-0 px-2.5 py-1.5" onClick={() => step(-1)}>
           ‹
         </button>
         <div ref={strip} className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto py-1">
@@ -1504,7 +1523,7 @@ function ScoreBoard({ me }: { me: string }) {
             </button>
           ))}
         </div>
-        <button aria-label={t("Sonraki şehir")} className="pixel-btn shrink-0 px-2.5 py-1.5" onClick={() => step(1)}>
+        <button aria-label={t("Sonraki Şehir")} className="pixel-btn shrink-0 px-2.5 py-1.5" onClick={() => step(1)}>
           ›
         </button>
       </div>
