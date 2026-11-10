@@ -30,6 +30,7 @@ paths:
 
 - `node scripts/art/sheet.cjs out.png`: bütün kılıklar, hareketler ve boss’lar tek föyde.
 - `node scripts/art/portraits.cjs --foy out.png`: sekiz portre büyük ve küçük boyda (föysüz çağrı PNG'leri yeniden üretir).
+- `node scripts/art/icons.cjs --foy out.png`: amblem, favicon ve uygulama ikonları bütün boylarda (16 px dahil); maskot neşeli görünmeli.
 - `node scripts/art/creatures.cjs out.png`: düşmanlar (her durum), dost hayvanlar, hatıralar ve ortak nesneler.
 - `node scripts/preview.cjs <şehir> [start|arrival|boss|npc:0] out.png [--telefon|--dikey|--memo|--en]`: oyunun içinden.
 - Şehir kartları: `node scripts/art/banners.cjs <şehir>` (görünüm değişince yeniden üret).

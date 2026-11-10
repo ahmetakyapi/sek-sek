@@ -6,7 +6,7 @@
  *
  *   node scripts/art/portraits.cjs                 dosyaları üretir
  *   node scripts/art/portraits.cjs --foy [çıktı]   yalnız föy: bütün kılıklar büyük, küçük, yüz kırpımı, göz kırpma ve atkı renkleri
- *   node scripts/art/portraits.cjs --buyuk [çıktı] iki kahraman 440 px genişlikte yan yana (ayrıntıya bakmak için)
+ *   node scripts/art/portraits.cjs --buyuk [çıktı] Uktun, Memo ve genç 440 px genişlikte yan yana, altta 40 px (ayrıntıya ve karışmaya bakmak için)
  */
 const { chromium } = require('playwright')
 const esbuild = require('esbuild')
@@ -37,9 +37,15 @@ window.one = (look, scarf) => {
 }
 window.big = () => {
   const bw = 440, bh = Math.round(bw * 76 / 64), pad = 12
-  const cv = document.getElementById('c'); cv.width = 2 * bw + 3 * pad; cv.height = bh + 2 * pad
+  const who = ['uktun', 'memo', 'genc']
+  const cv = document.getElementById('c'); cv.width = who.length * (bw + pad) + pad; cv.height = bh + 3 * pad + 48
   const c = cv.getContext('2d'); c.fillStyle = '#2a2438'; c.fillRect(0, 0, cv.width, cv.height)
-  ;['uktun', 'memo'].forEach((k, i) => { c.save(); c.translate(pad + i * (bw + pad), pad); S.drawPortrait(c, k, bw, bh, 0, { still: true }); c.restore() })
+  who.forEach((k, i) => {
+    const x = pad + i * (bw + pad)
+    c.save(); c.translate(x, pad); S.drawPortrait(c, k, bw, bh, 0, { still: true }); c.restore()
+    c.save(); c.translate(x, bh + 2 * pad); S.drawPortrait(c, k, 40, 48, 0, { still: true }); c.restore()
+    c.save(); c.translate(x + 52, bh + 2 * pad); S.drawPortrait(c, k, 38, 38, 0, { still: true, face: true }); c.restore()
+  })
 }
 window.sheet = () => {
   const bw = 220, bh = Math.round(bw * 76 / 64), sw = 40, sh = Math.round(sw * 76 / 64), pad = 16

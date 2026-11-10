@@ -42,7 +42,7 @@ const BACKDROP: Record<Look, [string, string]> = {
   amca: ['#f2dcb6', '#d8a67e'],
   teyze: ['#cfe6d6', '#8fbfa8'],
   usta: ['#f8dcaa', '#e6a672'],
-  genc: ['#f6d2c8', '#dc98a0'],
+  genc: ['#e4dcf6', '#a89ad6'],
   coban: ['#d2e6ee', '#92bcd2'],
   ozan: ['#f4dc9e', '#d8a45c'],
 }
@@ -226,6 +226,53 @@ function shoulders(c: Ctx, look: Look, s: Skin) {
     stitch(c, 80.2, 119, 81.2, 110.4, 78.4, 104, s.coat)
     curve(c, 12, 101.6, 19, 97.4, 27, 96.6, 1, s.coatS)
   }
+}
+
+/** gencin kapüşonlusu: boynun arkasında toplanan kapüşon, önde kavuşan iki kat ve sarkan iki ip (boyundan önce çizilir) */
+function hoodie(c: Ctx, s: Skin) {
+  blob(
+    c,
+    () => {
+      c.moveTo(31.5, 91.5)
+      c.quadraticCurveTo(31.5, 78.5, 42, 76.5)
+      c.lineTo(63, 76.5)
+      c.quadraticCurveTo(73.5, 78.5, 73.5, 91.5)
+      c.quadraticCurveTo(52, 99, 31.5, 91.5)
+    },
+    s.coatS,
+  )
+  blob(
+    c,
+    () => {
+      c.moveTo(31.5, 90.5)
+      c.quadraticCurveTo(39, 93.5, 51.6, 104)
+      c.lineTo(51.6, 124)
+      c.lineTo(29, 124)
+      c.quadraticCurveTo(27, 100, 31.5, 90.5)
+    },
+    s.coat,
+    { color: s.coatS, dx: -2.4, dy: -1.6 },
+  )
+  blob(
+    c,
+    () => {
+      c.moveTo(73.5, 90.5)
+      c.quadraticCurveTo(66, 93.5, 53, 104)
+      c.lineTo(53, 124)
+      c.lineTo(76, 124)
+      c.quadraticCurveTo(78, 100, 73.5, 90.5)
+    },
+    s.coat,
+    { color: s.coatS, dx: -2.6, dy: -1.6 },
+  )
+  // kat ışığı, dikiş ve ipler
+  curve(c, 33, 93.4, 39.6, 96.4, 48.6, 103.6, 1.2, s.coatL)
+  stitch(c, 31.6, 96.6, 38.6, 99.6, 49.4, 108.6, s.coatL)
+  stitch(c, 73.4, 96.6, 66.4, 99.6, 55.2, 108.6, s.coatS)
+  stroke(c, [46.4, 102, 45.4, 108, 46, 113.4], 1.1, '#f6ecd8')
+  stroke(c, [58.2, 102, 59.4, 107.4, 58.8, 112], 1.1, '#f6ecd8')
+  stroke(c, [46, 113.4, 46.1, 115.4], 1.9, '#d9c9a8')
+  stroke(c, [58.8, 112, 58.7, 114], 1.9, '#d9c9a8')
 }
 
 /** dikiş: kesik kesik ince çizgi */
@@ -485,33 +532,13 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
     soft(c, 38, 65.6, 3.6, 2, s.blush)
     soft(c, 69.4, 64.8, 2.6, 1.8, s.blush)
   }
-  if (look === 'genc') {
-    // kirli sakal gölgesi: çene ve dudak üstü
-    c.save()
-    c.beginPath()
-    headPath(c, false, true)
-    c.clip()
-    c.fillStyle = 'rgba(51,34,26,0.2)'
-    c.beginPath()
-    c.moveTo(28, 60)
-    c.lineTo(33.6, 60)
-    c.quadraticCurveTo(37, 74.5, 48, 79.4)
-    c.quadraticCurveTo(56.6, 82, 65, 78.6)
-    c.quadraticCurveTo(70.6, 73.5, 72.6, 61)
-    c.lineTo(78, 61)
-    c.lineTo(78, 90)
-    c.lineTo(28, 90)
-    c.closePath()
-    c.fill()
-    c.restore()
-  }
   // gözler: yüzün ortasında, badem biçimli; yakın göz iri, uzak göz dönük yüzde biraz dar
   const ry = fem ? 4.9 : 4.3
   // iki göz aynı boyda, aralarında bir göz genişliği; irisler aynı noktaya (kameraya) bakar
   eye(c, s, 45.4, 54.6, 4.5, ry, shut, look === 'uktun' ? 3 : fem ? 1 : 0, 0.3)
   eye(c, s, 63.4, 54.4, 4.3, ry, shut, look === 'uktun' ? 2 : 0, 0.3, 1)
   // kaşlar: gözün üstünde, yukarı kavisli (dostça); iç uç (buruna yakın) dolgun
-  const th = look === 'uktun' ? 1.2 : fem ? 1 : look === 'memo' ? 1.7 : look === 'genc' ? 1.8 : 2.1
+  const th = look === 'uktun' ? 1.2 : fem ? 1 : look === 'memo' ? 1.7 : look === 'genc' ? 1.15 : 2.1
   brow(c, 51.8, 45.6, 45.4, 41.2, 38, 46.4, th, s.brow)
   brow(c, 59.2, 45.3, 64.2, 41.1, 69.8, 45.6, th, s.brow)
   if (look === 'memo') {
@@ -541,7 +568,7 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
   c.globalAlpha = 1
   ell(c, 57, 63 + ny, 1.5, 1.1, 'rgba(255,255,255,0.5)')
   curve(c, 56.9, 51.6, 57.2, 55, 57.5, 58.6, 1, 'rgba(255,255,255,0.22)')
-  if (!fem) {
+  if (!fem && look !== 'genc') {
     // elmacık: yakın yanakta kısa bir gölge çizgisi
     curve(c, 34.4, 62.6, 35.2, 67, 38.4, 70.6, 0.8, s.skinS)
   }
@@ -551,6 +578,16 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
     curve(c, 72.6, 51.2, 73.8, 53, 73.4, 55.4, 0.8, s.skinS)
     curve(c, 48.6, 64.4, 47, 67.4, 47.8, 70.4, 0.8, s.skinS)
     curve(c, 63.8, 64, 65.4, 67, 64.8, 69.8, 0.8, s.skinS)
+  }
+  if (look === 'genc') {
+    // burun üstünde birkaç çil, yakın yanakta gamze
+    c.fillStyle = s.skinS
+    for (const [x, y] of [[50.6, 62.4], [52.8, 63.8], [63.6, 62.2], [65.4, 63.6], [48.6, 64]]) {
+      c.beginPath()
+      c.arc(x, y, 0.5, 0, Math.PI * 2)
+      c.fill()
+    }
+    curve(c, 46.6, 72.4, 45.9, 73.6, 46.6, 74.8, 0.8, s.skinS)
   }
   if (look === 'uktun') {
     // çiller
@@ -624,7 +661,6 @@ function mouth(c: Ctx, look: Look, s: Skin) {
     curve(c, 48.8, 73, 48.9, 73.7, 49.8, 73.9, 0.9, '#6a2c2a')
     curve(c, 64.4, 70.9, 64.6, 71.9, 63.4, 72.3, 0.9, '#6a2c2a')
     ell(c, 56.4, 77.2, 1.8, 0.55, 'rgba(255,255,255,0.35)', -0.1)
-    curve(c, 53.6, 80.6, 56.4, 81.6, 59.4, 80.2, 0.9, s.skinS)
     return
   }
   // kapalı gülümseme; sakallıda açık renk, bıyıklıda bıyığın altında
@@ -693,61 +729,79 @@ function mustache(c: Ctx, s: Skin) {
   curve(c, 56.6, 69, 56.4, 70.6, 56.6, 72.2, 0.9, s.hairS)
 }
 
-/** kirli sakalın kısa telleri (x, y, eğim): çene hattı, bıyık ve çene ucunda toplanır, dudak çevresi boştur */
-const STUBBLE: number[] = (() => {
-  const out: number[] = []
-  let seed = 7
-  const rnd = () => {
-    seed = (seed * 16807) % 2147483647
-    return seed / 2147483647
-  }
-  const inside = (x: number, y: number, cx: number, cy: number, rx: number, ry: number) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1
-  for (let i = 0; i < 4200 && out.length < 3 * 420; i++) {
-    const x = 28 + rnd() * 48
-    const y = 57 + rnd() * 29
-    const lean = (x - 56) * 0.014 + (rnd() - 0.5) * 0.24
-    if (inside(x, y, 56.5, 75.4, 9, 2.9)) continue
-    if (!inside(x, y, 55.5, 60, 17.6, 21.6) ? rnd() < 0.8 : inside(x, y, 56.8, 71, 8.6, 1.8) || inside(x, y, 56.6, 81.6, 8, 3.8)) out.push(x, y, lean)
-  }
-  return out
-})()
-
 /**
- * Memo'nun kirli sakalı: üç dört günlük tıraşsızlık. Önce yumuşak kenarlı gölge (favoriden çeneye ince hat, dudak üstü,
- * çene ucu), üstüne kılın çıkış yönüne yatan kısa teller. Çene hattı ve ağız açıkta kalır; ağız bunun üstüne çizilir.
+ * Memo'nun sakalı: kısa ve bakımlı, berberden çıkmış gibi. Tek parça düz ton; yanakta favoriden ağız köşesine inen
+ * temiz bir üst sınır, ince bıyık sakala bağlı, dudaklar ve alt dudağın altı açık. Hacim tek kademe gölge ve
+ * çene hattında ince bir ışıkla verilir; iç dokuda tel yoktur. Ağız bunun üstüne çizilir.
  */
-function stubble(c: Ctx) {
-  const tone = (a: number) => `rgba(44,28,22,${a})`
+function trimmedBeard(c: Ctx, s: Skin) {
+  const shape = () => {
+    // dış sınır: yanak çizgisi, bıyığın üstü, uzak yanak; alt taraf baş hattına kırpılır
+    c.moveTo(26, 57)
+    c.lineTo(33.6, 57)
+    c.quadraticCurveTo(34.8, 70.4, 46.4, 73)
+    c.quadraticCurveTo(51.4, 68.8, 56.8, 69.9)
+    c.quadraticCurveTo(61.8, 68.8, 66, 71.2)
+    c.quadraticCurveTo(71.6, 70, 73.6, 62)
+    c.lineTo(80, 62)
+    c.lineTo(80, 92)
+    c.lineTo(26, 92)
+    c.closePath()
+    // dudak boşluğu: bıyığın altı, ağız, alt dudağın altındaki açıklık
+    c.moveTo(48.4, 73.6)
+    c.quadraticCurveTo(56.6, 70.8, 64.8, 72.3)
+    c.quadraticCurveTo(65.8, 76, 62.4, 79)
+    c.quadraticCurveTo(57, 81.2, 51.6, 79.2)
+    c.quadraticCurveTo(47.6, 76.6, 48.4, 73.6)
+    c.closePath()
+  }
   c.save()
   c.beginPath()
   headPath(c, false)
   c.clip()
-  // çene hattı: iç içe üç şerit, kenarı yumuşak
-  c.lineCap = 'butt'
-  for (const [w, a] of [[15, 0.16], [10, 0.18], [5.5, 0.2]]) {
-    c.beginPath()
-    c.moveTo(30.4, 57)
-    c.bezierCurveTo(32.6, 72.6, 44, 85, 56, 85)
-    c.bezierCurveTo(65.4, 85, 72.6, 76, 76.4, 66)
-    c.strokeStyle = tone(a)
-    c.lineWidth = w
-    c.stroke()
-  }
-  // favorinin sakala karıştığı yer, dudak üstü, çene ucu ve dudak altı
-  soft(c, 31.6, 60, 2.2, 3.8, tone(0.38))
-  soft(c, 56.8, 71, 6.2, 1.5, tone(0.46))
-  soft(c, 56.6, 81.8, 7.4, 3.2, tone(0.36))
-  soft(c, 56.6, 78.6, 2, 1, tone(0.32))
   c.beginPath()
-  for (let i = 0; i < STUBBLE.length; i += 3) {
-    c.moveTo(STUBBLE[i], STUBBLE[i + 1])
-    c.lineTo(STUBBLE[i] + STUBBLE[i + 2], STUBBLE[i + 1] + 0.74)
-  }
-  c.strokeStyle = tone(0.58)
-  c.lineWidth = 0.42
+  shape()
+  c.fillStyle = s.trim!
+  c.fill('evenodd')
+  // tek kademe gölge: sağ alt yanda
+  c.save()
+  c.beginPath()
+  shape()
+  c.clip('evenodd')
+  c.beginPath()
+  c.moveTo(80, 60)
+  c.quadraticCurveTo(70, 80, 50, 83.4)
+  c.lineTo(50, 92)
+  c.lineTo(80, 92)
+  c.closePath()
+  c.fillStyle = s.trimS!
+  c.fill()
+  c.restore()
+  // kenarlar: ince koyu hat; çene hattında ince ışık
+  c.beginPath()
+  c.moveTo(33.6, 57)
+  c.quadraticCurveTo(34.8, 70.4, 46.4, 73)
+  c.quadraticCurveTo(51.4, 68.8, 56.8, 69.9)
+  c.quadraticCurveTo(61.8, 68.8, 66, 71.2)
+  c.quadraticCurveTo(71.6, 70, 73.6, 62)
+  c.moveTo(48.4, 73.6)
+  c.quadraticCurveTo(47.6, 76.6, 51.6, 79.2)
+  c.quadraticCurveTo(57, 81.2, 62.4, 79)
+  c.quadraticCurveTo(65.8, 76, 64.8, 72.3)
+  c.strokeStyle = s.trimS!
+  c.lineWidth = 0.7 * boost
+  c.lineJoin = 'round'
   c.lineCap = 'round'
   c.stroke()
+  curve(c, 36.6, 71.6, 40.6, 79, 48.6, 82.6, 1, 'rgba(255,214,170,0.26)')
   c.restore()
+  // sakalın örttüğü çene hattı yeniden çekilir
+  c.beginPath()
+  headPath(c, false)
+  c.closePath()
+  c.strokeStyle = INK
+  c.lineWidth = FACE_INKW * boost
+  c.stroke()
 }
 
 // ── saç ──────────────────────────────────────────────────────────────────
@@ -897,6 +951,53 @@ function shortHair(c: Ctx, s: Skin) {
   curve(c, 71, 37.6, 71.6, 30, 66, 24, 1, s.hairS)
   curve(c, 25.4, 40, 28, 25.5, 42, 20.6, 2.4, s.hairL)
   curve(c, 52, 17.6, 58, 15.6, 62.6, 19.4, 1.6, s.hairL)
+}
+
+/** gencin saçı: açık kestane, kıvırcık; tepede ve yanlarda lüle lüle kabarır, alna bukleler düşer, favori yoktur */
+function curlyHair(c: Ctx, s: Skin) {
+  blob(
+    c,
+    () => {
+      c.moveTo(27, 52)
+      c.quadraticCurveTo(21.5, 47, 24, 41)
+      c.quadraticCurveTo(19.5, 34, 25.5, 28.5)
+      c.quadraticCurveTo(25, 20.5, 33.5, 18.5)
+      c.quadraticCurveTo(37.5, 11.5, 46, 13.5)
+      c.quadraticCurveTo(52, 8.5, 59.5, 12.5)
+      c.quadraticCurveTo(67, 10.5, 71.5, 16.5)
+      c.quadraticCurveTo(79, 18, 79.5, 25.5)
+      c.quadraticCurveTo(84.5, 31, 80.5, 37.5)
+      c.quadraticCurveTo(82.5, 44, 77.6, 49)
+      // alın: sağdan sola bukleler
+      c.quadraticCurveTo(77.4, 43, 73, 40.5)
+      c.quadraticCurveTo(69.5, 43.6, 64.5, 40.2)
+      c.quadraticCurveTo(60, 44, 54.4, 40.4)
+      c.quadraticCurveTo(49.5, 44, 44, 40.2)
+      c.quadraticCurveTo(39, 43, 35.6, 39.8)
+      c.quadraticCurveTo(32.6, 43, 32.6, 48)
+      c.quadraticCurveTo(31.6, 52, 29.4, 53.4)
+      c.quadraticCurveTo(28, 53.2, 27, 52)
+    },
+    s.hair,
+    { color: s.hairS, dx: -3, dy: -2.6 },
+  )
+  // bukle kıvrımları: her lülenin içinde kısa bir yay
+  for (const [x, y, r, a] of [[31, 26, 4, 0.4], [41, 19.5, 4.4, 0.1], [53, 17, 4.6, -0.1], [65, 18.5, 4.4, -0.3], [74.5, 26, 4, -0.6], [77, 37, 3.4, -0.9], [27.5, 37.5, 3.6, 0.8], [38, 31, 3.8, 0.3], [49, 28.5, 4, 0], [60.5, 29, 4, -0.2], [69.5, 33, 3.6, -0.5], [44, 36.5, 2.8, 0.2], [57, 36.6, 2.8, -0.1]]) {
+    c.beginPath()
+    c.arc(x, y, r, Math.PI * (0.15 + a * 0.2), Math.PI * (1.05 + a * 0.2))
+    c.strokeStyle = s.hairS
+    c.lineWidth = 0.85 * boost
+    c.lineCap = 'round'
+    c.stroke()
+  }
+  // parlama: sol üstteki lülelerin sırtında
+  curve(c, 23.6, 38, 22.4, 33.6, 26.4, 30, 1.8, s.hairL)
+  curve(c, 27.6, 26.4, 28.4, 21.6, 34, 20.4, 2, s.hairL)
+  curve(c, 37.6, 17.4, 40.6, 14.4, 45.4, 15.4, 1.8, s.hairL)
+  curve(c, 49.6, 14.4, 53.4, 11.6, 58, 13.6, 1.6, s.hairL)
+  curve(c, 35.4, 31.4, 37.6, 28.4, 40.6, 28, 1.2, s.hairL)
+  curve(c, 46.4, 28.6, 48.6, 25.6, 51.6, 25.6, 1.2, s.hairL)
+  hairRim(c, s, 79.4, 26.6, 83.4, 31.6, 80.2, 37)
 }
 
 function memoTopPath(c: Ctx) {
@@ -1263,7 +1364,8 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   ink(INKW)
   shoulders(c, look, s)
   ink(MID_INKW)
-  collar(c, look, s)
+  if (look === 'genc') hoodie(c, s)
+  else collar(c, look, s)
   propFront(c, s)
   c.restore()
 
@@ -1311,11 +1413,12 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   c.restore()
   face(c, look, s, shut, fem)
   if (s.beard) beard(c, s, look === 'ozan')
-  if (s.stubble) stubble(c)
+  if (s.trim) trimmedBeard(c, s)
   mouth(c, look, s)
   if (s.mustache && !s.beard) mustache(c, s)
   if (s.long) longHairFront(c, s)
   else if (s.hat === 'yazma') partedHair(c, s)
+  else if (look === 'genc') curlyHair(c, s)
   else if (look === 'memo') {
     // kulak favorinin arkasında kalır
     ear(c, s, 26.6)

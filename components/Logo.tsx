@@ -1,7 +1,7 @@
-/** Plaka rozeti amblemi (public/logo-emblem.png, 32×32 piksel ızgaradan) + yazı. */
+/** Amblem (public/logo-emblem.png: güneşin önünde seken kırmızı atkılı Uktun, vektör; scripts/art/icons.cjs üretir) + yazı. */
 export function Emblem({ size = 40, className = '' }: { size?: number; className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo-emblem.png" width={size} height={size} alt="" className={className} style={{ imageRendering: 'pixelated' }} />
+  return <img src="/logo-emblem.png" width={size} height={size} alt="" className={className} />
 }
 
 export default function Logo({ size = 40 }: { size?: number }) {

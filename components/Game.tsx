@@ -718,7 +718,7 @@ export default function Game() {
                 <div className="kilim absolute inset-x-0 top-0" />
                 <div className="absolute bottom-1 left-7 flex items-end gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/logo-emblem.png" width={56} height={56} alt="" style={{ imageRendering: 'pixelated' }} className="mb-1 drop-shadow-[0_3px_0_#120f1a]" />
+                  <img src="/logo-emblem.png" width={56} height={56} alt="" className="mb-1 drop-shadow-[0_3px_0_#120f1a]" />
                   <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Sek-Sek</h1>
                 </div>
               </div>
