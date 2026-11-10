@@ -1,4 +1,4 @@
-import { index, integer, pgTable, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 /** Tablo adları seksek_ önekli (8 Kasım'a dek ortak veritabanında memleket_ önekliydi; oyun artık kendi Neon veritabanında). */
 /** Hesaplar: kullanıcı adı (büyük/küçük harf duyarsız tekil) + scrypt ile saklanan şifre. */
@@ -18,6 +18,16 @@ export const sessions = pgTable('seksek_sessions', {
     .references(() => players.id, { onDelete: 'cascade' }),
   tokenHash: text('token_hash').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+/** Bulut kaydı: hesaba bağlı ilerleme (açılan şehirler, süreler, pul, nazar, rozetler). Tarayıcının yerel deposu
+ *  silinse de (Safari 7 gün kullanılmayan sitenin deposunu siler) giriş yapan oyuncu kaldığı yerden devam eder. */
+export const saves = pgTable('seksek_saves', {
+  playerId: uuid('player_id')
+    .primaryKey()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  data: jsonb('data').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 export const scores = pgTable(

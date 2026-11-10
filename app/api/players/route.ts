@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { NAME_ERR, NAME_RE, PASS_ERR, cleanName, closeSession, findByName, hashPassword, nameKey, openSession, validPassword, verifyPlayer } from '@/lib/players'
+import { NAME_ERR, NAME_RE, PASS_ERR, cleanName, clearSessionCookie, closeSession, cookieSession, findByName, hashPassword, nameKey, openSession, setSessionCookie, validPassword, verifyPlayer } from '@/lib/players'
 import { players } from '@/lib/schema'
 
 export const dynamic = 'force-dynamic'
@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
     if (await findByName(name)) return bad('Bu kullanıcı adı alınmış, başka bir ad dene', 409)
     const passwordHash = await hashPassword(password)
     const row = (await db().insert(players).values({ name, nameKey: nameKey(name), passwordHash }).returning({ id: players.id }))[0]
-    return NextResponse.json({ id: row.id, name, token: await openSession(row.id) })
+    const token = await openSession(row.id)
+    return setSessionCookie(NextResponse.json({ id: row.id, name, token }), row.id, token)
   } catch {
     return bad('Hesap açılamadı, birazdan tekrar dene', 503)
   }
@@ -54,13 +55,14 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-/** DELETE {id, token} → bu cihazın oturumunu kapat */
+/** DELETE {id, token} → bu cihazın oturumunu kapat (çerez de silinir) */
 export async function DELETE(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as Body
+  const c = cookieSession(req)
   try {
-    await closeSession(body?.id, body?.token)
+    await closeSession(body?.id ?? c?.id, body?.token ?? c?.token)
   } catch {
     /* oturum zaten yoksa da çıkış sayılır */
   }
-  return NextResponse.json({ ok: true })
+  return clearSessionCookie(NextResponse.json({ ok: true }))
 }

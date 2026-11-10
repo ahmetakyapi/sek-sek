@@ -2,6 +2,7 @@ import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
+import type { NextRequest, NextResponse } from 'next/server'
 import { players, sessions } from '@/lib/schema'
 
 const scryptAsync = promisify(scrypt) as (pw: string, salt: Buffer, len: number) => Promise<Buffer>
@@ -58,6 +59,31 @@ export async function verifyPlayer(id: unknown, token: unknown) {
       .limit(1)
   )[0]
   return row ?? null
+}
+
+/**
+ * Oturum çerezi: sunucu koyar (HttpOnly, Secure, SameSite=Lax), bir yıldan uzun yaşar ve her açılışta tazelenir.
+ * Yerel depo silinse bile (Safari'nin 7 gün kuralı, temizlik) oyuncu yeniden giriş yapmadan tanınır.
+ * Değer: <oyuncu kimliği>.<oturum anahtarı>; veritabanında anahtarın yalnız özeti durur.
+ */
+export const SESSION_COOKIE = 'seksek_oturum'
+const COOKIE_AGE = 400 * 24 * 3600
+
+export function setSessionCookie(res: NextResponse, id: string, token: string) {
+  res.cookies.set(SESSION_COOKIE, `${id}.${token}`, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: COOKIE_AGE })
+  return res
+}
+
+export function clearSessionCookie(res: NextResponse) {
+  res.cookies.set(SESSION_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 0 })
+  return res
+}
+
+/** Çerezdeki oturum: { id, token } ya da null (doğrulamaz; verifyPlayer ile sınanır) */
+export function cookieSession(req: NextRequest) {
+  const v = req.cookies.get(SESSION_COOKIE)?.value ?? ''
+  const [id, token] = v.split('.')
+  return id && token ? { id, token } : null
 }
 
 export async function findByName(name: string) {

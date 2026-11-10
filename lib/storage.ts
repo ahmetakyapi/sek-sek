@@ -96,40 +96,87 @@ export function loadSave(): Save {
       }
     }
     if (!raw) return defaultSave()
-    const parsed = JSON.parse(raw) as Partial<Save>
-    const s = { ...defaultSave(), ...parsed }
-    if (parsed.mapVersion === undefined) s.mapVersion = 1
-    // rehber alanından önceki kayıt: yalnız henüz hiç oynamamış oyuncu rehberi görür
-    if (parsed.tutorial === undefined) s.tutorial = !parsed.seenStory && !parsed.unlocked && !Object.keys(parsed.best ?? {}).length
-    // haritalar uzadı: eski süreler yeni yolla yarışamaz (hatıralar kalır), eski hayalet koşular silinir
-    if (s.mapVersion < TIMES_SINCE && !parsed.timesReset) {
-      for (const b of Object.values(s.best)) b.stale = true
+    return normalizeSave(JSON.parse(raw) as Partial<Save>)
+  } catch {
+    return defaultSave()
+  }
+}
+
+/** Ham kaydı (yerel depodan ya da buluttan) bugünkü biçime getirir: eski sürümlerin alanları ve şehir sırası taşınır. */
+export function normalizeSave(parsed: Partial<Save>): Save {
+  const s = { ...defaultSave(), ...parsed }
+  if (parsed.mapVersion === undefined) s.mapVersion = 1
+  // rehber alanından önceki kayıt: yalnız henüz hiç oynamamış oyuncu rehberi görür
+  if (parsed.tutorial === undefined) s.tutorial = !parsed.seenStory && !parsed.unlocked && !Object.keys(parsed.best ?? {}).length
+  // haritalar uzadı: eski süreler yeni yolla yarışamaz (hatıralar kalır), eski hayalet koşular silinir
+  if (s.mapVersion < TIMES_SINCE && !parsed.timesReset) {
+    for (const b of Object.values(s.best)) b.stale = true
+    try {
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const k = localStorage.key(i)
         if (k?.startsWith('seksek:ghost:')) localStorage.removeItem(k)
       }
-      s.timesReset = true
+    } catch {
+      /* depo yoksa silinecek hayalet de yok */
     }
-    // eski sıradaki açılan şehri kimliğiyle yeni sıraya taşı (bir kez; not kapanınca sürüm güncellenir)
-    const order = ORDERS[s.mapVersion]
-    if (order && !parsed.migrated) {
-      const id = order[Math.min(s.unlocked, order.length - 1)]
-      const idx = LEVELS.findIndex((l) => l.id === id)
-      s.unlocked = idx >= 0 ? idx : 0
-      s.migrated = true
+    s.timesReset = true
+  }
+  // eski sıradaki açılan şehri kimliğiyle yeni sıraya taşı (bir kez; not kapanınca sürüm güncellenir)
+  const order = ORDERS[s.mapVersion]
+  if (order && !parsed.migrated) {
+    const id = order[Math.min(s.unlocked, order.length - 1)]
+    const idx = LEVELS.findIndex((l) => l.id === id)
+    s.unlocked = idx >= 0 ? idx : 0
+    s.migrated = true
+  }
+  // şifresiz eski yolcu kimlikleri silindi: oyuncu bir kez üye olur ya da giriş yapar
+  if ((parsed.accountVersion ?? 1) < 2) {
+    s.player = null
+    s.skippedName = false
+    s.accountVersion = 2
+  }
+  // eski sürümdeki "ayla" seçimi Uktun'a taşınır
+  if ((s.character as string) === 'ayla') s.character = 'uktun'
+  if ((s.character as string) === 'kerem') s.character = 'memo'
+  return s
+}
+
+/** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion'] as const
+export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
+
+/**
+ * Yerel kayıt ile bulut kaydını birleştirir; hiçbir ilerleme kaybolmaz: açılan şehir en ilerisi, şehir başına en iyi
+ * süre ve bütün hatıralar, pul / nazar / boss birleşimi, görev sayaçlarının büyüğü, Boss Rush'ın iyisi.
+ */
+export function mergeSaves(local: Save, cloud: Save): Save {
+  const best: Record<string, Best> = { ...cloud.best }
+  for (const [id, b] of Object.entries(local.best)) {
+    const c = best[id]
+    if (!c) {
+      best[id] = b
+      continue
     }
-    // şifresiz eski yolcu kimlikleri silindi: oyuncu bir kez üye olur ya da giriş yapar
-    if ((parsed.accountVersion ?? 1) < 2) {
-      s.player = null
-      s.skippedName = false
-      s.accountVersion = 2
-    }
-    // eski sürümdeki "ayla" seçimi Uktun'a taşınır
-    if ((s.character as string) === 'ayla') s.character = 'uktun'
-    if ((s.character as string) === 'kerem') s.character = 'memo'
-    return s
-  } catch {
-    return defaultSave()
+    const fresh = (x: Best) => !x.stale
+    const win = fresh(b) && (!fresh(c) || b.timeMs <= c.timeMs) ? b : fresh(c) ? c : b.timeMs <= c.timeMs ? b : c
+    best[id] = { ...win, items: win.items.map((v, i) => v || !!b.items[i] || !!c.items[i]) }
+  }
+  const more = (a: { last: string; count: number }, b: { last: string; count: number }) => (b.count > a.count ? b : a)
+  const rush = !local.rush ? cloud.rush : !cloud.rush ? local.rush : local.rush.bosses > cloud.rush.bosses || (local.rush.bosses === cloud.rush.bosses && local.rush.timeMs <= cloud.rush.timeMs) ? local.rush : cloud.rush
+  return {
+    ...local,
+    unlocked: Math.max(local.unlocked, cloud.unlocked),
+    best,
+    stamps: { ...cloud.stamps, ...local.stamps },
+    charms: { ...cloud.charms, ...local.charms },
+    bosses: { ...cloud.bosses, ...local.bosses },
+    daily: more(local.daily, cloud.daily),
+    weekly: more(local.weekly, cloud.weekly),
+    rush,
+    character: local.character ?? cloud.character,
+    scarf: local.scarf !== 'al' ? local.scarf : cloud.scarf,
+    seenStory: local.seenStory || cloud.seenStory,
+    tutorial: local.tutorial && cloud.tutorial,
   }
 }
 

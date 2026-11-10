@@ -25,11 +25,12 @@ import { World } from '@/game/sim'
 import { ENDING, STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
+import { bindCookie, pullMerge, pushSave, restorePlayer } from '@/lib/cloud'
 import { CHALLENGE_TEXT, SCARVES, completes, dailyChallenge, scarfFor, weeklyChallenge, type Challenge } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
-import { defaultSave, formatTime, loadSave, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
+import { defaultSave, formatTime, loadSave, mergeSaves, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
 const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
@@ -457,6 +458,67 @@ export default function Game() {
     setSave(next)
     writeSave(next)
   }, [])
+
+  // Hesap: yerel depo silinmişse (Safari 7 gün kullanılmayan sitenin deposunu siler) giriş oturum çerezinden geri gelir
+  useEffect(() => {
+    if (!ready) return
+    // girişli oyuncu: çerez yoksa kurulur (çerezden önceki girişler); oturum sunucuda kapanmışsa yerelden de düşer
+    if (save.player) {
+      const p = save.player
+      void bindCookie(p).then((ok) => {
+        if (!ok) setSave((prev) => (prev.player?.id === p.id ? (writeSave({ ...prev, player: null }), { ...prev, player: null }) : prev))
+      })
+      return
+    }
+    let live = true
+    void restorePlayer().then((p) => {
+      if (!live || !p) return
+      setSave((prev) => {
+        if (prev.player) return prev
+        const next = { ...prev, player: p, skippedName: false }
+        writeSave(next)
+        return next
+      })
+    })
+    return () => {
+      live = false
+    }
+    // yalnız açılışta bir kez
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
+
+  // Bulut kaydı: giriş yapan oyuncunun ilerlemesi buluttakiyle birleşir; birleşmeden önce hiçbir şey buluta yazılmaz
+  const pulledFor = useRef<string | null>(null)
+  const playerId = save.player?.id ?? null
+  useEffect(() => {
+    if (!playerId || pulledFor.current === playerId) return
+    let live = true
+    setSave((prev) => {
+      void pullMerge(prev).then((merged) => {
+        if (!live || !merged) return
+        pulledFor.current = playerId
+        setSave((cur) => {
+          // çekme sürerken yerelde ilerleme olduysa o da korunur; cihaz ayarları yerelde kalır
+          const next = mergeSaves(cur, merged)
+          writeSave(next)
+          setResumeIdx((r) => Math.max(r, Math.min(next.unlocked, LEVELS.length - 1)))
+          void pushSave(next)
+          return next
+        })
+      })
+      return prev
+    })
+    return () => {
+      live = false
+    }
+  }, [playerId])
+
+  // her ilerlemede (şehir, süre, pul, nazar, rozet) hesaba yaz; art arda değişiklikler tek istekte toplanır
+  useEffect(() => {
+    if (!save.player || pulledFor.current !== save.player.id) return
+    const id = setTimeout(() => void pushSave(save), 1500)
+    return () => clearTimeout(id)
+  }, [save])
 
   const ui = () => soundRef.current?.sfx('ui')
 
