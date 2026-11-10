@@ -31,7 +31,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <br clear="right">
 
-<img src="docs/img/mechanics.png" alt="Konya'da Sema Halkası, Nevşehir'de Balon, Gaziantep'te Bakırcı Tokmağı" width="100%">
+<img src="docs/img/mechanics.png" alt="Konya'da Sema Halkası, Nevşehir'de Balon, Gaziantep'te Bakırcı Tokmağı, Edirne'de İtilen Sandık, Van'da Gece ile Gündüz Taşları, Ankara'da Boss" width="100%">
 
 ## Rota
 

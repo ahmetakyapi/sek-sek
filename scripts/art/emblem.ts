@@ -18,8 +18,6 @@ const FAR = '#4d3068'
 const SCARF = '#e0423a'
 const SCARF_S = '#a3262f'
 const CREAM = '#f4ead8'
-const HAIR = LOOKS.uktun.hair
-const HAIR_S = LOOKS.uktun.hairS
 const SKIN = LOOKS.uktun.skin
 /** heroDraw'ın kendi dış hat kalınlığı (çizim biriminde) */
 const HERO_INK = 3.2
@@ -138,63 +136,127 @@ function frame(c: Ctx, size: number) {
   c.restore()
 }
 
-/** Sekme işareti (16-48 px): yalnız baş + atkı, güneşin önünde; ayrıntı yok, hat kalın. */
-export function drawMark(c: Ctx, size: number) {
-  const k = size / 100
+// ── sekme işareti (favicon): cepheden yüz + kırmızı atkı, altın güneşin önünde ──
+
+const MARK_HAIR = '#c4532a'
+const BLUSH = '#f0a08c'
+const LIP = '#b23a4a'
+
+/** 16 px: elle kurulan piksel ızgarası (bu boyda eğri yok, her piksel bilerek konur). */
+const MARK_16 = [
+  '..PPPPPPPPPPPP..',
+  '.PPGGGGGGGGGGPP.',
+  'PPGGGKKKKKKGGGPP',
+  'PGGGKHHHHHHKGGGP',
+  'PGGKHHHHHHHHKGGP',
+  'PGGKHHHHSSSHKGGP',
+  'PGGKHSKSSKSHKGGP',
+  'PGGKHSKSSKSHKGGP',
+  'PGGKHBSSSSBHKGGP',
+  'PGGKHSSLLSSHKGGP',
+  'PGGKKSSSSSSKKGGP',
+  'PPKRRRRRRRRRRKKP',
+  'PPKRRRRRRRRRRRRK',
+  'PPPKKKKKKKKKRRKP',
+  '.PPPPPPPPPPPKKP.',
+  '..PPPPPPPPPPPP..',
+]
+const MARK_PAL: Record<string, string> = { P: SKY, G: SUN_S, K: INK, H: MARK_HAIR, S: SKIN, B: BLUSH, L: LIP, R: SCARF }
+
+/**
+ * Sekme işareti. `n` hedef boy (16, 32, 48), `scale` tuvalin kaç kat büyük çizildiği.
+ * 16'da piksel ızgarası; 32 ve 48'de aynı düzen 16 birimlik karede vektörle (hat 1 birim: tam 2 ve 3 piksel).
+ */
+export function drawMark(c: Ctx, n: number, scale: number) {
   c.save()
-  c.scale(k, k)
+  c.scale(scale, scale)
+  if (n <= 16) {
+    MARK_16.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        if (row[x] === '.') continue
+        c.fillStyle = MARK_PAL[row[x]]
+        c.fillRect(x, y, 1, 1)
+      }
+    })
+    c.restore()
+    return
+  }
+  c.scale(n / 16, n / 16)
   c.beginPath()
-  c.roundRect(0, 0, 100, 100, 24)
+  c.roundRect(0, 0, 16, 16, 3.5)
   c.clip()
   c.fillStyle = SKY
-  c.fillRect(0, 0, 100, 100)
-  setInkWidth(6.5)
-  blob(c, circle(c, 48, 44, 41), SUN_S)
-  // atkı: boyundan sola, çatallı uç
+  c.fillRect(0, 0, 16, 16)
+  c.fillStyle = SUN_S
+  c.beginPath()
+  c.arc(8, 7.5, 7, 0, Math.PI * 2)
+  c.fill()
+  c.fillStyle = SUN
+  c.beginPath()
+  c.arc(7.4, 6.9, 5.6, 0, Math.PI * 2)
+  c.fill()
+  setInkWidth(1)
+  // saç: tepeden omuza inen uzun kızıl saç
   blob(
     c,
     () => {
-      c.moveTo(70, 68)
-      c.bezierCurveTo(50, 60, 36, 78, 5, 64)
-      c.lineTo(17, 79)
-      c.lineTo(4, 94)
-      c.bezierCurveTo(34, 102, 52, 86, 74, 92)
+      c.moveTo(3.5, 12.5)
+      c.lineTo(3.5, 7)
+      c.bezierCurveTo(3.5, 1, 12.5, 1, 12.5, 7)
+      c.lineTo(12.5, 12.5)
     },
-    SCARF,
-    { color: SCARF_S, dx: 0, dy: -6 },
+    MARK_HAIR,
   )
-  // saç: tepeden enseye, rüzgârda geriye savrulan tutam
-  blob(
-    c,
-    () => {
-      c.moveTo(88, 34)
-      c.bezierCurveTo(84, 6, 40, 4, 34, 34)
-      c.bezierCurveTo(30, 48, 20, 52, 8, 50)
-      c.bezierCurveTo(18, 64, 38, 66, 50, 60)
-      c.lineTo(62, 66)
-      c.lineTo(88, 34)
-    },
-    HAIR,
-    { color: HAIR_S, dx: -5, dy: -5 },
-  )
-  blob(c, circle(c, 70, 45, 19.5), SKIN)
-  // kâkül: alından şakağa iner
-  blob(
-    c,
-    () => {
-      c.moveTo(50, 36)
-      c.bezierCurveTo(58, 18, 84, 18, 91, 37)
-      c.bezierCurveTo(82, 29, 72, 29, 64, 34)
-      c.bezierCurveTo(59, 38, 56, 44, 53, 50)
-    },
-    HAIR,
-  )
+  // yüz
+  c.fillStyle = SKIN
+  c.beginPath()
+  c.roundRect(5, 5, 6, 7, 2.2)
+  c.fill()
+  // perçem: yana taranmış, alnın solunu örter
+  c.fillStyle = MARK_HAIR
+  c.beginPath()
+  c.moveTo(4.6, 8.4)
+  c.quadraticCurveTo(5.4, 6.2, 9, 5.5)
+  c.lineTo(9.5, 4.8)
+  c.quadraticCurveTo(10.4, 5.6, 11.4, 7.2)
+  c.lineTo(11.4, 3.6)
+  c.lineTo(4.6, 3.6)
+  c.closePath()
+  c.fill()
+  // gözler, yanak, gülümseme
   c.fillStyle = INK
   c.beginPath()
-  c.ellipse(78, 47, 4.2, 6.2, 0, 0, Math.PI * 2)
+  // yarım birim = 32'de tam bir piksel: göz ve ağız ızgaraya oturur
+  c.roundRect(6, 6.5, 1, 2, 0.45)
+  c.roundRect(9, 6.5, 1, 2, 0.45)
   c.fill()
-  // boyun sargısı
-  blob(c, () => c.roundRect(56, 68, 31, 14, 6), SCARF, { color: SCARF_S, dx: 0, dy: -5 })
+  c.fillStyle = '#ffffff'
+  c.fillRect(6.5, 6.5, 0.5, 0.5)
+  c.fillRect(9.5, 6.5, 0.5, 0.5)
+  c.fillStyle = BLUSH
+  c.fillRect(5.5, 9, 1, 0.5)
+  c.fillRect(9.5, 9, 1, 0.5)
+  c.fillStyle = LIP
+  c.beginPath()
+  c.moveTo(7, 9.5)
+  c.lineTo(9, 9.5)
+  c.quadraticCurveTo(8, 11.3, 7, 9.5)
+  c.fill()
+  // atkı: boyun sargısı ve sağa uçan çatallı uç tek parça
+  blob(
+    c,
+    () => {
+      c.moveTo(3.5, 11.5)
+      c.lineTo(12, 11.5)
+      c.lineTo(15.2, 10.8)
+      c.lineTo(14.2, 12.6)
+      c.lineTo(15.4, 14.4)
+      c.lineTo(12, 14)
+      c.lineTo(3.5, 14)
+    },
+    SCARF,
+    { color: SCARF_S, dx: 0, dy: -0.9 },
+  )
   setInkWidth(HERO_INK)
   c.restore()
 }

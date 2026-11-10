@@ -2,7 +2,7 @@
  * Logo amblemi, favicon, uygulama ikonları ve paylaşım görseli: scripts/art/emblem.ts'in vektör çizimini dosyaya basar.
  *   app/icon.png              512  yuvarlak köşeli amblem (saydam köşe)
  *   app/apple-icon.png        180  dolu kare (köşeyi iOS yuvarlar)
- *   app/favicon.ico           16, 32, 48  sadeleştirilmiş işaret: baş + atkı + güneş
+ *   app/favicon.ico           16, 32, 48  sekme işareti: cepheden yüz + kırmızı atkı + güneş (16 piksel ızgarası, 32 ve 48 vektör)
  *   public/logo-emblem.png    256  arayüzde "Sek-Sek" yazısının yanındaki amblem
  *   public/icon-192.png       192  PWA ana ekran ikonu (yuvarlak köşeli amblem)
  *   public/icon-maskable.png  512  PWA maskable: içerik ortadaki %80'de
@@ -35,7 +35,7 @@ const KINDS = {
   round: (c, n) => S.drawEmblem(c, n, { round: true }),
   square: (c, n) => S.drawEmblem(c, n),
   maskable: (c, n) => S.drawEmblem(c, n, { inset: 0.8 }),
-  mark: (c, n) => S.drawMark(c, n),
+  mark: (c, px) => S.drawMark(c, px / ${SS}, ${SS}),
 }
 // büyük çiz, kutu süzgeciyle küçült: 16 pikselde bile hat dağılmaz
 window.make = (kind, n) => {
