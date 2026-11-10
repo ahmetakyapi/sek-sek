@@ -151,6 +151,26 @@ export class Sound {
       case 'stamp':
         ;[523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.22, 'triangle', 0.13), i * 90))
         return
+      case 'charm':
+        ;[784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => this.tone(f, 0.2, 'sine', 0.12), i * 80))
+        return
+      case 'warp':
+        this.noise(0.25, 0.15, 1200)
+        return this.tone(392, 0.35, 'triangle', 0.1, 400)
+      case 'bossWake':
+        this.noise(0.3, 0.25, 220)
+        return this.tone(110, 0.5, 'sawtooth', 0.09, -30)
+      case 'bossSlam':
+        this.noise(0.16, 0.28, 320)
+        return this.tone(90, 0.16, 'square', 0.09, -40)
+      case 'bossHit':
+        this.noise(0.1, 0.25, 1000)
+        this.tone(523, 0.1, 'square', 0.1)
+        setTimeout(() => this.tone(784, 0.16, 'triangle', 0.12), 70)
+        return
+      case 'bossDown':
+        ;[392, 523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.24, 'triangle', 0.14), i * 100))
+        return
       case 'switch':
         this.noise(0.08, 0.2, 700)
         return this.tone(330, 0.1, 'square', 0.07, 120)

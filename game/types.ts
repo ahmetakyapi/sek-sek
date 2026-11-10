@@ -40,6 +40,8 @@ export interface LevelDef {
   quips: string[]
   /** yatay rüzgâr ivmesi (px/s²); periyodik esintiyle çarpılır */
   wind?: number
+  /** final eklenince hesaplanır: finalin ipuçları ve kişileri listelerde nereden başlıyor */
+  finaleAt?: { hint: number; npc: number }
   map: string[]
 }
 
@@ -80,6 +82,15 @@ export type GameEvent =
   | { type: 'crystal' }
   | { type: 'key' }
   | { type: 'stamp' }
+  /** saklı nazar boncuğu bulundu */
+  | { type: 'charm' }
   | { type: 'switch' }
+  /** meydan kapısından finale geçildi */
+  | { type: 'warp' }
+  | { type: 'bossWake'; x: number; y: number }
+  /** patron yere/duvara vurdu */
+  | { type: 'bossSlam'; x: number; y: number }
+  | { type: 'bossHit'; x: number; y: number; hp: number }
+  | { type: 'bossDown'; x: number; y: number }
   /** dost bir hayvanı sevdin */
   | { type: 'pet'; x: number; y: number }

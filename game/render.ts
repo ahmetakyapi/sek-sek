@@ -1,9 +1,11 @@
-import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, rng, sprite, type Ctx, type Layers } from './art'
+import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, sprite, type Ctx, type Layers } from './art'
 import { CHARACTERS, type CharacterDef } from './characters'
-import { POSES, drawHero, gait, type Pose } from './heroDraw'
+import { BOSSES } from './boss'
+import { drawBoss } from './bossDraw'
+import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
+import { TerrainHD } from './terrainDraw'
 import { GHOST_HZ, type GhostRun } from './ghost'
-import { NPC_ART } from './npcs'
-import { BLOCK_A, BLOCK_B, CRUMBLE, DOOR, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WATER, hammerState, type World } from './sim'
+import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, DOOR, EMPTY, SPIKE_UP, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -44,7 +46,13 @@ export class Renderer {
   private ctx: Ctx
   private buf: HTMLCanvasElement
   private b: Ctx
-  private tilesLayer: HTMLCanvasElement | null = null
+  /** ön katman: su, hareketli nesneler, canlılar, parçacıklar (zeminin üstünde) */
+  private fbuf: HTMLCanvasElement
+  private f: Ctx
+  private terrain: TerrainHD | null = null
+  private world: World | null = null
+  /** son fizik adımından önceki konumlar: çizim adımlar arasında ara değerlenir */
+  private prev = new WeakMap<object, { x: number; y: number }>()
   private layers: Layers | null = null
   private city: CityKey = 'istanbul'
   private particles: Particle[] = []
@@ -70,6 +78,8 @@ export class Renderer {
   /** havadaki en yüksek düşüş hızı: sert inişte toz ve sarsıntı */
   private airVy = 0
   private idleT = 0
+  /** patronun uyandığı an: adı kısa süre yazılır */
+  private bossWoke = -99
   /** bu karede çizilecek karakterler (hayalet, atılma izi, oyuncu): dünya tamponundan sonra ana tuvalde */
   private heroes: HeroDraw[] = []
 
@@ -78,6 +88,8 @@ export class Renderer {
     this.ctx = canvas.getContext('2d')!
     this.buf = document.createElement('canvas')
     this.b = this.buf.getContext('2d')!
+    this.fbuf = document.createElement('canvas')
+    this.f = this.fbuf.getContext('2d')!
   }
 
   resize(cssW: number, cssH: number, dpr: number) {
@@ -90,16 +102,58 @@ export class Renderer {
     const target = portrait ? Math.min(devW / (13 * T), devH / (20 * T)) : Math.min(devW / (20 * T), devH / (13 * T))
     // yatayda en yakın tam sayı: karakter masaüstünde de okunur kalsın
     this.scale = Math.max(1, portrait ? Math.floor(target) : Math.round(target))
-    this.viewW = Math.ceil(devW / this.scale)
-    this.viewH = Math.ceil(devH / this.scale)
-    this.buf.width = this.viewW
-    this.buf.height = this.viewH
+    // bir piksel fazla: kamera kesirli kayarken kenarda boşluk kalmasın
+    this.viewW = Math.ceil(devW / this.scale) + 1
+    this.viewH = Math.ceil(devH / this.scale) + 1
+    this.buf.width = this.fbuf.width = this.viewW
+    this.buf.height = this.fbuf.height = this.viewH
+    this.terrain = null
+  }
+
+  /** Her fizik adımından ÖNCE çağrılır: hareketli her şeyin konumunu saklar. */
+  capture(w: World) {
+    const keep = (o: { x: number; y: number }) => {
+      const q = this.prev.get(o)
+      if (q) {
+        q.x = o.x
+        q.y = o.y
+      } else this.prev.set(o, { x: o.x, y: o.y })
+    }
+    keep(w.player)
+    for (const o of w.platforms) keep(o)
+    for (const o of w.enemies) keep(o)
+    for (const o of w.projectiles) keep(o)
+    if (w.boss) keep(w.boss)
+  }
+
+  /** Konumları iki adım arasına çeker; dönen işlev gerçek konumları geri koyar. Işınlanmada (doğuş, kapı) ara değerleme yok. */
+  private blend(w: World, alpha: number): () => void {
+    const moved: Array<[{ x: number; y: number }, number, number]> = []
+    const mix = (o: { x: number; y: number }) => {
+      const q = this.prev.get(o)
+      if (!q || (q.x === o.x && q.y === o.y) || Math.abs(o.x - q.x) > 24 || Math.abs(o.y - q.y) > 24) return
+      moved.push([o, o.x, o.y])
+      o.x = q.x + (o.x - q.x) * alpha
+      o.y = q.y + (o.y - q.y) * alpha
+    }
+    mix(w.player)
+    for (const o of w.platforms) mix(o)
+    for (const o of w.enemies) mix(o)
+    for (const o of w.projectiles) mix(o)
+    if (w.boss) mix(w.boss)
+    return () => {
+      for (const [o, x, y] of moved) {
+        o.x = x
+        o.y = y
+      }
+    }
   }
 
   setLevel(world: World) {
     this.city = world.level.city
     this.layers = buildLayers(this.city)
-    this.tilesLayer = this.buildTiles(world)
+    this.world = world
+    this.terrain = null
     this.particles = []
     this.pops = []
     this.stompChain = 0
@@ -150,369 +204,6 @@ export class Renderer {
   }
 
   /* ── Statik tile katmanı ──────────────────────────────────── */
-  private buildTiles(w: World): HTMLCanvasElement {
-    const cv = document.createElement('canvas')
-    cv.width = w.cols * T
-    cv.height = w.rows * T
-    const c = cv.getContext('2d')!
-    const s = CITY[w.level.city]
-    const r = rng(w.cols * 31 + w.rows)
-    const solidish = (tx: number, ty: number) => {
-      const t = w.tile(tx, ty)
-      return t === SOLID || t === TURRET || t === ICE || t === FAKE
-    }
-    for (let ty = 0; ty < w.rows; ty++) {
-      for (let tx = 0; tx < w.cols; tx++) {
-        const t = w.tile(tx, ty)
-        const x = tx * T
-        const y = ty * T
-        const open = ty > 0 && !solidish(tx, ty - 1) && w.tile(tx, ty - 1) !== CRUMBLE
-        if (t === SOLID || t === TURRET || t === FAKE) this.solidTile(c, x, y, ty, open, !solidish(tx - 1, ty), !solidish(tx + 1, ty), r)
-        if (t === FAKE) {
-          // dikkatli bakan görür: ince bir çatlak
-          rect(c, x + 6, y + 4, 1, 3, 'rgba(0,0,0,0.25)')
-          rect(c, x + 7, y + 7, 1, 2, 'rgba(0,0,0,0.25)')
-        }
-        if (t === TURRET) {
-          rect(c, x + 2, y + 2, 12, 12, s.tileDark)
-          rect(c, x + 3, y + 3, 10, 10, s.tile)
-          rect(c, x + 3, y + 6, 10, 3, '#1a1420')
-          // Hitit motifi
-          rect(c, x + 6, y + 11, 4, 1, s.tileLight)
-          rect(c, x + 7, y + 10, 2, 3, s.tileLight)
-        }
-        if (t === ICE) {
-          rect(c, x, y, T, T, '#9fd6ee')
-          rect(c, x, y + 10, T, 6, '#7cc0e0')
-          rect(c, x + 2 + (tx % 3) * 3, y + 3, 5, 1, '#e6f8ff')
-          rect(c, x + 8, y + 6, 4, 1, '#d2f0fc')
-          if (open) rect(c, x, y, T, 2, '#f4fcff')
-          rect(c, x, y + 15, T, 1, '#5aa0c4')
-        }
-        if (t === ONEWAY) {
-          // tahta: üstte ışık, derz, çivi başları, altta gölge; uçlarda dirsek
-          const left = w.tile(tx - 1, ty) !== ONEWAY
-          const right = w.tile(tx + 1, ty) !== ONEWAY
-          rect(c, x, y, T, 5, s.plank)
-          rect(c, x, y, T, 1, lighten(s.plank))
-          rect(c, x, y + 4, T, 1, 'rgba(0,0,0,0.4)')
-          rect(c, x, y + 5, T, 2, 'rgba(0,0,0,0.18)')
-          rect(c, x + (tx % 2 ? 9 : 4), y + 1, 1, 3, 'rgba(0,0,0,0.3)')
-          rect(c, x + 2, y + 2, 1, 1, 'rgba(255,240,210,0.55)')
-          rect(c, x + 13, y + 2, 1, 1, 'rgba(255,240,210,0.55)')
-          if (left) {
-            rect(c, x, y, 1, 5, 'rgba(0,0,0,0.35)')
-            for (let k = 0; k < 4; k++) rect(c, x + 1, y + 5 + k, 4 - k, 1, s.plank)
-          }
-          if (right) {
-            rect(c, x + T - 1, y, 1, 5, 'rgba(0,0,0,0.4)')
-            for (let k = 0; k < 4; k++) rect(c, x + T - 5 + k, y + 5 + k, 4 - k, 1, s.plank)
-          }
-        }
-        if (t === SPIKE_UP) {
-          for (let i = 0; i < 2; i++) {
-            const sx = x + i * 8
-            for (let k = 0; k < 7; k++) rect(c, sx + 4 - Math.ceil(k / 2), y + 9 + k, Math.ceil(k / 2) * 2 || 1, 1, k < 2 ? s.spike[0] : s.spike[1])
-            rect(c, sx + 3, y + 10, 1, 4, s.spike[0])
-          }
-        }
-        if (t === SPIKE_DOWN) {
-          for (let i = 0; i < 2; i++) {
-            const sx = x + i * 8
-            for (let k = 0; k < 7; k++) rect(c, sx + 4 - Math.ceil((6 - k) / 2), y + k, Math.ceil((6 - k) / 2) * 2 || 1, 1, k > 4 ? s.spike[0] : s.spike[1])
-          }
-        }
-      }
-    }
-    // kabartma: her taş bloğunun üst ve sol kenarı ışık, alt ve sağ kenarı gölge alır
-    {
-      const dark = s.tileDark
-      const dr = parseInt(dark.slice(1, 3), 16)
-      const dg = parseInt(dark.slice(3, 5), 16)
-      const db = parseInt(dark.slice(5, 7), 16)
-      const img = c.getImageData(0, 0, cv.width, cv.height)
-      const d = img.data
-      const W2 = cv.width
-      const isMortar = (i: number) => d[i] === dr && d[i + 1] === dg && d[i + 2] === db && d[i + 3] === 255
-      const out = new Uint8ClampedArray(d)
-      for (let y = 1; y < cv.height - 1; y++) {
-        const ty = Math.floor(y / T)
-        for (let x = 1; x < W2 - 1; x++) {
-          if (!solidish(Math.floor(x / T), ty)) continue
-          const i = (y * W2 + x) * 4
-          if (d[i + 3] !== 255 || isMortar(i)) continue
-          let k = 0
-          if (isMortar(i - W2 * 4)) k += 0.16
-          if (isMortar(i - 4)) k += 0.08
-          if (isMortar(i + W2 * 4)) k -= 0.2
-          if (isMortar(i + 4)) k -= 0.1
-          if (!k) continue
-          // ton kaydırma: ışık sıcağa, gölge mor-maviye
-          const to = k > 0 ? [255, 240, 205] : [42, 26, 60]
-          const a = Math.abs(k)
-          out[i] = d[i] + (to[0] - d[i]) * a
-          out[i + 1] = d[i + 1] + (to[1] - d[i + 1]) * a
-          out[i + 2] = d[i + 2] + (to[2] - d[i + 2]) * a
-        }
-      }
-      img.data.set(out)
-      c.putImageData(img, 0, 0)
-    }
-    // derinlik: yüzeyden aşağı indikçe taş yumuşakça kararır (4 piksellik bantlarla)
-    for (let tx = 0; tx < w.cols; tx++) {
-      let depth = 0
-      for (let ty = 0; ty < w.rows; ty++) {
-        if (!solidish(tx, ty)) {
-          // çıkıntının altına temas gölgesi
-          if (depth > 0 && ty < w.rows) for (let k = 0; k < 3; k++) rect(c, tx * T, ty * T + k, T, 1, `rgba(10,6,20,${0.22 - k * 0.07})`)
-          depth = 0
-          continue
-        }
-        for (let band = 0; band < 4; band++) {
-          const a = Math.min(0.46, (depth + band / 4) * 0.08)
-          if (a > 0) rect(c, tx * T, ty * T + band * 4, T, 4, `rgba(14,9,26,${a.toFixed(3)})`)
-        }
-        depth++
-      }
-    }
-    // okunurluk ve doku: açık kenarlara koyu kontur + arka plana gölge; şehre göre çatlak, çakıl, yosun
-    const green = this.city === 'ordu' || this.city === 'trabzon' || this.city === 'kocaeli'
-    for (let ty = 0; ty < w.rows; ty++)
-      for (let tx = 0; tx < w.cols; tx++) {
-        const t = w.tile(tx, ty)
-        if (t !== SOLID && t !== TURRET && t !== FAKE) continue
-        const x = tx * T
-        const y = ty * T
-        const up = ty > 0 && !solidish(tx, ty - 1) && w.tile(tx, ty - 1) === 0
-        const L = tx > 0 && w.tile(tx - 1, ty) === 0
-        const R = tx < w.cols - 1 && w.tile(tx + 1, ty) === 0
-        if (up) rect(c, x, y - 1, T, 1, 'rgba(18,10,30,0.42)')
-        if (L) {
-          rect(c, x, y, 1, T, 'rgba(18,10,30,0.4)')
-          for (let k = 1; k <= 3; k++) rect(c, x - k, y, 1, T, `rgba(14,8,26,${(0.16 - k * 0.04).toFixed(2)})`)
-        }
-        if (R) {
-          rect(c, x + T - 1, y, 1, T, 'rgba(18,10,30,0.5)')
-          for (let k = 0; k < 3; k++) rect(c, x + T + k, y, 1, T, `rgba(14,8,26,${(0.18 - k * 0.05).toFixed(2)})`)
-        }
-        const roll = r()
-        if (roll < 0.1) {
-          // ince çatlak: iki üç piksel, kırık çizgi
-          const cx2 = x + 3 + Math.floor(r() * 9)
-          const cy2 = y + 4 + Math.floor(r() * 7)
-          rect(c, cx2, cy2, 1, 2, 'rgba(10,6,20,0.35)')
-          rect(c, cx2 + 1, cy2 + 2, 1, 2, 'rgba(10,6,20,0.3)')
-          rect(c, cx2 + 1, cy2, 1, 1, 'rgba(255,240,210,0.18)')
-        } else if (roll < 0.18) {
-          // çakıl: ışıklı üst, gölgeli alt
-          const px2 = x + 2 + Math.floor(r() * 11)
-          const py2 = y + 3 + Math.floor(r() * 10)
-          rect(c, px2, py2, 2, 1, 'rgba(255,240,210,0.22)')
-          rect(c, px2, py2 + 1, 2, 1, 'rgba(10,6,20,0.25)')
-        }
-        if (green && up && r() < 0.55) {
-          // yosun: üst kenardan sarkan yeşil uçlar
-          for (let k = 0; k < 3; k++) {
-            const mx = x + Math.floor(r() * 15)
-            rect(c, mx, y + 1, 1, 1 + Math.floor(r() * 3), k % 2 ? '#4a8a3a' : '#3a6e30')
-          }
-        }
-      }
-    return cv
-  }
-
-  private solidTile(c: Ctx, x: number, y: number, ty: number, open: boolean, openL: boolean, openR: boolean, r: () => number) {
-    const s = CITY[this.city]
-    rect(c, x, y, T, T, s.tile)
-    switch (this.city) {
-      case 'istanbul': {
-        // tuğla örgü
-        const off = ty % 2 ? 4 : 0
-        for (let by = 0; by < 16; by += 4) {
-          rect(c, x, y + by + 3, T, 1, s.tileDark)
-          const o = (by / 4) % 2 ? off : 4 - off
-          for (let bx = o; bx < 16; bx += 8) rect(c, x + bx, y + by, 1, 3, s.tileDark)
-        }
-        if (r() > 0.85) rect(c, x + 2 + Math.floor(r() * 8), y + 5, 4, 2, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 4, s.tileTop)
-          rect(c, x, y + 4, T, 1, s.tileDark)
-          for (let i = 0; i < 16; i += 4) rect(c, x + i, y + 1, 1, 2, s.tileLight)
-        }
-        break
-      }
-      case 'kocaeli': {
-        // fabrika tuğlası: koyu kırmızı, ince derz
-        const off = ty % 2 ? 4 : 0
-        for (let by = 0; by < 16; by += 4) {
-          rect(c, x, y + by + 3, T, 1, s.tileDark)
-          const o = (by / 4) % 2 ? off : 4 - off
-          for (let bx = o; bx < 16; bx += 8) rect(c, x + bx, y + by, 1, 3, s.tileDark)
-        }
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          rect(c, x, y + 3, T, 1, s.tileDark)
-        }
-        break
-      }
-      case 'adana': {
-        // Taşköprü'nün kesme taşı
-        rect(c, x, y + 7, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 5 : 11), y, 1, 7, s.tileDark)
-        rect(c, x + (ty % 2 ? 12 : 3), y + 8, 1, 8, s.tileDark)
-        rect(c, x + 1, y + 1, 5, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          rect(c, x, y + 3, T, 1, s.tileDark)
-        }
-        break
-      }
-      case 'izmir': {
-        // Kordon taşı: iri dikdörtgen kaplama
-        rect(c, x, y + 8, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 6 : 12), y, 1, 8, s.tileDark)
-        rect(c, x + (ty % 2 ? 13 : 4), y + 9, 1, 7, s.tileDark)
-        rect(c, x + 1, y + 1, 4, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          rect(c, x, y + 3, T, 1, s.tileDark)
-        }
-        break
-      }
-      case 'ankara': {
-        // andezit: kırmızımsı gri bloklar
-        rect(c, x, y + 5, T, 1, s.tileDark)
-        rect(c, x, y + 11, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 3 : 9), y, 1, 5, s.tileDark)
-        rect(c, x + (ty % 2 ? 11 : 5), y + 6, 1, 5, s.tileDark)
-        rect(c, x + (ty % 2 ? 7 : 13), y + 12, 1, 4, s.tileDark)
-        if (r() > 0.7) rect(c, x + 2 + Math.floor(r() * 10), y + 7, 2, 2, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          for (let i = 0; i < 16; i += 3) if (r() > 0.6) rect(c, x + i, y - 1, 1, 1, '#b8a058')
-        }
-        break
-      }
-      case 'mardin': {
-        rect(c, x, y + 7, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 4 : 11), y, 1, 7, s.tileDark)
-        rect(c, x + (ty % 2 ? 12 : 3), y + 8, 1, 8, s.tileDark)
-        rect(c, x + 1, y + 1, 6, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 4, s.tileTop)
-          // oyma bordür
-          for (let i = 0; i < 16; i += 4) {
-            rect(c, x + i + 1, y + 1, 2, 1, s.tileDark)
-            rect(c, x + i, y + 2, 1, 1, s.tileDark)
-            rect(c, x + i + 3, y + 2, 1, 1, s.tileDark)
-          }
-          rect(c, x, y + 4, T, 1, s.tileDark)
-        }
-        break
-      }
-      case 'malatya':
-      case 'ordu': {
-        for (let i = 0; i < 3; i++) rect(c, x + Math.floor(r() * 14), y + Math.floor(r() * 14), 2, 1, i ? s.tileDark : s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 4, s.tileTop)
-          rect(c, x, y + 4, T, 1, '#4a8a30')
-          for (let i = 0; i < 16; i += 3) rect(c, x + i, y - 1 - Math.floor(r() * 2), 1, 2, s.tileTop)
-          if (r() > 0.8) rect(c, x + 6, y - 1, 2, 2, '#f39a2e')
-        }
-        break
-      }
-      case 'corum': {
-        // poligonal kiklop taş örgüsü
-        const a = 3 + Math.floor(r() * 9)
-        const bb = 3 + Math.floor(r() * 9)
-        for (let i = 0; i < 16; i++) rect(c, x + i, y + Math.round(a + ((bb - a) * i) / 15), 1, 1, s.tileDark)
-        rect(c, x + 5 + Math.floor(r() * 6), y, 1, Math.min(a, bb), s.tileDark)
-        rect(c, x + 3 + Math.floor(r() * 9), y + Math.max(a, bb) + 1, 1, 16, s.tileDark)
-        rect(c, x + 2, y + 2, 3, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          for (let i = 0; i < 16; i += 2) rect(c, x + i, y - 1 - Math.floor(r() * 3), 1, 2, '#b8a058')
-        }
-        break
-      }
-      case 'trabzon': {
-        // yağmurdan ıslak koyu taş, üstünde yosun ve çimen
-        rect(c, x, y + 7, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 6 : 13), y, 1, 7, s.tileDark)
-        rect(c, x + (ty % 2 ? 13 : 4), y + 8, 1, 8, s.tileDark)
-        rect(c, x + 1, y + 1, 5, 1, s.tileLight)
-        if (r() > 0.7) rect(c, x + 3 + Math.floor(r() * 8), y + 9, 3, 2, '#4e6a52')
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          rect(c, x, y + 3, T, 1, '#3e6a32')
-          for (let i = 0; i < 16; i += 2) rect(c, x + i, y - 1 - Math.floor(r() * 2), 1, 2, '#7ab85a')
-        }
-        break
-      }
-      case 'konya': {
-        // Selçuklu kesme taşı; açık yüzde turkuaz çini şerit
-        rect(c, x, y + 7, T, 1, s.tileDark)
-        rect(c, x, y + 15, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 7 : 15), y, 1, 7, s.tileDark)
-        rect(c, x + (ty % 2 ? 15 : 7), y + 8, 1, 7, s.tileDark)
-        rect(c, x + 1, y + 1, 5, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 4, '#2f9a94')
-          rect(c, x, y + 4, T, 1, '#1e6a66')
-          for (let i = 1; i < 16; i += 4) {
-            rect(c, x + i, y + 1, 2, 2, '#f4ead8')
-            rect(c, x + i + 1, y + 1, 1, 1, '#2a6ab8')
-          }
-        }
-        break
-      }
-      case 'nevsehir': {
-        // yumuşak tüf: yuvarlak oyuklar, dalgalı katmanlar
-        for (let i = 0; i < 16; i++) rect(c, x + i, y + 9 + Math.round(Math.sin((x + i) / 5) * 1.5), 1, 1, s.tileDark)
-        if (r() > 0.7) {
-          disc(c, x + 5 + Math.floor(r() * 6), y + 5, 2, s.tileDark)
-        }
-        rect(c, x + 2, y + 2, 4, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          for (let i = 0; i < 16; i += 2) rect(c, x + i, y + 3, 1, 1 + Math.floor(r() * 2), s.tileTop)
-        }
-        break
-      }
-      case 'gaziantep': {
-        // havara taşı: krem, geniş derz; üstte bakır kenar
-        rect(c, x, y + 7, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 4 : 12), y, 1, 7, s.tileDark)
-        rect(c, x + (ty % 2 ? 11 : 3), y + 8, 1, 8, s.tileDark)
-        rect(c, x + 1, y + 1, 6, 1, s.tileLight)
-        if (r() > 0.85) rect(c, x + 8, y + 10, 3, 2, '#a8805a')
-        if (open) {
-          rect(c, x, y, T, 3, s.tileTop)
-          rect(c, x, y + 3, T, 1, '#b8682e')
-        }
-        break
-      }
-      case 'sivas':
-      case 'ardahan':
-      case 'bayburt': {
-        rect(c, x, y + 7, T, 1, s.tileDark)
-        rect(c, x, y + 15, T, 1, s.tileDark)
-        rect(c, x + (ty % 2 ? 5 : 12), y, 1, 7, s.tileDark)
-        rect(c, x + (ty % 2 ? 12 : 4), y + 8, 1, 7, s.tileDark)
-        rect(c, x + 1, y + 1, 4, 1, s.tileLight)
-        if (open) {
-          rect(c, x, y, T, 4, s.tileTop)
-          rect(c, x, y + 4, T, 1, '#c3cfe0')
-          for (let i = 0; i < 16; i += 3) if (r() > 0.5) rect(c, x + i, y + 4, 2, 1 + Math.floor(r() * 3), s.tileTop)
-        }
-        break
-      }
-    }
-    if (openL) rect(c, x, y, 1, T, 'rgba(0,0,0,0.25)')
-    if (openR) rect(c, x + T - 1, y, 1, T, 'rgba(0,0,0,0.3)')
-  }
-
-  /* ── Olaylar → efekt ──────────────────────────────────────── */
   handle(e: GameEvent, w: World) {
     const p = w.player
     const s = CITY[this.city]
@@ -571,6 +262,40 @@ export class Renderer {
         this.pop(e.x, e.y - 8, n <= 3 ? words[n - 1] : `${this.lang === 'en' ? 'Legend' : 'Efsane'} ×${n}`, n >= 3 ? '#ffd36a' : '#f4f0e6', n >= 2)
         break
       }
+      case 'bossWake':
+        this.bossWoke = this.t
+        this.shake = Math.max(this.shake, 3)
+        break
+      case 'bossSlam':
+        this.shake = Math.max(this.shake, 3.5)
+        this.burst(e.x, e.y, 12, 'rgba(240,230,210,0.8)', 70, 1)
+        break
+      case 'bossHit':
+        this.shake = Math.max(this.shake, 4)
+        this.flash = 0.08
+        this.burst(e.x, e.y, 20, '#ffd36a', 110, 2)
+        this.pop(e.x, e.y - 10, e.hp === 1 ? (this.lang === 'en' ? 'One more!' : 'Bir tane daha!') : this.lang === 'en' ? 'Got it!' : 'Tam isabet!', '#ffd36a', true)
+        break
+      case 'bossDown':
+        this.shake = 6
+        this.flash = 0.14
+        this.burst(e.x, e.y, 34, '#ffd36a', 150, 2)
+        this.burst(e.x, e.y, 24, s.accent, 120, 2)
+        this.burst(e.x, e.y, 16, '#f4ead8', 90, 1)
+        this.pop(e.x, e.y - 14, this.lang === 'en' ? 'The square is yours!' : 'Meydan senin!', '#ffd36a', true)
+        break
+      case 'warp':
+        // kapıdan geçiş: kamera yeni yere sıçrar, kısa bir ışık
+        this.camX = p.x - this.viewW / 2
+        this.camY = p.y - this.viewH * 0.55
+        this.flash = 0.16
+        break
+      case 'charm':
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 26, '#4ab0e8', 110, 2)
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 14, '#f4f8ff', 80, 1)
+        this.pop(p.x + p.w / 2, p.y - 8, this.lang === 'en' ? 'Evil eye, begone!' : 'Nazar değmesin!', '#7ad8ff', true)
+        this.flash = 0.08
+        break
       case 'respawn':
         this.stompChain = 0
         this.wallChain = 0
@@ -639,10 +364,13 @@ export class Renderer {
   }
 
   /* ── Çizim ────────────────────────────────────────────────── */
-  render(w: World, dt: number) {
+  /** alpha: son fizik adımından bu yana geçen sürenin adıma oranı (0..1); her tazeleme hızında akıcı çizim için */
+  render(w: World, dt: number, alpha = 1) {
     this.t += dt
+    const unblend = this.blend(w, alpha)
     const p = w.player
     const b = this.b
+    const f = this.f
     const s = CITY[this.city]
 
     // kamera
@@ -656,8 +384,13 @@ export class Renderer {
     this.shake = Math.max(0, this.shake - dt * 18)
     const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0
     const sy = this.shake ? (Math.random() - 0.5) * this.shake : 0
-    const cx = Math.round(this.camX + sx)
-    const cy = Math.round(this.camY + sy)
+    // kamera kesirli kayar: düşük çözünürlüklü katmanlar tam piksele çizilir, ekrana basılırken kesir kadar ötelenir
+    const cx = Math.floor(this.camX + sx)
+    const cy = Math.floor(this.camY + sy)
+    const offX = Math.round((this.camX + sx - cx) * this.scale)
+    const offY = Math.round((this.camY + sy - cy) * this.scale)
+    const hdX = cx + offX / this.scale
+    const hdY = cy + offY / this.scale
 
     // gökyüzü: 12 bant, sınırlarda 4x4 Bayer geçişi (el işi gradyan)
     b.drawImage(this.skyCanvas(s.sky), 0, 0)
@@ -721,56 +454,65 @@ export class Renderer {
 
     this.drawAmbient(b, dt, cx, cy, w)
 
-    // dünya
+    // dünya, arka: süsler zeminin arkasında kalır
     b.save()
     b.translate(-cx, -cy)
     this.drawDecor(b, w, cx, cy)
-    if (this.tilesLayer) {
-      const sx0 = Math.max(0, cx)
-      const sy0 = Math.max(0, cy)
-      const sw = Math.min(this.viewW, this.tilesLayer.width - sx0)
-      const sh = Math.min(this.viewH, this.tilesLayer.height - sy0)
-      if (sw > 0 && sh > 0) b.drawImage(this.tilesLayer, sx0, sy0, sw, sh, sx0, sy0, sw, sh)
-    }
-    this.drawUnderground(b, w, cx, cy)
-    this.drawDynamicTiles(b, w, cx, cy)
-    this.drawCrumbles(b, w, cx, cy)
-    this.drawWater(b, w, cx, cy)
-    this.drawEntities(b, w)
-    this.drawGhostRun(w)
-    this.drawPlayer(w, dt)
-    this.drawParticles(b, dt)
     b.restore()
 
+    const c = this.ctx
+    c.imageSmoothingEnabled = false
+    c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
+
+    // zemin ve duvarlar: ekran çözünürlüğünde, elle çizilmiş
+    if (!this.terrain || this.world !== w) {
+      this.world = w
+      this.terrain = new TerrainHD(w, this.city, this.scale)
+    }
+    this.terrain.draw(c, hdX, hdY, this.canvas.width)
+
+    // dünya, ön: su, hareketli nesneler, canlılar, parçacıklar
+    f.clearRect(0, 0, this.viewW, this.viewH)
+    f.save()
+    f.translate(-cx, -cy)
+    this.drawUnderground(f, w, cx, cy)
+    this.drawDynamicTiles(f, w, cx, cy)
+    this.drawCrumbles(f, w, cx, cy)
+    this.drawWater(f, w, cx, cy)
+    this.drawEntities(f, w)
+    this.drawGhostRun(w)
+    this.drawPlayer(w, dt)
+    this.drawParticles(f, dt)
+    f.restore()
+
     // fırtına / rüzgâr çizgileri önde
-    if (this.city === 'bayburt' || w.level.wind) this.drawWind(b, w)
+    if (this.city === 'bayburt' || w.level.wind) this.drawWind(f, w)
 
     if (this.flash > 0) {
       this.flash -= dt
-      b.fillStyle = 'rgba(255,255,255,0.12)'
-      b.fillRect(0, 0, this.viewW, this.viewH)
+      f.fillStyle = 'rgba(255,255,255,0.12)'
+      f.fillRect(0, 0, this.viewW, this.viewH)
     }
 
     // vinyet: ekran oranına göre elips; dikey ekranda üstü karartıp bulanık göstermesin
-    b.save()
+    f.save()
     const vw = this.viewW
     const vh = this.viewH
-    b.translate(vw / 2, vh / 2)
-    b.scale(1, vh / vw)
-    const vg = b.createRadialGradient(0, 0, vw * 0.42, 0, 0, vw * 0.78)
+    f.translate(vw / 2, vh / 2)
+    f.scale(1, vh / vw)
+    const vg = f.createRadialGradient(0, 0, vw * 0.42, 0, 0, vw * 0.78)
     vg.addColorStop(0, 'rgba(0,0,0,0)')
     vg.addColorStop(1, 'rgba(10,6,20,0.28)')
-    b.fillStyle = vg
-    b.fillRect(-vw / 2, -vw / 2, vw, vw)
-    b.restore()
+    f.fillStyle = vg
+    f.fillRect(-vw / 2, -vw / 2, vw, vw)
+    f.restore()
 
-    // büyüt
-    const c = this.ctx
-    c.imageSmoothingEnabled = false
-    c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, 0, 0, this.viewW * this.scale, this.viewH * this.scale)
+    c.drawImage(this.fbuf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
 
-    this.drawHeroes(cx, cy)
-    this.drawLabels(w, cx, cy)
+    this.drawBossHD(w, hdX, hdY)
+    this.drawHeroes(hdX, hdY)
+    this.drawLabels(w, hdX, hdY)
+    unblend()
   }
 
   private drawBosphorus(b: Ctx, y: number, cx: number) {
@@ -1010,13 +752,13 @@ export class Renderer {
     // şehir insanları
     w.npcs.forEach((n, i) => {
       const look = w.level.npcs[i]?.look ?? 'amca'
-      const art = NPC_ART[look]
-      const bob = Math.sin(this.t * 2 + i) > 0.7 ? 1 : 0
-      const faceLeft = w.player.x < n.x
-      drawShaded(b, bob ? ['............', ...art.rows.slice(0, -1).filter((_, k) => k !== 6), art.rows[art.rows.length - 1]] : art.rows, art.pal, n.x + 2, n.y + T - art.rows.length, faceLeft, '#1a1420')
+      // oyuncuya döner; hafifçe nefes alır
+      const br = 2 + 4 * (0.5 + 0.5 * Math.sin(this.t * 2.2 + i * 1.7))
+      const pose: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]], blink: (this.t + i * 1.3) % 3.8 < 0.12 }
+      this.heroes.push({ look, pose, x: n.x + T / 2, y: n.y + T, flip: w.player.x < n.x, alpha: 1, ghost: false, moving: false, sx: 1, sy: 1, size: NPC_SIZE })
       // konuşma balonu
       const near = w.nearNpc === i
-      const by = n.y + T - art.rows.length - 9 - (near ? 0 : Math.round(Math.sin(this.t * 3 + i)))
+      const by = n.y + T - NPC_SIZE - 10 - (near ? 0 : Math.round(Math.sin(this.t * 3 + i)))
       rect(b, n.x + 3, by, 10, 7, near ? '#ffd36a' : '#f4ead8')
       rect(b, n.x + 6, by + 7, 2, 2, near ? '#ffd36a' : '#f4ead8')
       for (let d = 0; d < 3; d++) rect(b, n.x + 5 + d * 2, by + 3, 1, 1, '#2a2236')
@@ -1625,6 +1367,16 @@ export class Renderer {
             }
           }
         }
+        if (t === BOSS_GATE && w.isSolid(tx, ty)) {
+          // meydan kapısı: demir parmaklık, patron yenilince kalkar
+          rect(b, x, y, T, T, 'rgba(18,12,26,0.45)')
+          for (let i = 1; i < T; i += 5) {
+            rect(b, x + i, y, 3, T, '#4a4654')
+            rect(b, x + i, y, 1, T, '#8a8694')
+          }
+          rect(b, x, y + 6, T, 2, '#2e2a38')
+          rect(b, x, y + 6, T, 1, '#6a6674')
+        }
         if (t === BLOCK_A || t === BLOCK_B) {
           const solid = t === BLOCK_A ? !w.switchOn : w.switchOn
           const col = t === BLOCK_A ? '#e8794a' : '#4aa8e0'
@@ -1830,7 +1582,8 @@ export class Renderer {
     // bayraklar
     for (const cp of w.checkpoints) this.drawFlag(b, cp)
     // çıkış kapısı
-    this.drawExit(b, w)
+    this.drawExit(b, w.exit)
+    if (w.warp) this.drawExit(b, w.warp, true)
     // düşmanlar
     for (const e of w.enemies) {
       if (!e.alive) continue
@@ -1899,6 +1652,19 @@ export class Renderer {
       rect(b, st.x + 2, sy2 + 2, 8, 6, CITY[this.city].accent)
       rect(b, st.x + 3, sy2 + 9, 6, 1, '#3a2a1e')
     }
+    if (w.charmBox && !w.charmTaken) {
+      // nazar boncuğu: lacivert cam, içinde göz; hafifçe sallanır
+      const ch = w.charmBox
+      const x = ch.x + 5 + Math.round(Math.sin(this.t * 2.4) * 1)
+      const y = ch.y + 5
+      rect(b, x, y - 8, 1, 4, '#c9a24a')
+      disc(b, x, y, 9, 'rgba(120,190,255,0.16)')
+      disc(b, x, y, 5, '#1d3f9a')
+      disc(b, x, y, 3, '#f4f8ff')
+      disc(b, x, y, 2, '#4ab0e8')
+      rect(b, x - 1, y - 1, 2, 2, '#120f1a')
+      rect(b, x - 3, y - 3, 1, 1, 'rgba(255,255,255,0.8)')
+    }
     // basınç plakaları
     for (const pl of w.plates) {
       rect(b, pl.x, pl.y + (pl.pressed ? 2 : 0), pl.w, pl.pressed ? 2 : 4, w.switchOn ? '#4aa8e0' : '#e8794a')
@@ -1916,6 +1682,16 @@ export class Renderer {
     }
     // oklar
     for (const pr of w.projectiles) {
+      if (pr.w > 6) {
+        // patronun savurduğu: şehrin vurgu renginde top, arkasında iz
+        const px = Math.round(pr.x + pr.w / 2)
+        const py = Math.round(pr.y + pr.h / 2)
+        disc(b, px - Math.sign(pr.vx) * 3, py - (pr.vy ? Math.sign(pr.vy) * 2 : 0), 2, 'rgba(255,255,255,0.3)')
+        disc(b, px, py, 4, '#120f1a')
+        disc(b, px, py, 3, s.accent)
+        rect(b, px - 2, py - 2, 2, 1, 'rgba(255,255,255,0.7)')
+        continue
+      }
       rect(b, pr.x, pr.y + 1, 6, 1, '#d8c8a0')
       rect(b, pr.vx > 0 ? pr.x + 5 : pr.x, pr.y, 1, 3, '#9aa3b5')
       rect(b, pr.vx > 0 ? pr.x : pr.x + 5, pr.y, 1, 3, '#c8553d')
@@ -1976,20 +1752,25 @@ export class Renderer {
     if (k === 1 && Math.sin(this.t * 3.1 + cp.index * 1.7) > 0.97) rect(b, x + 4, top - 3, 1, 1, '#ffffff')
   }
 
-  private drawExit(b: Ctx, w: World) {
+  /** Kapı: bölümün çıkışı; meydan kapısı (warp) aynı kemer, kilim rengi ışıkla */
+  private drawExit(b: Ctx, e: { x: number; y: number; h: number }, warp = false) {
     const s = CITY[this.city]
-    const e = w.exit
     const cx = e.x + T / 2
     const bot = e.y + e.h
     const glow = 0.25 + Math.sin(this.t * 3) * 0.1
     disc(b, cx, bot - 16, 22, `rgba(255,220,140,${glow * 0.5})`)
     rect(b, cx - 14, bot - 38, 28, 38, s.tileDark)
     rect(b, cx - 12, bot - 36, 24, 36, s.tile)
-    rect(b, cx - 8, bot - 24, 16, 24, '#ffe2a0')
-    disc(b, cx, bot - 24, 8, '#ffe2a0', true)
-    rect(b, cx - 6, bot - 22, 12, 22, '#fff4d0')
-    disc(b, cx, bot - 22, 6, '#fff4d0', true)
+    rect(b, cx - 8, bot - 24, 16, 24, warp ? '#f0a08a' : '#ffe2a0')
+    disc(b, cx, bot - 24, 8, warp ? '#f0a08a' : '#ffe2a0', true)
+    rect(b, cx - 6, bot - 22, 12, 22, warp ? '#ffd0b8' : '#fff4d0')
+    disc(b, cx, bot - 22, 6, warp ? '#ffd0b8' : '#fff4d0', true)
     rect(b, cx - 12, bot - 38, 24, 2, s.tileLight)
+    if (warp) {
+      // kemerin üstünde kilim şeridi: buradan meydana çıkılır
+      for (let i = 0; i < 6; i++) rect(b, cx - 12 + i * 4, bot - 41, 4, 3, i % 2 ? '#d83c36' : '#f2c14e')
+      return
+    }
     if (this.city === 'corum') {
       // Aslanlı Kapı aslanları
       for (const side of [-1, 1]) {
@@ -2010,6 +1791,8 @@ export class Renderer {
     const i = Math.floor(f)
     if (i >= n - 1) return
     const k = f - i
+    // kapıdan geçiş anı: iki örnek arası ışınlanma, çizme
+    if (Math.abs(g.data[i * 3 + 3] - g.data[i * 3]) > 48) return
     const x = g.data[i * 3] + (g.data[i * 3 + 3] - g.data[i * 3]) * k
     const y = g.data[i * 3 + 1] + (g.data[i * 3 + 4] - g.data[i * 3 + 1]) * k
     // oyuncuyla üst üste binince silikleşir, göz yormasın
@@ -2022,6 +1805,57 @@ export class Renderer {
     this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1, sx: 1, sy: 1 })
   }
 
+  /** Patron ve canları: zeminin üstünde, oyuncunun arkasında. Uyanınca adı kısa süre başının üstünde yazar. */
+  private drawBossHD(w: World, cx: number, cy: number) {
+    const b = w.boss
+    if (!b) return
+    if (b.state === 'down' && b.timer > 1.4) return
+    const c = this.ctx
+    const sc = this.scale
+    const x = (b.x + b.w / 2 - cx) * sc
+    const y = (b.y + b.h - cy) * sc
+    if (x < -200 * sc || x > this.canvas.width + 200 * sc) return
+    drawBoss(c, this.city, b, x, y, sc, this.t)
+    if (b.state === 'sleep' || b.state === 'down') return
+    // canlar: dolu kalp kırmızı, giden kalp boş
+    const top = b.hidden ? (b.floor - 16 - cy) * sc : (b.y - 12 - cy) * sc
+    const n = b.def.hp
+    for (let i = 0; i < n; i++) {
+      const hx = x + (i - (n - 1) / 2) * 7 * sc
+      c.save()
+      c.translate(hx, top)
+      c.scale(sc * 0.3, sc * 0.3)
+      c.beginPath()
+      c.moveTo(0, 7)
+      c.bezierCurveTo(-13, -2, -7, -11, 0, -4)
+      c.bezierCurveTo(7, -11, 13, -2, 0, 7)
+      c.closePath()
+      c.fillStyle = i < b.hp ? '#e23a3a' : 'rgba(30,20,40,0.55)'
+      c.fill()
+      c.strokeStyle = '#22161f'
+      c.lineWidth = 3
+      c.lineJoin = 'round'
+      c.stroke()
+      c.restore()
+    }
+    if (this.t - this.bossWoke < 3) {
+      const def = BOSSES[this.city]
+      const a = Math.min(1, (3 - (this.t - this.bossWoke)) / 0.5)
+      c.globalAlpha = a
+      c.font = `700 ${Math.round(sc * 6.5)}px ${this.popFont()}`
+      c.textAlign = 'center'
+      c.textBaseline = 'middle'
+      c.lineJoin = 'round'
+      c.lineWidth = Math.max(2, sc * 1.3)
+      c.strokeStyle = '#120f1a'
+      const label = this.lang === 'en' ? def.nameEn : def.name
+      c.strokeText(label, x, top - sc * 9)
+      c.fillStyle = '#ffd36a'
+      c.fillText(label, x, top - sc * 9)
+      c.globalAlpha = 1
+    }
+  }
+
   /** Karakterler büyütülmüş ana tuvalde, ekran çözünürlüğünde: oyun dünyası piksel, karakter elle çizilmiş */
   private drawHeroes(cx: number, cy: number) {
     const c = this.ctx
@@ -2030,7 +1864,7 @@ export class Renderer {
       c.save()
       c.globalAlpha = h.alpha
       if (h.ghost) c.filter = 'saturate(0.35) brightness(1.25)'
-      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, HERO_SIZE * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS })
+      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS })
       c.restore()
     }
     this.heroes = []
@@ -2164,29 +1998,37 @@ export class Renderer {
     const ex = (e.x + T / 2 - cx) * sc
     const ey = (e.y + e.h - 46 - cy) * sc
     this.drawPops(c, cx, cy, sc)
-    if (ex > -200 && ex < this.canvas.width + 200) {
-      const label = next ? `${next} →` : this.lang === 'en' ? 'LAST STOP' : 'SON DURAK'
-      c.font = `700 ${Math.round(sc * 5)}px ui-monospace, monospace`
-      const tw = c.measureText(label).width
-      const pad = sc * 3
-      c.fillStyle = '#1d4f91'
-      c.fillRect(ex - tw / 2 - pad, ey - sc * 6, tw + pad * 2, sc * 9)
-      c.strokeStyle = '#f4f4f4'
-      c.lineWidth = Math.max(1, sc * 0.6)
-      c.strokeRect(ex - tw / 2 - pad + sc, ey - sc * 5, tw + pad * 2 - sc * 2, sc * 7)
-      c.fillStyle = '#ffffff'
-      c.textAlign = 'center'
-      c.textBaseline = 'middle'
-      c.fillText(label, ex, ey - sc * 1.5)
-    }
+    if (w.warp) this.sign(c, (w.warp.x + T / 2 - cx) * sc, (w.warp.y + w.warp.h - 48 - cy) * sc, sc, this.lang === 'en' ? 'TOWN SQUARE →' : 'MEYDAN →', '#8e2630')
+    this.sign(c, ex, ey, sc, next ? `${next} →` : this.lang === 'en' ? 'LAST STOP' : 'SON DURAK', '#1d4f91')
+  }
+
+  /** Yol tabelası: renkli levha, beyaz çerçeve, ortalanmış yazı. */
+  private sign(c: Ctx, x: number, y: number, sc: number, label: string, color: string) {
+    if (x < -200 || x > this.canvas.width + 200) return
+    c.font = `700 ${Math.round(sc * 5)}px ui-monospace, monospace`
+    const tw = c.measureText(label).width
+    const pad = sc * 3
+    c.fillStyle = color
+    c.fillRect(x - tw / 2 - pad, y - sc * 6, tw + pad * 2, sc * 9)
+    c.strokeStyle = '#f4f4f4'
+    c.lineWidth = Math.max(1, sc * 0.6)
+    c.strokeRect(x - tw / 2 - pad + sc, y - sc * 5, tw + pad * 2 - sc * 2, sc * 7)
+    c.fillStyle = '#ffffff'
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.fillText(label, x, y - sc * 1.5)
   }
 }
 
 /** karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar) */
 const HERO_SIZE = 29
 
+/** şehir insanları oyuncudan bir tık kısa */
+const NPC_SIZE = 27
+
 interface HeroDraw {
-  look: 'uktun' | 'memo'
+  look: Look
+  size?: number
   pose: Pose
   /** ayak tabanı orta noktası (dünya) */
   x: number

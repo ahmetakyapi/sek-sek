@@ -5,7 +5,7 @@
  * Birim: karakter boyu ~100 birim, ayak tabanı orta noktası (0, 0), y yukarı eksi.
  */
 
-export type Look = 'uktun' | 'memo'
+export type Look = 'uktun' | 'memo' | 'amca' | 'teyze' | 'usta' | 'genc' | 'coban' | 'ozan'
 
 export interface Pose {
   /** [uyluk açısı, diz bükümü] uzak ve yakın bacak */
@@ -21,7 +21,12 @@ export interface Pose {
   blink?: boolean
 }
 
-const INK = '#22161f'
+export const INK = '#22161f'
+/** dış hat kalınlığı (çizim biriminde): patronlar dünya pikseliyle çizildiği için inceltir */
+let inkW = 3.2
+export function setInkWidth(w: number) {
+  inkW = w
+}
 
 interface Skin {
   skin: string
@@ -44,6 +49,17 @@ interface Skin {
   brow: string
   beard?: string
   beardS?: string
+  /** uzun saç (sırta dökülür) */
+  long?: boolean
+  mustache?: string
+  hat?: 'kasket' | 'yazma' | 'toque' | 'kalpak'
+  hatC?: string
+  hatS?: string
+  /** atkısız */
+  bare?: boolean
+  /** dize kadar inen giysi (etek, cübbe, kepenek) */
+  robe?: boolean
+  prop?: 'apron' | 'staff' | 'saz'
 }
 
 export const LOOKS: Record<Look, Skin> = {
@@ -52,7 +68,7 @@ export const LOOKS: Record<Look, Skin> = {
     hair: '#b4482a', hairS: '#7e2c20', hairL: '#e07a46', iris: '#7a4a26',
     coat: '#efb440', coatS: '#c98424', coatL: '#ffd878', shirt: '#fbf3e2',
     scarf: '#d83c36', scarfS: '#9e2430', pants: '#4f62a0', pantsS: '#35467c',
-    boot: '#7a4630', bootS: '#4c2a1c', brow: '#7e2c20',
+    boot: '#7a4630', bootS: '#4c2a1c', brow: '#7e2c20', long: true,
   },
   memo: {
     skin: '#e2ad84', skinS: '#c08460', blush: 'rgba(200,110,90,0.3)',
@@ -61,6 +77,54 @@ export const LOOKS: Record<Look, Skin> = {
     scarf: '#d83c36', scarfS: '#9e2430', pants: '#3e3e4e', pantsS: '#2a2a36',
     boot: '#6a3e2a', bootS: '#3e2418', brow: '#241612',
     beard: '#3a2a22', beardS: '#241812',
+  },
+  // ── şehir insanları: aynı çizgi, başka kılık
+  amca: {
+    skin: '#eab892', skinS: '#c88e6a', blush: 'rgba(210,110,90,0.3)',
+    hair: '#8a8690', hairS: '#5e5a66', hairL: '#b4b0b8', iris: '#4a3424',
+    coat: '#5a4a72', coatS: '#3e3252', coatL: '#7c6a96', shirt: '#f2ece0',
+    scarf: '#d83c36', scarfS: '#9e2430', pants: '#4a4452', pantsS: '#322e3a',
+    boot: '#3a2a26', bootS: '#241a18', brow: '#6e6a74',
+    mustache: '#8a8690', hat: 'kasket', hatC: '#6a6672', hatS: '#484450', bare: true,
+  },
+  teyze: {
+    skin: '#f0c09c', skinS: '#d09874', blush: 'rgba(230,110,100,0.4)',
+    hair: '#5a3a2a', hairS: '#3a241a', hairL: '#7a543c', iris: '#5a3a24',
+    coat: '#7a5a9e', coatS: '#583e78', coatL: '#9c7cc0', shirt: '#f4e6c8',
+    scarf: '#d83c36', scarfS: '#9e2430', pants: '#583e78', pantsS: '#3e2a58',
+    boot: '#3a2a26', bootS: '#241a18', brow: '#5a3a2a',
+    hat: 'yazma', hatC: '#d0563e', hatS: '#a03a2c', bare: true, robe: true,
+  },
+  usta: {
+    skin: '#e6b088', skinS: '#c48860', blush: 'rgba(210,110,90,0.3)',
+    hair: '#3a2a22', hairS: '#241812', hairL: '#5e4636', iris: '#3a2618',
+    coat: '#40557e', coatS: '#2c3c5c', coatL: '#6078a4', shirt: '#f6f2ea',
+    scarf: '#d83c36', scarfS: '#9e2430', pants: '#3e3a48', pantsS: '#2a2632',
+    boot: '#3a2a26', bootS: '#241a18', brow: '#2a1c16',
+    mustache: '#3a2a22', hat: 'toque', hatC: '#f6f2ea', hatS: '#cfc8ba', bare: true, prop: 'apron',
+  },
+  genc: {
+    skin: '#f4c6a0', skinS: '#d49c78', blush: 'rgba(235,120,105,0.4)',
+    hair: '#33221a', hairS: '#1e130e', hairL: '#55392a', iris: '#4a3020',
+    coat: '#46a078', coatS: '#2e7456', coatL: '#74c49c', shirt: '#f4efe6',
+    scarf: '#f2c14e', scarfS: '#c08a24', pants: '#454566', pantsS: '#2e2e48',
+    boot: '#e8e2d6', bootS: '#b4ac9c', brow: '#33221a',
+  },
+  coban: {
+    skin: '#e0a880', skinS: '#be8258', blush: 'rgba(200,100,80,0.3)',
+    hair: '#3a2a20', hairS: '#241812', hairL: '#5a4232', iris: '#3a2618',
+    coat: '#9a7a50', coatS: '#725638', coatL: '#be9c6c', shirt: '#e8dcc0',
+    scarf: '#d83c36', scarfS: '#9e2430', pants: '#725638', pantsS: '#523c26',
+    boot: '#3a2a26', bootS: '#241a18', brow: '#2a1c16',
+    mustache: '#3a2a20', hat: 'kalpak', hatC: '#6a5238', hatS: '#463422', bare: true, robe: true, prop: 'staff',
+  },
+  ozan: {
+    skin: '#e4ac84', skinS: '#c2865e', blush: 'rgba(200,100,80,0.3)',
+    hair: '#e6e2da', hairS: '#b4aea2', hairL: '#ffffff', iris: '#3a2618',
+    coat: '#7a2e30', coatS: '#561e22', coatL: '#a04a48', shirt: '#f0e6d0',
+    scarf: '#d83c36', scarfS: '#9e2430', pants: '#561e22', pantsS: '#3c1418',
+    boot: '#3a2a26', bootS: '#241a18', brow: '#b4aea2',
+    beard: '#f0ece4', beardS: '#c4beb2', hat: 'kalpak', hatC: '#2e2824', hatS: '#1a1614', bare: true, robe: true, prop: 'saz',
   },
 }
 
@@ -84,7 +148,7 @@ export function groundBob(p: Pose) {
   return -4.5 - low
 }
 
-function stroke(c: CanvasRenderingContext2D, pts: number[], w: number, color: string, ink = true) {
+export function stroke(c: CanvasRenderingContext2D, pts: number[], w: number, color: string, ink = true) {
   c.lineCap = 'round'
   c.lineJoin = 'round'
   const path = () => {
@@ -95,7 +159,7 @@ function stroke(c: CanvasRenderingContext2D, pts: number[], w: number, color: st
   if (ink) {
     path()
     c.strokeStyle = INK
-    c.lineWidth = w + 3.2
+    c.lineWidth = w + inkW
     c.stroke()
   }
   path()
@@ -105,13 +169,13 @@ function stroke(c: CanvasRenderingContext2D, pts: number[], w: number, color: st
 }
 
 /** dolu kapalı yol: önce mürekkep dış hat, sonra renk; gölge isteğe bağlı kırpılarak eklenir */
-function blob(c: CanvasRenderingContext2D, build: () => void, fill: string, shade?: { color: string; dx: number; dy: number }) {
+export function blob(c: CanvasRenderingContext2D, build: () => void, fill: string, shade?: { color: string; dx: number; dy: number }) {
   c.beginPath()
   build()
   c.closePath()
   c.lineJoin = 'round'
   c.strokeStyle = INK
-  c.lineWidth = 3.2
+  c.lineWidth = inkW
   c.stroke()
   c.fillStyle = fill
   c.fill()
@@ -283,23 +347,32 @@ function eye(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, w: numb
   c.stroke()
 }
 
-function drawHead(c: CanvasRenderingContext2D, look: Look, s: Skin, x: number, y: number, blink: boolean, hair: number) {
+function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, blink: boolean, hair: number) {
   const hx = x + 1.5
   const hy = y - 47
-  // arka saç (Uktun): enseden sırta dalgalı iner, savrulmayla geriye açılır
-  if (look === 'uktun') {
-    const sw = hair * 3
+  // arka saç (uzun): omuzların arkasından sırta dökülür, uçları tutam tutam ayrılır; koşarken geriye savrulur
+  if (s.long) {
+    const sw = hair * 3.4
     blob(
       c,
       () => {
-        c.moveTo(hx - 4, hy - 18)
-        c.bezierCurveTo(hx - 24 - sw, hy - 14, hx - 22 - sw, hy + 8, hx - 18 - sw * 1.6, hy + 22)
-        c.quadraticCurveTo(hx - 13 - sw, hy + 25, hx - 8 - sw * 0.6, hy + 20)
-        c.quadraticCurveTo(hx - 6, hy + 10, hx + 2, hy + 4)
+        c.moveTo(hx - 5, hy - 20)
+        c.bezierCurveTo(hx - 21, hy - 19, hx - 24 - sw * 0.4, hy - 2, hx - 20 - sw, hy + 14)
+        c.quadraticCurveTo(hx - 21 - sw * 1.6, hy + 23, hx - 24.5 - sw * 2.2, hy + 30)
+        c.quadraticCurveTo(hx - 19 - sw * 1.6, hy + 28, hx - 17.5 - sw * 1.5, hy + 23.5)
+        c.quadraticCurveTo(hx - 16.5 - sw * 1.6, hy + 29, hx - 15.5 - sw * 1.8, hy + 33.5)
+        c.quadraticCurveTo(hx - 11.5 - sw * 1.2, hy + 29.5, hx - 11 - sw, hy + 24)
+        c.quadraticCurveTo(hx - 9 - sw * 1.1, hy + 28, hx - 6.5 - sw * 1.2, hy + 30.5)
+        c.quadraticCurveTo(hx - 3.5 - sw * 0.5, hy + 22, hx - 4, hy + 12)
+        c.lineTo(hx + 1, hy + 2)
       },
       s.hair,
-      { color: s.hairS, dx: 3, dy: -2 },
+      { color: s.hairS, dx: 3.4, dy: -1.5 },
     )
+    // saç telleri: akışı izleyen ince koyu çizgiler ve bir ışık tutamı
+    stroke(c, [hx - 17, hy - 2, hx - 17.5 - sw * 0.8, hy + 12, hx - 19.5 - sw * 1.8, hy + 24], 0.9, s.hairS, false)
+    stroke(c, [hx - 11, hy + 8, hx - 12 - sw, hy + 18, hx - 13.5 - sw * 1.5, hy + 27], 0.9, s.hairS, false)
+    stroke(c, [hx - 20, hy - 6, hx - 21.4 - sw * 0.6, hy + 6, hx - 21.6 - sw * 1.2, hy + 15], 1.5, s.hairL, false)
   }
   // kulak hizasında boyun
   stroke(c, [hx - 1, hy + 14, hx - 1, hy + 19], 6.5, s.skinS)
@@ -327,7 +400,7 @@ function drawHead(c: CanvasRenderingContext2D, look: Look, s: Skin, x: number, y
   // kaşlar
   c.strokeStyle = s.brow
   c.lineCap = 'round'
-  c.lineWidth = look === 'memo' ? 2.4 : 1.6
+  c.lineWidth = s.long || s.hat === 'yazma' ? 1.6 : 2
   c.beginPath()
   // kaşlar gözün epey üstünde ve yukarı kavisli: yüz yumuşak ve meraklı baksın
   c.moveTo(hx + 1.4, hy - 6.2)
@@ -366,28 +439,50 @@ function drawHead(c: CanvasRenderingContext2D, look: Look, s: Skin, x: number, y
   c.moveTo(hx + 8.5, hy + 10)
   c.quadraticCurveTo(hx + 11, hy + 11.8, hx + 13.2, hy + 9.6)
   c.stroke()
+  // bıyık (sakalsız): ağzın üstünde iki yana sarkan kalın fırça
+  if (s.mustache && !s.beard) {
+    c.strokeStyle = INK
+    c.lineWidth = 4.4
+    c.lineCap = 'round'
+    c.beginPath()
+    c.moveTo(hx + 6.4, hy + 9.2)
+    c.quadraticCurveTo(hx + 10.6, hy + 6.6, hx + 15, hy + 9)
+    c.stroke()
+    c.strokeStyle = s.mustache
+    c.lineWidth = 2.4
+    c.stroke()
+  }
   // ön saç
-  if (look === 'uktun') {
+  if (s.long) {
+    // tepe: kabarık; yana taranmış iki uçlu perçem; şakaktan kulağın önüne inen ince bir tutam.
+    // Kulak, boyun ve çene açıkta kalır: saç yüzü sarmaz, arkaya dökülür.
     blob(
       c,
       () => {
-        c.moveTo(hx - 16, hy + 2)
-        c.bezierCurveTo(hx - 19, hy - 20, hx + 6, hy - 27, hx + 17.5, hy - 9)
-        c.quadraticCurveTo(hx + 18.6, hy - 11.5, hx + 16.8, hy - 12)
-        // perçem alnın üstünde yukarı kıvrılır: kaş açık kalır, yüz güler
-        c.quadraticCurveTo(hx + 11, hy - 11.2, hx + 6.5, hy - 14.5)
-        c.quadraticCurveTo(hx + 3.5, hy - 10.5, hx - 1, hy - 11)
-        c.quadraticCurveTo(hx - 5.5, hy - 8, hx - 6, hy + 4)
-        // kulağın önünden düşen tutam
-        c.quadraticCurveTo(hx - 7, hy + 12, hx - 4, hy + 19)
-        c.quadraticCurveTo(hx - 10, hy + 17, hx - 12, hy + 10)
+        c.moveTo(hx - 15.5, hy + 5)
+        c.bezierCurveTo(hx - 21, hy - 14, hx - 8, hy - 28, hx + 5, hy - 25)
+        c.bezierCurveTo(hx + 13, hy - 24, hx + 19, hy - 17, hx + 18.4, hy - 9.5)
+        // perçem uçları
+        c.quadraticCurveTo(hx + 18.8, hy - 8.6, hx + 16.4, hy - 8.4)
+        c.quadraticCurveTo(hx + 15, hy - 11.6, hx + 11.4, hy - 13)
+        c.quadraticCurveTo(hx + 11, hy - 10.4, hx + 8, hy - 9.6)
+        c.quadraticCurveTo(hx + 6.4, hy - 13, hx + 1, hy - 14.4)
+        // şakak: geriye taranır, kulağın önünde sivri bir tutamla biter
+        c.quadraticCurveTo(hx - 3.6, hy - 9.6, hx - 4.4, hy - 2)
+        c.quadraticCurveTo(hx - 3.8, hy + 5, hx - 5.6, hy + 10.5)
+        c.quadraticCurveTo(hx - 8.4, hy + 5, hx - 8, hy - 2.4)
+        c.quadraticCurveTo(hx - 11.6, hy - 1, hx - 13, hy + 5.6)
       },
       s.hair,
       { color: s.hairS, dx: 3.2, dy: -2.4 },
     )
-    // saç parlaması
-    stroke(c, [hx - 9, hy - 10, hx - 3, hy - 17, hx + 5, hy - 18.4], 2.2, s.hairL, false)
-  } else {
+    // ayrım çizgisi, teller ve parlama
+    stroke(c, [hx + 1.4, hy - 14.6, hx - 2.6, hy - 20.4, hx - 9, hy - 22.6], 0.9, s.hairS, false)
+    stroke(c, [hx - 9.6, hy - 9, hx - 13.4, hy - 2], 0.9, s.hairS, false)
+    stroke(c, [hx + 8.4, hy - 13, hx + 12.6, hy - 17.6], 0.9, s.hairS, false)
+    stroke(c, [hx - 13, hy - 12, hx - 8, hy - 19.4, hx - 1, hy - 22.2], 2.2, s.hairL, false)
+    stroke(c, [hx + 6, hy - 21.6, hx + 12.4, hy - 19.4, hx + 15.4, hy - 15.4], 1.5, s.hairL, false)
+  } else if (s.hat !== 'yazma') {
     blob(
       c,
       () => {
@@ -410,8 +505,8 @@ function drawHead(c: CanvasRenderingContext2D, look: Look, s: Skin, x: number, y
     stroke(c, [hx - 10, hy - 13, hx - 5, hy - 19.5, hx + 3, hy - 20.6], 2, s.hairL, false)
     stroke(c, [hx + 7, hy - 19.5, hx + 12, hy - 18.5], 1.6, s.hairL, false)
   }
-  // kulak (Memo'da görünür)
-  if (look === 'memo') {
+  // kulak: saçın arasından görünür (yazma kapatır)
+  if (s.hat !== 'yazma') {
     blob(
       c,
       () => {
@@ -420,6 +515,86 @@ function drawHead(c: CanvasRenderingContext2D, look: Look, s: Skin, x: number, y
       s.skin,
       { color: s.skinS, dx: 1, dy: -1 },
     )
+  }
+  if (s.hat) drawHat(c, s, hx, hy)
+}
+
+function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
+  const col = s.hatC!
+  const sh = { color: s.hatS!, dx: 3, dy: -2.2 }
+  switch (s.hat) {
+    case 'kasket':
+      // sekiz köşe kasket: yayvan tepe, öne uzanan siper
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 17, hy - 9)
+          c.bezierCurveTo(hx - 18, hy - 24, hx + 12, hy - 27, hx + 17, hy - 13)
+          c.lineTo(hx + 24, hy - 10.5)
+          c.quadraticCurveTo(hx + 24.5, hy - 8, hx + 22, hy - 7.6)
+          c.quadraticCurveTo(hx + 4, hy - 12.5, hx - 17, hy - 9)
+        },
+        col,
+        sh,
+      )
+      stroke(c, [hx - 12, hy - 15, hx - 4, hy - 20.5, hx + 6, hy - 20.5], 1.8, s.hairL, false)
+      break
+    case 'toque':
+      // usta kalfası: beyaz bant, üstünde kabarık tepe
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 14, hy - 12)
+          c.bezierCurveTo(hx - 24, hy - 22, hx - 14, hy - 36, hx - 3, hy - 30)
+          c.bezierCurveTo(hx + 2, hy - 38, hx + 14, hy - 36, hx + 13, hy - 28)
+          c.bezierCurveTo(hx + 22, hy - 26, hx + 20, hy - 15, hx + 15.5, hy - 13)
+          c.quadraticCurveTo(hx, hy - 16.5, hx - 14, hy - 12)
+        },
+        col,
+        sh,
+      )
+      stroke(c, [hx - 13.4, hy - 13.6, hx, hy - 17.6, hx + 15, hy - 14.6], 1.2, s.hatS!, false)
+      break
+    case 'kalpak':
+      // yün kalpak: silindir, üstü hafif bombeli
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 16, hy - 9)
+          c.lineTo(hx - 15, hy - 26)
+          c.quadraticCurveTo(hx, hy - 32, hx + 15.5, hy - 26)
+          c.lineTo(hx + 17.5, hy - 10)
+          c.quadraticCurveTo(hx, hy - 15, hx - 16, hy - 9)
+        },
+        col,
+        sh,
+      )
+      stroke(c, [hx - 10, hy - 14, hx - 9, hy - 24], 1.4, s.hairL, false)
+      stroke(c, [hx - 3, hy - 16, hx - 2.4, hy - 26], 1.2, s.hairL, false)
+      break
+    case 'yazma':
+      // yazma: başı sarar, enseden omuza düşer, çenenin altında düğümlenir
+      blob(
+        c,
+        () => {
+          c.moveTo(hx + 17, hy - 8)
+          c.bezierCurveTo(hx + 14, hy - 26, hx - 18, hy - 27, hx - 18, hy - 2)
+          c.quadraticCurveTo(hx - 19, hy + 14, hx - 12, hy + 21)
+          c.quadraticCurveTo(hx - 5, hy + 19, hx - 4, hy + 13)
+          c.quadraticCurveTo(hx - 9, hy + 2, hx - 4, hy - 7)
+          c.quadraticCurveTo(hx + 6, hy - 12, hx + 17, hy - 8)
+        },
+        col,
+        sh,
+      )
+      // oya ve puantiye
+      c.fillStyle = '#f6d98a'
+      for (const [dx, dy] of [[-12, -8], [-6, -17], [4, -18], [-13, 6], [11, -13]]) {
+        c.beginPath()
+        c.arc(hx + dx, hy + dy, 1.1, 0, Math.PI * 2)
+        c.fill()
+      }
+      break
   }
 }
 
@@ -447,14 +622,67 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   drawArm(c, s, tx - 4, sY, fa[0], fa[1], false)
   drawLeg(c, s, hipX - 2.5, hipY, fl[0], fl[1], false)
   drawLeg(c, s, hipX + 2, hipY, nl[0], nl[1], true)
+  if (s.prop === 'staff') {
+    // çoban değneği: arkada, yere basar
+    stroke(c, [tx - 15, ty - 44, tx - 13.5, -1.5], 2.6, '#6a4a2e')
+    stroke(c, [tx - 15, ty - 44, tx - 11, ty - 48, tx - 8.5, ty - 44.5], 2.6, '#6a4a2e')
+  }
   drawTorso(c, s, tx, ty)
-  drawScarf(c, s, tx, ty, t, !!opts.moving)
+  if (s.robe) {
+    // etek / cübbe: belden bileğe, hafif açılarak iner
+    blob(
+      c,
+      () => {
+        c.moveTo(tx - 9.5, ty - 6)
+        c.lineTo(tx + 9.5, ty - 6)
+        c.quadraticCurveTo(tx + 12.5, ty + 10, tx + 11.5, -bob - 6)
+        c.quadraticCurveTo(tx, -bob - 4, tx - 11.5, -bob - 6)
+        c.quadraticCurveTo(tx - 12.5, ty + 10, tx - 9.5, ty - 6)
+      },
+      s.pants,
+      { color: s.pantsS, dx: -3, dy: -0.5 },
+    )
+    stroke(c, [tx - 4, ty + 2, tx - 5, -bob - 8], 1, s.pantsS, false)
+    stroke(c, [tx + 4, ty + 4, tx + 5, -bob - 8], 1, s.pantsS, false)
+  }
+  if (s.prop === 'apron') {
+    // önlük: göğüsten dize
+    blob(
+      c,
+      () => {
+        c.moveTo(tx - 3, ty - 20)
+        c.lineTo(tx + 8.5, ty - 20)
+        c.lineTo(tx + 10, ty + 9)
+        c.quadraticCurveTo(tx + 3, ty + 11, tx - 4.5, ty + 9)
+        c.closePath()
+      },
+      '#f6f2ea',
+      { color: '#cfc8ba', dx: -2, dy: 0 },
+    )
+  }
+  if (s.prop === 'saz') {
+    // bağlama: gövde belde, sap omuza doğru
+    stroke(c, [tx + 2, ty - 8, tx + 22, ty - 30], 2.4, '#7a4a24')
+    blob(
+      c,
+      () => {
+        c.ellipse(tx + 1, ty - 6, 8.5, 6.2, -0.75, 0, Math.PI * 2)
+      },
+      '#b4733c',
+      { color: '#7a4a24', dx: 2, dy: -2 },
+    )
+    c.fillStyle = INK
+    c.beginPath()
+    c.arc(tx + 2, ty - 7, 1.3, 0, Math.PI * 2)
+    c.fill()
+  }
+  if (!s.bare) drawScarf(c, s, tx, ty, t, !!opts.moving)
   // kafa boyuna göre biraz büyük: sevimli oran
   c.save()
   c.translate(tx + 1, ty - 28)
   c.scale(1.14, 1.14)
   c.translate(-(tx + 1), -(ty - 28))
-  drawHead(c, look, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0)
+  drawHead(c, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0)
   c.restore()
   drawArm(c, s, tx + 4, sY, na[0], na[1], true)
   c.restore()

@@ -1,5 +1,7 @@
 import { applyAssists } from './assists'
+import { BOSSES } from './boss'
 import { EXTENSIONS } from './extensions'
+import { PRELUDES, buildFinale } from './finales'
 import { SIGNATURES } from './signatures'
 import type { LevelDef } from './types'
 
@@ -17,7 +19,7 @@ import type { LevelDef } from './types'
 const H = 24
 
 /** Alttan hizalı parça: satırları H'ye tamamlar, genişliği eşitler. */
-function chunk(rows: string[]): string[] {
+export function chunk(rows: string[]): string[] {
   const w = Math.max(...rows.map((r) => r.length))
   const padded = rows.map((r) => r.padEnd(w, ' '))
   while (padded.length < H) padded.unshift(' '.repeat(w))
@@ -1567,9 +1569,24 @@ function addSignature(l: LevelDef) {
   l.medals = l.medals.map((m) => m + sig.medal) as [number, number, number]
 }
 
+/** Final: eski çıkış meydan kapısına (@) döner; sağa meydan yolu, patron arenası ve gerçek çıkış eklenir. */
+function addFinale(l: LevelDef) {
+  const pre = PRELUDES[l.city]
+  const fin = buildFinale(l.city, chunk, (rows) => enrich(rows, l.city))
+  // finalin tabela ve kişileri, haritadaki sıralarına denk gelen yere yazılır (önceki listeler eksik ya da fazla olabilir)
+  const count = (ch: string) => l.map.join('').split(ch).length - 1
+  const fit = <A>(arr: A[], n: number, fill: A) => [...arr.slice(0, n), ...Array.from({ length: Math.max(0, n - arr.length) }, () => fill)]
+  l.finaleAt = { hint: count('?'), npc: count('n') }
+  l.hints = [...fit(l.hints, l.finaleAt.hint, ''), ...pre.hints, BOSSES[l.city].taunt]
+  l.npcs = [...l.npcs.slice(0, l.finaleAt.npc), ...(pre.npcs ?? [])]
+  l.map = l.map.map((r, y) => r.replace('E', '@') + fin[y])
+  l.medals = l.medals.map((m) => m + pre.medal) as [number, number, number]
+}
+
 for (const l of LEVELS) {
   extend(l)
   addSignature(l)
   l.map = applyAssists(l.id, enrich(l.map, l.city))
+  addFinale(l)
 }
 

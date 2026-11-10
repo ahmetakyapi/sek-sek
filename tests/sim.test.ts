@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BOSSES } from '../game/boss'
 import { POSES, gait, groundBob } from '../game/heroDraw'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
@@ -24,8 +25,12 @@ describe('bölüm verisi', () => {
   it.each(LEVELS.map((l) => [l.name, l]))('%s: bayraklar arası en çok 75 karo, soldan sağa numaralı', (_n, l) => {
     const w = new World(l)
     const xs = w.checkpoints.map((c) => c.x / 16)
-    const marks = [0, ...xs, w.exit.x / 16]
-    for (let i = 1; i < marks.length; i++) expect(marks[i] - marks[i - 1]).toBeLessThanOrEqual(75)
+    // meydan kapısı yolu ikiye böler: kapıya kadar yürünür, sonra varış noktasından devam edilir
+    const door = w.warp!.x / 16
+    const land = w.arrival!.x / 16
+    const before = [0, ...xs.filter((x) => x < door), door]
+    const after = [land, ...xs.filter((x) => x > land), w.exit.x / 16]
+    for (const marks of [before, after]) for (let i = 1; i < marks.length; i++) expect(marks[i] - marks[i - 1]).toBeLessThanOrEqual(75)
     expect(w.checkpoints.map((c) => c.index)).toEqual(w.checkpoints.map((_, i) => i))
     expect(xs).toEqual([...xs].sort((a, b) => a - b))
   })
@@ -247,5 +252,61 @@ describe('karakter çizimi', () => {
   it('koşu döngüsü kapanır: faz 0 ile 1 aynı poz', () => {
     expect(gait(1).legs[0][0]).toBeCloseTo(gait(0).legs[0][0], 6)
     expect(gait(1).arms[1][1]).toBeCloseTo(gait(0).arms[1][1], 6)
+  })
+})
+
+describe('final: meydan kapısı, düğmeler, nazar boncuğu', () => {
+  const step = (w: World, secs: number, patch: Partial<ReturnType<typeof emptyInput>> = {}) => {
+    for (let i = 0; i < secs * 120; i++) w.step(1 / 120, { ...emptyInput(), ...patch })
+  }
+
+  it('ölünce düğme bayrağı aldığın andaki haline döner (açık köprü açığı kapandı)', () => {
+    //  bayrak → plaka → dikenler: plakaya basıp ölünce bloklar eski haline dönmeli
+    const w = mk(['              ', ' P F _  ^^    ', '##############'])
+    step(w, 0.9, { right: true })
+    expect(w.checkpointIndex).toBe(0)
+    expect(w.switchOn).toBe(true)
+    for (let i = 0; i < 600 && w.deaths === 0; i++) step(w, 1 / 120, { right: true })
+    expect(w.deaths).toBe(1)
+    step(w, 1)
+    expect(w.player.dead).toBe(false)
+    expect(w.switchOn).toBe(false)
+  })
+
+  it('bayraktan önce basılan düğme, ölünce de basılı kalır', () => {
+    const w = mk(['              ', ' P _ F  ^^    ', '##############'])
+    for (let i = 0; i < 600 && w.deaths === 0; i++) step(w, 1 / 120, { right: true })
+    expect(w.deaths).toBe(1)
+    step(w, 1)
+    expect(w.player.dead).toBe(false)
+    expect(w.switchOn).toBe(true)
+  })
+
+  it('meydan kapısı oyuncuyu varış noktasına geçirir, düğmeleri sıfırlar, doğuş yerini taşır', () => {
+    const w = mk(['                    ', ' P _ @   ##  &   E  ', '####################'])
+    step(w, 0.8, { right: true })
+    expect(w.player.x).toBeGreaterThan(13 * 16 - 8)
+    expect(w.switchOn).toBe(false)
+    expect(w.spawn.x).toBeGreaterThan(12 * 16)
+    expect(w.complete).toBe(false)
+  })
+
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: kapı, varış, patron, kapalı meydan kapısı ve tek nazar boncuğu var', (_n, l) => {
+    const w = new World(l)
+    expect(w.warp).not.toBeNull()
+    expect(w.arrival).not.toBeNull()
+    expect(w.boss).not.toBeNull()
+    expect(w.charmBox).not.toBeNull()
+    expect(l.map.join('').split('!').length - 1).toBe(1)
+    expect(w.exit.x).toBeGreaterThan(w.boss!.max)
+    // çıkış patron yenilmeden kapalı
+    const gx = Math.floor((w.boss!.max + w.boss!.w) / 16) + 1
+    expect(w.isSolid(gx, 18)).toBe(true)
+    w.boss!.state = 'down'
+    expect(w.isSolid(gx, 18)).toBe(false)
+    // her tabelanın ve her kişinin bir metni var; finalin metinleri kendi tabelalarına denk gelir
+    expect(w.signs.length).toBe(l.hints.length)
+    expect(w.npcs.length).toBe(l.npcs.length)
+    expect(l.hints[l.hints.length - 1]).toBe(BOSSES[l.city].taunt)
   })
 })

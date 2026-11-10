@@ -1,3 +1,4 @@
+import { BOSSES, makeBoss, resetBoss, touchBoss, updateBoss, type Boss } from './boss'
 import { T, type GameEvent, type Input, type LevelDef } from './types'
 
 /* ── Tile kodları ───────────────────────────────────────────── */
@@ -14,6 +15,8 @@ export const DOOR = 9
 export const FAKE = 10
 export const BLOCK_A = 11
 export const BLOCK_B = 12
+/** meydan kapısı: patron yenilene dek kapalı */
+export const BOSS_GATE = 13
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 export const PHYS = {
@@ -155,6 +158,9 @@ export interface Turret {
 
 export interface Projectile extends Box {
   vx: number
+  /** kavisli atış (patron): dikey hız ve yerçekimi */
+  vy?: number
+  g?: number
 }
 
 export interface Pickup extends Box {
@@ -214,6 +220,9 @@ export class World {
   readonly plates: Plate[] = []
   keyBox: Box | null = null
   stampBox: Box | null = null
+  /** her bölümde bir tane saklı nazar boncuğu */
+  charmBox: Box | null = null
+  charmTaken = false
   hasKey = false
   stampTaken = false
   /** false: [ blokları katı · true: ] blokları katı */
@@ -222,6 +231,19 @@ export class World {
   /** şehrin dost hayvanları: dokununca sevinir, zarar vermez */
   readonly friends: Array<Box & { cool: number }> = []
   readonly exit: Box
+  /** meydan kapısı: dokununca oyuncuyu bölümün finaline (varış noktasına) geçirir */
+  warp: Box | null = null
+  arrival: { x: number; y: number } | null = null
+  /** şehrin patronu (yoksa null; çözücü de null yapar: kapı açık sayılır) */
+  boss: Boss | null = null
+  /** bayrak alındığındaki düğme durumu: ölünce buna dönülür, bloklar yanlış tarafta kalmaz */
+  private cpSwitch = false
+  get checkpointSwitch() {
+    return this.cpSwitch
+  }
+  set checkpointSwitch(v: boolean) {
+    this.cpSwitch = v
+  }
   readonly start: { x: number; y: number }
   readonly crumbles = new Map<number, CrumbleState>()
 
@@ -329,6 +351,9 @@ export class World {
           case '$':
             this.stampBox = { x: px + 2, y: py + 2, w: 12, h: 12 }
             break
+          case '!':
+            this.charmBox = { x: px + 3, y: py + 3, w: 10, h: 10 }
+            break
           case 'D':
             this.set(tx, ty, DOOR)
             break
@@ -341,6 +366,26 @@ export class World {
           case ']':
             this.set(tx, ty, BLOCK_B)
             break
+          case 'G':
+            this.set(tx, ty, BOSS_GATE)
+            break
+          case '@':
+            this.warp = { x: px, y: py - T, w: T, h: T * 2 }
+            break
+          case '&':
+            this.arrival = { x: px + (T - PW) / 2, y: py + T - PH }
+            break
+          case 'Q': {
+            // arena sınırları: patronun satırında | ya da duvara kadar
+            const def = BOSSES[level.city]
+            const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
+            let l = tx - 1
+            while (l >= 0 && !stop(row[l])) l--
+            let r = tx + 1
+            while (r < this.cols && !stop(row[r])) r++
+            this.boss = makeBoss(def, px, (ty + 1) * T, (l + 1) * T, r * T - def.w)
+            break
+          }
           case '_':
             this.plates.push({ x: px + 1, y: py + 12, w: 14, h: 4, pressed: false })
             break
@@ -502,6 +547,7 @@ export class World {
     if (t === DOOR) return !this.hasKey
     if (t === BLOCK_A) return !this.switchOn
     if (t === BLOCK_B) return this.switchOn
+    if (t === BOSS_GATE) return this.boss !== null && this.boss.state !== 'down'
     return false
   }
 
@@ -528,6 +574,7 @@ export class World {
       p.deadTimer -= dt
       if (p.deadTimer <= 0) this.respawn()
       this.updateEnemies(dt)
+      if (this.boss) updateBoss(this.boss, this, dt)
       this.updateTurrets(dt)
       return
     }
@@ -535,6 +582,7 @@ export class World {
     this.updatePlayer(dt, input)
     this.updateObjects(dt)
     this.updateEnemies(dt)
+    if (this.boss) updateBoss(this.boss, this, dt)
     this.updateTurrets(dt)
     this.interactions()
   }
@@ -1072,6 +1120,10 @@ export class World {
       this.stampTaken = true
       this.events.push({ type: 'stamp' })
     }
+    if (this.charmBox && !this.charmTaken && !p.dead && overlap(p, this.charmBox)) {
+      this.charmTaken = true
+      this.events.push({ type: 'charm' })
+    }
     for (const pl of this.plates) {
       const on = !p.dead && p.grounded && overlap({ x: p.x, y: p.y + 2, w: p.w, h: p.h }, pl)
       if (on && !pl.pressed) {
@@ -1096,6 +1148,10 @@ export class World {
     }
     this.projectiles = this.projectiles.filter((pr) => {
       pr.x += pr.vx * dt
+      if (pr.g !== undefined) {
+        pr.vy = (pr.vy ?? 0) + pr.g * dt
+        pr.y += pr.vy * dt
+      }
       const cx = Math.floor((pr.x + pr.w / 2) / T)
       const cy = Math.floor((pr.y + pr.h / 2) / T)
       if (cx < 0 || cx >= this.cols) return false
@@ -1174,6 +1230,29 @@ export class World {
 
     for (const pr of this.projectiles) if (overlap(shrink(p, 2), pr)) return this.kill()
 
+    if (this.boss) {
+      const r = touchBoss(this.boss, this)
+      if (r === 'kill') return this.kill()
+      if (r === 'hit') {
+        p.vy = -PHYS.stompV
+        p.canDash = true
+        p.dashTime = 0
+        p.grounded = false
+        if (this.boss.state === 'down') this.projectiles = []
+      }
+    }
+
+    // meydan kapısı: finale geç (tek yön)
+    if (this.warp && this.arrival && overlap(p, this.warp)) {
+      Object.assign(p, this.freshPlayer(this.arrival.x, this.arrival.y))
+      this.spawn = { ...this.arrival }
+      // final kendi düğme düzeniyle başlar: önceki bölümden kalan durum bulmacayı bozmasın
+      this.switchOn = false
+      this.cpSwitch = false
+      this.events.push({ type: 'warp' })
+      return
+    }
+
     for (const c of this.pickups) {
       if (!c.taken && overlap(p, c)) {
         c.taken = true
@@ -1187,6 +1266,7 @@ export class World {
         for (const o of this.checkpoints) if (o.index < cp.index) o.active = true
         this.checkpointIndex = cp.index
         this.spawn = { x: cp.x + (T - PW) / 2, y: cp.y + T * 2 - PH }
+        this.cpSwitch = this.switchOn
         this.events.push({ type: 'checkpoint', index: cp.index })
       }
     }
@@ -1218,6 +1298,10 @@ export class World {
 
   respawn() {
     Object.assign(this.player, this.freshPlayer(this.spawn.x, this.spawn.y))
+    // düğmeler bayrağı aldığın andaki haline döner: açtığın köprü kapanmaz, kapattığın açık kalmaz
+    this.switchOn = this.cpSwitch
+    for (const pl of this.plates) pl.pressed = false
+    if (this.boss && this.boss.state !== 'down') resetBoss(this.boss)
     for (const e of this.enemies) {
       e.alive = true
       e.x = e.ox
@@ -1275,8 +1359,12 @@ export interface Snapshot {
   hasKey: boolean
   switchOn: boolean
   stampTaken: boolean
+  charmTaken: boolean
   crystals: Array<[boolean, number]>
   clock: number
+  cpSwitch: boolean
+  boss: Boss | null
+  projectiles: Projectile[]
 }
 
 export function snapshot(w: World): Snapshot {
@@ -1295,8 +1383,12 @@ export function snapshot(w: World): Snapshot {
     hasKey: w.hasKey,
     switchOn: w.switchOn,
     stampTaken: w.stampTaken,
+    charmTaken: w.charmTaken,
     crystals: w.crystals.map((c) => [c.active, c.timer]),
     clock: w.clock,
+    cpSwitch: w.checkpointSwitch,
+    boss: w.boss ? { ...w.boss, home: { ...w.boss.home } } : null,
+    projectiles: w.projectiles.map((q) => ({ ...q })),
   }
 }
 
@@ -1316,9 +1408,12 @@ export function restore(w: World, s: Snapshot) {
   w.hasKey = s.hasKey
   w.switchOn = s.switchOn
   w.stampTaken = s.stampTaken
+  w.charmTaken = s.charmTaken
   s.crystals.forEach(([a, t], i) => Object.assign(w.crystals[i], { active: a, timer: t }))
   w.clock = s.clock
   w.plates.forEach((pl) => (pl.pressed = false))
-  w.projectiles = []
+  w.checkpointSwitch = s.cpSwitch
+  if (w.boss && s.boss) Object.assign(w.boss, s.boss, { home: { ...s.boss.home } })
+  w.projectiles = s.projectiles.map((q) => ({ ...q }))
   w.events = []
 }

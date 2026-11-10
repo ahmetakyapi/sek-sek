@@ -1,7 +1,7 @@
 import { LEVELS } from '@/game/levels'
 
 /** Haritalar değişince artar: oyuncuya "yenilendi" notu gösterilir, baştan başlama önerilir. */
-export const MAP_VERSION = 3
+export const MAP_VERSION = 4
 
 /** Eski sürümlerin şehir sırası: açılan şehir dizinini kimliğiyle yeni sıraya taşımak için */
 const ORDERS: Record<number, string[]> = {
@@ -39,6 +39,8 @@ export interface Save {
   player: Player | null
   skippedName: boolean
   stamps: Record<string, boolean>
+  /** bulunan nazar boncukları (şehir kimliği → bulundu) */
+  charms: Record<string, boolean>
   /** kaydın ait olduğu harita sürümü */
   mapVersion: number
   /** arayüz dili */
@@ -53,7 +55,7 @@ const KEY = 'seksek:v1'
 /** 8 Kasım'a dek anahtar `memleket:v1`di; ilk açılışta yeni anahtara taşınır, ilerleme kaybolmaz. */
 const LEGACY_KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
 
 export function loadSave(): Save {
   try {
@@ -96,7 +98,7 @@ export function loadSave(): Save {
 export const needsMapNotice = (s: Save) => s.mapVersion < MAP_VERSION && (s.unlocked > 0 || Object.keys(s.best).length > 0)
 
 /** Baştan başla: ilerleme sıfırlanır; ad, karakter ve ayarlar kalır */
-export const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, mapVersion: MAP_VERSION, migrated: false })
+export const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, mapVersion: MAP_VERSION, migrated: false })
 
 export function writeSave(s: Save) {
   try {

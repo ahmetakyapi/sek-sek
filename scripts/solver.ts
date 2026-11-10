@@ -1,6 +1,6 @@
 /**
  * Bölüm çözücüsü: gerçek fizik motoruyla BFS üzerinden "oynar".
- * Düşmanlar ve ok tuzakları zamanlama engelidir, ulaşılabilirliği değiştirmez: çözücüde kapalı.
+ * Düşmanlar, ok tuzakları ve patron zamanlama engelidir, ulaşılabilirliği değiştirmez: çözücüde kapalı.
  * verify-levels (geçilebilir mi) ve audit-difficulty (ne kadar hassas oyun istiyor) kullanır.
  */
 import type { LevelDef } from '../game/types'
@@ -89,6 +89,7 @@ export interface SolveResult {
   world: World
   won: boolean
   stamp: boolean
+  charm: boolean
   gotKey: boolean
   picks: Set<number>
   cps: Set<number>
@@ -103,6 +104,9 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   const w = new World(level)
   w.enemies.length = 0
   w.turrets.length = 0
+  // patron da zamanlama engelidir: çözücüde yok sayılır, meydan kapısı açık kabul edilir
+  // (yenilebilirliği tests/boss.test.ts oynayarak doğrular)
+  w.boss = null
   const ms = macros(opts.moves ?? 'all')
   let far = { x: 0, y: 0 }
   const start = snapshot(w)
@@ -147,10 +151,11 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   const cps = new Set<number>()
   let won = false
   let stamp = !w.stampBox
+  let charm = !w.charmBox
   let gotKey = !w.keyBox
   let expanded = 0
   const t0 = Date.now()
-  const allDone = () => won && (opts.exitOnly || (stamp && gotKey && picks.size === w.pickups.length && cps.size === w.checkpoints.length))
+  const allDone = () => won && (opts.exitOnly || (stamp && charm && gotKey && picks.size === w.pickups.length && cps.size === w.checkpoints.length))
   const loop = (budget: number, done: () => boolean) => {
     let n = 0
     while (queue.length && n < budget && !done()) {
@@ -171,6 +176,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
             if (e.type === 'collect') picks.add(e.index)
             if (e.type === 'checkpoint') cps.add(e.index)
             if (e.type === 'stamp') stamp = true
+            if (e.type === 'charm') charm = true
             if (e.type === 'key') gotKey = true
           }
           w.events.length = 0
@@ -200,12 +206,12 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   const goals = () =>
     opts.exitOnly
       ? !won ? [w.exit] : []
-      : [...w.pickups.filter((p) => !picks.has(p.index)), ...w.checkpoints.filter((c) => !cps.has(c.index)), ...(!stamp && w.stampBox ? [w.stampBox] : []), ...(!gotKey && w.keyBox ? [w.keyBox] : []), ...(!won ? [w.exit] : [])]
+      : [...w.pickups.filter((p) => !picks.has(p.index)), ...w.checkpoints.filter((c) => !cps.has(c.index)), ...(!stamp && w.stampBox ? [w.stampBox] : []), ...(!charm && w.charmBox ? [w.charmBox] : []), ...(!gotKey && w.keyBox ? [w.keyBox] : []), ...(!won ? [w.exit] : [])]
   for (const g of goals()) {
     target = { x: g.x, y: g.y }
     queue.length = 0
     for (const q of [...pool]) push(q, false)
     loop(6000, () => !goals().includes(g))
   }
-  return { world: w, won, stamp, gotKey, picks, cps, expanded, ms: Date.now() - t0, far }
+  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far }
 }

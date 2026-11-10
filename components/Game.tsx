@@ -190,6 +190,7 @@ export default function Game() {
           const rest = { ...inp, jumpPressed: false, dashPressed: false }
           let first = true
           while (acc >= STEP) {
+            renderer.capture(w)
             w.step(STEP, first ? inp : rest)
             first = false
             acc -= STEP
@@ -234,6 +235,31 @@ export default function Game() {
               })
               break
             }
+            case 'charm': {
+              haptic([20, 30, 20, 30, 50])
+              const tr = makeT(langRef.current)
+              setToast({ title: tr('Nazar Boncuğu'), text: tr('Dedenin çantasından düşmüş. Her şehirde bir tane saklı; bulana nazar değmez.'), item: tr('Gizli Bulgu'), key: Date.now() })
+              setSave((prev) => {
+                const next = { ...prev, charms: { ...prev.charms, [w.level.id]: true } }
+                writeSave(next)
+                return next
+              })
+              break
+            }
+            case 'bossWake':
+              haptic([30, 60, 30])
+              break
+            case 'bossHit':
+              freezeRef.current = 0.09
+              haptic([25, 30, 45])
+              break
+            case 'bossDown':
+              freezeRef.current = 0.14
+              haptic([40, 50, 40, 50, 90])
+              break
+            case 'warp':
+              haptic(18)
+              break
             case 'dash':
               haptic(6)
               break
@@ -259,7 +285,8 @@ export default function Game() {
       } else {
         acc = 0
       }
-      renderer.render(w, dt)
+      // adımlar arası ara değerleme yalnız oyun akarken: menüde dünya değişken adımla ilerler
+      renderer.render(w, dt, sc === 'play' ? acc / STEP : 1)
     }
     raf = requestAnimationFrame(frame)
 
@@ -497,7 +524,7 @@ export default function Game() {
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t("DEFTERE YENİ SAYFALAR")}</p>
             <h2 id="harita-notu" className="mt-1 font-display text-3xl text-cream">{t("Haritalar Yenilendi")}</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-cream/85">
-              {t('Trabzon yola eklendi: horon, kemençe, Sümela ve Hamsiköy sütlacı. İstanbul, Mardin ve Çorum’a yeni insanlar ve yeni detaylar geldi.')}
+              {t('Her şehrin sonuna bir meydan eklendi: meydan yolunda bir bulmaca, saklı bir nazar boncuğu ve şehrin bekçisi seni bekliyor. Bölümler uzadı, eski süreler yeni yola uymaz.')}
             </p>
             <p className="mt-2 text-[14px] leading-relaxed text-muted">
               {t('Yeni haritaları baştan yaşamak istersen yolculuğa İstanbul’dan başla. Rekorların ve pulların sıfırlanır; adın, karakterin ve ayarların kalır.')}
@@ -622,6 +649,9 @@ export default function Game() {
                     </span>
                     <span>
                       {t("Gizli Pul")} <strong className="text-cream">{Object.values(save.stamps ?? {}).filter(Boolean).length}</strong>/{LEVELS.length}
+                    </span>
+                    <span>
+                      {t("Nazar")} <strong className="text-cream">{Object.values(save.charms ?? {}).filter(Boolean).length}</strong>/{LEVELS.length}
                     </span>
                   </span>
                 </div>
@@ -1290,6 +1320,9 @@ function Complete({
               ) : (
                 <p className="border-2 border-dashed border-line/70 px-3 py-2 text-[12px] text-muted">{t('Bu şehirde bir gizli pul var. Sahte duvarlara, çatlak zeminlere ve zor ulaşılan köşelere bak.')}</p>
               )}
+              <p className={`border-2 px-3 py-2 text-[12px] ${save.charms?.[level.id] ? 'border-[#4ab0e8] bg-[#2a2438] text-cream/90' : 'border-dashed border-line/70 text-muted'}`}>
+                {save.charms?.[level.id] ? t('Nazar boncuğu bulundu: meydan yolunda saklıydı.') : t('Meydan yolunda bir nazar boncuğu saklı. Kapıdan geçtikten sonra etrafına iyi bak.')}
+              </p>
               {found === 0 && !best?.items.some(Boolean) && (
                 <p className="border-2 border-dashed border-line/70 px-3 py-3 text-[12px] text-muted">{t('Bu şehirde üç {item} saklı. Bul, defterine yazılsın.', { item: level.item })}</p>
               )}

@@ -23,7 +23,10 @@ const technique = process.argv.includes('--teknik')
 for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const w = new World(level)
   const exitX = Math.floor(w.exit.x / T)
-  const marks = [0, ...w.checkpoints.map((c) => Math.floor(c.x / T)).sort((a, b) => a - b), exitX]
+  // meydan kapısı yolu böler: kapı ile varış arası yürünmez (ışınlanılır), o aralık uzunluk hesabına girmez
+  const door = w.warp ? Math.floor(w.warp.x / T) : -1
+  const land = w.arrival ? Math.floor(w.arrival.x / T) : -1
+  const marks = [0, ...w.checkpoints.map((c) => Math.floor(c.x / T)), ...(w.warp ? [door, land] : []), exitX].sort((a, b) => a - b)
   const segOf = (tx: number) => marks.findIndex((m, i) => i > 0 && tx < m) - 1
 
   // bölüm bölüm tehlikeler
@@ -53,7 +56,7 @@ for (const level of LEVELS.filter((l) => !only || l.id === only)) {
   const weak = solve(level, { exitOnly: true, budget: 12000 })
   reset()
 
-  const longest = Math.max(...marks.slice(1).map((m, i) => m - marks[i]))
+  const longest = Math.max(...marks.slice(1).map((m, i) => (marks[i] === door && m === land ? 0 : m - marks[i])))
   const where = (r: { won: boolean; far: { x: number; y: number } }) => (r.won ? 'geçer' : `takılır @${Math.floor(r.far.x / T)},${Math.floor(r.far.y / T)} (bölüm ${segOf(Math.floor(r.far.x / T)) + 1})`)
   console.log(`\n${level.name} · ${w.cols} karo · bayrak ${w.checkpoints.length} · en uzak bayrak arası ${longest} karo`)
   console.log(`${basic ? `  yürü+zıpla: ${where(basic)}` : ''}  zayıf oyuncu: ${where(weak)}`)
