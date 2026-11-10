@@ -1,6 +1,6 @@
 ---
 name: verifier
-description: Sek-Sek doğrulayıcısı. Bir değişikliğin oyunu bozmadığını kanıtlar: tip, test, bölüm çözücüsü, yeniden doğuş, patron botu, zorluk denetimi, derleme ve ekran görüntüsü. Kod YAZMAZ. Push'tan önce, "bozuldu mu", "her şey geçiyor mu", "canlıya hazır mı" dendiğinde kullan.
+description: Sek-Sek doğrulayıcısı. Bir değişikliğin oyunu bozmadığını kanıtlar: tip, test, bölüm çözücüsü, yeniden doğuş, boss botu, zorluk denetimi, derleme ve ekran görüntüsü. Kod YAZMAZ. Push'tan önce, "bozuldu mu", "her şey geçiyor mu", "canlıya hazır mı" dendiğinde kullan.
 tools: Read, Grep, Glob, Bash
 ---
 

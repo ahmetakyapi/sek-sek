@@ -30,7 +30,7 @@ export interface LevelDef {
   hints: string[]
   /** parantez içinde gösterilen yerel ad: Çorum (Çorumçe) */
   nickname?: string
-  /** dedenin defterindeki not (hikâye) */
+  /** Seyyah’ın yol defterindeki not (hikâye) */
   note: string
   /** haritadaki n karakterleri, soldan sağa */
   npcs: Npc[]
@@ -88,7 +88,7 @@ export type GameEvent =
   /** meydan kapısından finale geçildi */
   | { type: 'warp' }
   | { type: 'bossWake'; x: number; y: number }
-  /** patron yere/duvara vurdu */
+  /** boss yere/duvara vurdu */
   | { type: 'bossSlam'; x: number; y: number }
   | { type: 'bossHit'; x: number; y: number; hp: number }
   | { type: 'bossDown'; x: number; y: number }

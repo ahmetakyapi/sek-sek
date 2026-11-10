@@ -3,7 +3,7 @@ import type { Prelude } from './types'
 /**
  * Düden Şelalesi: ıslak taşta hız yönetimi. Önce düz ıslak taş ve ucunda zararsız, kuru bir oyuk (erken dur), sonra
  * ıslak basamaklar, sudaki kısa ıslak taşlar ve şelalenin ardındaki alçak tavanlı mağara (iki dar su çukuru).
- * Nazar boncuğu mağarada, ortadaki taşın üstündeki tavan oyuğunda: atılarak geçen görmez, taşta durup zıplayan alır.
+ * Nazar boncuğu mağarada, ortadaki taşın üstündeki tavan oyuğunda: dash atarak geçen görmez, taşta durup zıplayan alır.
  */
 export const prelude: Prelude = {
   medal: 55,

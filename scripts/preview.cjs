@@ -6,7 +6,7 @@
  *   node scripts/preview.cjs <şehir> [yer] [çıktı.png] [seçenekler]
  *
  * yer:  start (varsayılan) · arrival (meydan yolunun başı) · arrival:+20 (varıştan 20 karo ileri)
- *       boss (arena, patron uyanmış) · x,y (karo koordinatı) · npc:2 (üçüncü kişinin yanı, diyalog açık)
+ *       boss (arena, boss uyanmış) · x,y (karo koordinatı) · npc:2 (üçüncü kişinin yanı, diyalog açık)
  * seçenekler: --telefon (iPhone yatay) · --dikey (telefon dikey) · --memo · --en · --bekle=ms · --port=3100
  */
 const { chromium, devices } = require('playwright')

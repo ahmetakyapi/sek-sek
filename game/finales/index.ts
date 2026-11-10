@@ -1,7 +1,7 @@
 /**
  * Bölüm finalleri: meydan kapısı (@) oyuncuyu buraya geçirir.
- *   [duvar] varış + bayrak → meydan yolu (şehre özgü bulmaca / meydan okuma) → bayrak → patron arenası → kapı → çıkış
- * Meydan yolları şehir başına bir dosyada (game/finales/<şehir>.ts); arena burada, patronun hareketine göre kurulur.
+ *   [duvar] varış + bayrak → meydan yolu (şehre özgü bulmaca / meydan okuma) → bayrak → boss arenası → kapı → çıkış
+ * Meydan yolları şehir başına bir dosyada (game/finales/<şehir>.ts); arena burada, boss’un hareketine göre kurulur.
  */
 import { BOSSES } from '../boss'
 import type { CityKey } from '../types'
@@ -41,9 +41,9 @@ const ICE: CityKey[] = ['sivas', 'ardahan', 'erzurum']
 const ARRIVAL = ['      ', ' & F  ', '######', '######', '######', '######']
 
 /**
- * Arena: solda bayrak ve patronun nasıl yenileceğini söyleyen tabela, ortada 22 karoluk düz meydan (iki ucunda
- * fener, ortasında şehrin simge nesnesi: süsler patronun arkasında kalır, yolu kesmez)
- * (patron | ile duvar arasında gezer), sağda göğe kadar duvar ve patron yenilince açılan kapı (G), ardında
+ * Arena: solda bayrak ve boss’un nasıl yenileceğini söyleyen tabela, ortada 22 karoluk düz meydan (iki ucunda
+ * fener, ortasında şehrin simge nesnesi: süsler boss’un arkasında kalır, yolu kesmez)
+ * (boss | ile duvar arasında gezer), sağda göğe kadar duvar ve boss yenilince açılan kapı (G), ardında
  * şehrin dost hayvanı ve çıkış.
  */
 function arena(city: CityKey): string[] {
@@ -60,7 +60,7 @@ function arena(city: CityKey): string[] {
     else r = '#'.repeat(W + 10)
     rows.push(r)
   }
-  // toslayan patronun üstünden atlamak için alçak bir sahanlık; sıçrayan ve atan için meydan boş kalır
+  // toslayan boss’un üstünden atlamak için alçak bir sahanlık; sıçrayan ve atan için meydan boş kalır
   if (moves[0] === 'charge') rows[17] = rows[17].slice(0, 14) + '====' + rows[17].slice(18)
   return rows
 }
@@ -71,7 +71,7 @@ export function buildRoad(city: CityKey, pad: (rows: string[]) => string[], deco
   return decorate(Array.from({ length: H }, (_, y) => parts.map((c) => c[y]).join('')))
 }
 
-/** Patron Koşusu: kısa bir giriş ve arena; meydan yolu ve tabela yok. */
+/** Boss Rush: kısa bir giriş ve arena; meydan yolu ve tabela yok. */
 export function buildArena(city: CityKey): string[] {
   return arena(city).map((r, y) => (y === 19 ? '  P  ' : y > 19 ? '#####' : '     ') + r.replace('?', ' '))
 }

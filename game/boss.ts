@@ -1,10 +1,10 @@
 /**
- * Şehir patronları: her bölümün meydanında, şehrin bir ayrıntısından doğan bekçi.
+ * Şehir boss’ları: her bölümün meydanında, şehrin bir ayrıntısından doğan bekçi.
  *
  * Kural bütün şehirlerde aynıdır, her yaştan oyuncu bir kez öğrenir:
- *   1. Patron saldırmadan önce hep işaret verir (titrer, gölgesi düşer, toprak kabarır).
+ *   1. Boss saldırmadan önce hep işaret verir (titrer, gölgesi düşer, toprak kabarır).
  *   2. Saldırırken dokunmak can yakar; saldırı bitince yorulur, başında yıldızlar döner.
- *   3. Yorgunken üstüne bas (ya da atıl): bir canı gider. Canı bitince meydan kapısı açılır.
+ *   3. Yorgunken üstüne bas (ya da dash at): bir canı gider. Canı bitince meydan kapısı açılır.
  * Şehirden şehre değişen şey saldırının biçimidir (toslar, dalar, sıçrar, yerden çıkar, atar):
  * her biri başka bir akıl ister. Hareketler saate bağlıdır, rastgelelik yoktur.
  */
@@ -82,7 +82,7 @@ export interface Boss extends Box {
   home: { x: number; y: number }
 }
 
-/** Patron dünyadan yalnız bunları ister: oyuncu, mermi listesi, olay kuyruğu. */
+/** Boss dünyadan yalnız bunları ister: oyuncu, mermi listesi, olay kuyruğu. */
 export interface BossHost {
   player: Box & { vy: number; dead: boolean; dashTime: number }
   projectiles: Projectile[]
@@ -356,14 +356,14 @@ export function updateBoss(b: Boss, host: BossHost, dt: number) {
   }
 }
 
-/** Oyuncuyla temas: 'hit' patron can kaybetti (oyuncu sektirilir), 'kill' oyuncu yandı, null temas yok. */
+/** Oyuncuyla temas: 'hit' boss can kaybetti (oyuncu sektirilir), 'kill' oyuncu yandı, null temas yok. */
 export function touchBoss(b: Boss, host: BossHost): 'hit' | 'kill' | null {
   const p = host.player
   if (b.hidden || b.state === 'sleep' || b.state === 'intro' || b.state === 'hurt' || b.state === 'down') return null
   const hit = p.x + 1 < b.x + b.w && p.x + p.w - 1 > b.x && p.y + 1 < b.y + b.h && p.y + p.h - 1 > b.y
   if (!hit) return null
   if (b.state !== 'tired') return 'kill'
-  // yorgunken zararsız: üstüne basış ya da atılma can götürür
+  // yorgunken zararsız: üstüne basış ya da dash can götürür
   const stomp = p.vy > 0 && p.y + p.h - b.y < 10
   if (!stomp && p.dashTime <= 0) return null
   b.hp--

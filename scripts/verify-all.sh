@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tam doğrulama zinciri: tip → test → her şehir için bölüm, yeniden doğuş ve patron (paralel) → derleme.
+# Tam doğrulama zinciri: tip → test → her şehir için bölüm, yeniden doğuş ve boss (paralel) → derleme.
 # Kullanım: bash scripts/verify-all.sh [şehir ...]     (şehir verilmezse hepsi)
 #           HIZLI=1 bash scripts/verify-all.sh istanbul  (derlemeyi ve tam test takımını atlar)
 # Çıktı: şehir başına tek satır; biri FAIL ise çıkış kodu 1. Ayrıntılar: $OUT/<şehir>.log
@@ -21,7 +21,7 @@ if [ -z "${HIZLI:-}" ]; then
   npm test >/dev/null 2>&1 || fail=1
 fi
 
-echo "▸ ${#cities[@]} şehir, $JOBS süreç: meydan yolu · bölüm · yeniden doğuş · patron"
+echo "▸ ${#cities[@]} şehir, $JOBS süreç: meydan yolu · bölüm · yeniden doğuş · boss"
 printf '%s\n' "${cities[@]}" | xargs -P "$JOBS" -I{} sh -c '
   { npx tsx scripts/verify-prelude.ts {}; echo "PRELUDE $?"
     npx tsx scripts/verify-levels.ts {};  echo "LEVELS $?"

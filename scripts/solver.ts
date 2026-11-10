@@ -1,6 +1,6 @@
 /**
  * Bölüm çözücüsü: gerçek fizik motoruyla BFS üzerinden "oynar".
- * Düşmanlar, ok tuzakları ve patron zamanlama engelidir, ulaşılabilirliği değiştirmez: çözücüde kapalı.
+ * Düşmanlar, ok tuzakları ve boss zamanlama engelidir, ulaşılabilirliği değiştirmez: çözücüde kapalı.
  * verify-levels (geçilebilir mi) ve audit-difficulty (ne kadar hassas oyun istiyor) kullanır.
  */
 import type { LevelDef } from '../game/types'
@@ -14,13 +14,13 @@ interface Macro {
   hold: number // yön tutma süresi
   jump: number // zıpla basılı süre (0: zıplama yok)
   jump2: number // ikinci zıplama anı (duvar sekmesi), 0: yok
-  dashAt: number // 0: atılma yok
+  dashAt: number // 0: dash yok
   dashDir: [number, number]
   wait: number
   repeat?: number
 }
 
-/** basic: yürü + zıpla · dash: + atılma · all: + duvar sekmesi ve ardışık zıplama */
+/** basic: yürü + zıpla · dash: + dash · all: + duvar sekmesi ve ardışık zıplama */
 export type MoveSet = 'basic' | 'dash' | 'all'
 
 function macros(set: MoveSet): Macro[] {
@@ -109,7 +109,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   const w = new World(level)
   w.enemies.length = 0
   w.turrets.length = 0
-  // patron da zamanlama engelidir: çözücüde yok sayılır, meydan kapısı açık kabul edilir
+  // boss da zamanlama engelidir: çözücüde yok sayılır, meydan kapısı açık kabul edilir
   // (yenilebilirliği tests/boss.test.ts oynayarak doğrular)
   w.boss = null
   const ms = macros(opts.moves ?? 'all')

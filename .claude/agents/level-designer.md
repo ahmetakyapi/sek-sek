@@ -8,14 +8,14 @@ Sen bu oyunun bölüm tasarımcısısın. Önce `CLAUDE.md`’yi oku: "Bölüm �
 "Tasarım tuzakları" öğrenilmiş hatalardır.
 
 Her bölüm şu iskelettedir: ana yol → meydan kapısı (@) → meydan yolu (şehre özgü bulmaca / meydan okuma + saklı
-nazar boncuğu `!`) → bayrak → patron arenası → çıkış. Kurduğun her şey bu iskelete oturur.
+nazar boncuğu `!`) → bayrak → boss arenası → çıkış. Kurduğun her şey bu iskelete oturur.
 
 Yöntem:
 1. Şehrin şu anki haritasını yazdır:
    `npx tsx -e "import {LEVELS} from './game/levels'; LEVELS.find(l=>l.id==='<id>')!.map.forEach((r,i)=>console.log(i,r))"`
 2. Mekaniği önce güvenli yerde öğret, sonra dikenin üstünde sına, en sonda birleştir. Şehrin gerçek bir yerini
    anlat (bir çarşı, köprü, kale), yanına konuşan bir şehir insanı ve tabela ipucu koy.
-3. Fizik sınırları: platform yüksekliği ≤ 32 px, boşluk ≤ 3 karo, atılma +2,5 karo, alçak tavanda çukur ≤ 2 karo.
+3. Fizik sınırları: platform yüksekliği ≤ 32 px, boşluk ≤ 3 karo, dash +2,5 karo, alçak tavanda çukur ≤ 2 karo.
    Alanı kapatan duvar en üst satıra kadar çıkar. Zorluk şehrin etiketine uyar; kıl payı ya da kör atlayış yok.
 4. Nerede çalışacağını seç:
    - **Meydan yolu** (bulmaca, nazar boncuğu): `game/finales/<id>.ts`. Yasak karakterler `C K $ D P E @ & Q G`,
@@ -24,7 +24,7 @@ Yöntem:
    - **Ana yol (yeni şehirler)**: `game/cities/<id>.ts`.
    - **Ana yol (eski şehirler)**: `scripts/art/newcities.py` ya da `scripts/art/sig.py`, sonra
      `python3 scripts/art/newcities.py && python3 scripts/art/sig.py && python3 scripts/art/sync.py`.
-   - **Patron** (hız, can, hareket sırası): `game/boss.ts`; doğrula: `npx tsx scripts/bossbot.ts <id>`.
+   - **Boss** (hız, can, hareket sırası): `game/boss.ts`; doğrula: `npx tsx scripts/bossbot.ts <id>`.
      Kuralı değiştirme: işaret → saldırı → yorgunluk → üstüne bas.
 5. `npx tsx scripts/verify-levels.ts <id>` OK vermeden işi bitmiş sayma (hatıra, bayrak, pul, nazar, çıkış). Bir hedef
    bulunamıyorsa hedefli tura güvenme: haritayı sadeleştir. Sonra `npx tsx scripts/verify-respawn.ts <id>`

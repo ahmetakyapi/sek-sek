@@ -17,7 +17,7 @@ export const EXTENSIONS: Record<string, Extension> = {
     mode: 'append',
     base: 20,
     medal: 35,
-    hints: ["Mavi kristal atılmanı havada yeniler: atıl, kristale değ, bir daha atıl!", "Basınç plakasına bas: Kız Kulesi iskelesinin köprüsü belirsin."],
+    hints: ["Mavi kristal dash’ini havada yeniler: dash at, kristale değ, bir daha dash at!", "Basınç plakasına bas: Kız Kulesi iskelesinin köprüsü belirsin."],
     chunks: [
       [
         '',
@@ -119,7 +119,7 @@ export const EXTENSIONS: Record<string, Extension> = {
     mode: 'append',
     base: 20,
     medal: 40,
-    hints: ["Anahtar yukarıda: zıpla, atıl, mavi kristale değ, bir daha atıl."],
+    hints: ["Anahtar yukarıda: zıpla, dash at, mavi kristale değ, bir daha dash at."],
     chunks: [
       [
         '',

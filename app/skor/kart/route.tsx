@@ -7,7 +7,6 @@ import { CHARACTERS } from '@/game/characters'
 import { CHARACTERS_EN, LEVELS_EN } from '@/game/content.en'
 import { LEVELS } from '@/game/levels'
 import { UI_EN } from '@/lib/ui.en'
-import { PORTRAITS } from '@/game/portraits'
 import { parseShare } from '@/lib/share'
 import { formatTime } from '@/lib/storage'
 
@@ -15,23 +14,6 @@ export const runtime = 'nodejs'
 
 const file = (p: string) => readFile(join(process.cwd(), p))
 const dataUrl = (b: Buffer, type = 'image/png') => `data:${type};base64,${b.toString('base64')}`
-
-/** Piksel portreyi SVG'ye çevirir (aynı renkli yatay dizileri birleştirir). */
-function portraitSvg(id: 'uktun' | 'memo') {
-  const p = PORTRAITS[id]
-  let rects = ''
-  p.rows.forEach((r, y) => {
-    let x = 0
-    while (x < r.length) {
-      const ch = r[x]
-      let n = 1
-      while (x + n < r.length && r[x + n] === ch) n++
-      if (ch !== '.' && p.pal[ch]) rects += `<rect x="${x}" y="${y}" width="${n}" height="1" fill="${p.pal[ch]}"/>`
-      x += n
-    }
-  })
-  return `data:image/svg+xml;base64,${Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 76" shape-rendering="crispEdges"><rect width="64" height="76" fill="#2a2438"/>${rects}</svg>`).toString('base64')}`
-}
 
 const SEAL = {
   altin: { label: 'ALTIN', bg: '#e3a92c', ring: '#9a6a12', ink: '#3a2408' },
@@ -46,7 +28,8 @@ export async function GET(req: NextRequest) {
   const d = parseShare(Object.fromEntries(req.nextUrl.searchParams))
   const level = LEVELS.find((l) => l.id === d?.level) ?? LEVELS[0]
   const idx = LEVELS.indexOf(level)
-  const [pixel, bold, semi, scene, paper, stamp, kh, kv] = await Promise.all([
+  const ch = CHARACTERS[d?.character ?? 'uktun']
+  const [pixel, bold, semi, scene, paper, stamp, kh, kv, portrait] = await Promise.all([
     file('assets/fonts/PixelifySans-Bold.ttf'),
     file('assets/fonts/IBMPlexMono-Bold.ttf'),
     file('assets/fonts/IBMPlexMono-SemiBold.ttf'),
@@ -55,8 +38,9 @@ export async function GET(req: NextRequest) {
     file('assets/card/stamp.png'),
     file('assets/card/kilim-h.png'),
     file('assets/card/kilim-v.png'),
+    // vektör portrenin hazır karesi: scripts/art/portraits.cjs üretir
+    file(`public/portreler/${ch.id}.png`),
   ])
-  const ch = CHARACTERS[d?.character ?? 'uktun']
   const medal = d ? medalFor(level, d.timeMs) : null
   const seal = medal ? SEAL[medal] : null
   const plate = String(level.plate).padStart(2, '0')
@@ -158,7 +142,7 @@ export async function GET(req: NextRequest) {
         {/* ── bantlı portre: levha ile sayfanın arasında */}
         <div style={{ position: 'absolute', left: 682, top: 392, width: 176, height: 212, display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8f4ec', padding: 12, boxShadow: '0 10px 18px rgba(0,0,0,0.45)', transform: 'rotate(-6deg)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={portraitSvg(ch.id)} width={152} height={156} alt="" style={{ objectFit: 'cover', objectPosition: 'top' }} />
+          <img src={dataUrl(portrait)} width={152} height={156} alt="" style={{ objectFit: 'cover', objectPosition: 'top' }} />
           <div style={{ display: 'flex', marginTop: 8, fontFamily: 'Pixel', fontSize: 20, color: INK, whiteSpace: 'nowrap' }}>{ch.name}</div>
           <div style={{ position: 'absolute', left: 50, top: -14, width: 76, height: 26, display: 'flex', background: 'rgba(242,193,78,0.6)', transform: 'rotate(4deg)' }} />
         </div>

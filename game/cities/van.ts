@@ -3,7 +3,7 @@ import type { CityRoad } from './types'
 /**
  * Van ana yolu, dört parça: Van Kalesi kayalığı (kovuktan girilen güvenli baca: duvardan duvara sek; sonra dikenli
  * yarığın ötesindeki kaya yüzüne tutun) → sur üstü (ilk mazgal arası sığ ve dikensiz, sonrakiler dikenli, sonuncusu altı karo: zıpla,
- * tepede atıl) → göl kıyısı (üç kayık; üçüncü dalga en uzunu) → Akdamar iskelesi (iskeleden atıl, çan kulesine
+ * tepede dash at) → göl kıyısı (üç kayık; üçüncü dalga en uzunu) → Akdamar iskelesi (iskeleden dash at, çan kulesine
  * duvardan tırman, anahtarı al, kapı aşağıda). Gizli pul sur üstündeki ilk sığ boşluğun sol duvarında (sahte duvar).
  */
 export const road: CityRoad = {

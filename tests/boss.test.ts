@@ -3,7 +3,7 @@ import { BOSSES, makeBoss, touchBoss, updateBoss, type BossHost } from '../game/
 import { LEVELS } from '../game/levels'
 import { fightBoss } from '../scripts/bossbot'
 
-describe('patron kuralları', () => {
+describe('boss kuralları', () => {
   const host = (x: number, y: number): BossHost => ({ player: { x, y, w: 12, h: 14, vy: 0, dead: false, dashTime: 0 }, projectiles: [], events: [] })
 
   it('uyur; oyuncu meydana girince uyanır, işaret vermeden saldırmaz', () => {
@@ -37,7 +37,7 @@ describe('patron kuralları', () => {
     expect(b.state).toBe('hurt')
   })
 
-  it('her şehrin patronu tanımlı: en az 3 can, her can için bir hareket sırası', () => {
+  it('her şehrin boss’u tanımlı: en az 3 can, her can için bir hareket sırası', () => {
     for (const l of LEVELS) {
       const d = BOSSES[l.city]
       expect(d.hp).toBeGreaterThanOrEqual(3)
@@ -48,7 +48,7 @@ describe('patron kuralları', () => {
   })
 })
 
-describe('patronlar yenilebilir (bot gerçek fizikle dövüşür)', () => {
+describe('boss’lar yenilebilir (bot gerçek fizikle dövüşür)', () => {
   it.each(LEVELS.map((l) => [l.name, l]))('%s: bot da zayıf oyuncu botu da yener', (_n, l) => {
     const r = fightBoss(l)
     expect(r.won, `kalan can ${r.hpLeft}`).toBe(true)

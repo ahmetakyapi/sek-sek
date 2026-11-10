@@ -35,7 +35,7 @@ export type ChallengeKind = 'noFall' | 'fewFalls' | 'noDash' | 'silver' | 'gold'
 export const CHALLENGE_TEXT: Record<ChallengeKind, string> = {
   noFall: 'Hiç Düşmeden Bitir',
   fewFalls: 'En Çok Üç Düşüşle Bitir',
-  noDash: 'Hiç Atılmadan Bitir',
+  noDash: 'Hiç Dash Atmadan Bitir',
   silver: 'Gümüş Sürede Bitir',
   gold: 'Altın Sürede Bitir',
   collector: 'Üç Hatırayı da Topla',

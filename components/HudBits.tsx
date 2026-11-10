@@ -68,7 +68,7 @@ export function Key({ children, wide = false, dim = false }: { children: React.R
   )
 }
 
-/** Masaüstü tuş ipuçları: oyuncu hareketsiz kaldıkça belirginleşir; atılma tuşu hazır olunca parlar. */
+/** Masaüstü tuş ipuçları: oyuncu hareketsiz kaldıkça belirginleşir; dash tuşu hazır olunca parlar. */
 export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean }) {
   const t = useT()
   return (
@@ -90,7 +90,7 @@ export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean })
           <Key wide dim={!canDash}>
             Space
           </Key>
-          {t('Atıl')}
+          {t('Dash')}
           <span className={`inline-block h-2 w-2 ${canDash ? 'bg-[#d6403a] shadow-[0_0_6px_#d6403a]' : 'bg-[#7f8ca8]'}`} />
         </span>
         <span className="flex items-center gap-1.5">

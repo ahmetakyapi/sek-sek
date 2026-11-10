@@ -291,39 +291,6 @@ input {
 }
 }
 
-@keyframes blink {
-  0%, 94%, 100% { transform: scaleY(1); }
-  96% { transform: scaleY(0.08); }
-}
-.portrait-blink {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: blink 4.2s infinite;
-}
-@keyframes blink-img {
-  0%, 95%, 100% { opacity: 0; }
-  96%, 98% { opacity: 1; }
-}
-.portrait-blink-img {
-  opacity: 0;
-  animation: blink-img 4.2s infinite;
-}
-@keyframes sway {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(0.8deg); }
-}
-.portrait-sway {
-  transform-origin: 120px 60px;
-  animation: sway 5s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .portrait-blink,
-  .portrait-blink-img,
-  .portrait-sway {
-    animation: none;
-  }
-}
-
 .notebook {
   background: #ecdfc2;
   color: #3a2a1e;
@@ -331,6 +298,49 @@ input {
   box-shadow:
     6px 6px 0 #2a1f18,
     inset 0 -4px 0 rgb(0 0 0 / 0.08);
+}
+
+/* Şehirler haritası: defter sayfasına mürekkeple çizilmiş yol haritası (components/TurkeyMap.tsx) */
+.tmap {
+  --tm-paper: #f1e5c8;
+  --tm-land-far: #dfcfa9;
+  --tm-sea: #c9d6c6;
+  --tm-shore: #dde5d3;
+  --tm-sea-ink: #3f6468;
+  --tm-ink: #3a2a1e;
+  --tm-route: #b8421f;
+  --tm-gold: #f2c14e;
+  overflow: hidden;
+  background: var(--tm-sea);
+  border: 3px solid #5a3c26;
+  box-shadow:
+    4px 4px 0 #2a1f18,
+    inset 0 0 0 2px rgb(255 255 255 / 0.25);
+}
+.tm-node {
+  cursor: pointer;
+  outline: none;
+}
+.tm-node[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+.tm-focus {
+  opacity: 0;
+}
+.tm-node:focus-visible .tm-focus {
+  opacity: 1;
+}
+@keyframes tm-pulse {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.tm-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tm-pulse 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tm-pulse { animation: none; opacity: 0; }
 }
 
 @keyframes title-card {

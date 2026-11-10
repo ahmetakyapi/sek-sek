@@ -9,12 +9,12 @@ import { SCARVES } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime, type Save } from '@/lib/storage'
 
-/** Patron Koşusu'nun açılması için yenilmesi gereken patron sayısı */
+/** Boss Rush’ın açılması için yenilmesi gereken boss sayısı */
 export const RUSH_NEEDS = 3
 
 /**
- * Dedenin Defteri: yolculukta toplanan her şey tek sayfada. Şehir başına üç hatıra, gizli pul, nazar boncuğu
- * ve meydanın bekçisi; üstte toplamlar, görev rozetleri ve Patron Koşusu.
+ * Yol Defteri: yolculukta toplanan her şey tek sayfada. Şehir başına üç hatıra, gizli pul, nazar boncuğu
+ * ve meydanın bekçisi; üstte toplamlar, görev rozetleri ve Boss Rush.
  */
 export default function Defter({ save, onClose, onRush }: { save: Save; onClose: () => void; onRush: () => void }) {
   const t = useT()
@@ -29,7 +29,7 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
     [t('Hatıra'), items, n * 3],
     [t('Gizli Pul'), stamps, n],
     [t('Nazar Boncuğu'), charms, n],
-    [t('Bekçi'), bosses, n],
+    [t('Boss'), bosses, n],
     [t('Atkı'), scarves, SCARVES.length],
   ]
   return (
@@ -38,7 +38,7 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('YOLCULUĞUN ÖZETİ')}</p>
-            <h2 className="mt-1 font-display text-3xl text-cream">{t('Dedenin Defteri')}</h2>
+            <h2 className="mt-1 font-display text-3xl text-cream">{t('Yol Defteri')}</h2>
           </div>
           <button className="pixel-btn" onClick={onClose}>
             {t('← Geri')}
@@ -67,13 +67,13 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
             <p className="mt-0.5 text-[13px] text-cream">{t('{n} hafta tamamlandı', { n: save.weekly.count })}</p>
           </div>
           <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" disabled={bosses < RUSH_NEEDS} onClick={onRush}>
-            <span className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('PATRON KOŞUSU')}</span>
+            <span className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('BOSS RUSH')}</span>
             <span className="text-[13px]">
               {bosses < RUSH_NEEDS
-                ? t('Önce {n} bekçi yen', { n: RUSH_NEEDS })
+                ? t('Önce {n} Boss Yen', { n: RUSH_NEEDS })
                 : save.rush
-                  ? t('Rekor: {time} · {n} bekçi', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })
-                  : t('▶ Yendiğin Bekçilerle Arka Arkaya')}
+                  ? t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })
+                  : t('▶ Yendiğin Boss’larla Arka Arkaya')}
             </span>
           </button>
         </div>
@@ -102,7 +102,7 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
                     <ThingIcon kind="stamp" taken={!!save.stamps[l.id]} size={20} />
                     <ThingIcon kind="charm" taken={!!save.charms[l.id]} size={20} />
                   </p>
-                  <p className="mt-0.5 truncate text-[11px] text-muted">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Bekçi: ???')}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Boss: ???')}</p>
                 </div>
                 <BossFigure city={l.city} className={`h-12 w-12 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
               </li>

@@ -3,7 +3,7 @@ import type { CityRoad } from './types'
 /**
  * Şanlıurfa ana yolu, dört parça: Balıklıgöl kıyısı (suda ıslak taşlar, önce iki karoluk güvenli ark) → kale yolu
  * (sandığı duvarın dibine itince yüksek basamak ikiye iner; kuleye duvardan sekerek çıkılır) → Harran evleri (kubbeden
- * kubbeye, ilk küme güvenli, ikincinin arasında diken) → Göbeklitepe (T taşları arası beş karo: zıpla + atıl; ilk
+ * kubbeye, ilk küme güvenli, ikincinin arasında diken) → Göbeklitepe (T taşları arası beş karo: zıpla + dash at; ilk
  * çukur güvenli). Gizli pul son dikilitaşın üstünde: tilkili taşın baktığı taş bloğun içi oyuk (sahte duvar), yürüyerek girilir.
  */
 export const road: CityRoad = {

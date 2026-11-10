@@ -22,7 +22,7 @@ export interface Pose {
 }
 
 export const INK = '#22161f'
-/** dış hat kalınlığı (çizim biriminde): patronlar dünya pikseliyle çizildiği için inceltir */
+/** dış hat kalınlığı (çizim biriminde): boss’lar dünya pikseliyle çizildiği için inceltir */
 let inkW = 3.2
 export function setInkWidth(w: number) {
   inkW = w

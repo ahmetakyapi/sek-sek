@@ -2,7 +2,7 @@
  * Meydan yolunu (game/finales/<şehir>.ts) tek başına, saniyeler içinde dener:
  *   - tam hareket setiyle sona varılıyor, nazar boncuğu alınabiliyor mu
  *   - zayıf oyuncu (zıplama %5 alçak, koşu %8 yavaş) sona varabiliyor mu
- *   - yalnız yürü + zıpla yetiyor mu, yoksa atılma / duvar sekmesi nerede şart (bilgi)
+ *   - yalnız yürü + zıpla yetiyor mu, yoksa dash / duvar sekmesi nerede şart (bilgi)
  * Kullanım: npx tsx scripts/verify-prelude.ts <şehir> [--goster]
  */
 import { PRELUDES, buildRoad } from '../game/finales'
@@ -16,7 +16,7 @@ const base = LEVELS.find((l) => l.id === id)
 if (!base) throw new Error(`şehir yok: ${id}`)
 const road = buildRoad(base.city, chunk, (r) => r)
 const END = chunk(['      ', '   E  ', '######', '######', '######', '######'])
-// varış işareti başlangıç olur; kapı ve patron bu denemede yok
+// varış işareti başlangıç olur; kapı ve boss bu denemede yok
 const map = road.map((r, y) => '##' + r.replace('&', 'P') + END[y])
 const level: LevelDef = { ...base, map }
 if (process.argv.includes('--goster')) console.log(map.map((r, y) => String(y).padStart(2) + ' ' + r).join('\n'))

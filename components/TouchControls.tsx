@@ -7,7 +7,7 @@ import type { InputManager } from '@/game/input'
 type Kind = 'jump' | 'dash'
 
 /**
- * Sol yarıda yüzen joystick, sağda ATIL ve ZIPLA.
+ * Sol yarıda yüzen joystick, sağda DASH ve ZIPLA.
  * Tuşların dokunma alanı görünen dairelerden geniştir; kaçırılan basış olmasın.
  */
 export default function TouchControls({ input, big = false, canDash = true }: { input: InputManager; big?: boolean; canDash?: boolean }) {
@@ -40,7 +40,7 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
 
   const block = (e: React.SyntheticEvent) => e.preventDefault()
 
-  // her parmak hangi tuşta: başparmak ZIPLA'dan ATIL'a kayınca kaldırmadan geçiş olur
+  // her parmak hangi tuşta: başparmak ZIPLA'dan DASH'a kayınca kaldırmadan geçiş olur
   const fingers = useRef(new Map<number, Kind>())
   const sync = () => {
     const on = [...fingers.current.values()]
@@ -129,13 +129,13 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
         className="pointer-events-none absolute flex items-end gap-3"
         style={{ right: 'max(14px, env(safe-area-inset-right))', bottom: 'max(22px, env(safe-area-inset-bottom))' }}
       >
-        <button type="button" aria-label={t("Atıl")} className="pointer-events-auto p-2" {...btn('dash')}>
+        <button type="button" aria-label={t("Dash")} className="pointer-events-auto p-2" {...btn('dash')}>
           <span
             className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#3a3250]' : canDash ? 'border-[#d6403a] bg-[#2a2438]/85 shadow-[0_0_12px_rgba(214,64,58,0.45)]' : 'border-white/20 bg-[#2a2438]/60 opacity-60'}`}
             style={{ width: dashD, height: dashD }}
           >
             <span className="text-xl leading-none">»</span>
-            {t('ATIL')}
+            {t('DASH')}
           </span>
         </button>
         <button type="button" aria-label={t("Zıpla")} className="pointer-events-auto mb-8 p-2" {...btn('jump')}>

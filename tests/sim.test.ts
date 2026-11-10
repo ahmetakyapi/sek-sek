@@ -104,7 +104,7 @@ describe('fizik', () => {
     expect(Math.abs(w.player.x - w.spawn.x)).toBeLessThan(40)
   })
 
-  it('atılma havada bir kez, yerde yenilenir', () => {
+  it('dash havada bir kez, yerde yenilenir', () => {
     const w = mk(flat)
     run(w, 0.2)
     w.step(1 / 120, { ...emptyInput(), dashPressed: true, right: true })
@@ -174,7 +174,7 @@ describe('bulmaca ve yeni düşmanlar', () => {
     expect(m.state === 'stun' || m.state === 'idle').toBe(true)
   })
 
-  it('kristal atılmayı geri doldurur ve kaybolur', () => {
+  it('kristal dash’i geri doldurur ve kaybolur', () => {
     const w = mk(['          ', ' *        ', '          ', ' P        ', '##########'])
     run(w, 0.2)
     run(w, 0.05, { jump: true, jumpPressed: true })
@@ -300,7 +300,7 @@ describe('final: meydan kapısı, düğmeler, nazar boncuğu', () => {
     expect(w.complete).toBe(false)
   })
 
-  it.each(LEVELS.map((l) => [l.name, l]))('%s: kapı, varış, patron, kapalı meydan kapısı ve tek nazar boncuğu var', (_n, l) => {
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: kapı, varış, boss, kapalı meydan kapısı ve tek nazar boncuğu var', (_n, l) => {
     const w = new World(l)
     expect(w.warp).not.toBeNull()
     expect(w.arrival).not.toBeNull()
@@ -308,7 +308,7 @@ describe('final: meydan kapısı, düğmeler, nazar boncuğu', () => {
     expect(w.charmBox).not.toBeNull()
     expect(l.map.join('').split('!').length - 1).toBe(1)
     expect(w.exit.x).toBeGreaterThan(w.boss!.max)
-    // çıkış patron yenilmeden kapalı
+    // çıkış boss yenilmeden kapalı
     const gx = Math.floor((w.boss!.max + w.boss!.w) / 16) + 1
     expect(w.isSolid(gx, 18)).toBe(true)
     w.boss!.state = 'down'

@@ -19,14 +19,14 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     name: 'Uktun',
     short: 'Uktun',
     role: 'Haritacı',
-    bio: 'İstanbullu, 26 yaşında. Kadıköy vapurlarında büyüdü, haritaları ezbere bilir ama hiçbir yolu dedesinin defteri kadar merak etmedi. Uzun saçlarını rüzgâra bırakır, yolu hep kendisi bulur.',
+    bio: 'İstanbullu, 26 yaşında. Kadıköy vapurlarında büyüdü, haritaları ezbere bilir ama hiçbir yolu sahafta bulduğu o defter kadar merak etmedi. Uzun saçlarını rüzgâra bırakır, yolu hep kendisi bulur.',
   },
   memo: {
     id: 'memo',
     name: 'Memo Çelik',
     short: 'Memo',
     role: 'Telefoncu',
-    bio: 'Diyarbakırlı, 28 yaşında. Surların dibinde küçük bir telefon dükkânı var; kırık ekranı bir bakışta tanır. Cebinde dedesinin defteri ve her şehri kaydettiği eski bir telefon.',
+    bio: 'Diyarbakırlı, 28 yaşında. Surların dibinde küçük bir telefon dükkânı var; kırık ekranı bir bakışta tanır. Cebinde Seyyah’ın defteri ve her şehri kaydettiği eski bir telefon.',
   },
 }
 

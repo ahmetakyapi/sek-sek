@@ -1,38 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { NPC_PORTRAITS } from '@/game/portraits'
+import { useEffect, useState } from 'react'
+import Portrait from '@/components/Portrait'
 import type { Npc } from '@/game/types'
-
-/** Konuşan kişinin piksel avatarı (4 kat). */
-function useAvatar(look: Npc['look']) {
-  return useMemo(() => {
-    if (typeof document === 'undefined') return ''
-    const art = NPC_PORTRAITS[look]
-    const w = art.rows[0].length
-    const h = art.rows.length
-    const cv = document.createElement('canvas')
-    cv.width = w
-    cv.height = h
-    const c = cv.getContext('2d')!
-    art.rows.forEach((r, y) => {
-      for (let x = 0; x < r.length; x++) {
-        const col = art.pal[r[x]]
-        if (!col) continue
-        c.fillStyle = col
-        c.fillRect(x, y, 1, 1)
-      }
-    })
-    return cv.toDataURL()
-  }, [look])
-}
 
 /**
  * Diyalog kutusu: ekranın altında, büyük ve yüksek kontrastlı; yazı daktilo gibi akar.
  * Dokunmatik kontrollerin üstüne oturur, oyunu kapatmaz.
  */
 export function NpcDialog({ npc, touch }: { npc: Npc; touch: boolean }) {
-  const avatar = useAvatar(npc.look)
   const [shown, setShown] = useState(0)
   useEffect(() => {
     setShown(0)
@@ -48,10 +24,7 @@ export function NpcDialog({ npc, touch }: { npc: Npc; touch: boolean }) {
     >
       <div className="relative flex w-full max-w-[560px] items-start gap-3 bg-[#120f1a]/95 p-3 [box-shadow:0_-3px_0_0_#d9a441,0_3px_0_0_#d9a441,-3px_0_0_0_#d9a441,3px_0_0_0_#d9a441,0_10px_24px_rgba(0,0,0,0.5)] sm:gap-4 sm:p-4">
         <div className="shrink-0 bg-[#2a2438] p-1.5 [box-shadow:0_0_0_2px_#3d3550]">
-          {avatar && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatar} alt="" width={64} height={76} className="dlg-avatar h-[76px] w-[64px] sm:h-[90px] sm:w-[76px]" style={{ imageRendering: 'pixelated' }} />
-          )}
+          <Portrait id={npc.look} className="dlg-avatar w-[64px] sm:w-[76px]" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-display text-[16px] leading-tight text-gold sm:text-[18px]">{npc.name}</p>

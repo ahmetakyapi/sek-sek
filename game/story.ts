@@ -5,12 +5,12 @@ export interface StoryPage {
 
 export const STORY: StoryPage[] = [
   {
-    title: 'Tavan Arasındaki Defter',
-    text: '{name}, dedesi Yusuf’un eski evini toplarken tavan arasında tozlu bir defter buldu. Kapağında soluk harflerle tek bir kelime yazıyordu: Memleket.',
+    title: 'Sahaftaki Defter',
+    text: '{name}, bir sahafın en alt rafında eski bir yol defteri buldu. Kapağında soluk harflerle tek bir kelime yazıyordu: Memleket. Kimden kaldığını sahaf da bilmiyordu; sayfaların altında hep aynı imza vardı: Seyyah.',
   },
   {
     title: 'Yarım Kalan Sayfalar',
-    text: 'Her sayfa bir şehre ayrılmıştı: İstanbul, Kocaeli, İzmir, Ankara, Konya, Nevşehir, Adana, Gaziantep, Mardin, Malatya, Çorum, Ordu, Trabzon, Sivas, Ardahan, Bayburt. Her sayfada dededen kısa bir not ve üç boş kutu vardı. Her şehirden üç hatıra… Yolculuk yarım kalmıştı.',
+    text: 'Her sayfa bir şehre ayrılmıştı. Her sayfada Seyyah’ın kısa bir notu vardı: ne yenir, nereden bakılır, kime selam verilir. Notun altında da üç boş kutu. Her şehirden üç hatıra… Seyyah kutuları doldurmamış, defteri bulana bırakmıştı.',
   },
   {
     title: 'Son Satır',
@@ -20,7 +20,7 @@ export const STORY: StoryPage[] = [
 
 export const ENDING: StoryPage = {
   title: 'Defter Tamamlandı',
-  text: '{name}, Bayburt Kalesi’nin burcunda defterin son sayfasını açtı. Dede Yusuf burada doğmuş, ilk kopuz sesini Çoruh kıyısında duymuştu. On dokuz şehir geride kaldı. Yol bitti ama memleket bitmez: sıradaki şehirler yolda.',
+  text: '{name}, Bayburt Kalesi’nin burcunda defterin son sayfasını açtı. Üç kutu da doldu. Seyyah kimdi, yola neden buradan çıktı, defter söylemiyor; sayfanın köşesinde yalnız küçük bir not var: “Sıra sende.” Yol bitti ama memleket bitmez: sıradaki şehirler yolda.',
 }
 
 export const fill = (t: string, name: string) => t.replaceAll('{name}', name)

@@ -1,5 +1,5 @@
 /**
- * Patron botu: arenada gerçek fizik motoruyla dövüşür, her patronun yenilebildiğini kanıtlar.
+ * Boss botu: arenada gerçek fizik motoruyla dövüşür, her boss’un yenilebildiğini kanıtlar.
  *
  * Yöntem: kısa ufuklu deneme-yanılma (her 0,15 sn'de bir avuç tuş dizisini 1,6 sn ileri oynatır,
  * en iyisinin ilk adımını uygular). Tohumlu sözde-rastgele: aynı girdiyle hep aynı dövüş.
@@ -62,7 +62,7 @@ export interface BotResult {
   hpLeft: number
 }
 
-/** Oyuncuyu arena bayrağına koyar, patron yenilene ya da süre dolana dek dövüşür. weak: zıplaması ve koşusu zayıf oyuncu. */
+/** Oyuncuyu arena bayrağına koyar, boss yenilene ya da süre dolana dek dövüşür. weak: zıplaması ve koşusu zayıf oyuncu. */
 export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number; weak?: boolean } = {}): BotResult {
   const phys = PHYS as unknown as Record<string, number>
   const base = { ...phys }

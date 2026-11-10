@@ -495,7 +495,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     subtitle: 'Cappadocia',
     item: 'Clay Jug',
     intro: 'Fairy chimneys, hundreds of balloons in the sky and a city beneath the ground. From Göreme to Derinkuyu, from Avanos to Uçhisar.',
-    note: 'Get up early: the sky fills with balloons. We used to call the fairy chimneys "stones with hats". And remember, there is a whole city under the earth too.',
+    note: 'Get up early: the sky fills with balloons. I call the fairy chimneys "stones with hats". And remember, there is a whole city under the earth too.',
     facts: [
       {
         title: 'Fairy Chimneys',
@@ -922,7 +922,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     subtitle: 'Castle and Storm',
     item: 'Kopuz',
     intro: 'From the banks of the Çoruh to Bayburt Castle. The wind blows from the west and pushes you back. You have learned everything, now put it to use.',
-    note: 'The end of the road is where I began. Look down at the Çoruh from the castle tower, and remember me.',
+    note: 'The end of the road is where I began. Look down at the Çoruh from the castle tower, and wave to me too.',
     facts: [
       {
         title: 'The Least Populous Province',
@@ -952,7 +952,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
       },
       {
         name: 'Rıza the Castle Keeper',
-        text: 'The wind always blows from the west here. Your grandfather used to play on these towers, I remember. Go on, the last page is waiting for you.',
+        text: 'The wind always blows from the west here. Another traveller with a notebook like yours came by once, I remember. Go on, the last page is waiting for you.',
       },
     ],
     quips: [
@@ -966,12 +966,12 @@ export const LEVELS_EN: Record<string, LevelEn> = {
 
 export const STORY_EN: { title: string; text: string }[] = [
   {
-    title: 'The Notebook in the Attic',
-    text: '{name} was clearing out Grandpa Yusuf’s old house when a dusty notebook turned up in the attic. On its cover, in faded letters, was a single word: Memleket, “homeland”.',
+    title: 'The Notebook at the Bookshop',
+    text: '{name} found an old road notebook on the bottom shelf of a second-hand bookshop. On its cover, in faded letters, was a single word: Memleket, “homeland”. Even the bookseller could not say whose it had been; every page was signed the same way: Seyyah, “the traveller”.',
   },
   {
     title: 'The Unfinished Pages',
-    text: 'Each page was given to a city: İstanbul, Kocaeli, İzmir, Ankara, Konya, Nevşehir, Adana, Gaziantep, Mardin, Malatya, Çorum, Ordu, Trabzon, Sivas, Ardahan, Bayburt. Every page had a short note from Grandpa and three empty boxes. Three keepsakes from every city… The journey had been left unfinished.',
+    text: 'Each page was given to a city. Every page had a short note from Seyyah: what to eat, where to look from, whom to greet. Under the note were three empty boxes. Three keepsakes from every city… Seyyah had not filled them in; that was left to whoever found the notebook.',
   },
   {
     title: 'The Last Line',
@@ -981,17 +981,17 @@ export const STORY_EN: { title: string; text: string }[] = [
 
 export const ENDING_EN: { title: string; text: string } = {
   title: 'The Notebook Is Complete',
-  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. Grandpa Yusuf was born here and heard his first kopuz on the banks of the Çoruh. Nineteen cities lie behind. The road has ended, but the homeland never does: the next cities are on their way.',
+  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. All three boxes are full. Who Seyyah was, and why the road began here, the notebook does not say; there is only a small note in the corner of the page: “Your turn.” The road has ended, but the homeland never does: the next cities are on their way.',
 }
 
 export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string }> = {
   uktun: {
     role: 'Mapmaker',
-    bio: 'From Istanbul, 26 years old. She grew up on the Kadıköy ferries and knows maps by heart, but no road ever intrigued her as much as her grandfather’s notebook. She lets her long hair fly in the wind and always finds the way herself.',
+    bio: 'From Istanbul, 26 years old. She grew up on the Kadıköy ferries and knows maps by heart, but no road ever intrigued her as much as the notebook she found at that bookshop. She lets her long hair fly in the wind and always finds the way herself.',
   },
   memo: {
     role: 'Phone Repairer',
-    bio: 'From Diyarbakır, 28 years old. He has a little phone shop at the foot of the city walls and can spot a cracked screen at a glance. In his pocket: his grandfather’s notebook and an old phone where he logs every city.',
+    bio: 'From Diyarbakır, 28 years old. He has a little phone shop at the foot of the city walls and can spot a cracked screen at a glance. In his pocket: Seyyah’s notebook and an old phone where he logs every city.',
   },
 }
 

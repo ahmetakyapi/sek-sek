@@ -1,6 +1,6 @@
 /**
  * Hayalet koşu: bölümdeki en iyi koşunun saniyede GHOST_HZ örneklik kaydı.
- * Örnek başına üç sayı: x, y, poz (0 bekle, 1 koş, 2 zıpla, 3 düş, 4 atıl; sola bakıyorsa +8).
+ * Örnek başına üç sayı: x, y, poz (0 bekle, 1 koş, 2 zıpla, 3 düş, 4 dash; sola bakıyorsa +8).
  * Saklama tarayıcıda: lib/ghost.ts.
  */
 import type { CharacterId } from './characters'

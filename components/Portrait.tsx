@@ -1,79 +1,81 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CharacterId } from '@/game/characters'
-import { PORTRAITS } from '@/game/portraits'
+import type { Look } from '@/game/heroDraw'
+import { drawPortrait } from '@/game/portraitDraw'
 
-/** Piksel portreyi tek seferde PNG'ye çevirip önbelleğe alır (açık + kırpık göz). */
-const cache = new Map<string, { open: string; closed: string }>()
-
-function toUrl(rows: string[], pal: Record<string, string>) {
-  const cv = document.createElement('canvas')
-  cv.width = rows[0].length
-  cv.height = rows.length
-  const c = cv.getContext('2d')!
-  rows.forEach((r, y) => {
-    for (let x = 0; x < r.length; x++) {
-      const col = pal[r[x]]
-      if (!col) continue
-      c.fillStyle = col
-      c.fillRect(x, y, 1, 1)
-    }
-  })
-  return cv.toDataURL('image/png')
+interface ScarfColor {
+  color: string
+  shade: string
 }
 
-export default function Portrait({ id, className = '' }: { id: CharacterId; className?: string }) {
-  const [src, setSrc] = useState<{ open: string; closed: string } | null>(null)
+/**
+ * Portreyi tuvalde, cihaz çözünürlüğünde canlı tutar: nefes alır, saçı ve atkısı salınır, arada göz kırpar.
+ * Saniyede ~24 kare yeter; hareket azaltma seçiliyse tek kare çizilir, yalnız boyut değişince yenilenir.
+ */
+function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const color = scarf?.color
+  const shade = scarf?.shade
   useEffect(() => {
-    let v = cache.get(id)
-    if (!v) {
-      const p = PORTRAITS[id]
-      v = { open: toUrl(p.rows, p.pal), closed: toUrl(p.closed, p.pal) }
-      cache.set(id, v)
+    const cv = ref.current
+    if (!cv) return
+    const c = cv.getContext('2d')!
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let raf = 0
+    let last = -1
+    const t0 = performance.now()
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame)
+      const dpr = Math.min(window.devicePixelRatio || 1, 3)
+      const w = Math.round(cv.clientWidth * dpr)
+      const h = Math.round(cv.clientHeight * dpr)
+      if (!w || !h) return
+      const resized = cv.width !== w || cv.height !== h
+      if (!resized && (still ? last >= 0 : now - last < 40)) return
+      if (resized) {
+        cv.width = w
+        cv.height = h
+      }
+      last = now
+      drawPortrait(c, look, w, h, (now - t0) / 1000, { scarf: color, scarfS: shade, face, still })
     }
-    setSrc(v)
-  }, [id])
-  const name = id === 'uktun' ? 'Uktun' : 'Memo Çelik'
+    raf = requestAnimationFrame(frame)
+    return () => cancelAnimationFrame(raf)
+  }, [look, face, color, shade])
+  return ref
+}
+
+/**
+ * Büst portre (64:76). `id` oynanan karakter ya da şehir insanı kılığıdır; `scarf` verilirse oyuncunun seçtiği
+ * atkı rengi giydirilir. Tuval çizilene dek (ve betiksiz) public/portreler'deki hazır kare görünür.
+ */
+export default function Portrait({ id, className = '', scarf }: { id: Look; className?: string; scarf?: ScarfColor | null }) {
+  const ref = usePortraitCanvas(id, false, scarf)
+  const name = id === 'uktun' ? 'Uktun' : id === 'memo' ? 'Memo Çelik' : null
   return (
-    <span className={`relative block aspect-[64/76] ${className}`} role="img" aria-label={`${name} portresi`}>
-      {src && (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src.open} alt="" className="absolute inset-0 h-full w-full" style={{ imageRendering: 'pixelated' }} draggable={false} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src.closed} alt="" className="portrait-blink-img absolute inset-0 h-full w-full" style={{ imageRendering: 'pixelated' }} draggable={false} />
-        </>
-      )}
+    <span
+      className={`relative block aspect-[64/76] bg-cover ${className}`}
+      style={scarf ? undefined : { backgroundImage: `url(/portreler/${id}.png)` }}
+      role={name ? 'img' : undefined}
+      aria-label={name ? `${name} portresi` : undefined}
+      aria-hidden={name ? undefined : true}
+    >
+      <canvas ref={ref} className="absolute inset-0 h-full w-full" />
     </span>
   )
 }
 
-/** Yüz bölgesi (alın, gözler, çene) */
-const FACE = { x: 13, y: 16, w: 38, h: 38 }
-
 /**
- * Göstergedeki küçük portre: yüz bölgesi 1:1 kırpılır, CSS pikseline tam oturur (retinada 2x/3x keskin kalır).
- * Altın çerçeveli bir posta pulu gibi durur, arada göz kırpar.
+ * Göstergedeki küçük portre: yüz kare kırpılır, altın çerçeveli bir posta pulu gibi durur, arada göz kırpar.
  */
-export function PortraitFace({ id, scale = 1 }: { id: CharacterId; scale?: 1 | 2 }) {
-  const [src, setSrc] = useState<{ open: string; closed: string } | null>(null)
-  useEffect(() => {
-    const p = PORTRAITS[id]
-    const crop = (rows: string[]) => rows.slice(FACE.y, FACE.y + FACE.h).map((r) => r.slice(FACE.x, FACE.x + FACE.w))
-    setSrc({ open: toUrl(crop(p.rows), p.pal), closed: toUrl(crop(p.closed), p.pal) })
-  }, [id])
-  const size = FACE.w * scale
+export function PortraitFace({ id, scale = 1, scarf }: { id: CharacterId; scale?: 1 | 2; scarf?: ScarfColor | null }) {
+  const ref = usePortraitCanvas(id, true, scarf)
+  const size = 38 * scale
   return (
     <span className="relative block shrink-0 bg-[#f4ead8] p-[2px] [box-shadow:0_0_0_2px_#d9a441,0_2px_0_2px_rgba(0,0,0,0.35)]" style={{ width: size + 4, height: size + 4 }} aria-hidden>
-      {src && (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src.open} alt="" width={size} height={size} className="absolute left-[2px] top-[2px]" style={{ imageRendering: 'pixelated', width: size, height: size }} draggable={false} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src.closed} alt="" width={size} height={size} className="portrait-blink-img absolute left-[2px] top-[2px]" style={{ imageRendering: 'pixelated', width: size, height: size }} draggable={false} />
-        </>
-      )}
+      <canvas ref={ref} className="block" style={{ width: size, height: size }} />
     </span>
   )
 }

@@ -23,31 +23,32 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
-  sim.ts         fizik + dünya: zıplama, duvar, atılma, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
-  levels.ts      25 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Patron Koşusu arenası) burada
+  sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
+  levels.ts      25 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
   cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
-  finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q patron, G kapı) → çıkış; arenayı index.ts kurar
-  boss.ts        şehir patronları: tanım (ad, can, hareket sırası), saate bağlı durum makinesi (toslar, dalar, sıçrar, yerden çıkar, atar), temas kuralı
+  finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q boss, G kapı) → çıkış; arenayı index.ts kurar
+  boss.ts        şehir boss’ları: tanım (ad, can, hareket sırası), saate bağlı durum makinesi (toslar, dalar, sıçrar, yerden çıkar, atar), temas kuralı
+  bossLines.ts   boss'ların üç lafı (uyanınca, yorulunca, basılınca; TR/EN); konuşma balonunu render.ts çizer
   assists.ts     kolaylık yamaları: birleşmiş haritaya en son yazılır (araya bayrak, çukura basamak); kayarsa hata verir
   content.en.ts  bütün bölüm metinlerinin İngilizcesi
   art.ts         şehir paletleri, arka plan katmanları (piksel), düşman türü seçimi, canlı adları
   render.ts      iki düşük çözünürlüklü tampon (arka: gök, parallax, süs · ön: su, nesne, canlı, parçacık), arada HD zemin; adımlar arası ara değerleme, kesirli kamera
   terrainDraw.ts elle çizilmiş zemin ve duvarlar: şehre göre taş örgüsü, mürekkep dış hat, üst örtü (taş, çimen, kar); parça parça önbelleklenir
-  bossDraw.ts    25 patronun vektör çizimi (ruh hâli: öfkeli, titrek, sersem, uykuda)
+  bossDraw.ts    25 boss’un vektör çizimi (ruh hâli: öfkeli, titrek, sersem, uykuda)
   enemyDraw.ts   düşmanlar, dost hayvanlar, hatıralar ve ortak nesneler (anahtar, pul, kristal, nazar, yay): vektör; föyü scripts/art/creatures.cjs
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
-  portraits.ts   64x76 portreler (scripts/art/painter.py üretir; Uktun'un yüzü elle çizilmiş scripts/art/uktun_classic.json'dan gelir)
+  portraitDraw.ts vesikalık portreler (vektör, heroDraw fırçalarıyla; sekiz kılık, atkı rengi parametreli). Sunucu kartı için public/portreler/<kılık>.png: `node scripts/art/portraits.cjs` (çizim ya da LOOKS değişince yeniden üret)
   audio.ts       WebAudio efektleri + şehir makamında üretilen müzik (bayrak sesi de şehrin makamından)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts
-components/      React arayüzü: Game (bütün ekranlar), Defter (toplananlar, rozetler, Patron Koşusu), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
+components/      React arayüzü: Game (bütün ekranlar), Defter (toplananlar, rozetler, Boss Rush), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), extras (atkı renkleri, Günün Şehri, Haftanın Görevi), scoreKey (skor tablosu harita sürümüne bağlı), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (patronu gerçek fizikle yenen bot), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, çizim föyü sheet.cjs, şehir görselleri banners.cjs, ikon ve favicon icons.py, harita üreteçleri, sync)
-tests/           sim.test.ts (fizik, mekanik, final), boss.test.ts (patron kuralları; her patronu bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Patron Koşusu arenaları)
+scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, şehir görselleri banners.cjs, ikon ve favicon icons.py, harita üreteçleri, sync)
+tests/           sim.test.ts (fizik, mekanik, final), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları)
 ```
 
 ## Ajanla çalışma
@@ -58,8 +59,8 @@ Bu oyun ajanla geliştiriliyor; her iş için hazır bir yol var. Yeni bir araç
 |---|---|
 | Yeni şehir | `/yeni-sehir <ad>` (sekiz ölçüt, baştan sona) |
 | Harita, bulmaca, zorluk | `level-designer` ajanı · `.claude/rules/bolumler.md` |
-| Karakter, patron, kaplama çizimi | `artist` ajanı · `.claude/rules/cizim.md` |
-| Patron davranışı | `.claude/rules/patron.md` |
+| Karakter, boss, kaplama çizimi | `artist` ajanı · `.claude/rules/cizim.md` |
+| Boss davranışı | `.claude/rules/boss.md` |
 | Metin, menü, Title Case | `.claude/rules/metin.md` |
 | "Bozuldu mu?" | `/dogrula [şehir]` ya da `verifier` ajanı → `bash scripts/verify-all.sh` |
 | "Nasıl duruyor?" | `/onizle <şehir> [yer]` → `scripts/preview.cjs` (oyun içi) · `scripts/art/sheet.cjs` (çizim föyü) |
@@ -79,17 +80,17 @@ Her bölüm, eskisi de yenisi de, şu iskeletle kurulur. Yeni şehir ya da yeni 
 3. **Meydan yolu.** Şehre özgü tek bir bulmaca ya da meydan okuma: oyuncu kafasını kullanır, oynanış ana yoldan farklı
    hisseder (düğme sırası, ritim, asansör, yeraltı, rüzgâr…). Bütün yol bulmaca olmaz. İçinde tam bir saklı
    **nazar boncuğu (!)**: adil ama dikkat isteyen bir yerde.
-4. **Patron arenası.** Şehrin bir ayrıntısından doğan bekçi (`game/boss.ts`). Kural bütün şehirlerde aynıdır:
+4. **Boss arenası.** Şehrin bir ayrıntısından doğan bekçi (`game/boss.ts`). Kural bütün şehirlerde aynıdır:
    işaret → saldırı → yorgunluk → üstüne bas. Şehirden şehre yalnız saldırının biçimi ve hızı değişir.
    Arenadan hemen önce bayrak, tabelada nasıl yenileceği yazar (TR + EN).
-5. **Aynı mantık herkese.** Zorluk etikete uyar (Kolay: yürü + zıpla yeter; Orta: bir atılma ya da duvar sekmesi;
+5. **Aynı mantık herkese.** Zorluk etikete uyar (Kolay: yürü + zıpla yeter; Orta: bir dash ya da duvar sekmesi;
    Zor: ikisi + zamanlama) ama hiçbir yerde kıl payı atlayış, kör atlayış ya da uzun cezalı tekrar olmaz.
    Fizik sabit adımlıdır (1/120 sn): her ekranda, her tazeleme hızında oyun aynı işler; hız ayarı fiziğe değil çizime yapılır.
-6. **Görsel dil.** Oynanan her şey (karakterler, şehir insanları, patronlar, zemin ve duvar) vektör çizgiyle, mürekkep
+6. **Görsel dil.** Oynanan her şey (karakterler, şehir insanları, boss’lar, zemin ve duvar) vektör çizgiyle, mürekkep
    dış hatla, ekran çözünürlüğünde çizilir (`heroDraw`, `bossDraw`, `terrainDraw`). Düşmanlar, dost hayvanlar ve toplananlar da vektördür (`enemyDraw`). Yeni karakter, canlı ya da kaplama piksel
    sprite olarak eklenmez; piksel kalan yalnız arka plan katmanları ve süslerdir. Işık sol üstten, gölge tek kademe.
 7. **Kanıt.** `verify-prelude` (meydan yolu) → `verify-levels` (bütün bölüm; hatıra, bayrak, pul, nazar, çıkış) →
-   `verify-respawn` (hangi bayrakta, hangi düğme durumuyla ölünürse ölünsün çıkışa varılır) → `bossbot` (patron; zayıf
+   `verify-respawn` (hangi bayrakta, hangi düğme durumuyla ölünürse ölünsün çıkışa varılır) → `bossbot` (boss; zayıf
    oyuncu botu dahil) → `audit-difficulty` (zayıf oyuncu geçer). Biri FAIL ise bölüm bitmemiştir.
 8. **Söz ve insan.** Her tabelanın ve her şehir insanının metni TR + EN yazılır, şehre özgüdür, kısadır ve sıcaktır;
    kişi adları oyun genelinde tekrar etmez. Tabela ne yapılacağını, insan şehri ve (üstü kapalı) gizli köşeyi anlatır.
@@ -103,7 +104,7 @@ Değiştir → `python3 scripts/art/newcities.py && python3 scripts/art/sig.py &
 **Yeni şehir.** `types.ts` CityKey → `game/cities/<id>.ts` (ana yol) → `art.ts` (CITY, buildLayers) → `enemyDraw.ts` (KEEPSAKES: hatıra çizimi; yeni tür varsa ENEMIES / FRIENDS) → `render.ts` (karo, tezgâh `s`,
 simge nesne `z`, NEXT_CITY) → `audio.ts` SCALES → `levels.ts` LEVELS + DECOR_CYCLE → `content.en.ts` →
 `components/TurkeyMap.tsx` koordinat → `game/features.ts` → `game/finales/<id>.ts` (meydan yolu + nazar boncuğu) ve
-`finales/index.ts` kaydı → `game/boss.ts` BOSSES (patron) + `game/bossDraw.ts` (çizimi) → `terrainDraw.ts` LOOK (zemin
+`finales/index.ts` kaydı → `game/boss.ts` BOSSES (boss) + `game/bossDraw.ts` (çizimi) → `terrainDraw.ts` LOOK (zemin
 malzemesi) → `public/sehirler/<id>.webp` ve `assets/cities/<id>.png` (`node scripts/art/banners.cjs <id>`) → `lib/storage.ts` ORDERS (eski sıra) → `tests/sim.test.ts`
 plaka listesi. "Bölüm ölçütleri"ndeki sekiz maddenin hepsi sağlanmadan şehir eklenmiş sayılmaz. Haritalar değişince `lib/storage.ts` MAP_VERSION artır.
 
@@ -114,7 +115,7 @@ yetim satır bırakma.
 **Meydan yolu değiştirmek.** `game/finales/<id>.ts` → `npx tsx scripts/verify-prelude.ts <id> --goster` (OK demeli) →
 `npx tsx scripts/verify-levels.ts <id>`. Yasak karakterler: `C K $ D P E @ & Q G`; tam bir `!` olmalı.
 
-**Patron değiştirmek.** `game/boss.ts` (BOSSES: can, hareket sırası, hız; BOSS: süreler) → `npx tsx scripts/bossbot.ts <id>`
+**Boss değiştirmek.** `game/boss.ts` (BOSSES: can, hareket sırası, hız; BOSS: süreler) → `npx tsx scripts/bossbot.ts <id>`
 (bot ve zayıf oyuncu botu yenmeli). Çizimi `game/bossDraw.ts`. Kural her şehirde aynı kalsın: işaret → saldırı → yorgunluk → üstüne bas.
 
 ## Tasarım tuzakları (öğrenilmiş)
@@ -131,9 +132,9 @@ yetim satır bırakma.
 - Telefonda yatay ekranda diyalog ve ipucu kutusu iki kontrolün arasına oturur; yeni kutu eklersen karakteri ve tuşları kapatmasın.
 - Düğme durumu bayrakla birlikte saklanır, ölünce o hale dönülür; meydan kapısından geçince sıfırlanır. Bulmacayı buna göre kur.
 - Çözücü "aşağı" tuşuna basmaz: tek yönlü platformdan aşağı inişe dayanan yol doğrulanamaz, çatlak taş (X) kullan.
-- Patron ve düşmanlar çözücüde yoktur (zamanlama engeli); patronun yenilebilirliğini `tests/boss.test.ts` kanıtlar.
+- Boss ve düşmanlar çözücüde yoktur (zamanlama engeli); boss’un yenilebilirliğini `tests/boss.test.ts` kanıtlar.
 - Çözücü (`verify-levels`) yavaşsa önce haritayı sadeleştir: dönen platformlar ve tokmaklar durum sayısını katlar.
-- Her yaştan oyuncu düşün: bayraklar arası **en çok 75 karo** (test bekler), boşluklar 3 karoyu geçmesin; "atıl + kristal + atıl"
+- Her yaştan oyuncu düşün: bayraklar arası **en çok 75 karo** (test bekler), boşluklar 3 karoyu geçmesin; "dash + kristal + dash"
   zinciri isteğe bağlı kestirme olsun, zorunlu yol olmasın. Değişiklikten sonra `npx tsx scripts/audit-difficulty.ts <id>`:
   zayıf oyuncu (zıplama ~%10 alçak, koşu %8 yavaş) geçebilmeli.
 

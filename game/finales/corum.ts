@@ -8,7 +8,7 @@ import type { Prelude } from './types'
 export const prelude: Prelude = {
   medal: 80,
   hints: [
-    'Yerkapı: surun altından geçen taş tünel. Tavan alçak, zıplayışın kısalır: geniş dikeni atılarak geç, okların ritmini bekle.',
+    'Yerkapı: surun altından geçen taş tünel. Tavan alçak, zıplayışın kısalır: geniş dikeni dash atarak geç, okların ritmini bekle.',
     'Plaka iki mavi kapıyı da açar: biri altta, biri üstte. Hangisi çıkışa götürür? Mavi taşların hepsi birlikte kalkar.',
     'Kırmızı kapı kapalı, bu geçit çıkmaz. Üst geçidin sonundaki plaka kırmızıyı açar.',
   ],

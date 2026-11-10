@@ -54,7 +54,7 @@ export interface Save {
   stamps: Record<string, boolean>
   /** bulunan nazar boncukları (şehir kimliği → bulundu) */
   charms: Record<string, boolean>
-  /** yenilen patronlar (şehir kimliği → yenildi) */
+  /** yenilen boss’lar (şehir kimliği → yenildi) */
   bosses: Record<string, boolean>
   /** atkı rengi (lib/extras.ts SCARVES) */
   scarf: string
@@ -62,7 +62,7 @@ export interface Save {
   daily: { last: string; count: number }
   /** Haftanın Görevi: son tamamlanan hafta ve toplam */
   weekly: { last: string; count: number }
-  /** Patron Koşusu'nun en iyi süresi (ms) ve o koşudaki patron sayısı */
+  /** Boss Rush’ın en iyi süresi (ms) ve o koşudaki boss sayısı */
   rush: { timeMs: number; bosses: number } | null
   /** eski haritalardan kalan süreler işaretlendi mi (bir kez) */
   timesReset?: boolean

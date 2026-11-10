@@ -2,10 +2,10 @@ import type { CityRoad } from './types'
 
 /**
  * Erzurum ana yolu, dört parça: Çifte Minareli Medrese (taç kapıdan avluya, iki minarenin arasında duvardan duvara
- * sekerek dama; altı zemin, güvenli) → Üç Kümbetler (ilk iki külah arası atılmayı güvenle öğretir, büyük kümbetin
- * duvarına tutunup tırmanılır, sonra taşlar arası atılma; düşen kurtların arasından yürür) → cirit meydanı (değnekler
- * düzenli aralıkla gelir: önce düz kulvar, sonra dikenli) → Palandöken yamacı (buz: zıpla, atıl, karşı duvara tutun;
- * vadinin üstünden atıl + kristal + atıl isteğe bağlı kestirme). Gizli pul soldaki minarenin dibinde, avluya bakan
+ * sekerek dama; altı zemin, güvenli) → Üç Kümbetler (ilk iki külah arası dash’i güvenle öğretir, büyük kümbetin
+ * duvarına tutunup tırmanılır, sonra taşlar arası dash; düşen kurtların arasından yürür) → cirit meydanı (değnekler
+ * düzenli aralıkla gelir: önce düz kulvar, sonra dikenli) → Palandöken yamacı (buz: zıpla, dash at, karşı duvara tutun;
+ * vadinin üstünden dash + kristal + dash isteğe bağlı kestirme). Gizli pul soldaki minarenin dibinde, avluya bakan
  * yüzündeki sahte duvarın ardında: sekerek çıkarken o yüze yaslanan içine düşer.
  */
 export const road: CityRoad = {

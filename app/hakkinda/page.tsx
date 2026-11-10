@@ -15,7 +15,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 25 şehir, 75 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 25 şehir, 75 hatıra, iki yolcu ve Seyyah’ın yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 
@@ -65,9 +65,9 @@ export default function Hakkinda() {
               ))}
             </ul>
             <p className="mt-7 max-w-md text-[17px] leading-relaxed text-cream/85">
-              Dedenin yarım kalmış defterini tamamla.
+              Seyyah’ın yarım kalmış defterini tamamla.
               <br />
-              <span className="text-muted">On dokuz şehir. Elli yedi hatıra. Tek yolculuk.</span>
+              <span className="text-muted">Yirmi beş şehir. Yetmiş beş hatıra. Tek yolculuk.</span>
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link href="/" className="pixel-btn primary px-7 py-3.5 text-lg">
@@ -107,7 +107,7 @@ export default function Hakkinda() {
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 md:grid-cols-[1fr_1.2fr] md:items-center">
           <div className="notebook rotate-[-1.5deg] p-6">
             <p className="font-display text-2xl">Memleket</p>
-            <p className="mt-1 text-[12px] opacity-70">Yusuf’un defteri</p>
+            <p className="mt-1 text-[12px] opacity-70">Seyyah’ın Yol Defteri</p>
             <ul className="mt-4 grid grid-cols-2 gap-1.5 text-[13px]">
               {LEVELS.map((l) => (
                 <li key={l.id} className="flex items-center gap-2 border border-[#5a3c26]/30 px-2 py-1">
@@ -120,9 +120,9 @@ export default function Hakkinda() {
           </div>
           <div>
             <p className="text-[12px] font-bold tracking-[0.3em] text-accent">HİKÂYE</p>
-            <h2 className="mt-2 font-display text-4xl text-cream">Tavan Arasındaki Defter</h2>
+            <h2 className="mt-2 font-display text-4xl text-cream">Sahaftaki Defter</h2>
             <p className="mt-4 leading-relaxed text-muted">
-              Dede Yusuf’un evini toplarken tozlu bir defter çıkar. Her sayfa bir şehre ayrılmış, her şehirde üç boş kutu var. Sırt çantanı hazırla, kırmızı atkını
+              Bir sahafın rafından tozlu bir yol defteri çıkar; altındaki imza tek kelime: Seyyah. Her sayfa bir şehre ayrılmış, her şehirde üç boş kutu var. Sırt çantanı hazırla, kırmızı atkını
               boynuna dola: İstanbul’dan başlayıp Bayburt Kalesi’nin burcunda biten bir yolculuk seni bekliyor.
             </p>
             <p className="mt-3 leading-relaxed text-muted">Topladığın her hatıra deftere bir sayfa ekler: Galata Kulesi’nin yaşı, Kadeş Antlaşması, Divriği’nin taş kapısı…</p>
@@ -206,9 +206,9 @@ export default function Hakkinda() {
         <h2 className="mt-2 font-display text-4xl text-cream">Telefonda da Klavyede de Kolay</h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {[
-            ['Telefon', ['Sol yarıda nereye dokunursan joystick orada çıkar', 'ZIPLA: uzun basarsan daha yükseğe', 'ATIL: joystick yönünde hızla fırla', 'Mola menüsünden büyük tuşlar ve tam ekran']],
-            ['Klavye', ['← → ya da A D ile yürü', '↑, W ya da Z ile zıpla', 'Boşluk, X ya da Shift ile 8 yöne atıl', '↓ ile ince platformdan in · Esc mola · R bayrak']],
-            ['Oyun Kolu', ['Sol çubuk ya da yön tuşları', 'A / Y zıpla', 'X / B / RT atıl', 'Start mola']],
+            ['Telefon', ['Sol yarıda nereye dokunursan joystick orada çıkar', 'ZIPLA: uzun basarsan daha yükseğe', 'DASH: joystick yönünde hızla fırla', 'Mola menüsünden büyük tuşlar ve tam ekran']],
+            ['Klavye', ['← → ya da A D ile yürü', '↑, W ya da Z ile zıpla', 'Boşluk, X ya da Shift ile 8 yöne dash at', '↓ ile ince platformdan in · Esc mola · R bayrak']],
+            ['Oyun Kolu', ['Sol çubuk ya da yön tuşları', 'A / Y zıpla', 'X / B / RT dash at', 'Start mola']],
           ].map(([t, items]) => (
             <div key={t as string} className="pixel-panel p-5">
               <h3 className="font-display text-2xl text-cream">{t as string}</h3>

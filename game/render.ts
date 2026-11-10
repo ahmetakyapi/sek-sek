@@ -1,4 +1,5 @@
 import { CITY, LAYER_H, LAYER_W, buildLayers, disc, enemySpecies, rect, type Ctx, type Layers } from './art'
+import { BOSS_LINES } from './bossLines'
 import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
 import { BOSSES } from './boss'
@@ -81,11 +82,14 @@ export class Renderer {
   /** havadaki en yüksek düşüş hızı: sert inişte toz ve sarsıntı */
   private airVy = 0
   private idleT = 0
-  /** patronun uyandığı an: adı kısa süre yazılır */
+  /** boss’un uyandığı an: adı kısa süre yazılır */
   private bossWoke = -99
+  /** boss'un konuşma balonu: ne dedi, ne zaman */
+  private bossSay: { text: string; at: number; hold: number } | null = null
+  private bossWas = ''
   /** gece-gündüz geçişinin yumuşak değeri (0 gündüz, 1 gece) */
   private nightK = 0
-  /** bu karede çizilecek karakterler (hayalet, atılma izi, oyuncu): dünya tamponundan sonra ana tuvalde */
+  /** bu karede çizilecek karakterler (hayalet, dash izi, oyuncu): dünya tamponundan sonra ana tuvalde */
   private heroes: HeroDraw[] = []
 
   constructor(canvas: HTMLCanvasElement) {
@@ -271,6 +275,7 @@ export class Renderer {
       }
       case 'bossWake':
         this.bossWoke = this.t
+        this.say('wake', 2.4)
         this.shake = Math.max(this.shake, 3)
         break
       case 'bossSlam':
@@ -278,6 +283,7 @@ export class Renderer {
         this.burst(e.x, e.y, 12, 'rgba(240,230,210,0.8)', 70, 1)
         break
       case 'bossHit':
+        this.say('ouch', 1.5)
         this.shake = Math.max(this.shake, 4)
         this.flash = 0.08
         this.burst(e.x, e.y, 20, '#ffd36a', 110, 2)
@@ -1559,7 +1565,7 @@ export class Renderer {
           }
         }
         if (t === BOSS_GATE && w.isSolid(tx, ty)) {
-          // meydan kapısı: demir parmaklık, patron yenilince kalkar
+          // meydan kapısı: demir parmaklık, boss yenilince kalkar
           rect(b, x, y, T, T, 'rgba(18,12,26,0.45)')
           for (let i = 1; i < T; i += 5) {
             rect(b, x + i, y, 3, T, '#4a4654')
@@ -1776,7 +1782,7 @@ export class Renderer {
     // oklar
     for (const pr of w.projectiles) {
       if (pr.w > 6) {
-        // patronun savurduğu: şehrin vurgu renginde top, arkasında iz
+        // boss’un savurduğu: şehrin vurgu renginde top, arkasında iz
         const px = Math.round(pr.x + pr.w / 2)
         const py = Math.round(pr.y + pr.h / 2)
         disc(b, px - Math.sign(pr.vx) * 3, py - (pr.vy ? Math.sign(pr.vy) * 2 : 0), 2, 'rgba(255,255,255,0.3)')
@@ -1959,10 +1965,49 @@ export class Renderer {
     }
   }
 
-  /** Patron ve canları: zeminin üstünde, oyuncunun arkasında. Uyanınca adı kısa süre başının üstünde yazar. */
+  /** Boss ve canları: zeminin üstünde, oyuncunun arkasında. Uyanınca adı kısa süre başının üstünde yazar. */
+  private say(kind: 'wake' | 'tired' | 'ouch', hold: number) {
+    this.bossSay = { text: BOSS_LINES[this.city][kind][this.lang === 'en' ? 1 : 0], at: this.t, hold }
+  }
+
+  /** Konuşma balonu: beyaz kâğıt, mürekkep hat, alt ucunda kuyruk; (x, y) kuyruğun ucu. */
+  private bubble(text: string, x: number, y: number, k: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const size = Math.round(sc * 5.2)
+    c.font = `700 ${size}px ${this.popFont()}`
+    const w = c.measureText(text).width + sc * 7
+    const h = size + sc * 5
+    // ekrandan taşmasın
+    const bx = Math.min(this.canvas.width - w - sc * 2, Math.max(sc * 2, x - w * 0.3))
+    const by = y - sc * 5 - h
+    c.save()
+    c.translate(x, y)
+    c.scale(k, k)
+    c.translate(-x, -y)
+    c.lineJoin = 'round'
+    c.lineWidth = Math.max(2, sc * 1.1)
+    c.strokeStyle = '#22161f'
+    c.fillStyle = '#fffaf0'
+    c.beginPath()
+    c.roundRect(bx, by, w, h, sc * 2.4)
+    c.moveTo(x - sc * 2, by + h - 1)
+    c.lineTo(x, y)
+    c.lineTo(x + sc * 3, by + h - 1)
+    c.stroke()
+    c.fill()
+    c.fillStyle = '#22161f'
+    c.textAlign = 'left'
+    c.textBaseline = 'middle'
+    c.fillText(text, bx + sc * 3.5, by + h / 2 + sc * 0.3)
+    c.restore()
+  }
+
   private drawBossHD(w: World, cx: number, cy: number) {
     const b = w.boss
     if (!b) return
+    if (b.state === 'tired' && this.bossWas !== 'tired') this.say('tired', 1.8)
+    this.bossWas = b.state
     if (b.state === 'down' && b.timer > 1.4) return
     const c = this.ctx
     const sc = this.scale
@@ -2008,6 +2053,41 @@ export class Renderer {
       c.fillText(label, x, top - sc * 9)
       c.globalAlpha = 1
     }
+    // yorgun: basılacak an. Zıplayan ok ve tek söz; kural her boss'ta aynı okunur.
+    if (b.state === 'tired' && !b.hidden) {
+      const bob = Math.abs(Math.sin(this.t * 7)) * sc * 2.5
+      const ay = top - sc * 11 - bob
+      c.save()
+      c.lineJoin = 'round'
+      c.lineWidth = Math.max(2, sc * 1.2)
+      c.strokeStyle = '#22161f'
+      c.fillStyle = '#ffd36a'
+      c.beginPath()
+      c.moveTo(x, ay + sc * 5)
+      c.lineTo(x - sc * 4, ay)
+      c.lineTo(x - sc * 1.6, ay)
+      c.lineTo(x - sc * 1.6, ay - sc * 4)
+      c.lineTo(x + sc * 1.6, ay - sc * 4)
+      c.lineTo(x + sc * 1.6, ay)
+      c.lineTo(x + sc * 4, ay)
+      c.closePath()
+      c.stroke()
+      c.fill()
+      c.font = `700 ${Math.round(sc * 5.5)}px ${this.popFont()}`
+      c.textAlign = 'center'
+      c.textBaseline = 'middle'
+      const now = this.lang === 'en' ? 'Stomp Now!' : 'Şimdi Bas!'
+      c.strokeText(now, x, ay - sc * 8)
+      c.fillText(now, x, ay - sc * 8)
+      c.restore()
+    }
+    const s = this.bossSay
+    if (s && this.t - s.at < s.hold && !b.hidden) {
+      const age = this.t - s.at
+      const k = Math.min(1, age / 0.12) * Math.min(1, (s.hold - age) / 0.15)
+      const up = b.state === 'tired' ? sc * 27 : this.t - this.bossWoke < 3 ? sc * 15 : sc * 6
+      this.bubble(s.text, x + b.w * sc * 0.25, top - up, k)
+    }
   }
 
   /** Karakterler büyütülmüş ana tuvalde, ekran çözünürlüğünde: oyun dünyası piksel, karakter elle çizilmiş */
@@ -2027,7 +2107,7 @@ export class Renderer {
   private drawPlayer(w: World, dt: number) {
     const p = w.player
     const look = this.character.id
-    // atılma izi: karakterin soluk kopyaları
+    // dash izi: karakterin soluk kopyaları
     if (p.dashTime > 0 && !p.dead) this.ghosts.push({ x: p.x, y: p.y, life: 0.22, flip: p.facing < 0 })
     for (const g of this.ghosts) {
       g.life -= dt
@@ -2074,7 +2154,7 @@ export class Renderer {
     const footX = p.x + p.w / 2
     const footY = p.y + p.h
     const moving = Math.abs(p.vx) > 40 || !p.grounded
-    // atılma hakkı bitince atkı soluklaşır: ne zaman yeniden atılabileceğin görünür
+    // dash hakkı bitince atkı soluklaşır: ne zaman yeniden dash atabileceğin görünür
     const spent = !p.canDash
     this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade })
 

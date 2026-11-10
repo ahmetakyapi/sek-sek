@@ -8,7 +8,6 @@ next-env.d.ts
 scripts/art/newcities.json
 scripts/art/sig.json
 scripts/art/*.png
-scripts/art/portraits.json
 scripts/art/sprites.json
 scripts/art/frames.json
 __pycache__/

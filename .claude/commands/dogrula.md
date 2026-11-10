@@ -1,5 +1,5 @@
 ---
-description: Tam doğrulama zinciri (tip, test, bölüm, yeniden doğuş, patron, derleme); değişen şehirler ya da hepsi
+description: Tam doğrulama zinciri (tip, test, bölüm, yeniden doğuş, boss, derleme); değişen şehirler ya da hepsi
 argument-hint: "[şehir ...]"
 ---
 

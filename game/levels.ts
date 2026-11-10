@@ -1124,7 +1124,7 @@ export const LEVELS: LevelDef[] = [
       'Boğaz’ın suyu soğuk, düşme! Martıların üstüne basarak onları uzaklaştırabilirsin.',
       'Bayrağa dokun: düşersen buradan devam edersin. İnce platformların altından geçip üstüne zıplayabilirsin.',
       'İskele: hareketli platforma bin, suyun üstünden geç.',
-      'ATIL (Boşluk / X): havadayken bir kez hızla fırla. Yere değince yenilenir. Zıpla, sonra atıl!',
+      'DASH (Boşluk / X): havadayken bir kez hızla fırla. Yere değince yenilenir. Zıpla, sonra dash at!',
     ],
     map: istanbul,
   },
@@ -1269,7 +1269,7 @@ export const LEVELS: LevelDef[] = [
     ],
     secret: { title: 'Efes', text: 'İzmir’in Selçuk ilçesindeki Efes Antik Kenti 2015’te UNESCO Dünya Mirası Listesi’ne alındı.' },
     hints: [
-      'Kordon’da yengeçler dolaşır. Üstlerine zıpla ya da atılarak geç.',
+      'Kordon’da yengeçler dolaşır. Üstlerine zıpla ya da dash atarak geç.',
       'Körfez vapuru: hareketli iskeleye bin, martılara dikkat.',
       'Tarihi Asansör: platforma bin, Karataş’a çık.',
     ],
@@ -1301,7 +1301,7 @@ export const LEVELS: LevelDef[] = [
     hints: [
       'Antalya’ya hoş geldin! Kaleiçi’nde damdan dama geç; sokak dar, atlayış kısa.',
       'Hadrian Kapısı: kemerin üstüne çıkmak için duvardan sek.',
-      'Falezler: boşluk geniş. Zıpla, en tepede atıl.',
+      'Falezler: boşluk geniş. Zıpla, en tepede dash at.',
       'Düden’e yaklaştın: parlayan taş ıslaktır, ayağın kayar. Erken dur.',
     ],
     map: roadMap(antalyaRoad),
@@ -1360,7 +1360,7 @@ export const LEVELS: LevelDef[] = [
       'Sema halkası: turkuaz tepsi bir merkezin etrafında döner. Üstüne bin, en tepeye çıkınca sete atla.',
       'Alaeddin Tepesi: halkadan halkaya tırman. Biri inerken öbürü çıkar, ritmi bekle.',
       'Karatay Medresesi: anahtarı al, kapıyı aç. Dama giden köprüden yürürsen çatlak bir duvar görürsün.',
-      'Yılan ısırır: üstüne bas ya da atılarak geç. Son hatıra yüksekte, halkayı kolla.',
+      'Yılan ısırır: üstüne bas ya da dash atarak geç. Son hatıra yüksekte, halkayı kolla.',
     ],
     map: konya,
   },
@@ -1371,7 +1371,7 @@ export const LEVELS: LevelDef[] = [
     plate: 50,
     subtitle: 'Kapadokya',
     difficulty: 'Orta',
-    note: 'Sabah erken kalk: gökyüzü balonla dolar. Peri bacalarına “şapkalı taşlar” derdik. Toprağın altı da bir şehirdir, unutma.',
+    note: 'Sabah erken kalk: gökyüzü balonla dolar. Ben peri bacalarına “şapkalı taşlar” derim. Toprağın altı da bir şehirdir, unutma.',
     npcs: [
       { name: 'Balon Pilotu Deniz', look: 'genc', text: 'Sepete bin, balon yükselir; inersen yavaşça geri çöker. Ne kadar yüksekte kalacağın senin elinde.' },
       { name: 'Yeraltı Rehberi Elif', look: 'teyze', text: 'Derinkuyu’da evler, ahırlar, kiler var. Kapılar değirmen taşı gibi yuvarlanır. Anahtarı soldaki dehlizde bıraktım.' },
@@ -1476,7 +1476,7 @@ export const LEVELS: LevelDef[] = [
       'Şanlıurfa’ya hoş geldin! Balıklıgöl’ün ıslak taşları kaygandır; suya düşersen bayrağa dönersin.',
       'Kale yolu: basamaklar yüksek. Sandığı duvarın dibine it, üstüne çık; kuleye duvardan sekerek tırman.',
       'Harran evleri: kubbeden kubbeye zıpla. Kubbenin tepesi dardır.',
-      'Göbeklitepe: taşların arası geniş. Zıpla, en tepede atıl. İlk çukur güvenli, orada dene.',
+      'Göbeklitepe: taşların arası geniş. Zıpla, en tepede dash at. İlk çukur güvenli, orada dene.',
     ],
     map: roadMap(sanliurfaRoad),
   },
@@ -1535,7 +1535,7 @@ export const LEVELS: LevelDef[] = [
     ],
     secret: { title: 'Deyrulzafaran', text: 'Deyrulzafaran Manastırı yüzyıllar boyunca Süryani Ortodoks Patrikliği’nin merkezi oldu. Mardin; Süryani, Arap, Kürt ve Türk kültürlerinin bir arada yaşadığı bir şehirdir.' },
     hints: [
-      'Akrepler terasta dolaşır. Üstlerine zıpla ya da atılarak çarp.',
+      'Akrepler terasta dolaşır. Üstlerine zıpla ya da dash atarak çarp.',
       'Çatlak taşlar basınca dağılır. Durmadan koş!',
       'Duvar tırmanışı: duvara doğru bas, değince zıpla. Karşı duvara seke seke yüksel.',
     ],
@@ -1566,7 +1566,7 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Kayısı Festivali', text: 'Malatya’da her yaz kayısı festivali düzenlenir; hasat şenlikle karşılanır.' },
     hints: [
       'Kayısı kasası yay gibidir: üstüne düşünce seni fırlatır.',
-      'Arılar havada salınır. Üstlerine bas ya da atılarak geç. Kasalar arasında atılmak seni uzağa taşır.',
+      'Arılar havada salınır. Üstlerine bas ya da dash atarak geç. Kasalar arasında dash atmak seni uzağa taşır.',
     ],
     map: malatya,
   },
@@ -1625,7 +1625,7 @@ export const LEVELS: LevelDef[] = [
     hints: [
       'Sinop’a hoş geldin! Surun üstüne çık: iki yanında iki ayrı deniz var.',
       'Balıkçı limanı: tekneden tekneye geç. Dalga tekneleri sallar, zamanını kolla.',
-      'Hamsilos koyu: kayalıkta boşluklar geniş. Zıpla, en tepede atıl.',
+      'Hamsilos koyu: kayalıkta boşluklar geniş. Zıpla, en tepede dash at.',
       'İnceburun feneri: kulenin içinde duvardan duvara sekerek çık. Anahtar tepede, kapı aşağıda.',
     ],
     map: roadMap(sinopRoad),
@@ -1652,7 +1652,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Yason Burnu', text: 'Yason Burnu, Argonotlar efsanesiyle anılan bir Karadeniz burnudur. Ucunda küçük, tarihi bir kilise durur.' },
     ],
     secret: { title: 'Yason Kilisesi', text: 'Yason Burnu’ndaki küçük kilise 19. yüzyılda yapıldı. Denize uzanan burnun ucunda tek başına durur.' },
-    hints: ['Yamaçlarda yaban domuzları dolaşır: üstlerine zıpla ya da atılarak geç. Sahildeki boşluklar geniş: zıpla, en tepede atıl.'],
+    hints: ['Yamaçlarda yaban domuzları dolaşır: üstlerine zıpla ya da dash atarak geç. Sahildeki boşluklar geniş: zıpla, en tepede dash at.'],
     map: ordu,
   },
   {
@@ -1740,7 +1740,7 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'İnci Kefali', text: 'İnci kefali dünyada yalnız Van Gölü havzasında yaşar. İlkbaharda yumurtlamak için derelere girer, akıntıya karşı sıçrayarak yüzer.' },
     hints: [
       'Van’a hoş geldin! Kalenin kayalığına tırman: duvardan duvara sek.',
-      'Sur üstü: mazgallar arası geniş. Zıpla, en tepede atıl.',
+      'Sur üstü: mazgallar arası geniş. Zıpla, en tepede dash at.',
       'Göl kıyısı: kayıklar dalgayla sallanır. Zamanını kolla.',
       'Akdamar iskelesi: anahtar yukarıda, kapı aşağıda. Önce tepeye çık.',
     ],
@@ -1771,9 +1771,9 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Cirit', text: 'Cirit, at üstünde oynanan eski bir Türk sporudur. Oyuncular birbirine ucu küt değnekler atar; Erzurum’da hâlâ oynanır.' },
     hints: [
       'Erzurum’a hoş geldin! Taç kapıdan avluya gir; iki minarenin arasında duvardan duvara sekerek dama çık.',
-      'Üç Kümbetler: külahtan külaha geçerken zıpla, tepede atıl. Büyük kümbetin duvarına tutun, seke seke tırman.',
+      'Üç Kümbetler: külahtan külaha geçerken zıpla, tepede dash at. Büyük kümbetin duvarına tutun, seke seke tırman.',
       'Cirit meydanı: değnekler düzenli aralıkla gelir. Biri geçince kulvara in, gelenin üstünden atla; sonda sahanlığa çık.',
-      'Palandöken yamacı: buzda hızın kesilmez. Yarın ucunda zıpla, tepede atıl, karşı duvara tutunup tırman.',
+      'Palandöken yamacı: buzda hızın kesilmez. Yarın ucunda zıpla, tepede dash at, karşı duvara tutunup tırman.',
     ],
     map: roadMap(erzurumRoad),
   },
@@ -1811,10 +1811,10 @@ export const LEVELS: LevelDef[] = [
     subtitle: 'Kale ve Fırtına',
     difficulty: 'Çok Zor',
     nickname: 'Uktun',
-    note: 'Yolun sonu, başladığım yer. Kalenin burcundan Çoruh’a bak, beni hatırla.',
+    note: 'Yolun sonu, başladığım yer. Kalenin burcundan Çoruh’a bak, bana da el salla.',
     npcs: [
       { name: 'Ozan Korkut Dede', look: 'ozan', text: 'Dede Korkut gibi anlat hikâyeni evlat: kopuzun teli gerilsin, söz yerini bulsun. Rüzgâra eğil, yürü.' },
-      { name: 'Kale Bekçisi Rıza', look: 'amca', text: 'Rüzgâr hep batıdan eser burada. Deden de bu burçlarda oynardı, ben hatırlarım. Hadi, son sayfa seni bekliyor.' },
+      { name: 'Kale Bekçisi Rıza', look: 'amca', text: 'Rüzgâr hep batıdan eser burada. Senin gibi defterli bir yolcu daha geçmişti, ben hatırlarım. Hadi, son sayfa seni bekliyor.' },
     ],
     medals: [70, 110, 170],
     quips: ['Rüzgâr şakacıdır.', 'Çoruh’a selam söyle.', 'Kale yüzyıllardır sabırlı.', 'Dede Korkut bunu da anlatır.'],
@@ -1826,7 +1826,7 @@ export const LEVELS: LevelDef[] = [
       { title: 'Baksı Müzesi', text: 'Bayburt’un bir köyünde kurulan Baksı Müzesi, 2014’te Avrupa Konseyi Müze Ödülü’nü kazandı.' },
     ],
     secret: { title: 'Cirit', text: 'Bayburt’ta cirit geleneği sürer: atlı oyuncular birbirine tahta mızrak atarak yarışır.' },
-    hints: ['Rüzgâr seni geri itiyor. Uzun boşluklarda zıpla, en tepede atıl.'],
+    hints: ['Rüzgâr seni geri itiyor. Uzun boşluklarda zıpla, en tepede dash at.'],
     wind: -210,
     map: bayburt,
   },
@@ -1870,7 +1870,7 @@ function addSignature(l: LevelDef) {
   l.medals = l.medals.map((m) => m + sig.medal) as [number, number, number]
 }
 
-/** Final: eski çıkış meydan kapısına (@) döner; sağa meydan yolu, patron arenası ve gerçek çıkış eklenir. */
+/** Final: eski çıkış meydan kapısına (@) döner; sağa meydan yolu, boss arenası ve gerçek çıkış eklenir. */
 function addFinale(l: LevelDef) {
   const pre = PRELUDES[l.city]
   const fin = buildFinale(l.city, chunk, (rows) => enrich(rows, l.city))
@@ -1884,7 +1884,7 @@ function addFinale(l: LevelDef) {
   l.medals = l.medals.map((m) => m + pre.medal) as [number, number, number]
 }
 
-/** Patron Koşusu'nun bölümü: şehrin yalnız arenası (hatıra, tabela ve kişi yok). */
+/** Boss Rush’ın bölümü: şehrin yalnız arenası (hatıra, tabela ve kişi yok). */
 export function bossLevel(l: LevelDef): LevelDef {
   return { ...l, map: buildArena(l.city), hints: [], npcs: [], finaleAt: undefined, wind: undefined }
 }

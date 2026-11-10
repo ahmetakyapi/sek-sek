@@ -18,7 +18,7 @@ describe('günün şehri ve haftanın görevi', () => {
     }
   })
 
-  it('atılmadan bitir yalnız Kolay şehirde, sıfır düşüş yalnız Zor olmayan şehirde istenir', () => {
+  it('dash atmadan bitir yalnız Kolay şehirde, sıfır düşüş yalnız Zor olmayan şehirde istenir', () => {
     for (let i = 0; i < 800; i++) {
       const ch = dailyChallenge(new Date(2026, 0, 1 + i), LEVELS, LEVELS.length - 1)
       const l = LEVELS.find((x) => x.id === ch.levelId)!
@@ -53,8 +53,8 @@ describe('günün şehri ve haftanın görevi', () => {
   })
 })
 
-describe('patron koşusu', () => {
-  it('her şehrin arena bölümü: başlangıç, bayrak, patron, kapı ve çıkış var; tabela yok', () => {
+describe('boss koşusu', () => {
+  it('her şehrin arena bölümü: başlangıç, bayrak, boss, kapı ve çıkış var; tabela yok', () => {
     for (const l of LEVELS) {
       const b = bossLevel(l)
       const w = new World(b)

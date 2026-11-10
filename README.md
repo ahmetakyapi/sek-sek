@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Dedenin yarım kalmış defterini tamamla. Yirmi beş şehir, yetmiş beş hatıra, tek yolculuk.**
+**Seyyah’ın yarım kalmış defterini tamamla. Yirmi beş şehir, yetmiş beş hatıra, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -19,13 +19,13 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
 
-- **16 Şehir, Her Biri Kendine Has.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+- **25 Şehir, Her Biri Kendine Has.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
   Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr.
 - **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
   **gizli pul** deftere gizli bir sayfa ekler.
 - **Konuşan Şehir.** Simitçiden vapur kaptanına, mırracıdan kangal sahibine 30’u aşkın şehir insanı.
   Dost hayvanları sevebilirsin; kırmızı hatla parlayan canlılar tehlikelidir.
-- **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, kristallerle havada ikinci atılma.
+- **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, kristallerle havada ikinci dash.
 - **Artbook Havası.** Işıkla boyanmış portreler, kilim çerçeveler, defter kâğıdı kartlar, paylaşılabilir kartpostallar.
 - **Skor Tablosu.** Şehir başına ve genel sıralama; altın, gümüş ve bronz süre madalyaları.
 
@@ -67,20 +67,20 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 ## Yolcular ve Şehir İnsanları
 
-<img src="docs/img/portraits.png" alt="Uktun, Memo Çelik ve şehir insanlarının piksel portreleri" width="100%">
+<img src="docs/img/portraits.png" alt="Uktun, Memo Çelik ve şehir insanlarının vesikalık portreleri" width="100%">
 
-**Uktun**, İstanbullu bir haritacı; **Memo Çelik**, Diyarbakırlı bir telefoncu. İkisinden biri, dedesi Yusuf’un tavan
-arasında kalmış “Memleket” defterini bulur. Her sayfa bir şehre ayrılmış, son sayfada tek bir cümle var:
+**Uktun**, İstanbullu bir haritacı; **Memo Çelik**, Diyarbakırlı bir telefoncu. İkisinden biri, bir sahafta “Seyyah” imzalı
+eski bir yol defteri bulur; kapağında “Memleket” yazar. Her sayfa bir şehre ayrılmış, son sayfada tek bir cümle var:
 “Yolun sonu, başladığım yer.”
 
-Portreler `scripts/art/painter.py` ile boyanır: sol üstten vuran gün batımı ışığı, sıcak ışık ve soğuk gölge,
-seçici dış hat, kenar ışığı ve her yolcunun kendi şehri arka planda.
+Portreler vesikalık kadrajında, oyundaki karakterlerle aynı elle çizilmiş çizgiyle (`game/portraitDraw.ts`) çizilir;
+menüde göz kırpar, seçtiğin atkı rengini taşır.
 
 ## Ekranlar
 
 <table>
 <tr>
-<td width="50%"><img src="docs/img/intro.png" alt="Gaziantep giriş ekranı: dedenin notu ve şehirdeki dost ile tehlikeler"><br><sub>Her şehrin girişinde dedenin notu ve <b>Bu Şehirde</b> rehberi: kim dost, kim tehlikeli.</sub></td>
+<td width="50%"><img src="docs/img/intro.png" alt="Gaziantep giriş ekranı: Seyyah’ın notu ve şehirdeki dost ile tehlikeler"><br><sub>Her şehrin girişinde Seyyah’ın notu ve <b>Bu Şehirde</b> rehberi: kim dost, kim tehlikeli.</sub></td>
 <td width="50%"><img src="docs/img/complete.png" alt="Bölüm sonu: süre, madalya, hatıralar, kartpostal ve skor tablosu"><br><sub>Bölüm sonu: süre ve madalya, bulunan hatıralar, kartpostal, skor tablosu.</sub></td>
 </tr>
 <tr>
@@ -93,13 +93,13 @@ seçici dış hat, kenar ışığı ve her yolcunun kendi şehri arka planda.
 
 ## Kontroller
 
-| | Hareket | Zıpla | Atıl | Diğer |
+| | Hareket | Zıpla | Dash at | Diğer |
 |---|---|---|---|---|
 | **Klavye** | ← → · A D | ↑ · W · Z (basılı tut, daha yükseğe) | Space · X · Shift (8 yöne) | ↓ ince platformdan in · Esc mola · R bayraktan dön |
-| **Dokunmatik** | Sol yarıda yüzen joystick | ZIPLA | ATIL (joystick yönünde) | Büyük tuş seçeneği |
+| **Dokunmatik** | Sol yarıda yüzen joystick | ZIPLA | DASH (joystick yönünde) | Büyük tuş seçeneği |
 | **Oyun kolu** | Sol çubuk | A · Y | X · B · RT | |
 
-Duvara doğru basılı tutup zıplarsan tırmanırsın. Atılma yere değince ya da bir düşmana basınca yenilenir:
+Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da bir düşmana basınca yenilenir:
 atkın kırmızıysa hazırsın, griyse harcadın.
 
 ## Geliştirme
@@ -126,7 +126,7 @@ game/          DOM'suz oyun çekirdeği: fizik (sim), bölümler, çizim, ses, k
 components/    React arayüzü: bütün ekranlar, artbook, şehir rehberi, diyalog, HUD, dokunmatik kontroller
 lib/           kayıt ve harita sürümü, TR/EN, paylaşım, veritabanı
 app/           / oyun · /hakkinda · /skor paylaşım sayfası · /skor/kart kartpostal · /api skor ve oyuncu
-scripts/       verify-levels çözücü, migrate, art/ (portre ressamı, harita üreteçleri)
+scripts/       verify-levels çözücü, migrate, art/ (portre, çizim föyleri, şehir kartları, harita üreteçleri)
 tests/         fizik ve mekanik testleri
 ```
 

@@ -1,7 +1,7 @@
 /**
  * Zorluk denetimi: her yaştan oyuncu gözüyle bölümler ne kadar hassas oyun istiyor?
  *
- *  1. Teknik: çıkışa yalnız yürü + zıpla ile varılıyor mu; atılma ya da duvar sekmesi nerede şart?
+ *  1. Teknik: çıkışa yalnız yürü + zıpla ile varılıyor mu; dash ya da duvar sekmesi nerede şart?
  *  2. Tolerans: zıplaması %10 alçak, koşusu %8 yavaş bir oyuncu da geçebiliyor mu?
  *     Takıldığı yer kusursuz zamanlama ya da kıl payı mesafe isteyen yerdir.
  *  3. Tehlike yoğunluğu: bayraklar arası en uzun yol ve o yoldaki diken, çukur, düşman, ok, tokmak.

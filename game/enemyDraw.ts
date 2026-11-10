@@ -1,9 +1,9 @@
 /**
- * Düşmanların, dost hayvanların ve toplanan nesnelerin çizimi: karakter ve patronlarla aynı dil
+ * Düşmanların, dost hayvanların ve toplanan nesnelerin çizimi: karakter ve boss’larla aynı dil
  * (mürekkep dış hat, düz renk, tek kademe gölge, ışık sol üstten).
  * Birim dünya pikseli. Canlılarda (0, 0) gövde kutusunun taban ortası, y yukarı eksi, çizim sağa bakar;
  * nesnelerde (0, 0) kutunun merkezi. Düşmanlar mürekkep hattın dışında ince kırmızı haleyle parlar.
- * Ruh hâli patronlarla aynı okunur: titreme + ünlem (işaret), çatık kaş (saldırı), sarmal göz + yıldız (sersem).
+ * Ruh hâli boss’larla aynı okunur: titreme + ünlem (işaret), çatık kaş (saldırı), sarmal göz + yıldız (sersem).
  */
 import { INK, blob, setInkWidth, stroke } from './heroDraw'
 import type { Enemy, EnemyKind } from './sim'
@@ -12,7 +12,7 @@ import type { CityKey } from './types'
 type Ctx = CanvasRenderingContext2D
 type Mood = 'stern' | 'angry' | 'dizzy'
 
-/** dış hat kalınlığı: 12 piksellik gövdede patronlardan (1.15) biraz ince */
+/** dış hat kalınlığı: 12 piksellik gövdede boss’lardan (1.15) biraz ince */
 const INKW = 0.85
 const HERO_INKW = 3.2
 const HALO = 'rgba(226,58,58,0.85)'
@@ -169,7 +169,7 @@ function softEye(c: Ctx, x: number, y: number, r: number, happy: boolean) {
   c.fill()
 }
 
-/** sersemken başın üstünde dönen yıldızlar (patronlarla aynı) */
+/** sersemken başın üstünde dönen yıldızlar (boss’larla aynı) */
 function stars(c: Ctx, y: number, t: number) {
   for (let i = 0; i < 3; i++) {
     const a = t * 4 + (i * TAU) / 3
@@ -1259,7 +1259,7 @@ export function drawKeepsake(c: CanvasRenderingContext2D, city: CityKey, x: numb
 /* ── Ortak nesneler ───────────────────────────────────────────── */
 
 /**
- * Ortak nesneler: anahtar, gizli pul, atılma kristali (active), nazar boncuğu, yay (squash 0..1).
+ * Ortak nesneler: anahtar, gizli pul, dash kristali (active), nazar boncuğu, yay (squash 0..1).
  * (x, y) kutunun merkezi (ekran pikseli). accent: şehrin vurgu rengi (pulun resmi, yayın tablası).
  * crate: yay yerine kayısı kasası (Malatya).
  */

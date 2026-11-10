@@ -1,5 +1,5 @@
 /**
- * Çizim föyü: oyundaki vektör çizimleri (kahramanlar, şehir insanları, patronlar) tek PNG'de gösterir.
+ * Çizim föyü: oyundaki vektör çizimleri (kahramanlar, şehir insanları, boss’lar) tek PNG'de gösterir.
  * heroDraw.ts ya da bossDraw.ts değişince önce buna bak; oyunu açmaya gerek kalmaz.
  *
  *   node scripts/art/sheet.cjs [çıktı.png]        (varsayılan /tmp/seksek-foy.png)
@@ -29,9 +29,9 @@ const label = (t, x, y) => { c.fillStyle = '#fff'; c.font = '14px sans-serif'; c
 const floor = (x, y) => { c.fillStyle = '#8a95a8'; c.fillRect(x - 90, y, 180, 5) }
 // 1. sıra: bütün kılıklar bekleme pozunda · 2. sıra: iki kahramanın hareketleri
 looks.forEach((k, i) => { const x = cw / 2 + i * cw, y = 300; floor(x, y); S.drawHero(c, k, S.POSES.idle, x, y, 260, false, 0.3, {}); label(k, x, 24) })
-const moves = [['koşu', S.gait(0)], ['koşu', S.gait(0.25)], ['zıpla', S.POSES.jump], ['tepe', S.POSES.apex], ['düş', S.POSES.fall], ['in', S.POSES.land], ['atıl', S.POSES.dash], ['el salla', S.POSES.wave]]
+const moves = [['koşu', S.gait(0)], ['koşu', S.gait(0.25)], ['zıpla', S.POSES.jump], ['tepe', S.POSES.apex], ['düş', S.POSES.fall], ['in', S.POSES.land], ['dash at', S.POSES.dash], ['el salla', S.POSES.wave]]
 moves.forEach(([n, p], i) => { const x = cw / 2 + i * cw, y = 640; floor(x, y); S.drawHero(c, i % 2 ? 'memo' : 'uktun', p, x, y, 260, false, 0.3, { moving: n === 'koşu' }); label(n, x, 364) })
-// patronlar: üstte hareket hâli, altta yorgun
+// boss’lar: üstte hareket hâli, altta yorgun
 bosses.forEach((id, i) => {
   const x = cw / 2 + (i % cols) * cw, y0 = 340 * heroRows + 60 + Math.floor(i / cols) * 420
   label(S.BOSSES[id].name, x, y0 + 14)

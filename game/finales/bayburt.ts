@@ -2,14 +2,14 @@ import type { Prelude } from './types'
 
 /**
  * Bayburt Kalesi’nin burçları: rüzgâr yüzüne eserken burçtan burca atla, duvara sekerek iç kaleye tırman.
- * Avluya düşmek ceza değildir, basamaklar yine yukarı çıkarır; uzak burca kristalli çift atılma isteğe bağlı kestirmedir.
+ * Avluya düşmek ceza değildir, basamaklar yine yukarı çıkarır; uzak burca kristalli çift dash isteğe bağlı kestirmedir.
  * Nazar boncuğu asma burcun tepesinde: iç kaleye varınca geri dön, rüzgârı arkana alıp atla.
  */
 export const prelude: Prelude = {
   medal: 85,
   hints: [
     'Burca çık: duvara doğru zıpla, duvara değince bir daha zıpla. Rüzgâr yüzüne eser; avluya düşersen basamaklar seni yine yukarı çıkarır.',
-    'Karşı burç uzak. Atıl, kristale dokun, bir daha atıl; ya da avluya inip basamaklardan çık. İkisi de yoldur.',
+    'Karşı burç uzak. Dash at, kristale dokun, bir daha dash at; ya da avluya inip basamaklardan çık. İkisi de yoldur.',
     'İç kale yüksek: duvarına zıpla, değince yine zıpla. Tepeye varınca geri dön, rüzgârı arkana al; asma burçta bir şey parlıyor.',
   ],
   hintsEn: [

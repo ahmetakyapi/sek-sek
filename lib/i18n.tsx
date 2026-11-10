@@ -40,7 +40,7 @@ export function localize(level: LevelDef, lang: Lang): LevelDef {
   let npcs = en.npcs
   if (sig?.hintAt !== undefined) hints = [...hints.slice(0, sig.hintAt), ...sig.en.hints, ...hints.slice(sig.hintAt)]
   if (sig?.npcAt !== undefined) npcs = [...npcs.slice(0, sig.npcAt), ...sig.en.npcs, ...npcs.slice(sig.npcAt)]
-  // final: meydan yolunun ipuçları ve patronun nasıl yenileceği en sona eklenir
+  // final: meydan yolunun ipuçları ve boss’un nasıl yenileceği en sona eklenir
   const pre = PRELUDES[level.city]
   const at = level.finaleAt ?? { hint: hints.length, npc: npcs.length }
   hints = [...Array.from({ length: at.hint }, (_, i) => hints[i] ?? level.hints[i] ?? ''), ...pre.hintsEn, BOSSES[level.city].tauntEn]

@@ -15,7 +15,7 @@ export const DOOR = 9
 export const FAKE = 10
 export const BLOCK_A = 11
 export const BLOCK_B = 12
-/** meydan kapısı: patron yenilene dek kapalı */
+/** meydan kapısı: boss yenilene dek kapalı */
 export const BOSS_GATE = 13
 /** ıslak taş: buz kadar değil ama kaygan (yağmurlu şehirler) */
 export const WET = 14
@@ -174,7 +174,7 @@ export interface Turret {
 
 export interface Projectile extends Box {
   vx: number
-  /** kavisli atış (patron): dikey hız ve yerçekimi */
+  /** kavisli atış (boss): dikey hız ve yerçekimi */
   vy?: number
   g?: number
 }
@@ -252,7 +252,7 @@ export class World {
   /** meydan kapısı: dokununca oyuncuyu bölümün finaline (varış noktasına) geçirir */
   warp: Box | null = null
   arrival: { x: number; y: number } | null = null
-  /** şehrin patronu (yoksa null; çözücü de null yapar: kapı açık sayılır) */
+  /** şehrin boss’u (yoksa null; çözücü de null yapar: kapı açık sayılır) */
   boss: Boss | null = null
   /** bayrak alındığındaki düğme durumu: ölünce buna dönülür, bloklar yanlış tarafta kalmaz */
   private cpSwitch = false
@@ -400,7 +400,7 @@ export class World {
             this.arrival = { x: px + (T - PW) / 2, y: py + T - PH }
             break
           case 'Q': {
-            // arena sınırları: patronun satırında | ya da duvara kadar
+            // arena sınırları: boss’un satırında | ya da duvara kadar
             const def = BOSSES[level.city]
             const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
             let l = tx - 1
@@ -715,12 +715,12 @@ export class World {
       p.y += 1
     }
 
-    // atılma
+    // dash
     if (input.dashPressed && p.canDash && p.dashTime <= 0) {
       let dx = ix
       let dy = iy
       if (dx === 0 && dy === 0) dx = p.facing
-      // yerdeyken aşağı atılma anlamsız: yataya çevir
+      // yerdeyken aşağı dash anlamsız: yataya çevir
       if (p.grounded && dy > 0) dy = 0
       if (dx === 0 && dy === 0) dx = p.facing
       const len = Math.hypot(dx, dy)
