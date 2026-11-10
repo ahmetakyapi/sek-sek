@@ -1,6 +1,12 @@
 /** Şehir kartlarında görünen kısa "neler var" satırı */
 export const FEATURES: Record<string, { tr: string; en: string }> = {
   istanbul: { tr: 'Zıplama, iskele platformu, vapur seferi', en: 'Jumping, the ferry pier, a ferry run' },
+  edirne: { tr: 'Karaağaç garı, Meriç Köprüsü, çarşı, Selimiye; itilen sandıklar', en: 'Karaağaç station, the Meriç Bridge, the bazaar, Selimiye; pushable crates' },
+  bursa: { tr: 'Cumalıkızık, Koza Han, teleferik; Karagöz’ün gölge platformları', en: 'Cumalıkızık, Koza Han, the cable car; Karagöz’s shadow platforms' },
+  antalya: { tr: 'Kaleiçi, Hadrian Kapısı, falezler, Düden’in ıslak taşları', en: 'Kaleiçi, Hadrian’s Gate, the cliffs, the wet stones of Düden' },
+  sanliurfa: { tr: 'Balıklıgöl, kale, Harran evleri, Göbeklitepe’nin taşları', en: 'Balıklıgöl, the castle, Harran houses, the stones of Göbeklitepe' },
+  van: { tr: 'Van Kalesi, göl kıyısı, Akdamar; gece ile gündüz taşları', en: 'Van Castle, the lakeshore, Akdamar; stones of night and day' },
+  erzurum: { tr: 'Medrese, kümbetler, Palandöken buzu, cirit meydanı', en: 'The madrasa, the tombs, Palandöken ice, the jereed field' },
   kocaeli: { tr: 'Körfez kıyısı, SEKA rıhtımı, anahtarlı depo', en: 'The gulf shore, the SEKA quay, a locked depot' },
   canakkale: { tr: 'Kordon, Boğaz feribotu, Kilitbahir, Truva’nın katmanları', en: 'The promenade, the strait ferry, Kilitbahir, the layers of Troy' },
   izmir: { tr: 'Kordon yengeçleri, Kemeraltı tenteleri, Tarihi Asansör', en: 'Kordon crabs, Kemeraltı awnings, the Historic Elevator' },

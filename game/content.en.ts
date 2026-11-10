@@ -15,6 +15,150 @@ export interface LevelEn {
 }
 
 export const LEVELS_EN: Record<string, LevelEn> = {
+  edirne: {
+    subtitle: 'Selimiye and Kırkpınar',
+    item: 'Fruit Soap',
+    intro: 'From the old station at Karaağaç to the Meriç Bridge, from the bazaar to the courtyard of Selimiye. The border city of Thrace, once the Ottoman capital.',
+    note: 'Call it crossing the border. Take a long look at the dome of Selimiye, then go down to the wrestling field. Do not run when the drum starts: no bout begins before the warm-up ends.',
+    facts: [
+      { title: 'Selimiye Mosque', text: 'Selimiye, which the architect Sinan called his masterpiece, was completed in 1575. It has been a UNESCO World Heritage Site since 2011.' },
+      { title: 'Kırkpınar', text: 'The Kırkpınar oil wrestling festival has been held in Edirne for centuries. The champion keeps the golden belt for a year.' },
+      { title: 'Meriç Bridge', text: 'The Meriç Bridge was completed in 1847. Its twelve arches join the city to Karaağaç.' },
+    ],
+    secret: { title: 'Karaağaç Station', text: 'The old station at Karaağaç was designed by the architect Kemaleddin. Today it belongs to Trakya University, and the Lausanne Monument stands in its garden.' },
+    hints: [
+      'Welcome to Edirne! Set out from the old station: walk with ← →, jump the gaps.',
+      'The Meriç Bridge: the arches stand apart. A short step, a single jump.',
+      'The bazaar: the awnings make a road. Look for a step to reach the high shelf.',
+      'The courtyard of Selimiye: climb the rim stone and cross the fountain along the arcade eaves. The square gate is ahead.',
+    ],
+    npcs: [
+      { name: 'Uncle Şaban the Announcer', text: 'The announcer calls each wrestler to the field with a prayer, child: “Do not grieve when you are beneath, do not gloat when you are on top!” The Kırkpınar drum is in a foul mood today, so watch your step.' },
+      { name: 'Müzeyyen the Soap Maker', text: 'Fruit soap is for smelling, not for eating! It used to go into dowry chests. Three of mine rolled out of the basket; keep them if you find them, and your bag will smell lovely.' },
+      { name: 'Tuncay the Liver Cook', text: 'Pan-fried liver is cut leaf-thin and goes in and out of the hot oil in a blink. Dried hot peppers on the side. Stop by the bazaar after the bridge and eat it hot.' },
+    ],
+    quips: ['Do not grieve when you are beneath!', 'That is no way to warm up.', 'The Meriç is cool.', 'Your wrestling breeches got wet.'],
+  },
+  bursa: {
+    subtitle: 'Green Bursa',
+    item: 'Candied Chestnut',
+    intro: 'From the stone lanes of Cumalıkızık to Koza Han, from the Grand Mosque to the Uludağ cable car. The first Ottoman capital, city of silk and shadow.',
+    note: 'A shadow screen has been set up at the foot of Uludağ. They say Karagöz’s shadow has run away from it; if you see it, do not be afraid. It gets confused when the light comes on.',
+    facts: [
+      { title: 'The Grand Mosque', text: 'The Grand Mosque of Bursa was completed in 1399. It is known for its twenty domes and the fountain inside.' },
+      { title: 'Koza Han', text: 'Koza Han was built in 1491. For centuries it was the heart of the silk cocoon trade; people still drink tea in its courtyard.' },
+      { title: 'Cumalıkızık', text: 'Cumalıkızık is an Ottoman village about seven hundred years old. It joined the UNESCO World Heritage List with Bursa in 2014.' },
+    ],
+    secret: { title: 'Karagöz and Hacivat', text: 'Legend says Karagöz and Hacivat were two friends who worked on the building of a mosque in Bursa. Their banter passed from mouth to mouth and at last onto the shadow screen.' },
+    hints: [
+      'Welcome to Bursa! The lane in Cumalıkızık is narrow: jump from bay window to bay window.',
+      'Koza Han: the bales make steps, and the springy bale tosses you up to the arcade. Cross over the roof of the little mosque in the courtyard.',
+      'The cable car: ride the cabin and step off on the far side. Do not jump before it arrives.',
+      'In front of the Grand Mosque: hop from rim to rim of the fountain. Is its stone solid all the way round? The square gate is ahead.',
+    ],
+    npcs: [
+      { name: 'Sabri the Shadow Master', text: 'The one who plays Karagöz is called a hayalî. The screen comes alive with camel-hide figures and a single lamp behind. Turn the lamp and the shadows change places; remember that.' },
+      { name: 'Auntie Feride of the Cocoons', text: 'Silk has been sold at Koza Han for five hundred years. One cocoon gives more than a thousand metres of thread, imagine! Have you seen my candied chestnuts? All three were left on the road.' },
+      { name: 'Kenan the Cable Car Hand', text: 'The cable car takes you up to the clouds. Snow above, green below; that is why they call it Green Bursa. Do not jump before the cabin comes. Wait.' },
+    ],
+    quips: ['The curtain song has been sung.', 'Hacivat would have said “My, my!”', 'You rolled down Uludağ.', 'You popped like a chestnut.'],
+  },
+  antalya: {
+    subtitle: 'Cliffs and Waterfall',
+    item: 'Orange',
+    intro: 'From the narrow lanes of Kaleiçi to Hadrian’s Gate, from the cliffs to where the Düden falls into the sea. At the foot of the Taurus, on the shore of the Mediterranean.',
+    note: 'The sun shines here three hundred days a year. Do not go too near the cliff edge; wet stone is slippery. They say a mask at Aspendos has been waiting two thousand years for applause.',
+    facts: [
+      { title: 'Hadrian’s Gate', text: 'The three-arched Hadrian’s Gate was built in honour of the Roman Emperor Hadrian’s visit in AD 130.' },
+      { title: 'The Fluted Minaret', text: 'The Fluted Minaret was built by the Seljuks in the 13th century. Its brick shaft with eight flutes is the symbol of the city.' },
+      { title: 'Düden Waterfall', text: 'The Lower Düden Waterfall drops from cliffs about forty metres high straight into the Mediterranean.' },
+    ],
+    secret: { title: 'Aspendos', text: 'The theatre of Aspendos was built in the 2nd century AD by the architect Zenon. Its stage has survived so well that concerts are still held there.' },
+    hints: [
+      'Welcome to Antalya! Cross from roof to roof in Kaleiçi; the lane is narrow, the jump short.',
+      'Hadrian’s Gate: bounce off the wall to get on top of the arch.',
+      'The cliffs: the gap is wide. Jump, then dash at the top.',
+      'You are near the Düden: shining stone is wet and your feet will slide. Stop early.',
+    ],
+    npcs: [
+      { name: 'Uncle Dursun the Orange Seller', text: 'A good orange is heavy, with thin peel. When the trees blossom the whole city smells of it. Three of mine rolled out of the crate; peel and eat them if you find them.' },
+      { name: 'Sevim the Kaleiçi Guide', text: 'Hadrian’s Gate has three arches; the emperor came here in AD 130. It is cool beneath them. One is a little different from the others, so do not pass without looking.' },
+      { name: 'Derya the Diver', text: 'The foot of the cliffs is full of caves. Step on wet stone and your feet slide: if you want to stop, let go early; if you mean to jump, jump before the edge.' },
+    ],
+    quips: ['You went down the cliff by the shortcut.', 'Wet stone does not forgive.', 'You rolled like an orange.', 'The Mediterranean is warm.'],
+  },
+  sanliurfa: {
+    subtitle: 'Balıklıgöl and Göbeklitepe',
+    item: 'Isot Pepper',
+    intro: 'From the shore of Balıklıgöl to the castle, from the beehive houses of Harran to the standing stones of Göbeklitepe. They call this the zero point of history.',
+    note: 'Feed the fish at Balıklıgöl but do not touch them. The stones of Göbeklitepe have stood for twelve thousand years; they say one got bored and started walking.',
+    facts: [
+      { title: 'Göbeklitepe', text: 'The standing stones of Göbeklitepe were raised about twelve thousand years ago. The site joined the UNESCO World Heritage List in 2018.' },
+      { title: 'Balıklıgöl', text: 'The carp of Balıklıgöl are held sacred and are never eaten. The pool lies in the courtyard of the Halilürrahman Mosque.' },
+      { title: 'Harran Houses', text: 'The cone-domed mud-brick houses of Harran stay cool in summer and warm in winter. The domes are built without a frame, each brick course stepping in over the last.' },
+    ],
+    secret: { title: 'Sıra Gecesi', text: 'In Urfa a sıra gecesi is an evening when friends gather at each other’s homes in turn. They talk, sing folk songs and knead çiğ köfte.' },
+    hints: [
+      'Welcome to Şanlıurfa! The wet stones of Balıklıgöl are slippery; fall in and you return to the flag.',
+      'The castle road: the steps are tall. Push the crate to the foot of the wall and climb on it; bounce off the wall to scale the tower.',
+      'The Harran houses: jump from dome to dome. The top of a dome is narrow.',
+      'Göbeklitepe: the stones stand far apart. Jump, then dash at the top. The first pit is safe, so try it there.',
+    ],
+    npcs: [
+      { name: 'Uncle Bozan the Isot Seller', text: 'Isot dries in the sun by day and sweats in a sack by night; that is how it turns so dark. Three strings of mine blew away. Take them if you find them, they bring plenty to a meal.' },
+      { name: 'Müslüm the Pool Keeper', text: 'These fish are held sacred; nobody touches them. Throw feed and the water seems to boil! The road up to the castle is steep; push the crate and it becomes a step.' },
+      { name: 'Zeliha the Archaeologist', text: 'The stones of Göbeklitepe are older than pottery. They are carved with foxes, cranes and scorpions. Look the way the fox is looking.' },
+    ],
+    quips: ['That stung like isot.', 'The fish watched you.', 'It waited twelve thousand years; you could not wait.', 'Strong as mırra.'],
+  },
+  van: {
+    subtitle: 'Lake and Castle',
+    item: 'Herbed Cheese',
+    intro: 'From the rock of Van Castle to the lakeshore, from the pier to Akdamar Island. The largest lake in Türkiye, and Tushpa, capital of the Urartians.',
+    note: 'Breakfast in Van lasts till noon; do not rush. The lake is like a sea but nothing like the sea. Many have seen the monster; nobody has a photograph.',
+    facts: [
+      { title: 'Lake Van', text: 'Lake Van is the largest lake in Türkiye. Its water is salty and rich in soda, and it has no outlet.' },
+      { title: 'Van Castle', text: 'Van Castle was founded by the Urartian king Sarduri I in the 9th century BC. The cuneiform inscriptions cut into the rock can still be read.' },
+      { title: 'Akdamar Church', text: 'The church on Akdamar Island was built between 915 and 921. Its outer walls are covered in stone reliefs.' },
+    ],
+    secret: { title: 'The Pearl Mullet', text: 'The pearl mullet lives nowhere in the world but the Lake Van basin. In spring it enters the streams to spawn, leaping against the current.' },
+    hints: [
+      'Welcome to Van! Climb the castle rock: bounce from wall to wall.',
+      'Along the walls: the battlements stand far apart. Jump, then dash at the top.',
+      'The lakeshore: the boats rock with the waves. Watch your timing.',
+      'Akdamar pier: the key is above, the door below. Climb to the top first.',
+    ],
+    npcs: [
+      { name: 'Gülbahar the Breakfast Cook', text: 'Herbed cheese, murtuğa, kavut, cacık, honey, clotted cream… the table never ends. Three of my cheeses were left on the road; they are yours if you find them, but travel on a full stomach.' },
+      { name: 'Sıddık the Boatman', text: 'The lake water is full of soda and lathers like soap. Only the pearl mullet lives in it. If you are crossing to Akdamar, count the waves: the third is always the big one.' },
+      { name: 'Mirza the Shepherd', text: 'Urartian kings had words carved into the castle rock. At sunset some stones appear and others vanish; here night and day change places.' },
+    ],
+    quips: ['The lake is soda; you lathered up.', 'The pearl mullet jumps better than you.', 'The monster laughed.', 'Breakfast has gone cold.'],
+  },
+  erzurum: {
+    subtitle: 'Land of the Dadaş',
+    item: 'Oltu Stone',
+    intro: 'From the Twin Minaret Madrasa to the Three Tombs, from the jereed field to the icy slope of Palandöken. The roof of Anatolia, winter itself.',
+    note: 'Here winter is long, tea is strong and people are dadaş. Drink your tea kıtlama: hold the sugar between your teeth. Fresh snow has fallen on Palandöken, so mind the avalanche.',
+    facts: [
+      { title: 'The Twin Minaret Madrasa', text: 'The Twin Minaret Madrasa was built in the late 13th century. The fluted minarets beside its portal are decorated with turquoise tiles.' },
+      { title: 'Palandöken', text: 'The summit of Palandöken rises above 3,000 metres. The 2011 Winter Universiade was held here.' },
+      { title: 'Oltu Stone', text: 'Oltu stone is mined in the Oltu district of Erzurum. Glossy and black, it is used for prayer beads and jewellery.' },
+    ],
+    secret: { title: 'Jereed', text: 'Jereed is an old Turkish sport played on horseback. Riders throw blunt wooden javelins at one another; it is still played in Erzurum.' },
+    hints: [
+      'Welcome to Erzurum! Go through the portal into the courtyard; bounce from wall to wall between the two minarets and up to the roof.',
+      'The Three Tombs: from cone to cone, jump and dash at the top. Grab the wall of the great tomb and hop your way up.',
+      'The jereed field: the javelins come at a steady beat. Drop into the lane once one has passed, jump the next, and climb the ledge at the end.',
+      'The slope of Palandöken: on ice you keep your speed. Jump at the edge, dash at the top, then grab the far wall and climb.',
+    ],
+    npcs: [
+      { name: 'Abdurrahman the Oltu Stone Carver', text: 'Oltu stone comes out of the ground soft and hardens in the air; the more you work it, the more it shines. Three of my beads rolled off the bench. Pocket them if you find them, they bring luck.' },
+      { name: 'Yavuz the Jereed Rider', text: 'Jereed is played on horseback: you throw the javelin, your rival ducks. It is the same on ice: set your speed early, for you cannot turn at the last moment.' },
+      { name: 'Granny Dilber the Tea Seller', text: 'Come, dear, warm yourself. The madrasa has two minarets, both fluted, both tiled. The snow at the foot of the left one always melts early; nobody knows why.' },
+    ],
+    quips: ['Ice does not listen, dadaş.', 'You dropped your sugar cube.', 'Came like an avalanche, melted like snow.', 'Greetings from Palandöken.'],
+  },
   canakkale: {
     subtitle: 'The Strait and Troy',
     item: 'Clay Jug',
@@ -855,5 +999,5 @@ export const CREATURE_NAMES_EN: Record<string, string> = {
   gull: 'Gull', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
   hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Wolf',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',
-  cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge',
+  cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge',
 }

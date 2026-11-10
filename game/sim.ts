@@ -17,6 +17,8 @@ export const BLOCK_A = 11
 export const BLOCK_B = 12
 /** meydan kapısı: patron yenilene dek kapalı */
 export const BOSS_GATE = 13
+/** ıslak taş: buz kadar değil ama kaygan (yağmurlu şehirler) */
+export const WET = 14
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 export const PHYS = {
@@ -30,6 +32,10 @@ export const PHYS = {
   dragAir: 300,
   accelIce: 240,
   decelIce: 70,
+  accelWet: 520,
+  decelWet: 300,
+  /** sandığı iterken en yüksek hız */
+  push: 46,
   jumpV: 312,
   lowJumpMul: 1.9,
   coyote: 0.12,
@@ -69,6 +75,7 @@ export interface Player extends Box {
   dropTimer: number
   onPlatform: Platform | null
   onIce: boolean
+  onWet: boolean
   dead: boolean
   deadTimer: number
   runTime: number
@@ -112,6 +119,15 @@ export interface Enemy extends Box {
 export interface Crystal extends Box {
   active: boolean
   timer: number
+}
+
+/** İtilebilen sandık: dinlenirken üstü zemin, yanı duvardır. */
+export interface Crate extends Box {
+  vy: number
+  ox: number
+  oy: number
+  /** suya ya da boşluğa düştükten sonra yerine dönene dek geçen süre */
+  sunk: number
 }
 
 export interface Plate extends Box {
@@ -218,6 +234,8 @@ export class World {
   readonly npcs: Sign[] = []
   readonly crystals: Crystal[] = []
   readonly plates: Plate[] = []
+  /** itilebilen sandıklar: yandan itilir, üstüne çıkılır, boşluğa düşer; ölünce yerine döner */
+  readonly crates: Crate[] = []
   keyBox: Box | null = null
   stampBox: Box | null = null
   /** her bölümde bir tane saklı nazar boncuğu */
@@ -293,6 +311,12 @@ export class World {
             break
           case 'I':
             this.set(tx, ty, ICE)
+            break
+          case 'i':
+            this.set(tx, ty, WET)
+            break
+          case 'p':
+            this.crates.push({ x: px, y: py, w: T, h: T, vy: 0, ox: px, oy: py, sunk: 0 })
             break
           case 'X':
             this.set(tx, ty, CRUMBLE)
@@ -520,6 +544,7 @@ export class World {
       dropTimer: 0,
       onPlatform: null,
       onIce: false,
+      onWet: false,
       dead: false,
       deadTimer: 0,
       runTime: 0,
@@ -542,7 +567,7 @@ export class World {
 
   isSolid(tx: number, ty: number): boolean {
     const t = this.tile(tx, ty)
-    if (t === SOLID || t === ICE || t === TURRET) return true
+    if (t === SOLID || t === ICE || t === WET || t === TURRET) return true
     if (t === CRUMBLE) return !this.crumbles.get(ty * this.cols + tx)?.broken
     if (t === DOOR) return !this.hasKey
     if (t === BLOCK_A) return !this.switchOn
@@ -569,6 +594,7 @@ export class World {
 
     this.updatePlatforms(dt)
     this.updateCrumbles(dt)
+    if (this.crates.length) this.updateCrates(dt)
 
     if (p.dead) {
       p.deadTimer -= dt
@@ -723,6 +749,7 @@ export class World {
       let accel: number
       if (p.grounded) {
         if (p.onIce) accel = ix !== 0 ? PHYS.accelIce : PHYS.decelIce
+        else if (p.onWet) accel = ix !== 0 ? PHYS.accelWet : PHYS.decelWet
         else accel = ix !== 0 ? PHYS.accelGround : PHYS.decelGround
       } else accel = ix !== 0 ? PHYS.accelAir : PHYS.dragAir
       if (p.wallLock > 0) accel *= 0.25
@@ -771,6 +798,7 @@ export class World {
     // ── Y hareketi
     p.grounded = false
     p.onIce = false
+    p.onWet = false
     const prevBottom = p.y + p.h
     this.moveY(p.vy * dt, prevBottom)
 
@@ -824,7 +852,63 @@ export class World {
       if (p.dashTime > 0 && p.dashDir[1] === 0) p.dashTime = 0
       p.vx = 0
     }
+    // sandık: yandan çarpınca itilir; itilemiyorsa duvar gibi durdurur
+    for (const c of this.crates) {
+      if (c.vy !== 0 || c.sunk > 0) continue
+      if (nx < c.x + c.w && nx + p.w > c.x && p.y < c.y + c.h && p.y + p.h > c.y + 0.5) {
+        const dir = dx > 0 ? 1 : -1
+        // oyuncu sandığın öbür yanından içine girmediyse (üstünden kayıp düşme hariç) it
+        const want = dir > 0 ? nx + p.w - c.x : nx - (c.x + c.w)
+        const step = Math.sign(want) * Math.min(Math.abs(want), PHYS.push * (1 / 120))
+        const cx = c.x + step
+        const free = !this.boxHitsSolid(cx, c.y, c.w, c.h) && !this.crates.some((o) => o !== c && o.sunk <= 0 && cx < o.x + o.w && cx + c.w > o.x && c.y < o.y + o.h && c.y + c.h > o.y) && cx >= 0 && cx + c.w <= this.cols * T
+        if (free && p.dashTime <= 0) c.x = cx
+        nx = dir > 0 ? c.x - p.w : c.x + c.w
+        if (p.dashTime > 0 && p.dashDir[1] === 0) p.dashTime = 0
+        p.vx = free ? dir * PHYS.push : 0
+      }
+    }
     p.x = nx
+  }
+
+  /** Sandıklar: altı boşsa düşer; katı zemine, tek yönlü platforma ya da başka sandığa oturur; suya ya da boşluğa düşen yerine döner. */
+  private updateCrates(dt: number) {
+    for (const c of this.crates) {
+      if (c.sunk > 0) {
+        c.sunk -= dt
+        if (c.sunk <= 0) {
+          c.x = c.ox
+          c.y = c.oy
+          c.vy = 0
+        }
+        continue
+      }
+      // ağırlık merkezinin altı boşsa düşer: bir karoluk boşluğa da tam oturur (sütuna hizalanır)
+      const ctx = Math.floor((c.x + c.w / 2) / T)
+      const below = Math.floor((c.y + c.h + 0.001) / T)
+      const ground = (tx: number, ty: number) => this.isSolid(tx, ty) || this.tile(tx, ty) === ONEWAY
+      const onCrate = (y: number) => this.crates.find((o) => o !== c && o.sunk <= 0 && o.vy === 0 && Math.abs(o.x - c.x) < c.w / 2 && Math.abs(o.y - y) < 0.5)
+      if (c.vy === 0 && (ground(ctx, below) || onCrate(c.y + c.h))) continue
+      if (c.vy === 0) c.x = ctx * T
+      c.vy = Math.min(PHYS.fallMax, c.vy + PHYS.gravity * dt)
+      let ny = c.y + c.vy * dt
+      const row = Math.floor((ny + c.h) / T)
+      let land: number | null = null
+      if (ground(ctx, row) && c.y + c.h <= row * T + 0.5) land = row * T - c.h
+      for (const o of this.crates) if (o !== c && o.sunk <= 0 && o.vy === 0 && Math.abs(o.x - c.x) < c.w / 2 && c.y + c.h <= o.y + 0.5 && ny + c.h >= o.y) land = o.y - c.h
+      if (land !== null && ny >= land) {
+        ny = land
+        c.vy = 0
+        this.events.push({ type: 'land' })
+      }
+      c.y = ny
+      // su ya da harita dışı: kaybolur, biraz sonra yerinde belirir
+      const mid = this.tile(Math.floor((c.x + c.w / 2) / T), Math.floor((c.y + c.h / 2) / T))
+      if (mid === WATER || c.y > this.rows * T + 16) {
+        c.sunk = 1.4
+        c.vy = 0
+      }
+    }
   }
 
   /** Verilen x için iniş noktası (katı zemin, tek yönlü tile, hareketli platform) */
@@ -852,6 +936,16 @@ export class World {
           }
         }
       }
+      for (const c of this.crates) {
+        if (c.vy !== 0 || c.sunk > 0 || x + p.w <= c.x || x >= c.x + c.w) continue
+        if (prevBottom <= c.y + 0.5 && bottom >= c.y) {
+          const cand = c.y - p.h
+          if (landY === null || cand < landY) {
+            landY = cand
+            landPlat = null
+          }
+        }
+      }
       for (const pl of this.platforms) {
         if (x + p.w <= pl.x || x >= pl.x + pl.w) continue
         const top = pl.y
@@ -871,6 +965,14 @@ export class World {
     const p = this.player
     let ny = p.y + dy
     if (dy < 0) {
+      // sandığın altına kafa atılmaz
+      for (const c of this.crates) {
+        if (c.vy === 0 && c.sunk <= 0 && p.x < c.x + c.w && p.x + p.w > c.x && p.y >= c.y + c.h - 0.5 && ny < c.y + c.h) {
+          ny = c.y + c.h
+          p.vy = 0
+          if (p.dashTime > 0) p.dashTime = 0
+        }
+      }
       if (this.boxHitsSolid(p.x, ny, p.w, p.h)) {
         // köşe düzeltmesi: kafa yalnızca tavanın köşesine değiyorsa yana kay, yükselmeye devam et
         let slid = false
@@ -922,6 +1024,7 @@ export class World {
         const ty = Math.floor((p.y + p.h + 1) / T)
         const cx = Math.floor((p.x + p.w / 2) / T)
         p.onIce = this.tile(cx, ty) === ICE
+        p.onWet = this.tile(cx, ty) === WET
       }
     } else {
       p.y = ny
@@ -1317,6 +1420,7 @@ export class World {
       c.timer = 0
     }
     for (const pl of this.platforms) if (pl.axis === 'b') pl.y = pl.max
+    for (const c of this.crates) Object.assign(c, { x: c.ox, y: c.oy, vy: 0, sunk: 0 })
     this.projectiles = []
     this.crumbles.clear()
     for (const t of this.turrets) t.timer = 0.9 + ((t.tx * 7 + t.ty * 3) % 10) / 10
@@ -1363,6 +1467,7 @@ export interface Snapshot {
   crystals: Array<[boolean, number]>
   clock: number
   cpSwitch: boolean
+  crates: Array<[number, number, number, number]>
   boss: Boss | null
   projectiles: Projectile[]
 }
@@ -1387,6 +1492,7 @@ export function snapshot(w: World): Snapshot {
     crystals: w.crystals.map((c) => [c.active, c.timer]),
     clock: w.clock,
     cpSwitch: w.checkpointSwitch,
+    crates: w.crates.map((c) => [c.x, c.y, c.vy, c.sunk]),
     boss: w.boss ? { ...w.boss, home: { ...w.boss.home } } : null,
     projectiles: w.projectiles.map((q) => ({ ...q })),
   }
@@ -1413,6 +1519,7 @@ export function restore(w: World, s: Snapshot) {
   w.clock = s.clock
   w.plates.forEach((pl) => (pl.pressed = false))
   w.checkpointSwitch = s.cpSwitch
+  s.crates.forEach(([x, y, vy, sunk], i) => Object.assign(w.crates[i], { x, y, vy, sunk }))
   if (w.boss && s.boss) Object.assign(w.boss, s.boss, { home: { ...s.boss.home } })
   w.projectiles = s.projectiles.map((q) => ({ ...q }))
   w.events = []

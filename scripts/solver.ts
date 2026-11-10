@@ -82,7 +82,9 @@ function key(s: Snapshot, w: World) {
   const clocked = near.some(({ q, a }) => (a === 'o' || a === 'h') && Math.abs(q.x - p.x) < 120) || w.hammers.some((h) => Math.abs(h.x - p.x) < 40 && p.y > h.top - 8)
   const phase = clocked ? Math.floor(((s.clock * 1.35) / (Math.PI * 2)) * 8) % 8 + '/' + Math.floor((s.clock % 3.11) * 4) : ''
   // bayrak numarası anahtarda yok: çözücü ölen dalı atar, bayraktan hiç doğmaz; bayrak eklemek aramayı katlamasın
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0].join('|')
+  // sandıkların yeri durumun parçası: itilen sandık yolu değiştirir
+  const crates = s.crates.map(([x, y]) => `${Math.round(x / 8)}.${Math.round(y / 16)}`).join(',')
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates].join('|')
 }
 
 export interface SolveResult {

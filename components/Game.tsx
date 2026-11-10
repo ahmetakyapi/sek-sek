@@ -12,18 +12,20 @@ import { NpcDialog, SignHint } from '@/components/NpcDialog'
 import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
 import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
+import Defter, { RUSH_NEEDS } from '@/components/Defter'
 import { LangProvider, characterFor, endingFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
 import { MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager } from '@/game/input'
 import { BOSSES } from '@/game/boss'
-import { LEVELS } from '@/game/levels'
+import { LEVELS, bossLevel } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
 import { ENDING, STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
+import { CHALLENGE_TEXT, SCARVES, completes, dailyChallenge, scarfFor, weeklyChallenge, type Challenge } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -45,7 +47,7 @@ const DIFF_TONE: Record<string, string> = {
   'Çok Zor': 'border-[#d6403a] text-[#f08a80]',
 }
 
-type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end'
+type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd'
 
 interface ScoreRow {
   name: string
@@ -62,6 +64,16 @@ interface Result {
   newBest: boolean
   /** Rahat Mod'da bitirildi: skor tabloya yazılmaz */
   relaxed: boolean
+  /** bu koşuyla tamamlanan görevler (Günün Şehri, Haftanın Görevi) */
+  earned: string[]
+}
+
+/** Patron Koşusu: yenilmiş bekçiler arka arkaya; süre ve düşüş birikir */
+interface Rush {
+  order: number[]
+  i: number
+  timeMs: number
+  deaths: number
 }
 
 const STEP = 1 / 120
@@ -79,6 +91,9 @@ export default function Game() {
   const ghostRecRef = useRef<number[]>([])
   const levelRef = useRef(0)
   const freezeRef = useRef(0)
+  /** bu koşuda kaç kez atılındı (görevler için) */
+  const dashRef = useRef(0)
+  const rushRef = useRef<Rush | null>(null)
 
   const [screen, setScreenState] = useState<Screen>('title')
   const [levelIdx, setLevelIdx] = useState(0)
@@ -91,6 +106,7 @@ export default function Game() {
   const [toast, setToast] = useState<(Fact & { item: string; key: number }) | null>(null)
   const [quip, setQuip] = useState<{ text: string; key: number } | null>(null)
   const [result, setResult] = useState<Result | null>(null)
+  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean } | null>(null)
   const [coarse, setCoarse] = useState(false)
   const [ready, setReady] = useState(false)
   const [storyPage, setStoryPage] = useState(0)
@@ -109,6 +125,15 @@ export default function Game() {
   const t = makeT(lang)
   const level = localize(LEVELS[levelIdx], lang)
   const hero = CHARACTERS[save.character ?? 'uktun']
+  const beaten = LEVELS.filter((l) => save.bosses[l.id]).length
+  const charmCount = LEVELS.filter((l) => save.charms[l.id]).length
+  const today = new Date()
+  const challenges: [string, Challenge, boolean][] = [
+    [t('GÜNÜN ŞEHRİ'), dailyChallenge(today, LEVELS, save.unlocked), false],
+    [t('HAFTANIN GÖREVİ'), weeklyChallenge(today, LEVELS, save.unlocked), false],
+  ]
+  challenges[0][2] = save.daily.last === challenges[0][1].key
+  challenges[1][2] = save.weekly.last === challenges[1][1].key
 
   /* ── kurulum ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -266,11 +291,18 @@ export default function Game() {
             case 'bossDown':
               freezeRef.current = 0.14
               haptic([40, 50, 40, 50, 90])
+              setSave((prev) => {
+                if (prev.bosses[w.level.id]) return prev
+                const next = { ...prev, bosses: { ...prev.bosses, [w.level.id]: true } }
+                writeSave(next)
+                return next
+              })
               break
             case 'warp':
               haptic(18)
               break
             case 'dash':
+              dashRef.current++
               haptic(6)
               break
             case 'complete':
@@ -289,7 +321,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else {
@@ -357,12 +389,14 @@ export default function Game() {
     (idx: number, toScreen: Screen = 'intro') => {
       levelRef.current = idx
       setLevelIdx(idx)
-      const w = new World(LEVELS[idx])
+      const rush = rushRef.current
+      const w = new World(rush ? bossLevel(LEVELS[idx]) : LEVELS[idx])
       worldRef.current = w
       ghostRecRef.current = []
+      dashRef.current = 0
       if (rendererRef.current) {
         rendererRef.current.setLevel(w)
-        rendererRef.current.ghostRun = ghostOnRef.current ? loadGhost(LEVELS[idx].id) : null
+        rendererRef.current.ghostRun = !rush && ghostOnRef.current ? loadGhost(LEVELS[idx].id) : null
       }
       inputRef.current?.clear()
       setHud({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
@@ -384,6 +418,30 @@ export default function Game() {
     ;(document.activeElement as HTMLElement | null)?.blur?.()
     setScreen('play')
   }, [setScreen])
+
+  /** Patron Koşusu: yenilmiş bekçiler şehir sırasıyla, arka arkaya. */
+  const startRush = () => {
+    const order = LEVELS.map((l, i) => (save.bosses[l.id] ? i : -1)).filter((i) => i >= 0)
+    if (order.length < RUSH_NEEDS) return
+    soundRef.current?.unlock()
+    ui()
+    rushRef.current = { order, i: 0, timeMs: 0, deaths: 0 }
+    loadLevel(order[0], 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: t('Bekçi {i}/{n}', { i: 1, n: order.length }) })
+  }
+
+  // menüye dönünce koşu biter
+  useEffect(() => {
+    if (screen === 'map' || screen === 'title') rushRef.current = null
+  }, [screen])
+
+  // atkı rengi: karakterin kendi atkısı (al) dışındaki seçim çizime bildirilir
+  useEffect(() => {
+    if (!rendererRef.current) return
+    const sc = scarfFor(save.scarf)
+    rendererRef.current.scarf = sc.id === 'al' ? null : { color: sc.color, shade: sc.shade }
+  }, [save.scarf, ready])
 
   const startJourney = () => {
     soundRef.current?.unlock()
@@ -429,14 +487,51 @@ export default function Game() {
     if (!w) return
     const idx = levelRef.current
     const timeMs = Math.round(w.time * 1000)
+    const rush = rushRef.current
+    if (rush) {
+      rush.timeMs += timeMs
+      rush.deaths += w.deaths
+      rush.i++
+      if (rush.i < rush.order.length) {
+        loadLevel(rush.order[rush.i], 'play')
+        beginPlay()
+        setCpToast({ at: Date.now() + 1, text: makeT(langRef.current)('Bekçi {i}/{n}', { i: rush.i + 1, n: rush.order.length }) })
+        return
+      }
+      rushRef.current = null
+      const relaxed = relaxedRef.current
+      const total = { timeMs: rush.timeMs, deaths: rush.deaths, bosses: rush.order.length }
+      setSave((prev) => {
+        const old = prev.rush
+        const best = !relaxed && (!old || total.bosses > old.bosses || (total.bosses === old.bosses && total.timeMs < old.timeMs))
+        setRushResult({ ...total, best, relaxed })
+        if (!best) return prev
+        const next = { ...prev, rush: { timeMs: total.timeMs, bosses: total.bosses } }
+        writeSave(next)
+        return next
+      })
+      setScreen('rushEnd')
+      return
+    }
     const items = w.pickups.map((p) => p.taken)
+    const run = { timeMs, deaths: w.deaths, dashes: dashRef.current, items, relaxed: relaxedRef.current }
+    const now = new Date()
     setSave((prev) => {
       const best = prev.best[w.level.id]
-      const newBest = !best || timeMs < best.timeMs
+      const newBest = !best || !!best.stale || timeMs < best.timeMs
       if (newBest) saveGhost(w.level.id, { hero: prev.character ?? 'uktun', data: ghostRecRef.current })
       const mergedItems = items.map((v, i) => v || !!best?.items[i])
+      const earned: string[] = []
+      const day = dailyChallenge(now, LEVELS, prev.unlocked)
+      const week = weeklyChallenge(now, LEVELS, prev.unlocked)
+      const daily = prev.daily.last !== day.key && completes(day, w.level, run) ? { last: day.key, count: prev.daily.count + 1 } : prev.daily
+      const weekly = prev.weekly.last !== week.key && completes(week, w.level, run) ? { last: week.key, count: prev.weekly.count + 1 } : prev.weekly
+      if (daily !== prev.daily) earned.push('Günün Şehri Tamam')
+      if (weekly !== prev.weekly) earned.push('Haftanın Görevi Tamam')
       const next: Save = {
         ...prev,
+        daily,
+        weekly,
         unlocked: Math.max(prev.unlocked, Math.min(idx + 1, LEVELS.length - 1)),
         best: {
           ...prev.best,
@@ -445,7 +540,7 @@ export default function Game() {
       }
       writeSave(next)
       setResumeIdx(next.unlocked)
-      setResult({ timeMs, deaths: w.deaths, items, newBest, relaxed: relaxedRef.current })
+      setResult({ timeMs, deaths: w.deaths, items, newBest, relaxed: relaxedRef.current, earned })
       return next
     })
     setScreen('complete')
@@ -577,7 +672,7 @@ export default function Game() {
               {save.character ? (
                 <figure className="polaroid absolute left-1/2 top-3 w-[118px] -translate-x-1/2 rotate-[-4deg] sm:w-[200px] md:top-10 md:w-[220px] [@media(max-height:500px)_and_(min-width:560px)]:top-8 [@media(max-height:500px)_and_(min-width:560px)]:w-[150px]">
                   <span className="tape" />
-                  <HeroFigure look={hero.id} className="block aspect-[64/76] w-full" />
+                  <HeroFigure look={hero.id} scarf={scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)} className="block aspect-[64/76] w-full" />
                   <figcaption>{hero.name}</figcaption>
                 </figure>
               ) : (
@@ -617,8 +712,14 @@ export default function Game() {
                   <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('map'))}>
                     {t("Şehirler")}
                   </button>
+                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('notebook'))}>
+                    {t("Defter")}
+                  </button>
                   <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('character'))}>
                     {t("Karakter")}
+                  </button>
+                  <button className="pixel-btn justify-center" disabled={beaten < RUSH_NEEDS} title={beaten < RUSH_NEEDS ? t('Önce {n} bekçi yen', { n: RUSH_NEEDS }) : undefined} onClick={startRush}>
+                    {t("Patron Koşusu")}
                   </button>
                   <button
                     className="pixel-btn justify-center"
@@ -718,6 +819,30 @@ export default function Game() {
                 )
               })}
             </div>
+            <p className="mt-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
+              {t("ATKI RENGİ")} <span className="kilim h-[6px] flex-1 opacity-50" />
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {SCARVES.map((sc) => {
+                const open = charmCount >= sc.need
+                const on = scarfFor(save.scarf).id === sc.id
+                return (
+                  <button
+                    key={sc.id}
+                    disabled={!open}
+                    aria-pressed={on}
+                    onClick={() => (ui(), persist({ ...save, scarf: sc.id }))}
+                    title={open ? undefined : t('{n} nazar boncuğu bulunca açılır', { n: sc.need })}
+                    className={`flex items-center gap-2 border-2 bg-panel-2 px-2.5 py-1.5 text-[12px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold text-cream' : 'border-line text-muted hover:border-accent-2'} ${open ? '' : 'opacity-45'}`}
+                  >
+                    <span className="h-4 w-4 border-2 border-ink" style={{ background: `linear-gradient(135deg, ${sc.color} 55%, ${sc.shade} 55%)` }} />
+                    {lang === 'en' ? sc.nameEn : sc.name}
+                    {!open && <span className="tabular-nums">· {charmCount}/{sc.need}</span>}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-1.5 text-[12px] text-muted">{t("Yeni renkler, şehirlerde saklı nazar boncuklarını buldukça açılır.")}</p>
             {save.character && (
               <button className="pixel-btn mt-3" onClick={() => setScreen('title')}>
                 {t("← Geri")}
@@ -844,6 +969,21 @@ export default function Game() {
                 {t("← Geri")}
               </button>
             </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {challenges.map(([title, ch, done]) => {
+                const i = LEVELS.findIndex((l) => l.id === ch.levelId)
+                return (
+                  <button key={title} className={`pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left ${done ? 'opacity-70' : ''}`} onClick={() => loadLevel(i)}>
+                    <span className="flex w-full items-center justify-between gap-2 text-[11px] font-bold tracking-[0.18em] text-gold">
+                      {title}
+                      {done && <span className="text-[#7ad88a]">✓ {t('Tamam')}</span>}
+                    </span>
+                    <span className="font-display text-base leading-tight">{displayName(LEVELS[i])}</span>
+                    <span className="text-[12px] leading-snug text-muted">{ch.kinds.map((k) => t(CHALLENGE_TEXT[k])).join(' · ')}</span>
+                  </button>
+                )
+              })}
+            </div>
             <div className="mt-3">
               <TurkeyMap unlocked={save.unlocked} selected={levelIdx} onSelect={(i) => loadLevel(i)} />
             </div>
@@ -871,10 +1011,10 @@ export default function Game() {
                           </span>
                         </span>
                         <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-muted">
-                          {locked ? t('Kilitli') : best ? formatTime(best.timeMs) : t('Yeni')}
+                          {locked ? t('Kilitli') : best && !best.stale ? formatTime(best.timeMs) : best ? t('Yeni Yol') : t('Yeni')}
                           {best && (
                             <span className="flex items-center gap-1.5">
-                              <MedalBadge medal={medalFor(l, best.timeMs)} />
+                              {!best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}
                               {found}/3
                             </span>
                           )}
@@ -1088,6 +1228,28 @@ export default function Game() {
         </Overlay>
       )}
 
+      {screen === 'notebook' && <Defter save={save} onClose={() => setScreen('title')} onRush={startRush} />}
+
+      {screen === 'rushEnd' && rushResult && (
+        <Overlay dim>
+          <div className="rise pixel-panel w-full max-w-md p-6 text-center">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{rushResult.best ? t('YENİ REKOR') : t('PATRON KOŞUSU')}</p>
+            <h2 className="mt-2 font-display text-5xl tabular-nums text-cream">{formatTime(rushResult.timeMs)}</h2>
+            <p className="mt-2 text-[13px] text-muted">{t('{n} bekçi · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths })}</p>
+            {rushResult.relaxed && <p className="mt-2 text-[12px] text-muted">{t("Rahat Mod’da koştun: rekor yazılmadı.")}</p>}
+            {!rushResult.best && !rushResult.relaxed && save.rush && <p className="mt-2 text-[12px] text-muted">{t('Rekor: {time} · {n} bekçi', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })}</p>}
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <button className="pixel-btn primary justify-center" onClick={startRush} autoFocus>
+                {t("↺ Yeniden Koş")}
+              </button>
+              <button className="pixel-btn justify-center" onClick={() => setScreen('notebook')}>
+                {t("Defter")}
+              </button>
+            </div>
+          </div>
+        </Overlay>
+      )}
+
       {screen === 'end' && (
         <Overlay>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
@@ -1100,7 +1262,7 @@ export default function Game() {
             <h2 className="mt-2 font-display text-4xl text-cream">{(endingFor(lang) ?? ENDING).title}</h2>
             <p className="mt-3 text-sm leading-relaxed text-cream/90">{fill((endingFor(lang) ?? ENDING).text, hero.short)}</p>
             <p className="mt-3 text-[12px] text-muted">
-              {t('{n} / {total} hatıra · Toplam en iyi süre {time}', { n: totalFound, total: LEVELS.length * 3, time: formatTime(Object.values(save.best).reduce((a, b) => a + b.timeMs, 0)) })}
+              {t('{n} / {total} hatıra · Toplam en iyi süre {time}', { n: totalFound, total: LEVELS.length * 3, time: formatTime(Object.values(save.best).reduce((a, b) => a + (b.stale ? 0 : b.timeMs), 0)) })}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn primary justify-center" onClick={() => setScreen('map')}>
@@ -1283,12 +1445,17 @@ function Complete({
                 <figcaption className="!text-[12px]">{heroName}</figcaption>
               </figure>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold tracking-[0.22em] text-muted">{result.newBest ? t('YENİ REKOR') : best ? t('REKORUN {time}', { time: formatTime(best.timeMs) }) : t('SÜRE')}</p>
+                <p className="text-[11px] font-bold tracking-[0.22em] text-muted">{result.newBest ? t('YENİ REKOR') : best && !best.stale ? t('REKORUN {time}', { time: formatTime(best.timeMs) }) : t('SÜRE')}</p>
                 <p className="font-display text-5xl leading-none tabular-nums text-cream sm:text-6xl">{formatTime(result.timeMs)}</p>
                 <p className="mt-1.5 text-[13px] text-muted">{t('{deaths} düşüş · {found}/3 {item}', { deaths: result.deaths, found, item: level.item })}</p>
               </div>
               <Seal medal={medal} bronze={level.medals[2]} />
             </div>
+            {result.earned.map((e) => (
+              <p key={e} className="mt-3 border-2 border-gold bg-gold/10 px-3 py-1.5 text-center text-[13px] font-bold tracking-[0.08em] text-gold">
+                ★ {t(e)}
+              </p>
+            ))}
 
             <p className="mt-5 flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
               {t('HATIRALAR')} <span className="kilim h-[6px] flex-1 opacity-50" />

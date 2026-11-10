@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, like, sql } from 'drizzle-orm'
 import Logo from '@/components/Logo'
 import { medalFor } from '@/components/medal'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
 import { findByName } from '@/lib/players'
+import { SCORE_SUFFIX, scoreCity } from '@/lib/scoreKey'
 import { scores } from '@/lib/schema'
 import { formatTime } from '@/lib/storage'
 
@@ -30,8 +31,9 @@ async function load(ad: string) {
       rank: sql<number>`(select count(*)::int + 1 from seksek_scores o where o.level = ${scores.level} and o.time_ms < ${scores.timeMs})`,
     })
     .from(scores)
-    .where(eq(scores.playerId, player.id))
-  return { player, byLevel: new Map(rows.map((r) => [r.level, r])) }
+    .where(and(eq(scores.playerId, player.id), like(scores.level, `%${SCORE_SUFFIX}`)))
+  // yalnız güncel harita sürümünün skorları sayılır
+  return { player, byLevel: new Map(rows.map((r) => [scoreCity(r.level), r])) }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

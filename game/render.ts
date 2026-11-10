@@ -1,4 +1,5 @@
-import { CITY, ITEM_ART, LAYER_H, LAYER_W, buildLayers, disc, enemyArt, rect, sprite, type Ctx, type Layers } from './art'
+import { CITY, LAYER_H, LAYER_W, buildLayers, disc, enemySpecies, rect, type Ctx, type Layers } from './art'
+import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
 import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
@@ -67,6 +68,8 @@ export class Renderer {
   camY = 0
   private t = 0
   character: CharacterDef = CHARACTERS.uktun
+  /** oyuncunun seçtiği atkı rengi (yoksa karakterin kendi atkısı) */
+  scarf: { color: string; shade: string } | null = null
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
   /** sahnedeki yazıların dili */
@@ -80,6 +83,8 @@ export class Renderer {
   private idleT = 0
   /** patronun uyandığı an: adı kısa süre yazılır */
   private bossWoke = -99
+  /** gece-gündüz geçişinin yumuşak değeri (0 gündüz, 1 gece) */
+  private nightK = 0
   /** bu karede çizilecek karakterler (hayalet, atılma izi, oyuncu): dünya tamponundan sonra ana tuvalde */
   private heroes: HeroDraw[] = []
 
@@ -123,6 +128,7 @@ export class Renderer {
     for (const o of w.platforms) keep(o)
     for (const o of w.enemies) keep(o)
     for (const o of w.projectiles) keep(o)
+    for (const o of w.crates) keep(o)
     if (w.boss) keep(w.boss)
   }
 
@@ -140,6 +146,7 @@ export class Renderer {
     for (const o of w.platforms) mix(o)
     for (const o of w.enemies) mix(o)
     for (const o of w.projectiles) mix(o)
+    for (const o of w.crates) mix(o)
     if (w.boss) mix(w.boss)
     return () => {
       for (const [o, x, y] of moved) {
@@ -460,6 +467,16 @@ export class Renderer {
     this.drawDecor(b, w, cx, cy)
     b.restore()
 
+    // gece-gündüz şehirlerinde düğme geceyi getirir: gök kararır, yıldızlar çıkar
+    const night = SWITCH_SKIN[this.city] === 'daynight' && w.switchOn
+    this.nightK += ((night ? 1 : 0) - this.nightK) * Math.min(1, dt * 5)
+    if (this.nightK > 0.01) {
+      b.fillStyle = `rgba(16,20,56,${(0.55 * this.nightK).toFixed(3)})`
+      b.fillRect(0, 0, this.viewW, this.viewH)
+      b.fillStyle = `rgba(255,255,240,${(0.9 * this.nightK).toFixed(3)})`
+      for (let i = 0; i < 40; i++) b.fillRect((i * 97 + 13) % this.viewW, (i * 53 + 7) % Math.round(this.viewH * 0.55), 1, 1)
+    }
+
     const c = this.ctx
     c.imageSmoothingEnabled = false
     c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
@@ -509,6 +526,8 @@ export class Renderer {
 
     c.drawImage(this.fbuf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
 
+    this.drawThingsHD(w, hdX, hdY)
+    this.drawCratesHD(w, hdX, hdY)
     this.drawBossHD(w, hdX, hdY)
     this.drawHeroes(hdX, hdY)
     this.drawLabels(w, hdX, hdY)
@@ -676,7 +695,7 @@ export class Renderer {
           break
         }
         case 'k': {
-          this.drawAnimal(b, x, bot - (this.petTimer > 0.2 ? 2 : 0))
+          this.friends.push({ x: x + 8, bot })
           const pl = w.player
           const near = Math.abs(pl.x + pl.w / 2 - (x + 8)) < 22 && Math.abs(pl.y + pl.h - bot) < 6
           if (near && pl.grounded && Math.abs(pl.vx) < 5 && !pl.dead && Math.random() < 0.05)
@@ -849,6 +868,80 @@ export class Renderer {
   /** Şehrin tezgâhı: simit arabası, mırra, kayısı, leblebi kazanı, Sivas halısı, saman ve kopuz */
   private drawStall(b: Ctx, x: number, bot: number) {
     switch (this.city) {
+      case 'edirne': {
+        // tava ciğeri tezgâhı: kazan, ipe dizili kuru biberler
+        rect(b, x - 4, bot - 9, 26, 9, '#6a4a32')
+        rect(b, x - 6, bot - 12, 30, 3, '#d8ccb4')
+        rect(b, x, bot - 18, 12, 6, '#3a3440')
+        rect(b, x, bot - 18, 12, 1, '#6a6474')
+        for (let i = 0; i < 4; i++) rect(b, x + 2 + i * 2, bot - 20, 2, 2, '#8a4a24')
+        rect(b, x - 6, bot - 26, 32, 1, '#6a4a32')
+        for (let i = 0; i < 7; i++) rect(b, x - 4 + i * 4, bot - 25, 2, 4, i % 2 ? '#c8302a' : '#a8201c')
+        rect(b, x - 6, bot - 26, 1, 14, '#6a4a32')
+        rect(b, x + 25, bot - 26, 1, 14, '#6a4a32')
+        break
+      }
+      case 'bursa': {
+        // İskender tezgâhı: dikey döner, bakır tabak
+        rect(b, x - 4, bot - 9, 26, 9, '#5e4634')
+        rect(b, x - 6, bot - 12, 30, 3, '#c8743a')
+        rect(b, x + 3, bot - 26, 2, 14, '#8a8e98')
+        for (let i = 0; i < 5; i++) rect(b, x + 1 - (i < 2 ? i : 4 - i), bot - 24 + i * 2, 6 + (i < 2 ? i : 4 - i) * 2, 2, i % 2 ? '#8a4a24' : '#a8602e')
+        disc(b, x + 16, bot - 13, 4, '#e8a85a', true)
+        rect(b, x + 12, bot - 13, 9, 1, '#f6ecd8')
+        rect(b, x - 6, bot - 28, 32, 2, '#3a7a5a')
+        rect(b, x - 6, bot - 26, 1, 14, '#5e4634')
+        rect(b, x + 25, bot - 26, 1, 14, '#5e4634')
+        break
+      }
+      case 'antalya': {
+        // portakal tezgâhı: piramit dizili portakallar, sıkma makinesi
+        rect(b, x - 4, bot - 8, 26, 8, '#7a5234')
+        rect(b, x - 6, bot - 11, 30, 3, '#f6ecd8')
+        for (const [dx, dy] of [[0, 0], [5, 0], [10, 0], [2, -4], [7, -4], [5, -8]] as const) disc(b, x + dx + 2, bot - 14 + dy, 2, '#f08a2a')
+        rect(b, x + 17, bot - 20, 5, 9, '#c8ccd4')
+        disc(b, x + 19, bot - 21, 2, '#f08a2a')
+        rect(b, x - 6, bot - 27, 32, 2, '#f08a2a')
+        rect(b, x - 6, bot - 25, 1, 14, '#7a5234')
+        rect(b, x + 25, bot - 25, 1, 14, '#7a5234')
+        break
+      }
+      case 'sanliurfa': {
+        // çiğ köfte sinisi ve mırra cezvesi
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4a32')
+        rect(b, x - 6, bot - 10, 30, 2, '#c8743a')
+        for (let i = 0; i < 6; i++) rect(b, x - 3 + i * 4, bot - 12, 3, 2, '#8a3a24')
+        rect(b, x + 20, bot - 17, 4, 7, '#b8862a')
+        rect(b, x + 24, bot - 15, 3, 1, '#b8862a')
+        rect(b, x - 6, bot - 26, 32, 2, '#c8302a')
+        for (let i = 0; i < 8; i++) rect(b, x - 5 + i * 4, bot - 24, 2, 2, '#f2c14e')
+        rect(b, x - 6, bot - 24, 1, 14, '#6a4a32')
+        rect(b, x + 25, bot - 24, 1, 14, '#6a4a32')
+        break
+      }
+      case 'van': {
+        // Van kahvaltısı: tabak tabak peynir, bal, kaymak; semaver
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4a32')
+        rect(b, x - 6, bot - 10, 30, 2, '#f6ecd8')
+        for (const [dx, col] of [[-3, '#f8f4e8'], [2, '#e8b84a'], [7, '#6aa84a'], [12, '#e24a48']] as const) {
+          rect(b, x + dx, bot - 12, 4, 2, col)
+          rect(b, x + dx - 1, bot - 10, 6, 1, '#c8ccd4')
+        }
+        rect(b, x + 19, bot - 20, 5, 10, '#c8a050')
+        rect(b, x + 20, bot - 23, 3, 3, '#a87a30')
+        rect(b, x + 21, bot - 26 - Math.round(Math.sin(this.t * 3)), 1, 3, 'rgba(255,255,255,0.5)')
+        break
+      }
+      case 'erzurum': {
+        // cağ kebabı: yatay döner, önünde odun ateşi
+        rect(b, x - 4, bot - 6, 26, 6, '#5e4634')
+        rect(b, x - 2, bot - 18, 2, 12, '#8a8e98')
+        rect(b, x + 20, bot - 18, 2, 12, '#8a8e98')
+        rect(b, x - 2, bot - 17, 24, 1, '#8a8e98')
+        for (let i = 0; i < 5; i++) rect(b, x + 1 + i * 4, bot - 20, 3, 7, i % 2 ? '#8a4a24' : '#a8602e')
+        for (let i = 0; i < 4; i++) rect(b, x + 3 + i * 5, bot - 9 - (Math.sin(this.t * 9 + i) > 0 ? 2 : 0), 2, 3, i % 2 ? '#f2c14e' : '#e8794a')
+        break
+      }
       case 'canakkale': {
         // peynir helvası tezgâhı: tepside altın kızarmış dilimler, yanında seramik testi
         rect(b, x - 4, bot - 9, 26, 9, '#7a5234')
@@ -1178,6 +1271,68 @@ export class Renderer {
   /** Şehrin kendine özgü küçük nesnesi: bölümü her yerde o şehre bağlar. */
   private drawLandmarkProp(b: Ctx, x: number, bot: number) {
     switch (this.city) {
+      case 'edirne': {
+        // Kırkpınar'ın altın kemeri, kaidede
+        rect(b, x + 2, bot - 6, 12, 6, '#8a7a5e')
+        rect(b, x + 1, bot - 7, 14, 1, '#b4a48a')
+        rect(b, x + 2, bot - 14, 12, 5, '#f2c14e')
+        rect(b, x + 2, bot - 14, 12, 1, '#fff0b0')
+        rect(b, x + 6, bot - 15, 4, 7, '#c8922a')
+        rect(b, x + 7, bot - 13, 2, 3, '#d6403a')
+        break
+      }
+      case 'bursa': {
+        // Karagöz perdesi: iki sopanın arasında aydınlık bez, arkasında suret
+        rect(b, x - 2, bot - 26, 1, 26, '#5e4634')
+        rect(b, x + 17, bot - 26, 1, 26, '#5e4634')
+        rect(b, x - 1, bot - 25, 18, 16, '#f6e8c0')
+        disc(b, x + 5, bot - 18, 2, '#3a2a44')
+        rect(b, x + 4, bot - 16, 3, 6, '#3a2a44')
+        rect(b, x + 3, bot - 21, 4, 1, '#3a2a44')
+        disc(b, x + 12, bot - 18, 2, '#3a2a44')
+        rect(b, x + 11, bot - 16, 3, 6, '#3a2a44')
+        rect(b, x + 10, bot - 22, 5, 2, '#3a2a44')
+        break
+      }
+      case 'antalya': {
+        // Hadrian Kapısı'ndan bir kemer parçası
+        rect(b, x, bot - 20, 4, 20, '#d8c8a8')
+        rect(b, x + 12, bot - 20, 4, 20, '#d8c8a8')
+        rect(b, x - 1, bot - 24, 18, 4, '#e8dcc0')
+        rect(b, x - 1, bot - 25, 18, 1, '#b8a888')
+        disc(b, x + 8, bot - 20, 4, '#b8a888', true)
+        rect(b, x, bot - 2, 4, 2, '#b8a888')
+        rect(b, x + 12, bot - 2, 4, 2, '#b8a888')
+        break
+      }
+      case 'sanliurfa': {
+        // Göbeklitepe dikilitaşı: T biçimli, üstünde tilki kabartması
+        rect(b, x + 5, bot - 22, 6, 22, '#c8a878')
+        rect(b, x + 1, bot - 27, 14, 6, '#d8b888')
+        rect(b, x + 1, bot - 27, 14, 1, '#f0d8a8')
+        rect(b, x + 6, bot - 16, 3, 2, '#8a6a44')
+        rect(b, x + 7, bot - 14, 1, 6, '#8a6a44')
+        rect(b, x + 9, bot - 17, 1, 1, '#8a6a44')
+        break
+      }
+      case 'van': {
+        // Urartu çivi yazılı taş
+        rect(b, x + 2, bot - 18, 12, 18, '#8a8490')
+        rect(b, x + 2, bot - 18, 12, 1, '#b0aab6')
+        for (let r2 = 0; r2 < 4; r2++) for (let i = 0; i < 4; i++) rect(b, x + 4 + i * 2 + (r2 % 2), bot - 15 + r2 * 3, 1, 2, '#4e4a56')
+        rect(b, x + 1, bot - 2, 14, 2, '#6e6874')
+        break
+      }
+      case 'erzurum': {
+        // cirit: yere saplı iki değnek ve bayrak
+        rect(b, x + 3, bot - 24, 1, 24, '#6a4a2e')
+        rect(b, x + 11, bot - 20, 1, 20, '#6a4a2e')
+        rect(b, x + 4, bot - 24, 6, 4, '#d6403a')
+        rect(b, x + 4, bot - 22, 4, 1, '#f4f9ff')
+        rect(b, x + 12, bot - 20, 5, 3, '#2e6aa8')
+        rect(b, x + 1, bot - 2, 14, 2, '#f4f9ff')
+        break
+      }
       case 'canakkale': {
         // Çimenlik Kalesi'nin eski topu: tekerlekli kundak, bronz namlu
         disc(b, x + 4, bot - 4, 4, '#5a3c26')
@@ -1355,41 +1510,6 @@ export class Renderer {
     }
   }
 
-  private drawAnimal(b: Ctx, x: number, bot: number) {
-    const tail = Math.sin(this.t * 3) > 0 ? 1 : 0
-    switch (CITY[this.city].animal) {
-      case 'partridge': {
-        // keklik: kafeste değil, özgür; kırmızı gaga, çizgili yan
-        const peck = Math.sin(this.t * 2) > 0.8 ? 1 : 0
-        sprite(b, ['..gg......', '.gegr.....', '.ggg......', 'gwwgggg...', '.gkgkgggg.', '..gggggg..', '...o..o...'], { g: '#a8a090', w: '#f4ead8', k: '#3a2a20', e: '#1d1a22', r: '#e0303a', o: '#e06a3a' }, x + 3, bot - 7 + peck)
-        break
-      }
-      case 'cat':
-        sprite(b, ['.o.o......', '.ooo......', '.oeo.....' + (tail ? 'o' : '.'), '.oooo...o' + (tail ? '.' : 'o'), '..ooooooo.', '..ooOooOo.', '..o.o..o..'], { o: '#e0903a', O: '#b06a24', e: '#2a2a2a' }, x + 2, bot - 7)
-        break
-      case 'cow':
-        sprite(b, ['kk..........', 'kwk.........', 'wwwwkwwwkww.', '.wwkkwwwkkww' + (tail ? 'k' : '.'), '..wwwwwwwwww', '..wkw...wkw.', '..k.k...k.k.'], { w: '#f4efe6', k: '#2a2420' }, x, bot - 7)
-        break
-      case 'flamingo':
-        sprite(b, ['..pp...', '.pppk..', '..p....', '..p....', '.ppp...', 'ppppp..', '.pppp..', '...l...', '...l...', '...l...', '..ll...'], { p: '#f29aa8', k: '#2a2220', l: '#d8707a' }, x + 4, bot - 11, tail > 0)
-        break
-      case 'angora':
-        sprite(b, ['.w.w......', '.www......', '.bwg.....' + (tail ? 'w' : '.'), '.wwww...w' + (tail ? '.' : 'w'), '..wwwwwww.', '..wwWwwWw.', '..w.w..w..'], { w: '#f8f6f0', W: '#dcd8d0', b: '#4a8ad8', g: '#e0b040' }, x + 2, bot - 7)
-        break
-      case 'kangal':
-        sprite(b, ['kk.........', 'kek........', 'kkwwwwwww..', '.wwwwwwwww' + (tail ? 'w' : '.'), '..wwwwwwww.', '..w.w..w.w.', '..w.w..w.w.'], { w: '#d9c49a', k: '#2a2420', e: '#f2d34a' }, x + 1, bot - 7)
-        break
-      case 'lion':
-        rect(b, x + 1, bot - 14, 14, 14, '#7a6a50')
-        sprite(b, ['..mmmm....', '.mmffmm...', '.mfefff...', '.mffffm...', '..mmmmmff.', '...ffffff.', '...f.f.ff.'], { m: '#5e5038', f: '#a8956e', e: '#2a2420' }, x + 3, bot - 12)
-        break
-      case 'horse':
-        sprite(b, ['kk..........', 'kkk.........', '.kkkkkkkkk..', '..kkkkkkkkkk', '..kkkkkkkk.k', '..k.k...k.k.', '..k.k...k.k.'], { k: '#4a3426' }, x, bot - 7)
-        break
-    }
-  }
-
-  /** Bölümün altında kalan alan: zemin sürer, su sürer, boşluk karanlıktır. */
   private drawUnderground(b: Ctx, w: World, cx: number, cy: number) {
     const lh = w.rows * T
     if (cy + this.viewH <= lh) return
@@ -1450,11 +1570,17 @@ export class Renderer {
         }
         if (t === BLOCK_A || t === BLOCK_B) {
           const solid = t === BLOCK_A ? !w.switchOn : w.switchOn
-          const col = t === BLOCK_A ? '#e8794a' : '#4aa8e0'
+          const skin = SWITCH_SKIN[this.city]
+          // gölge oyunu: perde rengi ve siyah suret · gece-gündüz: güneş taşı ve ay taşı
+          const col = skin === 'shadow' ? (t === BLOCK_A ? '#f0dca8' : '#3a2a44') : skin === 'daynight' ? (t === BLOCK_A ? '#f2c14e' : '#8ab4e8') : t === BLOCK_A ? '#e8794a' : '#4aa8e0'
+          const inner = skin === 'shadow' ? (t === BLOCK_A ? '#c8ac6c' : '#1e1426') : skin === 'daynight' ? (t === BLOCK_A ? '#c8922a' : '#4a6ea8') : t === BLOCK_A ? '#c8582a' : '#2a7ab0'
           if (solid) {
             rect(b, x, y, T, T, col)
-            rect(b, x + 1, y + 1, T - 2, T - 2, t === BLOCK_A ? '#c8582a' : '#2a7ab0')
+            rect(b, x + 1, y + 1, T - 2, T - 2, inner)
             rect(b, x + 3, y + 3, T - 6, T - 6, col)
+            if (skin === 'daynight') disc(b, x + 8, y + 8, 3, t === BLOCK_A ? '#fff4c8' : '#e8f0ff')
+            if (skin === 'daynight' && t === BLOCK_B) disc(b, x + 10, y + 7, 3, col)
+            if (skin === 'shadow') rect(b, x + 5, y + 5, 6, 6, inner)
             rect(b, x + 1, y + 1, T - 2, 1, 'rgba(255,255,255,0.35)')
           } else {
             for (let i = 0; i < T; i += 4) {
@@ -1627,115 +1753,11 @@ export class Renderer {
       }
       if (st.phase === 3 && Math.random() < 0.3) this.particles.push({ x: h.x + Math.random() * T, y: h.bottom + T - 1, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 40, life: 0.3, max: 0.3, color: '#ffd36a', size: 1, grav: 300 })
     }
-    // yaylar (Malatya'da kayısı kasası)
-    for (const sp of w.springs) {
-      const sq = sp.squash > 0 ? 3 : 0
-      if (this.city === 'malatya') {
-        rect(b, sp.x, sp.y + sq, sp.w, sp.h - sq, '#a86a38')
-        rect(b, sp.x, sp.y + sq, sp.w, 1, '#d29a5a')
-        rect(b, sp.x, sp.y + 4 + sq / 2, sp.w, 1, '#7a4a24')
-        for (let i = 0; i < 6; i++) disc(b, sp.x + 2 + i * 2, sp.y - 1 + sq, 1, i % 2 ? '#f39a2e' : '#ffb84a')
-      } else {
-        rect(b, sp.x + 2, sp.y + 5, sp.w - 4, 3, '#4a4458')
-        for (let i = 0; i < 3; i++) rect(b, sp.x + 4, sp.y + 2 + i * 1 + sq / 2, sp.w - 8, 1, '#9aa3b5')
-        rect(b, sp.x, sp.y + sq, sp.w, 2, s.accent)
-      }
-    }
-    // hatıralar
-    for (const c of w.pickups) {
-      if (c.taken) continue
-      const bob = Math.round(Math.sin(this.t * 3 + c.index) * 2)
-      disc(b, c.x + 5, c.y + 5 + bob, 8, 'rgba(255,220,120,0.15)')
-      const art = ITEM_ART[this.city]
-      drawShaded(b, art.rows, art.pal, c.x, c.y + bob, false, '#2a1a10')
-      if (Math.sin(this.t * 5 + c.index * 2) > 0.92) rect(b, c.x + 8, c.y + bob - 1, 1, 1, '#ffffff')
-    }
     // bayraklar
     for (const cp of w.checkpoints) this.drawFlag(b, cp)
     // çıkış kapısı
     this.drawExit(b, w.exit)
     if (w.warp) this.drawExit(b, w.warp, true)
-    // düşmanlar
-    for (const e of w.enemies) {
-      if (!e.alive) continue
-      const art = enemyArt(e.kind, this.city)
-      const speed = e.kind === 'fly' || e.kind === 'bat' ? 8 : e.state === 'charge' ? 14 : 6
-      // saksağan: tünekte kanatlar kapalı, uyarı ve dalışta hızlı çırpar
-      const f = e.kind === 'magpie' ? (e.state === 'idle' || e.state === 'stun' ? 0 : 1 + (Math.floor(this.t * 14) % 2)) : Math.abs(Math.floor(e.phase * speed)) % art.frames.length
-      const rows = art.frames[f]
-      const shake = e.state === 'windup' ? Math.round(Math.sin(this.t * 60)) : 0
-      const squash = e.kind === 'hopper' && e.state === 'windup' ? 2 : 0
-      const sx = e.x + shake
-      const sy = e.y + squash + (e.state === 'stun' ? 1 : 0)
-      const flip = e.dir > 0
-      // gölge
-      if (e.kind !== 'fly' && e.kind !== 'bat' && e.kind !== 'magpie') rect(b, e.x + 1, e.y + e.h - 1, e.w - 2, 1, 'rgba(0,0,0,0.3)')
-      // tehlike dış hattı: arka plandan ayrışsın
-      const outline: Record<string, string> = {}
-      const pulse = Math.sin(this.t * 5 + e.ox * 0.1) > 0.2
-      for (const k of Object.keys(art.pal)) outline[k] = e.kind === 'spiky' ? '#ff4a3a' : pulse ? '#e8283a' : '#5a0f1a'
-      drawShaded(b, rows, art.pal, sx, sy, flip, outline[Object.keys(outline)[0]])
-      // uyarı: hücumdan önce ünlem
-      if (e.state === 'windup') {
-        const ex = e.x + e.w / 2 - 1
-        rect(b, ex - 2, e.y - 13, 6, 10, '#120f1a')
-        rect(b, ex, e.y - 12, 2, 5, '#ff4a3a')
-        rect(b, ex, e.y - 6, 2, 2, '#ff4a3a')
-      }
-      if (e.state === 'stun') for (let k = 0; k < 3; k++) rect(b, e.x + e.w / 2 + Math.cos(this.t * 6 + k * 2.1) * 6, e.y - 4 + Math.sin(this.t * 6 + k * 2.1) * 2, 2, 2, '#ffd36a')
-    }
-    // atılma kristalleri
-    for (const c of w.crystals) {
-      const cx = c.x + 5
-      const cy = c.y + 5 + Math.round(Math.sin(this.t * 3 + c.x) * 1.5)
-      if (!c.active) {
-        b.globalAlpha = 0.3
-        rect(b, cx - 1, cy - 4, 2, 8, '#7ad8ff')
-        b.globalAlpha = 1
-        continue
-      }
-      disc(b, cx, cy, 8, 'rgba(122,216,255,0.18)')
-      for (let k = 0; k < 6; k++) rect(b, cx - k * 0.7, cy - 6 + k, 1 + k * 1.4, 1, k < 2 ? '#e8faff' : '#7ad8ff')
-      for (let k = 0; k < 6; k++) rect(b, cx - (5 - k) * 0.7, cy + k, 1 + (5 - k) * 1.4, 1, k > 3 ? '#2a7ab0' : '#4aa8e0')
-      if (Math.sin(this.t * 4 + c.x) > 0.8) rect(b, cx - 3, cy - 3, 1, 1, '#ffffff')
-    }
-    // anahtar
-    if (w.keyBox && !w.hasKey) {
-      const k = w.keyBox
-      const ky = k.y + Math.round(Math.sin(this.t * 3) * 2)
-      disc(b, k.x + 5, ky + 5, 9, 'rgba(255,210,100,0.2)')
-      disc(b, k.x + 3, ky + 4, 3, '#f2c14e')
-      disc(b, k.x + 3, ky + 4, 1, '#120f1a')
-      rect(b, k.x + 5, ky + 3, 6, 2, '#f2c14e')
-      rect(b, k.x + 8, ky + 5, 1, 2, '#f2c14e')
-      rect(b, k.x + 10, ky + 5, 1, 3, '#f2c14e')
-    }
-    // gizli pul
-    if (w.stampBox && !w.stampTaken) {
-      const st = w.stampBox
-      const sy2 = st.y + Math.round(Math.sin(this.t * 2) * 1.5)
-      disc(b, st.x + 6, sy2 + 6, 11, 'rgba(255,240,200,0.18)')
-      rect(b, st.x, sy2, 12, 12, '#f4ead8')
-      for (let i = 0; i < 12; i += 2) {
-        rect(b, st.x + i, sy2 - 1, 1, 1, '#f4ead8')
-        rect(b, st.x + i, sy2 + 12, 1, 1, '#f4ead8')
-      }
-      rect(b, st.x + 2, sy2 + 2, 8, 6, CITY[this.city].accent)
-      rect(b, st.x + 3, sy2 + 9, 6, 1, '#3a2a1e')
-    }
-    if (w.charmBox && !w.charmTaken) {
-      // nazar boncuğu: lacivert cam, içinde göz; hafifçe sallanır
-      const ch = w.charmBox
-      const x = ch.x + 5 + Math.round(Math.sin(this.t * 2.4) * 1)
-      const y = ch.y + 5
-      rect(b, x, y - 8, 1, 4, '#c9a24a')
-      disc(b, x, y, 9, 'rgba(120,190,255,0.16)')
-      disc(b, x, y, 5, '#1d3f9a')
-      disc(b, x, y, 3, '#f4f8ff')
-      disc(b, x, y, 2, '#4ab0e8')
-      rect(b, x - 1, y - 1, 2, 2, '#120f1a')
-      rect(b, x - 3, y - 3, 1, 1, 'rgba(255,255,255,0.8)')
-    }
     // basınç plakaları
     for (const pl of w.plates) {
       rect(b, pl.x, pl.y + (pl.pressed ? 2 : 0), pl.w, pl.pressed ? 2 : 4, w.switchOn ? '#4aa8e0' : '#e8794a')
@@ -1876,6 +1898,67 @@ export class Renderer {
     this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1, sx: 1, sy: 1 })
   }
 
+  /** İtilebilen sandıklar: tahta kasa, çapraz kuşak; oyundaki öbür vektör çizimlerle aynı mürekkep hat. */
+  /** dost hayvanların bu karedeki yerleri (süs döngüsü doldurur, HD katman çizer) */
+  private friends: { x: number; bot: number }[] = []
+
+  /** Toplananlar, yaylar, dost hayvanlar ve düşmanlar: ekran çözünürlüğünde, vektör (enemyDraw.ts). */
+  private drawThingsHD(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const t = this.t
+    const X = (x: number) => (x - cx) * sc
+    const Y = (y: number) => (y - cy) * sc
+    const seen = (x: number) => x > cx - 28 && x < cx + this.viewW + 28
+    const accent = CITY[this.city].accent
+    for (const sp of w.springs) if (seen(sp.x)) drawThing(c, 'spring', X(sp.x + 7), Y(sp.y + 4), sc, t, { squash: sp.squash > 0 ? 1 : 0, accent, crate: this.city === 'malatya' })
+    for (const p of w.pickups) if (!p.taken && seen(p.x)) drawKeepsake(c, this.city, X(p.x + 5), Y(p.y + 5 + Math.sin(t * 3 + p.index) * 2), sc, t)
+    for (const f of this.friends) drawFriend(c, CITY[this.city].animal, X(f.x), Y(f.bot), sc, t, this.petTimer > 0)
+    this.friends.length = 0
+    for (const k of w.crystals) if (seen(k.x)) drawThing(c, 'crystal', X(k.x + 5), Y(k.y + 5 + Math.sin(t * 3 + k.x) * 1.5), sc, t, { active: k.active })
+    if (w.keyBox && !w.hasKey) drawThing(c, 'key', X(w.keyBox.x + 5), Y(w.keyBox.y + 5 + Math.sin(t * 3) * 2), sc, t)
+    if (w.stampBox && !w.stampTaken) drawThing(c, 'stamp', X(w.stampBox.x + 6), Y(w.stampBox.y + 6 + Math.sin(t * 2) * 1.5), sc, t, { accent })
+    if (w.charmBox && !w.charmTaken) drawThing(c, 'charm', X(w.charmBox.x + 5), Y(w.charmBox.y + 5), sc, t)
+    for (const e of w.enemies) if (e.alive && seen(e.x)) drawEnemy(c, enemySpecies(e.kind, this.city), e, X(e.x + e.w / 2), Y(e.y + e.h), sc, e.dir > 0 ? 1 : -1, t)
+  }
+
+  private drawCratesHD(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    for (const k of w.crates) {
+      if (k.sunk > 0) continue
+      const x = (k.x - cx) * sc
+      const y = (k.y - cy) * sc
+      if (x < -T * sc || x > this.canvas.width) continue
+      const s = T * sc
+      c.save()
+      c.translate(x, y)
+      c.lineJoin = 'round'
+      c.fillStyle = '#b8824a'
+      c.strokeStyle = '#22161f'
+      c.lineWidth = sc * 1.1
+      c.beginPath()
+      c.roundRect(sc * 0.6, sc * 0.6, s - sc * 1.2, s - sc * 1.2, sc * 1.2)
+      c.fill()
+      c.stroke()
+      // sol üstten ışık, alt sağdan gölge
+      c.fillStyle = 'rgba(255,236,200,0.28)'
+      c.fillRect(sc * 1.4, sc * 1.4, s - sc * 2.8, sc * 1.6)
+      c.fillStyle = 'rgba(40,20,30,0.22)'
+      c.fillRect(sc * 1.4, s - sc * 3.4, s - sc * 2.8, sc * 2)
+      // kuşaklar
+      c.strokeStyle = '#7a4e24'
+      c.lineWidth = sc * 1.3
+      c.beginPath()
+      c.moveTo(sc * 2.6, sc * 2.6)
+      c.lineTo(s - sc * 2.6, s - sc * 2.6)
+      c.moveTo(s - sc * 2.6, sc * 2.6)
+      c.lineTo(sc * 2.6, s - sc * 2.6)
+      c.stroke()
+      c.restore()
+    }
+  }
+
   /** Patron ve canları: zeminin üstünde, oyuncunun arkasında. Uyanınca adı kısa süre başının üstünde yazar. */
   private drawBossHD(w: World, cx: number, cy: number) {
     const b = w.boss
@@ -1993,7 +2076,7 @@ export class Renderer {
     const moving = Math.abs(p.vx) > 40 || !p.grounded
     // atılma hakkı bitince atkı soluklaşır: ne zaman yeniden atılabileceğin görünür
     const spent = !p.canDash
-    this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : undefined, scarfS: spent ? '#5a6680' : undefined })
+    this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade })
 
     this.petTimer = Math.max(0, this.petTimer - dt)
     // koşu tozu ve duvar kayma kıvılcımı
@@ -2123,16 +2206,23 @@ interface Pop {
   big: boolean
 }
 
+/** Renkli blokların şehre özgü kılığı: mantık aynı (plaka rengi değiştirir), görüntü şehre göre */
+const SWITCH_SKIN: Partial<Record<CityKey, 'shadow' | 'daynight'>> = { bursa: 'shadow', van: 'daynight' }
+
 const NEXT_CITY: Record<CityKey, string | null> = {
-  istanbul: 'KOCAELİ',
-  kocaeli: 'ÇANAKKALE',
+  istanbul: 'EDİRNE',
+  edirne: 'KOCAELİ',
+  kocaeli: 'BURSA',
+  bursa: 'ÇANAKKALE',
   canakkale: 'İZMİR',
-  izmir: 'ANKARA',
+  izmir: 'ANTALYA',
+  antalya: 'ANKARA',
   ankara: 'KONYA',
   konya: 'NEVŞEHİR',
   nevsehir: 'ADANA',
   adana: 'GAZİANTEP',
-  gaziantep: 'DİYARBAKIR',
+  gaziantep: 'ŞANLIURFA',
+  sanliurfa: 'DİYARBAKIR',
   diyarbakir: 'MARDİN',
   mardin: 'MALATYA',
   malatya: 'ÇORUM',
@@ -2140,7 +2230,9 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   sinop: 'ORDU',
   ordu: 'TRABZON',
   trabzon: 'SİVAS',
-  sivas: 'ARDAHAN',
+  sivas: 'VAN',
+  van: 'ERZURUM',
+  erzurum: 'ARDAHAN',
   ardahan: 'BAYBURT',
   bayburt: null,
 }
@@ -2150,57 +2242,12 @@ function hexA(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
 }
 
-/* ── Ortak sprite dili: üstte ışık, altta gölge, yumuşak dış hat ─────────── */
-const shadeCache = new Map<string, HTMLCanvasElement>()
-
 function mixHex(hex: string, to: string, t: number) {
   if (hex[0] !== '#' || hex.length !== 7) return hex
   const a = parseInt(hex.slice(1), 16)
   const b = parseInt(to.slice(1), 16)
   const ch = (sh: number) => Math.round(((a >> sh) & 255) + ((((b >> sh) & 255) - ((a >> sh) & 255)) * t))
   return `rgb(${ch(16)},${ch(8)},${ch(0)})`
-}
-
-/** Sprite'ı bir kez gölgeleyip önbelleğe alır: üstü açık pikseller ışık, altı açık pikseller gölge alır, çevresine dış hat çekilir. */
-function shadedSprite(rows: string[], pal: Record<string, string>, outline: string | null) {
-  const key = `${rows.join('|')}#${JSON.stringify(pal)}#${outline}`
-  let cv = shadeCache.get(key)
-  if (cv) return cv
-  const w = Math.max(...rows.map((r) => r.length))
-  const h = rows.length
-  const on = (x: number, y: number) => y >= 0 && y < h && x >= 0 && x < (rows[y]?.length ?? 0) && rows[y][x] !== '.' && !!pal[rows[y][x]]
-  cv = document.createElement('canvas')
-  cv.width = w + 2
-  cv.height = h + 2
-  const c = cv.getContext('2d')!
-  for (let y = -1; y <= h; y++)
-    for (let x = -1; x <= w; x++) {
-      if (on(x, y)) {
-        let col = pal[rows[y][x]]
-        if (!on(x, y - 1)) col = mixHex(col, '#fff4dc', 0.24)
-        else if (!on(x, y + 1) || !on(x + 1, y + 1)) col = mixHex(col, '#120c18', 0.26)
-        c.fillStyle = col
-        c.fillRect(x + 1, y + 1, 1, 1)
-      } else if (outline && (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1))) {
-        c.fillStyle = outline
-        c.fillRect(x + 1, y + 1, 1, 1)
-      }
-    }
-  if (shadeCache.size > 600) shadeCache.clear()
-  shadeCache.set(key, cv)
-  return cv
-}
-
-function drawShaded(b: Ctx, rows: string[], pal: Record<string, string>, x: number, y: number, flip = false, outline: string | null = null) {
-  const cv = shadedSprite(rows, pal, outline)
-  const dx = Math.round(x) - 1
-  const dy = Math.round(y) - 1
-  if (!flip) return b.drawImage(cv, dx, dy)
-  b.save()
-  b.translate(dx + cv.width, dy)
-  b.scale(-1, 1)
-  b.drawImage(cv, 0, 0)
-  b.restore()
 }
 
 function lighten(hex: string) {

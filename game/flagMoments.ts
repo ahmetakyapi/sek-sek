@@ -26,6 +26,42 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Dengbêj bir kılam tutturdu.', 'A dengbêj begins a song.'],
     ['Hasan Paşa Hanı’nda kahvaltı kuruldu.', 'Breakfast is laid at Hasan Pasha Inn.'],
   ],
+  edirne: [
+    ['Cazgır pehlivanları meydana çağırıyor.', 'The announcer calls the wrestlers to the field.'],
+    ['Tava ciğeri çıtır çıtır.', 'Pan-fried liver, crisp as can be.'],
+    ['Selimiye’nin kubbesi ufukta.', 'The dome of Selimiye on the horizon.'],
+    ['Meriç ağır ağır akıyor.', 'The Meriç flows slow and wide.'],
+  ],
+  bursa: [
+    ['Perde kuruldu, şem’a yandı!', 'The screen is set, the lamp is lit!'],
+    ['Kestane şekeri şurupta parlıyor.', 'Candied chestnuts shine in syrup.'],
+    ['Teleferik Uludağ’a tırmanıyor.', 'The cable car climbs Uludağ.'],
+    ['Koza Han’da çay molası.', 'A tea break at Koza Han.'],
+  ],
+  antalya: [
+    ['Falezlerden deniz görünüyor.', 'The sea shows beyond the cliffs.'],
+    ['Portakal çiçeği kokusu.', 'The scent of orange blossom.'],
+    ['Düden’in suyu denize dökülüyor.', 'The Düden pours into the sea.'],
+    ['Kaleiçi’nde dar sokak, serin gölge.', 'Narrow lanes and cool shade in Kaleiçi.'],
+  ],
+  sanliurfa: [
+    ['Balıklıgöl’de balıklar yem bekliyor.', 'The fish at Balıklıgöl wait to be fed.'],
+    ['Sıra gecesinde bir gazel.', 'A song rises at the sıra gecesi.'],
+    ['İsot güneşte kuruyor.', 'Isot peppers dry in the sun.'],
+    ['Mırra acıdır, bir yudum yeter.', 'Mırra is bitter; one sip is enough.'],
+  ],
+  van: [
+    ['İnci kefali akıntıya karşı sıçrıyor.', 'Pearl mullet leap against the current.'],
+    ['Kahvaltı sofrası kuruldu.', 'The breakfast table is laid.'],
+    ['Akdamar’a tekne kalkıyor.', 'A boat leaves for Akdamar.'],
+    ['Göl gün batımında mor.', 'The lake turns purple at sunset.'],
+  ],
+  erzurum: [
+    ['Dadaş bar tutuyor.', 'The dadaş dancers begin the bar.'],
+    ['Cağ kebabı şişte dönüyor.', 'Cağ kebab turns on the spit.'],
+    ['Palandöken’e taze kar yağmış.', 'Fresh snow on Palandöken.'],
+    ['Çay kıtlama şekerle içilir.', 'Tea is drunk with a sugar cube between the teeth.'],
+  ],
   kocaeli: [
     ['Pişmaniye tel tel çekiliyor.', 'Pişmaniye pulled thread by thread.'],
     ['Körfezde gemiler yan yana.', 'Ships side by side in the gulf.'],

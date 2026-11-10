@@ -17,7 +17,8 @@ Bağlayıcı çerçeve: `CLAUDE.md` → "Bölüm ölçütleri (kalıcı kural)".
 
 `#` zemin · `=` tek yönlü · `I` buz · `X` çatlak taş · `^ v` diken · `~` su · `> <` ok tuzağı · `S` yay ·
 `M` yatay platform (`|` sınır) · `N` dikey (`:` sınır) · `O` sema halkası · `B` balon · `H J` horon / koçari · `Y` tokmak ·
-`[ ]` renkli blok, `_` plaka · `K D` anahtar, kapı · `%` sahte duvar · `*` kristal ·
+`i` ıslak taş (katı, kaygan: hızlanma ve durma yavaş) · `p` itilen sandık (yürüyerek itilir, boşluğa düşer, üstüne çıkılır; suya düşerse yerine döner) ·
+`[ ]` renkli blok, `_` plaka (Bursa'da gölge/ışık, Van'da gece/gündüz taşı olarak çizilir; kural aynı) · `K D` anahtar, kapı · `%` sahte duvar · `*` kristal ·
 `P` başlangıç · `F` bayrak · `C` hatıra · `$` pul · `!` nazar boncuğu · `E` çıkış (ana yolda meydan kapısına döner) ·
 `?` tabela · `n` kişi · `k` dost hayvan · `e f h c u x j` düşmanlar · süs: `l t s z q w a o b`.
 

@@ -3,9 +3,15 @@ import { BOSSES } from './boss'
 import { road as canakkaleRoad } from './cities/canakkale'
 import { road as diyarbakirRoad } from './cities/diyarbakir'
 import { road as sinopRoad } from './cities/sinop'
+import { road as edirneRoad } from './cities/edirne'
+import { road as bursaRoad } from './cities/bursa'
+import { road as antalyaRoad } from './cities/antalya'
+import { road as sanliurfaRoad } from './cities/sanliurfa'
+import { road as vanRoad } from './cities/van'
+import { road as erzurumRoad } from './cities/erzurum'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
-import { PRELUDES, buildFinale } from './finales'
+import { PRELUDES, buildArena, buildFinale } from './finales'
 import { SIGNATURES } from './signatures'
 import type { LevelDef } from './types'
 
@@ -1043,6 +1049,12 @@ const DECOR_CYCLE: Record<string, string> = {
   kocaeli: 'lzt',
   canakkale: 'lzt',
   sinop: 'tzl',
+  edirne: 'lzt',
+  bursa: 'tzl',
+  antalya: 'tlz',
+  sanliurfa: 'zlt',
+  van: 'zlt',
+  erzurum: 'lzt',
   diyarbakir: 'zlt',
   izmir: 'tlz',
   ankara: 'zlt',
@@ -1117,6 +1129,37 @@ export const LEVELS: LevelDef[] = [
     map: istanbul,
   },
   {
+    id: 'edirne',
+    city: 'edirne',
+    name: 'Edirne',
+    plate: 22,
+    subtitle: 'Selimiye ve Kırkpınar',
+    difficulty: 'Kolay',
+    note: 'Sınır kapısından girdik say. Selimiye’nin kubbesine uzun uzun bak, sonra er meydanına in. Davul çalınca kaçma: peşrev bitmeden güreş başlamaz.',
+    npcs: [
+      { name: 'Cazgır Şaban Dayı', look: 'amca', text: 'Cazgır pehlivanı meydana duayla çağırır evlat: “Alta geldim diye yerinme, üste çıktım diye sevinme!” Kırkpınar’ın davulu bugün pek huysuz, ayağını denk al.' },
+      { name: 'Sabuncu Müzeyyen Hanım', look: 'teyze', text: 'Meyve sabunu yenmez ha, koklanır! Eskiden çeyiz sandıklarına konurdu. Üç sabunum sepetten yuvarlandı; bulursan senin olsun, çantan mis gibi kokar.' },
+      { name: 'Ciğerci Tuncay Usta', look: 'usta', text: 'Tava ciğeri yaprak gibi ince kesilir, kızgın yağa bir girer bir çıkar. Yanına da kuru acı biber. Köprüyü geçince çarşıya uğra, sıcak sıcak ye.' },
+    ],
+    medals: [50, 80, 125],
+    quips: ['Alta geldim diye yerinme!', 'Peşrev böyle çekilmez.', 'Meriç serinmiş.', 'Kispet ıslandı.'],
+    item: 'Meyve Sabunu',
+    intro: 'Karaağaç’ın eski garından Meriç Köprüsü’ne, çarşıdan Selimiye’nin avlusuna. Trakya’nın sınır şehri, Osmanlı’nın eski başkenti.',
+    facts: [
+      { title: 'Selimiye Camii', text: 'Mimar Sinan’ın “ustalık eserim” dediği Selimiye 1575’te tamamlandı. 2011’den beri UNESCO Dünya Mirası Listesi’ndedir.' },
+      { title: 'Kırkpınar', text: 'Kırkpınar Yağlı Güreşleri yüzyıllardır Edirne’de yapılır. Kazanan başpehlivan altın kemeri bir yıl taşır.' },
+      { title: 'Meriç Köprüsü', text: 'Meriç Köprüsü 1847’de tamamlandı. On iki kemeriyle şehri Karaağaç’a bağlar.' },
+    ],
+    secret: { title: 'Karaağaç Garı', text: 'Karaağaç’taki eski gar binasını Mimar Kemaleddin tasarladı. Bugün Trakya Üniversitesi’nin elindedir; bahçesinde Lozan Anıtı durur.' },
+    hints: [
+      'Edirne’ye hoş geldin! Eski gardan yola çık: ← → ile yürü, boşlukta zıpla.',
+      'Meriç Köprüsü: kemerlerin arası açık. Kısa adım, tek zıplayış.',
+      'Çarşı: tentelerin üstü yol olur. Yüksek rafa çıkmak için basamak ara.',
+      'Selimiye’nin avlusu: kenar taşına çık, şadırvanı revak saçaklarının üstünden geç. Meydan kapısı ileride.',
+    ],
+    map: roadMap(edirneRoad),
+  },
+  {
     id: 'kocaeli',
     city: 'kocaeli',
     name: 'Kocaeli',
@@ -1140,6 +1183,37 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Maşukiye', text: 'Kartepe eteklerindeki Maşukiye, şelaleleri ve dere kenarındaki alabalık sofralarıyla bilinir.' },
     hints: ['Fabrika merdivenleri tek yönlüdür: alttan zıpla, çatıya çık. Yengeçlerin üstüne basabilirsin.'],
     map: kocaeli,
+  },
+  {
+    id: 'bursa',
+    city: 'bursa',
+    name: 'Bursa',
+    plate: 16,
+    subtitle: 'Yeşil Bursa',
+    difficulty: 'Kolay',
+    note: 'Uludağ’ın eteğinde perde kurulmuş. Karagöz’ün gölgesi perdeden kaçmış diyorlar; görürsen korkma, ışığı yakınca şaşırır.',
+    npcs: [
+      { name: 'Hayalî Sabri Usta', look: 'usta', text: 'Karagöz oynatana hayalî denir. Perde deve derisinden suretlerle, arkadaki tek bir ışıkla canlanır. Işık dönünce gölge yer değiştirir; aklında olsun.' },
+      { name: 'Kozacı Feride Teyze', look: 'teyze', text: 'Koza Han’da beş yüz yıldır ipek satılır. Bir koza bin metreden uzun ipek verir, düşün! Kestane şekerlerimi gördün mü? Üçü de yolda kaldı.' },
+      { name: 'Teleferikçi Kenan', look: 'genc', text: 'Teleferik seni buluta kadar çıkarır. Yukarıda kar, aşağıda yeşil; Bursa’ya ondan “Yeşil” derler. Kabin gelmeden atlama, bekle.' },
+    ],
+    medals: [50, 80, 125],
+    quips: ['Perde gazeli okundu.', 'Hacivat görse “Vay vay!” derdi.', 'Uludağ’dan yuvarlandın.', 'Kestane gibi patladın.'],
+    item: 'Kestane Şekeri',
+    intro: 'Cumalıkızık’ın taş sokaklarından Koza Han’a, Ulu Cami’den Uludağ teleferiğine. Osmanlı’nın ilk başkenti, ipeğin ve gölgenin şehri.',
+    facts: [
+      { title: 'Ulu Cami', text: 'Bursa Ulu Camii 1399’da tamamlandı. Yirmi kubbesi ve içindeki şadırvanıyla tanınır.' },
+      { title: 'Koza Han', text: 'Koza Han 1491’de yapıldı. Yüzyıllarca ipek kozası ticaretinin merkezi oldu; avlusunda bugün de çay içilir.' },
+      { title: 'Cumalıkızık', text: 'Cumalıkızık yaklaşık yedi yüz yıllık bir Osmanlı köyüdür. 2014’te Bursa ile birlikte UNESCO Dünya Mirası Listesi’ne girdi.' },
+    ],
+    secret: { title: 'Karagöz ile Hacivat', text: 'Rivayete göre Karagöz ile Hacivat, Bursa’da bir cami yapımında çalışan iki arkadaştı. Atışmaları dilden dile dolaştı, sonunda perdeye taşındı.' },
+    hints: [
+      'Bursa’ya hoş geldin! Cumalıkızık’ın sokağı dar: cumbadan cumbaya zıpla.',
+      'Koza Han: balyalar basamak olur, yay balya seni revaka fırlatır. Avludaki mescidin damından geç.',
+      'Teleferik: kabine bin, karşıya varınca in. Kabin gelmeden atlama.',
+      'Ulu Cami’nin önü: şadırvanın kenarından kenarına zıpla. Taşı her yerde sağlam mı? Meydan kapısı ileride.',
+    ],
+    map: roadMap(bursaRoad),
   },
   {
     id: 'canakkale',
@@ -1200,6 +1274,37 @@ export const LEVELS: LevelDef[] = [
       'Tarihi Asansör: platforma bin, Karataş’a çık.',
     ],
     map: izmir,
+  },
+  {
+    id: 'antalya',
+    city: 'antalya',
+    name: 'Antalya',
+    plate: 7,
+    subtitle: 'Falezler ve Şelale',
+    difficulty: 'Orta',
+    note: 'Güneş burada yılın üç yüz günü parlar. Falezlerin kenarına fazla yaklaşma; ıslak taş kaydırır. Aspendos’ta bir maske iki bin yıldır alkış bekliyormuş.',
+    npcs: [
+      { name: 'Portakalcı Dursun Amca', look: 'amca', text: 'Portakalın iyisi ağır olur, kabuğu ince. Çiçek açınca bütün şehir kokar. Üç portakalım sandıktan yuvarlandı; bulursan soy ye, afiyet olsun.' },
+      { name: 'Kaleiçi Rehberi Sevim Hanım', look: 'teyze', text: 'Hadrian Kapısı’nın üç kemeri var; imparator buraya MS 130’da gelmiş. Kemerlerin altı serindir. Biri ötekilerden biraz farklı, bakmadan geçme.' },
+      { name: 'Dalgıç Derya', look: 'genc', text: 'Falezlerin dibi mağaralarla dolu. Islak taşa basınca ayağın kayar: durmak istersen erken bırak, zıplayacaksan kenara varmadan zıpla.' },
+    ],
+    medals: [60, 95, 150],
+    quips: ['Falezden indin, hem de kestirmeden.', 'Islak taş affetmez.', 'Portakal gibi yuvarlandın.', 'Akdeniz ılıkmış.'],
+    item: 'Portakal',
+    intro: 'Kaleiçi’nin dar sokaklarından Hadrian Kapısı’na, falezlerden Düden’in denize döküldüğü yere. Torosların dibinde, Akdeniz’in kıyısında.',
+    facts: [
+      { title: 'Hadrian Kapısı', text: 'Üç kemerli Hadrian Kapısı, Roma İmparatoru Hadrianus’un MS 130’daki ziyareti onuruna yapıldı.' },
+      { title: 'Yivli Minare', text: 'Yivli Minare 13. yüzyılda Selçuklular tarafından yapıldı. Sekiz yivli tuğla gövdesi şehrin simgesidir.' },
+      { title: 'Düden Şelalesi', text: 'Aşağı Düden Şelalesi, yaklaşık kırk metrelik falezlerden doğrudan Akdeniz’e dökülür.' },
+    ],
+    secret: { title: 'Aspendos', text: 'Aspendos Tiyatrosu MS 2. yüzyılda mimar Zenon tarafından yapıldı. Sahnesi öyle sağlam kalmıştır ki bugün de konserler verilir.' },
+    hints: [
+      'Antalya’ya hoş geldin! Kaleiçi’nde damdan dama geç; sokak dar, atlayış kısa.',
+      'Hadrian Kapısı: kemerin üstüne çıkmak için duvardan sek.',
+      'Falezler: boşluk geniş. Zıpla, en tepede atıl.',
+      'Düden’e yaklaştın: parlayan taş ıslaktır, ayağın kayar. Erken dur.',
+    ],
+    map: roadMap(antalyaRoad),
   },
   {
     id: 'ankara',
@@ -1343,6 +1448,37 @@ export const LEVELS: LevelDef[] = [
       'Zeugma Müzesi: düğmeler duvarları ve köprüyü değiştirir. Sıra önemli.',
     ],
     map: gaziantep,
+  },
+  {
+    id: 'sanliurfa',
+    city: 'sanliurfa',
+    name: 'Şanlıurfa',
+    plate: 63,
+    subtitle: 'Balıklıgöl ve Göbeklitepe',
+    difficulty: 'Orta',
+    note: 'Balıklıgöl’ün balıklarına yem at ama dokunma. Göbeklitepe’de taşlar on iki bin yıldır ayakta; biri sıkılıp yürümeye başlamış diyorlar.',
+    npcs: [
+      { name: 'İsotçu Bozan Dayı', look: 'amca', text: 'İsot gündüz güneşte kurur, gece torbada terler; rengi öyle kararır. Üç dizi isotum rüzgârda savruldu. Bulursan al, yemeğine bereket katar.' },
+      { name: 'Göl Bekçisi Müslüm', look: 'usta', text: 'Bu balıklar kutsal sayılır, kimse dokunmaz. Yem atarsan su kaynar gibi olur! Kaleye çıkan yol dik; sandığı itersen basamak olur.' },
+      { name: 'Arkeolog Zeliha', look: 'genc', text: 'Göbeklitepe’nin taşları çanak çömlekten bile eski. Üstlerinde tilki, turna, akrep kabartmaları var. Tilkinin baktığı yöne sen de bak.' },
+    ],
+    medals: [65, 100, 155],
+    quips: ['İsot kadar acıdı.', 'Balıklar seni seyretti.', 'On iki bin yıl bekledi, sen bekleyemedin.', 'Mırra gibi sert.'],
+    item: 'İsot',
+    intro: 'Balıklıgöl’ün kıyısından kaleye, Harran’ın kümbet evlerinden Göbeklitepe’nin dikilitaşlarına. Tarihin sıfır noktası derler buraya.',
+    facts: [
+      { title: 'Göbeklitepe', text: 'Göbeklitepe’nin dikilitaşları yaklaşık on iki bin yıl önce dikildi. 2018’de UNESCO Dünya Mirası Listesi’ne girdi.' },
+      { title: 'Balıklıgöl', text: 'Balıklıgöl’deki sazanlar kutsal sayılır ve yenmez. Göl, Halilürrahman Camii’nin avlusundadır.' },
+      { title: 'Harran Evleri', text: 'Harran’ın konik kubbeli kerpiç evleri yazın serin, kışın sıcak kalır. Kubbeler tuğlanın üst üste bindirilmesiyle, kalıpsız örülür.' },
+    ],
+    secret: { title: 'Sıra Gecesi', text: 'Urfa’da sıra gecesi, arkadaşların sırayla birbirinin evinde toplandığı gecedir. Sohbet edilir, türkü söylenir, çiğ köfte yoğrulur.' },
+    hints: [
+      'Şanlıurfa’ya hoş geldin! Balıklıgöl’ün ıslak taşları kaygandır; suya düşersen bayrağa dönersin.',
+      'Kale yolu: basamaklar yüksek. Sandığı duvarın dibine it, üstüne çık; kuleye duvardan sekerek tırman.',
+      'Harran evleri: kubbeden kubbeye zıpla. Kubbenin tepesi dardır.',
+      'Göbeklitepe: taşların arası geniş. Zıpla, en tepede atıl. İlk çukur güvenli, orada dene.',
+    ],
+    map: roadMap(sanliurfaRoad),
   },
   {
     id: 'diyarbakir',
@@ -1580,6 +1716,68 @@ export const LEVELS: LevelDef[] = [
     map: sivas,
   },
   {
+    id: 'van',
+    city: 'van',
+    name: 'Van',
+    plate: 65,
+    subtitle: 'Göl ve Kale',
+    difficulty: 'Zor',
+    note: 'Van’da kahvaltı öğlene kadar sürer; acele etme. Göl deniz gibidir ama denize benzemez. Canavarı gören çok, fotoğrafını çeken yok.',
+    npcs: [
+      { name: 'Kahvaltıcı Gülbahar Abla', look: 'teyze', text: 'Sofrada otlu peynir, murtuğa, kavut, cacık, bal, kaymak… Say say bitmez. Üç kalıp peynirim yolda kaldı; bulursan senin, ama karnın tok gez.' },
+      { name: 'Kayıkçı Sıddık', look: 'amca', text: 'Gölün suyu sodalıdır, sabun gibi köpürür. İçinde yalnız inci kefali yaşar. Akdamar’a geçeceksen dalgayı say: üçüncüsü hep büyüktür.' },
+      { name: 'Çoban Mirza', look: 'coban', text: 'Kalenin taşlarına Urartu kralları yazı yazdırmış. Gün batınca bazı taşlar görünür, bazıları kaybolur; gece ile gündüz burada yer değiştirir.' },
+    ],
+    medals: [70, 110, 170],
+    quips: ['Göl sodalıymış, köpürdün.', 'İnci kefali senden iyi sıçrıyor.', 'Canavar güldü.', 'Kahvaltı soğudu.'],
+    item: 'Otlu Peynir',
+    intro: 'Van Kalesi’nin kayalığından göl kıyısına, iskeleden Akdamar Adası’na. Türkiye’nin en büyük gölü, Urartuların başkenti Tuşpa.',
+    facts: [
+      { title: 'Van Gölü', text: 'Van Gölü Türkiye’nin en büyük gölüdür. Suyu sodalı ve tuzludur; dışarıya akıntısı yoktur.' },
+      { title: 'Van Kalesi', text: 'Van Kalesi’ni Urartu kralı I. Sarduri MÖ 9. yüzyılda kurdu. Kayalara kazınmış çivi yazılı kitabeler hâlâ okunur.' },
+      { title: 'Akdamar Kilisesi', text: 'Akdamar Adası’ndaki kilise 915-921 yılları arasında yapıldı. Dış duvarları taş kabartmalarla kaplıdır.' },
+    ],
+    secret: { title: 'İnci Kefali', text: 'İnci kefali dünyada yalnız Van Gölü havzasında yaşar. İlkbaharda yumurtlamak için derelere girer, akıntıya karşı sıçrayarak yüzer.' },
+    hints: [
+      'Van’a hoş geldin! Kalenin kayalığına tırman: duvardan duvara sek.',
+      'Sur üstü: mazgallar arası geniş. Zıpla, en tepede atıl.',
+      'Göl kıyısı: kayıklar dalgayla sallanır. Zamanını kolla.',
+      'Akdamar iskelesi: anahtar yukarıda, kapı aşağıda. Önce tepeye çık.',
+    ],
+    map: roadMap(vanRoad),
+  },
+  {
+    id: 'erzurum',
+    city: 'erzurum',
+    name: 'Erzurum',
+    plate: 25,
+    subtitle: 'Dadaş Diyarı',
+    difficulty: 'Zor',
+    note: 'Burada kış uzun, çay demli, insan dadaştır. Çayı kıtlama iç: şekeri dişinin arasına al. Palandöken’e taze kar yağmış, çığa dikkat et.',
+    npcs: [
+      { name: 'Oltu Taşı Ustası Abdurrahman', look: 'usta', text: 'Oltu taşı yerden yumuşak çıkar, havayı görünce sertleşir; işledikçe parlar. Üç tanem tezgâhtan yuvarlandı. Bulursan cebine at, uğur getirir.' },
+      { name: 'Ciritçi Yavuz', look: 'genc', text: 'Cirit at üstünde oynanır: değneği atarsın, rakibin eğilip kurtulur. Buzun üstünde de öyle: hızını erken ayarla, son anda dönemezsin.' },
+      { name: 'Çaycı Dilber Nine', look: 'teyze', text: 'Gel yavrum, ısın biraz. Medresenin iki minaresi var, ikisi de yivli, ikisi de çinili. Soldakinin dibinde kar hep erken erir; nedenini bilen yok.' },
+    ],
+    medals: [70, 110, 170],
+    quips: ['Buz dadaş dinlemez.', 'Kıtlama şekerin düştü.', 'Çığ gibi geldin, kar gibi eridin.', 'Palandöken’den selam.'],
+    item: 'Oltu Taşı',
+    intro: 'Çifte Minareli Medrese’den Üç Kümbetler’e, cirit meydanından Palandöken’in buzlu yamacına. Anadolu’nun damı, kışın ta kendisi.',
+    facts: [
+      { title: 'Çifte Minareli Medrese', text: 'Çifte Minareli Medrese 13. yüzyılın sonlarında yapıldı. Taç kapısının iki yanındaki yivli minareler firuze çinilerle süslüdür.' },
+      { title: 'Palandöken', text: 'Palandöken’in zirvesi 3.000 metreyi aşar. 2011 Dünya Üniversiteler Kış Oyunları burada düzenlendi.' },
+      { title: 'Oltu Taşı', text: 'Oltu taşı Erzurum’un Oltu ilçesinde çıkarılır. Parlak siyah rengiyle tespih ve takı yapımında kullanılır.' },
+    ],
+    secret: { title: 'Cirit', text: 'Cirit, at üstünde oynanan eski bir Türk sporudur. Oyuncular birbirine ucu küt değnekler atar; Erzurum’da hâlâ oynanır.' },
+    hints: [
+      'Erzurum’a hoş geldin! Taç kapıdan avluya gir; iki minarenin arasında duvardan duvara sekerek dama çık.',
+      'Üç Kümbetler: külahtan külaha geçerken zıpla, tepede atıl. Büyük kümbetin duvarına tutun, seke seke tırman.',
+      'Cirit meydanı: değnekler düzenli aralıkla gelir. Biri geçince kulvara in, gelenin üstünden atla; sonda sahanlığa çık.',
+      'Palandöken yamacı: buzda hızın kesilmez. Yarın ucunda zıpla, tepede atıl, karşı duvara tutunup tırman.',
+    ],
+    map: roadMap(erzurumRoad),
+  },
+  {
     id: 'ardahan',
     city: 'ardahan',
     name: 'Ardahan',
@@ -1684,6 +1882,11 @@ function addFinale(l: LevelDef) {
   l.npcs = [...l.npcs.slice(0, l.finaleAt.npc), ...(pre.npcs ?? [])]
   l.map = l.map.map((r, y) => r.replace('E', '@') + fin[y])
   l.medals = l.medals.map((m) => m + pre.medal) as [number, number, number]
+}
+
+/** Patron Koşusu'nun bölümü: şehrin yalnız arenası (hatıra, tabela ve kişi yok). */
+export function bossLevel(l: LevelDef): LevelDef {
+  return { ...l, map: buildArena(l.city), hints: [], npcs: [], finaleAt: undefined, wind: undefined }
 }
 
 for (const l of LEVELS) {

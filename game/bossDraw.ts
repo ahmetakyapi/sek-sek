@@ -264,6 +264,176 @@ const PAINT: Record<CityKey, Painter> = {
       ell(c, 14, -14.6, 1.2, 1.6, Math.sin(t * 6) > 0 ? '#ffd36a' : '#f2b84a')
     }
   },
+  // Kırkpınar Davulu: kırmızı kasnaklı koca davul, elinde tokmak; toslarken teker gibi döner
+  edirne: (c, b, mood, t) => {
+    const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 11.5) * b.dir : 0
+    const air = b.y < b.floor - b.h - 2
+    if (!air && !roll) feet(c, 4.6, '#6a3a24')
+    c.save()
+    c.translate(0, -12.4)
+    c.rotate(roll)
+    ell(c, 0, 0, 11.8, 11.8, '#c8302a', '#8e1c1a')
+    ell(c, 0, 0, 9, 9, '#f2e2c0', '#d4c098')
+    // gergi ipleri
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4
+      stroke(c, [Math.cos(a) * 9, Math.sin(a) * 9, Math.cos(a + 0.39) * 11.4, Math.sin(a + 0.39) * 11.4], 0.6, '#f2c14e', false)
+    }
+    c.restore()
+    if (!roll) {
+      eye(c, -1.6, -13.4, 2.2, mood, t)
+      eye(c, 4.6, -13.4, 2, mood, t)
+      // tokmak: yorulunca yere düşer
+      if (mood === 'dizzy' || mood === 'hurt') {
+        stroke(c, [11, -1.4, 17, -1.8], 1.1, '#8a5a34')
+        ell(c, 18, -1.9, 1.9, 1.9, '#6a3a24')
+      } else {
+        const sw = b.state === 'warn' ? Math.sin(t * 22) * 2.4 : 0
+        stroke(c, [10, -11, 14.6, -18 + sw], 1.1, '#8a5a34')
+        ell(c, 15.2, -19.4 + sw, 2, 2, '#6a3a24')
+      }
+    }
+  },
+  // Karagöz'ün Gölgesi: perde sureti; yuvarlak kavuk, koca sakal, delikli deri desenleri
+  bursa: (c, b, mood, t) => {
+    const sway = Math.sin(t * 5) * 0.8
+    const air = b.y < b.floor - b.h - 2
+    const dark = '#3a2a52'
+    // bacaklar: mafsallı deri parçaları
+    stroke(c, [-3, -9, -4 - (air ? 2 : 0), -4.6, -3.4, -0.8], 2.4, dark)
+    stroke(c, [3, -9, 4.4 + (air ? 2 : 0), -4.6, 4, -0.8], 2.4, dark)
+    // gövde: çiçekli cepken
+    poly(c, [-6.4, -19, 6.4, -19, 7.4, -8, -7.4, -8], '#5a3a86', dark)
+    for (const [x, y] of [[-3, -15.4], [2.6, -15.4], [-0.2, -11.4]]) ell(c, x, y, 1.1, 1.1, '#f2c14e')
+    // kol: işaret ederken sallanır
+    stroke(c, [5.4, -17, 10.6, -14 + sway * 2, 13.6, -17.6 + sway * 3], 1.9, dark)
+    // baş, sakal, kavuk
+    ell(c, 1, -23, 5.4, 5, '#6a4a9a', dark)
+    blob(
+      c,
+      () => {
+        c.moveTo(-1.6, -21)
+        c.quadraticCurveTo(3, -13.6 + sway, 7.4, -21.6)
+        c.quadraticCurveTo(3, -20, -1.6, -21)
+      },
+      dark,
+    )
+    blob(
+      c,
+      () => {
+        c.moveTo(-4.6, -26)
+        c.bezierCurveTo(-5.6, -34, 7, -34, 6.4, -26)
+        c.closePath()
+      },
+      '#c8302a',
+      shade('#8e1c1a'),
+    )
+    eye(c, 3.4, -24, 1.8, mood, t)
+  },
+  // Aspendos Maskesi: taş tiyatro maskesi, defne çelengi; ağzı koca bir "O"
+  antalya: (c, b, mood, t) => {
+    const bob = b.state === 'tired' || b.state === 'down' ? 0 : Math.sin(t * 4) * 1.2
+    c.save()
+    c.translate(0, bob)
+    blob(
+      c,
+      () => {
+        c.moveTo(-10.6, -20)
+        c.bezierCurveTo(-11.6, -27, 11.6, -27, 10.6, -20)
+        c.bezierCurveTo(11.4, -9, 5.6, -1, 0, -1)
+        c.bezierCurveTo(-5.6, -1, -11.4, -9, -10.6, -20)
+      },
+      '#eadcc0',
+      shade('#c2b08c'),
+    )
+    // defne çelengi
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI * (1.1 + i * 0.133)
+      ell(c, Math.cos(a) * 10.4, -19 + Math.sin(a) * 6.6, 2.4, 1.1, i % 2 ? '#4e8a3a' : '#6aa84a', undefined, a + 1.2)
+    }
+    // ağız: saldırırken açılır
+    const open = mood === 'angry' ? 4.4 : mood === 'dizzy' ? 1.6 : 3
+    ell(c, 0, -7.6, 4.6, open, '#3a2a22')
+    eye(c, -4.4, -16, 2.4, mood, t)
+    eye(c, 4.4, -16, 2.4, mood, t)
+    // yanak çatlağı
+    stroke(c, [7, -12, 8.4, -9.4, 7.4, -7], 0.6, '#8a7a5e', false)
+    c.restore()
+  },
+  // Dikilitaş Bekçisi: T biçimli kireçtaşı; gövdesinde kabartma kollar ve tilki
+  sanliurfa: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const lean = b.state === 'warn' ? Math.sin(t * 28) * 0.03 : 0
+    c.save()
+    c.rotate(lean)
+    if (!air) poly(c, [-6.6, -2.4, 6.6, -2.4, 7.6, 0, -7.6, 0], '#a88a5e', '#7e6440')
+    poly(c, [-5, -21, 5, -21, 5.6, -2, -5.6, -2], '#d8b888', '#b09060')
+    poly(c, [-10.6, -28, 10.6, -28, 10, -20.6, -10, -20.6], '#e4c898', '#b09060')
+    // kabartma kollar: önde kavuşan eller
+    stroke(c, [-4.4, -18, -4, -10, 0.6, -8.6], 0.8, '#8a6a44', false)
+    stroke(c, [4.4, -18, 4, -10, -0.6, -8.6], 0.8, '#8a6a44', false)
+    // tilki kabartması
+    stroke(c, [-2, -5.6, 1.6, -6.4, 3, -4.6], 0.7, '#8a6a44', false)
+    stroke(c, [1.6, -6.4, 2.6, -7.8], 0.7, '#8a6a44', false)
+    eye(c, -3.4, -24.2, 2, mood, t)
+    eye(c, 4, -24.2, 2, mood, t)
+    c.restore()
+  },
+  // Göl Canavarı: turkuaz yılan boyun, sırtında yüzgeçler; sudan fırlamış gibi ıslak parlar
+  van: (c, _b, mood, t) => {
+    const w = Math.sin(t * 5) * 1.2
+    // kuyruk ve kamburlar
+    stroke(c, [-13, -2, -15.6, -7 + w, -12.6, -10.6], 2.6, '#2e8a9a')
+    ell(c, -7, -6, 6.6, 6, '#3aa0b0', '#2a7a8a')
+    ell(c, 2, -7.4, 8, 7.4, '#3aa0b0', '#2a7a8a')
+    for (const fx of [-8, -3, 2.6]) poly(c, [fx - 1.8, -12.6, fx + 0.4, -17 - Math.abs(w), fx + 2.4, -12.4], '#f08a5a', '#c8643a')
+    ell(c, 2, -3.6, 6, 2.6, '#c8ecf0')
+    // boyun ve baş
+    blob(
+      c,
+      () => {
+        c.moveTo(4, -12)
+        c.bezierCurveTo(5, -20, 7 + w, -22, 8.6 + w, -23)
+        c.lineTo(12.6 + w, -19.6)
+        c.bezierCurveTo(10, -17, 10, -12, 9.4, -8)
+        c.closePath()
+      },
+      '#3aa0b0',
+      shade('#2a7a8a'),
+    )
+    ell(c, 11.4 + w, -22.6, 5, 3.8, '#44b4c4', '#2a7a8a')
+    stroke(c, [13.6 + w, -21, 16 + w, -20.8], 0.7, INK, false)
+    eye(c, 11 + w, -23.6, 1.9, mood, t)
+  },
+  // Palandöken Çığı: koca kartopu; içine çam dalı, kaya ve bir kayak sopası karışmış
+  erzurum: (c, b, mood, t) => {
+    const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 12.5) * b.dir : 0
+    c.save()
+    c.translate(0, -13)
+    c.rotate(roll)
+    blob(
+      c,
+      () => {
+        c.moveTo(-12.6, 2)
+        c.bezierCurveTo(-14.6, -8, -6, -14.4, 1, -13.2)
+        c.bezierCurveTo(9, -14, 14.6, -6, 12.6, 3)
+        c.bezierCurveTo(12, 10.6, 5, 13, -1, 12.8)
+        c.bezierCurveTo(-8, 13.4, -12, 9, -12.6, 2)
+      },
+      '#f4f9ff',
+      shade('#c4d4e8'),
+    )
+    // karışanlar
+    poly(c, [-9, 4, -5, 2.6, -4.4, 7, -8.4, 8], '#6e7686', '#444c5c')
+    poly(c, [5, 7, 9, 5.6, 9.4, 9.4], '#6e7686')
+    stroke(c, [-7, -9, -12.6, -15.6], 1, '#e04a3a')
+    for (const k of [0, 1, 2]) stroke(c, [7 + k * 1.6, -8 - k * 1.4, 11 + k * 1.6, -11.6 - k * 1.4], 1.3, '#2e5e48')
+    c.restore()
+    if (!roll) {
+      eye(c, -1.6, -14.6, 2.4, mood, t)
+      eye(c, 5.4, -14.6, 2.2, mood, t)
+    }
+  },
   // Körfez Ahtapotu: mor kubbe baş, kıvrılan kollar
   izmir: (c, _b, mood, t) => {
     for (let i = 0; i < 4; i++) {

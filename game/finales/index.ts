@@ -24,12 +24,18 @@ import { prelude as trabzon } from './trabzon'
 import { prelude as sivas } from './sivas'
 import { prelude as ardahan } from './ardahan'
 import { prelude as bayburt } from './bayburt'
+import { prelude as edirne } from './edirne'
+import { prelude as bursa } from './bursa'
+import { prelude as antalya } from './antalya'
+import { prelude as sanliurfa } from './sanliurfa'
+import { prelude as van } from './van'
+import { prelude as erzurum } from './erzurum'
 import type { Prelude } from './types'
 
-export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt }
+export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt, edirne, bursa, antalya, sanliurfa, van, erzurum }
 
 const H = 24
-const ICE: CityKey[] = ['sivas', 'ardahan']
+const ICE: CityKey[] = ['sivas', 'ardahan', 'erzurum']
 
 /** Varış: kapıdan çıkılan yer, hemen yanında bayrak. */
 const ARRIVAL = ['      ', ' & F  ', '######', '######', '######', '######']
@@ -63,6 +69,11 @@ function arena(city: CityKey): string[] {
 export function buildRoad(city: CityKey, pad: (rows: string[]) => string[], decorate: (rows: string[]) => string[]): string[] {
   const parts = [pad(ARRIVAL), ...PRELUDES[city].chunks.map(pad)]
   return decorate(Array.from({ length: H }, (_, y) => parts.map((c) => c[y]).join('')))
+}
+
+/** Patron Koşusu: kısa bir giriş ve arena; meydan yolu ve tabela yok. */
+export function buildArena(city: CityKey): string[] {
+  return arena(city).map((r, y) => (y === 19 ? '  P  ' : y > 19 ? '#####' : '     ') + r.replace('?', ' '))
 }
 
 export function buildFinale(city: CityKey, pad: (rows: string[]) => string[], decorate: (rows: string[]) => string[]): string[] {

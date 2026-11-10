@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
 import { verifyPlayer } from '@/lib/players'
+import { SCORE_SUFFIX, scoreKey } from '@/lib/scoreKey'
 import { players, scores } from '@/lib/schema'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
         select p.name as name, count(*)::int as cities, sum(s.time_ms)::int as "timeMs",
                sum(s.deaths)::int as deaths, sum(s.items)::int as items
         from seksek_scores s join seksek_players p on p.id = s.player_id
+        where s.level like ${'%' + SCORE_SUFFIX}
         group by p.id, p.name
         order by ${order}
         limit 20`)
@@ -45,7 +47,7 @@ export async function GET(req: NextRequest) {
       .select({ name: players.name, timeMs: scores.timeMs, deaths: scores.deaths, items: scores.items })
       .from(scores)
       .innerJoin(players, eq(players.id, scores.playerId))
-      .where(eq(scores.level, level))
+      .where(eq(scores.level, scoreKey(level)))
       .orderBy(...order)
       .limit(10)
     return NextResponse.json({ scores: rows }, { headers: { 'Cache-Control': 'no-store' } })
@@ -69,13 +71,14 @@ export async function POST(req: NextRequest) {
     const me = await verifyPlayer(b.playerId, b.token)
     if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
     const d = db()
-    const prev = (await d.select({ id: scores.id, timeMs: scores.timeMs }).from(scores).where(and(eq(scores.level, level), eq(scores.playerId, me.id))).limit(1))[0]
+    const key = scoreKey(level)
+    const prev = (await d.select({ id: scores.id, timeMs: scores.timeMs }).from(scores).where(and(eq(scores.level, key), eq(scores.playerId, me.id))).limit(1))[0]
     let improved = true
-    if (!prev) await d.insert(scores).values({ level, name: me.name, playerId: me.id, timeMs, deaths, items })
+    if (!prev) await d.insert(scores).values({ level: key, name: me.name, playerId: me.id, timeMs, deaths, items })
     else if (timeMs < prev.timeMs) await d.update(scores).set({ timeMs, deaths, items, name: me.name, createdAt: new Date() }).where(eq(scores.id, prev.id))
     else improved = false
     const best = improved ? timeMs : prev!.timeMs
-    const rank = await d.execute(sql`select count(*)::int + 1 as rank from seksek_scores where level = ${level} and time_ms < ${best}`)
+    const rank = await d.execute(sql`select count(*)::int + 1 as rank from seksek_scores where level = ${key} and time_ms < ${best}`)
     return NextResponse.json({ ok: true, improved, rank: (rank.rows[0] as { rank: number }).rank })
   } catch {
     return bad('Skor kaydedilemedi', 503)

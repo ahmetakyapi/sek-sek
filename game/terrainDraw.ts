@@ -10,7 +10,7 @@
  * durur. Her karonun rastgeleliği konumundan türetilir: parça sınırlarında doku kesilmez.
  */
 import { CITY } from './art'
-import { CRUMBLE, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, type World } from './sim'
+import { CRUMBLE, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WET, type World } from './sim'
 import { T, type CityKey } from './types'
 
 type Ctx = CanvasRenderingContext2D
@@ -25,6 +25,12 @@ const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   istanbul: { mat: 'brick', cap: 'stone' },
   kocaeli: { mat: 'brick', cap: 'grass' },
   canakkale: { mat: 'ashlar', cap: 'stone' },
+  edirne: { mat: 'ashlar', cap: 'grass' },
+  bursa: { mat: 'cyclop', cap: 'grass' },
+  antalya: { mat: 'strata', cap: 'stone' },
+  sanliurfa: { mat: 'ashlar', cap: 'stone' },
+  van: { mat: 'rock', cap: 'stone' },
+  erzurum: { mat: 'rock', cap: 'snow' },
   sinop: { mat: 'cyclop', cap: 'grass' },
   diyarbakir: { mat: 'ashlar', cap: 'stone' },
   izmir: { mat: 'ashlar', cap: 'stone' },
@@ -88,7 +94,7 @@ export class TerrainHD {
   ) {
     this.solid = (tx, ty) => {
       const t = w.tile(tx, ty)
-      return t === SOLID || t === TURRET || t === ICE || t === FAKE
+      return t === SOLID || t === TURRET || t === ICE || t === FAKE || t === WET
     }
   }
 
@@ -208,6 +214,32 @@ export class TerrainHD {
         }
     }
     c.restore()
+
+    // ── ıslak taş: aynı örgü, üstünde su parıltısı (kaygan olduğu okunmalı)
+    for (let ty = 0; ty < rows; ty++)
+      for (let tx = tx0; tx <= tx1; tx++) {
+        if (w.tile(tx, ty) !== WET) continue
+        const x = tx * T
+        const y = ty * T
+        c.fillStyle = 'rgba(90,150,200,0.26)'
+        c.fillRect(x, y, T, T)
+        if (!solid(tx, ty - 1)) {
+          c.fillStyle = 'rgba(170,220,255,0.55)'
+          c.fillRect(x, y + 0.4, T, 1.6)
+          c.strokeStyle = 'rgba(255,255,255,0.8)'
+          c.lineWidth = 0.7
+          c.beginPath()
+          const o = hash(tx, ty, 71) * 7
+          c.moveTo(x + 1.5 + o, y + 1.2)
+          c.lineTo(x + 6.5 + o, y + 1.2)
+          c.stroke()
+          // damla
+          c.fillStyle = 'rgba(170,220,255,0.7)'
+          c.beginPath()
+          c.ellipse(x + 4 + hash(tx, ty, 72) * 8, y + 5 + hash(tx, ty, 73) * 6, 0.7, 1.1, 0, 0, Math.PI * 2)
+          c.fill()
+        }
+      }
 
     // ── 2. buz: ayrı malzeme, mavi mürekkep
     for (let ty = 0; ty < rows; ty++)

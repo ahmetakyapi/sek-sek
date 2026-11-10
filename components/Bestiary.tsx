@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CITY, CREATURE_NAMES, ENEMY_ART, enemyArt, rect, sprite, type Ctx } from '@/game/art'
-import { Renderer } from '@/game/render'
+import { CITY, CREATURE_NAMES, enemySpecies, rect, type Ctx } from '@/game/art'
+import { drawEnemy, drawFriend } from '@/game/enemyDraw'
+import type { EnemyKind } from '@/game/sim'
 import type { LevelDef } from '@/game/types'
 import { CREATURE_NAMES_EN } from '@/game/content.en'
 import { useLang, useT } from '@/lib/i18n'
@@ -17,22 +18,19 @@ interface Entry {
   draw: (c: Ctx) => void
 }
 
-const OUTLINE = (pal: Record<string, string>, col: string) => Object.fromEntries(Object.keys(pal).map((k) => [k, col]))
+const BOX: Partial<Record<EnemyKind, [number, number]>> = { charger: [14, 12], fly: [12, 8], bat: [12, 8], spiky: [12, 9], magpie: [12, 9] }
 
-function enemyEntry(id: string, key: string, note: string, art: { frames: string[][]; pal: Record<string, string> }): Entry {
-  const rows = art.frames[0]
+function enemyEntry(id: string, kind: EnemyKind, city: LevelDef['city'], note: string): Entry {
+  const key = enemySpecies(kind, city)
+  const [w, h] = BOX[kind] ?? [12, 10]
+  const air = kind === 'fly' || kind === 'bat'
   return {
     id,
     key,
     name: CREATURE_NAMES[key] ?? key,
     note,
     friend: false,
-    draw: (c) => {
-      const ox = Math.floor((20 - rows[0].length) / 2)
-      const oy = Math.floor((20 - rows.length) / 2) + 1
-      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) sprite(c, rows, OUTLINE(art.pal, '#e8283a'), ox + dx, oy + dy)
-      sprite(c, rows, art.pal, ox, oy)
-    },
+    draw: (c) => drawEnemy(c, key, { kind, state: 'idle', w, h, phase: 0.08, timer: 0.3 }, 10, air ? 14 : 17, 1.15, 1, 0.3),
   }
 }
 
@@ -48,19 +46,15 @@ export function bestiary(level: LevelDef): Entry[] {
       name: CREATURE_NAMES[s.animal] ?? 'Dost',
       note: 'Dost: yanına git, sev',
       friend: true,
-      draw: (c) => {
-        // oyundaki çizimle aynı: Renderer'ın hayvan çizicisini küçük tuvalde kullan
-        const fake = { t: 0, city: level.city }
-        ;(Renderer.prototype as unknown as { drawAnimal: (this: unknown, b: Ctx, x: number, bot: number) => void }).drawAnimal.call(fake, c, 2, 18)
-      },
+      draw: (c) => drawFriend(c, s.animal, 10, 18, 1.05, 0.3, false),
     })
-  if (has('e')) out.push(enemyEntry('e', s.enemyGround, 'Isırır: üstüne bas', enemyArt('ground', level.city)))
-  if (has('f')) out.push(enemyEntry('f', s.enemyFly, 'Uçar: üstüne bas', enemyArt('fly', level.city)))
-  if (has('h')) out.push(enemyEntry('h', enemyArt('hopper', level.city) === ENEMY_ART.hare ? 'hare' : 'frog', 'Sana doğru sıçrar', enemyArt('hopper', level.city)))
-  if (has('c')) out.push(enemyEntry('c', 'ram', 'Görünce hücum eder', ENEMY_ART.ram))
-  if (has('u')) out.push(enemyEntry('u', 'bat', 'Dalgalanarak uçar', ENEMY_ART.bat))
-  if (has('x')) out.push(enemyEntry('x', 'hedgehog', 'Dikenli: üstüne basma!', ENEMY_ART.hedgehog))
-  if (has('j')) out.push(enemyEntry('j', 'magpie', 'Daldan sana dalar: kanat çırpınca kaç', ENEMY_ART.magpie))
+  if (has('e')) out.push(enemyEntry('e', 'ground', level.city, 'Isırır: üstüne bas'))
+  if (has('f')) out.push(enemyEntry('f', 'fly', level.city, 'Uçar: üstüne bas'))
+  if (has('h')) out.push(enemyEntry('h', 'hopper', level.city, 'Sana doğru sıçrar'))
+  if (has('c')) out.push(enemyEntry('c', 'charger', level.city, 'Görünce hücum eder'))
+  if (has('u')) out.push(enemyEntry('u', 'bat', level.city, 'Dalgalanarak uçar'))
+  if (has('x')) out.push(enemyEntry('x', 'spiky', level.city, 'Dikenli: üstüne basma!'))
+  if (has('j')) out.push(enemyEntry('j', 'magpie', level.city, 'Daldan sana dalar: kanat çırpınca kaç'))
   if (has('Y'))
     out.push({
       id: 'Y',
@@ -96,16 +90,17 @@ function Icon({ entry }: { entry: Entry }) {
   const [src, setSrc] = useState('')
   useEffect(() => {
     const cv = document.createElement('canvas')
-    cv.width = 20
-    cv.height = 20
+    cv.width = 80
+    cv.height = 80
     const c = cv.getContext('2d')!
+    c.scale(4, 4)
     entry.draw(c)
     setSrc(cv.toDataURL())
   }, [entry])
   return (
     <span className="grid h-10 w-10 shrink-0 place-items-center bg-ink/60 [box-shadow:inset_0_0_0_2px_#3d3550]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {src && <img src={src} alt="" width={40} height={40} className="h-10 w-10" style={{ imageRendering: 'pixelated' }} />}
+      {src && <img src={src} alt="" width={40} height={40} className="h-10 w-10" />}
     </span>
   )
 }

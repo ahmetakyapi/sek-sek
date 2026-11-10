@@ -15,7 +15,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 19 şehir, 57 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 25 şehir, 75 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 

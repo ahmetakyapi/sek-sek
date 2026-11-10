@@ -38,14 +38,18 @@ describe('bölüm verisi', () => {
   it('il plakaları doğru', () => {
     expect(LEVELS.map((l) => [l.name, l.plate])).toEqual([
       ['İstanbul', 34],
+      ['Edirne', 22],
       ['Kocaeli', 41],
+      ['Bursa', 16],
       ['Çanakkale', 17],
       ['İzmir', 35],
+      ['Antalya', 7],
       ['Ankara', 6],
       ['Konya', 42],
       ['Nevşehir', 50],
       ['Adana', 1],
       ['Gaziantep', 27],
+      ['Şanlıurfa', 63],
       ['Diyarbakır', 21],
       ['Mardin', 47],
       ['Malatya', 44],
@@ -54,6 +58,8 @@ describe('bölüm verisi', () => {
       ['Ordu', 52],
       ['Trabzon', 61],
       ['Sivas', 58],
+      ['Van', 65],
+      ['Erzurum', 25],
       ['Ardahan', 75],
       ['Bayburt', 69],
     ])
@@ -311,5 +317,55 @@ describe('final: meydan kapısı, düğmeler, nazar boncuğu', () => {
     expect(w.signs.length).toBe(l.hints.length)
     expect(w.npcs.length).toBe(l.npcs.length)
     expect(l.hints[l.hints.length - 1]).toBe(BOSSES[l.city].taunt)
+  })
+})
+
+describe('yeni mekanikler: sandık ve ıslak taş', () => {
+  const go = (w: World, secs: number, patch: Partial<ReturnType<typeof emptyInput>> = {}) => {
+    for (let i = 0; i < secs * 120; i++) w.step(1 / 120, { ...emptyInput(), ...patch })
+  }
+
+  it('sandık yandan itilir, duvara dayanınca durur ve oyuncuyu da durdurur', () => {
+    const w = mk(['            ', ' P  p     # ', '############'])
+    const c = w.crates[0]
+    go(w, 0.3)
+    const x0 = c.x
+    go(w, 2, { right: true })
+    expect(c.x).toBeGreaterThan(x0 + 20)
+    go(w, 6, { right: true })
+    // duvar 10. sütunda: sandık 9. sütuna yaslanır, oyuncu sandığın solunda kalır
+    expect(c.x).toBeCloseTo(9 * 16, 0)
+    expect(w.player.x + w.player.w).toBeLessThanOrEqual(c.x + 0.01)
+  })
+
+  it('sandığın üstüne çıkılır; çukura itilen sandık köprü olur', () => {
+    //  sandık bir karoluk çukurun kenarında: itilince içine düşer, üstü zeminle bir olur, üstünden yürünür
+    const w = mk(['              ', ' P p          ', '#### #########', '##############', '##############'])
+    go(w, 3.5, { right: true })
+    const c = w.crates[0]
+    expect(c.y).toBe(2 * 16)
+    expect(w.deaths).toBe(0)
+    expect(w.player.x).toBeGreaterThan(5 * 16)
+  })
+
+  it('ölünce sandık yerine döner', () => {
+    const w = mk(['          ', ' P p   ^^ ', '##########'])
+    const c = w.crates[0]
+    for (let i = 0; i < 1200 && w.deaths === 0; i++) w.step(1 / 120, { ...emptyInput(), right: true })
+    expect(w.deaths).toBe(1)
+    go(w, 1)
+    expect(c.x).toBe(c.ox)
+  })
+
+  it('ıslak taşta durmak normal zeminden uzun, buzdan kısa sürer', () => {
+    const slide = (ch: string) => {
+      const w = mk(['                              ', ' P                            ', ch.repeat(30)])
+      go(w, 1.2, { right: true })
+      const x0 = w.player.x
+      go(w, 2)
+      return w.player.x - x0
+    }
+    expect(slide('i')).toBeGreaterThan(slide('#') + 3)
+    expect(slide('i')).toBeLessThan(slide('I') - 10)
   })
 })

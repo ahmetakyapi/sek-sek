@@ -19,11 +19,13 @@ paths:
   patron → karakterler → yazılar. Piksel katmanlar tam piksele, HD katmanlar kesirli kameraya çizilir.
 - Fizik sabit adımlıdır; çizim `capture()` / `blend()` ile adımlar arasında ara değerlenir. Yeni hareketli nesne
   eklersen ikisine de ekle, yoksa yüksek tazeleme hızında titrer.
-- Yeni piksel sprite ekleme: karakter, insan, patron ve zemin vektör kalır. (Düşmanlar, eşyalar ve arka plan
-  katmanları hâlâ piksel: dönüştürülecekse hepsi birlikte, tek karar olarak.)
+- Yeni piksel sprite ekleme: karakter, insan, patron, zemin, düşman, dost hayvan ve toplananlar vektördür
+  (`heroDraw`, `bossDraw`, `terrainDraw`, `enemyDraw`). Piksel kalan yalnız arka plan katmanları ve sokak süsleridir.
+- Düşman kırmızı haleyle çizilir (iki geçiş: önce kalın kırmızı hat), dost hayvanda hale yoktur; ikisi karışmasın.
 
 ## Bakmadan bitmez
 
 - `node scripts/art/sheet.cjs out.png`: bütün kılıklar, hareketler ve patronlar tek föyde.
+- `node scripts/art/creatures.cjs out.png`: düşmanlar (her durum), dost hayvanlar, hatıralar ve ortak nesneler.
 - `node scripts/preview.cjs <şehir> [start|arrival|boss|npc:0] out.png [--telefon|--dikey|--memo|--en]`: oyunun içinden.
 - Şehir kartları: `node scripts/art/banners.cjs <şehir>` (görünüm değişince yeniden üret).

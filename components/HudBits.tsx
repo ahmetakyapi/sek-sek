@@ -2,30 +2,20 @@
 
 import { useT } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
-import { ITEM_ART } from '@/game/art'
+import { drawKeepsake, drawThing } from '@/game/enemyDraw'
 import type { CityKey } from '@/game/types'
 
 const cache = new Map<string, string>()
 
-/** Şehrin hatıra çizimini küçük bir piksel simgesine çevirir. */
+/** Şehrin hatıra çizimi, küçük bir simge olarak (oyundaki vektör çizimin aynısı). */
 export function ItemIcon({ city, taken, size = 18 }: { city: CityKey; taken: boolean; size?: number }) {
   const [src, setSrc] = useState<string | null>(null)
   useEffect(() => {
     let url = cache.get(city)
     if (!url) {
-      const art = ITEM_ART[city]
       const cv = document.createElement('canvas')
-      cv.width = art.rows[0].length
-      cv.height = art.rows.length
-      const c = cv.getContext('2d')!
-      art.rows.forEach((r, y) => {
-        for (let x = 0; x < r.length; x++) {
-          const col = art.pal[r[x]]
-          if (!col) continue
-          c.fillStyle = col
-          c.fillRect(x, y, 1, 1)
-        }
-      })
+      cv.width = cv.height = 72
+      drawKeepsake(cv.getContext('2d')!, city, 36, 36, 5, 0)
       url = cv.toDataURL()
       cache.set(city, url)
     }
@@ -40,9 +30,27 @@ export function ItemIcon({ city, taken, size = 18 }: { city: CityKey; taken: boo
       height={size}
       alt=""
       className={`inline-block transition-[filter,opacity] duration-300 ${taken ? 'drop-shadow-[0_0_4px_rgba(242,193,78,0.7)]' : 'opacity-35 brightness-0 invert-[0.35]'}`}
-      style={{ imageRendering: 'pixelated' }}
     />
   )
+}
+
+/** Gizli pul ya da nazar boncuğu simgesi (oyundaki çizimin aynısı); bulunmamışsa soluk siluet. */
+export function ThingIcon({ kind, taken, size = 18 }: { kind: 'stamp' | 'charm'; taken: boolean; size?: number }) {
+  const [src, setSrc] = useState<string | null>(null)
+  useEffect(() => {
+    let url = cache.get(kind)
+    if (!url) {
+      const cv = document.createElement('canvas')
+      cv.width = cv.height = 72
+      drawThing(cv.getContext('2d')!, kind, 36, 36, kind === 'stamp' ? 4.2 : 4.6, 0)
+      url = cv.toDataURL()
+      cache.set(kind, url)
+    }
+    setSrc(url)
+  }, [kind])
+  if (!src) return <span style={{ width: size, height: size }} className="inline-block" />
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} width={size} height={size} alt="" className={`inline-block ${taken ? '' : 'opacity-35 brightness-0 invert-[0.35]'}`} />
 }
 
 export function Key({ children, wide = false, dim = false }: { children: React.ReactNode; wide?: boolean; dim?: boolean }) {
