@@ -45,9 +45,28 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (patronu gerçek fizikle yenen bot), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, şehir görselleri banners.cjs, ikon ve favicon icons.py, harita üreteçleri, sync)
+scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (patronu gerçek fizikle yenen bot), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, çizim föyü sheet.cjs, şehir görselleri banners.cjs, ikon ve favicon icons.py, harita üreteçleri, sync)
 tests/           sim.test.ts (fizik, mekanik, final), boss.test.ts (patron kuralları; her patronu bot ve zayıf oyuncu botu yener)
 ```
+
+## Ajanla çalışma
+
+Bu oyun ajanla geliştiriliyor; her iş için hazır bir yol var. Yeni bir araç ya da kural öğrendiğinde buraya ve ilgili dosyaya yaz.
+
+| İş | Nereden |
+|---|---|
+| Yeni şehir | `/yeni-sehir <ad>` (sekiz ölçüt, baştan sona) |
+| Harita, bulmaca, zorluk | `level-designer` ajanı · `.claude/rules/bolumler.md` |
+| Karakter, patron, kaplama çizimi | `artist` ajanı · `.claude/rules/cizim.md` |
+| Patron davranışı | `.claude/rules/patron.md` |
+| Metin, menü, Title Case | `.claude/rules/metin.md` |
+| "Bozuldu mu?" | `/dogrula [şehir]` ya da `verifier` ajanı → `bash scripts/verify-all.sh` |
+| "Nasıl duruyor?" | `/onizle <şehir> [yer]` → `scripts/preview.cjs` (oyun içi) · `scripts/art/sheet.cjs` (çizim föyü) |
+
+Kurallar (`.claude/rules/`) yalnız ilgili dosyalar okununca yüklenir; bu dosya her oturumda yüklenen haritadır.
+Paralel iş: şehirler ayrı dosyalarda durur (`game/cities/`, `game/finales/`), bu yüzden birden çok `level-designer`
+aynı anda çalışabilir; ortak dosyalara (`levels.ts`, `render.ts`, `boss.ts`) yalnız ana oturum dokunur.
+Ajan raporu kanıt değildir: push'tan önce değişen dosyaların son hâlini kendin doğrula (ajan sen doğrularken dosyayı değiştirmiş olabilir).
 
 ## Bölüm ölçütleri (kalıcı kural)
 

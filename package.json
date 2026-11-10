@@ -11,6 +11,9 @@
     "verify:levels": "tsx scripts/verify-levels.ts",
     "verify:respawn": "tsx scripts/verify-respawn.ts",
     "verify:boss": "tsx scripts/bossbot.ts",
+    "verify:all": "bash scripts/verify-all.sh",
+    "preview": "node scripts/preview.cjs",
+    "sheet": "node scripts/art/sheet.cjs",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts"
   },
   "dependencies": {
@@ -26,6 +29,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "5.9",
