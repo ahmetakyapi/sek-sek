@@ -967,11 +967,11 @@ export const LEVELS_EN: Record<string, LevelEn> = {
 export const STORY_EN: { title: string; text: string }[] = [
   {
     title: 'The Notebook at the Bookshop',
-    text: '{name} found an old road notebook on the bottom shelf of a second-hand bookshop. On its cover, in faded letters, was a single word: Memleket, “homeland”. Even the bookseller could not say whose it had been; every page was signed the same way: Seyyah, “the traveller”.',
+    text: '{name} found an old road notebook on the bottom shelf of a second-hand bookshop. On its cover, in faded letters, was a single word: Memleket, “homeland”. Even the bookseller could not say whose it had been; every page was signed the same way: the Traveller.',
   },
   {
     title: 'The Unfinished Pages',
-    text: 'Each page was given to a city. Every page had a short note from Seyyah: what to eat, where to look from, whom to greet. Under the note were three empty boxes. Three keepsakes from every city… Seyyah had not filled them in; that was left to whoever found the notebook.',
+    text: 'Each page was given to a city. Every page had a short note from the Traveller: what to eat, where to look from, whom to greet. Under the note were three empty boxes. Three keepsakes from every city… The Traveller had not filled them in; that was left to whoever found the notebook.',
   },
   {
     title: 'The Last Line',
@@ -981,7 +981,7 @@ export const STORY_EN: { title: string; text: string }[] = [
 
 export const ENDING_EN: { title: string; text: string } = {
   title: 'The Notebook Is Complete',
-  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. All three boxes are full. Who Seyyah was, and why the road began here, the notebook does not say; there is only a small note in the corner of the page: “Your turn.” The road has ended, but the homeland never does: the next cities are on their way.',
+  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. All three boxes are full. Who the Traveller was, and why the road began here, the notebook does not say; there is only a small note in the corner of the page: “Your turn.” The road has ended, but the homeland never does: the next cities are on their way.',
 }
 
 export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string }> = {
@@ -991,7 +991,7 @@ export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string
   },
   memo: {
     role: 'Phone Repairer',
-    bio: 'From Diyarbakır, 28 years old. He has a little phone shop at the foot of the city walls and can spot a cracked screen at a glance. In his pocket: Seyyah’s notebook and an old phone where he logs every city.',
+    bio: 'From Diyarbakır, 28 years old. He has a little phone shop at the foot of the city walls and can spot a cracked screen at a glance. In his pocket: the Traveller’s notebook and an old phone where he logs every city.',
   },
 }
 

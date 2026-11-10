@@ -22,4 +22,4 @@ paths:
   "atıl / atılma", "kontrol noktası" yazılmaz. Türkçe ek kesmeyle gelir: boss’u, boss’lar, dash’i, checkpoint’e.
   Fiil gerekiyorsa "dash at". Dünyadaki nesne kendi adıyla kalır (bayrak, tabela, hatıra, nazar boncuğu); terim, işlevin adıdır.
   Zaten yerleşmiş Türkçe karşılıklar (Bölüm, Ayarlar, Mola, Süre, Düşüş, Hayalet Koşu, Rahat Mod) değiştirilmez.
-- Çerçeve hikâye: defter, sahafta bulunan bir **Seyyah**'ın yol defteridir ("Yol Defteri"); "dede" anlatısı kullanılmaz.
+- Çerçeve hikâye: defter, sahafta bulunan bir **Gezgin**'in yol defteridir ("Yol Defteri"); "dede" anlatısı kullanılmaz.

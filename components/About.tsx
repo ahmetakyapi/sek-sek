@@ -83,7 +83,7 @@ export default function About({ onClose, onPlay, heroName }: { onClose: () => vo
         <div className="absolute bottom-4 left-4 right-4 bg-[#1e1a29]/80 px-4 py-3 sm:left-6 sm:right-auto sm:max-w-[560px] [box-shadow:0_0_0_2px_#3d3550]">
           <p className="text-[11px] font-bold tracking-[0.3em] text-accent-2">{t('SEK-SEK · ARTBOOK')}</p>
           <h2 className="mt-1 font-display text-[clamp(36px,8vw,60px)] leading-[0.95] text-cream [text-shadow:0_4px_0_#120f1a]">{t('Şehir Şehir Anadolu')}</h2>
-          <p className="mt-2 max-w-lg text-[14px] leading-relaxed text-cream/85">{t('Seyyah’ın yarım kalmış defteri, iki yolcu ve {n} şehir. Her sayfa bir şehrin sesi, tadı ve insanı.', { n: LEVELS.length })}</p>
+          <p className="mt-2 max-w-lg text-[14px] leading-relaxed text-cream/85">{t('Gezgin’in yarım kalmış defteri, iki yolcu ve {n} şehir. Her sayfa bir şehrin sesi, tadı ve insanı.', { n: LEVELS.length })}</p>
         </div>
       </header>
 
@@ -92,7 +92,7 @@ export default function About({ onClose, onPlay, heroName }: { onClose: () => vo
         <section className="grid gap-6 md:grid-cols-[1fr_1.15fr] md:items-center">
           <div className="notebook rotate-[-1.2deg] p-5">
             <p className="font-display text-2xl">{t('Memleket')}</p>
-            <p className="mt-0.5 text-[12px] opacity-70">{t('Seyyah’ın Yol Defteri')}</p>
+            <p className="mt-0.5 text-[12px] opacity-70">{t('Gezgin’in Yol Defteri')}</p>
             <ul className="mt-3 grid grid-cols-2 gap-1 text-[12px]">
               {LEVELS.map((l) => (
                 <li key={l.id} className="flex items-center gap-1.5 border border-[#5a3c26]/30 px-1.5 py-0.5">

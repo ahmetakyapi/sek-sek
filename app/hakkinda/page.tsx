@@ -15,7 +15,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 25 şehir, 75 hatıra, iki yolcu ve Seyyah’ın yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 25 şehir, 75 hatıra, iki yolcu ve Gezgin’in yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 
@@ -65,7 +65,7 @@ export default function Hakkinda() {
               ))}
             </ul>
             <p className="mt-7 max-w-md text-[17px] leading-relaxed text-cream/85">
-              Seyyah’ın yarım kalmış defterini tamamla.
+              Gezgin’in yarım kalmış defterini tamamla.
               <br />
               <span className="text-muted">Yirmi beş şehir. Yetmiş beş hatıra. Tek yolculuk.</span>
             </p>
@@ -107,7 +107,7 @@ export default function Hakkinda() {
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 md:grid-cols-[1fr_1.2fr] md:items-center">
           <div className="notebook rotate-[-1.5deg] p-6">
             <p className="font-display text-2xl">Memleket</p>
-            <p className="mt-1 text-[12px] opacity-70">Seyyah’ın Yol Defteri</p>
+            <p className="mt-1 text-[12px] opacity-70">Gezgin’in Yol Defteri</p>
             <ul className="mt-4 grid grid-cols-2 gap-1.5 text-[13px]">
               {LEVELS.map((l) => (
                 <li key={l.id} className="flex items-center gap-2 border border-[#5a3c26]/30 px-2 py-1">
@@ -122,7 +122,7 @@ export default function Hakkinda() {
             <p className="text-[12px] font-bold tracking-[0.3em] text-accent">HİKÂYE</p>
             <h2 className="mt-2 font-display text-4xl text-cream">Sahaftaki Defter</h2>
             <p className="mt-4 leading-relaxed text-muted">
-              Bir sahafın rafından tozlu bir yol defteri çıkar; altındaki imza tek kelime: Seyyah. Her sayfa bir şehre ayrılmış, her şehirde üç boş kutu var. Sırt çantanı hazırla, kırmızı atkını
+              Bir sahafın rafından tozlu bir yol defteri çıkar; altındaki imza tek kelime: Gezgin. Her sayfa bir şehre ayrılmış, her şehirde üç boş kutu var. Sırt çantanı hazırla, kırmızı atkını
               boynuna dola: İstanbul’dan başlayıp Bayburt Kalesi’nin burcunda biten bir yolculuk seni bekliyor.
             </p>
             <p className="mt-3 leading-relaxed text-muted">Topladığın her hatıra deftere bir sayfa ekler: Galata Kulesi’nin yaşı, Kadeş Antlaşması, Divriği’nin taş kapısı…</p>

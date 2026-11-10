@@ -53,7 +53,7 @@ function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null)
  */
 export default function Portrait({ id, className = '', scarf }: { id: Look; className?: string; scarf?: ScarfColor | null }) {
   const ref = usePortraitCanvas(id, false, scarf)
-  const name = id === 'uktun' ? 'Uktun' : id === 'memo' ? 'Memo Çelik' : null
+  const name = id === 'uktun' ? 'Uktun' : id === 'memo' ? 'Memo' : null
   return (
     <span
       className={`relative block aspect-[64/76] bg-cover ${className}`}

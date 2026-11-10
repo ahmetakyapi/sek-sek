@@ -30,7 +30,7 @@ export interface LevelDef {
   hints: string[]
   /** parantez içinde gösterilen yerel ad: Çorum (Çorumçe) */
   nickname?: string
-  /** Seyyah’ın yol defterindeki not (hikâye) */
+  /** Gezgin’in yol defterindeki not (hikâye) */
   note: string
   /** haritadaki n karakterleri, soldan sağa */
   npcs: Npc[]

@@ -7,6 +7,7 @@ import { CHARACTERS } from '@/game/characters'
 import { CHARACTERS_EN, LEVELS_EN } from '@/game/content.en'
 import { LEVELS } from '@/game/levels'
 import { UI_EN } from '@/lib/ui.en'
+import { SCARVES } from '@/lib/extras'
 import { parseShare } from '@/lib/share'
 import { formatTime } from '@/lib/storage'
 
@@ -29,6 +30,9 @@ export async function GET(req: NextRequest) {
   const level = LEVELS.find((l) => l.id === d?.level) ?? LEVELS[0]
   const idx = LEVELS.indexOf(level)
   const ch = CHARACTERS[d?.character ?? 'uktun']
+  // atkı: dosya adı bağlantıdaki değerden değil, SCARVES içinde bulunan kimlikten kurulur; ilk atkı adsız dosyadır
+  const scarf = SCARVES.find((s) => s.id === d?.scarf) ?? SCARVES[0]
+  const portraitFile = scarf === SCARVES[0] ? `${ch.id}.png` : `${ch.id}-${scarf.id}.png`
   const [pixel, bold, semi, scene, paper, stamp, kh, kv, portrait] = await Promise.all([
     file('assets/fonts/PixelifySans-Bold.ttf'),
     file('assets/fonts/IBMPlexMono-Bold.ttf'),
@@ -39,7 +43,7 @@ export async function GET(req: NextRequest) {
     file('assets/card/kilim-h.png'),
     file('assets/card/kilim-v.png'),
     // vektör portrenin hazır karesi: scripts/art/portraits.cjs üretir
-    file(`public/portreler/${ch.id}.png`),
+    file(`public/portreler/${portraitFile}`),
   ])
   const medal = d ? medalFor(level, d.timeMs) : null
   const seal = medal ? SEAL[medal] : null
@@ -139,10 +143,10 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
 
-        {/* ── bantlı portre: levha ile sayfanın arasında */}
-        <div style={{ position: 'absolute', left: 682, top: 392, width: 176, height: 212, display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8f4ec', padding: 12, boxShadow: '0 10px 18px rgba(0,0,0,0.45)', transform: 'rotate(-6deg)' }}>
+        {/* ── bantlı portre: levha ile sayfanın arasında; kare bütün basılır ki atkı rengi görünsün */}
+        <div style={{ position: 'absolute', left: 682, top: 370, width: 176, height: 236, display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8f4ec', padding: 12, boxShadow: '0 10px 18px rgba(0,0,0,0.45)', transform: 'rotate(-6deg)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={dataUrl(portrait)} width={152} height={156} alt="" style={{ objectFit: 'cover', objectPosition: 'top' }} />
+          <img src={dataUrl(portrait)} width={152} height={180} alt="" />
           <div style={{ display: 'flex', marginTop: 8, fontFamily: 'Pixel', fontSize: 20, color: INK, whiteSpace: 'nowrap' }}>{ch.name}</div>
           <div style={{ position: 'absolute', left: 50, top: -14, width: 76, height: 26, display: 'flex', background: 'rgba(242,193,78,0.6)', transform: 'rotate(4deg)' }} />
         </div>

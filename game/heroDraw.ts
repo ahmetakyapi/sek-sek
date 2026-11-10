@@ -49,6 +49,8 @@ interface Skin {
   brow: string
   beard?: string
   beardS?: string
+  /** kirli sakal: çene ve dudak üstünde ten üstüne binen yarı saydam gölge */
+  stubble?: string
   /** uzun saç (sırta dökülür) */
   long?: boolean
   mustache?: string
@@ -76,7 +78,7 @@ export const LOOKS: Record<Look, Skin> = {
     coat: '#2f8d9a', coatS: '#1f6472', coatL: '#58b8c0', shirt: '#f2eee6',
     scarf: '#d83c36', scarfS: '#9e2430', pants: '#3e3e4e', pantsS: '#2a2a36',
     boot: '#6a3e2a', bootS: '#3e2418', brow: '#241612',
-    beard: '#3a2a22', beardS: '#241812',
+    stubble: 'rgba(48,32,26,0.34)',
   },
   // ── şehir insanları: aynı çizgi, başka kılık
   amca: {
@@ -377,17 +379,32 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
   // kulak hizasında boyun
   stroke(c, [hx - 1, hy + 14, hx - 1, hy + 19], 6.5, s.skinS)
   // kafa: hafif oval, çene öne doğru
-  blob(
-    c,
-    () => {
-      c.moveTo(hx - 15, hy - 2)
-      c.bezierCurveTo(hx - 16, hy - 19, hx + 14, hy - 22, hx + 17, hy - 4)
-      c.bezierCurveTo(hx + 18.5, hy + 4, hx + 15, hy + 13, hx + 6, hy + 15.5)
-      c.bezierCurveTo(hx - 3, hy + 17.5, hx - 14, hy + 12, hx - 15, hy - 2)
-    },
-    s.skin,
-    { color: s.skinS, dx: 3, dy: -2.4 },
-  )
+  const skull = () => {
+    c.moveTo(hx - 15, hy - 2)
+    c.bezierCurveTo(hx - 16, hy - 19, hx + 14, hy - 22, hx + 17, hy - 4)
+    c.bezierCurveTo(hx + 18.5, hy + 4, hx + 15, hy + 13, hx + 6, hy + 15.5)
+    c.bezierCurveTo(hx - 3, hy + 17.5, hx - 14, hy + 12, hx - 15, hy - 2)
+  }
+  blob(c, skull, s.skin, { color: s.skinS, dx: 3, dy: -2.4 })
+  // kirli sakal (Memo): çene hattı ve dudak üstünde gölge; ağız ve çene açıkta okunur
+  if (s.stubble) {
+    c.save()
+    c.beginPath()
+    skull()
+    c.clip()
+    c.beginPath()
+    c.moveTo(hx - 10, hy + 2)
+    c.lineTo(hx - 6, hy + 1.5)
+    c.quadraticCurveTo(hx - 4.5, hy + 7.5, hx + 1, hy + 10.4)
+    c.quadraticCurveTo(hx + 5, hy + 7.4, hx + 10, hy + 7.6)
+    c.quadraticCurveTo(hx + 14, hy + 7.4, hx + 19, hy + 7)
+    c.lineTo(hx + 19, hy + 20)
+    c.lineTo(hx - 12, hy + 20)
+    c.closePath()
+    c.fillStyle = s.stubble
+    c.fill()
+    c.restore()
+  }
   // yanaklar
   c.fillStyle = s.blush
   c.beginPath()

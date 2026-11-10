@@ -1,10 +1,12 @@
 /**
  * Portreler: game/portraitDraw.ts'in vektör büstlerini dosyaya basar.
- *   public/portreler/<kılık>.png  384x456  (skor kartpostalı; Portrait bileşeninde tuval çizilene dek görünen ilk kare)
- * portraitDraw.ts ya da heroDraw.ts LOOKS değişince yeniden üret.
+ *   public/portreler/<kılık>.png          384x456  (skor kartpostalı; Portrait bileşeninde tuval çizilene dek görünen ilk kare)
+ *   public/portreler/<kahraman>-<atkı>.png  iki kahramanın öteki atkı renkleriyle hâli (lib/extras.ts SCARVES; skor kartı `k` ile seçer)
+ * portraitDraw.ts, heroDraw.ts LOOKS ya da SCARVES değişince yeniden üret.
  *
  *   node scripts/art/portraits.cjs                 dosyaları üretir
  *   node scripts/art/portraits.cjs --foy [çıktı]   yalnız föy: bütün kılıklar büyük, küçük, yüz kırpımı, göz kırpma ve atkı renkleri
+ *   node scripts/art/portraits.cjs --buyuk [çıktı] iki kahraman 440 px genişlikte yan yana (ayrıntıya bakmak için)
  */
 const { chromium } = require('playwright')
 const esbuild = require('esbuild')
@@ -15,21 +17,29 @@ const { execFileSync } = require('child_process')
 
 const root = path.join(__dirname, '..', '..')
 const sheet = process.argv.indexOf('--foy')
-const out = sheet >= 0 ? process.argv[sheet + 1] || '/tmp/seksek-portreler.png' : null
+const big = process.argv.indexOf('--buyuk')
+const out = sheet >= 0 ? process.argv[sheet + 1] || '/tmp/seksek-portreler.png' : big >= 0 ? process.argv[big + 1] || '/tmp/seksek-portre-buyuk.png' : null
 const W = 384
 const H = 456
 
 ;(async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seksek-portre-'))
   const entry = path.join(dir, 'entry.ts')
-  fs.writeFileSync(entry, `export { drawPortrait } from ${JSON.stringify(path.join(root, 'game/portraitDraw'))}\nexport { LOOKS } from ${JSON.stringify(path.join(root, 'game/heroDraw'))}\n`)
+  fs.writeFileSync(entry, `export { drawPortrait } from ${JSON.stringify(path.join(root, 'game/portraitDraw'))}\nexport { LOOKS } from ${JSON.stringify(path.join(root, 'game/heroDraw'))}\nexport { SCARVES } from ${JSON.stringify(path.join(root, 'lib/extras'))}\n`)
   await esbuild.build({ entryPoints: [entry], bundle: true, format: 'iife', globalName: 'S', outfile: path.join(dir, 's.js'), logLevel: 'silent' })
   fs.writeFileSync(path.join(dir, 'index.html'), `<!doctype html><body style="margin:0;background:#2a2438"><canvas id="c"></canvas><script src="s.js"></script><script>
 const looks = Object.keys(S.LOOKS)
-window.one = (look) => {
+window.one = (look, scarf) => {
   const cv = document.createElement('canvas'); cv.width = ${W}; cv.height = ${H}
-  S.drawPortrait(cv.getContext('2d'), look, ${W}, ${H}, 0, { still: true })
+  const sc = S.SCARVES.find((x) => x.id === scarf)
+  S.drawPortrait(cv.getContext('2d'), look, ${W}, ${H}, 0, { still: true, scarf: sc && sc.color, scarfS: sc && sc.shade })
   return cv.toDataURL('image/png')
+}
+window.big = () => {
+  const bw = 440, bh = Math.round(bw * 76 / 64), pad = 12
+  const cv = document.getElementById('c'); cv.width = 2 * bw + 3 * pad; cv.height = bh + 2 * pad
+  const c = cv.getContext('2d'); c.fillStyle = '#2a2438'; c.fillRect(0, 0, cv.width, cv.height)
+  ;['uktun', 'memo'].forEach((k, i) => { c.save(); c.translate(pad + i * (bw + pad), pad); S.drawPortrait(c, k, bw, bh, 0, { still: true }); c.restore() })
 }
 window.sheet = () => {
   const bw = 220, bh = Math.round(bw * 76 / 64), sw = 40, sh = Math.round(sw * 76 / 64), pad = 16
@@ -51,7 +61,7 @@ window.sheet = () => {
     at(x + 104, y3, 92, 110, (w, h) => S.drawPortrait(c, k, w, h, 2.4, {}))
   })
   // atkı renkleri: iki kahraman
-  const scarves = [['#f2b632', '#c08a24'], ['#2e8fd0', '#1e68a0'], ['#6a9a3e', '#4a7228'], ['#b04a9a', '#7e2e70'], ['#2ab8a8', '#1a8a7e'], ['#33407e', '#222c5a'], ['#f4f8ff', '#4ab0e8']]
+  const scarves = S.SCARVES.slice(1).map((x) => [x.color, x.shade])
   const y4 = pad + 20 + bh + pad + 76 + pad + 110 + pad
   scarves.forEach(([a, b], i) => {
     at(pad + i * 208, y4, 92, 110, (w, h) => S.drawPortrait(c, 'uktun', w, h, 0, { still: true, scarf: a, scarfS: b }))
@@ -64,19 +74,24 @@ window.sheet = () => {
   pg.on('pageerror', (e) => console.log('HATA:', e.message))
   await pg.goto('file://' + path.join(dir, 'index.html'))
   if (out) {
-    await pg.evaluate(() => window.sheet())
+    await pg.evaluate((b) => (b ? window.big() : window.sheet()), big >= 0)
     await (await pg.$('canvas')).screenshot({ path: out })
     console.log(out)
   } else {
     const target = path.join(root, 'public', 'portreler')
     fs.mkdirSync(target, { recursive: true })
-    const looks = await pg.evaluate(() => Object.keys(S.LOOKS))
-    for (const k of looks) {
-      const data = await pg.evaluate((look) => window.one(look), k)
-      fs.writeFileSync(path.join(target, `${k}.png`), Buffer.from(data.split(',')[1], 'base64'))
+    const { looks, scarves } = await pg.evaluate(() => ({ looks: Object.keys(S.LOOKS), scarves: S.SCARVES.map((x) => x.id) }))
+    // her kılık varsayılan atkıyla; iki kahraman ayrıca öteki atkı renkleriyle (ilk atkı adsız dosyadır)
+    const jobs = looks.map((k) => [k, null])
+    for (const k of ['uktun', 'memo']) for (const id of scarves.slice(1)) jobs.push([k, id])
+    for (const [k, id] of jobs) {
+      const name = id ? `${k}-${id}.png` : `${k}.png`
+      const data = await pg.evaluate(([look, scarf]) => window.one(look, scarf), [k, id])
+      const file = path.join(target, name)
+      fs.writeFileSync(file, Buffer.from(data.split(',')[1], 'base64'))
       // düz renkli çizim: 256 renkli palet göze aynı görünür, dosya beşte birine iner
-      execFileSync('python3', ['-c', `from PIL import Image; p='public/portreler/${k}.png'; Image.open(p).convert('RGB').quantize(256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG).save(p, optimize=True)`], { cwd: root })
-      console.log('ok', k)
+      execFileSync('python3', ['-c', 'import sys; from PIL import Image; p=sys.argv[1]; Image.open(p).convert("RGB").quantize(256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG).save(p, optimize=True)', file])
+      console.log('ok', name)
     }
   }
   await b.close()

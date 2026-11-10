@@ -278,7 +278,7 @@ export default function Game() {
             case 'charm': {
               haptic([20, 30, 20, 30, 50])
               const tr = makeT(langRef.current)
-              setToast({ title: tr('Nazar Boncuğu'), text: tr('Seyyah’ın çantasından düşmüş. Her şehirde bir tane saklı; bulana nazar değmez.'), item: tr('Gizli Bulgu'), key: Date.now() })
+              setToast({ title: tr('Nazar Boncuğu'), text: tr('Gezgin’in çantasından düşmüş. Her şehirde bir tane saklı; bulana nazar değmez.'), item: tr('Gizli Bulgu'), key: Date.now() })
               setSave((prev) => {
                 const next = { ...prev, charms: { ...prev.charms, [w.level.id]: true } }
                 writeSave(next)
@@ -705,7 +705,7 @@ export default function Game() {
                   <figure className="polaroid absolute right-[8%] top-0 w-[118px] rotate-[6deg] sm:w-[170px] md:right-6 md:top-2 md:w-[170px] [@media(max-height:500px)_and_(min-width:560px)]:right-0 [@media(max-height:500px)_and_(min-width:560px)]:top-24 [@media(max-height:500px)_and_(min-width:560px)]:w-[120px]">
                     <span className="tape" />
                     <Portrait id="memo" className="w-full" />
-                    <figcaption>Memo Çelik</figcaption>
+                    <figcaption>Memo</figcaption>
                   </figure>
                 </>
               )}
@@ -722,7 +722,7 @@ export default function Game() {
                   <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl">Sek-Sek</h1>
                 </div>
               </div>
-              <p className="text-[15px] leading-relaxed text-cream/85">{t("Seyyah’ın yarım kalmış defterini tamamla.")}</p>
+              <p className="text-[15px] leading-relaxed text-cream/85">{t("Gezgin’in yarım kalmış defterini tamamla.")}</p>
               <p className="text-[14px] leading-relaxed text-muted">{lang === 'en' ? `${LEVELS.length} cities. ${LEVELS.length * 3} keepsakes. One journey.` : `${trCount(LEVELS.length)} şehir. ${trCount(LEVELS.length * 3)} hatıra. Tek yolculuk.`}</p>
               <div className="mt-5 grid gap-2.5">
                 <button className="pixel-btn primary justify-center text-base" onClick={startJourney} autoFocus>
@@ -1055,7 +1055,7 @@ export default function Game() {
             <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={150} />
             <p className="-mt-1 text-sm text-muted">{level.subtitle}</p>
             <figure className="notebook mt-4 rotate-[-0.6deg] px-4 py-3">
-              <figcaption className="text-[11px] font-bold tracking-[0.22em] text-[#8a3a24]">{t("SEYYAH’IN DEFTERİNDEN")}</figcaption>
+              <figcaption className="text-[11px] font-bold tracking-[0.22em] text-[#8a3a24]">{t("GEZGİN’İN DEFTERİNDEN")}</figcaption>
               <blockquote className="mt-1 text-[14px] italic leading-relaxed">“{level.note}”</blockquote>
             </figure>
             <p className="mt-4 text-[14px] leading-relaxed text-cream/85">{level.intro}</p>
@@ -1395,7 +1395,7 @@ function Complete({
   const medal = medalFor(level, result.timeMs)
   const [copied, setCopied] = useState(false)
   const shareUrl = () =>
-    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', lang: lng })}`
+    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`
   const shareText = t('Sek-Sek’te {city} şehrini {time} sürede geçtim ({deaths} düşüş, {found}/3 hatıra). Sen de dene!', { city: level.name, time: formatTime(result.timeMs), deaths: result.deaths, found })
   const share = async () => {
     const url = shareUrl()
@@ -1542,7 +1542,7 @@ function Complete({
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', lang: lng })}`}
+              src={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`}
               alt={t('{city} skor kartı', { city: level.name })}
               width={1200}
               height={630}
@@ -1559,7 +1559,7 @@ function Complete({
               <button className="pixel-btn justify-center py-2.5 text-sm" onClick={copy}>
                 {copied ? t('Kopyalandı') : t('Bağlantıyı Kopyala')}
               </button>
-              <a className="pixel-btn justify-center py-2.5 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', lang: lng })}`} download={`sek-sek-${level.id}.png`}>
+              <a className="pixel-btn justify-center py-2.5 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`} download={`sek-sek-${level.id}.png`}>
                 {t('Kartı İndir')}
               </a>
             </div>

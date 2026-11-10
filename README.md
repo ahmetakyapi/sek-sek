@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Seyyah’ın yarım kalmış defterini tamamla. Yirmi beş şehir, yetmiş beş hatıra, tek yolculuk.**
+**Gezgin’in yarım kalmış defterini tamamla. Yirmi beş şehir, yetmiş beş hatıra, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -67,9 +67,9 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 ## Yolcular ve Şehir İnsanları
 
-<img src="docs/img/portraits.png" alt="Uktun, Memo Çelik ve şehir insanlarının vesikalık portreleri" width="100%">
+<img src="docs/img/portraits.png" alt="Uktun, Memo ve şehir insanlarının vesikalık portreleri" width="100%">
 
-**Uktun**, İstanbullu bir haritacı; **Memo Çelik**, Diyarbakırlı bir telefoncu. İkisinden biri, bir sahafta “Seyyah” imzalı
+**Uktun**, İstanbullu bir haritacı; **Memo**, Diyarbakırlı bir telefoncu. İkisinden biri, bir sahafta “Gezgin” imzalı
 eski bir yol defteri bulur; kapağında “Memleket” yazar. Her sayfa bir şehre ayrılmış, son sayfada tek bir cümle var:
 “Yolun sonu, başladığım yer.”
 
@@ -80,7 +80,7 @@ menüde göz kırpar, seçtiğin atkı rengini taşır.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/img/intro.png" alt="Gaziantep giriş ekranı: Seyyah’ın notu ve şehirdeki dost ile tehlikeler"><br><sub>Her şehrin girişinde Seyyah’ın notu ve <b>Bu Şehirde</b> rehberi: kim dost, kim tehlikeli.</sub></td>
+<td width="50%"><img src="docs/img/intro.png" alt="Gaziantep giriş ekranı: Gezgin’in notu ve şehirdeki dost ile tehlikeler"><br><sub>Her şehrin girişinde Gezgin’in notu ve <b>Bu Şehirde</b> rehberi: kim dost, kim tehlikeli.</sub></td>
 <td width="50%"><img src="docs/img/complete.png" alt="Bölüm sonu: süre, madalya, hatıralar, kartpostal ve skor tablosu"><br><sub>Bölüm sonu: süre ve madalya, bulunan hatıralar, kartpostal, skor tablosu.</sub></td>
 </tr>
 <tr>

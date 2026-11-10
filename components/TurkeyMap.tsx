@@ -123,13 +123,13 @@ const COORDS: Record<string, [number, number]> = {
 }
 
 const W = 640
-const X = (lon: number) => (lon - 24.6) * 30.6
 
 /**
- * Ölçüye göre harita geometrisi. Enlem ölçeği boylamın 1,28 katıdır (39. paralelde gerçek oran);
- * dar ekranda `stretch` ile biraz daha uzar ki 25 şehrin adı sığsın.
+ * Ölçüye göre harita geometrisi: `lon0` sol kenarın boylamı, `kx` derece başına birim.
+ * Enlem ölçeği boylamın 1,28 katıdır (39. paralelde gerçek oran); dar ekranda `stretch` ile uzar ki 25 şehrin adı sığsın.
  */
-function makeGeo(stretch: number) {
+function makeGeo(stretch: number, lon0: number, kx: number) {
+  const X = (lon: number) => (lon - lon0) * kx
   const ky = 39.2 * stretch
   const Y = (lat: number) => (42.95 - lat) * ky
   const H = Math.round(7.65 * ky)
@@ -161,6 +161,7 @@ function makeGeo(stretch: number) {
   })
   return {
     H,
+    X,
     Y,
     nodes,
     legs,
@@ -180,47 +181,17 @@ const SEAS = {
   en: { black: 'Black Sea', aegean: 'Aegean', med: 'Mediterranean', marmara: 'Marmara', locked: 'Locked', done: 'Completed', route: 'Journey Route' },
 }
 
-/** Dar ekranda etiketin yeri: [yön, dx, dy] (yön: 0 sağ, 1 sol, 2 üst, 3 alt, 4 sağ üst, 5 sağ alt, 6 sol üst, 7 sol alt; kaydırma ekran pikseli) */
-const PINS_NARROW: Record<string, number[]> = {
-  edirne: [2],
-  istanbul: [4],
-  kocaeli: [0],
-  bursa: [3, -8],
-  canakkale: [2, 5],
-  izmir: [0],
-  antalya: [1],
-  ankara: [1],
-  konya: [1],
-  nevsehir: [2, -5],
-  adana: [3],
-  gaziantep: [2, -9, -1],
-  sanliurfa: [3],
-  diyarbakir: [0],
-  mardin: [0],
-  malatya: [2],
-  corum: [2],
-  sinop: [0],
-  ordu: [2, -3],
-  trabzon: [2, 2, -10],
-  sivas: [1],
-  van: [0],
-  erzurum: [0],
-  ardahan: [2, 4],
-  bayburt: [1, 0, -2],
-}
-
 const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))
 
 /** Pixelify Sans'ta ortalama harf genişliği (em) */
 const CHAR = 0.55
 
 /**
- * Etiket yerleşimi: her şehir için sekiz yön (sağ, sol, üst, alt, çaprazlar) üç uzaklıkta denenir.
+ * Geniş ekranda etiket yerleşimi: her şehir için sekiz yön (sağ, sol, üst, alt, çaprazlar) üç uzaklıkta denenir.
  * Öbür etiketlere, düğümlere, deniz adlarına, rotaya ve kenara binmeyi en aza indiren yer seçilir;
  * uzağa düşen etiket düğüme ince bir çizgiyle bağlanır. Ölçüye göre yeniden hesaplanır.
- * Dar ekranda yer azdır: şehirler `PINS_NARROW` ile elle yerleştirilir, tabloda olmayan (yeni) şehri çözücü yerleştirir.
  */
-function placeLabels(geo: Geo, fs: number, r: number, fixed: Box[], pins: Record<string, number[]> | null, u: number) {
+function placeLabels(geo: Geo, fs: number, r: number, fixed: Box[]): Box[] {
   const { nodes, legs, H } = geo
   const h = fs * 0.84
   const boxes = (i: number): Box[] => {
@@ -249,15 +220,10 @@ function placeLabels(geo: Geo, fs: number, r: number, fixed: Box[], pins: Record
   /* yanlara geniş pay: etiket komşu düğüme yaslanıp onun adı gibi okunmasın */
   const nodeBox = (j: number): Box => ({ x0: nodes[j].x - nr - fs * 0.7, y0: nodes[j].y - nr, x1: nodes[j].x + nr + fs * 0.7, y1: nodes[j].y + nr })
   const frame: Box = { x0: 5, y0: 5, x1: W - 5, y1: H - 5 }
-  const chosen = nodes.map((_, i) => {
-    const [dir = 0, dx = 0, dy = 0] = pins?.[LEVELS[i].id] ?? []
-    const b = boxes(i)[dir]
-    return { x0: b.x0 + dx * u, y0: b.y0 + dy * u, x1: b.x1 + dx * u, y1: b.y1 + dy * u }
-  })
+  const chosen = nodes.map((_, i) => boxes(i)[0])
   const unit = fs * fs
   for (let pass = 0; pass < 8; pass++) {
     for (let i = 0; i < nodes.length; i++) {
-      if (pins?.[LEVELS[i].id]) continue
       let best = Infinity
       for (const [k, b] of boxes(i).entries()) {
         const g = grow(b)
@@ -276,16 +242,155 @@ function placeLabels(geo: Geo, fs: number, r: number, fixed: Box[], pins: Record
       }
     }
   }
-  return chosen.map((b, i) => {
-    /* bağ çizgisi: etiket düğümden uzağa düştüyse kutunun en yakın noktasına */
-    const tx = Math.max(b.x0, Math.min(b.x1, nodes[i].x))
-    const ty = Math.max(b.y0, Math.min(b.y1, nodes[i].y))
-    const far = Math.hypot(tx - nodes[i].x, ty - nodes[i].y) > r + fs * 0.75
-    return { x: (b.x0 + b.x1) / 2, y: b.y1 - h * 0.1, leader: far ? `M${nodes[i].x.toFixed(1)} ${nodes[i].y.toFixed(1)}L${tx.toFixed(1)} ${ty.toFixed(1)}` : null }
-  })
+  return chosen
 }
 
-const GEO = { wide: makeGeo(1), narrow: makeGeo(1.16) }
+/** Pixelify Sans'ta adın genişliği (em): harf sınıfına göre, kalın yazının ölçüsüyle (gerçeğinden bir iki piksel bol) */
+const textEm = (s: string) => [...s].reduce((w, c) => w + ('ıil'.includes(c) ? 0.25 : 'Iİ'.includes(c) ? 0.43 : 'mwMW'.includes(c) ? 0.78 : 'at'.includes(c) ? 0.69 : 0.6), 0)
+
+/** Dar ekranda etiket ölçüsü (ekran pikseli): yazı 11, satır kutusu 13 (taban çizgisinin 10 üstü, 3 altı) */
+const NARROW = { fs: 11, line: 13, rise: 10, r: 6 }
+/** Çözülmüş dar yerleşimler: harita yeniden açılınca aynı ölçü için tavlama yinelenmez */
+const NARROW_DONE = new Map<string, Box[]>()
+
+/**
+ * Dar ekranda etiket yerleşimi. Yer azdır, bu yüzden kural serttir: hiçbir etiket kutusu öbür etikete,
+ * başka bir rozete, deniz adına ya da kenara değmez. Her şehir için yüz aday yer (sağ, sol, üst, alt; kaydırılmış;
+ * beş uzaklıkta) üretilir, tohumu sabit bir tavlama çakışmasız ve düğümüne en yakın dizilimi arar.
+ * Hesap ekran pikseliyle yapılır (`u`: piksel başına harita birimi), sonuç harita birimidir.
+ */
+function placeNarrow(geo: Geo, u: number, fixed: Box[]): Box[] {
+  const key = `${u}|${geo.H}|${fixed.map((f) => Math.round(f.x0 + f.y1)).join()}`
+  const known = NARROW_DONE.get(key)
+  if (known) return known
+  const { line } = NARROW
+  const nodes = geo.nodes.map((n) => ({ x: n.x / u, y: n.y / u }))
+  const count = nodes.length
+  const frame: Box = { x0: 4, y0: 4, x1: W / u - 4, y1: geo.H / u - 4 }
+  const still = [...nodes.map((n): Box => ({ x0: n.x - 8.6, y0: n.y - 8.6, x1: n.x + 8.6, y1: n.y + 8.6 })), ...fixed.map((f): Box => ({ x0: f.x0 / u - 2, y0: f.y0 / u - 2, x1: f.x1 / u + 2, y1: f.y1 / u + 2 }))]
+  const samples = geo.legs.flatMap((leg) => leg.samples.map(([x, y]): Pt => [x / u, y / u]))
+  const reach = (b: Box, n: { x: number; y: number }) => {
+    const dx = n.x < b.x0 ? b.x0 - n.x : n.x > b.x1 ? n.x - b.x1 : 0
+    const dy = n.y < b.y0 ? b.y0 - n.y : n.y > b.y1 ? n.y - b.y1 : 0
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+  /* çakışma cezası: alan + sabit pay, kıl payı değme de sayılsın */
+  const fine = (area: number) => (area > 1e-6 ? (area + 4) * 10 : 0)
+
+  /* adaylar: kutu her yandan 1 piksel payla tutulur, iki etiket arasında en az 2 piksel kalır */
+  const spots: Box[] = []
+  const cost: number[] = []
+  const first: number[] = []
+  nodes.forEach((n, i) => {
+    const w = textEm(LEVELS[i].name) * NARROW.fs
+    const add = (x0: number, y0: number, rank: number) => {
+      const b: Box = { x0: x0 - 1, y0: y0 - 1, x1: x0 + w + 1, y1: y0 + line + 1 }
+      let clash = ((b.x1 - b.x0) * (b.y1 - b.y0) - overlap(b, frame)) * 3
+      still.forEach((o, j) => {
+        if (j !== i) clash += overlap(b, o)
+      })
+      let sum = rank + fine(clash)
+      /* başka bir düğüme kendi düğümünden yakın duran etiket onun adı gibi okunur */
+      const own = reach(b, n)
+      nodes.forEach((m, j) => {
+        const d = j === i ? Infinity : reach(b, m)
+        if (d < own + 3) sum += d < own ? 3 : 0.8
+      })
+      for (const [sx, sy] of samples) if (sx > b.x0 && sx < b.x1 && sy > b.y0 && sy < b.y1) sum += 0.08
+      spots.push(b)
+      cost.push(sum)
+    }
+    first.push(spots.length)
+    for (const [ring, far] of [0, 6, 12, 19, 27].entries()) {
+      const base = ring * 1.2
+      for (const [dy, pull, rank] of [[0, 0, 0], [-5, 0.5, 0.25], [5, 0.5, 0.25], [-10, 0.9, 0.35], [10, 0.9, 0.35]]) {
+        add(n.x + 10.5 - pull + far, n.y - line / 2 + dy, base + rank)
+        add(n.x - 10.5 + pull - far - w, n.y - line / 2 + dy, base + rank + 0.05)
+      }
+      for (const [slide, rank] of [[0.5, 0.1], [0.25, 0.2], [0.75, 0.2], [0, 0.3], [1, 0.3]]) {
+        add(n.x - w * slide, n.y - 9.6 - far - line, base + rank)
+        add(n.x - w * slide, n.y + 9.6 + far, base + rank + 0.02)
+      }
+    }
+  })
+  const per = spots.length / count
+
+  /** `i` şehri `k` adayında dururken ödediği bedel: kendi yeri + seçili öbür etiketlerle çakışması */
+  let pick = first.slice()
+  const price = (i: number, k: number) => {
+    const a = spots[k]
+    let sum = cost[k]
+    for (let j = 0; j < count; j++) {
+      if (j === i) continue
+      const b = spots[pick[j]]
+      const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)
+      if (w <= 0) continue
+      const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0)
+      if (h > 0) sum += fine(w * h)
+    }
+    return sum
+  }
+  const total = () => pick.reduce((sum, k, i) => sum + (cost[k] + price(i, k)) / 2, 0)
+
+  let best = pick
+  let bestTotal = Infinity
+  const STEPS = 60000
+  /* çakışma kalırsa (ceza en az 40) başka tohumla yeniden denenir */
+  for (let attempt = 0; attempt < 3 && bestTotal >= 40; attempt++) {
+    let seed = 7 + attempt * 101
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296
+    pick = first.slice()
+    let now = total()
+    let low = now
+    let lowPick = pick.slice()
+    /* şehrin şimdiki bedeli, son yer değişikliğinden beri hesaplandıysa yeniden hesaplanmaz */
+    const held = new Float64Array(count)
+    const stamp = new Int32Array(count).fill(-1)
+    let moves = 0
+    for (let step = 0; step < STEPS; step++) {
+      const i = Math.floor(rnd() * count)
+      const k = first[i] + Math.floor(rnd() * per)
+      if (k === pick[i]) continue
+      if (stamp[i] !== moves) {
+        held[i] = price(i, pick[i])
+        stamp[i] = moves
+      }
+      const d = price(i, k) - held[i]
+      if (d <= 0 || rnd() < Math.exp(-d / (40 * Math.pow(0.0005, step / STEPS)))) {
+        pick[i] = k
+        moves++
+        now += d
+        if (now < low - 1e-9) {
+          low = now
+          lowPick = pick.slice()
+        }
+      }
+    }
+    pick = lowPick
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 0; i < count; i++) {
+        let cheapest = price(i, pick[i])
+        for (let k = first[i]; k < first[i] + per; k++) {
+          const c = price(i, k)
+          if (c < cheapest - 1e-9) {
+            cheapest = c
+            pick[i] = k
+          }
+        }
+      }
+    }
+    const sum = total()
+    if (sum < bestTotal) {
+      bestTotal = sum
+      best = pick
+    }
+  }
+  const placed = best.map((k) => ({ x0: (spots[k].x0 + 1) * u, y0: (spots[k].y0 + 1) * u, x1: (spots[k].x1 - 1) * u, y1: (spots[k].y1 - 1) * u }))
+  NARROW_DONE.set(key, placed)
+  return placed
+}
+
+const WIDE = makeGeo(1, 24.6, 30.6)
 
 export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: number; selected: number; onSelect?: (i: number) => void }) {
   const lang = useLang()
@@ -306,29 +411,40 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
   /** Bir ekran pikseli kaç harita birimi: yazı ve dokunma hedefi ekranda sabit boyda kalır */
   const u = W / width
   const compact = width < 480
-  const geo = compact ? GEO.narrow : GEO.wide
-  const { H, Y, nodes } = geo
-  const fs = (compact ? 11 : 12.5) * u
+  /* dar ekranda boş deniz kırpılır (kıyı kenara yaklaşır) ve harita daraldıkça boyuna uzar: 25 ada yer açılır. 363 pikselden genişte uzama 1,16'da kalır */
+  const stretch = compact ? Math.max(1.16, Math.round((4.5 - 0.0092 * width) * 50) / 50) : 1
+  const geo = useMemo(() => (stretch === 1 ? WIDE : makeGeo(stretch, 25.3, 32.2)), [stretch])
+  const { H, X, Y, nodes } = geo
+  const fs = (compact ? NARROW.fs : 12.5) * u
   const seaFs = (compact ? 11 : 13) * u
-  const r = (compact ? 6 : 10.5) * u
+  const r = (compact ? NARROW.r : 10.5) * u
   const hit = 18 * u
   const ink = Math.min(1.9, 1.15 * u)
 
   const { seas, rose, labels } = useMemo(() => {
     const seas = [
-      { key: 'black', text: words.black, x: X(32.2), y: Y(42.5), rot: 0, size: seaFs },
+      { key: 'black', text: words.black, x: X(compact ? 31.4 : 32.2), y: Y(42.5), rot: 0, size: seaFs },
       { key: 'med', text: words.med, x: X(compact ? 30.4 : 31.6), y: Y(35.62), rot: 0, size: seaFs },
-      { key: 'aegean', text: words.aegean, x: X(25.15), y: Y(38.7), rot: -90, size: seaFs },
+      { key: 'aegean', text: words.aegean, x: compact ? 12 * u : X(25.15), y: Y(compact ? 37.3 : 38.7), rot: -90, size: seaFs },
       ...(compact ? [] : [{ key: 'marmara', text: words.marmara, x: X(28.12), y: Y(40.64), rot: 0, size: 11 * u }]),
     ].map((s) => {
       const w = s.text.length * 0.72 * s.size
       const box: Box = s.rot ? { x0: s.x - s.size * 0.7, y0: s.y - w / 2, x1: s.x + s.size * 0.3, y1: s.y + w / 2 } : { x0: s.x - w / 2, y0: s.y - s.size * 0.8, x1: s.x + w / 2, y1: s.y + s.size * 0.25 }
       return { ...s, box }
     })
-    const rose = compact ? { x: X(26.0), y: Y(36.05), r: 17 } : { x: X(39.9), y: Y(42.33), r: 15 }
+    const rose = compact ? { x: X(26.2), y: Y(36.05), r: 17 } : { x: X(39.9), y: Y(42.33), r: 15 }
     const roseBox: Box = { x0: rose.x - rose.r - 3, y0: rose.y - rose.r - 3, x1: rose.x + rose.r + 3, y1: rose.y + rose.r + 3 }
-    return { seas, rose, labels: placeLabels(geo, fs, r, [...seas.map((s) => s.box), roseBox], compact ? PINS_NARROW : null, u) }
-  }, [words, compact, geo, Y, seaFs, fs, r, u])
+    const fixed = [...seas.map((s) => s.box), roseBox]
+    const rise = compact ? NARROW.rise * u : fs * 0.756
+    const labels = (compact ? placeNarrow(geo, u, fixed) : placeLabels(geo, fs, r, fixed)).map((b, i) => {
+      /* bağ çizgisi: etiket düğümden uzağa düştüyse kutunun en yakın noktasına */
+      const tx = Math.max(b.x0, Math.min(b.x1, geo.nodes[i].x))
+      const ty = Math.max(b.y0, Math.min(b.y1, geo.nodes[i].y))
+      const far = Math.hypot(tx - geo.nodes[i].x, ty - geo.nodes[i].y) > (compact ? 12.5 * u : r + fs * 0.75)
+      return { x: (b.x0 + b.x1) / 2, y: b.y0 + rise, leader: far ? `M${geo.nodes[i].x.toFixed(1)} ${geo.nodes[i].y.toFixed(1)}L${tx.toFixed(1)} ${ty.toFixed(1)}` : null }
+    })
+    return { seas, rose, labels }
+  }, [words, compact, geo, X, Y, seaFs, fs, r, u])
 
   /** Dokunma hedefleri sık şehirlerde üst üste biner: tıklanan yere en yakın şehir seçilir */
   const pick = (e: React.MouseEvent, own: number) => {

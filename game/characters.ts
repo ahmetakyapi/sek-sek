@@ -23,10 +23,10 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   },
   memo: {
     id: 'memo',
-    name: 'Memo Çelik',
+    name: 'Memo',
     short: 'Memo',
     role: 'Telefoncu',
-    bio: 'Diyarbakırlı, 28 yaşında. Surların dibinde küçük bir telefon dükkânı var; kırık ekranı bir bakışta tanır. Cebinde Seyyah’ın defteri ve her şehri kaydettiği eski bir telefon.',
+    bio: 'Diyarbakırlı, 28 yaşında. Surların dibinde küçük bir telefon dükkânı var; kırık ekranı bir bakışta tanır. Cebinde Gezgin’in defteri ve her şehri kaydettiği eski bir telefon.',
   },
 }
 
