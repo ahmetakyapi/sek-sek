@@ -524,7 +524,7 @@ export default function Game() {
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t("DEFTERE YENİ SAYFALAR")}</p>
             <h2 id="harita-notu" className="mt-1 font-display text-3xl text-cream">{t("Haritalar Yenilendi")}</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-cream/85">
-              {t('Her şehrin sonuna bir meydan eklendi: meydan yolunda bir bulmaca, saklı bir nazar boncuğu ve şehrin bekçisi seni bekliyor. Bölümler uzadı, eski süreler yeni yola uymaz.')}
+              {t('Yola üç şehir katıldı: Çanakkale, Diyarbakır ve Sinop. Her şehrin sonunda artık bir meydan var: yolunda bir bulmaca, saklı bir nazar boncuğu ve şehrin bekçisi. Bölümler uzadı, eski süreler yeni yola uymaz.')}
             </p>
             <p className="mt-2 text-[14px] leading-relaxed text-muted">
               {t('Yeni haritaları baştan yaşamak istersen yolculuğa İstanbul’dan başla. Rekorların ve pulların sıfırlanır; adın, karakterin ve ayarların kalır.')}

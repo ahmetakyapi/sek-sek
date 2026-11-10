@@ -17,8 +17,8 @@ export const prelude: Prelude = {
     'The plate opens both blue doors: one below, one above. Which leads out? Every blue stone lifts together.',
     'The red door is shut, this passage is a dead end. The plate at the end of the upper passage opens the red.',
   ],
-  npcs: [{ name: 'Kazı Bekçisi Satılmış', look: 'amca', text: 'Otuz yıldır bu surun dibinde nöbet tutarım. Hitit askeri bu tünelden sessizce çıkarmış; iki geçidi vardır, biri yanıltır. Ama yanılan da boş dönmez, döşemedeki mavi taşa iyi bak!' }],
-  npcsEn: [{ name: 'Satılmış the Dig Watchman', text: 'I have kept watch at the foot of this wall for thirty years. Hittite soldiers slipped out through this tunnel; it has two passages, and one misleads. But even the misled don’t leave empty-handed: take a good look at the blue stone in the floor!' }],
+  npcs: [{ name: 'Kazı Bekçisi Hıdır', look: 'amca', text: 'Otuz yıldır bu surun dibinde nöbet tutarım. Hitit askeri bu tünelden sessizce çıkarmış; iki geçidi vardır, biri yanıltır. Ama yanılan da boş dönmez, döşemedeki mavi taşa iyi bak!' }],
+  npcsEn: [{ name: 'Hıdır the Dig Watchman', text: 'I have kept watch at the foot of this wall for thirty years. Hittite soldiers slipped out through this tunnel; it has two passages, and one misleads. But even the misled don’t leave empty-handed: take a good look at the blue stone in the floor!' }],
   chunks: [
     [
       '        #                                                         ',

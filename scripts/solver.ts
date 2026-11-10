@@ -97,10 +97,13 @@ export interface SolveResult {
   ms: number
   /** en sağa varılan yer (dünya pikseli) */
   far: { x: number; y: number }
+  /** her bayrağa (ve meydan kapısının varışına, index -1) varıldığı an: düğme/anahtar durumu başına bir görüntü */
+  arrivals: Array<{ index: number; switchOn: boolean; hasKey: boolean; snap: Snapshot }>
 }
 
 /** exitOnly: yalnızca çıkışa giden yol aranır (anahtar kapısı varsa anahtar da, çünkü yol ona bağlı) */
-export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number } = {}): SolveResult {
+/** start: aramayı bu durumdan başlat (bayraktan yeniden doğuş denetimi için) */
+export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot } = {}): SolveResult {
   const w = new World(level)
   w.enemies.length = 0
   w.turrets.length = 0
@@ -109,6 +112,11 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   w.boss = null
   const ms = macros(opts.moves ?? 'all')
   let far = { x: 0, y: 0 }
+  if (opts.start) restore(w, opts.start)
+  const arrivals: SolveResult['arrivals'] = []
+  const arrive = (index: number) => {
+    if (!arrivals.some((a) => a.index === index && a.switchOn === w.switchOn && a.hasKey === w.hasKey)) arrivals.push({ index, switchOn: w.switchOn, hasKey: w.hasKey, snap: snapshot(w) })
+  }
   const start = snapshot(w)
   const seen = new Set<string>([key(start, w)])
   const queue: (Snapshot & { pr?: number })[] = [start]
@@ -174,7 +182,11 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
           t += DT
           for (const e of w.events) {
             if (e.type === 'collect') picks.add(e.index)
-            if (e.type === 'checkpoint') cps.add(e.index)
+            if (e.type === 'checkpoint') {
+              cps.add(e.index)
+              arrive(e.index)
+            }
+            if (e.type === 'warp') arrive(-1)
             if (e.type === 'stamp') stamp = true
             if (e.type === 'charm') charm = true
             if (e.type === 'key') gotKey = true
@@ -213,5 +225,5 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
     for (const q of [...pool]) push(q, false)
     loop(6000, () => !goals().includes(g))
   }
-  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far }
+  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals }
 }

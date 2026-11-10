@@ -849,6 +849,44 @@ export class Renderer {
   /** Şehrin tezgâhı: simit arabası, mırra, kayısı, leblebi kazanı, Sivas halısı, saman ve kopuz */
   private drawStall(b: Ctx, x: number, bot: number) {
     switch (this.city) {
+      case 'canakkale': {
+        // peynir helvası tezgâhı: tepside altın kızarmış dilimler, yanında seramik testi
+        rect(b, x - 4, bot - 9, 26, 9, '#7a5234')
+        rect(b, x - 6, bot - 12, 30, 3, '#e8dcc0')
+        for (let i = 0; i < 5; i++) {
+          rect(b, x - 3 + i * 5, bot - 15, 4, 3, '#e8b85a')
+          rect(b, x - 3 + i * 5, bot - 15, 4, 1, '#c8843a')
+        }
+        rect(b, x + 22, bot - 20, 4, 8, '#5a8a4a')
+        rect(b, x + 23, bot - 22, 2, 2, '#a86a34')
+        rect(b, x - 6, bot - 25, 32, 2, '#d6403a')
+        rect(b, x - 6, bot - 23, 1, 11, '#7a5234')
+        rect(b, x + 25, bot - 23, 1, 11, '#7a5234')
+        break
+      }
+      case 'sinop': {
+        // mantı ve nokul tezgâhı: buğusu tüten sini
+        rect(b, x - 4, bot - 9, 26, 9, '#5e4634')
+        rect(b, x - 6, bot - 12, 30, 3, '#c8ccd4')
+        for (let i = 0; i < 6; i++) rect(b, x - 3 + i * 4, bot - 14, 3, 2, '#f0e4c8')
+        for (let i = 0; i < 3; i++) rect(b, x + 1 + i * 7, bot - 18 - Math.round(Math.sin(this.t * 3 + i) * 1), 1, 3, 'rgba(255,255,255,0.5)')
+        rect(b, x - 6, bot - 25, 32, 2, '#2a6a86')
+        rect(b, x - 6, bot - 23, 1, 11, '#5e4634')
+        rect(b, x + 25, bot - 23, 1, 11, '#5e4634')
+        break
+      }
+      case 'diyarbakir': {
+        // karpuz sergisi: üst üste dizili koca karpuzlar, biri yarılmış
+        rect(b, x - 6, bot - 3, 32, 3, '#6a4a32')
+        for (const [dx, dy] of [[-2, 0], [8, 0], [18, 0], [3, -8], [13, -8]] as const) {
+          disc(b, x + dx + 4, bot - 8 + dy, 5, '#2e6a30')
+          rect(b, x + dx + 2, bot - 11 + dy, 1, 6, '#1e4a22')
+          rect(b, x + dx + 5, bot - 12 + dy, 1, 7, '#1e4a22')
+        }
+        disc(b, x + 8, bot - 23, 5, '#e24a48', true)
+        rect(b, x + 3, bot - 23, 11, 1, '#e8f0d0')
+        break
+      }
       case 'trabzon': {
         // hamsi tezgâhı: tepside sıra sıra gümüş balık, limon
         rect(b, x - 4, bot - 9, 26, 9, '#6a4a32')
@@ -1140,6 +1178,39 @@ export class Renderer {
   /** Şehrin kendine özgü küçük nesnesi: bölümü her yerde o şehre bağlar. */
   private drawLandmarkProp(b: Ctx, x: number, bot: number) {
     switch (this.city) {
+      case 'canakkale': {
+        // Çimenlik Kalesi'nin eski topu: tekerlekli kundak, bronz namlu
+        disc(b, x + 4, bot - 4, 4, '#5a3c26')
+        disc(b, x + 4, bot - 4, 2, '#8a6240')
+        rect(b, x + 1, bot - 9, 12, 3, '#6a4a32')
+        rect(b, x + 3, bot - 13, 16, 4, '#8a7a4a')
+        rect(b, x + 3, bot - 13, 16, 1, '#c8b46a')
+        rect(b, x + 18, bot - 14, 2, 6, '#6a5a34')
+        for (const dx of [20, 24]) disc(b, x + dx, bot - 2, 2, '#3a3440')
+        break
+      }
+      case 'sinop': {
+        // Diyojen'in feneri: taş kaide üstünde yanan fener
+        rect(b, x + 3, bot - 6, 10, 6, '#6a6e78')
+        rect(b, x + 2, bot - 7, 12, 1, '#8a8e98')
+        rect(b, x + 5, bot - 16, 6, 9, '#3a3440')
+        rect(b, x + 6, bot - 15, 4, 7, Math.sin(this.t * 5) > 0 ? '#ffd36a' : '#f2b84a')
+        rect(b, x + 4, bot - 17, 8, 1, '#3a3440')
+        rect(b, x + 7, bot - 20, 2, 3, '#3a3440')
+        disc(b, x + 8, bot - 12, 8, 'rgba(255,220,140,0.14)')
+        break
+      }
+      case 'diyarbakir': {
+        // Dört Ayaklı Minare: dört sütun üstünde bazalt gövde
+        for (const dx of [2, 5, 9, 12]) rect(b, x + dx, bot - 8, 2, 8, '#8e8a96')
+        rect(b, x + 1, bot - 10, 14, 2, '#34303c')
+        rect(b, x + 3, bot - 30, 10, 20, '#56525e')
+        for (let k = 0; k < 4; k++) rect(b, x + 3, bot - 28 + k * 5, 10, 1, '#e8dcc0')
+        rect(b, x + 2, bot - 32, 12, 2, '#34303c')
+        rect(b, x + 5, bot - 38, 6, 6, '#56525e')
+        rect(b, x + 7, bot - 42, 2, 4, '#34303c')
+        break
+      }
       case 'trabzon': {
         // tabure üstünde kemençe ve yayı
         rect(b, x + 2, bot - 6, 12, 2, '#5e4634')
@@ -2054,16 +2125,19 @@ interface Pop {
 
 const NEXT_CITY: Record<CityKey, string | null> = {
   istanbul: 'KOCAELİ',
-  kocaeli: 'İZMİR',
+  kocaeli: 'ÇANAKKALE',
+  canakkale: 'İZMİR',
   izmir: 'ANKARA',
   ankara: 'KONYA',
   konya: 'NEVŞEHİR',
   nevsehir: 'ADANA',
   adana: 'GAZİANTEP',
-  gaziantep: 'MARDİN',
+  gaziantep: 'DİYARBAKIR',
+  diyarbakir: 'MARDİN',
   mardin: 'MALATYA',
   malatya: 'ÇORUM',
-  corum: 'ORDU',
+  corum: 'SİNOP',
+  sinop: 'ORDU',
   ordu: 'TRABZON',
   trabzon: 'SİVAS',
   sivas: 'ARDAHAN',

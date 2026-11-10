@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Sek-Sek · Şehir Şehir Anadolu',
     short_name: 'Sek-Sek',
-    description: 'İstanbul’dan Bayburt’a 16 şehirlik piksel platform oyunu.',
+    description: 'İstanbul’dan Bayburt’a 19 şehirlik platform oyunu.',
     start_url: '/',
     display: 'fullscreen',
     orientation: 'any',

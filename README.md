@@ -2,9 +2,9 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Dedenin yarım kalmış defterini tamamla. On altı şehir, kırk sekiz hatıra, tek yolculuk.**
+**Dedenin yarım kalmış defterini tamamla. On dokuz şehir, elli yedi hatıra, tek yolculuk.**
 
-İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir piksel platform oyunu.<br>
+İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 [**▶ Hemen Oyna · sek-sek.vercel.app**](https://sek-sek.vercel.app)
@@ -35,7 +35,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 ## Rota
 
-<img src="docs/img/cities.png" alt="On altı şehrin oyun içinden görüntüleri" width="100%">
+<img src="docs/img/cities.png" alt="Şehirlerin oyun içinden görüntüleri" width="100%">
 
 | # | Şehir | Plaka | Zorluk | Kendine Has | Hatıra |
 |---|-------|:-----:|--------|-------------|--------|

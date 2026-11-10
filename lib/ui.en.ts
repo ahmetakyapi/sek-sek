@@ -192,7 +192,7 @@ export const UI_EN: Record<string, string> = {
   Yeni: 'New',
   'Ses Efektleri': 'Sound Effects',
   'Dokunmatik Kontroller': 'Touch Controls',
-  'Her şehrin sonuna bir meydan eklendi: meydan yolunda bir bulmaca, saklı bir nazar boncuğu ve şehrin bekçisi seni bekliyor. Bölümler uzadı, eski süreler yeni yola uymaz.': 'Every city now ends in a town square: a puzzle on the way, a hidden evil-eye bead and the city’s guardian await. Levels are longer, so old times no longer match the new road.',
+  'Yola üç şehir katıldı: Çanakkale, Diyarbakır ve Sinop. Her şehrin sonunda artık bir meydan var: yolunda bir bulmaca, saklı bir nazar boncuğu ve şehrin bekçisi. Bölümler uzadı, eski süreler yeni yola uymaz.': 'Three cities have joined the road: Çanakkale, Diyarbakır and Sinop. Every city now ends in a town square: a puzzle on the way, a hidden evil-eye bead and the city’s guardian. Levels are longer, so old times no longer match the new road.',
   'Nazar Boncuğu': 'Evil-Eye Bead',
   'Gizli Bulgu': 'Hidden Find',
   'Nazar': 'Beads',

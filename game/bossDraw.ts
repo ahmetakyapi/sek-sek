@@ -175,6 +175,95 @@ const PAINT: Record<CityKey, Painter> = {
     c.fill()
     if (b.state !== 'attack') feet(c, 4, '#c9a05a')
   },
+  // Truva Atı: tekerlekli tahta at, kalas gövde, yelesi fırça gibi
+  canakkale: (c, b, mood, t) => {
+    const spin = b.state === 'attack' && b.move === 'charge' ? b.x / 4 : 0
+    // tekerlekli tabla
+    poly(c, [-13, -4.6, 13, -4.6, 13, -2.6, -13, -2.6], '#7a5234', '#523420')
+    for (const wx of [-9, 9]) {
+      ell(c, wx, -2.6, 2.8, 2.8, '#a8763e', '#6e4622')
+      stroke(c, [wx + Math.cos(spin) * 2, -2.6 + Math.sin(spin) * 2, wx - Math.cos(spin) * 2, -2.6 - Math.sin(spin) * 2], 0.6, '#523420', false)
+    }
+    // bacaklar
+    for (const lx of [-8, -4, 4, 8]) poly(c, [lx - 1.3, -13, lx + 1.3, -13, lx + 1.1, -4.6, lx - 1.1, -4.6], lx < 0 ? '#9a6a3a' : '#b8804a', '#6e4622')
+    // gövde: kalas kalas
+    poly(c, [-11, -21, 9, -21, 10, -12.4, -11, -12.4], '#b8804a', '#7e5228')
+    for (const px of [-6, -1, 4]) stroke(c, [px, -20.6, px, -12.8], 0.6, '#6e4622', false)
+    // karnındaki kapak: atarken açılır
+    if (b.state === 'warn' && b.move === 'throw') poly(c, [-3, -17, 3, -17, 3, -12.6, -3, -12.6], '#3a2416')
+    // kuyruk, boyun, baş
+    stroke(c, [-11, -19, -14.6, -15, -13.6, -11], 1.6, '#6e4622')
+    poly(c, [4, -21, 9.4, -21, 12.6, -29, 8, -30], '#b8804a', '#7e5228')
+    poly(c, [7.6, -31.4, 12.4, -32, 17.6, -27.6, 16.6, -24.6, 11, -26], '#c08a52', '#7e5228')
+    poly(c, [8, -31.4, 9.4, -35, 10.8, -31.6], '#b8804a')
+    // yele
+    for (let i = 0; i < 4; i++) poly(c, [5 + i * 1.3, -22.6 - i * 2.2, 3.2 + i * 1.3, -24.4 - i * 2.2, 5.6 + i * 1.3, -25 - i * 2.2], '#6e4622')
+    eye(c, 12.2, -29, 1.5, mood, t)
+  },
+  // Dev Karpuz: çizgili yeşil kabuk; yorulunca çatlağından kırmızısı görünür
+  diyarbakir: (c, b, mood, t) => {
+    const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 12) * b.dir : 0
+    const air = b.y < b.floor - b.h - 2
+    if (!air && !roll) feet(c, 4.4, '#245a26')
+    c.save()
+    c.translate(0, -12)
+    c.rotate(roll)
+    ell(c, 0, 0, 12.4, 11.4, '#3a8a3c', '#246028')
+    c.save()
+    c.beginPath()
+    c.ellipse(0, 0, 12.4, 11.4, 0, 0, Math.PI * 2)
+    c.clip()
+    c.strokeStyle = '#1e4e22'
+    c.lineWidth = 1.5
+    for (const sx of [-8, -3.4, 1.4, 6.4]) {
+      c.beginPath()
+      c.moveTo(sx, -12)
+      c.bezierCurveTo(sx - 2.4, -5, sx + 2.4, 5, sx, 12)
+      c.stroke()
+    }
+    c.restore()
+    stroke(c, [0, -11.2, 0.8, -14.4], 1.2, '#6a4a2e')
+    if (mood === 'dizzy' || mood === 'hurt') poly(c, [-8, -2, -3, -6, 1, -2.6, 5, -6.4, 9, -2, 4, 1.4, -1, -0.6, -5, 2], '#e24a48', '#b8302e')
+    c.restore()
+    if (!roll) {
+      eye(c, 0.4, -13.6, 2.4, mood, t)
+      eye(c, 6.8, -13.6, 2.2, mood, t)
+    }
+  },
+  // Diyojen'in Fıçısı: çemberli tahta fıçı, içinden bakan gözler, elinde fener
+  sinop: (c, b, mood, t) => {
+    const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 11) * b.dir : 0
+    const air = b.y < b.floor - b.h - 2
+    if (!air && !roll) feet(c, 4.6, '#e0a880')
+    c.save()
+    c.translate(0, -12)
+    c.rotate(roll)
+    blob(
+      c,
+      () => {
+        c.moveTo(-8.6, -10.6)
+        c.lineTo(8.6, -10.6)
+        c.quadraticCurveTo(13.4, 0, 8.6, 10.6)
+        c.lineTo(-8.6, 10.6)
+        c.quadraticCurveTo(-13.4, 0, -8.6, -10.6)
+      },
+      '#a8703a',
+      shade('#74481e'),
+    )
+    for (const px of [-4.6, 0, 4.6]) stroke(c, [px, -10.2, px * 1.3, 0, px, 10.2], 0.6, '#74481e', false)
+    for (const hy of [-6.6, 6.6]) stroke(c, [-10.6, hy, 10.6, hy], 1.6, '#8a8e98')
+    // fıçının ağzı: karanlık, içinden gözler
+    ell(c, 2.6, 0, 6, 5, '#2a1a12')
+    c.restore()
+    if (!roll) {
+      eye(c, 0.6, -12.4, 1.9, mood, t)
+      eye(c, 5, -12.4, 1.8, mood, t)
+      // fener
+      stroke(c, [9.6, -9, 13.4, -12.6], 1.2, '#e0a880')
+      poly(c, [12.4, -17, 15.6, -17, 15.6, -12.4, 12.4, -12.4], '#3a3440')
+      ell(c, 14, -14.6, 1.2, 1.6, Math.sin(t * 6) > 0 ? '#ffd36a' : '#f2b84a')
+    }
+  },
   // Körfez Ahtapotu: mor kubbe baş, kıvrılan kollar
   izmir: (c, _b, mood, t) => {
     for (let i = 0; i < 4; i++) {

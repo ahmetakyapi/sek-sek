@@ -21,12 +21,14 @@ Yöntem:
    - **Meydan yolu** (bulmaca, nazar boncuğu): `game/finales/<id>.ts`. Yasak karakterler `C K $ D P E @ & Q G`,
      tam bir `!`. Düğmeler finale girerken sıfırlanır, bayrakla saklanır. Çözücü "aşağı" basmaz: inişi çatlak taşla (X) yap.
      Doğrula: `npx tsx scripts/verify-prelude.ts <id> --goster` (saniyeler sürer, OK demeli).
-   - **Ana yol**: `scripts/art/newcities.py` ya da `scripts/art/sig.py`, sonra
+   - **Ana yol (yeni şehirler)**: `game/cities/<id>.ts`.
+   - **Ana yol (eski şehirler)**: `scripts/art/newcities.py` ya da `scripts/art/sig.py`, sonra
      `python3 scripts/art/newcities.py && python3 scripts/art/sig.py && python3 scripts/art/sync.py`.
    - **Patron** (hız, can, hareket sırası): `game/boss.ts`; doğrula: `npx tsx scripts/bossbot.ts <id>`.
      Kuralı değiştirme: işaret → saldırı → yorgunluk → üstüne bas.
 5. `npx tsx scripts/verify-levels.ts <id>` OK vermeden işi bitmiş sayma (hatıra, bayrak, pul, nazar, çıkış). Bir hedef
-   bulunamıyorsa hedefli tura güvenme: haritayı sadeleştir. Sonra `npx tsx scripts/audit-difficulty.ts <id>`: zayıf oyuncu geçmeli.
+   bulunamıyorsa hedefli tura güvenme: haritayı sadeleştir. Sonra `npx tsx scripts/verify-respawn.ts <id>`
+   (her bayraktan yeniden doğunca çıkışa varılmalı) ve `npx tsx scripts/audit-difficulty.ts <id>` (zayıf oyuncu geçmeli).
 6. Yeni tabela ya da kişi eklediysen Türkçe metnin yanına İngilizcesini de yaz (`hintsEn` / `npcsEn`, `content.en.ts`,
    `signatures.ts`).
 

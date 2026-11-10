@@ -20,7 +20,7 @@ export const STORY: StoryPage[] = [
 
 export const ENDING: StoryPage = {
   title: 'Defter Tamamlandı',
-  text: '{name}, Bayburt Kalesi’nin burcunda defterin son sayfasını açtı. Dede Yusuf burada doğmuş, ilk kopuz sesini Çoruh kıyısında duymuştu. On altı şehir geride kaldı. Yol bitti ama memleket bitmez: sıradaki şehirler yolda.',
+  text: '{name}, Bayburt Kalesi’nin burcunda defterin son sayfasını açtı. Dede Yusuf burada doğmuş, ilk kopuz sesini Çoruh kıyısında duymuştu. On dokuz şehir geride kaldı. Yol bitti ama memleket bitmez: sıradaki şehirler yolda.',
 }
 
 export const fill = (t: string, name: string) => t.replaceAll('{name}', name)

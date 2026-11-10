@@ -15,7 +15,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 16 şehir, 48 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 19 şehir, 57 hatıra, iki yolcu ve dedenin yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 
@@ -67,7 +67,7 @@ export default function Hakkinda() {
             <p className="mt-7 max-w-md text-[17px] leading-relaxed text-cream/85">
               Dedenin yarım kalmış defterini tamamla.
               <br />
-              <span className="text-muted">On altı şehir. Kırk sekiz hatıra. Tek yolculuk.</span>
+              <span className="text-muted">On dokuz şehir. Elli yedi hatıra. Tek yolculuk.</span>
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link href="/" className="pixel-btn primary px-7 py-3.5 text-lg">

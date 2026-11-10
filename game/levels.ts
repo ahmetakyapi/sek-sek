@@ -1,5 +1,9 @@
 import { applyAssists } from './assists'
 import { BOSSES } from './boss'
+import { road as canakkaleRoad } from './cities/canakkale'
+import { road as diyarbakirRoad } from './cities/diyarbakir'
+import { road as sinopRoad } from './cities/sinop'
+import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { PRELUDES, buildFinale } from './finales'
 import { SIGNATURES } from './signatures'
@@ -43,6 +47,9 @@ function decorate(map: string[], items: [number, number, string][]): string[] {
   }
   return m.map((r) => r.join(''))
 }
+
+/** Şehir dosyasındaki (game/cities) parçaları tek haritada birleştirir. */
+const roadMap = (r: CityRoad): string[] => join(...r.chunks.map(chunk))
 
 const ground = (w: number, n = 4) => Array.from({ length: n }, () => '#'.repeat(w))
 
@@ -1034,6 +1041,9 @@ const gaziantep = [
 const DECOR_CYCLE: Record<string, string> = {
   istanbul: 'lzqt',
   kocaeli: 'lzt',
+  canakkale: 'lzt',
+  sinop: 'tzl',
+  diyarbakir: 'zlt',
   izmir: 'tlz',
   ankara: 'zlt',
   konya: 'zls',
@@ -1130,6 +1140,37 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Maşukiye', text: 'Kartepe eteklerindeki Maşukiye, şelaleleri ve dere kenarındaki alabalık sofralarıyla bilinir.' },
     hints: ['Fabrika merdivenleri tek yönlüdür: alttan zıpla, çatıya çık. Yengeçlerin üstüne basabilirsin.'],
     map: kocaeli,
+  },
+  {
+    id: 'canakkale',
+    city: 'canakkale',
+    name: 'Çanakkale',
+    plate: 17,
+    subtitle: 'Boğaz ve Truva',
+    difficulty: 'Kolay',
+    note: 'Kordon’da çayını iç, Boğaz’dan geçen gemileri say. Truva’ya varınca atın karnına bakmayı unutma; her hediye göründüğü gibi değildir.',
+    npcs: [
+      { name: 'Çaycı Halil Usta', look: 'usta', text: 'Kordon’un çayı Boğaz rüzgârıyla demlenir. Saat Kulesi’ne bak: 1897’den beri hiç acele etmedi, sen de etme.' },
+      { name: 'Seramikçi Gülsüm', look: 'teyze', text: 'Çanakkale’nin adı çanaktan gelir evladım. At başlı testilerimiz meşhurdur; üç tanesini yolda düşürdüm, bulursan senin olsun.' },
+      { name: 'Feribot Kaptanı Yaşar', look: 'amca', text: 'Avrupa ile Asya arası yirmi dakika. Feribot iskeleye yanaşmadan atlama; Boğaz’ın akıntısı şaka kaldırmaz.' },
+    ],
+    medals: [50, 80, 125],
+    quips: ['Boğaz’ın akıntısı güçlü!', 'Hediye atın dişine bakılır.', 'Testi kırıldı, sen sağ ol.', 'Rüzgâr burada hiç dinmez.'],
+    item: 'Testi',
+    intro: 'Kordon’da Saat Kulesi, Aynalı Çarşı, Boğaz’ı geçen feribot ve Kilitbahir’in surları. Yolun sonunda Truva’nın üst üste kurulmuş dokuz şehri.',
+    facts: [
+      { title: 'Saat Kulesi', text: 'Çanakkale Saat Kulesi 1897’de yapıldı. Beş katlıdır ve kordonun simgelerinden biridir.' },
+      { title: 'Kilitbahir Kalesi', text: 'Kilitbahir Kalesi 15. yüzyılda, Boğaz’ın en dar yerinde yapıldı. Adı “denizin kilidi” demektir.' },
+      { title: 'Çanakkale Seramiği', text: 'Şehrin adı çanak çömlekçiliğinden gelir. Çanakkale seramiği yüzyıllardır yapılır; at başlı testileriyle tanınır.' },
+    ],
+    secret: { title: 'Truva', text: 'Truva ören yerinde üst üste kurulmuş dokuz şehrin katmanı vardır. 1998’de UNESCO Dünya Mirası Listesi’ne alındı.' },
+    hints: [
+      'Çanakkale’ye hoş geldin! Kordon boyunca yürü, Saat Kulesi’nin önünden geç.',
+      'Aynalı Çarşı: tentelerin üstüne zıpla, tenteden tenteye geç.',
+      'Boğaz feribotu: iskeleye yanaşınca bin, karşı kıyıya varınca in.',
+      'Kilitbahir surları: basamak basamak çık. Anahtar burçta, kapı aşağıda.',
+    ],
+    map: roadMap(canakkaleRoad),
   },
   {
     id: 'izmir',
@@ -1304,6 +1345,37 @@ export const LEVELS: LevelDef[] = [
     map: gaziantep,
   },
   {
+    id: 'diyarbakir',
+    city: 'diyarbakir',
+    name: 'Diyarbakır',
+    plate: 21,
+    subtitle: 'Bazalt Surlar',
+    difficulty: 'Orta',
+    note: 'Surların üstünde yürü, Dicle’yi On Gözlü Köprü’den seyret. Dağ Kapı’nın dibindeki küçük telefoncu dükkânına da selam ver.',
+    npcs: [
+      { name: 'Telefoncu Çırağı Baran', look: 'genc', text: 'Ustam Memo yola çıktı, dükkân bana kaldı! O kırık ekranı bir bakışta tanırdı. Surun dibine uğrayan herkese bir çay ısmarlarız.' },
+      { name: 'Dengbêj Seyda', look: 'ozan', text: 'Biz hikâyeyi çalgısız, yalnız sesimizle anlatırız. Bu surlar binlerce yıllık; her burcun bir kılamı var. Dinlersen yol kısalır.' },
+      { name: 'Bostancı Hatun Teyze', look: 'teyze', text: 'Hevsel’in toprağı bereketlidir, Dicle’nin kumu karpuzu dev eder. Üç dilimim yolda kaldı; bulursan afiyetle ye, ama meydandakine sataşma!' },
+    ],
+    medals: [60, 95, 150],
+    quips: ['Bazalt serttir!', 'Karpuz gibi yuvarlandın.', 'Surlar seni izliyor.', 'Dicle serin ama derin.'],
+    item: 'Karpuz',
+    intro: 'Kara bazalttan surlar, burçlar ve kapılar. Dağ Kapı’dan Hasan Paşa Hanı’na, Hevsel Bahçeleri’nden Dicle’nin On Gözlü Köprüsü’ne.',
+    facts: [
+      { title: 'Diyarbakır Surları', text: 'Diyarbakır Surları yaklaşık 5,8 kilometre uzunluğundadır. Hevsel Bahçeleri’yle birlikte 2015’te UNESCO Dünya Mirası Listesi’ne alındı.' },
+      { title: 'On Gözlü Köprü', text: 'Dicle üzerindeki On Gözlü Köprü 1065’te yapıldı. Adını on kemerinden alır.' },
+      { title: 'Dört Ayaklı Minare', text: 'Şeyh Mutahhar Camii’nin minaresi dört taş sütunun üstünde durur. Kara bazalt ve açık renk taş sıralarıyla örülmüştür.' },
+    ],
+    secret: { title: 'Diyarbakır Karpuzu', text: 'Dicle kıyısındaki kumluklarda yetişen Diyarbakır karpuzu çok iri olur; en büyükleri her yıl karpuz şenliğinde yarışır.' },
+    hints: [
+      'Diyarbakır’a hoş geldin! Dağ Kapı’dan gir, surun basamaklarından burca çık.',
+      'Burçtan burca atla: surun üstü dar, akreplere dikkat.',
+      'Hasan Paşa Hanı: avlunun revaklarına zıpla. Anahtar üst katta.',
+      'On Gözlü Köprü: kemerden kemere geç, Dicle’ye düşme. Kapı köprünün öbür ucunda.',
+    ],
+    map: roadMap(diyarbakirRoad),
+  },
+  {
     id: 'mardin',
     city: 'mardin',
     name: 'Mardin',
@@ -1390,6 +1462,37 @@ export const LEVELS: LevelDef[] = [
       'Yerkapı: surun altından geçen taş tünel. Tavan alçak, kısa zıpla!',
     ],
     map: corum,
+  },
+  {
+    id: 'sinop',
+    city: 'sinop',
+    name: 'Sinop',
+    plate: 57,
+    subtitle: 'En Kuzeydeki Liman',
+    difficulty: 'Zor',
+    note: 'Türkiye’nin en kuzey ucuna var, fenerin dibinde dur. Diyojen’e selam söyle; ondan bir şey isteme, yalnız gölge etme.',
+    npcs: [
+      { name: 'Maketçi Rasim Usta', look: 'usta', text: 'Kırk yıldır gemi maketi yaparım; en küçük yelkeni iğneyle dikerim. Üç maketimi rüzgâr aldı götürdü. Bulursan getirme, senin olsun.' },
+      { name: 'Mantıcı Nezahat Abla', look: 'teyze', text: 'Sinop mantısının yarısı yoğurtlu, yarısı cevizlidir; ikisini bir tabakta yersin. Limanda tekneler sallanır, karnı tok geçmek iyidir!' },
+      { name: 'Fenerci Osman', look: 'amca', text: 'Bu fener 1863’ten beri yanar. Türkiye’nin en kuzeyindesin evlat; buradan ötesi Karadeniz. Tepeye çık, ufka bir bak.' },
+    ],
+    medals: [70, 110, 170],
+    quips: ['Karadeniz şakaya gelmez.', 'Diyojen görse gülerdi.', 'Fener seni gördü.', 'Hamsi gibi kaydın.'],
+    item: 'Gemi Maketi',
+    intro: 'Kale surlarından balıkçı limanına, Hamsilos’un sakin koyundan İnceburun fenerine. Karadeniz burada bir yarımadayı kucaklar.',
+    facts: [
+      { title: 'Sinop Kalesi', text: 'Sinop Kalesi’nin geçmişi MÖ 7. yüzyıla dayanır. Surları yarımadanın en dar yerini iki denizin arasında keser.' },
+      { title: 'İnceburun', text: 'İnceburun, Türkiye’nin en kuzey noktasıdır. Ucundaki fener 1863’ten beri gemilere yol gösterir.' },
+      { title: 'Gemi Maketçiliği', text: 'Sinop, el yapımı gemi maketleriyle tanınır. Bu zanaat şehirde kuşaktan kuşağa aktarılır.' },
+    ],
+    secret: { title: 'Diyojen', text: 'Filozof Diyojen MÖ 5. yüzyılın sonlarında Sinop’ta doğdu. Rivayete göre bir fıçıda yaşar, gündüz vakti elinde fenerle dürüst insan arardı.' },
+    hints: [
+      'Sinop’a hoş geldin! Surun üstüne çık: iki yanında iki ayrı deniz var.',
+      'Balıkçı limanı: tekneden tekneye geç. Dalga tekneleri sallar, zamanını kolla.',
+      'Hamsilos koyu: kayalıkta boşluklar geniş. Zıpla, en tepede atıl.',
+      'İnceburun feneri: kulenin içinde duvardan duvara sekerek çık. Anahtar tepede, kapı aşağıda.',
+    ],
+    map: roadMap(sinopRoad),
   },
   {
     id: 'ordu',

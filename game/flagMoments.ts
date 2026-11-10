@@ -8,6 +8,24 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Martılar simit kapma peşinde.', 'Gulls are after your simit.'],
     ['Boğaz’da çay, karşıda Kız Kulesi.', 'Tea by the Bosphorus, Maiden’s Tower ahead.'],
   ],
+  canakkale: [
+    ['Feribot düdüğü: Eceabat’a kalkıyoruz!', 'Ferry horn: leaving for Eceabat!'],
+    ['Peynir helvası fırından yeni çıktı.', 'Cheese halva, fresh out of the oven.'],
+    ['Boğaz’da rüzgâr, kordonda çay.', 'Wind on the strait, tea on the promenade.'],
+    ['Saat Kulesi beşi vurdu.', 'The Clock Tower strikes five.'],
+  ],
+  sinop: [
+    ['Balıkçılar ağ topluyor.', 'The fishermen haul in their nets.'],
+    ['Mantının üstüne ceviz serpildi.', 'Walnuts sprinkled on the mantı.'],
+    ['Fener uzaktan göz kırpıyor.', 'The lighthouse winks from afar.'],
+    ['Diyojen: “Gölge etme, başka ihsan istemem.”', 'Diogenes: “Stand out of my light.”'],
+  ],
+  diyarbakir: [
+    ['Surların üstünde gün batıyor.', 'The sun sets over the city walls.'],
+    ['Karpuz çatladı: kıpkırmızı!', 'The watermelon cracks open: bright red!'],
+    ['Dengbêj bir kılam tutturdu.', 'A dengbêj begins a song.'],
+    ['Hasan Paşa Hanı’nda kahvaltı kuruldu.', 'Breakfast is laid at Hasan Pasha Inn.'],
+  ],
   kocaeli: [
     ['Pişmaniye tel tel çekiliyor.', 'Pişmaniye pulled thread by thread.'],
     ['Körfezde gemiler yan yana.', 'Ships side by side in the gulf.'],

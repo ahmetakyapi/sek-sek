@@ -15,8 +15,8 @@ export const prelude: Prelude = {
     'Galata Bridge opens and closes: step on the plate to bring the red bridge.',
     'The red shutter blocks the way. The colour that brings the bridge also lowers the shutter: step on the plate again!',
   ],
-  npcs: [{ name: 'Köprü Balıkçısı Rıza', look: 'amca', text: 'Kırk yıldır bu köprüden olta sallarım. Köprü kalkınca vapur geçer, inince tramvay. Her şeyin bir sırası var evladım; acele eden istavriti kaçırır.' }],
-  npcsEn: [{ name: 'Rıza the Bridge Angler', text: 'I have cast my line from this bridge for forty years. When it lifts, the ferry passes; when it lowers, the tram does. Everything has its turn, my child; rush and the mackerel gets away.' }],
+  npcs: [{ name: 'Köprü Balıkçısı Cemal', look: 'amca', text: 'Kırk yıldır bu köprüden olta sallarım. Köprü kalkınca vapur geçer, inince tramvay. Her şeyin bir sırası var evladım; acele eden istavriti kaçırır.' }],
+  npcsEn: [{ name: 'Cemal the Bridge Angler', text: 'I have cast my line from this bridge for forty years. When it lifts, the ferry passes; when it lowers, the tram does. Everything has its turn, my child; rush and the mackerel gets away.' }],
   chunks: [
     [
       '                                                    #   ',

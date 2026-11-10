@@ -9,6 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "verify:levels": "tsx scripts/verify-levels.ts",
+    "verify:respawn": "tsx scripts/verify-respawn.ts",
+    "verify:boss": "tsx scripts/bossbot.ts",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts"
   },
   "dependencies": {

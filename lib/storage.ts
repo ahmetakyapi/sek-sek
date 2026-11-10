@@ -1,12 +1,17 @@
 import { LEVELS } from '@/game/levels'
 
 /** Haritalar değişince artar: oyuncuya "yenilendi" notu gösterilir, baştan başlama önerilir. */
-export const MAP_VERSION = 4
+export const MAP_VERSION = 5
+
+/** Çanakkale, Diyarbakır ve Sinop eklenmeden önceki on altı şehir */
+const SIXTEEN = ['istanbul', 'kocaeli', 'izmir', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'mardin', 'malatya', 'corum', 'ordu', 'trabzon', 'sivas', 'ardahan', 'bayburt']
 
 /** Eski sürümlerin şehir sırası: açılan şehir dizinini kimliğiyle yeni sıraya taşımak için */
 const ORDERS: Record<number, string[]> = {
   1: ['istanbul', 'kocaeli', 'izmir', 'ankara', 'adana', 'mardin', 'malatya', 'corum', 'ordu', 'sivas', 'ardahan', 'bayburt'],
   2: ['istanbul', 'kocaeli', 'izmir', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'mardin', 'malatya', 'corum', 'ordu', 'sivas', 'ardahan', 'bayburt'],
+  3: SIXTEEN,
+  4: SIXTEEN,
 }
 
 export interface Best {

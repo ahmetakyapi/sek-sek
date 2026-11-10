@@ -7,7 +7,10 @@ import { BOSSES } from '../boss'
 import type { CityKey } from '../types'
 import { prelude as istanbul } from './istanbul'
 import { prelude as kocaeli } from './kocaeli'
+import { prelude as canakkale } from './canakkale'
+import { prelude as diyarbakir } from './diyarbakir'
 import { prelude as izmir } from './izmir'
+import { prelude as sinop } from './sinop'
 import { prelude as ankara } from './ankara'
 import { prelude as konya } from './konya'
 import { prelude as nevsehir } from './nevsehir'
@@ -23,7 +26,7 @@ import { prelude as ardahan } from './ardahan'
 import { prelude as bayburt } from './bayburt'
 import type { Prelude } from './types'
 
-export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, izmir, ankara, konya, nevsehir, adana, gaziantep, mardin, malatya, corum, ordu, trabzon, sivas, ardahan, bayburt }
+export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt }
 
 const H = 24
 const ICE: CityKey[] = ['sivas', 'ardahan']

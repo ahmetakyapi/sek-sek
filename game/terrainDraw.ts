@@ -24,6 +24,9 @@ type Cap = 'stone' | 'grass' | 'snow'
 const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   istanbul: { mat: 'brick', cap: 'stone' },
   kocaeli: { mat: 'brick', cap: 'grass' },
+  canakkale: { mat: 'ashlar', cap: 'stone' },
+  sinop: { mat: 'cyclop', cap: 'grass' },
+  diyarbakir: { mat: 'ashlar', cap: 'stone' },
   izmir: { mat: 'ashlar', cap: 'stone' },
   ankara: { mat: 'ashlar', cap: 'stone' },
   konya: { mat: 'ashlar', cap: 'stone' },

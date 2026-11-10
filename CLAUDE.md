@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 16 şehrini gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 19 şehrini gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -10,7 +10,8 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 1. **Parça parça commit atma.** Bir isteği baştan sona bitir, doğrula, sonra **tek ve anlamlı** bir commit at.
    Ara kayıt gerekiyorsa yerelde tut; `main`e yarım iş gitmez (her push canlıya çıkar).
 2. **Doğrulamadan push yok.** Sırayla: `npm run typecheck` → `npm test` → `npm run verify:levels` (değişen bölüm için
-   `npx tsx scripts/verify-levels.ts <id>`) → `npm run build`. Görsel değişiklikte ekran görüntüsüyle bak.
+   `npx tsx scripts/verify-levels.ts <id>`) → `npm run verify:respawn` → `npm run build`. Tam doğrulama uzun sürer:
+   şehirleri ayrı süreçlerde paralel koş (`xargs -P`). Görsel değişiklikte ekran görüntüsüyle bak.
 3. **Sırlar depoya girmez.** `DATABASE_URL`, `VERCEL_TOKEN` yalnızca ortam değişkeninde; `.env*` gitignore’da.
    Oyunun kendi Neon veritabanı var (8 Kasım'a dek Açılış Zili ile ortaktı); tablolar `seksek_*` önekli.
 4. **Commit mesajı:** `feat|fix|refactor|docs(kapsam): açıklama`, Türkçe, gövdede madde madde ne değişti.
@@ -23,7 +24,8 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
   sim.ts         fizik + dünya: zıplama, duvar, atılma, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
-  levels.ts      16 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend() ve addSignature() burada
+  levels.ts      19 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend(), addSignature() ve addFinale() burada
+  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
   finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q patron, G kapı) → çıkış; arenayı index.ts kurar
@@ -43,7 +45,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
 components/      React arayüzü: Game (bütün ekranlar), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), bossbot (patronu gerçek fizikle yenen bot), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, ikon ve favicon icons.py, harita üreteçleri, sync)
+scripts/         verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (patronu gerçek fizikle yenen bot), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre ressamı, şehir görselleri banners.cjs, ikon ve favicon icons.py, harita üreteçleri, sync)
 tests/           sim.test.ts (fizik, mekanik, final), boss.test.ts (patron kuralları; her patronu bot ve zayıf oyuncu botu yener)
 ```
 
@@ -67,7 +69,10 @@ Her bölüm, eskisi de yenisi de, şu iskeletle kurulur. Yeni şehir ya da yeni 
    dış hatla, ekran çözünürlüğünde çizilir (`heroDraw`, `bossDraw`, `terrainDraw`). Yeni karakter ya da kaplama piksel
    sprite olarak eklenmez. Işık sol üstten, gölge tek kademe.
 7. **Kanıt.** `verify-prelude` (meydan yolu) → `verify-levels` (bütün bölüm; hatıra, bayrak, pul, nazar, çıkış) →
-   `bossbot` (patron; zayıf oyuncu botu dahil) → `audit-difficulty` (zayıf oyuncu geçer). Biri FAIL ise bölüm bitmemiştir.
+   `verify-respawn` (hangi bayrakta, hangi düğme durumuyla ölünürse ölünsün çıkışa varılır) → `bossbot` (patron; zayıf
+   oyuncu botu dahil) → `audit-difficulty` (zayıf oyuncu geçer). Biri FAIL ise bölüm bitmemiştir.
+8. **Söz ve insan.** Her tabelanın ve her şehir insanının metni TR + EN yazılır, şehre özgüdür, kısadır ve sıcaktır;
+   kişi adları oyun genelinde tekrar etmez. Tabela ne yapılacağını, insan şehri ve (üstü kapalı) gizli köşeyi anlatır.
 
 ## Sık işler
 
@@ -75,12 +80,12 @@ Her bölüm, eskisi de yenisi de, şu iskeletle kurulur. Yeni şehir ya da yeni 
 Değiştir → `python3 scripts/art/newcities.py && python3 scripts/art/sig.py && python3 scripts/art/sync.py` →
 `npx tsx scripts/verify-levels.ts <id>`. Eski şehirlerin ana haritası doğrudan `game/levels.ts` içinde.
 
-**Yeni şehir.** `types.ts` CityKey → `art.ts` (CITY, buildLayers, ITEM_ART) → `render.ts` (karo, tezgâh `s`,
+**Yeni şehir.** `types.ts` CityKey → `game/cities/<id>.ts` (ana yol) → `art.ts` (CITY, buildLayers, ITEM_ART) → `render.ts` (karo, tezgâh `s`,
 simge nesne `z`, NEXT_CITY) → `audio.ts` SCALES → `levels.ts` LEVELS + DECOR_CYCLE → `content.en.ts` →
 `components/TurkeyMap.tsx` koordinat → `game/features.ts` → `game/finales/<id>.ts` (meydan yolu + nazar boncuğu) ve
 `finales/index.ts` kaydı → `game/boss.ts` BOSSES (patron) + `game/bossDraw.ts` (çizimi) → `terrainDraw.ts` LOOK (zemin
-malzemesi) → `public/sehirler/<id>.webp` ve `assets/cities/<id>.png` (oyundan ekran görüntüsü) → `tests/sim.test.ts`
-plaka listesi. "Bölüm ölçütleri"ndeki yedi maddenin hepsi sağlanmadan şehir eklenmiş sayılmaz. Haritalar değişince `lib/storage.ts` MAP_VERSION artır.
+malzemesi) → `public/sehirler/<id>.webp` ve `assets/cities/<id>.png` (`node scripts/art/banners.cjs <id>`) → `lib/storage.ts` ORDERS (eski sıra) → `tests/sim.test.ts`
+plaka listesi. "Bölüm ölçütleri"ndeki sekiz maddenin hepsi sağlanmadan şehir eklenmiş sayılmaz. Haritalar değişince `lib/storage.ts` MAP_VERSION artır.
 
 **Metin eklemek.** Arayüzde Türkçe metni `t('…')` ile yaz, İngilizcesini `lib/ui.en.ts`’e ekle. Bölüm metni
 `levels.ts`’e, İngilizcesi `content.en.ts`’e. Başlık ve düğmeler Title Case, paragraflar cümle düzeni; tek kelimelik

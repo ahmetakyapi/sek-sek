@@ -15,6 +15,78 @@ export interface LevelEn {
 }
 
 export const LEVELS_EN: Record<string, LevelEn> = {
+  canakkale: {
+    subtitle: 'The Strait and Troy',
+    item: 'Clay Jug',
+    intro: 'The Clock Tower on the promenade, the Mirrored Bazaar, the ferry across the strait and the walls of Kilitbahir. At the end of the road, the nine cities of Troy stacked one upon another.',
+    note: 'Drink your tea on the promenade and count the ships passing through the strait. When you reach Troy, remember to look inside the horse; not every gift is what it seems.',
+    facts: [
+      { title: 'The Clock Tower', text: 'The Çanakkale Clock Tower was built in 1897. It has five storeys and is one of the symbols of the promenade.' },
+      { title: 'Kilitbahir Castle', text: 'Kilitbahir Castle was built in the 15th century at the narrowest point of the strait. Its name means “lock of the sea”.' },
+      { title: 'Çanakkale Ceramics', text: 'The city takes its name from pottery. Çanakkale ceramics have been made for centuries and are known for their horse-headed jugs.' },
+    ],
+    secret: { title: 'Troy', text: 'The site of Troy holds the layers of nine cities built one on top of another. It was added to the UNESCO World Heritage List in 1998.' },
+    hints: [
+      'Welcome to Çanakkale! Walk along the promenade and pass the Clock Tower.',
+      'The Mirrored Bazaar: jump onto the awnings and hop from one to the next.',
+      'The strait ferry: board when it reaches the pier, get off on the far shore.',
+      'The walls of Kilitbahir: climb step by step. The key is in the bastion, the door below.',
+    ],
+    npcs: [
+      { name: 'Halil the Tea Master', text: 'Tea on the promenade is brewed by the wind off the strait. Look at the Clock Tower: it has not hurried once since 1897, and neither should you.' },
+      { name: 'Gülsüm the Potter', text: 'Çanakkale takes its name from the clay bowl, my child. Our horse-headed jugs are famous; I dropped three on the road, keep them if you find them.' },
+      { name: 'Captain Yaşar of the Ferry', text: 'Twenty minutes between Europe and Asia. Do not jump before the ferry reaches the pier; the current of the strait is no joke.' },
+    ],
+    quips: ['The strait’s current is strong!', 'Do look a gift horse in the mouth.', 'The jug broke, but you are fine.', 'The wind never rests here.'],
+  },
+  diyarbakir: {
+    subtitle: 'Basalt Walls',
+    item: 'Watermelon',
+    intro: 'Walls, bastions and gates of black basalt. From the Mountain Gate to Hasan Pasha Inn, from the Hevsel Gardens to the Ten-Eyed Bridge over the Tigris.',
+    note: 'Walk on top of the walls and watch the Tigris from the Ten-Eyed Bridge. Say hello to the little phone shop at the foot of the Mountain Gate, too.',
+    facts: [
+      { title: 'The Walls of Diyarbakır', text: 'The walls of Diyarbakır are about 5.8 kilometres long. Together with the Hevsel Gardens they joined the UNESCO World Heritage List in 2015.' },
+      { title: 'The Ten-Eyed Bridge', text: 'The Ten-Eyed Bridge over the Tigris was built in 1065. It is named after its ten arches.' },
+      { title: 'The Four-Legged Minaret', text: 'The minaret of the Sheikh Mutahhar Mosque stands on four stone columns. It is built in bands of black basalt and pale stone.' },
+    ],
+    secret: { title: 'Diyarbakır Watermelon', text: 'Grown in the sandy banks of the Tigris, Diyarbakır watermelons become enormous; the largest compete each year at the watermelon festival.' },
+    hints: [
+      'Welcome to Diyarbakır! Enter by the Mountain Gate and take the wall steps up to the bastion.',
+      'Jump from bastion to bastion: the wall top is narrow, mind the scorpions.',
+      'Hasan Pasha Inn: jump up to the arcades of the courtyard. The key is upstairs.',
+      'The Ten-Eyed Bridge: cross arch by arch, do not fall into the Tigris. The door is at the far end.',
+    ],
+    npcs: [
+      { name: 'Baran the Phone Apprentice', text: 'My master Memo took to the road and left the shop to me! He could spot a cracked screen at a glance. Anyone who stops by the foot of the wall gets a glass of tea.' },
+      { name: 'Seyda the Dengbêj', text: 'We tell our stories with no instrument, only the voice. These walls are thousands of years old; every bastion has its song. Listen, and the road grows shorter.' },
+      { name: 'Auntie Hatun the Gardener', text: 'The soil of Hevsel is rich, and the sand of the Tigris makes giants of our watermelons. Three of my slices were left on the road; enjoy them if you find them, but do not tease the one in the square!' },
+    ],
+    quips: ['Basalt is hard!', 'You rolled like a watermelon.', 'The walls are watching you.', 'The Tigris is cool but deep.'],
+  },
+  sinop: {
+    subtitle: 'The Northernmost Harbour',
+    item: 'Model Ship',
+    intro: 'From the castle walls to the fishing harbour, from the calm bay of Hamsilos to the İnceburun lighthouse. Here the Black Sea embraces a peninsula.',
+    note: 'Reach the northernmost tip of Türkiye and stop at the foot of the lighthouse. Give Diogenes my regards; ask him for nothing, just do not block his sun.',
+    facts: [
+      { title: 'Sinop Castle', text: 'Sinop Castle dates back to the 7th century BC. Its walls cut across the narrowest part of the peninsula, between two seas.' },
+      { title: 'İnceburun', text: 'İnceburun is the northernmost point of Türkiye. The lighthouse at its tip has guided ships since 1863.' },
+      { title: 'Model Shipbuilding', text: 'Sinop is known for its handmade model ships. The craft is handed down in the city from one generation to the next.' },
+    ],
+    secret: { title: 'Diogenes', text: 'The philosopher Diogenes was born in Sinop in the late 5th century BC. Legend says he lived in a barrel and carried a lantern in daylight, looking for an honest person.' },
+    hints: [
+      'Welcome to Sinop! Climb onto the wall: there is a different sea on either side.',
+      'The fishing harbour: cross from boat to boat. The waves rock them, so watch your timing.',
+      'Hamsilos Bay: the gaps in the rocks are wide. Jump, then dash at the top.',
+      'İnceburun lighthouse: climb inside the tower by bouncing from wall to wall. The key is at the top, the door below.',
+    ],
+    npcs: [
+      { name: 'Rasim the Model Maker', text: 'I have built model ships for forty years; I sew the smallest sail with a needle. The wind carried off three of them. If you find them, do not bring them back, they are yours.' },
+      { name: 'Nezahat the Mantı Cook', text: 'Sinop mantı is half yoghurt, half walnut; you eat both from one plate. The boats rock in the harbour, so it is best to cross on a full stomach!' },
+      { name: 'Osman the Lighthouse Keeper', text: 'This light has burned since 1863. You are at the very north of Türkiye, child; beyond here is only the Black Sea. Climb up and look at the horizon.' },
+    ],
+    quips: ['The Black Sea does not joke.', 'Diogenes would have laughed.', 'The lighthouse saw you.', 'You slipped like an anchovy.'],
+  },
   trabzon: {
     subtitle: 'Horon and Highlands',
     item: 'Rice Pudding',
@@ -765,7 +837,7 @@ export const STORY_EN: { title: string; text: string }[] = [
 
 export const ENDING_EN: { title: string; text: string } = {
   title: 'The Notebook Is Complete',
-  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. Grandpa Yusuf was born here and heard his first kopuz on the banks of the Çoruh. Sixteen cities lie behind. The road has ended, but the homeland never does: the next cities are on their way.',
+  text: '{name} opened the last page of the notebook on the tower of Bayburt Castle. Grandpa Yusuf was born here and heard his first kopuz on the banks of the Çoruh. Nineteen cities lie behind. The road has ended, but the homeland never does: the next cities are on their way.',
 }
 
 export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string }> = {
