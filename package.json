@@ -11,6 +11,7 @@
     "verify:levels": "tsx scripts/verify-levels.ts",
     "verify:respawn": "tsx scripts/verify-respawn.ts",
     "verify:boss": "tsx scripts/bossbot.ts",
+    "verify:items": "tsx scripts/verify-items.ts",
     "verify:enemies": "tsx scripts/verify-enemies.ts",
     "verify:all": "bash scripts/verify-all.sh",
     "preview": "node scripts/preview.cjs",

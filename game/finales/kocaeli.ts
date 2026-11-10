@@ -15,8 +15,8 @@ export const prelude: Prelude = {
     'The SEKA pier: don’t linger on the cracked planks, hop across one by one!',
     'Jump on the spring crate: it flings you onto the paper bales. If you fall off the planks, the spring in the yard sends you back up.',
   ],
-  npcs: [{ name: 'Balyacı Saniye Abla', look: 'teyze', text: 'Otuz yıl bu iskelede kâğıt balyası saydım. Bir sır vereyim: balyaların hepsi dolu değildir, kimi yığının içi bomboştur. Duvar sandığın şeye bir yaslan bak.' }],
-  npcsEn: [{ name: 'Saniye the Bale Counter', text: 'Thirty years I counted paper bales on this pier. Here is a secret: not every bale is full, some stacks are hollow inside. Lean on what you take for a wall and see.' }],
+  npcs: [{ name: 'Balyacı Saniye Abla', look: 'teyze', text: 'Otuz yıl bu iskelede kâğıt balyası saydım. Bir sır vereyim: balyaların hepsi dolu değildir, kimi yığının içinde karanlık bir geçit vardır. Dibine bir bak.' }],
+  npcsEn: [{ name: 'Saniye the Bale Counter', text: 'Thirty years I counted paper bales on this pier. Here is a secret: not every bale is full, some stacks hide a dark passage. Take a look at the bottom.' }],
   chunks: [
     [
       '                                                          ',

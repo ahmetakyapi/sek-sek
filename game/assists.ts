@@ -35,6 +35,7 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 167, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
   konya: [
+    { x: 105, y: 6, from: ['   '], to: ['==='], why: 'Medresenin damına giden köprü ile dam arasında 5 karo boşluk vardı (kural en çok 3): zayıf oyuncu gizli pula varamıyordu. Köprü üç karo uzadı' },
     { x: 123, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
   nevsehir: [
@@ -50,6 +51,7 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 128, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
   mardin: [
+    { x: 40, y: 11, from: ['C', ' '], to: [' ', 'C'], why: 'Hatıra çatlak taş köprünün bir karo üstünde asılıydı: köprü basınca dağıldığı için zıplamaya vakit kalmıyor, zayıf oyuncu alamıyordu. Koşarken alınacak yüksekliğe indi' },
     { x: 160, y: 17, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
   malatya: [

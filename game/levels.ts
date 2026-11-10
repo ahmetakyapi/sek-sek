@@ -1359,7 +1359,7 @@ export const LEVELS: LevelDef[] = [
     hints: [
       'Sema halkası: turkuaz tepsi bir merkezin etrafında döner. Üstüne bin, en tepeye çıkınca sete atla.',
       'Alaeddin Tepesi: halkadan halkaya tırman. Biri inerken öbürü çıkar, ritmi bekle.',
-      'Karatay Medresesi: anahtarı al, kapıyı aç. Dama giden köprüden yürürsen çatlak bir duvar görürsün.',
+      'Karatay Medresesi: anahtarı al, kapıyı aç. Dama giden köprüden yürürsen damda karanlık bir kapı aralığı görürsün.',
       'Yılan ısırır: üstüne bas ya da dash atarak geç. Son hatıra yüksekte, halkayı kolla.',
     ],
     map: konya,

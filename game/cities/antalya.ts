@@ -5,7 +5,7 @@ import type { CityRoad } from './types'
  * Hadrian Kapısı (üç kemerin altından geçilir, kapı ile sur arasındaki bacadan duvar sekmesiyle üstüne çıkılır) →
  * falezler (önce sığ ve kuru bir oyukta zıpla + dash at, sonra altı deniz; alçak kaya ana yol, kristal isteğe bağlı kestirme) →
  * Düden'e iniş (ilk ıslak taş düz zeminde, ardından küçük bir su birikintisi).
- * Gizli pul Hadrian Kapısı'nın orta kemerinin üstünde: alınlıktaki çatlak taş sahtedir, kapının üstünden içine düşülür.
+ * Gizli pul Hadrian Kapısı'nın orta kemerinin üstünde: alınlıkta karanlık bir ağız var, kapının üstünden içine düşülür.
  */
 export const road: CityRoad = {
   chunks: [

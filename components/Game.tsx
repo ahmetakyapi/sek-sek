@@ -1524,7 +1524,7 @@ function Complete({
                   <p className="mt-0.5 text-[12px] leading-snug text-cream/85">{level.secret.text}</p>
                 </div>
               ) : (
-                <p className="border-2 border-dashed border-line/70 px-3 py-2 text-[12px] text-muted">{t('Bu şehirde bir gizli pul var. Sahte duvarlara, çatlak zeminlere ve zor ulaşılan köşelere bak.')}</p>
+                <p className="border-2 border-dashed border-line/70 px-3 py-2 text-[12px] text-muted">{t('Bu şehirde bir gizli pul var. Kayadaki karanlık ağızlara, çatlak zeminlere ve zor ulaşılan köşelere bak.')}</p>
               )}
               <p className={`border-2 px-3 py-2 text-[12px] ${save.charms?.[level.id] ? 'border-[#4ab0e8] bg-[#2a2438] text-cream/90' : 'border-dashed border-line/70 text-muted'}`}>
                 {save.charms?.[level.id] ? t('Nazar boncuğu bulundu: meydan yolunda saklıydı.') : t('Meydan yolunda bir nazar boncuğu saklı. Kapıdan geçtikten sonra etrafına iyi bak.')}

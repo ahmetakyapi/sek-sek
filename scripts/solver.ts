@@ -135,13 +135,15 @@ export interface SolveResult {
   arrivals: Array<{ index: number; switchOn: boolean; hasKey: boolean; snap: Snapshot }>
   /** trace istenirse: başlangıçtan çıkışa giden makro dizisi (çıkışa varılamadıysa boş) */
   path: Macro[]
+  /** grabs istenirse: her toplanabilir şeyin (C0, C1…, $, !, K) alındığı anın durumu, şey başına en çok üç; oradan çıkışa varılıyor mu diye sınanır */
+  grabs: Map<string, Snapshot[]>
 }
 
 /** exitOnly: yalnızca çıkışa giden yol aranır (anahtar kapısı varsa anahtar da, çünkü yol ona bağlı) */
 /** start: aramayı bu durumdan başlat (bayraktan yeniden doğuş denetimi için) */
 /** trace: çıkışa giden yolu da döndür (verify-enemies yol gösterici olarak kullanır); kapalıyken hiçbir şey saklanmaz */
 /** goal: çıkış yerine bu koşulu sağlayan ilk yere varmak yeter (yere basılı durumda sınanır); arama (x, y) noktasına yakın durumlardan açılır */
-export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot; trace?: boolean; goal?: { x: number; y: number; reached: (w: World) => boolean } } = {}): SolveResult {
+export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot; trace?: boolean; grabs?: boolean; goal?: { x: number; y: number; reached: (w: World) => boolean } } = {}): SolveResult {
   const w = new World(level)
   w.enemies.length = 0
   w.turrets.length = 0
@@ -196,6 +198,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
     return top
   }
   const picks = new Set<number>()
+  const grabs = new Map<string, Snapshot[]>()
   const cps = new Set<number>()
   let won = false
   let stamp = !w.stampBox
@@ -214,8 +217,15 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
         restore(w, s)
         if (opts.trace) holdPlates(w)
         const deaths = w.deaths
+        const got: string[] = []
         runMacro(w, m, () => {
           for (const e of w.events) {
+            if (opts.grabs) {
+              if (e.type === 'collect') got.push('C' + e.index)
+              if (e.type === 'stamp') got.push('$')
+              if (e.type === 'charm') got.push('!')
+              if (e.type === 'key') got.push('K')
+            }
             if (e.type === 'collect') picks.add(e.index)
             if (e.type === 'checkpoint') {
               cps.add(e.index)
@@ -228,6 +238,11 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
           }
           w.events.length = 0
         })
+        if (got.length && w.deaths === deaths && !w.complete)
+          for (const g of got) {
+            const list = grabs.get(g) ?? []
+            if (list.length < 3) grabs.set(g, [...list, snapshot(w)])
+          }
         const hit = w.complete || (opts.goal !== undefined && w.deaths === deaths && w.player.grounded && opts.goal.reached(w))
         if (hit && !goal) goal = { from: s, via: m }
         if (hit) won = true
@@ -256,5 +271,5 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   }
   const path: Macro[] = []
   if (opts.trace) for (let g = goal as { from: Snapshot; via: Macro } | null | undefined; g; g = links.get(g.from)) path.unshift(g.via)
-  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals, path }
+  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals, path, grabs }
 }

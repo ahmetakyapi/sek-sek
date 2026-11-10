@@ -15,8 +15,8 @@ export const prelude: Prelude = {
     'The stones of Taşköprü are cracked: they crumble underfoot, so keep moving. If an arrow comes at you, jump over it!',
     'The cotton bale flings you to the top of the pier. Cracked stones above, arrows below: pick your own way.',
   ],
-  npcs: [{ name: 'Köprü Bekçisi Durdu', look: 'amca', text: 'Bu köprü bin yedi yüz yıldır Seyhan’ın üstünde, evladım. Kemer ayaklarının içi oyuktur derler; eskiler kıymetlisini oraya saklarmış. Duvar deyip geçme!' }],
-  npcsEn: [{ name: 'Durdu the Bridge Keeper', text: 'This bridge has stood over the Seyhan for seventeen hundred years, my child. They say the piers are hollow; the old folk hid their treasures inside. Don’t take every wall for a wall!' }],
+  npcs: [{ name: 'Köprü Bekçisi Durdu', look: 'amca', text: 'Bu köprü bin yedi yüz yıldır Seyhan’ın üstünde, evladım. Kemer ayaklarının birinin içi oyuktur, dibinde karanlık bir ağzı var; eskiler kıymetlisini oraya saklarmış.' }],
+  npcsEn: [{ name: 'Durdu the Bridge Keeper', text: 'This bridge has stood over the Seyhan for seventeen hundred years, my child. One of the piers is hollow, with a dark opening at its foot; the old folk hid their treasures inside.' }],
   chunks: [
     [
       '                                                            ',

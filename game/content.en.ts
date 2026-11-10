@@ -470,7 +470,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     hints: [
       'Sema ring: turquoise trays turn around a centre. Hop on, and jump to the ledge when you reach the top.',
       'Alaeddin Hill: climb from ring to ring. As one goes down the other comes up, so wait for the rhythm.',
-      'Karatay Madrasa: grab the key and open the door. On the bridge to the roof, you may spot a cracked wall.',
+      'Karatay Madrasa: grab the key and open the door. Cross the bridge to the roof and you will see a dark doorway up there.',
       'Snakes bite: stomp on them or dash past. The last keepsake is up high, so watch the ring.',
     ],
     npcs: [

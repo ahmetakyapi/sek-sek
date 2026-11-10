@@ -3,7 +3,7 @@ import type { CityRoad } from './types'
 /**
  * Sinop ana yolu: kale surları (mazgallar arası atlayış, iki yanda deniz) → balıkçı limanı (dalgada sallanan
  * tekneler) → Hamsilos koyu (zıpla, en tepede dash at) → İnceburun feneri (duvar sekmesiyle tepeye, anahtar yukarıda).
- * Gizli pul Hamsilos'ta, ilk geniş boşluktan sonraki kayanın içinde (sahte duvar).
+ * Gizli pul Hamsilos'ta, ilk geniş boşluktan sonraki kayanın içinde (karanlık tünel ağzından girilir).
  */
 export const road: CityRoad = {
   chunks: [

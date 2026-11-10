@@ -85,6 +85,8 @@ export class TerrainHD {
   private chunks = new Map<number, HTMLCanvasElement>()
   private order: number[] = []
   private readonly solid: (tx: number, ty: number) => boolean
+  /** gizli köşenin mağarası: sahte duvarın (artık görünür tünel ağzı) ardında kalan küçük cep; gök yerine kaya içi çizilir */
+  private readonly cave = new Set<number>()
 
   constructor(
     private readonly w: World,
@@ -94,8 +96,47 @@ export class TerrainHD {
   ) {
     this.solid = (tx, ty) => {
       const t = w.tile(tx, ty)
-      return t === SOLID || t === TURRET || t === ICE || t === FAKE || t === WET
+      return t === SOLID || t === TURRET || t === ICE || t === WET
     }
+    // Sahte duvar (%) bir tünel ya da mağara ağzıdır: içi karanlık, kenarı mürekkepli, oyuncu görür ve girer.
+    // Ardındaki cep, başlangıçtan (ya da meydan kapısının varışından) sahte duvarı aşmadan varılamayan küçük boşluktur.
+    const cols = w.cols
+    const block = (t: number) => t === SOLID || t === TURRET || t === ICE || t === WET || t === FAKE
+    const reach = new Set<number>()
+    const flood = (sx: number, sy: number) => {
+      const st = [[sx, sy]]
+      while (st.length) {
+        const [x, y] = st.pop()!
+        if (x < 0 || x >= cols || y < 0 || y >= w.rows) continue
+        const k = y * cols + x
+        if (reach.has(k) || block(w.tile(x, y))) continue
+        reach.add(k)
+        st.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1])
+      }
+    }
+    flood(Math.floor((w.player.x + 6) / T), Math.floor((w.player.y + 6) / T))
+    if (w.arrival) flood(Math.floor(w.arrival.x / T), Math.floor(w.arrival.y / T))
+    for (let ty = 0; ty < w.rows; ty++)
+      for (let tx = 0; tx < cols; tx++) {
+        if (w.tile(tx, ty) !== FAKE) continue
+        this.cave.add(ty * cols + tx)
+        // ağzın ardındaki cep (büyük açık alanlar mağara sayılmaz)
+        for (const [nx, ny] of [[tx + 1, ty], [tx - 1, ty], [tx, ty + 1], [tx, ty - 1]]) {
+          const pocket: number[] = []
+          const st = [[nx, ny]]
+          const seen = new Set<number>()
+          while (st.length && pocket.length <= 40) {
+            const [x, y] = st.pop()!
+            if (x < 0 || x >= cols || y < 0 || y >= w.rows) continue
+            const k = y * cols + x
+            if (seen.has(k) || reach.has(k) || block(w.tile(x, y))) continue
+            seen.add(k)
+            pocket.push(k)
+            st.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1])
+          }
+          if (pocket.length <= 40) for (const k of pocket) this.cave.add(k)
+        }
+      }
   }
 
   /** Görünen parçaları ana tuvale basar. camX/camY dünya pikseli (kesirli olabilir). */
@@ -147,6 +188,25 @@ export class TerrainHD {
     const solid = this.solid
     c.lineCap = 'round'
     c.lineJoin = 'round'
+
+    // ── 0. gizli köşelerin mağarası ve tünel ağzı: kaya içi karanlık, derine doğru koyulaşır
+    for (let ty = 0; ty < rows; ty++)
+      for (let tx = tx0; tx <= tx1; tx++) {
+        if (!this.cave.has(ty * w.cols + tx)) continue
+        const x = tx * T
+        const y = ty * T
+        c.fillStyle = mix(s.tileDark, '#120f1a', 0.62)
+        c.fillRect(x - 0.05, y - 0.05, T + 0.1, T + 0.1)
+        // arka duvarın taş örgüsü, çok soluk
+        c.strokeStyle = 'rgba(255,236,200,0.06)'
+        c.lineWidth = 0.6
+        c.beginPath()
+        c.moveTo(x, y + 8 + (tx % 2) * 2)
+        c.lineTo(x + T, y + 8 + (tx % 2) * 2)
+        c.moveTo(x + 5 + hash(tx, ty, 41) * 6, y)
+        c.lineTo(x + 5 + hash(tx, ty, 41) * 6, y + 8)
+        c.stroke()
+      }
 
     // ── 1. kütle + malzeme (katı bölgeye kırpılır)
     c.save()
@@ -324,14 +384,7 @@ export class TerrainHD {
         const y = ty * T
         if (t === ONEWAY) this.plank(c, x, y, w.tile(tx - 1, ty) !== ONEWAY, w.tile(tx + 1, ty) !== ONEWAY, s.plank, tx)
         else if (t === SPIKE_UP || t === SPIKE_DOWN) this.spikes(c, x, y, t === SPIKE_UP, s.spike, tx)
-        else if (t === FAKE) {
-          // dikkatli bakan görür: ince bir çatlak
-          c.strokeStyle = 'rgba(22,12,34,0.42)'
-          c.lineWidth = 0.6
-          c.beginPath()
-          wobble(c, x + 6, y + 3, x + 8.5, y + 10, 1, 3)
-          c.stroke()
-        } else if (t === TURRET) {
+        else if (t === TURRET) {
           c.fillStyle = s.tileDark
           c.strokeStyle = INK
           c.lineWidth = 1
