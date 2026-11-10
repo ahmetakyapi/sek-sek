@@ -50,6 +50,9 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 36, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 128, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
+  diyarbakir: [
+    { x: 6, y: 17, from: ['   '], to: ['==='], why: 'Başlangıçtaki burcun içinde karpuz 5 karo yukarıda asılıydı; yalnız iki asılı duvar arasında sekerek alınıyordu, oyunun başında kimse tahmin etmez. Burcun içine basamak tahtası: üstüne çıkan zıplayınca alır' },
+  ],
   mardin: [
     { x: 40, y: 11, from: ['C', ' '], to: [' ', 'C'], why: 'Hatıra çatlak taş köprünün bir karo üstünde asılıydı: köprü basınca dağıldığı için zıplamaya vakit kalmıyor, zayıf oyuncu alamıyordu. Koşarken alınacak yüksekliğe indi' },
     { x: 160, y: 17, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
@@ -75,6 +78,9 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 125, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
   sivas: [
+    { x: 127, y: 19, from: ['e'], to: [' '], why: 'Çatlak taşlardan (üstünde beklenemez) inilen buz zeminin tamamında kurt geziyordu: iniş kurda denk gelirse kaçış yoktu. Kurt inişin ötesine taşındı' },
+    { x: 131, y: 19, from: [' '], to: ['#'], why: 'Kurdun önüne küçük taş: iniş alanına (126-130) girmesin' },
+    { x: 136, y: 19, from: [' '], to: ['e'], why: 'Kurdun yeni yeri: inişten sonra, taşla buz kıyısı arasında gezer' },
     { x: 108, y: 13, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 168, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],

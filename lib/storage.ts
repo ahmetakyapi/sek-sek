@@ -42,7 +42,10 @@ export interface Save {
   music: boolean
   touch: 'auto' | 'on' | 'off'
   character: 'uktun' | 'memo' | null
+  /** hikâye kendiliğinden açılmasın: okundu, geçildi ya da yeni oyuncu doğrudan oyuna girdi */
   seenStory: boolean
+  /** oyun içi adım adım rehber (yalnız ilk oynayış): ilk bölüm bitince ya da adımlar tamamlanınca kapanır */
+  tutorial: boolean
   controlSize: 'normal' | 'buyuk'
   keyHints: boolean
   /** Rahat Mod: dünya %80 hızda; skorlar tabloya yazılmaz */
@@ -80,7 +83,7 @@ const KEY = 'seksek:v1'
 /** 8 Kasım'a dek anahtar `memleket:v1`di; ilk açılışta yeni anahtara taşınır, ilerleme kaybolmaz. */
 const LEGACY_KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
 
 export function loadSave(): Save {
   try {
@@ -96,6 +99,8 @@ export function loadSave(): Save {
     const parsed = JSON.parse(raw) as Partial<Save>
     const s = { ...defaultSave(), ...parsed }
     if (parsed.mapVersion === undefined) s.mapVersion = 1
+    // rehber alanından önceki kayıt: yalnız henüz hiç oynamamış oyuncu rehberi görür
+    if (parsed.tutorial === undefined) s.tutorial = !parsed.seenStory && !parsed.unlocked && !Object.keys(parsed.best ?? {}).length
     // haritalar uzadı: eski süreler yeni yolla yarışamaz (hatıralar kalır), eski hayalet koşular silinir
     if (s.mapVersion < TIMES_SINCE && !parsed.timesReset) {
       for (const b of Object.values(s.best)) b.stale = true

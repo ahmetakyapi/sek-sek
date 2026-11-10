@@ -383,3 +383,22 @@ describe('ok tuzakları adil', () => {
     }
   })
 })
+
+describe('toplama kutusu çizilen gövdeye eşit', () => {
+  const walk = (row: string) => {
+    const pad = ' '.repeat(30)
+    const w = mk([pad, pad, pad, pad, row.padEnd(30), ' P'.padEnd(30), '#'.repeat(30), '#'.repeat(30)].map((r) => r.padEnd(30)))
+    run(w, 2.5, { right: true })
+    return w.pickups[0].taken
+  }
+  it('omuz hizasındaki hatıra yürüyerek alınır', () => {
+    // oyuncu 5. satırda yürür; hatıra hemen üstündeki satırda (gövdenin çizildiği yükseklik)
+    expect(walk('      C')).toBe(true)
+  })
+  it('bir kademe yukarıdaki hatıra için zıplamak gerekir', () => {
+    const pad = ' '.repeat(30)
+    const w = mk([pad, pad, pad, '      C'.padEnd(30), pad, ' P'.padEnd(30), '#'.repeat(30), '#'.repeat(30)])
+    run(w, 2.5, { right: true })
+    expect(w.pickups[0].taken).toBe(false)
+  })
+})

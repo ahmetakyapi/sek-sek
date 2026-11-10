@@ -101,3 +101,48 @@ export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean })
     </div>
   )
 }
+
+export type TutorialStep = 'walk' | 'jump' | 'collect' | 'flag' | 'dash'
+
+/**
+ * İlk oynayışın adım adım rehberi: tek satır, diyalog kutusunun yerinde (alt orta; telefonda yatayda iki kontrolün arası).
+ * Klavyede tuşu, dokunmatikte kontrolün adını söyler.
+ */
+export function TutorialHint({ step, touch }: { step: TutorialStep; touch: boolean }) {
+  const t = useT()
+  const body: Record<TutorialStep, React.ReactNode> = touch
+    ? {
+        walk: t('Sol Yarı: Yürü'),
+        jump: t('Zıpla Düğmesi'),
+        collect: t('Hatırayı Topla'),
+        flag: t('Bayrağa Dokun: Düşersen Buradan Başlarsın'),
+        dash: t('Dash Düğmesi'),
+      }
+    : {
+        walk: (
+          <>
+            <Key>→</Key> {t('Yürü')}
+          </>
+        ),
+        jump: (
+          <>
+            <Key>↑</Key> {t('Zıpla')}
+          </>
+        ),
+        collect: t('Hatırayı Topla'),
+        flag: t('Bayrağa Dokun: Düşersen Buradan Başlarsın'),
+        dash: (
+          <>
+            <Key wide>Space</Key> {t('Dash')}
+          </>
+        ),
+      }
+  return (
+    <div className="dialog-in dlg-pos tut-pos pointer-events-none absolute inset-x-0 z-10 flex justify-center px-3" data-touch={touch ? '' : undefined} role="status" aria-live="polite">
+      <p className="tut-hint flex max-w-full items-center gap-2 bg-ink/85 px-3 py-1.5 text-[14px] font-bold leading-snug text-cream sm:text-[15px]">
+        <span className="tut-dot h-2 w-2 shrink-0 bg-gold" aria-hidden />
+        <span className="flex items-center gap-1.5">{body[step]}</span>
+      </p>
+    </div>
+  )
+}

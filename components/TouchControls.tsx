@@ -10,7 +10,7 @@ type Kind = 'jump' | 'dash'
  * Sol yarıda yüzen joystick, sağda DASH ve ZIPLA.
  * Tuşların dokunma alanı görünen dairelerden geniştir; kaçırılan basış olmasın.
  */
-export default function TouchControls({ input, big = false, canDash = true }: { input: InputManager; big?: boolean; canDash?: boolean }) {
+export default function TouchControls({ input, big = false, canDash = true, focus = null }: { input: InputManager; big?: boolean; canDash?: boolean; focus?: 'stick' | 'jump' | 'dash' | null }) {
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null)
   const [pressed, setPressed] = useState({ jump: false, dash: false })
   const stickId = useRef<number | null>(null)
@@ -115,7 +115,7 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
           </div>
         ) : (
           <div
-            className="absolute flex items-center justify-between rounded-full border-2 border-white/15 bg-black/25 px-4 text-lg text-white/40"
+            className={`absolute flex items-center justify-between rounded-full border-2 bg-black/25 px-4 text-lg text-white/40 ${focus === 'stick' ? 'tut-focus border-gold' : 'border-white/15'}`}
             style={{ width: (R + 14) * 2, height: (R + 14) * 2, left: 'max(20px, env(safe-area-inset-left))', bottom: 'max(28px, env(safe-area-inset-bottom))' }}
           >
             <span>◀</span>
@@ -131,7 +131,7 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
       >
         <button type="button" aria-label={t("Dash")} className="pointer-events-auto p-2" {...btn('dash')}>
           <span
-            className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#3a3250]' : canDash ? 'border-[#d6403a] bg-[#2a2438]/85 shadow-[0_0_12px_rgba(214,64,58,0.45)]' : 'border-white/20 bg-[#2a2438]/60 opacity-60'}`}
+            className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${focus === 'dash' ? 'tut-focus' : ''} ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#3a3250]' : canDash ? 'border-[#d6403a] bg-[#2a2438]/85 shadow-[0_0_12px_rgba(214,64,58,0.45)]' : 'border-white/20 bg-[#2a2438]/60 opacity-60'}`}
             style={{ width: dashD, height: dashD }}
           >
             <span className="text-xl leading-none">»</span>
@@ -140,7 +140,7 @@ export default function TouchControls({ input, big = false, canDash = true }: { 
         </button>
         <button type="button" aria-label={t("Zıpla")} className="pointer-events-auto mb-8 p-2" {...btn('jump')}>
           <span
-            className={`flex flex-col items-center justify-center rounded-full border-2 border-[#f5a571] font-display text-base text-ink shadow-[inset_0_-5px_0_rgba(0,0,0,0.3)] transition-transform duration-75 ${pressed.jump ? 'translate-y-0.5 scale-95 bg-accent-2' : 'bg-accent/90'}`}
+            className={`flex flex-col items-center justify-center rounded-full border-2 border-[#f5a571] font-display text-base text-ink shadow-[inset_0_-5px_0_rgba(0,0,0,0.3)] transition-transform duration-75 ${focus === 'jump' ? 'tut-focus' : ''} ${pressed.jump ? 'translate-y-0.5 scale-95 bg-accent-2' : 'bg-accent/90'}`}
             style={{ width: jumpD, height: jumpD }}
           >
             <span className="text-2xl leading-none">▲</span>

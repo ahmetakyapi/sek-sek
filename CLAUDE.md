@@ -44,10 +44,10 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   audio.ts       WebAudio efektleri + şehir makamında üretilen müzik (bayrak sesi de şehrin makamından)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts
-components/      React arayüzü: Game (bütün ekranlar), Defter (toplananlar, rozetler, Boss Rush), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
+components/      React arayüzü: Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, Boss Rush), About (artbook), Bestiary, NpcDialog, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), extras (atkı renkleri, Günün Şehri, Haftanın Görevi), scoreKey (skor tablosu harita sürümüne bağlı), players (hesap: scrypt şifre + cihaz oturumu), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
+scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
 tests/           sim.test.ts (fizik, mekanik, final), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları)
 ```
 
@@ -138,6 +138,10 @@ yetim satır bırakma.
   karanlık aralık olarak çizilir; çatlak taş `X`; plakayla açılan kapı). Tabela ve şehir insanı girişi doğru tarif eder
   ("üstüne atla" deniyorsa üstüne atlayan alır). Her şeyi zayıf oyuncu alabilmeli ve aldığı yerden çıkışa varabilmeli
   (kapan yok): `npx tsx scripts/verify-items.ts <id>`.
+- Toplanan şeyler çizilen gövdeye değince alınır (`sim.ts` reach: 26 px boy); fizik ve tehlikeler 14 px kutuyla kalır.
+  Omuz hizası yürüyerek alınır, bir kademe (2 karo) ve yukarısı zıplayarak. Gökyüzünde dayanaksız şey olmaz: her şey
+  bir zeminin, tahtanın, hareketli platform yolunun, yayın, sandığın ya da duvarın zıplama menzilinde (3 karo yan,
+  4 karo yukarı): `npx tsx scripts/audit-reach.ts <id>`.
 - Ok, katı bir karoya çarpana dek uçar: ok tuzağının hattında bayrak, tabela, şehir insanı ya da başlangıç olmasın
   (test bekler); gerekiyorsa araya oku durduran bir taş koy.
 - `audit-difficulty` zayıf oyuncu takılırsa çıkış kodu 1 verir; Malatya'da bu yüzden bir diken tarlası gözden kaçmıştı.

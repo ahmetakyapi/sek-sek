@@ -12,6 +12,7 @@
     "verify:respawn": "tsx scripts/verify-respawn.ts",
     "verify:boss": "tsx scripts/bossbot.ts",
     "verify:items": "tsx scripts/verify-items.ts",
+    "verify:reach": "tsx scripts/audit-reach.ts",
     "verify:enemies": "tsx scripts/verify-enemies.ts",
     "verify:all": "bash scripts/verify-all.sh",
     "preview": "node scripts/preview.cjs",

@@ -1208,22 +1208,22 @@ export class World {
       if (!c.active) {
         c.timer -= dt
         if (c.timer <= 0) c.active = true
-      } else if (!p.dead && !p.canDash && overlap(p, c)) {
+      } else if (!p.dead && !p.canDash && overlap(reach(p), c)) {
         c.active = false
         c.timer = 2.5
         p.canDash = true
         this.events.push({ type: 'crystal' })
       }
     }
-    if (this.keyBox && !this.hasKey && !p.dead && overlap(p, this.keyBox)) {
+    if (this.keyBox && !this.hasKey && !p.dead && overlap(reach(p), this.keyBox)) {
       this.hasKey = true
       this.events.push({ type: 'key' })
     }
-    if (this.stampBox && !this.stampTaken && !p.dead && overlap(p, this.stampBox)) {
+    if (this.stampBox && !this.stampTaken && !p.dead && overlap(reach(p), this.stampBox)) {
       this.stampTaken = true
       this.events.push({ type: 'stamp' })
     }
-    if (this.charmBox && !this.charmTaken && !p.dead && overlap(p, this.charmBox)) {
+    if (this.charmBox && !this.charmTaken && !p.dead && overlap(reach(p), this.charmBox)) {
       this.charmTaken = true
       this.events.push({ type: 'charm' })
     }
@@ -1357,14 +1357,14 @@ export class World {
     }
 
     for (const c of this.pickups) {
-      if (!c.taken && overlap(p, c)) {
+      if (!c.taken && overlap(reach(p), c)) {
         c.taken = true
         this.events.push({ type: 'collect', index: c.index })
       }
     }
 
     for (const cp of this.checkpoints) {
-      if (!cp.active && overlap(p, cp)) {
+      if (!cp.active && overlap(reach(p), cp)) {
         cp.active = true
         for (const o of this.checkpoints) if (o.index < cp.index) o.active = true
         this.checkpointIndex = cp.index
@@ -1438,6 +1438,16 @@ export class World {
     p.deadTimer = 0
     this.respawn()
   }
+}
+
+/**
+ * Toplama kutusu: karakter ekranda çarpışma kutusunun iki katına yakın boyda çizilir (render.ts HERO_SIZE 29, kutu 14).
+ * Toplanan şeyler (hatıra, pul, nazar, anahtar, kristal, bayrak) çizilen gövdeye değince alınır; fizik ve tehlikeler
+ * dar kutuyla kalır. Böylece omuz hizasındaki hatıra yürüyerek alınır, ancak bir kademe yukarıdaki için zıplanır.
+ */
+const REACH_H = 26
+function reach(p: Box): Box {
+  return { x: p.x - 1, y: p.y + p.h - REACH_H, w: p.w + 2, h: REACH_H }
 }
 
 function overlap(a: Box, b: Box) {

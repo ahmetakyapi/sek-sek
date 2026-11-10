@@ -2,12 +2,16 @@ import { useLang, useT } from '@/lib/i18n'
 import type { LevelDef } from '@/game/types'
 
 /** Panel başlığı: şehrin piksel sahnesi, posta pulu biçiminde plaka ve şehir adı. */
-export default function CityBanner({ level, index, total, eyebrow, height = 120 }: { level: LevelDef; index?: number; total?: number; eyebrow?: string; height?: number }) {
+export default function CityBanner({ level, index, total, eyebrow, height = 120, short }: { level: LevelDef; index?: number; total?: number; eyebrow?: string; height?: number; short?: number }) {
   const plate = String(level.plate).padStart(2, '0')
   const t = useT()
   const lang = useLang()
   return (
-    <div className="relative -mx-6 -mt-[calc(14px+1.25rem)] mb-4 overflow-hidden" style={{ height }}>
+    // short: yatay telefonda (alçak ekranda) daha basık şerit; giriş kartı kaydırmadan sığsın
+    <div
+      className="relative -mx-6 -mt-[calc(14px+1.25rem)] mb-4 h-[var(--bh)] overflow-hidden [@media(max-height:500px)]:mb-2 [@media(max-height:500px)]:h-[var(--bh-short)]"
+      style={{ '--bh': `${height}px`, '--bh-short': `${short ?? height}px` } as React.CSSProperties}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/sehirler/${level.id}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ imageRendering: 'pixelated', objectPosition: '50% 70%' }} />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1e1a29]/30 to-[#1e1a29]" />

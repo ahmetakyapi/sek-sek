@@ -28,12 +28,13 @@ printf '%s\n' "${cities[@]}" | xargs -P "$JOBS" -I{} sh -c '
     npx tsx scripts/verify-levels.ts {};  echo "LEVELS $?"
     npx tsx scripts/verify-respawn.ts {}; echo "RESPAWN $?"
     npx tsx scripts/bossbot.ts {};        echo "BOSS $?"
+    npx tsx scripts/audit-reach.ts {};    echo "REACH $?"
     npx tsx scripts/verify-items.ts {};   echo "ITEMS $?"
     npx tsx scripts/verify-enemies.ts {}; echo "ENEMIES $?"; } > "'"$OUT"'/{}.log" 2>&1'
 
 for c in "${cities[@]}"; do
   line=""
-  for k in PRELUDE LEVELS RESPAWN BOSS ITEMS ENEMIES; do
+  for k in PRELUDE LEVELS RESPAWN BOSS REACH ITEMS ENEMIES; do
     code=$(grep -E "^$k " "$OUT/$c.log" | awk '{print $2}')
     if [ "$code" = "0" ]; then line+=" $k ✓"; else line+=" $k ✗"; fail=1; fi
   done

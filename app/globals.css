@@ -435,3 +435,32 @@ figcaption {
 
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* İlk oynayış rehberi: tek satır, diyalogla aynı yuva (aynı anda görünmezler); masaüstünde biraz daha aşağıda */
+.tut-pos:not([data-touch]) { bottom: 40px; }
+.tut-hint { box-shadow: 0 0 0 2px var(--color-gold), 0 6px 16px rgb(0 0 0 / 0.45); text-wrap: balance; }
+@keyframes tut-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.tut-dot { animation: tut-blink 1.1s ease-in-out infinite; }
+/* rehberin işaret ettiği dokunmatik kontrol */
+@keyframes tut-focus {
+  0%, 100% { outline-offset: 2px; outline-color: var(--color-gold); }
+  50% { outline-offset: 7px; outline-color: rgb(242 193 78 / 0.25); }
+}
+.tut-focus { outline: 3px solid var(--color-gold); animation: tut-focus 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tut-dot, .tut-focus { animation: none; }
+}
+
+/* ilk bölümün başlık kartı çerçeve cümlesini taşır: okunacak kadar kalsın */
+.title-card.slow { animation-duration: 5s; }
+
+/* giriş kartının "Şehir Hakkında" bölümü */
+.intro-more > summary { list-style: none; }
+.intro-more > summary::-webkit-details-marker { display: none; }
+.intro-more[open] .intro-more-arrow { transform: rotate(180deg); }
+@media (orientation: landscape) and (max-height: 520px) {
+  .tut-pos[data-touch] .tut-hint { font-size: 13px; }
+}

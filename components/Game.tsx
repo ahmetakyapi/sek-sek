@@ -9,7 +9,7 @@ import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
 import { NpcDialog, SignHint } from '@/components/NpcDialog'
-import { ItemIcon, Key, KeyHints } from '@/components/HudBits'
+import { ItemIcon, Key, KeyHints, TutorialHint, type TutorialStep } from '@/components/HudBits'
 import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
 import Defter, { RUSH_NEEDS } from '@/components/Defter'
@@ -47,6 +47,24 @@ const DIFF_TONE: Record<string, string> = {
   'Çok Zor': 'border-[#d6403a] text-[#f08a80]',
 }
 
+/** Henüz hiç oynamamış oyuncu: hikâye ve ad ekranı atlanır, doğrudan İstanbul'a girer. */
+const isFresh = (s: Save) => !s.seenStory && s.unlocked === 0 && Object.keys(s.best).length === 0
+
+/** HUD'daki tek kelimelik hedef: ilk üç şehirde görünür */
+type Goal = 'square' | 'boss' | 'exit'
+const GOAL_CITIES = 3
+
+/** Rehberin bu bölümde öğrettikleri (yalnız ilk oynayış) */
+interface Tutorial {
+  startX: number
+  walked: boolean
+  jumped: boolean
+  got: boolean
+  flag: boolean
+  dashed: boolean
+}
+const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
+
 type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd'
 
 interface ScoreRow {
@@ -78,6 +96,30 @@ interface Rush {
 
 const STEP = 1 / 120
 
+interface HudState {
+  time: number
+  deaths: number
+  items: boolean[]
+  canDash: boolean
+  idle: boolean
+  goal: Goal
+}
+const EMPTY_HUD: HudState = { time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true, goal: 'square' }
+
+/**
+ * Rehberin şu anki adımı: sırayla yürü → zıpla → (ekranda hatıra varsa) topla → bayrak → dash.
+ * Yapılan adım kendiliğinden geçer; hatıra adımı yalnız bir hatıra görünürken çıkar.
+ */
+function tutorialStep(tut: Tutorial, w: World, r: Renderer): TutorialStep | null {
+  if (!tut.walked) return 'walk'
+  if (!tut.jumped) return 'jump'
+  const seen = w.pickups.some((p) => !p.taken && p.x + p.w > r.camX && p.x < r.camX + r.viewW && p.y + p.h > r.camY && p.y < r.camY + r.viewH)
+  if (!tut.got && seen) return 'collect'
+  if (!tut.flag) return 'flag'
+  if (!tut.dashed) return 'dash'
+  return null
+}
+
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const worldRef = useRef<World | null>(null)
@@ -94,11 +136,19 @@ export default function Game() {
   /** bu koşuda kaç kez dash atıldı (görevler için) */
   const dashRef = useRef(0)
   const rushRef = useRef<Rush | null>(null)
+  /** rehber açık mı (save.tutorial) ve bu bölümde hangi adımlar yapıldı */
+  const tutorialOnRef = useRef(false)
+  const tutRef = useRef<Tutorial>(freshTutorial(0))
+  /** meydan kapısından geçildi / boss yenildi: HUD hedefi buna göre değişir */
+  const goalRef = useRef<Goal>('square')
+  /** karakter seçimi bitince oyuna mı (yeni oyuncu) menüye mi dönülür */
+  const pickThenPlayRef = useRef(false)
 
   const [screen, setScreenState] = useState<Screen>('title')
   const [levelIdx, setLevelIdx] = useState(0)
   const [save, setSave] = useState<Save>(defaultSave)
-  const [hud, setHud] = useState({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
+  const [hud, setHud] = useState<HudState>(EMPTY_HUD)
+  const [tutStep, setTutStep] = useState<TutorialStep | null>(null)
   const [cpToast, setCpToast] = useState<{ at: number; text: string } | null>(null)
   const idleRef = useRef(0)
   const [hint, setHint] = useState<string | null>(null)
@@ -143,8 +193,10 @@ export default function Game() {
   useEffect(() => {
     relaxedRef.current = save.relaxed
     ghostOnRef.current = save.ghost
+    tutorialOnRef.current = save.tutorial
+    if (!save.tutorial) setTutStep(null)
     if (!save.ghost && rendererRef.current) rendererRef.current.ghostRun = null
-  }, [save.relaxed, save.ghost])
+  }, [save.relaxed, save.ghost, save.tutorial])
 
   useEffect(() => {
     const s = loadSave()
@@ -241,6 +293,7 @@ export default function Game() {
           soundRef.current?.sfx(e.type)
           switch (e.type) {
             case 'collect': {
+              tutRef.current.got = true
               const lv = localize(w.level, langRef.current)
               setToast({ ...lv.facts[e.index], item: lv.item, key: Date.now() })
               haptic([12, 40, 12])
@@ -258,6 +311,7 @@ export default function Game() {
               break
             }
             case 'checkpoint': {
+              tutRef.current.flag = true
               haptic(10)
               const moments = FLAG_MOMENTS[w.level.city]
               const m = moments[e.index % moments.length]
@@ -296,6 +350,7 @@ export default function Game() {
               haptic([25, 30, 45])
               break
             case 'bossDown':
+              goalRef.current = 'exit'
               freezeRef.current = 0.14
               haptic([40, 50, 40, 50, 90])
               setSave((prev) => {
@@ -306,11 +361,17 @@ export default function Game() {
               })
               break
             case 'warp':
+              goalRef.current = 'boss'
               haptic(18)
               break
             case 'dash':
+              tutRef.current.dashed = true
               dashRef.current++
               haptic(6)
+              break
+            case 'jump':
+            case 'walljump':
+              tutRef.current.jumped = true
               break
             case 'complete':
               haptic([20, 60, 20, 60, 40])
@@ -324,7 +385,14 @@ export default function Game() {
           hudTimer = 0
           const moving = Math.abs(w.player.vx) > 5 || !w.player.grounded
           idleRef.current = moving ? 0 : idleRef.current + 0.1
-          setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken), canDash: w.player.canDash, idle: w.time < 6 || idleRef.current > 1.5 })
+          setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken), canDash: w.player.canDash, idle: w.time < 6 || idleRef.current > 1.5, goal: goalRef.current })
+          if (tutorialOnRef.current && !rushRef.current) {
+            const tut = tutRef.current
+            if (Math.abs(w.player.x - tut.startX) >= 32) tut.walked = true
+            const step = tutorialStep(tut, w, renderer)
+            setTutStep(step)
+            if (!step && tut.walked && tut.jumped && tut.got && tut.flag && tut.dashed) endTutorial()
+          }
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
@@ -406,7 +474,10 @@ export default function Game() {
         rendererRef.current.ghostRun = !rush && ghostOnRef.current ? loadGhost(LEVELS[idx].id) : null
       }
       inputRef.current?.clear()
-      setHud({ time: 0, deaths: 0, items: [false, false, false], canDash: true, idle: true })
+      setHud(EMPTY_HUD)
+      goalRef.current = 'square'
+      tutRef.current = freshTutorial(w.player.x)
+      setTutStep(null)
       setToast(null)
       setHint(null)
       setNpc(-1)
@@ -424,8 +495,33 @@ export default function Game() {
     inputRef.current?.clear()
     setTitleCard(Date.now())
     ;(document.activeElement as HTMLElement | null)?.blur?.()
+    // yeni oyuncu oyuna girdi: hikâye ve ad ekranı bir daha kendiliğinden açılmaz (ad, bölüm sonunda sorulur)
+    setSave((prev) => {
+      if (!isFresh(prev)) return prev
+      const next = { ...prev, seenStory: true, skippedName: prev.player ? prev.skippedName : true }
+      writeSave(next)
+      return next
+    })
     setScreen('play')
   }, [setScreen])
+
+  /** Rehber bitti: bir daha gösterilmez. */
+  function endTutorial() {
+    tutorialOnRef.current = false
+    setTutStep(null)
+    setSave((prev) => {
+      if (!prev.tutorial) return prev
+      const next = { ...prev, tutorial: false }
+      writeSave(next)
+      return next
+    })
+  }
+
+  /** İlk açılış: İstanbul giriş kartı atlanır, oyun hemen başlar. */
+  const firstPlay = () => {
+    loadLevel(0, 'play')
+    beginPlay()
+  }
 
   /** Boss Rush: yenilmiş bekçiler şehir sırasıyla, arka arkaya. */
   const startRush = () => {
@@ -454,6 +550,14 @@ export default function Game() {
   const startJourney = () => {
     soundRef.current?.unlock()
     ui()
+    if (isFresh(save)) {
+      // yeni oyuncu: karakter seçimi → doğrudan oyun (en çok iki tık)
+      if (!save.character) {
+        pickThenPlayRef.current = true
+        return setScreen('character')
+      }
+      return firstPlay()
+    }
     if (!save.character) return setScreen('character')
     if (!save.player && !save.skippedName) return setScreen('name')
     if (!save.seenStory) {
@@ -468,6 +572,10 @@ export default function Game() {
     const next = { ...save, character: id }
     persist(next)
     if (rendererRef.current) rendererRef.current.character = CHARACTERS[id]
+    if (pickThenPlayRef.current && isFresh(next)) {
+      pickThenPlayRef.current = false
+      return firstPlay()
+    }
     if (!next.player && !next.skippedName) setScreen('name')
     else if (!next.seenStory) {
       setStoryPage(0)
@@ -521,6 +629,8 @@ export default function Game() {
       setScreen('rushEnd')
       return
     }
+    tutorialOnRef.current = false
+    setTutStep(null)
     const items = w.pickups.map((p) => p.taken)
     const run = { timeMs, deaths: w.deaths, dashes: dashRef.current, items, relaxed: relaxedRef.current }
     const now = new Date()
@@ -538,6 +648,8 @@ export default function Game() {
       if (weekly !== prev.weekly) earned.push('Haftanın Görevi Tamam')
       const next: Save = {
         ...prev,
+        // ilk bölüm bitti: rehber işini yaptı
+        tutorial: false,
         daily,
         weekly,
         unlocked: Math.max(prev.unlocked, Math.min(idx + 1, LEVELS.length - 1)),
@@ -576,6 +688,7 @@ export default function Game() {
   }, [save.lang, ready])
 
   const showTouch = save.touch === 'on' || (save.touch === 'auto' && coarse)
+  const introBest = save.best[level.id]?.stale ? undefined : save.best[level.id]
   const totalFound = Object.values(save.best).reduce((a, b) => a + b.items.filter(Boolean).length, 0)
 
   return (
@@ -585,19 +698,29 @@ export default function Game() {
 
       {screen === 'play' && (
         <>
-          <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} onPause={() => setScreen('pause')} />
+          <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} showGoal={levelIdx < GOAL_CITIES && !rushRef.current} onPause={() => setScreen('pause')} />
           {titleCard > 0 && hud.time < 0.05 && (
-            <div key={titleCard} className="title-card pointer-events-none absolute inset-x-0 top-[30%] z-10 flex flex-col items-center [@media(max-height:500px)]:top-[12%]">
+            <div key={titleCard} className={`title-card ${save.tutorial ? 'slow' : ''} pointer-events-none absolute inset-x-0 top-[30%] z-10 flex flex-col items-center ${save.tutorial ? '[@media(max-height:500px)]:top-[20%]' : '[@media(max-height:500px)]:top-[12%]'}`}>
               <div className="kilim w-[min(520px,80vw)]" />
               <p className="mt-3 text-[12px] font-bold tracking-[0.4em] text-accent-2 [text-shadow:0_2px_0_#120f1a]">
                 {String(level.plate).padStart(2, '0')} · {level.subtitle.toLocaleUpperCase(lang)}
               </p>
               <p className="font-display text-6xl text-cream [text-shadow:0_4px_0_#120f1a] sm:text-7xl [@media(max-height:500px)]:text-5xl">{level.name}</p>
-              <p className="mt-1 text-[13px] text-cream/80 [text-shadow:0_2px_0_#120f1a]">{t("Hareket Edince Süre Başlar")}</p>
+              {save.tutorial && !rushRef.current ? (
+                <p className="mt-2 max-w-[min(520px,88vw)] px-2 text-center text-[15px] leading-snug text-gold [text-shadow:0_2px_0_#120f1a,0_0_10px_#120f1a] [text-wrap:balance] [@media(max-height:500px)]:mt-1 [@media(max-height:500px)]:text-[13px]">{t('Gezgin’in defterini tamamla: her şehirde 3 hatıra topla, meydandaki boss’u yen.')}</p>
+              ) : (
+                <p className="mt-1 text-[13px] text-cream/80 [text-shadow:0_2px_0_#120f1a]">{t("Hareket Edince Süre Başlar")}</p>
+              )}
               <div className="kilim mt-3 w-[min(520px,80vw)]" />
             </div>
           )}
-          {npc >= 0 && level.npcs[npc] ? <NpcDialog key={`npc-${levelIdx}-${npc}`} npc={level.npcs[npc]} touch={showTouch} /> : hint ? <SignHint key={hint} text={hint} touch={showTouch} /> : null}
+          {npc >= 0 && level.npcs[npc] ? (
+            <NpcDialog key={`npc-${levelIdx}-${npc}`} npc={level.npcs[npc]} touch={showTouch} />
+          ) : hint ? (
+            <SignHint key={hint} text={hint} touch={showTouch} />
+          ) : tutStep && !coach ? (
+            <TutorialHint key={tutStep} step={tutStep} touch={showTouch} />
+          ) : null}
           {quip && (
             <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[38%] z-10 flex justify-center px-4">
               <p className="rise font-display text-base text-cream/90 [text-shadow:0_2px_0_#120f1a,0_0_12px_#120f1a] sm:text-xl">{quip.text}</p>
@@ -629,7 +752,7 @@ export default function Game() {
             </div>
           )}
           {cpToast && Date.now() - cpToast.at < 3200 && (
-            <div key={cpToast.at} className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+64px)] z-10 flex justify-center px-4">
+            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(env(safe-area-inset-top)+104px)]' : 'top-[calc(env(safe-area-inset-top)+64px)]'}`}>
               <div className="max-w-[min(92vw,420px)] bg-ink/85 px-3.5 py-2 text-center [box-shadow:0_-2px_0_0_#e30a17,0_2px_0_0_#e30a17,-2px_0_0_0_#e30a17,2px_0_0_0_#e30a17]">
                 <p className="flex items-center justify-center gap-2 font-display text-sm text-cream">
                   <span className="text-[#e30a17]">⚑</span> {t("Checkpoint")}
@@ -638,8 +761,8 @@ export default function Game() {
               </div>
             </div>
           )}
-          {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} canDash={hud.canDash} />}
-          {!showTouch && save.keyHints && <KeyHints canDash={hud.canDash} idle={hud.idle} />}
+          {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} canDash={hud.canDash} focus={tutStep === 'walk' ? 'stick' : tutStep === 'jump' ? 'jump' : tutStep === 'dash' ? 'dash' : null} />}
+          {!showTouch && save.keyHints && !save.tutorial && <KeyHints canDash={hud.canDash} idle={hud.idle} />}
         </>
       )}
 
@@ -649,10 +772,10 @@ export default function Game() {
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t("DEFTERE YENİ SAYFALAR")}</p>
             <h2 id="harita-notu" className="mt-1 font-display text-3xl text-cream">{t("Haritalar Yenilendi")}</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-cream/85">
-              {t('Yola altı şehir daha katıldı: Edirne, Bursa, Antalya, Şanlıurfa, Van ve Erzurum. Şehirlerin sırası değişti; her şehrin sonunda bir bulmaca, saklı bir nazar boncuğu ve şehrin boss’u var. Skor tablosu yeni haritalarla baştan başladı.')}
+              {t('Yola altı şehir katıldı: Edirne, Bursa, Antalya, Şanlıurfa, Van ve Erzurum. Her şehrin sonunda bir bulmaca, saklı bir nazar boncuğu ve bir boss var; skor tablosu baştan başladı.')}
             </p>
             <p className="mt-2 text-[14px] leading-relaxed text-muted">
-              {t('Yeni haritaları baştan yaşamak istersen yolculuğa İstanbul’dan başla. Rekorların ve pulların sıfırlanır; adın, karakterin ve ayarların kalır.')}
+              {t('İstersen İstanbul’dan baştan başla: rekorların ve pulların sıfırlanır; adın, karakterin ve ayarların kalır.')}
             </p>
             <div className="mt-5 grid gap-2.5">
               <button
@@ -735,7 +858,14 @@ export default function Game() {
                   <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('notebook'))}>
                     {t("Defter")}
                   </button>
-                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('character'))}>
+                  <button
+                    className="pixel-btn justify-center"
+                    onClick={() => {
+                      ui()
+                      pickThenPlayRef.current = false
+                      setScreen('character')
+                    }}
+                  >
                     {t("Karakter")}
                   </button>
                   <button className="pixel-btn justify-center" disabled={beaten < RUSH_NEEDS} title={beaten < RUSH_NEEDS ? t('Önce {n} Boss Yen', { n: RUSH_NEEDS }) : undefined} onClick={startRush}>
@@ -1052,46 +1182,61 @@ export default function Game() {
       {screen === 'intro' && (
         <Overlay>
           <div className="rise pixel-panel w-full max-w-md overflow-clip px-6">
-            <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={150} />
-            <p className="-mt-1 text-sm text-muted">{level.subtitle}</p>
-            <figure className="notebook mt-4 rotate-[-0.6deg] px-4 py-3">
-              <figcaption className="text-[11px] font-bold tracking-[0.22em] text-[#8a3a24]">{t("GEZGİN’İN DEFTERİNDEN")}</figcaption>
-              <blockquote className="mt-1 text-[14px] italic leading-relaxed">“{level.note}”</blockquote>
-            </figure>
-            <p className="mt-4 text-[14px] leading-relaxed text-cream/85">{level.intro}</p>
-            <Bestiary level={level} />
-            <div className="mt-4 flex items-center gap-3 border-2 border-line bg-ink/40 px-3 py-2">
-              <BossFigure city={level.city} className="h-[64px] w-[72px] shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold tracking-[0.2em] text-accent-2">{t('ŞEHRİN BOSS’U')}</p>
-                <p className="font-display text-xl leading-tight text-cream">{lang === 'en' ? BOSSES[level.city].nameEn : BOSSES[level.city].name}</p>
-                <p className="mt-0.5 text-[12px] leading-snug text-muted">{t('İşaretini bekle, yorulunca üstüne bas.')}</p>
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-              <div className="border-2 border-line bg-ink/40 px-1 py-2">
-                <p className="font-display text-lg leading-none text-gold">3</p>
-                <p className="mt-1 truncate text-[11px] text-muted">{level.item}</p>
-              </div>
-              {(['altin', 'gumus', 'bronz'] as const).map((m, k) => (
-                <div key={m} className="border-2 border-line bg-ink/40 px-1 py-2">
-                  <p className="flex items-center justify-center gap-1.5 font-display text-lg leading-none text-cream">
-                    <MedalBadge medal={m} />
-                    {level.medals[k]}
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted">{t("Saniye")}</p>
-                </div>
-              ))}
-            </div>
-            {!showTouch && (
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-muted">
-                <span className="flex items-center gap-1.5"><Key>←</Key><Key>→</Key> {t("Yürü")}</span>
-                <span className="flex items-center gap-1.5"><Key>↑</Key> {t("Zıpla")}</span>
-                <span className="flex items-center gap-1.5 text-gold"><Key wide>Space</Key> {t("Dash")}</span>
-              </div>
+            <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={120} short={84} />
+            <p className="-mt-1 text-sm text-muted [@media(max-height:500px)]:hidden">{level.subtitle}</p>
+            <p className="mt-3 flex [@media(max-height:500px)]:mt-0 items-center gap-2.5 text-[15px] leading-snug text-cream">
+              <ItemIcon city={level.city} taken size={28} />
+              <span>{t('Üç {item} topla, meydandaki boss’u yen.', { item: level.item })}</span>
+            </p>
+            {introBest && (
+              <p className="mt-2 flex items-center gap-2 text-[13px] text-muted tabular-nums">
+                {t('En İyi Süre')} <strong className="text-cream">{formatTime(introBest.timeMs)}</strong>
+                <MedalBadge medal={medalFor(level, introBest.timeMs)} />
+                <span>· {introBest.items.filter(Boolean).length}/3</span>
+              </p>
             )}
-            <div className="sticky bottom-0 z-10 -mx-6 mt-5 grid grid-cols-[1fr_auto] gap-3 border-t-2 border-line bg-[#1e1a29]/95 px-6 py-3 [padding-bottom:max(12px,env(safe-area-inset-bottom))]">
-              <button className="pixel-btn primary justify-center text-base" onClick={beginPlay} autoFocus>
+            <details className="intro-more mt-3 border-2 [@media(max-height:500px)]:mt-2 border-line bg-ink/40">
+              <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[13px] font-bold text-cream">
+                {t('Şehir Hakkında')}
+                <span aria-hidden className="intro-more-arrow text-muted">▾</span>
+              </summary>
+              <div className="px-3 pb-3">
+                <figure className="notebook mt-1 rotate-[-0.6deg] px-4 py-3">
+                  <figcaption className="text-[11px] font-bold tracking-[0.22em] text-[#8a3a24]">{t("GEZGİN’İN DEFTERİNDEN")}</figcaption>
+                  <blockquote className="mt-1 text-[14px] italic leading-relaxed">“{level.note}”</blockquote>
+                </figure>
+                <p className="mt-4 text-[14px] leading-relaxed text-cream/85">{level.intro}</p>
+                <Bestiary level={level} />
+                <div className="mt-4 flex items-center gap-3 border-2 border-line bg-ink/40 px-3 py-2">
+                  <BossFigure city={level.city} className="h-[64px] w-[72px] shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold tracking-[0.2em] text-accent-2">{t('ŞEHRİN BOSS’U')}</p>
+                    <p className="font-display text-xl leading-tight text-cream">{lang === 'en' ? BOSSES[level.city].nameEn : BOSSES[level.city].name}</p>
+                    <p className="mt-0.5 text-[12px] leading-snug text-muted">{t('İşaretini bekle, yorulunca üstüne bas.')}</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  {(['altin', 'gumus', 'bronz'] as const).map((m, k) => (
+                    <div key={m} className="border-2 border-line bg-ink/40 px-1 py-2">
+                      <p className="flex items-center justify-center gap-1.5 font-display text-lg leading-none text-cream">
+                        <MedalBadge medal={m} />
+                        {level.medals[k]}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted">{t("Saniye")}</p>
+                    </div>
+                  ))}
+                </div>
+                {!showTouch && (
+                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-muted">
+                    <span className="flex items-center gap-1.5"><Key>←</Key><Key>→</Key> {t("Yürü")}</span>
+                    <span className="flex items-center gap-1.5"><Key>↑</Key> {t("Zıpla")}</span>
+                    <span className="flex items-center gap-1.5 text-gold"><Key wide>Space</Key> {t("Dash")}</span>
+                  </div>
+                )}
+              </div>
+            </details>
+            <div className="sticky bottom-0 z-10 -mx-6 mt-4 grid grid-cols-[1fr_auto] [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:py-2 gap-3 border-t-2 border-line bg-[#1e1a29]/95 px-6 py-3 [padding-bottom:max(12px,env(safe-area-inset-bottom))]">
+              <button className="pixel-btn primary justify-center py-3 text-lg" onClick={beginPlay} autoFocus>
                 {t("▶ Başla")}
               </button>
               <button className="pixel-btn" onClick={() => setScreen('map')}>
@@ -1242,7 +1387,7 @@ export default function Game() {
               </dl>
             </div>
             <p className="mt-4 text-[12px] leading-relaxed text-muted">
-              {t("Duvara doğru basılı tutup zıplarsan aynı duvarda tırmanırsın. Dash yere değince ya da bir düşmana basınca yenilenir: atkın kırmızıysa hazırsın, griyse harcadın. Şehir insanlarının yanına gidersen seninle konuşurlar.")}
+              {t("Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da düşmana basınca yenilenir: atkın kırmızıysa hazır, griyse harcandı.")}
             </p>
           </div>
         </Overlay>
@@ -1319,7 +1464,9 @@ function Notebook({ page }: { page: number }) {
   )
 }
 
-function Hud({ level, hud, hero, scarf, onPause }: { scarf: { color: string; shade: string } | null; level: (typeof LEVELS)[number]; hud: { time: number; deaths: number; items: boolean[]; canDash: boolean; idle: boolean }; hero: CharacterId; onPause: () => void }) {
+const GOAL_TEXT: Record<Goal, string> = { square: 'Meydana Git', boss: 'Boss’u Yen', exit: 'Çıkışa Git' }
+
+function Hud({ level, hud, hero, scarf, showGoal, onPause }: { scarf: { color: string; shade: string } | null; level: (typeof LEVELS)[number]; hud: HudState; hero: CharacterId; showGoal: boolean; onPause: () => void }) {
   const t = useT()
   const lng = useLang()
   return (
@@ -1341,6 +1488,11 @@ function Hud({ level, hud, hero, scarf, onPause }: { scarf: { color: string; sha
       </div>
       <div className="pointer-events-auto flex shrink-0 items-center gap-2">
         <div className="flex items-center gap-2 bg-ink/80 px-2 py-2 text-sm font-semibold tabular-nums text-cream [box-shadow:0_0_0_2px_rgba(61,53,80,0.8)] sm:gap-3 sm:px-3">
+          {showGoal && (
+            <span key={hud.goal} className="rise whitespace-nowrap border-r-2 border-line pr-2 text-[12px] font-bold text-gold sm:pr-3 sm:text-[13px]" role="status">
+              {t(GOAL_TEXT[hud.goal])}
+            </span>
+          )}
           <span className="flex gap-1" aria-label={t('{n} / 3 hatıra', { n: hud.items.filter(Boolean).length })}>
             {hud.items.map((v, i) => (
               <ItemIcon key={i} city={level.city} taken={v} />
