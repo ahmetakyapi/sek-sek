@@ -374,27 +374,30 @@ export class Renderer {
   }
 
   /**
-   * Boss dövüşünde kamera boss'a kilitlenir: arena ekrana sığıyorsa bütün arena, sığmıyorsa boss ile oyuncunun
-   * ortası; boss her an görünür kalır. Havadaki boss (dalış) ve zemin birlikte kadrajda tutulur.
+   * Boss dövüşünde kamera karakterle boss'un arasına bakar ve ikisiyle birlikte kayar: karakter yürüdükçe kadraj
+   * akar, ikisi de ekranda kalır. Ekrana sığmayacak kadar uzaklaşırlarsa boss kenarda tutulur, kadraj karaktere
+   * doğru yaslanır. Yerin altındaki boss'un yerine çıkacağı yer, havadaki boss'la zemin birlikte kadrajda durur.
    */
   private bossFrame(w: World): [number, number] | null {
     const b = w.boss
     if (!b || b.state === 'sleep' || b.state === 'down' || w.player.dead) return null
     const p = w.player
-    const L = b.min
-    const R = b.max + b.w
-    const bx = b.hidden ? b.tx : b.x + b.w / 2
-    const margin = 36
-    let tx: number
-    if (R - L + margin * 2 <= this.viewW) tx = (L + R) / 2 - this.viewW / 2
-    else {
-      tx = (bx + p.x + p.w / 2) / 2 - this.viewW / 2
-      // boss kadrajdan çıkmasın: oyuncu uzaktaysa boss öncelikli
-      tx = Math.max(bx + margin - this.viewW, Math.min(bx - margin, tx))
-      tx = Math.max(L - margin, Math.min(R + margin - this.viewW, tx))
-    }
-    let ty = b.floor - this.viewH * 0.68
-    ty = Math.min(ty, Math.min(b.y, p.y) - 28)
+    const vw = this.viewW
+    const pcx = p.x + p.w / 2
+    const bcx = b.hidden ? b.tx : b.x + b.w / 2
+    const m = Math.min(40, vw * 0.14)
+    // ortanın biraz karakter tarafı: koşunun gittiği yer de görünsün
+    let tx = (pcx + bcx) / 2 + p.vx * 0.06 - vw / 2
+    if (Math.abs(pcx - bcx) + m * 2 <= vw) tx = Math.max(Math.max(pcx, bcx) + m - vw, Math.min(Math.min(pcx, bcx) - m, tx))
+    else tx = bcx < pcx ? bcx - m : bcx + m - vw
+    // arenanın dışına fazla taşmasın (duvarlar görünür kalır); arena ekrandan darsa ortalanır
+    const pad = 40
+    const lo = b.min - pad
+    const hi = b.max + b.w + pad - vw
+    tx = lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, tx))
+    // dikeyde zemin sabit durur; karakter ya da boss yükselince kadraj da yükselir
+    const top = Math.min(p.y, b.hidden ? b.floor : b.y)
+    const ty = Math.min(b.floor - this.viewH * 0.66, top - 30)
     return [tx, ty]
   }
 
@@ -417,8 +420,10 @@ export class Renderer {
     const s = CITY[this.city]
 
     // kamera
-    const [tx, ty] = this.bossFrame(w) ?? [p.x + p.w / 2 - this.viewW / 2 + p.facing * 28 + p.vx * 0.15, p.y + p.h / 2 - this.viewH * 0.55]
-    const k = 1 - Math.pow(0.0015, dt)
+    const frame = this.bossFrame(w)
+    const [tx, ty] = frame ?? [p.x + p.w / 2 - this.viewW / 2 + p.facing * 28 + p.vx * 0.15, p.y + p.h / 2 - this.viewH * 0.55]
+    // dövüşte kadraj bir tık yumuşak akar: boss'un ani sıçrayışları ekranı sarsmaz
+    const k = 1 - Math.pow(frame ? 0.006 : 0.0015, dt)
     this.camX += (tx - this.camX) * k
     this.camY += (ty - this.camY) * k * 0.8
     this.clampCam(w)
