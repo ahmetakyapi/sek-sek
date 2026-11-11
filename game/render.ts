@@ -373,6 +373,31 @@ export class Renderer {
     this.camY = Math.max(lo, Math.min(hi, this.camY))
   }
 
+  /**
+   * Boss dövüşünde kamera boss'a kilitlenir: arena ekrana sığıyorsa bütün arena, sığmıyorsa boss ile oyuncunun
+   * ortası; boss her an görünür kalır. Havadaki boss (dalış) ve zemin birlikte kadrajda tutulur.
+   */
+  private bossFrame(w: World): [number, number] | null {
+    const b = w.boss
+    if (!b || b.state === 'sleep' || b.state === 'down' || w.player.dead) return null
+    const p = w.player
+    const L = b.min
+    const R = b.max + b.w
+    const bx = b.hidden ? b.tx : b.x + b.w / 2
+    const margin = 36
+    let tx: number
+    if (R - L + margin * 2 <= this.viewW) tx = (L + R) / 2 - this.viewW / 2
+    else {
+      tx = (bx + p.x + p.w / 2) / 2 - this.viewW / 2
+      // boss kadrajdan çıkmasın: oyuncu uzaktaysa boss öncelikli
+      tx = Math.max(bx + margin - this.viewW, Math.min(bx - margin, tx))
+      tx = Math.max(L - margin, Math.min(R + margin - this.viewW, tx))
+    }
+    let ty = b.floor - this.viewH * 0.68
+    ty = Math.min(ty, Math.min(b.y, p.y) - 28)
+    return [tx, ty]
+  }
+
   /** Dikey ekranda bölümün altı ekranın ~%66'sında kalır: alt kısım dokunmatik kontrollere ayrılır. */
   private camYRange(lh: number): [number, number] {
     const portrait = this.viewH > this.viewW * 1.25
@@ -392,9 +417,7 @@ export class Renderer {
     const s = CITY[this.city]
 
     // kamera
-    const lookX = p.facing * 28 + p.vx * 0.15
-    const tx = p.x + p.w / 2 - this.viewW / 2 + lookX
-    const ty = p.y + p.h / 2 - this.viewH * 0.55
+    const [tx, ty] = this.bossFrame(w) ?? [p.x + p.w / 2 - this.viewW / 2 + p.facing * 28 + p.vx * 0.15, p.y + p.h / 2 - this.viewH * 0.55]
     const k = 1 - Math.pow(0.0015, dt)
     this.camX += (tx - this.camX) * k
     this.camY += (ty - this.camY) * k * 0.8
