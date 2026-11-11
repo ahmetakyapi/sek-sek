@@ -1251,7 +1251,8 @@ export default function Game() {
               </button>
             </div>
             {/* geniş ekranda: solda görevler ve ekran boyunun izin verdiği en büyük harita; sağdaki liste haritanın boyunda, kendi içinde kayar */}
-            <div className="flex min-h-0 flex-1 flex-col side:mt-3 side:grid side:grid-cols-[auto_minmax(240px,1fr)] side:gap-5 short:mt-2 short:gap-3">
+            {/* dar ekranda görevler, harita ve liste tek bir alanda birlikte kayar (başlık yerinde kalır); kenarlar yumuşakça solar */}
+            <div className="overlay-scroll fade-edges -mx-2 mt-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2 side:mx-0 side:mt-3 side:grid side:grid-cols-[auto_minmax(240px,1fr)] side:gap-5 side:overflow-visible side:px-0 side:pb-0 side:[mask-image:none] short:mt-2 short:gap-3">
               <div className="min-w-0 wide:w-[min(calc((100dvh-260px)*2.08),calc(100vw-480px),1040px)] short:w-[min(calc((100dvh-120px)*2.08),calc(100vw-320px))]">
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 side:mt-0 short:hidden">
                   {challenges.map(([title, ch, done]) => {
@@ -1272,8 +1273,13 @@ export default function Game() {
                   <TurkeyMap unlocked={save.unlocked} selected={levelIdx} onSelect={(i) => loadLevel(i)} />
                 </div>
               </div>
-              <div className="relative mt-3 min-h-[160px] flex-1 side:mt-0">
-                <ul className="overlay-scroll absolute inset-0 grid grid-cols-1 content-start gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 side:grid-cols-1">
+              <div className="relative mt-4 side:mt-0 side:flex side:min-h-[160px] side:flex-1 side:flex-col">
+                <div className="mb-2 flex items-baseline justify-between gap-3 px-0.5 short:hidden">
+                  <span className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('Bütün Şehirler')}</span>
+                  <span className="text-[12px] text-muted tabular-nums">{t('{n}/{total} Tamam', { n: LEVELS.filter((l) => save.best[l.id]).length, total: LEVELS.length })}</span>
+                </div>
+                <div className="side:relative side:min-h-[120px] side:flex-1">
+                <ul className="overlay-scroll grid grid-cols-1 content-start gap-2.5 sm:grid-cols-2 side:absolute side:inset-0 side:grid-cols-1 side:overflow-y-auto side:pr-1">
                   {LEVELS.map((l, i) => {
                     const locked = i > save.unlocked
                     const best = save.best[l.id]
@@ -1281,16 +1287,16 @@ export default function Game() {
                     return (
                       <li key={l.id}>
                         <button className="pixel-btn w-full items-stretch gap-0 overflow-hidden p-0 text-left" disabled={locked} onClick={() => loadLevel(i)}>
-                          <span className="relative w-[92px] shrink-0 overflow-hidden">
+                          <span className="relative w-[92px] short:w-[60px] shrink-0 overflow-hidden">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={`/sehirler/${l.id}.webp`} alt="" className={`h-full w-full object-cover ${locked ? 'opacity-30 grayscale' : ''}`} style={{ imageRendering: 'pixelated' }} />
                             <span className="plate absolute bottom-1 left-1 text-[11px]">
                               <span>{String(l.plate).padStart(2, '0')}</span>
                             </span>
                           </span>
-                          <span className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2.5">
+                          <span className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2.5 short:px-2.5">
                             <span className="min-w-0">
-                              <span className="block font-display text-base leading-tight [overflow-wrap:anywhere]">{displayName(l)}</span>
+                              <span className="block font-display text-base leading-tight break-words">{displayName(l)}</span>
                               <span className="block text-[11px] leading-snug text-muted">
                                 {localize(l, lang).subtitle}
                                 <span className={`ml-2 inline-block border px-1.5 py-px align-middle text-[11px] font-bold ${DIFF_TONE[l.difficulty]}`}>{t(l.difficulty)}</span>
@@ -1311,6 +1317,7 @@ export default function Game() {
                     )
                   })}
                 </ul>
+                </div>
               </div>
             </div>
           </div>

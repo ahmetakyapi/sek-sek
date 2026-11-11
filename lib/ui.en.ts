@@ -257,6 +257,8 @@ export const UI_EN: Record<string, string> = {
   'GÜNÜN ŞEHRİ': 'CITY OF THE DAY',
   'HAFTANIN GÖREVİ': 'CHALLENGE OF THE WEEK',
   'Tamam': 'Done',
+  'Bütün Şehirler': 'All Cities',
+  '{n}/{total} Tamam': '{n}/{total} Done',
   'ATKI RENGİ': 'SCARF COLOUR',
   '{n} nazar boncuğu bulunca açılır': 'Unlocks when you find {n} evil eye beads',
   'Yeni renkler, şehirlerde saklı nazar boncuklarını buldukça açılır.': 'New colours unlock as you find the evil eye beads hidden in the cities.',

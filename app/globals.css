@@ -75,6 +75,11 @@ input {
 }
 
 /* menü kaydırılabilsin */
+/* kayan alanın üst ve alt kenarı yumuşakça solar: içerik kesilmiş gibi değil, devam ediyor gibi görünür */
+@utility fade-edges {
+  mask-image: linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 18px), transparent);
+}
+
 .overlay-scroll,
 .overlay-scroll button {
   touch-action: pan-y;
