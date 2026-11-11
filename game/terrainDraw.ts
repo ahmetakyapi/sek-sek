@@ -17,6 +17,8 @@ type Ctx = CanvasRenderingContext2D
 const INK = '#241824'
 const CHUNK = 8
 const KEEP = 12
+/** haritanın altına sürdürülen satır: dikey ekranda kamera haritanın altını da gösterir, zemin orada düz bir banda dönmesin */
+const BELOW = 16
 
 type Material = 'brick' | 'ashlar' | 'cyclop' | 'strata' | 'earth' | 'rock'
 type Cap = 'stone' | 'grass' | 'snow'
@@ -85,6 +87,8 @@ export class TerrainHD {
   private chunks = new Map<number, HTMLCanvasElement>()
   private order: number[] = []
   private readonly solid: (tx: number, ty: number) => boolean
+  /** çizilen satır sayısı: harita + altına sürdürülen pay */
+  private readonly rows: number
   /** gizli köşenin mağarası: sahte duvarın (artık görünür tünel ağzı) ardında kalan küçük cep; gök yerine kaya içi çizilir */
   private readonly cave = new Set<number>()
 
@@ -94,10 +98,13 @@ export class TerrainHD {
     /** bir dünya pikseli kaç ekran pikseli */
     private readonly scale: number,
   ) {
-    this.solid = (tx, ty) => {
+    this.rows = w.rows + BELOW
+    const base = (tx: number, ty: number) => {
       const t = w.tile(tx, ty)
       return t === SOLID || t === TURRET || t === ICE || t === WET
     }
+    // haritanın altında her sütun son satırı gibi sürer: katı sütun taş olarak iner, çukur ve su açık kalır
+    this.solid = (tx, ty) => base(tx, Math.min(ty, w.rows - 1))
     // Sahte duvar (%) bir tünel ya da mağara ağzıdır: içi karanlık, kenarı mürekkepli, oyuncu görür ve girer.
     // Ardındaki cep, başlangıçtan (ya da meydan kapısının varışından) sahte duvarı aşmadan varılamayan küçük boşluktur.
     const cols = w.cols
@@ -168,7 +175,7 @@ export class TerrainHD {
     }
     const cv = document.createElement('canvas')
     cv.width = Math.ceil((CHUNK * T + MARGIN * 2) * this.scale)
-    cv.height = Math.ceil((this.w.rows * T + MARGIN * 2) * this.scale)
+    cv.height = Math.ceil((this.rows * T + MARGIN * 2) * this.scale)
     const c = cv.getContext('2d')!
     c.scale(this.scale, this.scale)
     c.translate(MARGIN - i * CHUNK * T, MARGIN)
@@ -184,7 +191,7 @@ export class TerrainHD {
     const w = this.w
     const s = CITY[this.city]
     const look = LOOK[this.city]
-    const rows = w.rows
+    const rows = this.rows
     const solid = this.solid
     c.lineCap = 'round'
     c.lineJoin = 'round'

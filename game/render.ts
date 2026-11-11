@@ -1521,6 +1521,7 @@ export class Renderer {
     }
   }
 
+  /** Haritanın altı (dikey ekranda görünür): taş sütunları HD zemin sürdürür; burada su derinleşir, çukur uçuruma döner */
   private drawUnderground(b: Ctx, w: World, cx: number, cy: number) {
     const lh = w.rows * T
     if (cy + this.viewH <= lh) return
@@ -1528,16 +1529,22 @@ export class Renderer {
     const h = cy + this.viewH - lh
     const x0 = Math.max(0, Math.floor(cx / T))
     const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T))
+    // çukur: arka plan görünür, aşağı indikçe karanlığa gömülür
+    const pit = b.createLinearGradient(0, lh, 0, lh + Math.min(h, 96))
+    pit.addColorStop(0, 'rgba(11,9,16,0.15)')
+    pit.addColorStop(1, 'rgba(11,9,16,0.96)')
     for (let tx = x0; tx <= x1; tx++) {
       const t = w.tile(tx, w.rows - 1)
-      const color = t === WATER ? s.water[1] : t === EMPTY || t === SPIKE_UP ? '#0b0910' : s.tileDark
-      rect(b, tx * T, lh, T, h, color)
-      if (color === s.tileDark) for (let y = lh + 6; y < lh + h; y += 11) rect(b, tx * T + ((tx * 7 + y) % 12), y, 3, 1, s.tile)
+      if (t === WATER) rect(b, tx * T, lh, T, h, s.water[1])
+      else if (t === EMPTY || t === SPIKE_UP) {
+        b.fillStyle = pit
+        b.fillRect(tx * T, lh, T, h)
+      }
     }
-    // derinleştikçe kararan örtü
+    // derinleştikçe kararan örtü (taşın üstüne de düşer)
     const g = b.createLinearGradient(0, lh, 0, lh + h)
     g.addColorStop(0, 'rgba(10,8,16,0)')
-    g.addColorStop(1, 'rgba(10,8,16,0.75)')
+    g.addColorStop(1, 'rgba(10,8,16,0.6)')
     b.fillStyle = g
     b.fillRect(cx, lh, this.viewW, h)
   }
