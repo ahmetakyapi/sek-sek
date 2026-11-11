@@ -34,20 +34,20 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
   ]
   return (
     <Overlay>
-      <div className="rise pixel-panel w-full max-w-3xl p-5 sm:p-6">
+      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1280px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('YOLCULUĞUN ÖZETİ')}</p>
-            <h2 className="mt-1 font-display text-3xl text-cream">{t('Yol Defteri')}</h2>
+            <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Yol Defteri')}</h2>
           </div>
           <button className="pixel-btn" onClick={onClose}>
             {t('← Geri')}
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center sm:grid-cols-5 short:mt-2">
           {totals.map(([k, v, max]) => (
-            <div key={k} className={`border-2 py-2 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
+            <div key={k} className={`border-2 py-2 short:py-1 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
               <p className="font-display text-xl leading-none tabular-nums text-cream">
                 {v}
                 <span className="text-sm text-muted">/{max}</span>
@@ -57,7 +57,7 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
           ))}
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="mt-3 grid gap-2 sm:grid-cols-3 short:mt-2">
           <div className="border-2 border-line bg-ink/40 px-3 py-2">
             <p className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('GÜNÜN ŞEHRİ')}</p>
             <p className="mt-0.5 text-[13px] text-cream">{t('{n} gün tamamlandı', { n: save.daily.count })}</p>
@@ -78,7 +78,7 @@ export default function Defter({ save, onClose, onRush }: { save: Save; onClose:
           </button>
         </div>
 
-        <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <ul className="overlay-scroll mt-4 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 short:mt-2 wide:grid-cols-3 min-[1400px]:wide:grid-cols-4">
           {LEVELS.map((l, i) => {
             const locked = i > save.unlocked
             const best = save.best[l.id]

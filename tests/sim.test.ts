@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BOSSES } from '../game/boss'
 import { POSES, gait, groundBob } from '../game/heroDraw'
 import { LEVELS } from '../game/levels'
-import { World } from '../game/sim'
+import { FAKE, World } from '../game/sim'
 import { emptyInput, type LevelDef } from '../game/types'
 
 const mk = (map: string[], extra: Partial<LevelDef> = {}): World =>
@@ -400,5 +400,23 @@ describe('toplama kutusu çizilen gövdeye eşit', () => {
     const w = mk([pad, pad, pad, '      C'.padEnd(30), pad, ' P'.padEnd(30), '#'.repeat(30), '#'.repeat(30)])
     run(w, 2.5, { right: true })
     expect(w.pickups[0].taken).toBe(false)
+  })
+})
+
+describe('tünel ağızları', () => {
+  // gövde 26 px çizilir: 1 karoluk (16 px) tünele yürüyerek girmek duvarın içinden geçmek gibi görünür
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: her tünel en az 2 karo yüksek', (_n, l) => {
+    const w = new World(l)
+    const low: string[] = []
+    for (let ty = 0; ty < w.rows; ty++)
+      for (let tx = 0; tx < w.cols; tx++) {
+        if (w.tile(tx, ty) !== FAKE) continue
+        let up = ty
+        while (up > 0 && !w.isSolid(tx, up - 1)) up--
+        let dn = ty
+        while (dn < w.rows - 1 && !w.isSolid(tx, dn + 1)) dn++
+        if (dn - up + 1 < 2) low.push(`${tx},${ty}`)
+      }
+    expect(low).toEqual([])
   })
 })

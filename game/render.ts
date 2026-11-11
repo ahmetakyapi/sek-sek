@@ -22,6 +22,11 @@ interface Particle {
   grav: number
 }
 
+/** dash izi: kopyalar arası dünya pikseli, ömür (sn), en çok kopya */
+const GHOST_GAP = 11
+const GHOST_LIFE = 0.18
+const GHOST_MAX = 3
+
 interface Ghost {
   x: number
   y: number
@@ -2097,6 +2102,7 @@ export class Renderer {
     for (const h of this.heroes) {
       c.save()
       c.globalAlpha = h.alpha
+      // hayalet koşu soluk renkli (tek kopya); dash izi filtresiz, çünkü filtre her çizimde pahalı
       if (h.ghost) c.filter = 'saturate(0.35) brightness(1.25)'
       drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS })
       c.restore()
@@ -2107,13 +2113,22 @@ export class Renderer {
   private drawPlayer(w: World, dt: number) {
     const p = w.player
     const look = this.character.id
-    // dash izi: karakterin soluk kopyaları
-    if (p.dashTime > 0 && !p.dead) this.ghosts.push({ x: p.x, y: p.y, life: 0.22, flip: p.facing < 0 })
-    for (const g of this.ghosts) {
-      g.life -= dt
-      if (g.life > 0) this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: g.life * 2, ghost: true, moving: true, sx: 1, sy: 1 })
-    }
+    // dash izi: yol boyunca aralıklı birkaç soluk kopya. Kare başına değil mesafeye göre bırakılır:
+    // 60 Hz'de de 120 Hz'de de aynı iz, üst üste yığılmaz ve çizim yükü sabit kalır
+    for (const g of this.ghosts) g.life -= dt
     this.ghosts = this.ghosts.filter((g) => g.life > 0)
+    if (p.dashTime > 0 && !p.dead) {
+      const last = this.ghosts[this.ghosts.length - 1]
+      if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= GHOST_GAP) {
+        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: p.facing < 0 })
+        if (this.ghosts.length > GHOST_MAX) this.ghosts.shift()
+      }
+    }
+    for (const g of this.ghosts) {
+      // kopyalar karakterin arkasında kalır: karaktere çok yakın olan çizilmez
+      if (Math.hypot(p.x - g.x, p.y - g.y) < GHOST_GAP * 0.6) continue
+      this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.38 * (g.life / GHOST_LIFE), ghost: false, moving: true, sx: 1, sy: 1 })
+    }
     if (p.dead) return
 
     // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir

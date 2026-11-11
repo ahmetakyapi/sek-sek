@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* geniş ve yeterince yüksek ekran (masaüstü, tablet yatay): kartlar iki sütuna açılır, kaydırma gerekmez */
+@custom-variant wide (@media (min-width: 900px) and (min-height: 600px));
+/* yan yana düzen: geniş masaüstü ya da yatay telefon */
+@custom-variant side {
+  @media (min-width: 900px) and (min-height: 600px) { @slot; }
+  @media (min-width: 560px) and (max-height: 500px) { @slot; }
+}
+/* alçak ekran (yatay telefon): kartlar yatay dizilir, ikincil metin kısalır */
+@custom-variant short (@media (max-height: 500px));
+
 @theme {
   --color-ink: #120f1a;
   --color-panel: #1e1a29;

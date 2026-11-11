@@ -18,6 +18,24 @@ export interface Assist {
 }
 
 export const ASSISTS: Record<string, Assist[]> = {
+  van: [
+    { x: 53, y: 8, from: ['   ', ' # ', '###'], to: ['   ', '###', '%%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
+  ],
+  sinop: [
+    { x: 131, y: 16, from: ['   ', '   ', '###'], to: ['   ', '###', '%%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
+  ],
+  sanliurfa: [
+    { x: 204, y: 13, from: ['  ', ' l', '##'], to: [' l', '##', '%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
+  ],
+  canakkale: [
+    { x: 170, y: 16, from: ['   ', ' t ', '###'], to: [' t ', '###', '%%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
+  ],
+  bursa: [
+    { x: 195, y: 16, from: ['  ', ' l', '##'], to: [' l', '##', '%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
+  ],
+  edirne: [
+    { x: 176, y: 16, from: ['   ', ' t ', '###'], to: [' t ', '###', '%%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
+  ],
   istanbul: [
     { x: 176, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 166, y: 20, from: ['~~', '~~', '~~', '~~'], to: ['##', '##', '##', '##'], why: 'Kolay bölümde 8 karolık su dash+kristal+dash at istiyordu: ortaya iskele kazığı, iki kısa atlayış' },
@@ -33,6 +51,7 @@ export const ASSISTS: Record<string, Assist[]> = {
   ],
   ankara: [
     { x: 167, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
+    { x: 221, y: 10, from: ['   ', ' z ', '###'], to: [' z ', '###', '%%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
   ],
   konya: [
     { x: 105, y: 6, from: ['   '], to: ['==='], why: 'Medresenin damına giden köprü ile dam arasında 5 karo boşluk vardı (kural en çok 3): zayıf oyuncu gizli pula varamıyordu. Köprü üç karo uzadı' },
@@ -52,6 +71,7 @@ export const ASSISTS: Record<string, Assist[]> = {
   ],
   diyarbakir: [
     { x: 6, y: 17, from: ['   '], to: ['==='], why: 'Başlangıçtaki burcun içinde karpuz 5 karo yukarıda asılıydı; yalnız iki asılı duvar arasında sekerek alınıyordu, oyunun başında kimse tahmin etmez. Burcun içine basamak tahtası: üstüne çıkan zıplayınca alır' },
+    { x: 58, y: 12, from: ['   ', '   ', '###'], to: ['   ', '###', '%%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
   ],
   mardin: [
     { x: 40, y: 11, from: ['C', ' '], to: [' ', 'C'], why: 'Hatıra çatlak taş köprünün bir karo üstünde asılıydı: köprü basınca dağıldığı için zıplamaya vakit kalmıyor, zayıf oyuncu alamıyordu. Koşarken alınacak yüksekliğe indi' },
@@ -62,6 +82,7 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 160, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 194, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 86, y: 19, from: ['^^'], to: ['  '], why: 'Direk üstündeki yaydan sonraki 7 karoluk diken tarlasını zayıf oyuncu (koşu %8 yavaş) aşamıyordu: son iki diken kalktı, iniş payı 2 karo' },
+    { x: 210, y: 18, from: ['  ', '  ', '##'], to: ['  ', '##', '%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
   ],
   corum: [
     { x: 10, y: 19, from: [' '], to: ['#'], why: 'İlk ok yerden başlangıç noktasına dek uçuyordu: tabelayı ya da Leblebici’yi okuyan vuruluyordu. Araya oku durduran taş; oyuncu taşı aşınca okla tanışır' },
@@ -72,6 +93,7 @@ export const ASSISTS: Record<string, Assist[]> = {
   ordu: [
     { x: 136, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 171, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
+    { x: 221, y: 16, from: ['  ', '  ', '##'], to: ['  ', '##', '%%'], why: 'Tünel ağzı 1 karo yüksekti: gövde (26 px) sığmadığı halde yürüyerek giriliyordu. Tavan bir kademe yükseldi (içi 2 karo), üstteki süs yeni çatıya çıktı' },
   ],
   trabzon: [
     { x: 39, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },

@@ -1,68 +1,30 @@
 import type { CityKey } from './types'
+import { SCALES, cityTheme, titleTheme, type NoteEvent, type Song } from './music'
 
-/** Tamamen sentezlenmiş ses: harici dosya yok. */
-const SCALES: Record<CityKey, { root: number; steps: number[]; meter: number[]; tempo: number }> = {
-  // Hicaz (Re)
-  istanbul: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 2, 2], tempo: 0.22 },
-  // Nihavend'e yakın
-  konya: { root: 57, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [3, 3, 2], tempo: 0.24 },
-  nevsehir: { root: 59, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.18 },
-  gaziantep: { root: 60, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.15 },
-  trabzon: { root: 62, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.11 },
-  // Hüseyni, ağır zeybek (Çanakkale)
-  canakkale: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.21 },
-  // Karadeniz kıyısı, 7/8 (Sinop)
-  sinop: { root: 60, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.14 },
-  // Uşşak, uzun hava ağırlığı (Diyarbakır)
-  diyarbakir: { root: 57, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.21 },
-  // Hicaz, Trakya 9/8'i (Edirne)
-  edirne: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.15 },
-  // Rast, ağırbaşlı (Bursa)
-  bursa: { root: 60, steps: [0, 2, 4, 5, 7, 9, 11, 12], meter: [2, 2, 2, 2], tempo: 0.2 },
-  // Hüseyni, Teke zeybeği 9/8 (Antalya)
-  antalya: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 3, 2, 2], tempo: 0.14 },
-  // Hicaz, sıra gecesi (Şanlıurfa)
-  sanliurfa: { root: 59, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.19 },
-  // Uşşak, göl kıyısı (Van)
-  van: { root: 57, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.2 },
-  // Hüseyni, bar havası 5/8 (Erzurum)
-  erzurum: { root: 59, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 3], tempo: 0.16 },
-  kocaeli: { root: 60, steps: [0, 2, 3, 5, 7, 8, 11, 12], meter: [2, 2, 2, 2], tempo: 0.2 },
-  // Rast, zeybek usulü 9/8
-  izmir: { root: 60, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.19 },
-  // Kürdi, Ankara havası
-  ankara: { root: 62, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.16 },
-  // Hicaz, Çukurova türküsü havası
-  adana: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.17 },
-  // Hicaz (La)
-  mardin: { root: 57, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.2 },
-  // Uşşak'a yakın (Re)
-  malatya: { root: 62, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.15 },
-  // Rast'a yakın (Sol)
-  corum: { root: 55, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 2], tempo: 0.21 },
-  // Karadeniz horonu, 7/8
-  ordu: { root: 62, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 3], tempo: 0.13 },
-  // Hüseyni'ye yakın (La)
-  sivas: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.16 },
-  // Kafkas havası, Uşşak'a yakın
-  ardahan: { root: 57, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.15 },
-  // Saba'ya yakın (Re)
-  bayburt: { root: 50, steps: [0, 2, 3, 4, 7, 8, 10, 12], meter: [3, 2, 2], tempo: 0.19 },
-}
+/** Tamamen sentezlenmiş ses: harici dosya yok. Müziğin notaları music.ts'te. */
 
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
+
+/** müziğin genel sesi (efektlerin altında kalır) */
+const MUSIC_VOL = 0.3
 
 export class Sound {
   private ac: AudioContext | null = null
   private master: GainNode | null = null
   private musicGain: GainNode | null = null
+  private reverb: ConvolverNode | null = null
+  private noiseBuf: AudioBuffer | null = null
   private timer: number | null = null
   private nextTime = 0
   private stepIdx = 0
-  private note = 3
   private city: CityKey = 'istanbul'
+  /** çalan beste ve onun kendi ses yolu (geçişte eskisi kısılır, yenisi açılır) */
+  private song: Song | null = null
+  private songBus: GainNode | null = null
+  /** müzik açıkken bile sessiz kalan yüzde: molada kısılır */
+  private ducked = false
   sfxOn = true
-  musicOn = true
+  private _musicOn = true
 
   /** Kullanıcı etkileşiminden sonra çağrılmalı (mobil kilit) */
   unlock() {
@@ -73,11 +35,64 @@ export class Sound {
       this.master = this.ac.createGain()
       this.master.gain.value = 0.5
       this.master.connect(this.ac.destination)
+      // müzik: hafif sıkıştırma + kısa oda yankısı, sonra ana ses
+      const comp = this.ac.createDynamicsCompressor()
+      comp.threshold.value = -18
+      comp.ratio.value = 3
+      comp.connect(this.master)
       this.musicGain = this.ac.createGain()
-      this.musicGain.gain.value = 0.22
-      this.musicGain.connect(this.master)
+      this.musicGain.gain.value = this._musicOn ? MUSIC_VOL : 0
+      this.musicGain.connect(comp)
+      this.reverb = this.ac.createConvolver()
+      this.reverb.buffer = this.impulse(2.2)
+      const wet = this.ac.createGain()
+      wet.gain.value = 0.32
+      this.reverb.connect(wet)
+      wet.connect(comp)
+      // seçilmiş ama ses kilidi yüzünden bekleyen beste şimdi başlar
+      if (this.song) this.play(this.song, true)
     }
     if (this.ac.state === 'suspended') void this.ac.resume()
+  }
+
+  get musicOn() {
+    return this._musicOn
+  }
+
+  set musicOn(on: boolean) {
+    this._musicOn = on
+    this.applyMusicVol()
+  }
+
+  /** molada müzik kısılır ama durmaz */
+  duck(on: boolean) {
+    if (this.ducked === on) return
+    this.ducked = on
+    this.applyMusicVol()
+  }
+
+  /** sekme arkadayken ses tamamen durur, dönünce kaldığı yerden sürer */
+  setHidden(hidden: boolean) {
+    if (!this.ac) return
+    if (hidden) void this.ac.suspend()
+    else void this.ac.resume()
+  }
+
+  private applyMusicVol() {
+    if (!this.ac || !this.musicGain) return
+    const v = !this._musicOn ? 0 : this.ducked ? MUSIC_VOL * 0.35 : MUSIC_VOL
+    this.musicGain.gain.setTargetAtTime(v, this.ac.currentTime, 0.12)
+  }
+
+  private impulse(sec: number) {
+    const ac = this.ac!
+    const len = Math.floor(ac.sampleRate * sec)
+    const buf = ac.createBuffer(2, len, ac.sampleRate)
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch)
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2)
+    }
+    return buf
   }
 
   private tone(freq: number, dur: number, type: OscillatorType, vol: number, slide = 0, dest?: AudioNode, at?: number) {
@@ -197,58 +212,254 @@ export class Sound {
     }
   }
 
+  /** oyun müziği: şehrin makamında besteli tema */
   setMusic(city: CityKey) {
     this.city = city
-    this.stepIdx = 0
-    this.note = 3
-    this.startMusic()
+    this.play(cityTheme(city))
   }
 
-  startMusic() {
-    if (!this.ac || this.timer !== null) return
-    this.nextTime = this.ac.currentTime + 0.1
-    this.timer = window.setInterval(() => this.schedule(), 60)
+  /** jenerik: menülerde çalan tema (zaten çalıyorsa baştan başlamaz) */
+  playTheme() {
+    if (this.song?.id === 'title') return
+    this.play(titleTheme())
   }
 
   stopMusic() {
     if (this.timer !== null) window.clearInterval(this.timer)
     this.timer = null
+    this.fadeOutBus()
+    this.song = null
+  }
+
+  private fadeOutBus() {
+    const bus = this.songBus
+    this.songBus = null
+    if (!bus || !this.ac) return
+    bus.gain.setTargetAtTime(0, this.ac.currentTime, 0.25)
+    window.setTimeout(() => bus.disconnect(), 1800)
+  }
+
+  private play(song: Song, force = false) {
+    if (!force && this.song === song && this.timer !== null) return
+    this.song = song
+    if (!this.ac || !this.musicGain || !this.reverb) return
+    this.fadeOutBus()
+    const bus = this.ac.createGain()
+    bus.gain.setValueAtTime(0.0001, this.ac.currentTime)
+    bus.gain.exponentialRampToValueAtTime(1, this.ac.currentTime + 0.6)
+    bus.connect(this.musicGain)
+    const send = this.ac.createGain()
+    send.gain.value = 1
+    bus.connect(send)
+    send.connect(this.reverb)
+    this.songBus = bus
+    this.stepIdx = 0
+    this.nextTime = this.ac.currentTime + 0.12
+    if (this.timer === null) this.timer = window.setInterval(() => this.schedule(), 50)
   }
 
   private schedule() {
-    if (!this.ac || !this.musicGain) return
-    const sc = SCALES[this.city]
-    const beats = sc.meter.reduce((a, b) => a + b, 0)
-    while (this.nextTime < this.ac.currentTime + 0.25) {
-      const t = this.nextTime
-      const pos = this.stepIdx % beats
-      // vurgular (düm/tek) — aksak usuller için meter grupları
-      let acc = 0
-      let strong = false
-      for (const g of sc.meter) {
-        if (pos === acc) strong = true
-        acc += g
-      }
-      if (this.musicOn) {
-        if (pos === 0) this.tone(mtof(sc.root - 24), sc.tempo * 1.6, 'sine', 0.22, -20, this.musicGain, t)
-        else if (strong) this.noise(0.05, 0.12, 2400, this.musicGain, t)
-        // drone
-        if (this.stepIdx % (beats * 2) === 0) {
-          this.tone(mtof(sc.root - 12), sc.tempo * beats * 2, 'triangle', 0.05, 0, this.musicGain, t)
-          this.tone(mtof(sc.root - 5), sc.tempo * beats * 2, 'sine', 0.035, 0, this.musicGain, t)
-        }
-        // saz benzeri melodi: ölçek içinde rastgele yürüyüş
-        if (strong || Math.random() < 0.45) {
-          const r = Math.random()
-          this.note = Math.max(0, Math.min(sc.steps.length - 1, this.note + (r < 0.4 ? -1 : r < 0.8 ? 1 : r < 0.9 ? 2 : -2)))
-          if (pos === 0 && Math.random() < 0.5) this.note = 0
-          const m = sc.root + sc.steps[this.note]
-          this.tone(mtof(m), sc.tempo * 1.8, 'triangle', 0.09, 0, this.musicGain, t)
-          this.tone(mtof(m) * 2.005, sc.tempo * 0.6, 'sine', 0.02, 0, this.musicGain, t)
-        }
-      }
-      this.nextTime += sc.tempo
+    const song = this.song
+    const bus = this.songBus
+    if (!this.ac || !song || !bus) return
+    while (this.nextTime < this.ac.currentTime + 0.3) {
+      for (const e of song.byStep[this.stepIdx % song.length]) this.voice(e, this.nextTime, song.step, bus)
+      this.nextTime += song.step
       this.stepIdx++
     }
+  }
+
+  /** bir notayı çalgısıyla çalar */
+  private voice(e: NoteEvent, t: number, step: number, out: AudioNode) {
+    const ac = this.ac!
+    const dur = e.dur * step
+    switch (e.inst) {
+      case 'ney': {
+        // ney: yumuşak giriş, hafif vibrato, nefes sesi
+        const f = mtof(e.midi[0])
+        const o = ac.createOscillator()
+        o.type = 'sine'
+        o.frequency.value = f
+        const o2 = ac.createOscillator()
+        o2.type = 'triangle'
+        o2.frequency.value = f * 2
+        const lfo = ac.createOscillator()
+        lfo.frequency.value = 5.2
+        const lg = ac.createGain()
+        lg.gain.setValueAtTime(0, t)
+        lg.gain.linearRampToValueAtTime(f * 0.012, t + Math.min(0.4, dur * 0.6))
+        lfo.connect(lg)
+        lg.connect(o.frequency)
+        lg.connect(o2.frequency)
+        const g = ac.createGain()
+        const g2 = ac.createGain()
+        g2.gain.value = 0.12
+        const atk = Math.min(0.09, dur * 0.3)
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.linearRampToValueAtTime(e.vol, t + atk)
+        g.gain.setValueAtTime(e.vol * 0.85, t + Math.max(atk, dur - 0.08))
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25)
+        o.connect(g)
+        o2.connect(g2)
+        g2.connect(g)
+        g.connect(out)
+        this.breath(t, Math.min(0.12, dur), e.vol * 0.25, f * 2, out)
+        for (const x of [o, o2, lfo]) {
+          x.start(t)
+          x.stop(t + dur + 0.3)
+        }
+        return
+      }
+      case 'saz':
+      case 'arp': {
+        // saz: tel çekilince parlak, hızla yumuşayan ton (süzgeç kapanır)
+        const f = mtof(e.midi[0])
+        const o = ac.createOscillator()
+        o.type = 'sawtooth'
+        o.frequency.value = f
+        const o2 = ac.createOscillator()
+        o2.type = 'square'
+        o2.frequency.value = f * 1.003
+        const lp = ac.createBiquadFilter()
+        lp.type = 'lowpass'
+        lp.Q.value = 2
+        lp.frequency.setValueAtTime(e.inst === 'arp' ? 2200 : 3600, t)
+        lp.frequency.exponentialRampToValueAtTime(e.inst === 'arp' ? 500 : 700, t + 0.22)
+        const g = ac.createGain()
+        const ring = e.inst === 'arp' ? 0.35 : Math.max(0.3, dur * 1.1)
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.exponentialRampToValueAtTime(e.vol, t + 0.004)
+        g.gain.exponentialRampToValueAtTime(e.vol * 0.35, t + 0.12)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + ring)
+        const g2 = ac.createGain()
+        g2.gain.value = 0.4
+        o.connect(lp)
+        o2.connect(g2)
+        g2.connect(lp)
+        lp.connect(g)
+        g.connect(out)
+        o.start(t)
+        o2.start(t)
+        o.stop(t + ring + 0.05)
+        o2.stop(t + ring + 0.05)
+        return
+      }
+      case 'bass': {
+        const f = mtof(e.midi[0])
+        const o = ac.createOscillator()
+        o.type = 'triangle'
+        o.frequency.value = f
+        const sub = ac.createOscillator()
+        sub.type = 'sine'
+        sub.frequency.value = f
+        const g = ac.createGain()
+        const end = Math.max(0.18, dur * 0.9)
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.exponentialRampToValueAtTime(e.vol, t + 0.01)
+        g.gain.exponentialRampToValueAtTime(e.vol * 0.5, t + end * 0.5)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + end)
+        o.connect(g)
+        sub.connect(g)
+        g.connect(out)
+        o.start(t)
+        sub.start(t)
+        o.stop(t + end + 0.05)
+        sub.stop(t + end + 0.05)
+        return
+      }
+      case 'pad': {
+        // dem: hafif akortsuz iki testere, kapalı süzgeç, yavaş giriş çıkış
+        const lp = ac.createBiquadFilter()
+        lp.type = 'lowpass'
+        lp.frequency.value = 900
+        const g = ac.createGain()
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.linearRampToValueAtTime(e.vol, t + Math.min(0.5, dur * 0.4))
+        g.gain.setValueAtTime(e.vol, t + dur * 0.8)
+        g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.4)
+        lp.connect(g)
+        g.connect(out)
+        for (const n of e.midi) {
+          for (const det of [-7, 7]) {
+            const o = ac.createOscillator()
+            o.type = 'sawtooth'
+            o.frequency.value = mtof(n)
+            o.detune.value = det
+            const og = ac.createGain()
+            og.gain.value = 1 / (e.midi.length * 2)
+            o.connect(og)
+            og.connect(lp)
+            o.start(t)
+            o.stop(t + dur + 0.45)
+          }
+        }
+        return
+      }
+      case 'dum': {
+        // darbuka düm: perdesi düşen pes vuruş
+        const o = ac.createOscillator()
+        o.type = 'sine'
+        o.frequency.setValueAtTime(120, t)
+        o.frequency.exponentialRampToValueAtTime(52, t + 0.16)
+        const g = ac.createGain()
+        g.gain.setValueAtTime(e.vol, t)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28)
+        o.connect(g)
+        g.connect(out)
+        o.start(t)
+        o.stop(t + 0.3)
+        return
+      }
+      case 'tek':
+      case 'ka': {
+        // tek: kenardan parlak vuruş; ka: daha kısık ve kısa
+        const tek = e.inst === 'tek'
+        this.hit(t, tek ? 0.07 : 0.035, e.vol, tek ? 3200 : 5200, out)
+        if (tek) {
+          const o = ac.createOscillator()
+          o.type = 'triangle'
+          o.frequency.setValueAtTime(520, t)
+          const g = ac.createGain()
+          g.gain.setValueAtTime(e.vol * 0.5, t)
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06)
+          o.connect(g)
+          g.connect(out)
+          o.start(t)
+          o.stop(t + 0.08)
+        }
+        return
+      }
+    }
+  }
+
+  /** önceden üretilmiş gürültü tamponundan kısa vuruş (her vuruşta yeni tampon üretmez) */
+  private hit(t: number, dur: number, vol: number, freq: number, out: AudioNode) {
+    const ac = this.ac!
+    this.noiseBuf ??= this.whiteNoise()
+    const src = ac.createBufferSource()
+    src.buffer = this.noiseBuf
+    const f = ac.createBiquadFilter()
+    f.type = 'bandpass'
+    f.frequency.value = freq
+    f.Q.value = 1.2
+    const g = ac.createGain()
+    g.gain.setValueAtTime(vol, t)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    src.connect(f)
+    f.connect(g)
+    g.connect(out)
+    src.start(t, Math.random() * 0.5, dur + 0.02)
+  }
+
+  private breath(t: number, dur: number, vol: number, freq: number, out: AudioNode) {
+    this.hit(t, dur, vol, Math.min(6000, freq), out)
+  }
+
+  private whiteNoise() {
+    const ac = this.ac!
+    const buf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+    return buf
   }
 }
