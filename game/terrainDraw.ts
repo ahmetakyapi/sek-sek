@@ -10,13 +10,19 @@
  * durur. Her karonun rastgeleliği konumundan türetilir: parça sınırlarında doku kesilmez.
  */
 import { CITY } from './art'
-import { CRUMBLE, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WET, type World } from './sim'
+import { CRUMBLE, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WET, type World } from './sim'
 import { T, type CityKey } from './types'
 
 type Ctx = CanvasRenderingContext2D
 const INK = '#241824'
 const CHUNK = 8
-const KEEP = 12
+/** parça bu kadar satırlık hücrelere bölünür; her hücre kendi küçük tuvali (açması ucuz, çizimi ~1-3 ms) */
+const BAND = 2
+/** her karede ileriki hücreleri hazırlamaya ayrılan süre (ms): 240 Hz'de bile kare bütçesinin altında */
+const WARM_MS = 1.5
+/** görünenin iki yanında hazır tutulan parça, altında ve üstünde hazır tutulan hücre sırası */
+const AHEAD = 2
+const VAHEAD = 2
 /** haritanın altına sürdürülen satır: dikey ekranda kamera haritanın altını da gösterir, zemin orada düz bir banda dönmesin */
 const BELOW = 16
 
@@ -84,8 +90,11 @@ function wobble(c: Ctx, x0: number, y0: number, x1: number, y1: number, amp: num
 }
 
 export class TerrainHD {
-  private chunks = new Map<number, HTMLCanvasElement>()
-  private order: number[] = []
+  /** hücre önbelleği (anahtar: parça * 64 + bant; null: boş gök, çizilecek bir şey yok). Map sırası en son kullanılanı sona alır. */
+  private cells = new Map<number, HTMLCanvasElement | null>()
+  private keep = 120
+  /** görünür olduğu karede hazır olmayan bant sayısı (doğrulama için: koşu ve dash sırasında artmamalı) */
+  syncBands = 0
   private readonly solid: (tx: number, ty: number) => boolean
   /** çizilen satır sayısı: harita + altına sürdürülen pay */
   private readonly rows: number
@@ -146,58 +155,137 @@ export class TerrainHD {
       }
   }
 
-  /** Görünen parçaları ana tuvale basar. camX/camY dünya pikseli (kesirli olabilir). */
-  draw(c: Ctx, camX: number, camY: number, devW: number) {
+  /**
+   * Görünen hücreleri ana tuvale basar. camX/camY dünya pikseli (kesirli olabilir), devW/devH ekran pikseli.
+   * Zemin çizimi pahalıdır (yüksek çözünürlükte bir parça 15-20 ms): kare içinde tek seferde yapılırsa 120 Hz'de iki
+   * kare kaçar ve hızlı kaymada (dash) kasma olur. Bu yüzden dünya küçük hücrelere bölünür (CHUNK karo × BAND satır)
+   * ve görünenin çevresindeki hücreler her karede küçük bir süre bütçesiyle (WARM_MS) önceden çizilir; görünür
+   * olduklarında hazırdırlar. Yalnız ışınlanmada (bölüm başı, kapı, yeniden doğuş) eksik hücre bir kerelik tamamlanır.
+   * Kanıt: scripts/verify-frames.cjs (koşu ve dash boyunca hazır olmayan hücre sayısı 0 olmalı).
+   */
+  draw(c: Ctx, camX: number, camY: number, devW: number, devH: number) {
     const sc = this.scale
-    const first = Math.floor(camX / (CHUNK * T))
-    const last = Math.floor((camX + devW / sc) / (CHUNK * T))
+    const span = CHUNK * T
+    const first = Math.floor(camX / span)
+    const last = Math.floor((camX + devW / sc) / span)
+    const b0 = Math.max(0, Math.floor(camY / (BAND * T)))
+    const b1 = Math.min(this.bandCount - 1, Math.floor((camY + devH / sc) / (BAND * T)))
+    this.keep = (last - first + 3 + AHEAD * 2) * (b1 - b0 + 3 + VAHEAD * 2)
     for (let i = first; i <= last; i++) {
-      if (i < 0 || i * CHUNK >= this.w.cols) continue
-      const cv = this.chunk(i)
-      c.drawImage(cv, Math.round((i * CHUNK * T - MARGIN - camX) * sc), Math.round((-MARGIN - camY) * sc))
-    }
-    // yürünen yöndeki komşuyu boş karede hazırla: yeni parça görünürken takılma olmasın
-    for (const i of [last + 1, first - 1]) {
-      if (i >= 0 && i * CHUNK < this.w.cols && !this.chunks.has(i)) {
-        this.chunk(i)
-        break
+      if (!this.valid(i)) continue
+      for (let bb = b0; bb <= b1; bb++) {
+        const cv = this.cell(i, bb, true)
+        if (cv) c.drawImage(cv, Math.round((i * span - MARGIN - camX) * sc), Math.round((this.top(bb) - camY) * sc))
       }
     }
+    // önce görünen parçaların altı ve üstü, sonra yakından uzağa iki yandaki parçalar: bütçe bitene dek
+    const start = performance.now()
+    const lo = Math.max(0, b0 - VAHEAD)
+    const hi = Math.min(this.bandCount - 1, b1 + VAHEAD)
+    const warm = (i: number, from: number, to: number) => {
+      if (!this.valid(i)) return true
+      for (let bb = from; bb <= to; bb++) {
+        if (this.cells.has(i * 64 + bb)) continue
+        if (performance.now() - start > WARM_MS) return false
+        this.cell(i, bb, false)
+      }
+      return true
+    }
+    for (let i = first; i <= last; i++) if (!warm(i, lo, b0 - 1) || !warm(i, b1 + 1, hi)) return
+    for (let d = 1; d <= AHEAD; d++) for (const i of [last + d, first - d]) if (!warm(i, lo, hi)) return
   }
 
-  private chunk(i: number): HTMLCanvasElement {
-    const hit = this.chunks.get(i)
-    if (hit) {
-      const k = this.order.indexOf(i)
-      if (k >= 0) this.order.splice(k, 1)
-      this.order.push(i)
+  /** İlk çizim öncesi: görünen bölge ve çevresi hazırlanır (bölüm açılırken bir kez) */
+  prime(camX: number, camY: number, devW: number, devH: number) {
+    const span = CHUNK * T
+    const b0 = Math.max(0, Math.floor(camY / (BAND * T)) - VAHEAD)
+    const b1 = Math.min(this.bandCount - 1, Math.floor((camY + devH / this.scale) / (BAND * T)) + VAHEAD)
+    for (let i = Math.floor(camX / span) - AHEAD; i <= Math.floor((camX + devW / this.scale) / span) + AHEAD; i++)
+      if (this.valid(i)) for (let bb = b0; bb <= b1; bb++) this.cell(i, bb, false)
+  }
+
+  private get bandCount() {
+    return Math.ceil(this.rows / BAND)
+  }
+
+  private valid(i: number) {
+    return i >= 0 && i * CHUNK < this.w.cols
+  }
+
+  /** hücrenin üst ve alt kenarı (dünya pikseli); ilk ve son hücre dış hat payını da taşır */
+  private top(b: number) {
+    return b === 0 ? -MARGIN : b * BAND * T
+  }
+
+  private bottom(b: number) {
+    return b === this.bandCount - 1 ? this.rows * T + MARGIN : (b + 1) * BAND * T
+  }
+
+  /** hücreyi verir; yoksa çizer. sync: görünür olduğu karede çizilmek zorunda kaldı (sayılır) */
+  private cell(i: number, b: number, sync: boolean): HTMLCanvasElement | null {
+    const key = i * 64 + b
+    if (this.cells.has(key)) {
+      const hit = this.cells.get(key)!
+      this.cells.delete(key)
+      this.cells.set(key, hit)
       return hit
     }
-    const cv = document.createElement('canvas')
-    cv.width = Math.ceil((CHUNK * T + MARGIN * 2) * this.scale)
-    cv.height = Math.ceil((this.rows * T + MARGIN * 2) * this.scale)
-    const c = cv.getContext('2d')!
-    c.scale(this.scale, this.scale)
-    c.translate(MARGIN - i * CHUNK * T, MARGIN)
-    this.paint(c, i * CHUNK - 1, i * CHUNK + CHUNK)
-    this.chunks.set(i, cv)
-    this.order.push(i)
-    while (this.order.length > KEEP) this.chunks.delete(this.order.shift()!)
+    const cv = this.paintCell(i, b)
+    if (sync && cv) this.syncBands++
+    this.cells.set(key, cv)
+    while (this.cells.size > this.keep) this.cells.delete(this.cells.keys().next().value!)
     return cv
   }
 
-  /** tx0..tx1 (uçlar dahil) sütunlarını çizer; komşu birer sütun taşma payıdır */
-  private paint(c: Ctx, tx0: number, tx1: number) {
+  /** hücrenin çevresinde (taşma payı dahil) çizilecek bir şey var mı: boş gök hücresi tuval açmaz */
+  private blank(i: number, b: number) {
+    const w = this.w
+    const ty0 = Math.max(0, b * BAND - 2)
+    const ty1 = Math.min(this.rows - 1, (b + 1) * BAND + 1)
+    for (let tx = i * CHUNK - 1; tx <= i * CHUNK + CHUNK; tx++)
+      for (let ty = ty0; ty <= ty1; ty++) {
+        const y = Math.min(ty, w.rows - 1)
+        if (w.tile(tx, y) !== EMPTY || this.cave.has(y * w.cols + tx)) return false
+      }
+    return true
+  }
+
+  private paintCell(i: number, b: number): HTMLCanvasElement | null {
+    if (this.blank(i, b)) return null
+    const top = this.top(b)
+    const bot = this.bottom(b)
+    const cv = document.createElement('canvas')
+    cv.width = Math.ceil((CHUNK * T + MARGIN * 2) * this.scale)
+    cv.height = Math.round((bot - top) * this.scale)
+    const c = cv.getContext('2d')!
+    c.scale(this.scale, this.scale)
+    c.translate(MARGIN - i * CHUNK * T, -top)
+    // hücre tam kendi şeridine kırpılır: komşu hücrelerle aynı çizim üst üste binmez, ek yeri görünmez
+    c.beginPath()
+    c.rect(i * CHUNK * T - MARGIN, top, CHUNK * T + MARGIN * 2, bot - top)
+    c.clip()
+    const ty0 = b * BAND
+    this.paint(c, i * CHUNK - 1, i * CHUNK + CHUNK, ty0, Math.min(this.rows, ty0 + BAND) - 1)
+    return cv
+  }
+
+  /**
+   * tx0..tx1 sütunlarını ty0..ty1 bandında çizer (uçlar dahil); komşu birer sütun ve iki satır taşma payıdır.
+   * Çizim tamamen karo konumundan türer (hash): bant bant çizilen parça, tek seferde çizilenle aynıdır.
+   */
+  private paint(c: Ctx, tx0: number, tx1: number, ty0: number, ty1: number) {
     const w = this.w
     const s = CITY[this.city]
     const look = LOOK[this.city]
     const rows = this.rows
     const solid = this.solid
+    const r0 = Math.max(0, ty0 - 2)
+    const r1 = Math.min(rows, ty1 + 3)
     c.lineCap = 'round'
     c.lineJoin = 'round'
 
     // ── 0. gizli köşelerin mağarası ve tünel ağzı: kaya içi karanlık, derine doğru koyulaşır
-    for (let ty = 0; ty < rows; ty++)
+    for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
         if (!this.cave.has(ty * w.cols + tx)) continue
         const x = tx * T
@@ -219,7 +307,7 @@ export class TerrainHD {
     c.save()
     c.beginPath()
     let any = false
-    for (let ty = 0; ty < rows; ty++)
+    for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++)
         if (solid(tx, ty) && w.tile(tx, ty) !== ICE) {
           c.rect(tx * T - 0.05, ty * T - 0.05, T + 0.1, T + 0.1)
@@ -228,14 +316,18 @@ export class TerrainHD {
     if (any) {
       c.clip()
       c.fillStyle = mix(s.tileDark, s.tile, 0.35)
-      c.fillRect(tx0 * T, 0, (tx1 - tx0 + 1) * T, rows * T)
-      this.material(c, look.mat, tx0 * T, (tx1 + 1) * T, rows * T)
+      c.fillRect(tx0 * T, r0 * T, (tx1 - tx0 + 1) * T, (r1 - r0) * T)
+      this.material(c, look.mat, tx0 * T, (tx1 + 1) * T, r0 * T, r1 * T)
       // derinlik: yüzeyden aşağı indikçe yumuşakça kararır
       for (let tx = tx0; tx <= tx1; tx++) {
         let depth = 0
         for (let ty = 0; ty < rows; ty++) {
           if (!solid(tx, ty)) {
             depth = 0
+            continue
+          }
+          if (ty < r0 || ty >= r1) {
+            depth++
             continue
           }
           const a0 = Math.min(0.5, depth * 0.085)
@@ -249,7 +341,7 @@ export class TerrainHD {
         }
       }
       // ışık sol üstten: sola bakan açık yüzler aydınlanır, sağa bakanlar gölgelenir
-      for (let ty = 0; ty < rows; ty++)
+      for (let ty = r0; ty < r1; ty++)
         for (let tx = tx0; tx <= tx1; tx++) {
           if (!solid(tx, ty) || w.tile(tx, ty) === ICE) continue
           if (!solid(tx - 1, ty)) {
@@ -283,7 +375,7 @@ export class TerrainHD {
     c.restore()
 
     // ── ıslak taş: aynı örgü, üstünde su parıltısı (kaygan olduğu okunmalı)
-    for (let ty = 0; ty < rows; ty++)
+    for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
         if (w.tile(tx, ty) !== WET) continue
         const x = tx * T
@@ -309,7 +401,7 @@ export class TerrainHD {
       }
 
     // ── 2. buz: ayrı malzeme, mavi mürekkep
-    for (let ty = 0; ty < rows; ty++)
+    for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
         if (w.tile(tx, ty) !== ICE) continue
         const x = tx * T
@@ -338,7 +430,7 @@ export class TerrainHD {
       }
 
     // ── 3. üst örtü: açık üst yüzlerin koşusu boyunca
-    for (let ty = 0; ty < rows; ty++) {
+    for (let ty = r0; ty < r1; ty++) {
       let run = -1
       for (let tx = tx0; tx <= tx1 + 1; tx++) {
         const open = tx <= tx1 && solid(tx, ty) && !solid(tx, ty - 1) && w.tile(tx, ty - 1) !== CRUMBLE && ty > 0
@@ -354,7 +446,7 @@ export class TerrainHD {
     c.strokeStyle = INK
     c.lineWidth = 1.25
     c.beginPath()
-    for (let ty = 0; ty <= rows; ty++) {
+    for (let ty = r0; ty <= r1; ty++) {
       for (const side of [0, 1]) {
         // side 0: üst kenar (katının üstü boş), side 1: alt kenar
         let run = -1
@@ -375,7 +467,8 @@ export class TerrainHD {
           const edge = ty < rows && (side === 0 ? solid(tx, ty) && !solid(tx - 1, ty) : solid(tx - 1, ty) && !solid(tx, ty)) && tx > 0 && tx < w.cols
           if (edge && run < 0) run = ty
           if (!edge && run >= 0) {
-            wobble(c, tx * T, run * T - 0.4, tx * T, ty * T + 0.4, 0.45, 13 + side)
+            // koşu bütün sütun boyunca bulunur (uçları bandan bağımsız), yalnız banda değeni çizilir
+            if (ty >= r0 && run < r1) wobble(c, tx * T, run * T - 0.4, tx * T, ty * T + 0.4, 0.45, 13 + side)
             run = -1
           }
         }
@@ -384,7 +477,7 @@ export class TerrainHD {
     c.stroke()
 
     // ── 5. tahta iskele, diken, sahte duvar çatlağı, ok tuzağı yüzü
-    for (let ty = 0; ty < rows; ty++)
+    for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
         const t = w.tile(tx, ty)
         const x = tx * T
@@ -414,11 +507,11 @@ export class TerrainHD {
   }
 
   /** Taş örgüsü: sarsak dörtgenler (tuğla, kesme taş, kiklop, kaya) ya da dalgalı katmanlar (tüf, toprak). */
-  private material(c: Ctx, mat: Material, x0: number, x1: number, h: number) {
+  private material(c: Ctx, mat: Material, x0: number, x1: number, y0: number, y1: number) {
     const s = CITY[this.city]
     if (mat === 'strata' || mat === 'earth') {
       const band = mat === 'strata' ? 11 : 14
-      for (let y = -band; y < h + band; y += band) {
+      for (let y = (Math.floor(y0 / band) - 1) * band; y < y1 + band; y += band) {
         const row = Math.round(y / band)
         const tone = [s.tile, mix(s.tile, s.tileLight, 0.55), mix(s.tile, s.tileDark, 0.4)][((row % 3) + 3) % 3]
         c.fillStyle = tone
@@ -440,7 +533,7 @@ export class TerrainHD {
       }
       // tüfte oyuklar, toprakta çakıllar
       for (let gx = Math.floor(x0 / 13); gx * 13 < x1; gx++)
-        for (let gy = 0; gy * 13 < h; gy++) {
+        for (let gy = Math.max(0, Math.floor(y0 / 13) - 1); gy * 13 < y1; gy++) {
           const r = hash(gx, gy, 21)
           if (r > 0.34) continue
           const px = gx * 13 + hash(gx, gy, 22) * 10
@@ -468,7 +561,7 @@ export class TerrainHD {
       return [i * P.bw + off + (hash(i, j, 31 + (row === j ? 0 : 7)) - 0.5) * P.jit, j * P.bh + (hash(i, j, 32) - 0.5) * P.jit * 0.8]
     }
     const tones = [s.tile, mix(s.tile, s.tileLight, 0.5), mix(s.tile, s.tileDark, 0.35), mix(s.tile, s.tileLight, 0.25)]
-    for (let j = -1; j * P.bh < h + P.bh; j++)
+    for (let j = Math.max(-1, Math.floor(y0 / P.bh) - 2); j * P.bh < y1 + P.bh; j++)
       for (let i = Math.floor(x0 / P.bw) - 1; i * P.bw < x1 + P.bw; i++) {
         const a = corner(i, j)
         const b = corner(i + 1, j)

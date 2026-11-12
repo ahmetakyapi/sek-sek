@@ -6,6 +6,7 @@ import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
 import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
 import { TerrainHD } from './terrainDraw'
+import { camYRange, clampCam, shakeOffset, stepCamera } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, DOOR, EMPTY, SPIKE_UP, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
@@ -364,72 +365,41 @@ export class Renderer {
     for (let i = 0; i < n; i++) this.ambient.push({ x: Math.random() * 600, y: Math.random() * 400, vx: 0, vy: 0, phase: Math.random() * 10, size: Math.random() < 0.3 ? 2 : 1 })
   }
 
-  /* ── Kamera ───────────────────────────────────────────────── */
+  /** doğrulama sayaçları (?debug): kare içinde tek seferde çizilmek zorunda kalan zemin bandı */
+  get stats() {
+    return { syncBands: this.terrain?.syncBands ?? 0 }
+  }
+
+  /** son karenin süresi: kare başına olasılıklar buna göre ölçeklenir */
+  private frameDt = 1 / 60
+
+  /** 60 Hz'de kare başına p olasılığı, her kare hızında saniyede aynı sıklık verir (yüksek Hz'de parçacık yığılmaz) */
+  private chance(p60: number) {
+    return Math.random() < 1 - Math.pow(1 - Math.min(0.999, p60), this.frameDt * 60)
+  }
+
+  /* ── Kamera (hesabı game/camera.ts) ─────────────────────── */
   private clampCam(w: World) {
-    const lw = w.cols * T
-    const lh = w.rows * T
-    this.camX = Math.max(0, Math.min(lw - this.viewW, this.camX))
-    const [lo, hi] = this.camYRange(lh)
-    this.camY = Math.max(lo, Math.min(hi, this.camY))
-  }
-
-  /**
-   * Boss dövüşünde kamera karakterle boss'un arasına bakar ve ikisiyle birlikte kayar: karakter yürüdükçe kadraj
-   * akar, ikisi de ekranda kalır. Ekrana sığmayacak kadar uzaklaşırlarsa boss kenarda tutulur, kadraj karaktere
-   * doğru yaslanır. Yerin altındaki boss'un yerine çıkacağı yer, havadaki boss'la zemin birlikte kadrajda durur.
-   */
-  private bossFrame(w: World): [number, number] | null {
-    const b = w.boss
-    if (!b || b.state === 'sleep' || b.state === 'down' || w.player.dead) return null
-    const p = w.player
-    const vw = this.viewW
-    const pcx = p.x + p.w / 2
-    const bcx = b.hidden ? b.tx : b.x + b.w / 2
-    const m = Math.min(40, vw * 0.14)
-    // ortanın biraz karakter tarafı: koşunun gittiği yer de görünsün
-    let tx = (pcx + bcx) / 2 + p.vx * 0.06 - vw / 2
-    if (Math.abs(pcx - bcx) + m * 2 <= vw) tx = Math.max(Math.max(pcx, bcx) + m - vw, Math.min(Math.min(pcx, bcx) - m, tx))
-    else tx = bcx < pcx ? bcx - m : bcx + m - vw
-    // arenanın dışına fazla taşmasın (duvarlar görünür kalır); arena ekrandan darsa ortalanır
-    const pad = 40
-    const lo = b.min - pad
-    const hi = b.max + b.w + pad - vw
-    tx = lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, tx))
-    // dikeyde zemin sabit durur; karakter ya da boss yükselince kadraj da yükselir
-    const top = Math.min(p.y, b.hidden ? b.floor : b.y)
-    const ty = Math.min(b.floor - this.viewH * 0.66, top - 30)
-    return [tx, ty]
-  }
-
-  /** Dikey ekranda bölümün altı ekranın ~%66'sında kalır: alt kısım dokunmatik kontrollere ayrılır. */
-  private camYRange(lh: number): [number, number] {
-    const portrait = this.viewH > this.viewW * 1.25
-    const hi = portrait ? lh - this.viewH * 0.66 : lh - this.viewH
-    const lo = Math.min(0, lh - this.viewH, hi)
-    return [lo, Math.max(lo, hi)]
+    ;[this.camX, this.camY] = clampCam(w, this.camX, this.camY, this.viewW, this.viewH)
   }
 
   /* ── Çizim ────────────────────────────────────────────────── */
   /** alpha: son fizik adımından bu yana geçen sürenin adıma oranı (0..1); her tazeleme hızında akıcı çizim için */
   render(w: World, dt: number, alpha = 1) {
     this.t += dt
+    this.frameDt = dt
     const unblend = this.blend(w, alpha)
-    const p = w.player
     const b = this.b
     const f = this.f
     const s = CITY[this.city]
 
-    // kamera
-    const frame = this.bossFrame(w)
-    const [tx, ty] = frame ?? [p.x + p.w / 2 - this.viewW / 2 + p.facing * 28 + p.vx * 0.15, p.y + p.h / 2 - this.viewH * 0.55]
-    // dövüşte kadraj bir tık yumuşak akar: boss'un ani sıçrayışları ekranı sarsmaz
-    const k = 1 - Math.pow(frame ? 0.006 : 0.0015, dt)
-    this.camX += (tx - this.camX) * k
-    this.camY += (ty - this.camY) * k * 0.8
-    this.clampCam(w)
+    // kamera: saate bağlı (game/camera.ts), kare hızından bağımsız
+    const cam = { x: this.camX, y: this.camY }
+    stepCamera(w, cam, dt, this.viewW, this.viewH)
+    this.camX = cam.x
+    this.camY = cam.y
     this.shake = Math.max(0, this.shake - dt * 18)
-    const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0
-    const sy = this.shake ? (Math.random() - 0.5) * this.shake : 0
+    const [sx, sy] = shakeOffset(this.t, this.shake)
     // kamera kesirli kayar: düşük çözünürlüklü katmanlar tam piksele çizilir, ekrana basılırken kesir kadar ötelenir
     const cx = Math.floor(this.camX + sx)
     const cy = Math.floor(this.camY + sy)
@@ -460,7 +430,7 @@ export class Renderer {
 
     const lh = w.rows * T
     // katmanların tabanı bölümün zemin çizgisine (satır 20) oturur, dikeyde parallax
-    const camRef = this.camYRange(lh)[1]
+    const camRef = camYRange(lh, this.viewW, this.viewH)[1]
     const layerY = (f: number) => Math.round(GROUND_Y - camRef - (cy - camRef) * f) - LAYER_H + 22
     if (s.sun) {
       const sunX = this.viewW * s.sun.x
@@ -524,8 +494,9 @@ export class Renderer {
     if (!this.terrain || this.world !== w) {
       this.world = w
       this.terrain = new TerrainHD(w, this.city, this.scale)
+      this.terrain.prime(hdX, hdY, this.canvas.width, this.canvas.height)
     }
-    this.terrain.draw(c, hdX, hdY, this.canvas.width)
+    this.terrain.draw(c, hdX, hdY, this.canvas.width, this.canvas.height)
 
     // dünya, ön: su, hareketli nesneler, canlılar, parçacıklar
     f.clearRect(0, 0, this.viewW, this.viewH)
@@ -737,7 +708,7 @@ export class Renderer {
           this.friends.push({ x: x + 8, bot })
           const pl = w.player
           const near = Math.abs(pl.x + pl.w / 2 - (x + 8)) < 22 && Math.abs(pl.y + pl.h - bot) < 6
-          if (near && pl.grounded && Math.abs(pl.vx) < 5 && !pl.dead && Math.random() < 0.05)
+          if (near && pl.grounded && Math.abs(pl.vx) < 5 && !pl.dead && this.chance(0.05))
             this.particles.push({ x: x + 6 + Math.random() * 6, y: bot - 12, vx: (Math.random() - 0.5) * 10, vy: -28, life: 1, max: 1, color: '#ff6a8a', size: 2, grav: -10 })
           break
         }
@@ -872,7 +843,7 @@ export class Renderer {
     rect(b, pl.x, pl.y, pl.w, 2, kocari ? '#f4ead8' : '#2a2430')
     for (let i = 0; i <= n; i++) rect(b, Math.round(pl.x + i * step - 1), pl.y, 3, 2, skin)
     // yere vuruşta toz
-    if (lift < 1 && kocari && Math.random() < 0.3) this.particles.push({ x: pl.x + Math.random() * pl.w, y: pl.max + 30, vx: (Math.random() - 0.5) * 30, vy: -20, life: 0.3, max: 0.3, color: 'rgba(200,190,170,0.7)', size: 1, grav: 60 })
+    if (lift < 1 && kocari && this.chance(0.3)) this.particles.push({ x: pl.x + Math.random() * pl.w, y: pl.max + 30, vx: (Math.random() - 0.5) * 30, vy: -20, life: 0.3, max: 0.3, color: 'rgba(200,190,170,0.7)', size: 1, grav: 60 })
     rect(b, pl.x + 2 + lift / 4, pl.max + 30, pl.w - 4 - lift / 2, 1, 'rgba(0,0,0,0.35)')
   }
 
@@ -1660,7 +1631,7 @@ export class Renderer {
         }
         // kırılmaya ne kadar kaldı: titreme artar, çatlak büyür, taş hafifçe çöker, toz dökülür
         const k = st ? Math.min(1, st.t / 0.42) : 0
-        const shakeX = st ? Math.round((Math.random() - 0.5) * (1 + k * 2)) : 0
+        const shakeX = st ? Math.round(Math.sin(this.t * 90 + tx * 1.7) * 0.5 * (1 + k * 2)) : 0
         const sink = Math.round(k * 2)
         const x = tx * T + shakeX
         const y = ty * T + sink
@@ -1680,7 +1651,7 @@ export class Renderer {
           rect(b, x + 7, y, 1, 12, s.tileDark)
           rect(b, x + 12, y + 8, 3, 1, s.tileDark)
         }
-        if (st && Math.random() < 0.25 + k * 0.4) this.particles.push({ x: tx * T + Math.random() * T, y: ty * T + 13, vx: (Math.random() - 0.5) * 10, vy: 10, life: 0.5, max: 0.5, color: s.tileLight, size: 1, grav: 200 })
+        if (st && this.chance(0.25 + k * 0.4)) this.particles.push({ x: tx * T + Math.random() * T, y: ty * T + 13, vx: (Math.random() - 0.5) * 10, vy: 10, life: 0.5, max: 0.5, color: s.tileLight, size: 1, grav: 200 })
       }
   }
 
@@ -1797,7 +1768,7 @@ export class Renderer {
         // uyarı: yerde gölge ve kıvılcım
         rect(b, h.x + 1, h.bottom + T - 1, T - 2, 1, 'rgba(255,80,60,0.6)')
       }
-      if (st.phase === 3 && Math.random() < 0.3) this.particles.push({ x: h.x + Math.random() * T, y: h.bottom + T - 1, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 40, life: 0.3, max: 0.3, color: '#ffd36a', size: 1, grav: 300 })
+      if (st.phase === 3 && this.chance(0.3)) this.particles.push({ x: h.x + Math.random() * T, y: h.bottom + T - 1, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 40, life: 0.3, max: 0.3, color: '#ffd36a', size: 1, grav: 300 })
     }
     // bayraklar
     for (const cp of w.checkpoints) this.drawFlag(b, cp)

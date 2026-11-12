@@ -236,7 +236,7 @@ export default function Game() {
     setResumeIdx(startIdx)
     worldRef.current = new World(LEVELS[startIdx])
     renderer.setLevel(worldRef.current)
-    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __mk: unknown }).__mk = { world: () => worldRef.current }
+    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __mk: unknown }).__mk = { world: () => worldRef.current, stats: () => renderer.stats }
     setReady(true)
     window.addEventListener('resize', fit)
     window.addEventListener('orientationchange', fit)

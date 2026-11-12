@@ -47,5 +47,12 @@ if [ -z "${HIZLI:-}" ]; then
   echo "▸ derleme"
   npm run build >/dev/null 2>&1 && echo "derleme ✓" || { echo "derleme ✗"; fail=1; }
 fi
+# kare akıcılığı (tarayıcıda): geliştirme sunucusu açıksa koşar (npm run dev -- -p 3100)
+if curl -s -o /dev/null "http://localhost:${PORT:-3100}"; then
+  echo "▸ kare akıcılığı"
+  node scripts/verify-frames.cjs "${cities[@]:0:3}" --port="${PORT:-3100}" || fail=1
+else
+  echo "▸ kare akıcılığı atlandı: geliştirme sunucusu yok (npm run dev -- -p 3100)"
+fi
 [ $fail -eq 0 ] && echo "TEMİZ" || echo "SORUN VAR: $OUT/<şehir>.log"
 exit $fail

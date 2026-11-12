@@ -19,6 +19,8 @@ paths:
   boss → karakterler → yazılar. Piksel katmanlar tam piksele, HD katmanlar kesirli kameraya çizilir.
 - Fizik sabit adımlıdır; çizim `capture()` / `blend()` ile adımlar arasında ara değerlenir. Yeni hareketli nesne
   eklersen ikisine de ekle, yoksa yüksek tazeleme hızında titrer.
+- Çizimde her şey saate bağlıdır: kare başına `Math.random()` titremesi ya da `Math.random() < p` yok (`shakeOffset`,
+  `this.chance(p)`); pahalı çizim kare içinde tek seferde yapılmaz, önbelleğe bütçeyle önceden çizilir (CLAUDE.md "Akıcılık").
 - Yeni piksel sprite ekleme: karakter, insan, boss, zemin, düşman, dost hayvan ve toplananlar vektördür
   (`heroDraw`, `bossDraw`, `terrainDraw`, `enemyDraw`). Piksel kalan yalnız arka plan katmanları ve sokak süsleridir.
 - Düşman kırmızı haleyle çizilir (iki geçiş: önce kalın kırmızı hat), dost hayvanda hale yoktur; ikisi karışmasın.
