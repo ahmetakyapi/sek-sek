@@ -258,6 +258,7 @@ export const UI_EN: Record<string, string> = {
   'GÜNÜN ŞEHRİ': 'CITY OF THE DAY',
   'HAFTANIN GÖREVİ': 'CHALLENGE OF THE WEEK',
   'Tamam': 'Done',
+  'Ana Menü': 'Main Menu',
   'En az 6 karakter': 'At least 6 characters',
   'Tekrar Hoş Geldin': 'Welcome Back',
   'Defterini Kaydet': 'Save Your Notebook',

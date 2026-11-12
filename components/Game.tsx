@@ -1521,7 +1521,7 @@ export default function Game() {
                 <button className="pixel-btn primary mt-4 w-full justify-center py-3 text-lg short:mt-2.5 short:py-2" onClick={() => setScreen('play')} autoFocus>
                   {t("▶ Devam Et")}
                 </button>
-                <div className="mt-3 grid grid-cols-3 gap-3 short:mt-2.5 short:gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 short:mt-2.5 short:grid-cols-4 short:gap-2">
                   <button
                     className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[12px]"
                     onClick={() => {
@@ -1539,6 +1539,10 @@ export default function Game() {
                   <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[12px]" onClick={() => setScreen('map')}>
                     <span className="text-lg leading-none">⌖</span>
                     {t("Şehirler")}
+                  </button>
+                  <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[12px]" onClick={() => setScreen('title')}>
+                    <span className="text-lg leading-none">⌂</span>
+                    {t('Ana Menü')}
                   </button>
                 </div>
               </div>

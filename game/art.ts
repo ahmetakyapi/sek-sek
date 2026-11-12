@@ -82,6 +82,66 @@ export interface CityStyle {
 }
 
 export const CITY: Record<CityKey, CityStyle> = {
+  kayseri: {
+    // Erciyes’in karlı silueti, bazalt taş, Selçuklu kırmızısı
+    sky: ['#4a5a86', '#a4b0d0', '#f2e8da'],
+    sun: { x: 0.72, y: 0.34, r: 14, color: '#fff2d0', glow: 'rgba(255,240,210,0.18)' },
+    far: '#b8bccc',
+    mid: '#80829a',
+    near: '#4c4c60',
+    tileTop: '#d6cec2',
+    tile: '#5e5a66',
+    tileDark: '#3a3642',
+    tileLight: '#7e7886',
+    plank: '#6a4a30',
+    accent: '#c8302a',
+    water: ['#4a8ab8', '#2e6a98', '#d0ecfa'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'snow',
+    enemyGround: 'lizard',
+    enemyFly: 'raven',
+    animal: 'horse',
+  },
+  hatay: {
+    // sıcak güney akşamı, kireçtaşı, defne yeşili
+    sky: ['#e89a62', '#f4cc9c', '#fff2da'],
+    sun: { x: 0.22, y: 0.5, r: 16, color: '#fff4cc', glow: 'rgba(255,230,180,0.2)' },
+    far: '#d6b494',
+    mid: '#ae8868',
+    near: '#785844',
+    tileTop: '#e8d8b6',
+    tile: '#c6a67e',
+    tileDark: '#8a6a4a',
+    tileLight: '#dec29a',
+    plank: '#7a5234',
+    accent: '#d6403a',
+    water: ['#3a9ab0', '#2a7a90', '#d0f0f4'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'petals',
+    enemyGround: 'scorpion',
+    enemyFly: 'wasp',
+    animal: 'cat',
+  },
+  eskisehir: {
+    // açık gök, Porsuk mavisi, Odunpazarı’nın renkli cepheleri, tuğla
+    sky: ['#68a6d6', '#b6daf0', '#f2f8ea'],
+    sun: { x: 0.8, y: 0.3, r: 13, color: '#fff8d6', glow: 'rgba(255,250,220,0.18)' },
+    far: '#a6c2c8',
+    mid: '#7898a2',
+    near: '#4c6876',
+    tileTop: '#78b65a',
+    tile: '#b06a4a',
+    tileDark: '#7a4434',
+    tileLight: '#cc8a66',
+    plank: '#6a4a30',
+    accent: '#e8794a',
+    water: ['#4aa8c8', '#2e88a8', '#d4f2fa'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'leaves',
+    enemyGround: 'rat',
+    enemyFly: 'pigeon',
+    animal: 'cat',
+  },
   trabzon: {
     sky: ['#3c5468', '#7e98a0', '#c8d6d0'],
     sun: null,
@@ -832,6 +892,73 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    case 'eskisehir':
+      return {
+        far: layer((c) => {
+          hills(c, s.far, B - 92, 16, 2, 901)
+          // Sazova Masal Şatosu: sivri külahlı kuleler
+          const sx = 440
+          rect(c, sx - 30, B - 120, 60, 120, s.far)
+          for (let x = sx - 30; x < sx + 30; x += 6) rect(c, x, B - 124, 3, 4, s.far)
+          for (const [dx, w, h] of [[-34, 10, 52], [-12, 8, 62], [6, 12, 76], [28, 10, 54]] as const) {
+            rect(c, sx + dx, B - 90 - h, w, h + 90, s.far)
+            for (let i = 0; i < w * 1.6; i++) rect(c, sx + dx - 1 + i * 0.36, B - 90 - h - i, w + 2 - i * 0.72, 1, '#8aa6b6')
+            rect(c, sx + dx + w / 2 - 1, B - 90 - h + 8, 2, 4, '#6a8aa0')
+          }
+        }),
+        mid: layer((c) => {
+          const r = rng(902)
+          const base = B - 62
+          // Odunpazarı: renkli, cumbalı, kiremit çatılı evler
+          const colors = ['#e8a8a0', '#f0d48a', '#a8cce0', '#b8d8a0', '#e8b890', '#d8b8e0']
+          for (let x = 0; x < LAYER_W; x += 22 + Math.floor(r() * 8)) {
+            if (x > 300 && x < 380) continue
+            const h = 18 + Math.floor(r() * 8)
+            const col = colors[Math.floor(r() * colors.length)]
+            rect(c, x + 2, base - h, 14, h, col)
+            rect(c, x, base - h + 3, 18, 8, col)
+            rect(c, x, base - h + 11, 18, 1, '#6a4a34')
+            for (let i = 0; i < 10; i++) rect(c, x - 1 + i, base - h - i / 2, 20 - i * 2, 1, '#b0503a')
+            rect(c, x + 3, base - h + 5, 3, 4, '#3a3440')
+            rect(c, x + 12, base - h + 5, 3, 4, '#3a3440')
+            rect(c, x + 7, base - 6, 4, 6, '#5a3a2a')
+          }
+          // Porsuk Çayı, kemerli yaya köprüsü ve gondol
+          rect(c, 0, base, LAYER_W, 16, s.water[1])
+          for (let x = 0; x < LAYER_W; x += 19) rect(c, x + ((x * 5) % 9), base + 5 + ((x * 3) % 8), 7, 1, s.water[2])
+          const bx = 340
+          for (let x = bx - 36; x < bx + 36; x++) {
+            const d = (x - bx) / 36
+            const top = base - 12 + Math.round(d * d * 8)
+            rect(c, x, top, 1, 3, '#d8d0c0')
+            if ((x - bx) % 6 === 0) rect(c, x, top - 5, 1, 5, '#d8d0c0')
+          }
+          rect(c, bx - 36, base - 10, 72, 1, '#d8d0c0')
+          const gx = 200
+          rect(c, gx - 12, base + 4, 24, 3, '#3a2a30')
+          rect(c, gx - 14, base + 2, 3, 3, '#3a2a30')
+          rect(c, gx + 11, base + 1, 3, 4, '#3a2a30')
+          rect(c, gx - 4, base + 1, 8, 3, '#c83a34')
+          rect(c, gx + 6, base - 10, 2, 12, '#3a2a30')
+          disc(c, gx + 7, base - 12, 2, '#3a2a30')
+          rect(c, gx + 5, base - 15, 5, 1, '#e8d8a0')
+          rect(c, gx + 9, base - 8, 1, 14, '#6a4a34')
+          rect(c, 0, base + 16, LAYER_W, 60, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(903)
+          const base = B - 24
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // kıyı korkuluğu ve sarkık dallı söğütler
+          for (let x = 0; x < LAYER_W; x += 6) rect(c, x, base - 5, 1, 5, s.near)
+          rect(c, 0, base - 6, LAYER_W, 1, s.near)
+          for (let x = 14; x < LAYER_W; x += 44 + Math.floor(r() * 24)) {
+            rect(c, x + 4, base - 16, 3, 16, '#3a3a34')
+            disc(c, x + 5, base - 22, 9, '#4e7a4a')
+            for (let k = -8; k <= 8; k += 2) rect(c, x + 5 + k, base - 20, 1, 8 + Math.abs(k % 4) * 2 - Math.abs(k) * 0.4, '#5e8a54')
+          }
+        }),
+      }
     case 'bursa':
       return {
         far: layer((c) => {
@@ -1323,6 +1450,84 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    case 'hatay':
+      return {
+        far: layer((c) => {
+          // Amanoslar uzakta; önde Habib-i Neccar Dağı, yamaçta zeytinlikler
+          hills(c, s.far, B - 140, 20, 2, 1051)
+          hills(c, '#c4a284', B - 104, 30, 1, 1052)
+          const r = rng(1053)
+          for (let i = 0; i < 90; i++) {
+            const x = Math.floor(r() * LAYER_W)
+            const t = (x / LAYER_W) * Math.PI * 2
+            const y = B - 96 + Math.floor(r() * 40)
+            if (y < B - 104 - 30 * Math.sin(t) + 6) continue
+            disc(c, x, y, 2, '#a88a68')
+          }
+        }),
+        mid: layer((c) => {
+          const r = rng(1054)
+          const base = B - 66
+          const stone = s.mid
+          // yamaca basamak basamak tırmanan taş evler: düz dam, kemerli pencere
+          for (let row = 2; row >= 0; row--) {
+            for (let x = row * 30; x < 400 - row * 40; x += 15 + Math.floor(r() * 8)) {
+              const h = 9 + Math.floor(r() * 7)
+              const y = base - row * 14
+              rect(c, x, y - h, 13, h, stone)
+              rect(c, x - 1, y - h - 1, 15, 1, '#c8a684')
+              if (r() > 0.3) {
+                rect(c, x + 4, y - h + 3, 3, 4, '#5a4434')
+                rect(c, x + 5, y - h + 2, 1, 1, '#5a4434')
+              }
+            }
+          }
+          // çan kulesi ve minare yan yana
+          rect(c, 150, base - 56, 10, 28, stone)
+          for (let i = 0; i < 6; i++) rect(c, 150 + i * 0.8, base - 56 - i, 10 - i * 1.6, 1, stone)
+          rect(c, 154, base - 50, 2, 4, '#5a4434')
+          rect(c, 154, base - 66, 1, 4, stone)
+          rect(c, 152, base - 64, 5, 1, stone)
+          minaret(c, 250, base - 14, 50, stone)
+          // Asi Nehri ve su dolabı
+          rect(c, 0, base, LAYER_W, 14, s.water[1])
+          for (let x = 0; x < LAYER_W; x += 23) rect(c, x + ((x * 7) % 11), base + 4 + ((x * 3) % 7), 8, 1, s.water[2])
+          const nx = 500
+          const ny = base - 10
+          for (let a = 0; a < 120; a++) {
+            const an = (a / 120) * Math.PI * 2
+            rect(c, nx + Math.cos(an) * 20, ny + Math.sin(an) * 20, 2, 2, '#6a4a32')
+            if (a % 10 === 0) for (let k = 3; k < 20; k += 2) rect(c, nx + Math.cos(an) * k, ny + Math.sin(an) * k, 1, 1, '#6a4a32')
+            if (a % 10 === 5) rect(c, nx + Math.cos(an) * 21, ny + Math.sin(an) * 21, 3, 3, '#6a4a32')
+          }
+          rect(c, nx - 2, ny - 2, 5, 5, '#4a3424')
+          // dolabın taş ayağı ve su kemeri
+          rect(c, nx - 30, base - 8, 6, 22, stone)
+          rect(c, nx + 24, base - 34, 50, 6, stone)
+          for (let x = nx + 28; x < nx + 74; x += 12) rect(c, x, base - 28, 5, 42, stone)
+          rect(c, 0, base + 14, LAYER_W, 60, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(1055)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // boğumlu gövdeli zeytinler ve sık defne çalıları
+          for (let x = 0; x < LAYER_W; x += 30 + Math.floor(r() * 18)) {
+            if (r() > 0.45) {
+              rect(c, x + 5, base - 12, 3, 12, '#4a3626')
+              rect(c, x + 3, base - 8, 2, 3, '#4a3626')
+              rect(c, x + 8, base - 10, 2, 3, '#4a3626')
+              disc(c, x + 2, base - 16, 6, '#6e7a52')
+              disc(c, x + 11, base - 15, 6, '#6e7a52')
+              disc(c, x + 6, base - 20, 6, '#7e8a60')
+            } else {
+              disc(c, x + 4, base - 5, 7, '#2e5a32')
+              disc(c, x + 12, base - 7, 8, '#3a6a3a')
+              for (let i = 0; i < 4; i++) rect(c, x + 2 + i * 4, base - 10 - (i % 2) * 3, 2, 1, '#5a8a4e')
+            }
+          }
+        }),
+      }
     case 'adana':
       return {
         far: layer((c) => {
@@ -1531,6 +1736,76 @@ export function buildLayers(city: CityKey): Layers {
           for (let x = 0; x < LAYER_W; x += 16 + Math.floor(r() * 10)) {
             disc(c, x + 8, base - 8, 9, s.near)
             for (let i = 0; i < 4; i++) rect(c, x + 2 + Math.floor(r() * 12), base - 14 + Math.floor(r() * 8), 2, 2, '#8a5a2a')
+          }
+        }),
+      }
+    case 'kayseri':
+      return {
+        far: layer((c) => {
+          hills(c, s.far, B - 92, 14, 3, 581)
+          // Erciyes: tek başına yükselen karlı volkan konisi, omzunda ikinci tepe
+          const px = 330
+          for (let x = 40; x < 620; x++) {
+            const d = x - px
+            const shoulder = d < 0 && d > -70 ? Math.max(0, 12 - Math.abs(d + 44) * 0.5) : 0
+            const top = B - 196 + Math.abs(d) * (Math.abs(d) < 40 ? 0.9 : 0.55) + (Math.abs(d) >= 40 ? 14 : 0) - shoulder
+            if (top > B - 92) continue
+            rect(c, x, top, 1, B - top, s.far)
+            // kar örtüsü: zirveden yamaca dil dil iner
+            const snow = B - 152 + Math.round(5 * Math.sin(x * 0.19) + 3 * Math.sin(x * 0.53) + 9 * Math.max(0, Math.sin(x * 0.11)) ** 3)
+            if (top < snow) rect(c, x, top, 1, snow - top, x < px ? '#f6f8ff' : '#dde4f2')
+          }
+        }),
+        mid: layer((c) => {
+          const r = rng(582)
+          const base = B - 64
+          const basalt = '#5c5c70'
+          // Kayseri Kalesi: kara bazalt sur, yuvarlak burçlar, mazgallar
+          rect(c, 40, base - 22, 220, 22, basalt)
+          for (let x = 40; x < 260; x += 6) rect(c, x, base - 26, 4, 4, basalt)
+          for (const tx of [40, 96, 152, 208, 252]) {
+            rect(c, tx - 7, base - 34, 16, 34, basalt)
+            rect(c, tx - 6, base - 34, 2, 34, '#74748a')
+            for (let i = 0; i < 16; i += 5) rect(c, tx - 7 + i, base - 38, 3, 4, basalt)
+          }
+          rect(c, 140, base - 14, 10, 14, '#3a3a48')
+          disc(c, 145, base - 14, 5, '#3a3a48', true)
+          // Döner Kümbet: on iki köşeli gövde, kör kemerler, sivri külah
+          const kx = 420
+          rect(c, kx - 11, base - 30, 22, 30, s.mid)
+          rect(c, kx - 13, base - 4, 26, 4, s.mid)
+          for (let i = 0; i < 4; i++) {
+            rect(c, kx - 9 + i * 5, base - 24, 3, 14, '#9a9cb2')
+            rect(c, kx - 9 + i * 5 + 1, base - 26, 1, 2, '#9a9cb2')
+          }
+          rect(c, kx - 12, base - 32, 24, 2, s.mid)
+          for (let i = 0; i < 22; i++) rect(c, kx - 12 + i * 0.55, base - 32 - i, 24 - i * 1.1, 1, s.mid)
+          // küçük kümbet
+          const k2 = 540
+          rect(c, k2 - 7, base - 20, 14, 20, s.mid)
+          for (let i = 0; i < 14; i++) rect(c, k2 - 8 + i * 0.57, base - 20 - i, 16 - i * 1.14, 1, s.mid)
+          // düz damlı taş evler
+          for (let x = 280; x < LAYER_W; x += 16 + Math.floor(r() * 10)) {
+            if (x > 396 && x < 446) continue
+            if (x > 526 && x < 556) continue
+            house(c, x, base, 12 + Math.floor(r() * 6), 8 + Math.floor(r() * 8), s.mid, null, r, 'flat')
+          }
+          rect(c, 0, base, LAYER_W, 64, s.mid)
+        }),
+        near: layer((c) => {
+          const r = rng(583)
+          const base = B - 26
+          rect(c, 0, base, LAYER_W, 40, s.near)
+          // kavaklar ve bazalt taş duvar
+          for (let x = 0; x < LAYER_W; x += 4) rect(c, x, base - 5 + ((x / 4) % 2), 3, 5, s.near)
+          for (let x = 8; x < LAYER_W; x += 26 + Math.floor(r() * 30)) {
+            const h = 30 + Math.floor(r() * 16)
+            rect(c, x + 2, base - 6, 2, 6, '#3a3040')
+            for (let i = 0; i < h; i++) {
+              const hw = Math.round(Math.sin((i / h) * Math.PI) * 4)
+              rect(c, x + 3 - hw, base - 6 - i, hw * 2 + 1, 1, s.near)
+            }
+            for (let i = 6; i < h - 6; i += 5) rect(c, x + 1, base - 6 - i, 1, 2, '#6a6a80')
           }
         }),
       }

@@ -1748,6 +1748,320 @@ const PAINT: Record<CityKey, Painter> = {
       })
     aura(c, mood, t, 9.6, -24, 5.6, -12.4, -2.4)
   },
+  // Dev Mantı: dört köşesi tepede büzülmüş hamur bohçası; sırtında sarımsaklı yoğurt, üstünde pul biberli tereyağı
+  kayseri: (c, b, mood, t) => {
+    const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 11) * b.dir : 0
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const lift = b.state === 'warn' && b.move === 'throw'
+    if (!air && !roll) feet(c, 5, '#c89a5a')
+    // arka kol
+    if (!roll) stroke(c, [-9.6, -8, -12.4, out ? -4 : -6.4, -13, out ? -2.6 : -8.6], 2.6, '#ecd2a0')
+    c.save()
+    c.translate(0, -11)
+    c.rotate(roll)
+    c.translate(0, 11)
+    // hamur gövde
+    blob(
+      c,
+      () => {
+        c.moveTo(-11, -3)
+        c.bezierCurveTo(-13.4, -11, -8.6, -17.4, -2.6, -18.6)
+        c.lineTo(2.6, -18.6)
+        c.bezierCurveTo(8.6, -17.4, 13.4, -11, 11, -3)
+        c.quadraticCurveTo(0, 0.4, -11, -3)
+      },
+      '#f6e2b8',
+      shade('#d6b47e'),
+    )
+    // büzgü kıvrımları
+    c.strokeStyle = '#d6b47e'
+    c.lineWidth = 0.6
+    c.lineCap = 'round'
+    c.beginPath()
+    c.moveTo(-1.4, -18.4)
+    c.quadraticCurveTo(-7, -16, -9.6, -9)
+    c.moveTo(1.4, -18.4)
+    c.quadraticCurveTo(7, -16, 9.8, -9)
+    c.stroke()
+    // sarımsaklı yoğurt: omuzlardan damla damla iner
+    blob(
+      c,
+      () => {
+        c.moveTo(-10.6, -12)
+        c.quadraticCurveTo(-8.4, -17.6, -2.6, -18)
+        c.lineTo(2.6, -18)
+        c.quadraticCurveTo(8.4, -17.6, 10.6, -12)
+        c.quadraticCurveTo(10, -9.6, 8.8, -11.2)
+        c.quadraticCurveTo(7.8, -7.6, 6.4, -10.8)
+        c.quadraticCurveTo(3.4, -11.8, 0.8, -11.2)
+        c.quadraticCurveTo(-0.2, -8.4, -1.6, -11)
+        c.quadraticCurveTo(-4.6, -11.8, -6.6, -11.2)
+        c.quadraticCurveTo(-7.6, -8.6, -8.8, -11.4)
+        c.quadraticCurveTo(-10, -11.2, -10.6, -12)
+      },
+      '#fbfaf2',
+      shade('#d4d8d0'),
+    )
+    dab(c, -5, -15.6, 2.2, 0.9, '#ffffff')
+    // dört hamur köşesi ve düğüm
+    for (const k of [-1, 1])
+      blob(
+        c,
+        () => {
+          c.moveTo(k * 5, -17.4)
+          c.quadraticCurveTo(k * 7.8, -19.6, k * 7.6, -22.2 + (out ? 1 : 0))
+          c.quadraticCurveTo(k * 3.8, -21.6, k * 0.8, -19.4)
+        },
+        '#f6e2b8',
+        shade('#d6b47e'),
+      )
+    blob(
+      c,
+      () => {
+        c.moveTo(-2, -19)
+        c.quadraticCurveTo(-1.6, -22.6, 0.2, -24.2 + (out ? 1.4 : 0))
+        c.quadraticCurveTo(1.6, -22.4, 2, -19)
+      },
+      '#f6e2b8',
+      shade('#d6b47e'),
+    )
+    ell(c, 0, -18.8, 2.6, 1.6, '#f0d6a4', '#d6b47e')
+    // pul biberli tereyağı: yoğurdun üstünde kırmızı yol, biber pulları, bir tutam nane
+    c.strokeStyle = 'rgba(214,58,30,0.85)'
+    c.lineWidth = 1
+    c.beginPath()
+    c.moveTo(-8.6, -13.4)
+    c.bezierCurveTo(-5, -16.4, -2, -12.2, 1.4, -14.8)
+    c.bezierCurveTo(4, -16.6, 6.6, -12.8, 8.8, -14.4)
+    c.stroke()
+    for (const [x, y] of [[-6.4, -15.8], [-3.2, -13], [0.2, -16.6], [3.4, -13.4], [6.4, -15.6], [-8.6, -12], [8.4, -12.2]]) dab(c, x, y, 0.5, 0.4, '#a8201a')
+    for (const [x, y] of [[-2, -16], [4.6, -16.2]]) dab(c, x, y, 0.6, 0.45, '#5a9a3a')
+    c.restore()
+    if (roll) {
+      // yuvarlanırken arkasında yoğurt izi
+      for (let i = 0; i < 3; i++) dab(c, -13 - i * 3, -1 - ((t * 20 + i) % 2) * 0.4, 1.4 - i * 0.3, 0.7, 'rgba(250,250,240,0.8)')
+      return
+    }
+    eye(c, -0.4, -8, 2.6, mood, t)
+    eye(c, 6.4, -8, 2.4, mood, t)
+    dab(c, -3.6, -4.6, 1.7, 1.1, BLUSH)
+    dab(c, 9.6, -4.8, 1.5, 1, BLUSH)
+    face(c, 3.2, -3.8, 1.9, mood, t, -7, -20)
+    // ön kol: yoğurt savuracaksa bir avuç yoğurdu başının üstüne kaldırır
+    if (lift) {
+      stroke(c, [9.4, -8, 12.4, -13.4], 2.6, '#ecd2a0')
+      ell(c, 13, -17, 3, 2.6, '#fbfaf2', '#d4d8d0')
+      dab(c, 12.2, -17.6, 0.6, 0.5, '#a8201a')
+    } else stroke(c, [9.6, -8, 12.4, out ? -4 : -6.6, 13.2, out ? -2.6 : -9], 2.6, '#ecd2a0')
+  },
+  // Kızgın Künefe Tepsisi: kulplu bakır tepside tel kadayıf; üstünde fıstık, şerbet parıltısı, buhar; soğuyunca solar
+  hatay: (c, b, mood, t) => {
+    const spin = b.state === 'attack' && b.move === 'charge'
+    const air = b.y < b.floor - b.h - 2
+    const cold = beat(mood) || mood === 'sleep'
+    const turn = spin ? b.x / 3 : 0.5
+    if (!air && !spin) feet(c, 6.4, '#7a3e1c')
+    // kulplar tepsinin çevresinde döner: arkadaki önce, öndeki sonra çizilir
+    const handle = (front: boolean) => {
+      for (const a of [turn, turn + Math.PI]) {
+        if (Math.sin(a) > 0 !== front) continue
+        const x = Math.cos(a) * 13.6
+        const y = -4.4 + Math.sin(a) * 2
+        fine(() => {
+          c.beginPath()
+          c.ellipse(x, y, 1.6 + Math.abs(Math.sin(a)) * 1.4, 1.6, 0, 0, Math.PI * 2)
+          c.strokeStyle = INK
+          c.lineWidth = 2.2
+          c.stroke()
+          c.strokeStyle = '#d88a48'
+          c.lineWidth = 1
+          c.stroke()
+        })
+      }
+    }
+    handle(false)
+    ell(c, 0, -6, 13, 3.4, '#9a4e22')
+    // tel kadayıf
+    const top = cold ? '#d8a050' : '#f2a43a'
+    blob(
+      c,
+      () => {
+        c.moveTo(-12, -5.6)
+        c.bezierCurveTo(-12.6, -11.6, -9.4, -14.6, 0, -14.8)
+        c.bezierCurveTo(9.4, -14.6, 12.6, -11.6, 12, -5.6)
+        c.closePath()
+      },
+      cold ? '#c88a40' : '#e8862a',
+      shade(cold ? '#946230' : '#b45a18'),
+    )
+    ell(c, 0, -13.2, 10.2, 2.4, top)
+    // telleri: kısa kıvrık çizgiler
+    c.lineCap = 'round'
+    c.lineWidth = 0.5
+    c.strokeStyle = cold ? '#a87038' : '#b85e1a'
+    c.beginPath()
+    for (let i = 0; i < 9; i++) {
+      const x = -10 + i * 2.5
+      const y = -10.8 + ((i * 7) % 3) * 1.2
+      c.moveTo(x, y)
+      c.quadraticCurveTo(x + 0.8, y - 1, x + 1.6, y + 0.2)
+    }
+    c.stroke()
+    c.strokeStyle = cold ? '#ecc078' : '#ffd070'
+    c.beginPath()
+    for (let i = 0; i < 6; i++) {
+      const x = -9 + i * 3.4
+      c.moveTo(x, -12.6)
+      c.quadraticCurveTo(x + 1, -13.6, x + 2, -12.8)
+    }
+    c.stroke()
+    // fıstık serpintisi tepsiyle döner
+    for (let i = 0; i < 7; i++) {
+      const a = turn * 1 + i * 0.9
+      const r = 3 + (i % 3) * 2.6
+      dab(c, Math.cos(a) * r, -13.2 + Math.sin(a) * r * 0.22, 0.9, 0.55, i % 2 ? '#7ab04a' : '#5a9a34')
+    }
+    // şerbet parıltısı
+    if (!cold) {
+      const g = 0.55 + Math.sin(t * 5) * 0.25
+      dab(c, -5.4, -13.8, 2, 0.6, `rgba(255,248,210,${g.toFixed(2)})`)
+      dab(c, -9.4, -9, 0.7, 1.4, `rgba(255,236,170,${(g * 0.8).toFixed(2)})`)
+    }
+    // bakır tepsinin ön duvarı
+    blob(
+      c,
+      () => {
+        c.moveTo(-13, -6)
+        c.quadraticCurveTo(0, -0.2, 13, -6)
+        c.lineTo(11.6, -1.6)
+        c.quadraticCurveTo(0, 1.4, -11.6, -1.6)
+        c.closePath()
+      },
+      '#c8743a',
+      shade('#8e4a22'),
+    )
+    c.strokeStyle = '#f2b070'
+    c.lineWidth = 0.6
+    c.beginPath()
+    c.moveTo(-12, -5.2)
+    c.quadraticCurveTo(-6, -2.6, -2, -2.6)
+    c.stroke()
+    for (const x of [-7, -2.4, 2.4, 7]) dab(c, x, -1.8 - Math.abs(x) * 0.12, 0.4, 0.4, '#8e4a22')
+    handle(true)
+    eye(c, -0.8, -9.4, 2.5, mood, t)
+    eye(c, 5.6, -9.4, 2.3, mood, t)
+    if (!cold) {
+      dab(c, -4.4, -6.6, 1.5, 1, 'rgba(255,90,60,0.55)')
+      dab(c, 9, -6.8, 1.3, 1, 'rgba(255,90,60,0.55)')
+    }
+    face(c, 2.4, -6.2, 1.8, mood, t, -8.6, -17)
+    if (b.state === 'warn' && b.move === 'throw') {
+      // savrulacak şerbet tepede köpürür
+      const p = Math.abs(Math.sin(t * 12)) * 1.6
+      fine(() => ell(c, 3, -17.4 - p, 2.6, 2, '#f6c24a', '#c8901e'))
+      dab(c, 2.2, -18 - p, 0.7, 0.5, '#fff6d0')
+    }
+    if (spin) {
+      // dönüş çizgileri
+      c.strokeStyle = 'rgba(255,255,255,0.7)'
+      c.lineWidth = 0.7
+      c.beginPath()
+      c.ellipse(0, -7, 15.6, 5, 0, 0.2, 1.4)
+      c.moveTo(-15, -9)
+      c.ellipse(0, -7, 15.6, 5, 0, Math.PI + 0.2, Math.PI + 1.4)
+      c.stroke()
+    }
+    if (!cold) {
+      // kızgın tepsiden buhar
+      c.strokeStyle = 'rgba(255,255,255,0.55)'
+      c.lineWidth = 0.8
+      c.beginPath()
+      for (let i = 0; i < 3; i++) {
+        const x = -6 + i * 6
+        const k = (t * 0.8 + i * 0.33) % 1
+        c.moveTo(x, -16 - k * 2)
+        c.quadraticCurveTo(x + Math.sin(t * 4 + i) * 2, -19 - k * 2, x, -22 - k * 2)
+      }
+      c.stroke()
+    }
+  },
+  // Dev Çibörek: yarım ay hamur, tırtıklı çatal izli kenar, kabarcıklı altın kabuk; kızgın yağdan fırlar, sönünce yumuşar
+  eskisehir: (c, b, mood, t) => {
+    const dash = b.state === 'attack' && b.move === 'charge'
+    const air = b.y < b.floor - b.h - 2
+    const limp = beat(mood) || mood === 'sleep'
+    if (!air && !dash) feet(c, 5.6, '#a8702a')
+    c.save()
+    if (dash) c.rotate(0.12)
+    const rim = (k: number, bump: number) => {
+      for (let i = 0; i <= 64; i++) {
+        const a = (i / 64) * Math.PI
+        const r = k * (1 + bump * Math.abs(Math.sin(a * 11)))
+        const x = -Math.cos(a) * 12.4 * r
+        const y = -1.6 - Math.sin(a) * 14.2 * r * (limp ? 0.94 : 1)
+        if (i) c.lineTo(x, y)
+        else c.moveTo(x, y)
+      }
+    }
+    // tırtıklı yarım ay
+    blob(
+      c,
+      () => {
+        rim(1, 0.045)
+        c.quadraticCurveTo(0, -0.2, -12.4, -1.6)
+      },
+      limp ? '#e0b46a' : '#eab252',
+      shade(limp ? '#b48a48' : '#b87628'),
+    )
+    // kenar bandı ve çatal izleri
+    c.save()
+    c.strokeStyle = limp ? '#b48a48' : '#c08030'
+    c.lineWidth = 0.6
+    c.lineCap = 'round'
+    c.beginPath()
+    rim(0.84, 0)
+    c.stroke()
+    c.beginPath()
+    for (let i = 1; i < 11; i++) {
+      const a = ((i + 0.5) / 11) * Math.PI
+      const x = -Math.cos(a)
+      const y = -Math.sin(a)
+      c.moveTo(x * 12.4 * 0.88, -1.6 + y * 14.2 * 0.88)
+      c.lineTo(x * 12.4 * 0.98, -1.6 + y * 14.2 * 0.98)
+    }
+    c.stroke()
+    c.restore()
+    // kızarmış kabarcıklar ve yağ parıltısı
+    for (const [x, y, r] of [[-6, -11, 1.3], [-2.4, -13.4, 0.9], [7.4, -10.4, 1.1], [-8.2, -6, 0.9], [4, -12.6, 0.8]]) {
+      dab(c, x + 0.4, y + 0.4, r, r * 0.8, limp ? '#c89a50' : '#c8862e')
+      dab(c, x, y, r, r * 0.8, limp ? '#eccb8a' : '#f8d282')
+    }
+    if (!limp) dab(c, -4.6, -9, 2.2, 0.8, 'rgba(255,250,220,0.6)')
+    c.restore()
+    eye(c, -0.2, -7.6, 2.6, mood, t)
+    eye(c, 6.4, -7.6, 2.4, mood, t)
+    dab(c, -3.6, -4.4, 1.6, 1, BLUSH)
+    dab(c, 9.4, -4.6, 1.4, 1, BLUSH)
+    face(c, 3.2, -3.8, 1.8, mood, t, -9, -15)
+    if (dash) {
+      // kızgın yağdan fırlarken sıçrayan damlalar
+      for (let i = 0; i < 4; i++) {
+        const k = (t * 3 + i / 4) % 1
+        dab(c, -13 - k * 8, -3 - i * 2.4 + k * k * 4, 1 - k * 0.5, 0.8 - k * 0.4, `rgba(255,214,90,${(1 - k).toFixed(2)})`)
+      }
+    } else if (!limp) {
+      c.strokeStyle = 'rgba(255,255,255,0.5)'
+      c.lineWidth = 0.8
+      c.beginPath()
+      for (let i = 0; i < 2; i++) {
+        const x = -3 + i * 6
+        c.moveTo(x, -17.6)
+        c.quadraticCurveTo(x + Math.sin(t * 4 + i) * 2, -20.6, x, -23.6)
+      }
+      c.stroke()
+    }
+  },
 }
 
 /** Yerden çıkan boss'un işareti: kabaran toprak, sıçrayan çakıllar. */

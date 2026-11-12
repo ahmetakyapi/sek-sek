@@ -56,6 +56,24 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Akdamar’a tekne kalkıyor.', 'A boat leaves for Akdamar.'],
     ['Göl gün batımında mor.', 'The lake turns purple at sunset.'],
   ],
+  kayseri: [
+    ['Pastırma rüzgârda kuruyor.', 'Pastırma dries in the wind.'],
+    ['Bir kaşığa kırk mantı.', 'Forty mantı on one spoon.'],
+    ['Erciyes’in tepesi bulutta.', 'The peak of Erciyes is in the clouds.'],
+    ['Kapalı Çarşı’da pazarlık başladı.', 'The bargaining has begun in the Covered Bazaar.'],
+  ],
+  hatay: [
+    ['Künefe tepsisi fırından çıktı.', 'The künefe tray is out of the oven.'],
+    ['Defne sabunu kokusu sardı.', 'The scent of laurel soap is everywhere.'],
+    ['Asi yavaş akıyor.', 'The Orontes flows slowly.'],
+    ['Sofraya bir tabak daha konuldu.', 'One more plate on the table.'],
+  ],
+  eskisehir: [
+    ['Gondol köprünün altından geçti.', 'A gondola slipped under the bridge.'],
+    ['Çibörek kızgın yağda.', 'Çibörek sizzles in the hot oil.'],
+    ['Odunpazarı’nda bir cumba açıldı.', 'A bay window opens in Odunpazarı.'],
+    ['Nasreddin Hoca eşeğine ters bindi.', 'Nasreddin Hodja rides his donkey backwards.'],
+  ],
   erzurum: [
     ['Dadaş bar tutuyor.', 'The dadaş dancers begin the bar.'],
     ['Cağ kebabı şişte dönüyor.', 'Cağ kebab turns on the spit.'],

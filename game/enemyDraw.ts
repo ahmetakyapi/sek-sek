@@ -1197,6 +1197,88 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     dab(c, -1.4, 1.5, 0.9, 0.9, '#2a2220')
     line(c, [-3.2, 3.4, 4, -3.8], 0.25, '#f0e2c0', false)
   },
+  // Mantı: mavi çini tabakta minik bohçalar, üstünde yoğurt ve pul biberli tereyağı
+  kayseri: (c) => {
+    ell(c, 0, 2.4, 5.8, 2.6, '#f4f6fa', '#b8c4d8')
+    line(c, [-4.4, 2.6, -2, 4, 2, 4, 4.4, 2.6], 0.45, '#3a6ab8', false)
+    for (const [x, y] of [[-3, 0.4], [3, 0.4], [-1.4, -0.6], [1.6, -0.6], [0, 1]] as const) {
+      shape(
+        c,
+        () => {
+          c.moveTo(x - 1.5, y + 1)
+          c.quadraticCurveTo(x - 1.7, y - 1, x, y - 1.8)
+          c.quadraticCurveTo(x + 1.7, y - 1, x + 1.5, y + 1)
+          c.closePath()
+        },
+        '#f6e2b8',
+        '#d6b47e',
+      )
+    }
+    shape(
+      c,
+      () => {
+        c.moveTo(-3.6, -0.4)
+        c.quadraticCurveTo(0, -3.8, 3.6, -0.4)
+        c.quadraticCurveTo(2.4, 0.6, 1.4, 0)
+        c.quadraticCurveTo(0, 1.2, -1.2, 0.2)
+        c.quadraticCurveTo(-2.6, 0.8, -3.6, -0.4)
+      },
+      '#fbfaf2',
+      '#d4d8d0',
+    )
+    line(c, [-2.6, -1, -0.8, -2, 0.8, -1.2, 2.6, -1.8], 0.5, '#d63a1e', false)
+    for (const [x, y] of [[-1.6, -1.6], [1.6, -1], [0, -2.4]] as const) dab(c, x, y, 0.3, 0.25, '#a8201a')
+  },
+  // Künefe: tel kadayıf dilimi, üstü fıstıklı, şerbeti parıldar
+  hatay: (c) => {
+    shape(
+      c,
+      () => {
+        c.moveTo(-5, 0.2)
+        c.lineTo(5.2, -2.2)
+        c.lineTo(5.2, 1.2)
+        c.lineTo(-5, 4.2)
+        c.closePath()
+      },
+      '#e8862a',
+      '#b45a18',
+    )
+    line(c, [-4.6, 2.2, 5, -0.6], 0.5, '#fff0c0', false)
+    shape(
+      c,
+      () => {
+        c.moveTo(-5, 0.2)
+        c.lineTo(5.2, -2.2)
+        c.quadraticCurveTo(4.6, -5.6, 1.6, -5.4)
+        c.closePath()
+      },
+      '#f2a43a',
+      '#c8761e',
+    )
+    for (const [x, y] of [[0.4, -2.2], [2.6, -3.4], [3.2, -1.8], [-1.6, -1]] as const) dab(c, x, y, 0.6, 0.4, '#6aa840')
+    dab(c, 1.8, -4.2, 1.2, 0.45, '#fff6d0', -0.3)
+    for (const [x, y] of [[-3, 2.6], [0, 1.8], [3, 1]] as const) line(c, [x, y, x + 0.8, y - 0.6, x + 1.6, y - 0.2], 0.3, '#b45a18', false)
+  },
+  // Lületaşı: beyaz, oymalı lüle; kehribar ağızlık
+  eskisehir: (c) => {
+    line(c, [-1, 1.4, 4.8, -2.4], 1.4, '#c8862a')
+    line(c, [3.6, -1.6, 5.2, -2.6], 1.4, '#7a4a20')
+    shape(
+      c,
+      () => {
+        c.moveTo(-5, -3.6)
+        c.lineTo(-0.6, -3.6)
+        c.quadraticCurveTo(-0.2, 2.6, -2.4, 3.8)
+        c.quadraticCurveTo(-5.6, 3.6, -5, -3.6)
+      },
+      '#f6f0e2',
+      '#cfc4ac',
+    )
+    ell(c, -2.8, -3.6, 2.2, 0.8, '#5a3a24')
+    line(c, [-4.4, -1.6, -3.4, -0.6, -2.4, -1.6, -1.4, -0.6], 0.35, '#b8a888', false)
+    line(c, [-4, 1, -3, 1.8, -2, 1], 0.35, '#b8a888', false)
+    dab(c, -4, -2.4, 0.4, 1.2, '#ffffff')
+  },
 }
 
 /** bilinmeyen şehir: altın yıldız */
