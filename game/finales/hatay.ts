@@ -1,56 +1,52 @@
 import type { Prelude } from './types'
 
 /**
- * Palandöken kayak pisti: yaylar teleskinin yerine pistin başına çıkarır, sonra iniş yönünde rampalar.
- * Rampa, basamağın bir karo altındaki yaydır: buzda kayarak gelen kendiliğinden uçar. Karar her rampada "nasıl
- * uçacağım": 1) sağa basılı tut, karşıya kon (bırakan vadiye iner, kar basamağından çıkar) · 2) kar seti yüksek:
- * zıplamayı basılı tut (kaçıran çukura düşer, geri çıkar) · 3) saçakta sarkıt var: zıplamaya basma, alçak uç ·
- * 4) son rampa: ikisini de basılı tut, kayalığı aş. Nazar boncuğu ilk rampanın dibindeki kar oyuğunda.
+ * Hatay Arkeoloji Müzesi, mozaik salonları: plakaya basınca turuncu ve mavi mozaik taşları yer değiştirir
+ * (bas, atla, bas, bas). 1) Girişteki plaka turuncu duvarı kaldırır, mavi köprüyü kurar · 2) köprünün başındaki plakaya
+ * basılmaz, üstünden atlanır (basan köprüyü kaldırır; inip yeniden basar) · 3) mavi duvarın önündeki plaka duvarı
+ * açar, dikenli salona turuncu taşları serer · 4) adadaki plaka turuncuyu kaldırıp mavi taşı getirir.
+ * Nazar boncuğu ikinci salonun tavanında: "yanlış" plakaya bilerek basınca beliren turuncu merdivenin ucunda.
  */
 export const prelude: Prelude = {
-  medal: 45,
+  medal: 50,
   hints: [
-    'Palandöken kayak pisti. Teleski kapalı: yayın üstüne zıpla, seni pistin başına fırlatır.',
-    'Buzda kendiliğinden kayarsın, uçtaki rampa seni uçurur. Sağa basılı tut, karşı düzlüğe kon. Vadiye düşersen kar basamağından çık.',
-    'Kar seti yüksek. Rampaya girerken zıplamayı basılı tut: yüksek uçarsın. Kaçırırsan geri çık, bir daha dene.',
-    'Saçakta buz sarkıtları var. Bu rampada zıplamaya basma: alçak uç, altından geç.',
-    'Son rampa: zıplamayı da sağı da basılı tut. En uzun uçuş kayalığı aşar.',
+    'Arkeoloji Müzesi. Plakaya bas: turuncu taşlar kalkar, mavi taşlar yerine oturur. Bir daha basarsan geri döner.',
+    'Köprü mavi taştan. Önündeki plakaya basarsan köprü kalkar: üstünden atla. Bastıysan in, yeniden bas.',
+    'Dikenli salon. Turuncu taşlara bas, adaya çık. Adadaki plaka sıradaki mavi taşı getirir.',
   ],
   hintsEn: [
-    'The Palandöken ski run. The lift is closed: jump onto the spring and it will fling you to the top of the run.',
-    'On ice you slide by yourself, and the ramp at the end sends you flying. Hold right and land on the far ledge. If you drop into the gully, climb out by the snow step.',
-    'The snow bank is high. Hold jump as you hit the ramp and you fly high. If you miss, climb back and try again.',
-    'Icicles hang from the overhang. Keep off the jump button on this ramp: fly low and pass beneath.',
-    'The last ramp: hold both jump and right. The longest flight clears the rocks.',
+    'The Archaeology Museum. Step on the plate: the orange stones lift away and the blue ones settle into place. Step again and they swap back.',
+    'The bridge is made of blue stones. Step on the plate in front of it and the bridge lifts: hop over it. If you pressed it, step off and press again.',
+    'The hall of spikes. Cross on the orange stones and climb onto the island. The plate there brings the next blue stone.',
   ],
-  npcs: [{ name: 'Kayak Hocası Kâzım', look: 'usta', text: 'Palandöken’in karı un gibidir, pisti uzundur. Rampaya nasıl girersen öyle uçarsın evlat: yükseğe mi, alçağa mı, yukarıda karar ver; havada geç kalırsın. İlk rampadan uçmayıp vadiye inen, rampanın dibindeki kar oyuğunu görür.' }],
-  npcsEn: [{ name: 'Kâzım the Ski Instructor', text: 'Palandöken snow is fine as flour and the run is long. You fly the way you hit the ramp, my child: high or low, decide up top; in the air it is too late. Whoever skips the first ramp and drops into the gully will spot the snow hollow at its foot.' }],
+  npcs: [{ name: 'Müze Bekçisi Mustafa', look: 'amca', text: 'Bu salonlarda Roma’dan kalma mozaikler yatar evlat; Okeanos ile Tethys bile burada. Taşlar renk renk dizilir, her plaka resmi değiştirir. Köprünün başındaki plakaya bir kez bilerek bas, sonra başını kaldır: tavana çıkan turuncu taşlar bir şey saklıyor.' }],
+  npcsEn: [{ name: 'Mustafa the Museum Guard', text: 'Roman mosaics lie in these halls, my child; even Oceanus and Tethys are here. The stones are laid colour by colour, and every plate changes the picture. Step on the plate at the head of the bridge once on purpose, then look up: the orange stones climbing to the ceiling are hiding something.' }],
   chunks: [
     [
-      '                                                                        ',
-      '                                                ######                  ',
-      '                                                ######                  ',
-      '                                                vvvvvv                  ',
-      '                                                                        ',
-      '                                                                        ',
-      '                                                                        ',
-      '                                                                        ',
-      '                                       F ?                              ',
-      '             ? l                      ######IIIS                        ',
-      '            #####IIIIIIS              ##########                        ',
-      '            ############              ##########       ?                ',
-      '            ############    ?         ##########IIIIIIIIIS              ',
-      '          S ############   ###IIIIIS  ####################              ',
-      '        ###########       ################################              ',
-      '        ###########!      ################################              ',
-      '        ##################################################              ',
-      '        ##################################################              ',
-      '        ##################################################              ',
-      ' ? n  S ##################################################^^^^^^   l k  ',
-      '########################################################################',
-      '########################################################################',
-      '########################################################################',
-      '########################################################################',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[  !                   ]]                                ',
+      '            [[  [[                  ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[     [[               ]]                                ',
+      '            [[                      ]]                                ',
+      '            [[  [[                  ]]                                ',
+      '            [[                      ]]             _                  ',
+      '            [[     [[               ]]        [[  ###  ]]             ',
+      ' ?  n    _  [[ ?      _          _  ]] F ?  ^^^^^^###^^^^^^    l      ',
+      '#########################]]]]]########################################',
+      '#########################     ########################################',
+      '#########################^^^^^########################################',
+      '######################################################################',
     ],
   ],
 }

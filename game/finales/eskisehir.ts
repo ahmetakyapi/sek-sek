@@ -1,56 +1,51 @@
 import type { Prelude } from './types'
 
 /**
- * Palandöken kayak pisti: yaylar teleskinin yerine pistin başına çıkarır, sonra iniş yönünde rampalar.
- * Rampa, basamağın bir karo altındaki yaydır: buzda kayarak gelen kendiliğinden uçar. Karar her rampada "nasıl
- * uçacağım": 1) sağa basılı tut, karşıya kon (bırakan vadiye iner, kar basamağından çıkar) · 2) kar seti yüksek:
- * zıplamayı basılı tut (kaçıran çukura düşer, geri çıkar) · 3) saçakta sarkıt var: zıplamaya basma, alçak uç ·
- * 4) son rampa: ikisini de basılı tut, kayalığı aş. Nazar boncuğu ilk rampanın dibindeki kar oyuğunda.
+ * Nasreddin Hoca’nın eşeğinin yolu: köprünün taşları çatlak, üstünde duran düşer; eşek gibi durmadan yürüyen geçer.
+ * Önce güvenli: çatlak köprünün altı sığ hendek, düşen yürüyüp çıkar. Sonra dikenin üstünde aynı köprü.
+ * En sonda ahırın damı duvara dayanır: çatlak taşta bilerek durulur, ahıra inilir, ahırdan sağa çıkılır.
+ * Nazar boncuğu ahırın arka (sol) köşesinde: Hoca gibi "ters bakan", indiği yerden sola dönen görür.
  */
 export const prelude: Prelude = {
-  medal: 45,
+  medal: 35,
   hints: [
-    'Palandöken kayak pisti. Teleski kapalı: yayın üstüne zıpla, seni pistin başına fırlatır.',
-    'Buzda kendiliğinden kayarsın, uçtaki rampa seni uçurur. Sağa basılı tut, karşı düzlüğe kon. Vadiye düşersen kar basamağından çık.',
-    'Kar seti yüksek. Rampaya girerken zıplamayı basılı tut: yüksek uçarsın. Kaçırırsan geri çık, bir daha dene.',
-    'Saçakta buz sarkıtları var. Bu rampada zıplamaya basma: alçak uç, altından geç.',
-    'Son rampa: zıplamayı da sağı da basılı tut. En uzun uçuş kayalığı aşar.',
+    'Hoca’nın eşeği hiç durmaz. Köprünün taşları çatlak: üstünde durursan kırılır. Durmadan yürü!',
+    'Bu köprünün altında diken var. Hızını kesme, karşıya kadar yürü.',
+    'Dam duvara dayandı. Bu kez çatlak taşın üstünde dur: kırılır, ahıra inersin. Yol ahırdan sağa gider.',
   ],
   hintsEn: [
-    'The Palandöken ski run. The lift is closed: jump onto the spring and it will fling you to the top of the run.',
-    'On ice you slide by yourself, and the ramp at the end sends you flying. Hold right and land on the far ledge. If you drop into the gully, climb out by the snow step.',
-    'The snow bank is high. Hold jump as you hit the ramp and you fly high. If you miss, climb back and try again.',
-    'Icicles hang from the overhang. Keep off the jump button on this ramp: fly low and pass beneath.',
-    'The last ramp: hold both jump and right. The longest flight clears the rocks.',
+    'Hoca’s donkey never stops. The bridge stones are cracked: stand still and they break. Keep walking!',
+    'There are spikes under this bridge. Don’t slow down, walk all the way across.',
+    'The roof ends at a wall. This time stand still on the cracked stones: they break and you drop into the barn. The way goes on to the right.',
   ],
-  npcs: [{ name: 'Kayak Hocası Kâzım', look: 'usta', text: 'Palandöken’in karı un gibidir, pisti uzundur. Rampaya nasıl girersen öyle uçarsın evlat: yükseğe mi, alçağa mı, yukarıda karar ver; havada geç kalırsın. İlk rampadan uçmayıp vadiye inen, rampanın dibindeki kar oyuğunu görür.' }],
-  npcsEn: [{ name: 'Kâzım the Ski Instructor', text: 'Palandöken snow is fine as flour and the run is long. You fly the way you hit the ramp, my child: high or low, decide up top; in the air it is too late. Whoever skips the first ramp and drops into the gully will spot the snow hollow at its foot.' }],
+  npcs: [{ name: 'Şato Bekçisi Gülizar', look: 'teyze', text: 'Hoca bizim Sivrihisar’ın çocuğudur. Eşeğine hep ters binermiş, “Ben geride kalanı görmek isterim” dermiş. Sen de ahıra inince bir kere Hoca gibi ters dön evladım; arka köşede bir göz seni bekler.' }],
+  npcsEn: [{ name: 'Gülizar the Castle Keeper', text: 'Hoca was a child of our own Sivrihisar. He always rode his donkey backwards: “I like to see what I leave behind,” he would say. When you drop into the barn, turn around once like Hoca, my dear; an eye is waiting for you in the back corner.' }],
   chunks: [
     [
-      '                                                                        ',
-      '                                                ######                  ',
-      '                                                ######                  ',
-      '                                                vvvvvv                  ',
-      '                                                                        ',
-      '                                                                        ',
-      '                                                                        ',
-      '                                                                        ',
-      '                                       F ?                              ',
-      '             ? l                      ######IIIS                        ',
-      '            #####IIIIIIS              ##########                        ',
-      '            ############              ##########       ?                ',
-      '            ############    ?         ##########IIIIIIIIIS              ',
-      '          S ############   ###IIIIIS  ####################              ',
-      '        ###########       ################################              ',
-      '        ###########!      ################################              ',
-      '        ##################################################              ',
-      '        ##################################################              ',
-      '        ##################################################              ',
-      ' ? n  S ##################################################^^^^^^   l k  ',
-      '########################################################################',
-      '########################################################################',
-      '########################################################################',
-      '########################################################################',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                                ##            ',
+      '                                   ?            ##            ',
+      '                                #############XXX##            ',
+      '                                #                             ',
+      ' ?  n  l         F ?          ###!                    l   k   ',
+      '###########XXXX#######XXXXX###################################',
+      '###########    #######^^^^^###################################',
+      '##############################################################',
+      '##############################################################',
     ],
   ],
 }
