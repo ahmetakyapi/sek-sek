@@ -35,6 +35,12 @@ describe('bölüm verisi', () => {
     expect(xs).toEqual([...xs].sort((a, b) => a - b))
   })
 
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: iki bayrak yan yana durmaz (en az 12 karo arayla)', (_n, l) => {
+    // parça birleşiminde (biri bayrakla biter, öteki bayrakla başlar) yan yana iki bayrak çıkıyordu (Adana)
+    const xs = new World(l).checkpoints.map((c) => c.x / 16)
+    for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(12)
+  })
+
   it('il plakaları doğru', () => {
     expect(LEVELS.map((l) => [l.name, l.plate])).toEqual([
       ['İstanbul', 34],

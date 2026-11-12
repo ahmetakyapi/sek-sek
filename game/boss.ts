@@ -79,6 +79,8 @@ export interface Boss extends Box {
   floor: number
   /** yerin altındayken görünmez ve dokunulmaz */
   hidden: boolean
+  /** yorgunluğun toplam süresi (sn): başındaki geri sayım buna göre boşalır */
+  span?: number
   home: { x: number; y: number }
 }
 
@@ -153,6 +155,7 @@ function begin(b: Boss, host: BossHost) {
 function tire(b: Boss) {
   b.state = 'tired'
   b.timer = BOSS.tired[b.move] / (1 + 0.06 * (b.def.hp - b.hp))
+  b.span = b.timer
   b.vx = 0
   b.vy = 0
   b.y = b.floor - b.h

@@ -15,6 +15,7 @@
     "verify:reach": "tsx scripts/audit-reach.ts",
     "verify:enemies": "tsx scripts/verify-enemies.ts",
     "verify:frames": "node scripts/verify-frames.cjs",
+    "verify:perf": "node scripts/verify-perf.cjs",
     "verify:all": "bash scripts/verify-all.sh",
     "preview": "node scripts/preview.cjs",
     "sheet": "node scripts/art/sheet.cjs",

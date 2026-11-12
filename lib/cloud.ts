@@ -1,6 +1,6 @@
 'use client'
 
-import { cloudPart, mergeSaves, normalizeSave, type Player, type Save } from '@/lib/storage'
+import { adoptable, cloudPart, mergeSaves, normalizeSave, type Player, type Save } from '@/lib/storage'
 
 /**
  * Bulut kaydı (istemci): giriş yapan oyuncunun ilerlemesi hesabında da durur.
@@ -39,7 +39,9 @@ export async function pullMerge(local: Save): Promise<Save | null> {
     const r = await fetch('/api/players/save', { cache: 'no-store', headers: auth(local.player) })
     if (!r.ok) return null
     const j = (await r.json()) as { data: Partial<Save> | null }
-    return j.data ? mergeSaves(local, normalizeSave({ ...j.data, accountVersion: 2 })) : local
+    // asıl kayıt veritabanı: yereldeki başka bir hesabın ilerlemesi karışmaz (misafirinki hesaba aktarılır)
+    const mine = adoptable(local, local.player.id)
+    return j.data ? mergeSaves(mine, normalizeSave({ ...j.data, accountVersion: 2 })) : mine
   } catch {
     return null
   }

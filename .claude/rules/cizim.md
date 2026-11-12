@@ -21,6 +21,8 @@ paths:
   eklersen ikisine de ekle, yoksa yüksek tazeleme hızında titrer.
 - Çizimde her şey saate bağlıdır: kare başına `Math.random()` titremesi ya da `Math.random() < p` yok (`shakeOffset`,
   `this.chance(p)`); pahalı çizim kare içinde tek seferde yapılmaz, önbelleğe bütçeyle önceden çizilir (CLAUDE.md "Akıcılık").
+- Tuval piksel bütçesiyle çizilir (`backingDpr`, `PIXEL_BUDGET`); yeni tam ekran katman, `filter` ya da büyük gölge eklemeden
+  önce `node scripts/verify-perf.cjs` ile ölç (üretim derlemesinde).
 - Yeni piksel sprite ekleme: karakter, insan, boss, zemin, düşman, dost hayvan ve toplananlar vektördür
   (`heroDraw`, `bossDraw`, `terrainDraw`, `enemyDraw`). Piksel kalan yalnız arka plan katmanları ve sokak süsleridir.
 - Düşman kırmızı haleyle çizilir (iki geçiş: önce kalın kırmızı hat), dost hayvanda hale yoktur; ikisi karışmasın.

@@ -50,8 +50,8 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
 components/      React arayüzü: Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, Boss Rush), About (artbook), Bestiary, HUD, dokunmatik
 lib/             storage (kayıt + harita sürümü), extras (atkı renkleri, Günün Şehri, Haftanın Görevi), scoreKey (skor tablosu harita sürümüne bağlı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
-scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-frames (tarayıcıda 3x çözünürlükte dash hızında kayarken zemin hücresi hazır mı; kasma kanıtı), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
-tests/           sim.test.ts (fizik, mekanik, final), camera.test.ts (60-240 Hz'de aynı kamera, titremesiz dash), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları), music.test.ts (besteler)
+scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-frames (tarayıcıda 3x çözünürlükte dash hızında kayarken zemin hücresi hazır mı; kasma kanıtı), verify-perf (üretim derlemesinde gerçek oynanışta kare kaçırma; performans kanıtı), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
+tests/           sim.test.ts (fizik, mekanik, final), camera.test.ts (60-240 Hz'de aynı kamera, titremesiz dash), perf.test.ts (tuval piksel bütçesi), bubble.test.ts (baloncuk karakterin üstüne binmez), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları), music.test.ts (besteler)
 ```
 
 ## Ajanla çalışma
@@ -176,9 +176,15 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
 - **Kare içinde ağır iş yok.** 120 Hz'de bütün kare 8 ms'dir. Pahalı çizim (zemin) önceden, küçük parçalar hâlinde ve
   süre bütçesiyle yapılır (`terrainDraw.ts` WARM_MS). Yeni önbellekli çizim eklersen aynı yolu izle.
 - **Hareketli her şey ara değerlenir** (`capture()` / `blend()`), yoksa yüksek Hz'de titrer.
-- **Kanıt:** `tests/camera.test.ts` (döngüyü 60-240 Hz'de koşar: dash'te ekranda geri tepme yok, her Hz'de aynı yol) ve
-  `node scripts/verify-frames.cjs` (geliştirme sunucusu açıkken; hazır olmayan zemin hücresi 0 olmalı). Kamera, çizim
-  döngüsü ya da zemin önbelleğine dokunduysan ikisini de koş.
+- **Piksel bütçesi.** Tuval ekranın tam yoğunluğunda değil, `backingDpr()` ile kare başına en çok `PIXEL_BUDGET`
+  (~2,6 Mpx, aşağı yukarı 1080p) çizilir. Kasmanın asıl nedeni JavaScript değil boyamaydı (profilin %85'i): Retina, 4K ve DPR 3
+  telefonda 5-8 Mpx çizmek kare kaçırtıyordu. Tuvali büyütecek, kare başına yeni tam ekran katman ya da `filter` / büyük
+  gölge ekleyecek değişiklikten önce ölç. Tuval `imageRendering: pixelated` olmaz (tam sayı olmayan ölçekte titrer).
+- **Kanıt:** `tests/camera.test.ts` (döngüyü 60-240 Hz'de koşar: dash'te ekranda geri tepme yok, her Hz'de aynı yol),
+  `tests/perf.test.ts` (bilinen ekranlarda piksel bütçesi), `node scripts/verify-frames.cjs` (geliştirme sunucusu açıkken;
+  hazır olmayan zemin hücresi 0 olmalı) ve `node scripts/verify-perf.cjs` (üretim sunucusunda gerçek oynanış: karelerin
+  en çok %2'si 25 ms'yi aşar, p95 ≤ 20 ms). Kamera, çizim, tuval ya da zemin önbelleğine dokunduysan hepsini koş;
+  geliştirme modunda ölçme (React geliştirme modu yavaştır, yanıltır).
 
 ## Yayın
 

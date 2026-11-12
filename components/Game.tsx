@@ -29,7 +29,7 @@ import { CHALLENGE_TEXT, SCARVES, completes, dailyChallenge, scarfFor, weeklyCha
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
-import { defaultSave, formatTime, loadSave, mergeSaves, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
+import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
 const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
@@ -514,8 +514,9 @@ export default function Game() {
         }
         pulledFor.current = playerId
         setSave((cur) => {
-          // çekme sürerken yerelde ilerleme olduysa o da korunur; cihaz ayarları yerelde kalır
-          const next = mergeSaves(cur, merged)
+          // çekme sürerken yerelde ilerleme olduysa o da korunur; cihaz ayarları yerelde kalır. Bundan sonra
+          // bu tarayıcıdaki ilerleme bu hesabındır
+          const next = { ...mergeSaves(adoptable(cur, playerId), merged), owner: playerId }
           writeSave(next)
           setResumeIdx((r) => Math.max(r, Math.min(next.unlocked, LEVELS.length - 1)))
           void pushSave(next)
@@ -652,6 +653,12 @@ export default function Game() {
     if (screen === 'map' || screen === 'title') rushRef.current = null
   }, [screen])
 
+  // oyundaki karakter her an kayıttakini izler: kayıt hangi yoldan değişirse değişsin (seçim, bulut birleşmesi, giriş)
+  // oyunda çizilen ile bölüm sonu, portre ve kartpostalda görünen hep aynı kişidir
+  useEffect(() => {
+    if (rendererRef.current) rendererRef.current.character = CHARACTERS[save.character ?? 'uktun']
+  }, [save.character, ready])
+
   // atkı rengi: karakterin kendi atkısı (al) dışındaki seçim çizime bildirilir
   useEffect(() => {
     if (!rendererRef.current) return
@@ -683,7 +690,6 @@ export default function Game() {
     ui()
     const next = { ...save, character: id }
     persist(next)
-    if (rendererRef.current) rendererRef.current.character = CHARACTERS[id]
     if (pickThenPlayRef.current && isFresh(next)) {
       pickThenPlayRef.current = false
       return firstPlay()
@@ -697,7 +703,9 @@ export default function Game() {
 
   const signOut = async () => {
     const p = save.player
-    persist({ ...save, player: null, skippedName: true })
+    // ilerleme hesapta (veritabanında) kalır; tarayıcıdan silinir ki bu cihazı kullanan bir sonraki kişiye geçmesin
+    persist({ ...clearProgress(save), player: null, skippedName: true })
+    setResumeIdx(0)
     setScreen('title')
     if (p) await fetch('/api/players', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, token: p.token }) }).catch(() => {})
   }
@@ -1038,7 +1046,7 @@ export default function Game() {
               </div>
               <div className="short:col-start-1 short:row-start-2">
                 <p className="text-[15px] leading-relaxed text-cream/85 short:text-[14px] short:leading-snug">{t("Gezgin’in yarım kalmış defterini tamamla.")}</p>
-                <p className="text-[14px] leading-relaxed text-muted short:hidden">{lang === 'en' ? `${LEVELS.length} cities. ${LEVELS.length * 3} keepsakes. One journey.` : `${trCount(LEVELS.length)} şehir. ${trCount(LEVELS.length * 3)} hatıra. Tek yolculuk.`}</p>
+                <p className="hidden text-[14px] leading-relaxed text-muted sm:block short:hidden">{lang === 'en' ? `${LEVELS.length} cities. ${LEVELS.length * 3} keepsakes. One journey.` : `${trCount(LEVELS.length)} şehir. ${trCount(LEVELS.length * 3)} hatıra. Tek yolculuk.`}</p>
               </div>
               <button className="pixel-btn primary mt-4 w-full justify-center text-base sm:mt-5 short:col-start-1 short:row-start-3 short:mt-3" onClick={startJourney} autoFocus>
                 ▶ {save.unlocked > 0 || resumeIdx > 0 ? t('Devam Et: {city}', { city: LEVELS[resumeIdx].name }) : t('Yolculuğa Başla')}
@@ -1086,22 +1094,32 @@ export default function Game() {
                 </div>
               </div>
               <div className="mt-3 grid gap-2 border-t-2 border-line pt-2.5 text-[12px] text-muted sm:mt-4 sm:pt-3 short:col-start-1 short:row-start-4 short:mt-3 short:self-end">
+                {!save.player && (
+                  // misafir: hesap çağrısı belirgin bir kart (küçük bir bağlantı değil); ilerlemesi varsa kaybolabileceği söylenir
+                  <div className="flex items-center justify-between gap-3 bg-[#2a2236] px-3 py-2 [box-shadow:inset_0_0_0_2px_#d9a441]">
+                    <span className="min-w-0 leading-snug">
+                      <span className="block text-[12px] font-semibold text-cream sm:text-[13px]">
+                        <span className="text-gold">☁</span> {save.unlocked > 0 || Object.keys(save.best).length > 0 ? t('İlerlemen yalnız bu tarayıcıda') : t('Hesabınla her cihazdan devam et')}
+                      </span>
+                      <span className="hidden text-[12px] text-muted sm:block short:hidden">{t('Hesap aç, defterin hiç kaybolmasın.')}</span>
+                    </span>
+                    <button className="pixel-btn primary shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px]" onClick={() => (ui(), setScreen('name'))}>
+                      <span className="sm:hidden">{t('Giriş Yap')}</span>
+                      <span className="hidden sm:inline">{t('Giriş Yap / Üye Ol')}</span>
+                    </button>
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                  <button className="flex items-center gap-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('name'))}>
-                    <span className="text-gold">◆</span>
-                    {save.player ? (
+                  {save.player ? (
+                    <button className="flex items-center gap-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('name'))}>
+                      <span className="text-gold">◆</span>
                       <span>
                         {t("Hesap:")} <strong className="font-semibold text-cream">{save.player.name}</strong> <span className="text-[#7ad88a]">· {t('İlerleme Hesabında')}</span>
                       </span>
-                    ) : save.unlocked > 0 || Object.keys(save.best).length > 0 ? (
-                      // misafir: ilerlemesi yalnız bu tarayıcıda; tarayıcı silerse gider
-                      <span>
-                        <span className="text-cream">{t('İlerlemeni Hesabına Kaydet')}</span> <span>· {t('şu an yalnız bu tarayıcıda')}</span>
-                      </span>
-                    ) : (
-                      t('Üye Ol ya da Giriş Yap')
-                    )}
-                  </button>
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                   <span className="flex items-center gap-3 tabular-nums">
                     <span>
                       {t("Hatıra")} <strong className="text-cream">{totalFound}</strong>/{LEVELS.length * 3}

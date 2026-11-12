@@ -77,6 +77,11 @@ export interface Save {
   migrated?: boolean
   /** hesap sürümü: 2 = kullanıcı adı + şifre; eski şifresiz kimlikler geçersiz */
   accountVersion?: number
+  /**
+   * Bu tarayıcıdaki ilerlemenin sahibi: hesabın kimliği, ya da null (misafir ilerlemesi). Asıl kayıt veritabanıdır;
+   * başka bir hesaba ait ilerleme yeni girişe karışmaz, misafir ilerlemesi ilk girişte hesaba aktarılır.
+   */
+  owner?: string | null
 }
 
 const KEY = 'seksek:v1'
@@ -185,6 +190,16 @@ export const needsMapNotice = (s: Save) => s.mapVersion < MAP_VERSION && (s.unlo
 
 /** Baştan başla: ilerleme sıfırlanır; ad, karakter ve ayarlar kalır */
 export const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, bosses: {}, rush: null, mapVersion: MAP_VERSION, migrated: false })
+
+/** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null })
+
+/** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
+export function adoptable(local: Save, playerId: string): Save {
+  // sahip bilgisinden önceki kayıt: girişliyse o hesabın, değilse misafirin sayılır
+  const owner = local.owner === undefined ? (local.player?.id ?? null) : local.owner
+  return owner === null || owner === playerId ? local : clearProgress(local)
+}
 
 export function writeSave(s: Save) {
   try {

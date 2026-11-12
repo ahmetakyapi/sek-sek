@@ -54,5 +54,12 @@ if curl -s -o /dev/null "http://localhost:${PORT:-3100}"; then
 else
   echo "▸ kare akıcılığı atlandı: geliştirme sunucusu yok (npm run dev -- -p 3100)"
 fi
+# performans (üretim derlemesinde gerçek oynanış): üretim sunucusu açıksa koşar (npm run build && npx next start -p 3200)
+if curl -s -o /dev/null "http://localhost:${PERF_PORT:-3200}"; then
+  echo "▸ performans"
+  node scripts/verify-perf.cjs "${cities[@]:0:2}" --port="${PERF_PORT:-3200}" || fail=1
+else
+  echo "▸ performans atlandı: üretim sunucusu yok (npm run build && npx next start -p 3200)"
+fi
 [ $fail -eq 0 ] && echo "TEMİZ" || echo "SORUN VAR: $OUT/<şehir>.log"
 exit $fail

@@ -112,7 +112,7 @@ export class Renderer {
   resize(cssW: number, cssH: number, deviceDpr: number) {
     // Piksel bütçesi: kare başına en çok ~2,6 milyon piksel çizilir (aşağı yukarı 1080p). Retina, 4K ve DPR 3 telefonlarda
     // tuval ekranın tam yoğunluğunda çizilince boyama yükü 2-3 katına çıkıyor, kare kaçıyordu; tarayıcı ölçekler
-    const dpr = Math.max(1, Math.min(deviceDpr, Math.sqrt(PIXEL_BUDGET / Math.max(1, cssW * cssH))))
+    const dpr = backingDpr(cssW, cssH, deviceDpr)
     this.dpr = dpr
     const devW = Math.round(cssW * dpr)
     const devH = Math.round(cssH * dpr)
@@ -2130,15 +2130,35 @@ export class Renderer {
       c.textAlign = 'center'
       c.textBaseline = 'middle'
       const now = this.lang === 'en' ? 'Stomp Now!' : 'Şimdi Bas!'
-      c.strokeText(now, x, ay - sc * 8)
-      c.fillText(now, x, ay - sc * 8)
+      // yazı ve geri sayım sabit durur (okunsun), yalnız ok zıplar
+      const ty = top - sc * 25
+      c.strokeText(now, x, ty)
+      c.fillText(now, x, ty)
+      // geri sayım: üstüne basabileceğin süre boşalan çubuk ve kalan saniye; azaldıkça sarıdan kırmızıya döner
+      const left = Math.max(0, b.timer)
+      const k = b.span ? Math.min(1, left / b.span) : 1
+      const bw = sc * 24
+      const bh = sc * 3.2
+      const bx = x - bw / 2 - sc * 4
+      const by = top - sc * 20.5
+      c.fillStyle = '#22161f'
+      c.fillRect(bx - sc * 0.6, by - sc * 0.6, bw + sc * 1.2, bh + sc * 1.2)
+      c.fillStyle = k > 0.5 ? '#ffd36a' : k > 0.25 ? '#ff9a4a' : '#ff5a4a'
+      c.fillRect(bx, by, bw * k, bh)
+      c.font = `700 ${Math.round(sc * 6)}px ${this.popFont()}`
+      c.textAlign = 'left'
+      c.lineWidth = Math.max(2, sc * 1)
+      const sec = left.toFixed(1)
+      c.strokeText(sec, bx + bw + sc * 2, by + bh / 2)
+      c.fillStyle = k > 0.25 ? '#ffd36a' : '#ff5a4a'
+      c.fillText(sec, bx + bw + sc * 2, by + bh / 2)
       c.restore()
     }
     const s = this.bossSay
     if (s && this.t - s.at < s.hold && !b.hidden) {
       const age = this.t - s.at
       const k = Math.min(1, age / 0.12) * Math.min(1, (s.hold - age) / 0.15)
-      const up = b.state === 'tired' ? sc * 27 : this.t - this.bossWoke < 3 ? sc * 15 : sc * 6
+      const up = b.state === 'tired' ? sc * 32 : this.t - this.bossWoke < 3 ? sc * 15 : sc * 6
       this.bubble(s.text, x + b.w * sc * 0.25, top - up, k)
     }
   }
@@ -2467,8 +2487,17 @@ export function placeBubble(
   return [bx, by]
 }
 
-/** kare başına çizilecek en çok piksel (tuvalin arka çözünürlüğü) */
-const PIXEL_BUDGET = 2_600_000
+/** kare başına çizilecek en çok piksel (tuvalin arka çözünürlüğü): aşağı yukarı 1080p */
+export const PIXEL_BUDGET = 2_600_000
+
+/**
+ * Tuvalin arka çözünürlük oranı: ekranın yoğunluğu (deviceDpr) ama kare başına PIXEL_BUDGET'ı aşmadan, en az 1.
+ * Retina, 4K ve DPR 3 telefonlarda tam yoğunlukta çizmek boyama yükünü 2-3 katına çıkarıp kare kaçırtıyordu.
+ * Kanıt: tests/perf.test.ts (bilinen ekranlar) ve scripts/verify-perf.cjs (üretim derlemesinde kare kaçırma).
+ */
+export function backingDpr(cssW: number, cssH: number, deviceDpr: number) {
+  return Math.max(1, Math.min(deviceDpr, Math.sqrt(PIXEL_BUDGET / Math.max(1, cssW * cssH))))
+}
 
 /** karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar) */
 const HERO_SIZE = 29
