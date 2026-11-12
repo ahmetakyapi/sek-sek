@@ -73,6 +73,8 @@ export class Renderer {
   viewH = 180
   camX = 0
   camY = 0
+  /** kameranın dikeyde baktığı basılan yükseklik (havadayken sabit kalır) */
+  private camFeet: number | undefined = undefined
   private t = 0
   character: CharacterDef = CHARACTERS.uktun
   /** oyuncunun seçtiği atkı rengi (yoksa karakterin kendi atkısı) */
@@ -182,6 +184,7 @@ export class Renderer {
     const p = world.player
     this.camX = p.x - this.viewW / 2
     this.camY = p.y - this.viewH / 2
+    this.camFeet = undefined
     this.clampCam(world)
   }
 
@@ -409,8 +412,9 @@ export class Renderer {
     const s = CITY[this.city]
 
     // kamera: saate bağlı (game/camera.ts), kare hızından bağımsız
-    const cam = { x: this.camX, y: this.camY }
+    const cam = { x: this.camX, y: this.camY, feet: this.camFeet }
     stepCamera(w, cam, dt, this.viewW, this.viewH)
+    this.camFeet = cam.feet
     this.camX = cam.x
     this.camY = cam.y
     this.shake = Math.max(0, this.shake - dt * 18)
@@ -2313,9 +2317,9 @@ export class Renderer {
       ay = s.y - 1
     }
     // baloncuk karakterin başına da binmesin: ikisinin de üstünde açılır
-    const hero = w.player.y + w.player.h - HERO_SIZE - 3
-    const lift = Math.max(0, ay - hero)
-    ay = Math.min(ay, hero)
+    const heroTop = w.player.y + w.player.h - HERO_SIZE - 3
+    const lift = Math.max(0, ay - heroTop)
+    ay = Math.min(ay, heroTop)
     const key = `${d.kind}:${d.text}`
     if (key !== this.dlgKey) {
       this.dlgKey = key
@@ -2356,9 +2360,10 @@ export class Renderer {
     const tipY = (ay - cy) * sc
     // kuyruk konuşana dek uzar (tabela alçaksa karakterin yanından iner)
     const reach = lift * sc
-    const bx = Math.max(12 * u, Math.min(W - bw - 12 * u, tipX - bw * 0.4))
-    // üstte HUD'a binmesin
-    const by = Math.max(64 * u, tipY - tail - bh)
+    // karakterin ekrandaki kutusu (baş dahil): baloncuk buna hiçbir durumda binmez
+    const pl = w.player
+    const hero = { x0: (pl.x - 4 - cx) * sc, x1: (pl.x + pl.w + 4 - cx) * sc, y0: (pl.y + pl.h - HERO_SIZE - 4 - cy) * sc, y1: (pl.y + pl.h - cy) * sc }
+    const [bx, by] = placeBubble({ tipX, tipY, bw, bh, tail, W, H: this.canvas.height, top: 64 * u, edge: 12 * u, gap: 8 * u }, hero)
     const k = Math.min(1, (this.t - this.dlgAt) / 0.16)
     const sign = d.kind === 'sign'
     const fill = sign ? '#3a2a1e' : '#fffaf0'
@@ -2378,7 +2383,7 @@ export class Renderer {
     const tx = Math.max(bx + 14 * u, Math.min(bx + bw - 14 * u, tipX))
     c.beginPath()
     c.roundRect(bx, by, bw, bh, 7 * u)
-    if (tipY - tail > by + bh) {
+    if (tipY - tail > by + bh && tipX > bx && tipX < bx + bw) {
       c.moveTo(tx - 6 * u, by + bh - 1)
       c.lineTo(tipX, tipY + Math.min(reach, 4 * u))
       c.lineTo(tx + 6 * u, by + bh - 1)
@@ -2434,6 +2439,29 @@ export class Renderer {
     c.textBaseline = 'middle'
     c.fillText(label, x, y - sc * 1.5)
   }
+}
+
+/**
+ * Konuşma baloncuğunun yeri (ekran pikseli): önce konuşanın üstüne (kuyruğu ona dönük), ekrandan ve üstteki HUD'dan
+ * taşmadan. Böyle yerleşince karakterin kutusuyla çakışıyorsa (yukarıda yer yok) karakterin yanına, boş tarafa geçer.
+ */
+export function placeBubble(
+  o: { tipX: number; tipY: number; bw: number; bh: number; tail: number; W: number; H: number; top: number; edge: number; gap: number },
+  hero: { x0: number; y0: number; x1: number; y1: number },
+): [number, number] {
+  const clampX = (x: number) => Math.max(o.edge, Math.min(o.W - o.bw - o.edge, x))
+  let bx = clampX(o.tipX - o.bw * 0.4)
+  let by = Math.max(o.top, o.tipY - o.tail - o.bh)
+  const hits = (x: number, y: number) => x < hero.x1 && x + o.bw > hero.x0 && y < hero.y1 && y + o.bh > hero.y0
+  if (hits(bx, by)) {
+    // yanına: sağda yer varsa sağa, yoksa sola; baş hizasında
+    const right = o.W - o.edge - (hero.x1 + o.gap)
+    bx = right >= o.bw ? hero.x1 + o.gap : clampX(hero.x0 - o.gap - o.bw)
+    by = Math.max(o.top, Math.min(o.H - o.bh - o.edge, hero.y0))
+    // iki yanda da yer yoksa (çok dar ekran) karakterin altına
+    if (hits(bx, by)) by = Math.min(o.H - o.bh - o.edge, hero.y1 + o.gap)
+  }
+  return [bx, by]
 }
 
 /** karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar) */

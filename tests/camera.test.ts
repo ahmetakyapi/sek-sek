@@ -92,6 +92,42 @@ describe('kamera kare hızından bağımsız', () => {
     }
   })
 
+  it('zıplarken kamera dikeyde sallanmaz, yüksek yere çıkınca yeni yüksekliği izler', () => {
+    const w = new World(LEVELS[0])
+    const vw = 427
+    const vh = 240
+    const cam: { x: number; y: number; feet?: number } = { x: w.player.x - vw / 2, y: w.player.y - vh / 2 }
+    const tick = (inp = {}) => {
+      w.step(STEP, { ...emptyInput(), ...inp })
+      stepCamera(w, cam, STEP, vw, vh)
+    }
+    for (let i = 0; i < 240; i++) tick()
+    const y0 = cam.y
+    let most = 0
+    for (let i = 0; i < 120; i++) {
+      tick({ jump: true, jumpPressed: i === 0 })
+      most = Math.max(most, Math.abs(cam.y - y0))
+    }
+    expect(most).toBeLessThan(2)
+    // yüksek bir taşa çıkınca (ayak hizası 6 karo yukarı) kamera da yukarı kayar
+    const map = [...Array(14)].map(() => ' '.repeat(40)).concat(['                 ##########      ', '                 ##########      ', '                 ##########      ', '                 ##########      ', '                 ##########      ', '                 ##########      ', ' P               ##########      ', '########################', '########################', '########################'].map((r) => r.padEnd(40, '#')))
+    const h = new World({ ...LEVELS[0], map })
+    const hc: { x: number; y: number; feet?: number } = { x: 0, y: 0 }
+    for (let i = 0; i < 240; i++) {
+      h.step(STEP, emptyInput())
+      stepCamera(h, hc, STEP, vw, vh)
+    }
+    const low = hc.y
+    h.player.x = 20 * 16
+    h.player.y = 14 * 16 - h.player.h
+    for (let i = 0; i < 360; i++) {
+      h.step(STEP, emptyInput())
+      stepCamera(h, hc, STEP, vw, vh)
+    }
+    expect(h.player.grounded).toBe(true)
+    expect(low - hc.y).toBeGreaterThan(50)
+  })
+
   it('sarsıntı rastgele değil, zamana bağlı ve yumuşak', () => {
     // 240 Hz'de ardışık iki kare arası sarsıntı farkı küçük kalmalı (her karede rastgele sıçrama yok)
     let prev = shakeOffset(0, 1.5)
