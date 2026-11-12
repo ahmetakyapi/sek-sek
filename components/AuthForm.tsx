@@ -10,7 +10,7 @@ const field =
   'w-full min-w-0 bg-ink px-3 py-2.5 text-cream outline-none [box-shadow:0_-2px_0_0_#3d3550,0_2px_0_0_#3d3550,-2px_0_0_0_#3d3550,2px_0_0_0_#3d3550] focus:[box-shadow:0_-2px_0_0_#f2c14e,0_2px_0_0_#f2c14e,-2px_0_0_0_#f2c14e,2px_0_0_0_#f2c14e]'
 
 /** Üye ol / giriş yap: kullanıcı adı + şifre. Oturum anahtarı cihazda kalır, tekrar giriş gerekmez. */
-export default function AuthForm({ onDone, suggestion = '', autoFocus = true }: { onDone: (p: Player) => void; suggestion?: string; autoFocus?: boolean }) {
+export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = true }: { onDone: (p: Player) => void; onMode?: (m: 'signup' | 'login') => void; suggestion?: string; autoFocus?: boolean }) {
   const t = useT()
   const [mode, setMode] = useState<'signup' | 'login'>('signup')
   const [name, setName] = useState('')
@@ -80,9 +80,20 @@ export default function AuthForm({ onDone, suggestion = '', autoFocus = true }: 
 
   return (
     <form onSubmit={submit} className="grid gap-3">
-      <div className="grid grid-cols-2 gap-1.5" role="tablist">
+      {/* tek parça sekme çubuğu: iki iri düğme yerine */}
+      <div className="grid grid-cols-2 bg-ink/60 p-1 [box-shadow:inset_0_0_0_2px_#3d3550]" role="tablist">
         {(['signup', 'login'] as const).map((m) => (
-          <button key={m} type="button" role="tab" aria-selected={mode === m} className={`pixel-btn justify-center py-2 text-sm ${mode === m ? 'primary' : ''}`} onClick={() => setMode(m)}>
+          <button
+            key={m}
+            type="button"
+            role="tab"
+            aria-selected={mode === m}
+            className={`py-1.5 text-sm font-semibold transition-colors ${mode === m ? 'bg-accent text-ink' : 'text-muted hover:text-cream'}`}
+            onClick={() => {
+              setMode(m)
+              onMode?.(m)
+            }}
+          >
             {m === 'signup' ? t('Üye Ol') : t('Giriş Yap')}
           </button>
         ))}
@@ -101,7 +112,12 @@ export default function AuthForm({ onDone, suggestion = '', autoFocus = true }: 
           placeholder={suggestion || t('Adın')}
           className={`${field} font-display text-xl`}
         />
-        {nameHint && <span className={`text-[12px] ${avail === 'free' ? 'text-gold' : avail === 'taken' ? 'text-accent-2' : 'text-muted'}`} aria-live="polite">{nameHint}</span>}
+        {/* varsayılan açıklama yalnız geniş ekranda; telefonda yalnız durum (boşta, alınmış, geçersiz) görünür: form ekrana sığsın */}
+        {nameHint && (
+          <span className={`text-[12px] ${avail === 'free' ? 'text-gold' : avail === 'taken' ? 'text-accent-2' : 'text-muted'} ${avail === 'idle' ? 'hidden sm:inline short:hidden' : ''}`} aria-live="polite">
+            {nameHint}
+          </span>
+        )}
       </label>
       <label className="grid gap-1">
         <span className="text-[11px] font-bold tracking-[0.2em] text-muted">{t('ŞİFRE')}</span>
@@ -113,13 +129,14 @@ export default function AuthForm({ onDone, suggestion = '', autoFocus = true }: 
             maxLength={64}
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             enterKeyHint="go"
-            className={`${field} text-base`}
+            placeholder={mode === 'signup' ? t('En az 6 karakter') : ''}
+            className={`${field} text-base placeholder:text-muted/70`}
           />
           <button type="button" className="pixel-btn shrink-0 px-3 text-[12px]" onClick={() => setShow((v) => !v)} aria-pressed={show}>
             {show ? t('Gizle') : t('Göster')}
           </button>
         </span>
-        {mode === 'signup' && <span className={`text-[12px] ${password && !passOk ? 'text-accent-2' : 'text-muted'}`}>{t('En az 6 karakter.')}</span>}
+        {mode === 'signup' && password && !passOk && <span className="text-[12px] text-accent-2">{t('En az 6 karakter.')}</span>}
       </label>
       {err && (
         <p className="text-[12px] text-accent-2" aria-live="polite">

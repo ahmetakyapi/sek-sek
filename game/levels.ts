@@ -1121,7 +1121,7 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Kız Kulesi', text: 'Kız Kulesi, Boğaz’ın girişinde küçük bir adacığın üzerindedir. Yüzyıllar boyunca deniz feneri ve gözetleme kulesi olarak kullanıldı.' },
     hints: [
       '← → ile yürü, ↑ ya da ZIPLA ile atla. Uzun basılı tutarsan daha yükseğe çıkarsın.',
-      'Boğaz’ın suyu soğuk, düşme! Martıların üstüne basarak onları uzaklaştırabilirsin.',
+      'Boğaz’ın suyu soğuk, düşme! Gökçekuşların üstüne basarak onları uzaklaştırabilirsin.',
       'Bayrağa dokun: düşersen buradan devam edersin. İnce platformların altından geçip üstüne zıplayabilirsin.',
       'İskele: hareketli platforma bin, suyun üstünden geç.',
       'DASH (Boşluk / X): havadayken bir kez hızla fırla. Yere değince yenilenir. Zıpla, sonra dash at!',
@@ -1270,7 +1270,7 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Efes', text: 'İzmir’in Selçuk ilçesindeki Efes Antik Kenti 2015’te UNESCO Dünya Mirası Listesi’ne alındı.' },
     hints: [
       'Kordon’da yengeçler dolaşır. Üstlerine zıpla ya da dash atarak geç.',
-      'Körfez vapuru: hareketli iskeleye bin, martılara dikkat.',
+      'Körfez vapuru: hareketli iskeleye bin, gökçekuşlara dikkat.',
       'Tarihi Asansör: platforma bin, Karataş’a çık.',
     ],
     map: izmir,
@@ -1683,7 +1683,7 @@ export const LEVELS: LevelDef[] = [
       'Horon halkası: oyuncular hep birlikte zıplar. Ellerinin üstüne bin, en tepede bir üst terasa atla.',
       'Sümela’nın kayalığı: çatlak taşlar dağılır, duvara yaslanıp tırman. Anahtar manastırın önünde.',
       'Düğün meydanı: koçari halkası ağır ağır yere vurur, tepede uzun durur. Sofraya çıkmak için zamanla.',
-      'Uzungöl: kayıktan kayığa geç, martılara dikkat.',
+      'Uzungöl: kayıktan kayığa geç, gökçekuşlara dikkat.',
     ],
     map: trabzon,
   },

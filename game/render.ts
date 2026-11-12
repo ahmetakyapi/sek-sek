@@ -109,7 +109,10 @@ export class Renderer {
     this.f = this.fbuf.getContext('2d')!
   }
 
-  resize(cssW: number, cssH: number, dpr: number) {
+  resize(cssW: number, cssH: number, deviceDpr: number) {
+    // Piksel bütçesi: kare başına en çok ~2,6 milyon piksel çizilir (aşağı yukarı 1080p). Retina, 4K ve DPR 3 telefonlarda
+    // tuval ekranın tam yoğunluğunda çizilince boyama yükü 2-3 katına çıkıyor, kare kaçıyordu; tarayıcı ölçekler
+    const dpr = Math.max(1, Math.min(deviceDpr, Math.sqrt(PIXEL_BUDGET / Math.max(1, cssW * cssH))))
     this.dpr = dpr
     const devW = Math.round(cssW * dpr)
     const devH = Math.round(cssH * dpr)
@@ -2463,6 +2466,9 @@ export function placeBubble(
   }
   return [bx, by]
 }
+
+/** kare başına çizilecek en çok piksel (tuvalin arka çözünürlüğü) */
+const PIXEL_BUDGET = 2_600_000
 
 /** karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar) */
 const HERO_SIZE = 29

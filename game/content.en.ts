@@ -247,7 +247,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
       'The horon line: the dancers jump together. Stand on their joined hands and leap to the next terrace at the top.',
       'The Sümela cliff: cracked stones crumble, press against the wall to climb. The key is in front of the monastery.',
       'The wedding square: the koçari line stomps slowly and stays up longer. Time it to reach the table.',
-      'Uzungöl: hop from boat to boat and watch out for the gulls.',
+      'Uzungöl: hop from boat to boat and watch out for the Gökçekuş birds.',
     ],
     npcs: [
       { name: 'Uncle Cemal the Kemençe Player', text: 'The kemençe has only three strings but never runs out of things to say, my lad! Now let me play “Taşacak Bu Deniz” so the dancers jump; jump too when you are at the top.' },
@@ -281,7 +281,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     },
     hints: [
       'Walk with ← →, jump with ↑ or JUMP. Hold it longer to jump higher.',
-      "The Bosphorus is cold, don't fall in! Stomp on the gulls to chase them off.",
+      "The Bosphorus is cold, don't fall in! Stomp on the Gökçekuş birds to chase them off.",
       'Touch the flag: if you fall, you pick up from here. You can jump up through thin platforms and land on top.',
       'The pier: ride the moving platform across the water.',
       'DASH (Space / X): burst forward once in mid-air. It recharges when you land. Jump, then dash!',
@@ -376,7 +376,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     },
     hints: [
       'Crabs roam the Kordon. Jump on them or dash past.',
-      'The gulf ferry: ride the moving pier, and watch out for gulls.',
+      'The gulf ferry: ride the moving pier, and watch out for the Gökçekuş birds.',
       'Historic Elevator: ride the platform up to Karataş.',
       'Kemeraltı gate: step on the orange plate, the orange blocks vanish and the blue blocks appear.',
     ],
@@ -996,7 +996,7 @@ export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string
 }
 
 export const CREATURE_NAMES_EN: Record<string, string> = {
-  gull: 'Gull', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
+  gull: 'Gökçekuş', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
   hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Wolf',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',
   cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge',

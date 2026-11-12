@@ -150,6 +150,9 @@ export default function Game() {
   const [hud, setHud] = useState<HudState>(EMPTY_HUD)
   const [tutStep, setTutStep] = useState<TutorialStep | null>(null)
   const [cpToast, setCpToast] = useState<{ at: number; text: string } | null>(null)
+  // hesap ekranı: üye ol / giriş sekmesi (başlık ona göre) ve çıkış onayı
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup')
+  const [confirmOut, setConfirmOut] = useState(false)
   const idleRef = useRef(0)
   const [hint, setHint] = useState<string | null>(null)
   const [npc, setNpc] = useState<number>(-1)
@@ -496,12 +499,19 @@ export default function Game() {
   // Bulut kaydı: giriş yapan oyuncunun ilerlemesi buluttakiyle birleşir; birleşmeden önce hiçbir şey buluta yazılmaz
   const pulledFor = useRef<string | null>(null)
   const playerId = save.player?.id ?? null
+  // bulut okunamazsa (ağ, sunucu) 5, 15, 45 sn sonra yeniden denenir; okunmadan buluta yazılmaz (eski ilerleme ezilmesin)
+  const [pullTry, setPullTry] = useState(0)
   useEffect(() => {
     if (!playerId || pulledFor.current === playerId) return
     let live = true
+    let retry: ReturnType<typeof setTimeout> | undefined
     setSave((prev) => {
       void pullMerge(prev).then((merged) => {
-        if (!live || !merged) return
+        if (!live) return
+        if (!merged) {
+          if (pullTry < 3) retry = setTimeout(() => setPullTry((n) => n + 1), [5000, 15000, 45000][pullTry])
+          return
+        }
         pulledFor.current = playerId
         setSave((cur) => {
           // çekme sürerken yerelde ilerleme olduysa o da korunur; cihaz ayarları yerelde kalır
@@ -516,15 +526,41 @@ export default function Game() {
     })
     return () => {
       live = false
+      if (retry) clearTimeout(retry)
     }
-  }, [playerId])
+  }, [playerId, pullTry])
 
-  // her ilerlemede (şehir, süre, pul, nazar, rozet) hesaba yaz; art arda değişiklikler tek istekte toplanır
+  // her ilerlemede hesaba yaz: yeni şehir, süre, pul, nazar ya da rozet hemen; ayar gibi küçük değişiklikler toplanıp
+  // 1,5 sn sonra. Sekme kapanırken ya da arka plana geçerken bekleyen kayıt gönderilir (bölüm biter bitmez kapatan kaybetmez)
+  const lastPushed = useRef('')
+  const pending = useRef<Save | null>(null)
   useEffect(() => {
     if (!save.player || pulledFor.current !== save.player.id) return
-    const id = setTimeout(() => void pushSave(save), 1500)
+    const progress = JSON.stringify([save.unlocked, save.best, save.stamps, save.charms, save.bosses, save.rush])
+    pending.current = save
+    const flush = () => {
+      if (!pending.current) return
+      lastPushed.current = JSON.stringify([pending.current.unlocked, pending.current.best, pending.current.stamps, pending.current.charms, pending.current.bosses, pending.current.rush])
+      void pushSave(pending.current)
+      pending.current = null
+    }
+    if (progress !== lastPushed.current) return flush()
+    const id = setTimeout(flush, 1500)
     return () => clearTimeout(id)
   }, [save])
+  useEffect(() => {
+    const out = () => {
+      if (pending.current) void pushSave(pending.current)
+      pending.current = null
+    }
+    const onHide = () => document.visibilityState === 'hidden' && out()
+    window.addEventListener('pagehide', out)
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      window.removeEventListener('pagehide', out)
+      document.removeEventListener('visibilitychange', onHide)
+    }
+  }, [])
 
   const ui = () => soundRef.current?.sfx('ui')
 
@@ -665,6 +701,25 @@ export default function Game() {
     setScreen('title')
     if (p) await fetch('/api/players', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, token: p.token }) }).catch(() => {})
   }
+
+  /** hesap ekranında misafirin alt şeridi: solda Geri (menüden gelince), sağda Şimdilik Geç ve tek satır not */
+  const guestFooter = (cls: string) => (
+    <div className={`${cls} items-center justify-between gap-3 border-t-2 border-line pt-3`}>
+      {save.seenStory ? (
+        <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+          {t('← Geri')}
+        </button>
+      ) : (
+        <span />
+      )}
+      <span className="text-right text-[12px] leading-snug text-muted">
+        <button className="text-cream underline-offset-4 hover:underline" onClick={() => afterName({ ...save, skippedName: true })}>
+          {t('Şimdilik Geç')}
+        </button>
+        <span className="block">{t('İlerlemen yalnız bu tarayıcıda kalır.')}</span>
+      </span>
+    </div>
+  )
 
   const afterName = (next: Save) => {
     persist(next)
@@ -827,7 +882,7 @@ export default function Game() {
   return (
     <LangProvider value={lang}>
     <div className="game-root">
-      <canvas ref={canvasRef} className="absolute inset-x-0 bottom-0 w-full" style={{ imageRendering: 'pixelated', top: 'env(safe-area-inset-top)', height: 'calc(100% - env(safe-area-inset-top))' }} aria-label={t("Oyun Alanı")} />
+      <canvas ref={canvasRef} className="absolute inset-x-0 bottom-0 w-full" style={{ top: 'env(safe-area-inset-top)', height: 'calc(100% - env(safe-area-inset-top))' }} aria-label={t("Oyun Alanı")} />
 
       {screen === 'play' && (
         <>
@@ -1036,7 +1091,12 @@ export default function Game() {
                     <span className="text-gold">◆</span>
                     {save.player ? (
                       <span>
-                        {t("Hesap:")} <strong className="font-semibold text-cream">{save.player.name}</strong>
+                        {t("Hesap:")} <strong className="font-semibold text-cream">{save.player.name}</strong> <span className="text-[#7ad88a]">· {t('İlerleme Hesabında')}</span>
+                      </span>
+                    ) : save.unlocked > 0 || Object.keys(save.best).length > 0 ? (
+                      // misafir: ilerlemesi yalnız bu tarayıcıda; tarayıcı silerse gider
+                      <span>
+                        <span className="text-cream">{t('İlerlemeni Hesabına Kaydet')}</span> <span>· {t('şu an yalnız bu tarayıcıda')}</span>
                       </span>
                     ) : (
                       t('Üye Ol ya da Giriş Yap')
@@ -1150,61 +1210,98 @@ export default function Game() {
 
       {screen === 'name' && (
         <Overlay>
-          <div className="rise pixel-panel max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto px-6 pb-6">
-            <div className="flex items-end gap-4">
-              <figure className="polaroid relative w-[96px] shrink-0 rotate-[-5deg]">
-                <span className="tape" />
-                <Portrait id={hero.id} scarf={heroScarf} className="w-full" />
-                <figcaption>{hero.short}</figcaption>
-              </figure>
-              <div className="min-w-0 pb-2">
-                <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{save.player ? t('HESABIM') : t('DEFTERİN SAHİBİ')}</p>
-                <h2 className="mt-1 font-display text-3xl leading-tight text-cream">{save.player ? save.player.name : t('Yolcu Hesabı')}</h2>
-                <p className="mt-1 text-[13px] leading-snug text-muted">
-                  {save.player ? t('Bu cihazda girişlisin; tekrar giriş yapman gerekmez.') : t('Üye ol ya da giriş yap: skorların tabloya yazılır, her cihazdan devam edersin.')}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5">
-              {save.player ? (
-                <div className="grid gap-4">
-                  <a href={`/oyuncu/${encodeURIComponent(save.player.name)}`} className="pixel-btn primary justify-center">
-                    {t('Kullanıcı Sayfamı Aç')}
-                  </a>
-                  <div>
-                    <p className="mb-1.5 text-[11px] font-bold tracking-[0.2em] text-muted">{t('ADINI DEĞİŞTİR')}</p>
-                    <NameForm
-                      player={save.player}
-                      onDone={(p: Player) => {
-                        ui()
-                        persist({ ...save, player: p })
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between border-t-2 border-line pt-3">
-                    <button className="pixel-btn" onClick={() => setScreen('title')}>
-                      {t('← Geri')}
-                    </button>
-                    <button className="text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => void signOut()}>
-                      {t('Çıkış Yap')}
-                    </button>
+          <div className="rise pixel-panel max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto px-6 pb-5 short:max-w-[min(760px,100%)] short:px-5">
+            <div className="short:grid short:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] short:gap-6">
+              <div>
+                <div className="flex items-end gap-4">
+                  <figure className="polaroid relative w-[60px] shrink-0 rotate-[-5deg] sm:w-[88px] short:hidden">
+                    <span className="tape" />
+                    <Portrait id={hero.id} scarf={heroScarf} className="w-full" />
+                    <figcaption>{hero.short}</figcaption>
+                  </figure>
+                  <div className="min-w-0 pb-1">
+                    <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{save.player ? t('HESABIM') : t('DEFTERİN SAHİBİ')}</p>
+                    <h2 className="mt-1 font-display text-[26px] leading-tight text-cream [overflow-wrap:anywhere]">
+                      {save.player ? save.player.name : authMode === 'login' ? t('Tekrar Hoş Geldin') : t('Defterini Kaydet')}
+                    </h2>
+                    {save.player && <p className="mt-1 text-[12px] text-[#7ad88a]">☁ {t('İlerlemen hesabında kayıtlı')}</p>}
                   </div>
                 </div>
-              ) : (
-                <>
-                  <AuthForm
-                    suggestion={hero.short}
-                    onDone={(p: Player) => {
-                      ui()
-                      afterName({ ...save, player: p, skippedName: false })
-                    }}
-                  />
-                  <button className="mt-3 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => afterName({ ...save, skippedName: true })}>
-                    {t('Şimdilik Geç')}
-                  </button>
-                  <p className="mt-1 text-[11px] text-muted">{t('Hesapsız da oynarsın; skorların yalnız bu cihazda kalır. Sonra menüden üye olabilirsin.')}</p>
-                </>
-              )}
+                {save.player ? (
+                  // hesabın özeti: neyi taşıdığı bir bakışta
+                  <div className="mt-4 grid grid-cols-4 gap-1.5 text-center">
+                    {([
+                      [Math.min(save.unlocked + 1, LEVELS.length), t('Açık Şehir')],
+                      [totalFound, t('Hatıra')],
+                      [Object.values(save.stamps ?? {}).filter(Boolean).length, t('Gizli Pul')],
+                      [Object.values(save.charms ?? {}).filter(Boolean).length, t('Nazar')],
+                    ] as const).map(([n, label]) => (
+                      <div key={label} className="bg-ink/50 px-1 py-2 [box-shadow:inset_0_0_0_2px_#3d3550]">
+                        <p className="font-display text-lg leading-none text-cream tabular-nums">{n}</p>
+                        <p className="mt-1 text-[11px] leading-tight text-muted">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  // hesap ne kazandırır: üç kısa madde
+                  <ul className="mt-3 grid gap-1 text-[13px] text-cream/90 sm:mt-4 sm:gap-1.5">
+                    <li className="flex items-center gap-2"><span className="w-5 text-center text-gold">☁</span>{t('İlerleme hesabında kalır')}</li>
+                    <li className="flex items-center gap-2"><span className="w-5 text-center text-gold">★</span>{t('Süren skor tablosuna girer')}</li>
+                    <li className="flex items-center gap-2"><span className="w-5 text-center text-gold">⇄</span>{t('Her cihazdan kaldığın yerden')}</li>
+                  </ul>
+                )}
+                {/* yatay telefonda alt şerit sol sütunda: sağdaki form ekrana sığsın */}
+                {!save.player && guestFooter('mt-4 hidden short:flex')}
+              </div>
+              <div className="mt-4 sm:mt-5 short:mt-0">
+                {save.player ? (
+                  <div className="grid gap-4">
+                    <a href={`/oyuncu/${encodeURIComponent(save.player.name)}`} className="pixel-btn primary justify-center">
+                      {t('Kullanıcı Sayfamı Aç')}
+                    </a>
+                    <div>
+                      <p className="mb-1.5 text-[11px] font-bold tracking-[0.2em] text-muted">{t('ADINI DEĞİŞTİR')}</p>
+                      <NameForm
+                        player={save.player}
+                        onDone={(p: Player) => {
+                          ui()
+                          persist({ ...save, player: p })
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-t-2 border-line pt-3">
+                      <button className="pixel-btn" onClick={() => (setConfirmOut(false), setScreen('title'))}>
+                        {t('← Geri')}
+                      </button>
+                      {confirmOut ? (
+                        // çıkışta onay: yanlışlıkla basılmasın
+                        <span className="flex items-center gap-2 text-[12px] text-muted">
+                          {t('İlerlemen hesabında kalır.')}
+                          <button className="pixel-btn px-3 py-1.5 text-[12px] text-accent-2" onClick={() => (setConfirmOut(false), void signOut())}>
+                            {t('Çıkış Yap')}
+                          </button>
+                        </span>
+                      ) : (
+                        <button className="pixel-btn px-3 py-1.5 text-[12px]" onClick={() => setConfirmOut(true)}>
+                          {t('Çıkış Yap')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <AuthForm
+                      suggestion={hero.short}
+                      onMode={setAuthMode}
+                      onDone={(p: Player) => {
+                        ui()
+                        afterName({ ...save, player: p, skippedName: false })
+                      }}
+                    />
+                    {guestFooter('mt-4 flex short:hidden')}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </Overlay>

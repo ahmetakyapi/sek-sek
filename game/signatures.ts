@@ -15,10 +15,10 @@ export interface Signature {
 
 export const SIGNATURES: Record<string, Signature> = {
   istanbul: {
-    en: { hints: ["Ferry run: two ferries, two rhythms. Hop from one to the other and watch the gulls."], npcs: [{"name": "Kenan the Fish Sandwich Cook", "text": "In Eminönü the fish sandwiches are grilled right on the boats, and the grill sways with every wave. Add a pickle juice and you are all set!"}, {"name": "Captain Nuri of the Ferry", "text": "Forty years I have sailed between Karaköy and Kadıköy. The waves are rough and the gulls are cheeky, but every crossing is beautiful in its own way."}] },
+    en: { hints: ["Ferry run: two ferries, two rhythms. Hop from one to the other and watch out for the Gökçekuş birds."], npcs: [{"name": "Kenan the Fish Sandwich Cook", "text": "In Eminönü the fish sandwiches are grilled right on the boats, and the grill sways with every wave. Add a pickle juice and you are all set!"}, {"name": "Captain Nuri of the Ferry", "text": "Forty years I have sailed between Karaköy and Kadıköy. The waves are rough and the gulls are cheeky, but every crossing is beautiful in its own way."}] },
     at: 174,
     medal: 15,
-    hints: ["Vapur seferi: iki vapur, iki ritim. Birinden ötekine geç, martılara dikkat."],
+    hints: ["Vapur seferi: iki vapur, iki ritim. Birinden ötekine geç, gökçekuşlara dikkat."],
     npcs: [{ name: "Balık-Ekmekçi Kenan", look: "usta", text: "Eminönü’nde balık ekmek teknede pişer, dalga vurdukça ızgara sallanır. Yanına bir turşu suyu, keyfine diyecek yok!" }, { name: "Vapur Kaptanı Nuri", look: "amca", text: "Kırk yıldır Karaköy ile Kadıköy arasında gidip gelirim. Dalga sert, martı arsız; ama her sefer bir başka güzel." }],
     rows: [
       '                                      ',
