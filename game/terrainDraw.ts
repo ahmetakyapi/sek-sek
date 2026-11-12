@@ -637,7 +637,8 @@ export class TerrainHD {
     c.moveTo(x0, y)
     c.lineTo(x1, y)
     for (let x = x1; x >= x0; x -= 2.5) {
-      const k = cap === 'stone' ? 0.35 : cap === 'grass' ? 1.3 : 1.7
+      // örtünün alt kenarı yumuşak dalgalanır; sivri saçak (kar) diken gibi okunmasın
+      const k = cap === 'stone' ? 0.35 : cap === 'grass' ? 1.1 : 0.9
       c.lineTo(x, y + depth + (hash(Math.round(x), ty, 42) - 0.5) * 2 * k + (cap === 'snow' ? Math.sin(x * 0.5) * 0.8 : 0))
     }
     c.closePath()
@@ -647,7 +648,8 @@ export class TerrainHD {
     c.lineWidth = 0.6
     c.beginPath()
     for (let x = x0; x <= x1; x += 2.5) {
-      const k = cap === 'stone' ? 0.35 : cap === 'grass' ? 1.3 : 1.7
+      // örtünün alt kenarı yumuşak dalgalanır; sivri saçak (kar) diken gibi okunmasın
+      const k = cap === 'stone' ? 0.35 : cap === 'grass' ? 1.1 : 0.9
       const yy = y + depth + (hash(Math.round(x), ty, 42) - 0.5) * 2 * k + (cap === 'snow' ? Math.sin(x * 0.5) * 0.8 : 0) + 0.3
       if (x === x0) c.moveTo(x, yy)
       else c.lineTo(x, yy)
@@ -660,18 +662,23 @@ export class TerrainHD {
     wobble(c, x0 + 1, y + 1, x1 - 1, y + 1, 0.2, 43)
     c.stroke()
     if (cap === 'grass') {
-      // çimen tutamları: üst kenardan yukarı kısa fırça darbeleri
-      c.strokeStyle = mix(top, '#1e3a1a', 0.35)
-      c.lineWidth = 0.8
+      // çimen: seyrek, alçak, kıvrık tutamlar (iki üç yaprak yana yatar), yeşile çalar. Dik, sivri ve açık renkli
+      // çizgiler uzaktan diken gibi okunuyordu: tehlikeyle karışmasın
+      c.strokeStyle = mix(mix(top, '#3f7a3a', 0.55), '#1e3a1a', 0.25)
+      c.lineWidth = 0.7
+      c.globalAlpha = 0.85
       c.beginPath()
-      for (let x = x0 + 1.5; x < x1 - 1; x += 3.2) {
+      for (let x = x0 + 3; x < x1 - 3; x += 6.5) {
         const r = hash(Math.round(x * 3), ty, 44)
-        if (r < 0.3) continue
-        const hgt = 1.4 + r * 2.4
-        c.moveTo(x, y + 0.6)
-        c.quadraticCurveTo(x + (r - 0.6) * 1.6, y - hgt * 0.6, x + (r - 0.5) * 3, y - hgt)
+        if (r < 0.45) continue
+        const hgt = 1.1 + r * 1.1
+        for (const [dx, lean] of [[-0.8, -1.8], [0, 0.6], [0.8, 1.9]] as const) {
+          c.moveTo(x + dx, y + 0.8)
+          c.quadraticCurveTo(x + dx + lean * 0.3, y - hgt * 0.7, x + dx + lean, y - hgt * (dx === 0 ? 1 : 0.75))
+        }
       }
       c.stroke()
+      c.globalAlpha = 1
     }
   }
 

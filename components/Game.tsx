@@ -8,7 +8,6 @@ import { BossFigure, HeroFigure } from '@/components/Figures'
 import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
-import { NpcDialog, SignHint } from '@/components/NpcDialog'
 import { ItemIcon, Key, KeyHints, TutorialHint, type TutorialStep } from '@/components/HudBits'
 import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
@@ -236,7 +235,7 @@ export default function Game() {
     setResumeIdx(startIdx)
     worldRef.current = new World(LEVELS[startIdx])
     renderer.setLevel(worldRef.current)
-    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __mk: unknown }).__mk = { world: () => worldRef.current, stats: () => renderer.stats }
+    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __mk: unknown }).__mk = { world: () => worldRef.current, stats: () => renderer.stats, sound: () => soundRef.current }
     setReady(true)
     window.addEventListener('resize', fit)
     window.addEventListener('orientationchange', fit)
@@ -386,7 +385,7 @@ export default function Game() {
           hudTimer = 0
           const moving = Math.abs(w.player.vx) > 5 || !w.player.grounded
           idleRef.current = moving ? 0 : idleRef.current + 0.1
-          setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken), canDash: w.player.canDash, idle: w.time < 6 || idleRef.current > 1.5, goal: goalRef.current })
+          setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken), canDash: w.player.canDash && w.player.dashCool <= 0, idle: w.time < 6 || idleRef.current > 1.5, goal: goalRef.current })
           if (tutorialOnRef.current && !rushRef.current) {
             const tut = tutRef.current
             if (Math.abs(w.player.x - tut.startX) >= 32) tut.walked = true
@@ -744,14 +743,29 @@ export default function Game() {
   }
 
   const toggle = (k: 'sfx' | 'music') => {
-    const next = { ...save, [k]: !save[k] }
-    persist(next)
+    soundRef.current?.unlock()
+    setSave((prev) => {
+      const next = { ...prev, [k]: !prev[k] }
+      writeSave(next)
+      return next
+    })
+  }
+
+  // konuşma baloncuğu: yakındaki kişinin ya da tabelanın sözü çizime bildirilir
+  useEffect(() => {
+    const r = rendererRef.current
+    if (!r) return
+    const who = npc >= 0 ? level.npcs[npc] : null
+    r.dialog = who ? { kind: 'npc', name: who.name, text: who.text } : hint ? { kind: 'sign', text: hint } : null
+  }, [npc, hint, level])
+
+  // ses ayarı tek kaynaktan: kayıt hangi yoldan değişirse değişsin (düğme, bulut, giriş, sıfırlama) ses onu izler
+  useEffect(() => {
     const snd = soundRef.current
     if (!snd) return
-    snd.unlock()
-    if (k === 'sfx') snd.sfxOn = next.sfx
-    else snd.musicOn = next.music
-  }
+    snd.sfxOn = save.sfx
+    snd.musicOn = save.music
+  }, [save.sfx, save.music, ready])
 
   const fullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen()
@@ -833,16 +847,17 @@ export default function Game() {
               <div className="kilim mt-3 w-[min(520px,80vw)]" />
             </div>
           )}
-          {npc >= 0 && level.npcs[npc] ? (
-            <NpcDialog key={`npc-${levelIdx}-${npc}`} npc={level.npcs[npc]} touch={showTouch} />
-          ) : hint ? (
-            <SignHint key={hint} text={hint} touch={showTouch} />
-          ) : tutStep && !coach ? (
+          {/* konuşma ve tabela, kişinin başının üstünde baloncuk olarak çizilir (render.ts); burada yalnız ekran okuyucu için */}
+          <p className="sr-only" role="status" aria-live="polite">
+            {npc >= 0 && level.npcs[npc] ? `${level.npcs[npc].name}: ${level.npcs[npc].text}` : (hint ?? '')}
+          </p>
+          {npc < 0 && !hint && tutStep && !coach ? (
             <TutorialHint key={tutStep} step={tutStep} touch={showTouch} />
           ) : null}
           {quip && (
-            <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[38%] z-10 flex justify-center px-4">
-              <p className="rise font-display text-base text-cream/90 [text-shadow:0_2px_0_#120f1a,0_0_12px_#120f1a] sm:text-xl">{quip.text}</p>
+            // ölünce şehrin lafı: oynanış alanında değil, üstte HUD'ın altında; küçük ve soluk (yeniden doğuşu kapatmaz)
+            <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+66px)] z-10 flex justify-center px-4">
+              <p className="rise font-display text-[13px] text-cream/75 [text-shadow:0_1px_0_#120f1a,0_0_8px_#120f1a] sm:text-sm">{quip.text}</p>
             </div>
           )}
           {toast && (
@@ -872,11 +887,12 @@ export default function Game() {
           )}
           {cpToast && Date.now() - cpToast.at < 3200 && (
             <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(env(safe-area-inset-top)+104px)]' : 'top-[calc(env(safe-area-inset-top)+64px)]'}`}>
-              <div className="max-w-[min(92vw,420px)] bg-ink/85 px-3.5 py-2 text-center [box-shadow:0_-2px_0_0_#e30a17,0_2px_0_0_#e30a17,-2px_0_0_0_#e30a17,2px_0_0_0_#e30a17]">
-                <p className="flex items-center justify-center gap-2 font-display text-sm text-cream">
+              {/* sakin şerit: yarı saydam, solda ince kırmızı çizgi; göze batmaz, oynanışı kapatmaz */}
+              <div className="max-w-[min(88vw,380px)] border-l-2 border-[#e30a17] bg-ink/60 px-3 py-1.5 text-left backdrop-blur-[2px]">
+                <p className="flex items-center gap-1.5 font-display text-[13px] text-cream/90">
                   <span className="text-[#e30a17]">⚑</span> {t("Checkpoint")}
                 </p>
-                <p className="mt-0.5 text-[12px] italic leading-snug text-gold [text-wrap:balance]">{cpToast.text}</p>
+                <p className="text-[12px] italic leading-snug text-gold/85 [text-wrap:balance]">{cpToast.text}</p>
               </div>
             </div>
           )}
@@ -1487,7 +1503,7 @@ export default function Game() {
                 <dt className="text-muted">{t("Zıpla")}</dt>
                 <dd>↑ / W / Z</dd>
                 <dt className="text-muted">{t("Dash")}</dt>
-                <dd className="text-gold">{t("Space (Boşluk) / X / Shift")}</dd>
+                <dd className="text-gold">{t("Space (Boşluk) / X")}</dd>
                 <dt className="text-muted">{t("İn")}</dt>
                 <dd>{t("↓ (ince platformdan)")}</dd>
                 <dt className="text-muted">{t("Mola")}</dt>
@@ -1779,7 +1795,7 @@ function Complete({
 
         {/* ── orta: üç bölüm. Geniş ekranda yan yana, her biri kendi içinde kayar; telefonda seçili sekme */}
         <div className="mt-3 min-h-0 flex-1 short:col-start-2 short:row-span-3 short:row-start-3 short:mt-2 wide:mt-4 wide:grid wide:grid-cols-[1.15fr_1fr_0.9fr] wide:gap-6">
-          <div className={`overlay-scroll h-full min-w-0 overflow-y-auto pr-1 ${tab === 'defter' ? '' : 'hidden'} wide:block`}>
+          <div className={`overlay-scroll -mx-2 h-full min-w-0 overflow-y-auto px-2 pt-2 ${tab === 'defter' ? '' : 'hidden'} wide:block`}>
             <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
               {t('HATIRALAR')} <span className="kilim h-[6px] flex-1 opacity-50" />
             </p>
@@ -1838,7 +1854,7 @@ function Complete({
             </div>
           </div>
 
-          <div className={`overlay-scroll h-full min-w-0 overflow-y-auto pr-1 ${tab === 'kart' ? '' : 'hidden'} wide:block`}>
+          <div className={`overlay-scroll -mx-2 h-full min-w-0 overflow-y-auto px-2 pt-2 ${tab === 'kart' ? '' : 'hidden'} wide:block`}>
             <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
               {t('KARTPOSTALIN')} <span className="kilim h-[6px] flex-1 opacity-50" />
             </p>
@@ -1867,7 +1883,7 @@ function Complete({
             </div>
           </div>
 
-          <div className={`overlay-scroll h-full min-w-0 overflow-y-auto pr-1 ${tab === 'skor' ? '' : 'hidden'} wide:block`}>
+          <div className={`overlay-scroll -mx-2 h-full min-w-0 overflow-y-auto px-2 pt-2 ${tab === 'skor' ? '' : 'hidden'} wide:block`}>
             <div className="border-2 border-line bg-ink/40 p-3.5">
               <p className="flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">
                 {t('SKOR TABLOSU')} <span className="kilim h-[6px] flex-1 opacity-50" />
@@ -1899,8 +1915,8 @@ function Complete({
         </div>
 
         {/* ── sabit eylem şeridi: telefonda da hep görünür */}
-        <div className="z-10 -mx-6 mt-3 grid shrink-0 grid-cols-[1fr_auto_auto] gap-2.5 border-t-2 border-line bg-[#1e1a29]/95 px-6 py-3 wide:mt-4 [padding-bottom:max(12px,env(safe-area-inset-bottom))] short:col-start-1 short:row-start-3 short:mx-0 short:mt-2 short:grid-cols-2 short:gap-2 short:self-start short:border-0 short:bg-transparent short:p-0">
-          <button className="pixel-btn primary min-w-0 justify-center short:col-span-2" onClick={onNext} autoFocus>
+        <div className="z-10 -mx-6 mt-3 grid shrink-0 grid-cols-2 gap-2.5 sm:grid-cols-[1fr_auto_auto] border-t-2 border-line bg-[#1e1a29]/95 px-6 py-3 wide:mt-4 [padding-bottom:max(12px,env(safe-area-inset-bottom))] short:col-start-1 short:row-start-3 short:mx-0 short:mt-2 short:grid-cols-2 short:gap-2 short:self-start short:border-0 short:bg-transparent short:p-0">
+          <button className="pixel-btn primary col-span-2 min-w-0 justify-center sm:col-span-1 short:col-span-2" onClick={onNext} autoFocus>
             <span className="truncate">{levelIdx + 1 < LEVELS.length ? t('▶ Sıradaki: {city}', { city: displayName(LEVELS[levelIdx + 1]) }) : t('▶ Defteri Kapat')}</span>
           </button>
           <button className="pixel-btn" onClick={onRetry} aria-label={t('↺ Tekrar')}>

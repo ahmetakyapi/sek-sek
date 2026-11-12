@@ -98,7 +98,7 @@ export const UI_EN: Record<string, string> = {
   'Skorun kaydediliyor…': 'Saving your score…',
   'Sol Yarı': 'Left Half',
   'Sonraki Şehir': 'Next City',
-  'Space (Boşluk) / X / Shift': 'Space / X / Shift',
+  'Space (Boşluk) / X': 'Space / X',
   '↓ (ince platformdan)': '↓ (off a thin platform)',
   SÜRE: 'TIME',
   Süre: 'Time',

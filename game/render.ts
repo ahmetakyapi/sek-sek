@@ -108,6 +108,7 @@ export class Renderer {
   }
 
   resize(cssW: number, cssH: number, dpr: number) {
+    this.dpr = dpr
     const devW = Math.round(cssW * dpr)
     const devH = Math.round(cssH * dpr)
     this.canvas.width = devW
@@ -372,6 +373,17 @@ export class Renderer {
   get stats() {
     return { syncBands: this.terrain?.syncBands ?? 0 }
   }
+
+  /** ekran pikselinin CSS pikseline oranı: baloncuk yazısı her ekranda aynı okunur boyda */
+  private dpr = 1
+
+  /**
+   * Konuşma: yakındaki şehir insanının ya da tabelanın sözü (metni arayüz verir, dili seçilmiş). Başının üstünde
+   * kuyruklu baloncuk olarak çizilir: ekranın ortasını kaplamaz, karakterin üstüne binmez, kimin konuştuğu belli olur.
+   */
+  dialog: { kind: 'npc' | 'sign'; name?: string; text: string } | null = null
+  private dlgKey = ''
+  private dlgAt = 0
 
   /** son karenin süresi: kare başına olasılıklar buna göre ölçeklenir */
   private frameDt = 1 / 60
@@ -679,12 +691,24 @@ export class Renderer {
       const bot = y + T
       switch (d.ch) {
         case 'l': {
-          // fener
-          rect(b, x + 7, bot - 30, 2, 30, '#2a2236')
-          rect(b, x + 4, bot - 34, 8, 6, '#2a2236')
-          rect(b, x + 5, bot - 33, 6, 4, '#ffd27a')
-          disc(b, x + 8, bot - 31, 12, 'rgba(255,210,120,0.10)')
-          disc(b, x + 8, bot - 31, 7, 'rgba(255,210,120,0.12)')
+          // sokak feneri: ayak, direk, camlı fener, şapka; bayrak direğiyle (kırmızı bez, altın topuz) karışmasın
+          const K = '#2a2236'
+          disc(b, x + 8, bot - 35, 13, 'rgba(255,210,120,0.09)')
+          disc(b, x + 8, bot - 35, 8, 'rgba(255,210,120,0.12)')
+          rect(b, x + 5, bot - 2, 6, 2, K)
+          rect(b, x + 7, bot - 31, 2, 29, K)
+          rect(b, x + 6, bot - 14, 4, 1, K)
+          rect(b, x + 5, bot - 32, 6, 1, K)
+          // cam: koyu çerçeve, sıcak ışık, ortada ince kayıt
+          rect(b, x + 4, bot - 39, 8, 7, K)
+          rect(b, x + 5, bot - 38, 6, 5, '#ffd27a')
+          rect(b, x + 5, bot - 38, 2, 5, '#fff0b8')
+          rect(b, x + 8, bot - 38, 1, 5, '#c9902e')
+          // şapka ve tepe topuzu
+          rect(b, x + 3, bot - 40, 10, 1, K)
+          rect(b, x + 4, bot - 41, 8, 1, K)
+          rect(b, x + 6, bot - 42, 4, 1, K)
+          rect(b, x + 7, bot - 44, 2, 2, K)
           break
         }
         case 't': {
@@ -788,8 +812,9 @@ export class Renderer {
       const br = 2 + 4 * (0.5 + 0.5 * Math.sin(this.t * 2.2 + i * 1.7))
       const pose: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]], blink: (this.t + i * 1.3) % 3.8 < 0.12 }
       this.heroes.push({ look, pose, x: n.x + T / 2, y: n.y + T, flip: w.player.x < n.x, alpha: 1, ghost: false, moving: false, sx: 1, sy: 1, size: NPC_SIZE })
-      // konuşma balonu
+      // "konuşacak" işareti; konuşma açıkken baloncuk kendisi görünür, işaret çekilir
       const near = w.nearNpc === i
+      if (near && this.dialog?.kind === 'npc') return
       const by = n.y + T - NPC_SIZE - 10 - (near ? 0 : Math.round(Math.sin(this.t * 3 + i)))
       rect(b, n.x + 3, by, 10, 7, near ? '#ffd36a' : '#f4ead8')
       rect(b, n.x + 6, by + 7, 2, 2, near ? '#ffd36a' : '#f4ead8')
@@ -1830,9 +1855,14 @@ export class Renderer {
     disc(b, x + 4, top - 1, 1.8, '#f2c14e')
     rect(b, x + 3, top - 2, 1, 1, '#fff1c0')
     if (!cp.active) {
-      // direğe sarılı, solgun bez
-      for (let j = 0; j < 12; j++) rect(b, x + 5, top + 2 + j, 2, 1, j % 3 === 0 ? '#6a2a30' : '#8a3a42')
-      rect(b, x + 5, top + 14, 1, 2, '#6a2a30')
+      // yarıya inik, soluk bayrak: uzaktan da "bayrak" okunur (fenerle karışmaz); dokununca göndere çekilir
+      const fy = top + 14
+      rect(b, x + 5, fy, 9, 6, '#9a3a40')
+      rect(b, x + 5, fy, 9, 1, '#b25058')
+      rect(b, x + 5, fy + 5, 9, 1, '#7a2a30')
+      rect(b, x + 8, fy + 2, 2, 2, '#e8d8d0')
+      rect(b, x + 9, fy + 2, 1, 2, '#9a3a40')
+      rect(b, x + 11, fy + 2, 1, 1, '#e8d8d0')
       return
     }
     // göndere çekiliş: 0,6 sn'de aşağıdan yukarı (yumuşak duruş)
@@ -2260,6 +2290,132 @@ export class Renderer {
     this.drawPops(c, cx, cy, sc)
     if (w.warp) this.sign(c, (w.warp.x + T / 2 - cx) * sc, (w.warp.y + w.warp.h - 48 - cy) * sc, sc, this.lang === 'en' ? 'TOWN SQUARE →' : 'MEYDAN →', '#8e2630')
     this.sign(c, ex, ey, sc, next ? `${next} →` : this.lang === 'en' ? 'LAST STOP' : 'SON DURAK', '#1d4f91')
+    this.drawDialog(w, cx, cy)
+  }
+
+  /** Konuşma baloncuğu: kişinin (ya da tabelanın) üstünde, kuyruğu ona dönük; yazı daktilo gibi akar. */
+  private drawDialog(w: World, cx: number, cy: number) {
+    const d = this.dialog
+    if (!d) return
+    const sc = this.scale
+    // çapa: konuşan kişinin başı ya da tabelanın tepesi; yanından ayrılınca baloncuk kalkar
+    let ax: number
+    let ay: number
+    if (d.kind === 'npc') {
+      const n = w.npcs.find((q) => q.index === w.nearNpc)
+      if (!n) return
+      ax = n.x + T / 2
+      ay = n.y + T - NPC_SIZE - 3
+    } else {
+      const s = w.signs.find((q) => q.index === w.nearSign)
+      if (!s) return
+      ax = s.x + T / 2
+      ay = s.y - 1
+    }
+    // baloncuk karakterin başına da binmesin: ikisinin de üstünde açılır
+    const hero = w.player.y + w.player.h - HERO_SIZE - 3
+    const lift = Math.max(0, ay - hero)
+    ay = Math.min(ay, hero)
+    const key = `${d.kind}:${d.text}`
+    if (key !== this.dlgKey) {
+      this.dlgKey = key
+      this.dlgAt = this.t
+    }
+    const c = this.ctx
+    const u = this.dpr
+    const W = this.canvas.width
+    const small = this.canvas.height / u < 520 || this.canvas.width / u < 500
+    const size = Math.round((small ? 12 : 14) * u)
+    const nameSize = Math.round((small ? 11 : 13) * u)
+    const pad = Math.round((small ? 8 : 10) * u)
+    const lh = Math.round(size * 1.38)
+    const maxW = Math.min(W - 24 * u, (small ? 250 : 320) * u)
+    const body = `400 ${size}px ${this.textFont()}`
+    // satırlara böl (genişlik tam metne göre: yazı akarken baloncuk büyümez)
+    c.font = body
+    const lines: string[] = []
+    let cur = ''
+    for (const word of d.text.split(' ')) {
+      const tryLine = cur ? `${cur} ${word}` : word
+      if (c.measureText(tryLine).width > maxW - pad * 2 && cur) {
+        lines.push(cur)
+        cur = word
+      } else cur = tryLine
+    }
+    if (cur) lines.push(cur)
+    let tw = Math.max(...lines.map((l) => c.measureText(l).width))
+    if (d.name) {
+      c.font = `700 ${nameSize}px ${this.popFont()}`
+      tw = Math.max(tw, c.measureText(d.name).width)
+    }
+    const bw = Math.ceil(tw + pad * 2)
+    const head = d.name ? Math.round(nameSize * 1.5) : 0
+    const bh = Math.ceil(pad * 2 + head + lines.length * lh - (lh - size))
+    const tail = Math.round(8 * u)
+    const tipX = (ax - cx) * sc
+    const tipY = (ay - cy) * sc
+    // kuyruk konuşana dek uzar (tabela alçaksa karakterin yanından iner)
+    const reach = lift * sc
+    const bx = Math.max(12 * u, Math.min(W - bw - 12 * u, tipX - bw * 0.4))
+    // üstte HUD'a binmesin
+    const by = Math.max(64 * u, tipY - tail - bh)
+    const k = Math.min(1, (this.t - this.dlgAt) / 0.16)
+    const sign = d.kind === 'sign'
+    const fill = sign ? '#3a2a1e' : '#fffaf0'
+    const line = sign ? '#c79a62' : '#22161f'
+    c.save()
+    c.globalAlpha = k
+    c.translate(0, (1 - k) * 6 * u)
+    // yumuşak gölge, sonra kâğıt ve kuyruk tek dış hatla
+    c.fillStyle = 'rgba(10,6,20,0.28)'
+    c.beginPath()
+    c.roundRect(bx + 3 * u, by + 4 * u, bw, bh, 7 * u)
+    c.fill()
+    c.lineJoin = 'round'
+    c.lineWidth = Math.max(1.5, 2 * u)
+    c.strokeStyle = line
+    c.fillStyle = fill
+    const tx = Math.max(bx + 14 * u, Math.min(bx + bw - 14 * u, tipX))
+    c.beginPath()
+    c.roundRect(bx, by, bw, bh, 7 * u)
+    if (tipY - tail > by + bh) {
+      c.moveTo(tx - 6 * u, by + bh - 1)
+      c.lineTo(tipX, tipY + Math.min(reach, 4 * u))
+      c.lineTo(tx + 6 * u, by + bh - 1)
+    }
+    c.stroke()
+    c.fill()
+    c.textAlign = 'left'
+    c.textBaseline = 'top'
+    let y = by + pad
+    if (d.name) {
+      c.font = `700 ${nameSize}px ${this.popFont()}`
+      c.fillStyle = sign ? '#e8c890' : '#8a3a24'
+      c.fillText(d.name, bx + pad, y)
+      y += head
+    }
+    // daktilo: saniyede ~90 harf
+    let left = Math.floor((this.t - this.dlgAt) * 90)
+    c.font = body
+    c.fillStyle = sign ? '#f4ead8' : '#2a2230'
+    for (const l of lines) {
+      if (left <= 0) break
+      c.fillText(l.slice(0, left), bx + pad, y)
+      left -= l.length + 1
+      y += lh
+    }
+    c.restore()
+  }
+
+  private textFamily: string | null = null
+
+  /** gövde yazısı: arayüzle aynı (IBM Plex Mono) */
+  private textFont() {
+    if (this.textFamily === null) {
+      const v = typeof document !== 'undefined' ? getComputedStyle(document.body).getPropertyValue('--font-plex').trim() : ''
+      this.textFamily = v ? `${v}, ui-monospace, monospace` : 'ui-monospace, monospace'
+    }
+    return this.textFamily
   }
 
   /** Yol tabelası: renkli levha, beyaz çerçeve, ortalanmış yazı. */

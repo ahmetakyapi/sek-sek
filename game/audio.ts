@@ -29,6 +29,9 @@ export class Sound {
   /** Kullanıcı etkileşiminden sonra çağrılmalı (mobil kilit) */
   unlock() {
     if (!this.ac) {
+      // iOS/Safari: oyun sesi "ortam" sesidir; telefon sessizdeyken susar, başka uygulamanın müziğini kesmez
+      const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession
+      if (session) session.type = 'ambient'
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
       if (!AC) return
       this.ac = new AC()
@@ -262,6 +265,11 @@ export class Sound {
     const song = this.song
     const bus = this.songBus
     if (!this.ac || !song || !bus) return
+    // müzik kapalıyken nota üretilmez (sessiz de çalmaz); açılınca kaldığı ölçüden sürer
+    if (!this._musicOn) {
+      this.nextTime = this.ac.currentTime + 0.12
+      return
+    }
     while (this.nextTime < this.ac.currentTime + 0.3) {
       for (const e of song.byStep[this.stepIdx % song.length]) this.voice(e, this.nextTime, song.step, bus)
       this.nextTime += song.step

@@ -120,4 +120,5 @@ export class InputManager {
 }
 
 const JUMP_KEYS = ['ArrowUp', 'KeyW', 'KeyZ', 'KeyK', 'KeyC']
-const DASH_KEYS = ['Space', 'KeyX', 'ShiftLeft', 'ShiftRight', 'KeyJ', 'KeyL']
+// Shift yok: Windows'ta art arda 5 Shift "Yapışkan Tuşlar" sesini ve penceresini açar, dash'e hızlı basan oyuncuyu böler
+const DASH_KEYS = ['Space', 'KeyX', 'KeyJ', 'KeyL']

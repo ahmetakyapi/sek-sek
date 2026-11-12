@@ -1,7 +1,7 @@
 import { LEVELS } from '@/game/levels'
 
 /** Haritalar değişince artar: oyuncuya "yenilendi" notu gösterilir, baştan başlama önerilir. */
-export const MAP_VERSION = 6
+export const MAP_VERSION = 7
 /** bu sürümden önceki süreler geçersiz: bölümlere final eklendi */
 const TIMES_SINCE = 4
 

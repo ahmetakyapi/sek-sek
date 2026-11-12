@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { BOSSES } from '../game/boss'
 import { POSES, gait, groundBob } from '../game/heroDraw'
 import { LEVELS } from '../game/levels'
-import { FAKE, World } from '../game/sim'
-import { emptyInput, type LevelDef } from '../game/types'
+import { FAKE, PHYS, World } from '../game/sim'
+import { emptyInput, type Input, type LevelDef } from '../game/types'
 
 const mk = (map: string[], extra: Partial<LevelDef> = {}): World =>
   new World({ ...LEVELS[0], map, ...extra })
@@ -172,6 +172,95 @@ describe('bulmaca ve yeni düşmanlar', () => {
     run(w, 2, {})
     expect(Math.abs(Math.round(m.x - x0))).toBe(96)
     expect(m.state === 'stun' || m.state === 'idle').toBe(true)
+  })
+
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: art arda hareketli platformlar düzenli buluşur (en çok 9 sn bekleme)', (_n, l) => {
+    // iki raylı platform arasında atlanacaksa aralıkları eşit, fazları ters olmalı: yoksa zamanla kayar, buluşma 30 sn'yi bulur
+    const w = new World(l)
+    const xs = w.platforms.filter((p) => p.axis === 'x')
+    const pairs = xs.flatMap((a) => xs.filter((b) => b !== a && b.min >= a.min + a.w && b.min - (a.max + a.w) < 6 * 16 && Math.abs(a.y - b.y) <= 4 * 16).map((b) => [a, b] as const))
+    const wait = pairs.map(() => ({ since: 0, worst: 0, met: false }))
+    for (let i = 0; i < 120 * 60; i++) {
+      w.step(1 / 120, emptyInput())
+      pairs.forEach(([a, b], k) => {
+        const s = wait[k]
+        if (b.x - (a.x + a.w) <= 3 * 16) {
+          s.met = true
+          s.since = 0
+        } else s.worst = Math.max(s.worst, (s.since += 1 / 120))
+      })
+    }
+    // hiç buluşmayan çift (aralarında zemin var) atlanacak çift değildir
+    for (const s of wait) if (s.met) expect(s.worst).toBeLessThanOrEqual(9)
+  })
+
+  it('uçan düşmana üstten basmak her durumda sayılır (zıplamanın tepesinde de); alttan çarpan ölür', () => {
+    const map = ['            ', '            ', '            ', '   f        ', '            ', '            ', ' P          ', '############']
+    for (const vy of [0, -40, 120]) {
+      const w = mk(map)
+      const e = w.enemies[0]
+      const p = w.player
+      p.x = e.x + e.w / 2 - p.w / 2
+      p.y = e.y - p.h - 1
+      p.vy = vy
+      run(w, 0.35)
+      expect(e.alive, `vy=${vy}`).toBe(false)
+      expect(p.dead, `vy=${vy}`).toBe(false)
+    }
+    const w = mk(map)
+    const e = w.enemies[0]
+    const p = w.player
+    p.x = e.x + e.w / 2 - p.w / 2
+    p.y = e.y + e.h + 1
+    p.vy = -250
+    run(w, 0.1)
+    expect(p.dead).toBe(true)
+  })
+
+  it('taşın yan yüzüne üst kenarına az kala çarpan üstüne çıkar, yerde yürürken duvara tırmanmaz', () => {
+    const map = ['          ', '          ', '      ##  ', '      ##  ', '      ##  ', ' P    ##  ', '##########']
+    const w = mk(map)
+    const p = w.player
+    p.x = 6 * 16 - p.w - 0.5
+    p.y = 2 * 16 + 3 - p.h
+    p.vy = 0
+    run(w, 0.4, { right: true })
+    expect(p.y + p.h).toBeLessThanOrEqual(2 * 16 + 0.5)
+    expect(p.x).toBeGreaterThan(6 * 16 - p.w)
+    // yerde duvara yürüyen yerinde kalır
+    const g = mk(map)
+    run(g, 1, { right: true })
+    expect(g.player.y + g.player.h).toBeCloseTo(6 * 16, 0)
+    expect(g.player.x).toBeLessThanOrEqual(6 * 16 - g.player.w + 0.01)
+  })
+
+  it('dash art arda spam atılamaz: kısa bekleme var, erken basış yutulmaz', () => {
+    const w = new World(LEVELS[0])
+    const go = (s: number, inp: Partial<Input> = {}) => {
+      for (let i = 0; i < Math.round(s * 120); i++) w.step(1 / 120, { ...emptyInput(), ...inp })
+    }
+    go(0.5)
+    const dashes = () => w.events.filter((e) => e.type === 'dash').length
+    let n = 0
+    // her adımda dash'e bas: saniyede en çok 1 / dashCooldown dash
+    for (let i = 0; i < 120; i++) {
+      w.step(1 / 120, { ...emptyInput(), dashPressed: true })
+      n += dashes()
+      w.events.length = 0
+      w.player.canDash = true
+    }
+    expect(n).toBeLessThanOrEqual(Math.ceil(1 / PHYS.dashCooldown))
+    expect(n).toBeGreaterThanOrEqual(2)
+    // beklemenin sonunda basılan dash süre dolunca atılır
+    go(1)
+    w.step(1 / 120, { ...emptyInput(), dashPressed: true })
+    w.events.length = 0
+    w.player.canDash = true
+    go(PHYS.dashCooldown - 0.06)
+    w.events.length = 0
+    w.step(1 / 120, { ...emptyInput(), dashPressed: true })
+    go(0.1)
+    expect(w.events.some((e) => e.type === 'dash')).toBe(true)
   })
 
   it('dash halkası dash’i geri doldurur ve söner', () => {

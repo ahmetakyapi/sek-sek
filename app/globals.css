@@ -85,6 +85,24 @@ input {
   touch-action: pan-y;
 }
 
+/* Kayan listeler yalnız dikey kayar: eğik kartlar ve köşe damgaları taşınca yatay çubuk çıkmasın.
+   Çubuk ince ve oyunun renginde (tarayıcının beyaz, oklu çubuğu değil). */
+.overlay-scroll {
+  overflow-x: hidden;
+}
+/* Firefox standart ayarı kullanır; Chrome ve Safari'de standart ayar ::-webkit-scrollbar'ı ezip uçlara ok koyar */
+@supports not selector(::-webkit-scrollbar) {
+  .overlay-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #4a4060 transparent;
+  }
+}
+.overlay-scroll::-webkit-scrollbar { width: 6px; height: 0; }
+.overlay-scroll::-webkit-scrollbar-track { background: transparent; }
+.overlay-scroll::-webkit-scrollbar-thumb { background: #4a4060; }
+.overlay-scroll::-webkit-scrollbar-thumb:hover { background: #d9a441; }
+.overlay-scroll::-webkit-scrollbar-button { display: none; height: 0; }
+
 .game-root {
   position: fixed;
   inset: 0;
@@ -445,7 +463,6 @@ figcaption {
     bottom: calc(env(safe-area-inset-bottom) + 12px);
     padding-inline: calc(env(safe-area-inset-left) + 160px) calc(env(safe-area-inset-right) + 250px);
   }
-  .dlg-pos[data-touch] .dlg-avatar { width: 48px; height: 57px; }
 }
 
 .no-scrollbar { scrollbar-width: none; }

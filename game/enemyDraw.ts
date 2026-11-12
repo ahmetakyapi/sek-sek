@@ -842,10 +842,13 @@ export function drawFriend(c: CanvasRenderingContext2D, animal: string, x: numbe
   const statue = animal === 'lion'
   c.save()
   c.translate(x, y)
-  c.scale(sc, sc)
+  // dost hayvan dekordur: düşmandan küçük, ince hatlı ve hafif saydam; göz yormaz, "tehlike" ya da "toplanacak" okunmaz
+  const soft = 0.82
+  c.scale(sc * soft, sc * soft)
+  c.globalAlpha = happy ? 1 : 0.85
   c.lineJoin = 'round'
   c.lineCap = 'round'
-  setInkWidth(INKW)
+  setInkWidth(INKW * 0.7)
   halo = false
   try {
     groundShadow(c, 6)

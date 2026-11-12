@@ -87,6 +87,8 @@ export interface BossHost {
   player: Box & { vy: number; dead: boolean; dashTime: number }
   projectiles: Projectile[]
   events: GameEvent[]
+  /** oyuncunun bu adımdan önceki ayak hizası: üstten mi geldi */
+  prevFeet?: number
 }
 
 export const BOSS = {
@@ -363,8 +365,11 @@ export function touchBoss(b: Boss, host: BossHost): 'hit' | 'kill' | null {
   const hit = p.x + 1 < b.x + b.w && p.x + p.w - 1 > b.x && p.y + 1 < b.y + b.h && p.y + p.h - 1 > b.y
   if (!hit) return null
   if (b.state !== 'tired') return 'kill'
-  // yorgunken zararsız: üstüne basış ya da dash can götürür
-  const stomp = p.vy > 0 && p.y + p.h - b.y < 10
+  // yorgunken zararsız: üstüne basış ya da dash can götürür. Basış cömert sayılır: üstten geldiysen (önceki adımda
+  // ayaklar tepenin üstündeydi) ya da ayakların gövdenin üst yarısında ve yükselmiyorsan
+  const feet = p.y + p.h
+  const fromAbove = host.prevFeet !== undefined && host.prevFeet <= b.y + 4 && p.vy > -150
+  const stomp = fromAbove || (p.vy >= -30 && feet - b.y < Math.max(10, b.h * 0.5))
   if (!stomp && p.dashTime <= 0) return null
   b.hp--
   const x = b.x + b.w / 2

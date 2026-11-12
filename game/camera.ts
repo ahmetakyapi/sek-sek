@@ -5,7 +5,7 @@
  * saniyede aynı yere varır; sarsıntı her karede rastgele sayı çekmez (yüksek Hz'de titreme olur), zamanla
  * dalgalanır. Yeni kamera davranışı eklerken bu dosyaya ekle ve testi genişlet.
  */
-import { PHYS, type World } from './sim'
+import { ONEWAY, PHYS, WATER, type World } from './sim'
 import { T } from './types'
 
 export const CAM = {
@@ -35,12 +35,33 @@ export function shakeOffset(t: number, amp: number): [number, number] {
   return [x * amp * 0.5, y * amp * 0.5]
 }
 
-/** Normal takip: karakter ekranın ortasında, koşu yönünde biraz önde. */
+/**
+ * Aşağı bakış (dünya pikseli): karakterin baktığı yönde birkaç karo içinde bir düşüş varsa, ineceği yer görünsün diye
+ * kadraj aşağı kayar; düşerken de aşağıya bakılır. Yüksek bir duvarın üstünde oyuncu boşluğa kör atlamaz.
+ */
+export function lookDown(w: World, vh: number): number {
+  const p = w.player
+  const feet = Math.floor((p.y + p.h + 1) / T)
+  const cx = Math.floor((p.x + p.w / 2) / T)
+  let drop = 0
+  for (let d = 1; d <= 6; d++) {
+    const tx = cx + p.facing * d
+    let ty = feet
+    // ilk basılacak yer (zemin, tahta ya da su: tehlike de görünmeli)
+    while (ty < w.rows && !w.isSolid(tx, ty) && w.tile(tx, ty) !== ONEWAY && w.tile(tx, ty) !== WATER) ty++
+    drop = Math.max(drop, (ty - feet) * T)
+  }
+  const ahead = drop > 2 * T ? drop * 0.6 : 0
+  const falling = p.vy > 0 && !p.grounded ? p.vy * 0.12 : 0
+  return Math.min(vh * 0.25, Math.max(ahead, falling))
+}
+
+/** Normal takip: karakter ekranın ortasında, koşu yönünde biraz önde; önünde düşüş varsa biraz aşağıda. */
 export function followTarget(w: World, vw: number, vh: number): [number, number] {
   const p = w.player
   const cap = PHYS.run * 1.15
   const vx = Math.max(-cap, Math.min(cap, p.vx))
-  return [p.x + p.w / 2 - vw / 2 + p.facing * CAM.lead + vx * CAM.leadVel, p.y + p.h / 2 - vh * 0.55]
+  return [p.x + p.w / 2 - vw / 2 + p.facing * CAM.lead + vx * CAM.leadVel, p.y + p.h / 2 - vh * 0.55 + lookDown(w, vh)]
 }
 
 /**

@@ -45,6 +45,8 @@ export const PHYS = {
   buffer: 0.16,
   /** kenar yardımı: kıl payı kaçırılan zemine yatayda bu kadar piksel çekilir */
   ledgeAssist: 4,
+  /** taşın yan yüzüne üst kenarın bu kadar altından çarpan oyuncu taşın üstüne alınır (px): kenara "az kala" düşülmez */
+  stepUp: 5,
   /** tavan köşesine kafa sürtünce bu kadar piksel yana kayar */
   cornerAssist: 4,
   wallJumpVX: 150,
@@ -52,6 +54,10 @@ export const PHYS = {
   wallLock: 0.14,
   dashSpeed: 285,
   dashTime: 0.14,
+  /** iki dash arası en az bu kadar (sn, dash başından): art arda spam olmaz; dash halkası bekletmez */
+  dashCooldown: 0.3,
+  /** bekleme bitmeden basılan dash yutulmaz, bu kadar önceden basılırsa süre dolunca atılır */
+  dashBuffer: 0.12,
   springV: 470,
   stompV: 270,
 } as const
@@ -73,6 +79,10 @@ export interface Player extends Box {
   dashTime: number
   dashDir: [number, number]
   canDash: boolean
+  /** sonraki dash'e kalan bekleme (sn) */
+  dashCool: number
+  /** bekleme sırasında basılmış dash (sn) */
+  dashQueued: number
   wallDir: -1 | 0 | 1
   wallLock: number
   dropTimer: number
@@ -117,6 +127,8 @@ export interface Enemy extends Box {
   /** idle · windup (uyarı) · charge · stun · air */
   state: 'idle' | 'windup' | 'charge' | 'stun' | 'air'
   timer: number
+  /** bu adımdan önceki tepe (basma kuralı: oyuncu üstten mi geldi) */
+  py?: number
 }
 
 export interface Crystal extends Box {
@@ -275,6 +287,8 @@ export class World {
   complete = false
   /** süre ilk hareketle başlar (madalya adaletli olsun) */
   started = false
+  /** oyuncunun bu adımdan önceki ayak hizası (basma kuralı) */
+  prevFeet = 0
   private prevDown = false
   windNow = 0
   nearSign = -1
@@ -542,6 +556,8 @@ export class World {
       dashTime: 0,
       dashDir: [1, 0],
       canDash: true,
+      dashCool: 0,
+      dashQueued: 0,
       wallDir: 0,
       wallLock: 0,
       dropTimer: 0,
@@ -608,8 +624,10 @@ export class World {
       return
     }
 
+    this.prevFeet = p.y + p.h
     this.updatePlayer(dt, input)
     this.updateObjects(dt)
+    for (const e of this.enemies) e.py = e.y
     this.updateEnemies(dt)
     if (this.boss) updateBoss(this.boss, this, dt)
     this.updateTurrets(dt)
@@ -718,8 +736,13 @@ export class World {
       p.y += 1
     }
 
-    // dash
-    if (input.dashPressed && p.canDash && p.dashTime <= 0) {
+    // dash: art arda basışta kısa bekleme; beklemenin sonuna doğru basılan dash sırada bekler
+    p.dashCool = Math.max(0, p.dashCool - dt)
+    // yalnız dash hakkı varken ya da bekleme sırasında basılan sıraya girer (hakkı yokken basılan yere inince patlamaz)
+    p.dashQueued = input.dashPressed && (p.canDash || p.dashCool > 0) ? PHYS.dashBuffer : Math.max(0, p.dashQueued - dt)
+    if (p.dashQueued > 0 && p.canDash && p.dashTime <= 0 && p.dashCool <= 0) {
+      p.dashQueued = 0
+      p.dashCool = PHYS.dashCooldown
       let dx = ix
       let dy = iy
       if (dx === 0 && dy === 0) dx = p.facing
@@ -847,6 +870,15 @@ export class World {
     const p = this.player
     if (dx === 0) return
     let nx = p.x + dx
+    // taşın yan yüzüne, üst kenarına az kala çarptıysan üstüne çık (yerde yürürken tetiklenmez: taş 16 px)
+    if (this.boxHitsSolid(nx, p.y, p.w, p.h)) {
+      for (let k = 1; k <= PHYS.stepUp; k++)
+        if (!this.boxHitsSolid(nx, p.y - k, p.w, p.h) && !this.boxHitsSolid(p.x, p.y - k, p.w, p.h)) {
+          p.y -= k
+          if (p.vy > 0) p.vy = 0
+          break
+        }
+    }
     if (this.boxHitsSolid(nx, p.y, p.w, p.h)) {
       if (dx > 0) nx = Math.floor((nx + p.w) / T) * T - p.w
       else nx = Math.floor(nx / T) * T + T
@@ -1215,6 +1247,8 @@ export class World {
         c.active = false
         c.timer = CRYSTAL_RECHARGE
         p.canDash = true
+        // halka dash zincirinin parçası: bekletmez
+        p.dashCool = 0
         this.events.push({ type: 'crystal' })
       }
     }
@@ -1324,7 +1358,10 @@ export class World {
     // düşmanlar
     for (const e of this.enemies) {
       if (!e.alive || !overlap(shrink(p, 1), e)) continue
-      const stomp = p.vy > 0 && p.y + p.h - e.y < 8
+      // basma: oyuncu üstten geldiyse (önceki adımda ayaklar düşmanın tepesinin üstündeydi) sayılır. Uçan düşman
+      // inip kalkarken ya da zıplamanın tepesinde (hız ~0) de geçerli; alttan zıplayıp çarpan ölür
+      const fromAbove = this.prevFeet <= (e.py ?? e.y) + 4 && p.vy > -150
+      const stomp = fromAbove || (p.vy > 0 && p.y + p.h - e.y < 10)
       if (e.kind !== 'spiky' && (stomp || p.dashTime > 0)) {
         e.alive = false
         p.vy = -PHYS.stompV
