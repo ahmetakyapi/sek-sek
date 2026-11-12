@@ -3,6 +3,7 @@ import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { SCARVES, completes, dailyChallenge, dayKey, meets, weekKey, weeklyChallenge } from '../lib/extras'
 import { bossLevel } from '../game/levels'
+import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
 
 describe('günün şehri ve haftanın görevi', () => {
   it('aynı gün aynı görev, açılmamış şehir çıkmaz', () => {
@@ -63,5 +64,25 @@ describe('boss koşusu', () => {
       expect(b.map.join('').includes('?'), l.id).toBe(false)
       expect(w.exit.x, l.id).toBeGreaterThan(w.boss!.x)
     }
+  })
+})
+
+describe('oynanmamış şehre yönlendirme', () => {
+  const done = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, { timeMs: 1000, deaths: 0, items: [true, true, true] }]))
+  const all = LEVELS.map((l) => l.id)
+  it('sona varmış ama araya giren şehirleri oynamamış oyuncu ilk oynanmamışa gider', () => {
+    const s = { ...defaultSave(), unlocked: LEVELS.length - 1, best: done(all.filter((id) => !['eskisehir', 'kayseri', 'hatay'].includes(id))) }
+    expect(LEVELS[resumeFor(s)].id).toBe('eskisehir')
+    // son şehirden sonra sıradaki de oynanmamış ilk şehir
+    expect(LEVELS[nextUnplayed(s, LEVELS.length - 1)!].id).toBe('eskisehir')
+  })
+  it('hepsi bitmişse devam son şehirde kalır, sıradaki yoktur', () => {
+    const s = { ...defaultSave(), unlocked: LEVELS.length - 1, best: done(all) }
+    expect(resumeFor(s)).toBe(LEVELS.length - 1)
+    expect(nextUnplayed(s, LEVELS.length - 1)).toBeNull()
+  })
+  it('yolun ortasındaki oyuncu kaldığı şehirden devam eder', () => {
+    const s = { ...defaultSave(), unlocked: 3, best: done(all.slice(0, 3)) }
+    expect(resumeFor(s)).toBe(3)
   })
 })

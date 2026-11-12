@@ -29,7 +29,7 @@ import { CHALLENGE_TEXT, SCARVES, completes, dailyChallenge, scarfFor, weeklyCha
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
-import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
+import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, needsMapNotice, restartJourney, writeSave, MAP_VERSION, type Player, type Save } from '@/lib/storage'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
 const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
@@ -232,7 +232,7 @@ export default function Game() {
     }
     fit()
     const qCity = LEVELS.findIndex((l) => l.id === qs.get('sehir'))
-    const startIdx = qCity >= 0 && qCity <= s.unlocked ? qCity : Math.min(s.unlocked, LEVELS.length - 1)
+    const startIdx = qCity >= 0 && qCity <= s.unlocked ? qCity : resumeFor(s)
     levelRef.current = startIdx
     setLevelIdx(startIdx)
     setResumeIdx(startIdx)
@@ -518,7 +518,7 @@ export default function Game() {
           // bu tarayıcıdaki ilerleme bu hesabındır
           const next = { ...mergeSaves(adoptable(cur, playerId), merged), owner: playerId }
           writeSave(next)
-          setResumeIdx((r) => Math.max(r, Math.min(next.unlocked, LEVELS.length - 1)))
+          setResumeIdx(resumeFor(next))
           void pushSave(next)
           return next
         })
@@ -798,7 +798,7 @@ export default function Game() {
         },
       }
       writeSave(next)
-      setResumeIdx(next.unlocked)
+      setResumeIdx(resumeFor(next))
       setResult({ timeMs, deaths: w.deaths, items, newBest, relaxed: relaxedRef.current, earned })
       return next
     })
@@ -1578,7 +1578,13 @@ export default function Game() {
           heroName={hero.short}
           heroId={hero.id}
           onPlayer={(p) => persist({ ...save, player: p, skippedName: !p })}
-          onNext={() => (levelIdx + 1 < LEVELS.length ? loadLevel(levelIdx + 1) : setScreen('end'))}
+          nextIdx={levelIdx + 1 < LEVELS.length ? levelIdx + 1 : nextUnplayed(save, levelIdx)}
+          onNext={() => {
+            // sondaki şehirden sonra: oynanmamış bir şehir varsa ona, yoksa defterin sonuna
+            const n = levelIdx + 1 < LEVELS.length ? levelIdx + 1 : nextUnplayed(save, levelIdx)
+            if (n === null) setScreen('end')
+            else loadLevel(n)
+          }}
           onRetry={() => loadLevel(levelIdx, 'play')}
           onMap={() => setScreen('map')}
         />
@@ -1782,6 +1788,7 @@ function Complete({
   heroId,
   onPlayer,
   onNext,
+  nextIdx,
   onRetry,
   onMap,
 }: {
@@ -1792,6 +1799,8 @@ function Complete({
   heroId: CharacterId
   onPlayer: (p: Player | null) => void
   onNext: () => void
+  /** Sıradaki düğmesinin şehri (null: defterin sonu) */
+  nextIdx: number | null
   onRetry: () => void
   onMap: () => void
 }) {
@@ -2036,7 +2045,7 @@ function Complete({
         {/* ── sabit eylem şeridi: telefonda da hep görünür */}
         <div className="z-10 -mx-6 mt-3 grid shrink-0 grid-cols-2 gap-2.5 sm:grid-cols-[1fr_auto_auto] border-t-2 border-line bg-[#1e1a29]/95 px-6 py-3 wide:mt-4 [padding-bottom:max(12px,env(safe-area-inset-bottom))] short:col-start-1 short:row-start-3 short:mx-0 short:mt-2 short:grid-cols-2 short:gap-2 short:self-start short:border-0 short:bg-transparent short:p-0">
           <button className="pixel-btn primary col-span-2 min-w-0 justify-center sm:col-span-1 short:col-span-2" onClick={onNext} autoFocus>
-            <span className="truncate">{levelIdx + 1 < LEVELS.length ? t('▶ Sıradaki: {city}', { city: displayName(LEVELS[levelIdx + 1]) }) : t('▶ Defteri Kapat')}</span>
+            <span className="truncate">{nextIdx !== null ? t('▶ Sıradaki: {city}', { city: displayName(LEVELS[nextIdx]) }) : t('▶ Defteri Kapat')}</span>
           </button>
           <button className="pixel-btn" onClick={onRetry} aria-label={t('↺ Tekrar')}>
             {t('↺ Tekrar')}

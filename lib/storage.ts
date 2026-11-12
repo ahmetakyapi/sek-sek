@@ -195,6 +195,23 @@ export const needsMapNotice = (s: Save) => s.mapVersion < MAP_VERSION && (s.unlo
 /** Baştan başla: ilerleme sıfırlanır; ad, karakter ve ayarlar kalır */
 export const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, bosses: {}, rush: null, mapVersion: MAP_VERSION, migrated: false })
 
+/**
+ * Açık ama hiç bitirilmemiş ilk şehir: `from`dan sonra aranır, yoksa baştan. Araya yeni şehir girince (Kayseri, Hatay,
+ * Eskişehir) sona varmış oyuncu oynamadığı şehre yönlendirilir. Hepsi bitmişse null.
+ */
+export function nextUnplayed(s: Save, from: number): number | null {
+  const last = Math.min(s.unlocked, LEVELS.length - 1)
+  const order = [...Array(last + 1).keys()]
+  for (const i of [...order.filter((i) => i > from), ...order.filter((i) => i <= from)]) if (!s.best[LEVELS[i].id]) return i
+  return null
+}
+
+/** "Devam Et"in şehri: kaldığı şehir; o bitmişse ilk oynanmamış açık şehir */
+export function resumeFor(s: Save): number {
+  const at = Math.min(s.unlocked, LEVELS.length - 1)
+  return s.best[LEVELS[at].id] ? (nextUnplayed(s, at) ?? at) : at
+}
+
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
 export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null })
 
