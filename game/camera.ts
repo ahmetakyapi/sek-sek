@@ -20,7 +20,29 @@ export const CAM = {
   lead: 28,
   /** hıza göre bakış payı; dash hızı sayılmaz, yoksa kamera dash'te ileri fırlayıp geri teper */
   leadVel: 0.15,
+  /** bakış payı ekranın en çok bu oranı: dar (telefon) ekranda dönüşte kadraj savrulmasın */
+  leadMax: 0.07,
+  /** bakış payı dönüşte yavaşça kayar (sn başına kalan oran): joystick titrese de kamera savrulmaz */
+  leadKeep: 0.06,
+  /** aşağı bakış da yumuşakça açılır ve kapanır */
+  lookKeep: 0.08,
+  /** ölü bölge: karakter kadrajın ortasındaki bu genişlikte (ekran oranı) kaldıkça kamera kımıldamaz */
+  window: 0.035,
 } as const
+
+/** Kameranın kare arası durumu: konum ve yumuşatılmış takip payları */
+export interface CamState {
+  x: number
+  y: number
+  /** havadayken sabit kalan basılan yükseklik */
+  feet?: number
+  /** yumuşatılmış bakış payı (dünya pikseli) */
+  lead?: number
+  /** yumuşatılmış aşağı bakış (dünya pikseli) */
+  look?: number
+  /** ölü bölgenin çapası: karakter ortası bu noktadan pencere kadar uzaklaşınca çapa onu izler */
+  anchor?: number
+}
 
 /** Üstel yaklaşım: kaç karede çağrılırsa çağrılsın aynı sürede aynı yere varır. */
 export function approach(cur: number, target: number, dt: number, keep: number) {
@@ -62,19 +84,34 @@ export function lookDown(w: World, vh: number): number {
  * Dikeyde kamera her zıplamada sallanmaz: yerde ya da duvarda iken basılan yüksekliğe (feet) bakar, havadayken
  * o yükseklikte kalır. Karakter ekranın üst ya da alt bandına yaklaşırsa yine izler (yüksek tırmanış, uzun düşüş).
  */
-export function followTarget(w: World, vw: number, vh: number, cam?: { feet?: number }): [number, number] {
+export function followTarget(w: World, vw: number, vh: number, cam?: CamState, dt = 0): [number, number] {
   const p = w.player
   const cap = PHYS.run * 1.15
   const vx = Math.max(-cap, Math.min(cap, p.vx))
+  // bakış payı ekrana orantılı (telefonda küçük) ve dönüşte yumuşakça kayar
+  const lead = Math.min(CAM.lead, vw * CAM.leadMax)
+  const wantLead = p.facing * lead + vx * CAM.leadVel * (lead / CAM.lead)
+  if (cam) cam.lead = cam.lead === undefined ? wantLead : approach(cam.lead, wantLead, dt, CAM.leadKeep)
+  const look = lookDown(w, vh)
+  if (cam) cam.look = cam.look === undefined ? look : approach(cam.look, look, dt, CAM.lookKeep)
   const feet = p.y + p.h
   const onGround = p.grounded || p.wallDir !== 0 || p.dead
   if (cam && (onGround || cam.feet === undefined)) cam.feet = feet
   const anchor = cam?.feet ?? feet
-  let ty = anchor - p.h / 2 - vh * 0.55 + lookDown(w, vh)
+  let ty = anchor - p.h / 2 - vh * 0.55 + (cam?.look ?? look)
   // karakter ekranın %22'si ile %72'si arasında kalsın
   const pc = p.y + p.h / 2
   ty = Math.max(pc - vh * 0.72, Math.min(pc - vh * 0.22, ty))
-  return [p.x + p.w / 2 - vw / 2 + p.facing * CAM.lead + vx * CAM.leadVel, ty]
+  // ölü bölge hedefe uygulanır, kameraya değil: çapa karakter ortası pencereden çıkınca onu izler (ufak ileri geri
+  // adımlar kadrajı oynatmaz). Çapa yalnız karakterin yoluna bağlıdır: her Hz'de aynı sonuç
+  const pcx = p.x + p.w / 2
+  let ax = pcx
+  if (cam) {
+    const win = vw * CAM.window
+    cam.anchor = cam.anchor === undefined ? pcx : Math.max(pcx - win, Math.min(pcx + win, cam.anchor))
+    ax = cam.anchor
+  }
+  return [ax - vw / 2 + (cam?.lead ?? wantLead), ty]
 }
 
 /**
@@ -119,9 +156,9 @@ export function clampCam(w: World, x: number, y: number, vw: number, vh: number)
 }
 
 /** Bir karelik kamera adımı: hedefi seçer, saate bağlı yaklaşır, sınıra çeker. */
-export function stepCamera(w: World, cam: { x: number; y: number; feet?: number }, dt: number, vw: number, vh: number) {
+export function stepCamera(w: World, cam: CamState, dt: number, vw: number, vh: number) {
   const boss = bossFrame(w, vw, vh)
-  const [tx, ty] = boss ?? followTarget(w, vw, vh, cam)
+  const [tx, ty] = boss ?? followTarget(w, vw, vh, cam, dt)
   const x = approach(cam.x, tx, dt, boss ? CAM.boss : CAM.follow)
   const y = approach(cam.y, ty, dt, boss ? CAM.bossY : CAM.followY)
   ;[cam.x, cam.y] = clampCam(w, x, y, vw, vh)

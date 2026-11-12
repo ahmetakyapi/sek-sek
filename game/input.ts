@@ -11,6 +11,8 @@ export class InputManager {
   private prevPadJump = false
   private prevPadDash = false
   touch = { x: 0, y: 0, jump: false, dash: false }
+  /** joystick'in tuttuğu yön (-1, 0, 1): eşikte titremesin diye bırakma eşiği daha düşük */
+  private stickDir = 0
   onPause: (() => void) | null = null
   onRetry: (() => void) | null = null
 
@@ -84,9 +86,11 @@ export class InputManager {
     i.down = k.has('ArrowDown') || k.has('KeyS')
     i.jump = JUMP_KEYS.some((c) => k.has(c)) || this.touch.jump
 
-    // dokunmatik joystick
-    if (this.touch.x < -0.28) i.left = true
-    if (this.touch.x > 0.28) i.right = true
+    // dokunmatik joystick: basmak için 0,28, bırakmak için 0,18 (eşikte titreyen başparmak yönü açıp kapatmasın)
+    const tx = this.touch.x
+    this.stickDir = this.stickDir > 0 ? (tx > 0.18 ? 1 : tx < -0.28 ? -1 : 0) : this.stickDir < 0 ? (tx < -0.18 ? -1 : tx > 0.28 ? 1 : 0) : tx > 0.28 ? 1 : tx < -0.28 ? -1 : 0
+    if (this.stickDir < 0) i.left = true
+    if (this.stickDir > 0) i.right = true
     if (this.touch.y < -0.5) i.up = true
     // aşağı yalnızca bilinçli ve dike yakın bir itişle: koşarken başparmak kayınca ince platformdan düşmesin
     if (this.touch.y > 0.72 && Math.abs(this.touch.x) < this.touch.y * 0.7) i.down = true

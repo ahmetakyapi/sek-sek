@@ -12,6 +12,10 @@ export class Sound {
   private ac: AudioContext | null = null
   private master: GainNode | null = null
   private musicGain: GainNode | null = null
+  /** efektlerin yolu: alçak geçiren süzgeç (sert, bip gibi tiz harmonikler kesilir) */
+  private sfxBus: BiquadFilterNode | null = null
+  /** aynı efekt art arda tetiklenirse üst üste binmesin: son çalınış zamanı */
+  private lastSfx = new Map<string, number>()
   private reverb: ConvolverNode | null = null
   private noiseBuf: AudioBuffer | null = null
   private timer: number | null = null
@@ -38,6 +42,11 @@ export class Sound {
       this.master = this.ac.createGain()
       this.master.gain.value = 0.5
       this.master.connect(this.ac.destination)
+      this.sfxBus = this.ac.createBiquadFilter()
+      this.sfxBus.type = 'lowpass'
+      this.sfxBus.frequency.value = 3200
+      this.sfxBus.Q.value = 0.7
+      this.sfxBus.connect(this.master)
       // müzik: hafif sıkıştırma + kısa oda yankısı, sonra ana ses
       const comp = this.ac.createDynamicsCompressor()
       comp.threshold.value = -18
@@ -110,7 +119,7 @@ export class Sound {
     g.gain.exponentialRampToValueAtTime(vol, t + 0.008)
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     o.connect(g)
-    g.connect(dest ?? this.master)
+    g.connect(dest ?? this.sfxBus ?? this.master)
     o.start(t)
     o.stop(t + dur + 0.02)
   }
@@ -131,25 +140,36 @@ export class Sound {
     g.gain.value = vol
     src.connect(f)
     f.connect(g)
-    g.connect(dest ?? this.master)
+    g.connect(dest ?? this.sfxBus ?? this.master)
     src.start(t)
   }
 
+  /**
+   * Oyun efektleri: yumuşak, yuvarlak sesler (sinüs ve üçgen; kare ve testere dalga yok: bip gibi, yapışkan tuş
+   * uyarısı gibi duyuluyordu). Hepsi alçak geçiren süzgeçten geçer; aynı efekt 60 ms içinde ikinci kez çalmaz.
+   */
   sfx(name: string) {
     if (!this.sfxOn || !this.ac) return
+    const now = this.ac.currentTime
+    if (now - (this.lastSfx.get(name) ?? -1) < 0.06) return
+    this.lastSfx.set(name, now)
     switch (name) {
       case 'jump':
-        return this.tone(330, 0.12, 'square', 0.08, 220)
+        // kısa, yukarı kalkan bir "blop"
+        this.tone(300, 0.13, 'sine', 0.07, 260)
+        return this.tone(600, 0.06, 'triangle', 0.02, 300)
       case 'walljump':
-        return this.tone(392, 0.12, 'square', 0.08, 260)
+        this.tone(360, 0.13, 'sine', 0.07, 300)
+        return this.tone(720, 0.05, 'triangle', 0.02, 260)
       case 'dash':
-        this.noise(0.18, 0.25, 1800)
-        return this.tone(600, 0.14, 'sawtooth', 0.05, -300)
+        // süzgeçli rüzgâr hışırtısı
+        this.noise(0.18, 0.16, 1300)
+        return this.tone(520, 0.12, 'triangle', 0.03, -260)
       case 'land':
-        return this.noise(0.05, 0.12, 400)
+        return this.noise(0.05, 0.08, 380)
       case 'death':
-        this.noise(0.35, 0.3, 300)
-        return this.tone(220, 0.4, 'square', 0.1, -170)
+        this.noise(0.3, 0.2, 300)
+        return this.tone(220, 0.38, 'triangle', 0.09, -160)
       case 'collect':
         this.tone(784, 0.1, 'triangle', 0.14)
         setTimeout(() => this.tone(1046, 0.18, 'triangle', 0.14), 80)
@@ -163,8 +183,8 @@ export class Sound {
       case 'spring':
         return this.tone(200, 0.25, 'triangle', 0.14, 500)
       case 'stomp':
-        this.noise(0.08, 0.2, 900)
-        return this.tone(180, 0.1, 'square', 0.08, -80)
+        this.noise(0.07, 0.15, 800)
+        return this.tone(200, 0.1, 'triangle', 0.08, -90)
       case 'crumble':
         return this.noise(0.2, 0.15, 250)
       case 'shoot':
@@ -194,24 +214,24 @@ export class Sound {
         this.noise(0.25, 0.15, 1200)
         return this.tone(392, 0.35, 'triangle', 0.1, 400)
       case 'bossWake':
-        this.noise(0.3, 0.25, 220)
-        return this.tone(110, 0.5, 'sawtooth', 0.09, -30)
+        this.noise(0.3, 0.2, 220)
+        return this.tone(110, 0.5, 'triangle', 0.1, -30)
       case 'bossSlam':
-        this.noise(0.16, 0.28, 320)
-        return this.tone(90, 0.16, 'square', 0.09, -40)
+        this.noise(0.16, 0.22, 320)
+        return this.tone(90, 0.16, 'triangle', 0.1, -40)
       case 'bossHit':
-        this.noise(0.1, 0.25, 1000)
-        this.tone(523, 0.1, 'square', 0.1)
+        this.noise(0.1, 0.18, 1000)
+        this.tone(523, 0.1, 'triangle', 0.1)
         setTimeout(() => this.tone(784, 0.16, 'triangle', 0.12), 70)
         return
       case 'bossDown':
         ;[392, 523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.24, 'triangle', 0.14), i * 100))
         return
       case 'switch':
-        this.noise(0.08, 0.2, 700)
-        return this.tone(330, 0.1, 'square', 0.07, 120)
+        this.noise(0.08, 0.14, 700)
+        return this.tone(330, 0.1, 'triangle', 0.07, 120)
       case 'ui':
-        return this.tone(660, 0.05, 'square', 0.04)
+        return this.tone(520, 0.05, 'sine', 0.035)
     }
   }
 

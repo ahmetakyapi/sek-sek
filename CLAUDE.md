@@ -176,6 +176,11 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
 - **Kare içinde ağır iş yok.** 120 Hz'de bütün kare 8 ms'dir. Pahalı çizim (zemin) önceden, küçük parçalar hâlinde ve
   süre bütçesiyle yapılır (`terrainDraw.ts` WARM_MS). Yeni önbellekli çizim eklersen aynı yolu izle.
 - **Hareketli her şey ara değerlenir** (`capture()` / `blend()`), yoksa yüksek Hz'de titrer.
+- **Kamera telefonda sakin.** Bakış payı ekrana orantılı (`CAM.leadMax`), dönüşte yumuşakça kayar (`leadKeep`); ölü bölge
+  kameraya değil hedefe uygulanır (`anchor`): ufak adımlar ve eşikte titreyen joystick kadrajı oynatmaz. Joystick'in yön eşiği
+  pay ile çalışır (basmak 0,28, bırakmak 0,18). Sarsıntı küçük ekranda orana göre küçülür.
+- **Efekt sesleri yumuşak.** Kare ve testere dalga efektte kullanılmaz (bip, yapışkan tuş uyarısı gibi duyuluyordu); efektler
+  alçak geçiren süzgeçten geçer, aynı efekt 60 ms içinde ikinci kez çalmaz (`tests/music.test.ts` bekler).
 - **Piksel bütçesi.** Tuval ekranın tam yoğunluğunda değil, `backingDpr()` ile kare başına en çok `PIXEL_BUDGET`
   (~2,6 Mpx, aşağı yukarı 1080p) çizilir. Kasmanın asıl nedeni JavaScript değil boyamaydı (profilin %85'i): Retina, 4K ve DPR 3
   telefonda 5-8 Mpx çizmek kare kaçırtıyordu. Tuvali büyütecek, kare başına yeni tam ekran katman ya da `filter` / büyük
