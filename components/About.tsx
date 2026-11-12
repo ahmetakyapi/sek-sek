@@ -16,7 +16,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 /** Mekanik sözlüğünün küçük piksel simgeleri (10x10) */
 const ICONS: Record<string, { rows: string[]; pal: Record<string, string> }> = {
   flag: { pal: { p: '#d8d8d8', r: '#e30a17', w: '#ffffff' }, rows: ['.p........', '.prrrrr...', '.prrwrrr..', '.prrrrr...', '.p........', '.p........', '.p........', '.p........', '.p........', 'ppp.......'] },
-  crystal: { pal: { b: '#7ad8ff', B: '#3a8ab8', w: '#ffffff' }, rows: ['....b.....', '...bwb....', '..bwbbb...', '.bbbbbbb..', 'bbbbbbbbB.', '.bbbbbbB..', '..bbbbB...', '...bbB....', '....B.....', '..........'] },
+  crystal: { pal: { r: '#e5484d', k: '#2a2038', w: '#ffffff' }, rows: ['...rrrr...', '.rrkkkkrr.', '.rkkkkkkr.', 'rkwkkwkkkr', 'rkkwkkwkkr', 'rkkwkkwkkr', 'rkwkkwkkkr', '.rkkkkkkr.', '.rrkkkkrr.', '...rrrr...'] },
   key: { pal: { g: '#f2c14e', G: '#a8781c' }, rows: ['..........', '.ggg......', 'g...g.....', 'g...gggggg', 'g...g..G.G', '.ggg...G.G', '..........', '..........', '..........', '..........'] },
   plate: { pal: { o: '#e8794a', b: '#3fa8c8', k: '#5a3c26' }, rows: ['oooo..bbbb', 'o..o..b..b', 'o..o..b..b', 'oooo..bbbb', '..........', '..........', '...kkkk...', '..kkkkkk..', '..........', '..........'] },
   fake: { pal: { s: '#9aa3b5', d: '#3c4052', c: '#1a1420' }, rows: ['ssssdsssss', 'ssssdsssss', 'dddddddddd', 'ssdcccccds', 'sdcccccccs', 'dccccccccd', 'scccccccsc', 'scccccccss', 'dccccccccd', 'scccccccds'] },
@@ -50,7 +50,7 @@ function PixelIcon({ id }: { id: string }) {
 
 const MECHANICS: [string, string, string][] = [
   ['flag', 'Bayrak', 'Dokununca kontrol noktası olur; düşersen buradan başlarsın.'],
-  ['crystal', 'Kristal', 'Havadayken dash’ini yeniler. Dash at, kristale değ, bir daha dash at.'],
+  ['crystal', 'Dash Halkası', 'Toplanmaz, içinden geçilir: havada dash’ini yeniler. Dash at, halkadan geç, bir daha dash at.'],
   ['key', 'Anahtar ve Kapı', 'Kapı anahtarsız açılmaz. Anahtar çoğu zaman en zor köşededir.'],
   ['plate', 'Basınç Plakası', 'Bastıkça turuncu ve mavi bloklar yer değiştirir. Sıra önemlidir.'],
   ['crumble', 'Çatlak Taş', 'Üstüne basınca dağılır, biraz sonra yerine gelir. Durma, sek.'],

@@ -1259,7 +1259,8 @@ export function drawKeepsake(c: CanvasRenderingContext2D, city: CityKey, x: numb
 /* ── Ortak nesneler ───────────────────────────────────────────── */
 
 /**
- * Ortak nesneler: anahtar, gizli pul, dash kristali (active), nazar boncuğu, yay (squash 0..1).
+ * Ortak nesneler: anahtar, gizli pul, dash halkası (active; ready: oyuncunun dash'i harcanmış, charge: dolum 0..1),
+ * nazar boncuğu, yay (squash 0..1).
  * (x, y) kutunun merkezi (ekran pikseli). accent: şehrin vurgu rengi (pulun resmi, yayın tablası).
  * crate: yay yerine kayısı kasası (Malatya).
  */
@@ -1270,7 +1271,7 @@ export function drawThing(
   y: number,
   sc: number,
   t: number,
-  opt?: { active?: boolean; squash?: number; accent?: string; crate?: boolean },
+  opt?: { active?: boolean; ready?: boolean; charge?: number; squash?: number; accent?: string; crate?: boolean },
 ): void {
   begin(c, x, y, sc)
   try {
@@ -1318,32 +1319,50 @@ export function drawThing(
         break
       }
       case 'crystal': {
+        // Dash halkası: toplanmaz, içinden geçilir. Dokunmatik DASH tuşunun aynısı (koyu disk, kırmızı halka, » okları),
+        // oyuncu "bu bir dash" diye okusun, hatıra ya da mücevher sanmasın.
+        const RED = '#e5484d'
         if (opt?.active === false) {
-          // harcanmış: yalnız soluk çerçeve, dolunca geri gelir
-          c.globalAlpha = 0.35
+          // harcandı: soluk kesik halka, saat gibi dolan yay; dolunca geri gelir
+          const k = Math.max(0, Math.min(1, opt?.charge ?? 0))
+          c.globalAlpha = 0.45
+          c.setLineDash([1.4, 1.2])
           c.beginPath()
-          c.moveTo(0, -6)
-          c.lineTo(3.8, -1)
-          c.lineTo(0, 6)
-          c.lineTo(-3.8, -1)
-          c.closePath()
-          c.strokeStyle = '#7ad8ff'
-          c.lineWidth = 0.7
+          c.arc(0, 0, 4.3, 0, TAU)
+          c.strokeStyle = RED
+          c.lineWidth = 0.6
+          c.stroke()
+          c.setLineDash([])
+          c.globalAlpha = 0.85
+          c.beginPath()
+          c.arc(0, 0, 4.3, -Math.PI / 2, -Math.PI / 2 + k * TAU)
+          c.lineWidth = 1.1
           c.stroke()
           break
         }
-        glow(c, 8 + Math.sin(t * 4) * 0.8, 'rgba(122,216,255,0.2)')
-        poly(c, [0, -6, 3.8, -1, 0, 6, -3.8, -1], '#7ad8ff', '#3a98d4')
-        c.beginPath()
-        c.moveTo(0, -6)
-        c.lineTo(-3.8, -1)
-        c.lineTo(-0.6, -1.6)
-        c.closePath()
-        c.fillStyle = '#e8faff'
-        c.fill()
-        line(c, [-3.8, -1, -0.6, -1.6, 3.8, -1], 0.35, '#2a7ab0', false)
-        line(c, [-0.6, -1.6, 0, 6], 0.35, '#2a7ab0', false)
-        if (Math.sin(t * 4 + x * 0.05) > 0.7) twinkle(c, -3, -4.4, 1.6)
+        // dash hakkın varken soluk durur (o an işe yaramaz); dash'i harcayınca parlar ve dalga yayar
+        const ready = opt?.ready !== false
+        if (ready) {
+          for (let i = 0; i < 2; i++) {
+            const ph = (t * 1.1 + i * 0.5) % 1
+            c.globalAlpha = (1 - ph) * 0.55
+            c.beginPath()
+            c.arc(0, 0, 5.6 + ph * 4.5, 0, TAU)
+            c.strokeStyle = '#ff8a70'
+            c.lineWidth = 0.6
+            c.stroke()
+          }
+          c.globalAlpha = 1
+          glow(c, 8 + Math.sin(t * 4) * 0.6, 'rgba(255,110,90,0.22)')
+        } else c.globalAlpha = 0.6
+        ell(c, 0, 0, 5.2, 5.2, '#2a2038', '#1a1426')
+        ring(c, 0, 0, 4.1, 1.05, RED)
+        // » : ileri doğru hafifçe kayan iki ok
+        const dx = ready ? Math.sin(t * 6) * 0.35 : 0
+        const ch = ready ? '#ffffff' : '#cfc6dc'
+        line(c, [-2.5 + dx, -2, -0.9 + dx, 0, -2.5 + dx, 2], 0.95, ch, false)
+        line(c, [-0.1 + dx, -2, 1.5 + dx, 0, -0.1 + dx, 2], 0.95, ch, false)
+        dab(c, -2.6, -3.2, 1.1, 0.5, 'rgba(255,255,255,0.35)', -0.6)
         break
       }
       case 'charm': {

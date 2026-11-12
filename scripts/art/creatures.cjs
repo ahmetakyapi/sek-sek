@@ -93,7 +93,7 @@ cities.forEach((id, i) => {
 })
 y0 += kRows * kh
 head('ORTAK NESNELER', y0); y0 += 40
-const things = [['key', {}, 'anahtar'], ['stamp', { accent: '#e8794a' }, 'pul'], ['stamp', { accent: '#2f9a94' }, 'pul (vurgu)'], ['crystal', { active: true }, 'kristal'], ['crystal', { active: false }, 'kristal (boş)'], ['charm', {}, 'nazar'], ['spring', { squash: 0, accent: '#e8794a' }, 'yay'], ['spring', { squash: 1, accent: '#e8794a' }, 'yay (basık)'], ['spring', { squash: 0, crate: true }, 'kasa (Malatya)'], ['spring', { squash: 1, crate: true }, 'kasa (basık)']]
+const things = [['key', {}, 'anahtar'], ['stamp', { accent: '#e8794a' }, 'pul'], ['stamp', { accent: '#2f9a94' }, 'pul (vurgu)'], ['crystal', { active: true }, 'dash halkası'], ['crystal', { active: true, ready: false }, 'halka (dash varken)'], ['crystal', { active: false, charge: 0.6 }, 'halka (doluyor)'], ['charm', {}, 'nazar'], ['spring', { squash: 0, accent: '#e8794a' }, 'yay'], ['spring', { squash: 1, accent: '#e8794a' }, 'yay (basık)'], ['spring', { squash: 0, crate: true }, 'kasa (Malatya)'], ['spring', { squash: 1, crate: true }, 'kasa (basık)']]
 const tw = W / things.length
 things.forEach(([k, o, n], i) => {
   const x0 = i * tw

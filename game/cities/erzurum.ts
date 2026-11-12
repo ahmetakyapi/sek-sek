@@ -5,7 +5,7 @@ import type { CityRoad } from './types'
  * sekerek dama; altı zemin, güvenli) → Üç Kümbetler (ilk iki külah arası dash’i güvenle öğretir, büyük kümbetin
  * duvarına tutunup tırmanılır, sonra taşlar arası dash; düşen kurtların arasından yürür) → cirit meydanı (değnekler
  * düzenli aralıkla gelir: önce düz kulvar, sonra dikenli) → Palandöken yamacı (buz: zıpla, dash at, karşı duvara tutun;
- * vadinin üstünden dash + kristal + dash isteğe bağlı kestirme). Gizli pul soldaki minarenin dibinde, avluya bakan
+ * vadinin üstünden dash + dash halkası + dash isteğe bağlı kestirme). Gizli pul soldaki minarenin dibinde, avluya bakan
  * yüzündeki sahte duvarın ardında: sekerek çıkarken o yüze yaslanan içine düşer.
  */
 export const road: CityRoad = {

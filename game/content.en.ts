@@ -285,7 +285,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
       'Touch the flag: if you fall, you pick up from here. You can jump up through thin platforms and land on top.',
       'The pier: ride the moving platform across the water.',
       'DASH (Space / X): burst forward once in mid-air. It recharges when you land. Jump, then dash!',
-      'A blue crystal recharges your dash in mid-air: dash, touch the crystal, dash again!',
+      'A dash ring recharges your dash in mid-air: dash, go through the ring, dash again!',
       "Step on the pressure plate to make the bridge to Maiden's Tower pier appear.",
     ],
     npcs: [
@@ -424,7 +424,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     hints: [
       'The bay-window balconies are one-way: jump up from below to get on top. Cracked planks crumble!',
       'Castle walls: bounce between the two walls to climb. Watch out for pigeons.',
-      'The key is up high: jump, dash, touch the blue crystal, dash again.',
+      'The key is up high: jump, dash, go through the dash ring, dash again.',
     ],
     npcs: [
       {
@@ -897,7 +897,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     hints: [
       'In Ardahan the wind pushes you back. Ice is slippery, press the opposite direction to stop.',
       'Frozen lake: cracked ice breaks when you step on it. Keep running and jump over the holes.',
-      'Ride the platform that glides like a horse-drawn sleigh. The key is on an ice floe, and the crystal will get you there.',
+      'Ride the platform that glides like a horse-drawn sleigh. The key is on an ice floe, and the dash ring will get you there.',
     ],
     npcs: [
       {

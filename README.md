@@ -25,7 +25,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
   **gizli pul** deftere gizli bir sayfa ekler.
 - **Konuşan Şehir.** Simitçiden vapur kaptanına, mırracıdan kangal sahibine 30’u aşkın şehir insanı.
   Dost hayvanları sevebilirsin; kırmızı hatla parlayan canlılar tehlikelidir.
-- **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, kristallerle havada ikinci dash.
+- **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, dash halkalarıyla havada ikinci dash.
 - **Artbook Havası.** Işıkla boyanmış portreler, kilim çerçeveler, defter kâğıdı kartlar, paylaşılabilir kartpostallar.
 - **Skor Tablosu.** Şehir başına ve genel sıralama; altın, gümüş ve bronz süre madalyaları.
 

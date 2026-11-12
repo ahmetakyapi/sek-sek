@@ -38,7 +38,7 @@ export const ASSISTS: Record<string, Assist[]> = {
   ],
   istanbul: [
     { x: 176, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
-    { x: 166, y: 20, from: ['~~', '~~', '~~', '~~'], to: ['##', '##', '##', '##'], why: 'Kolay bölümde 8 karolık su dash+kristal+dash at istiyordu: ortaya iskele kazığı, iki kısa atlayış' },
+    { x: 166, y: 20, from: ['~~', '~~', '~~', '~~'], to: ['##', '##', '##', '##'], why: 'Kolay bölümde 8 karolık su dash+halka+dash at istiyordu: ortaya iskele kazığı, iki kısa atlayış' },
   ],
   kocaeli: [
     { x: 100, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
@@ -46,7 +46,7 @@ export const ASSISTS: Record<string, Assist[]> = {
   ],
   izmir: [
     { x: 163, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
-    { x: 174, y: 20, from: ['  ', '  ', '  ', '^^'], to: ['##', '##', '##', '##'], why: '8 karolık dikenli çukur dash+kristal zinciri istiyordu: ortaya basamak' },
+    { x: 174, y: 20, from: ['  ', '  ', '  ', '^^'], to: ['##', '##', '##', '##'], why: '8 karolık dikenli çukur dash+halka zinciri istiyordu: ortaya basamak' },
     { x: 185, y: 17, from: ['  ===       ===       === ', '                          '], to: ['                          ', '   ===   ===   ===   ===  '], why: 'Diken tarlasındaki iskeleler zeminden 48 piksel yüksekti (zıplama sınırı): 32 piksele indi, aralar 3 karo' },
   ],
   ankara: [
@@ -109,12 +109,12 @@ export const ASSISTS: Record<string, Assist[]> = {
   ardahan: [
     { x: 124, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 174, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
-    { x: 148, y: 18, from: ['      III        '], to: ['  ##  III   ##   '], why: '27 karolık diken tarlasında adalar arası 6–8 karoydu (dash+kristal zinciri): iki taş, aralar en çok 3 karo' },
+    { x: 148, y: 18, from: ['      III        '], to: ['  ##  III   ##   '], why: '27 karolık diken tarlasında adalar arası 6–8 karoydu (dash+halka zinciri): iki taş, aralar en çok 3 karo' },
   ],
   bayburt: [
     { x: 30, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 174, y: 7, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
-    { x: 152, y: 7, from: ['                X'], to: ['  ##       ##   X'], why: 'Rüzgâra karşı çöken adalar arası 7–8 karoydu (dash+kristal zinciri): iki sağlam taş, aralar en çok 3 karo' },
+    { x: 152, y: 7, from: ['                X'], to: ['  ##       ##   X'], why: 'Rüzgâra karşı çöken adalar arası 7–8 karoydu (dash+halka zinciri): iki sağlam taş, aralar en çok 3 karo' },
   ],
 }
 

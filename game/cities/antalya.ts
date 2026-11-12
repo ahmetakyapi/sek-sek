@@ -3,7 +3,7 @@ import type { CityRoad } from './types'
 /**
  * Antalya ana yolu, dört parça: Kaleiçi damları (damdan dama; dar sokağa düşmek zararsız, tentede ilk portakal) →
  * Hadrian Kapısı (üç kemerin altından geçilir, kapı ile sur arasındaki bacadan duvar sekmesiyle üstüne çıkılır) →
- * falezler (önce sığ ve kuru bir oyukta zıpla + dash at, sonra altı deniz; alçak kaya ana yol, kristal isteğe bağlı kestirme) →
+ * falezler (önce sığ ve kuru bir oyukta zıpla + dash at, sonra altı deniz; alçak kaya ana yol, dash halkası isteğe bağlı kestirme) →
  * Düden'e iniş (ilk ıslak taş düz zeminde, ardından küçük bir su birikintisi).
  * Gizli pul Hadrian Kapısı'nın orta kemerinin üstünde: alınlıkta karanlık bir ağız var, kapının üstünden içine düşülür.
  */

@@ -8,7 +8,7 @@ import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
 import { TerrainHD } from './terrainDraw'
 import { camYRange, clampCam, shakeOffset, stepCamera } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
-import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, DOOR, EMPTY, SPIKE_UP, WATER, hammerState, type World } from './sim'
+import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, SPIKE_UP, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -322,7 +322,10 @@ export class Renderer {
       case 'crumble':
         break
       case 'crystal':
-        this.burst(p.x + p.w / 2, p.y + p.h / 2, 16, '#7ad8ff', 90, 1)
+        // dash halkasından geçildi: halkanın renginde kıvılcım, dash'in yenilendiği yazıyla da okunur
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 14, '#ff8a70', 90, 1)
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 8, '#ffffff', 70, 1)
+        this.pop(p.x + p.w / 2, p.y - 6, 'Dash!', '#ff8a70')
         this.flash = 0.05
         break
       case 'key':
@@ -1932,7 +1935,9 @@ export class Renderer {
     for (const p of w.pickups) if (!p.taken && seen(p.x)) drawKeepsake(c, this.city, X(p.x + 5), Y(p.y + 5 + Math.sin(t * 3 + p.index) * 2), sc, t)
     for (const f of this.friends) drawFriend(c, CITY[this.city].animal, X(f.x), Y(f.bot), sc, t, this.petTimer > 0)
     this.friends.length = 0
-    for (const k of w.crystals) if (seen(k.x)) drawThing(c, 'crystal', X(k.x + 5), Y(k.y + 5 + Math.sin(t * 3 + k.x) * 1.5), sc, t, { active: k.active })
+    const ready = !w.player.canDash
+    for (const k of w.crystals)
+      if (seen(k.x)) drawThing(c, 'crystal', X(k.x + 5), Y(k.y + 5 + Math.sin(t * 3 + k.x) * 1.5), sc, t, { active: k.active, ready, charge: 1 - k.timer / CRYSTAL_RECHARGE })
     if (w.keyBox && !w.hasKey) drawThing(c, 'key', X(w.keyBox.x + 5), Y(w.keyBox.y + 5 + Math.sin(t * 3) * 2), sc, t)
     if (w.stampBox && !w.stampTaken) drawThing(c, 'stamp', X(w.stampBox.x + 6), Y(w.stampBox.y + 6 + Math.sin(t * 2) * 1.5), sc, t, { accent })
     if (w.charmBox && !w.charmTaken) drawThing(c, 'charm', X(w.charmBox.x + 5), Y(w.charmBox.y + 5), sc, t)

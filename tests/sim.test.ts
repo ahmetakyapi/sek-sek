@@ -174,7 +174,7 @@ describe('bulmaca ve yeni düşmanlar', () => {
     expect(m.state === 'stun' || m.state === 'idle').toBe(true)
   })
 
-  it('kristal dash’i geri doldurur ve kaybolur', () => {
+  it('dash halkası dash’i geri doldurur ve söner', () => {
     const w = mk(['          ', ' *        ', '          ', ' P        ', '##########'])
     run(w, 0.2)
     run(w, 0.05, { jump: true, jumpPressed: true })

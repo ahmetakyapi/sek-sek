@@ -21,6 +21,9 @@ export const BOSS_GATE = 13
 export const WET = 14
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
+/** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
+export const CRYSTAL_RECHARGE = 2.5
+
 export const PHYS = {
   gravity: 980,
   fallMax: 300,
@@ -1210,7 +1213,7 @@ export class World {
         if (c.timer <= 0) c.active = true
       } else if (!p.dead && !p.canDash && overlap(reach(p), c)) {
         c.active = false
-        c.timer = 2.5
+        c.timer = CRYSTAL_RECHARGE
         p.canDash = true
         this.events.push({ type: 'crystal' })
       }
@@ -1442,7 +1445,7 @@ export class World {
 
 /**
  * Toplama kutusu: karakter ekranda çarpışma kutusunun iki katına yakın boyda çizilir (render.ts HERO_SIZE 29, kutu 14).
- * Toplanan şeyler (hatıra, pul, nazar, anahtar, kristal, bayrak) çizilen gövdeye değince alınır; fizik ve tehlikeler
+ * Toplanan şeyler (hatıra, pul, nazar, anahtar, dash halkası, bayrak) çizilen gövdeye değince alınır; fizik ve tehlikeler
  * dar kutuyla kalır. Böylece omuz hizasındaki hatıra yürüyerek alınır, ancak bir kademe yukarıdaki için zıplanır.
  */
 const REACH_H = 26
