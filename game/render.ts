@@ -6,7 +6,7 @@ import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
 import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
 import { TerrainHD } from './terrainDraw'
-import { camYRange, clampCam, shakeOffset, stepCamera } from './camera'
+import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, SPIKE_UP, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
@@ -73,8 +73,8 @@ export class Renderer {
   viewH = 180
   camX = 0
   camY = 0
-  /** kameranın dikeyde baktığı basılan yükseklik (havadayken sabit kalır) */
-  private camFeet: number | undefined = undefined
+  /** kameranın kare arası durumu (basılan yükseklik, yumuşatılmış bakış payları) */
+  private cam: CamState = { x: 0, y: 0 }
   private t = 0
   character: CharacterDef = CHARACTERS.uktun
   /** oyuncunun seçtiği atkı rengi (yoksa karakterin kendi atkısı) */
@@ -187,7 +187,7 @@ export class Renderer {
     const p = world.player
     this.camX = p.x - this.viewW / 2
     this.camY = p.y - this.viewH / 2
-    this.camFeet = undefined
+    this.cam = { x: this.camX, y: this.camY }
     this.clampCam(world)
   }
 
@@ -314,6 +314,7 @@ export class Renderer {
         // kapıdan geçiş: kamera yeni yere sıçrar, kısa bir ışık
         this.camX = p.x - this.viewW / 2
         this.camY = p.y - this.viewH * 0.55
+        this.cam = { x: this.camX, y: this.camY }
         this.flash = 0.16
         break
       case 'charm':
@@ -415,13 +416,14 @@ export class Renderer {
     const s = CITY[this.city]
 
     // kamera: saate bağlı (game/camera.ts), kare hızından bağımsız
-    const cam = { x: this.camX, y: this.camY, feet: this.camFeet }
-    stepCamera(w, cam, dt, this.viewW, this.viewH)
-    this.camFeet = cam.feet
-    this.camX = cam.x
-    this.camY = cam.y
+    this.cam.x = this.camX
+    this.cam.y = this.camY
+    stepCamera(w, this.cam, dt, this.viewW, this.viewH)
+    this.camX = this.cam.x
+    this.camY = this.cam.y
     this.shake = Math.max(0, this.shake - dt * 18)
-    const [sx, sy] = shakeOffset(this.t, this.shake)
+    // küçük ekranda büyütme oranı yüksek: aynı sarsıntı ekranda daha büyük görünür, orana göre küçülür
+    const [sx, sy] = shakeOffset(this.t, this.shake * Math.min(1, this.viewW / 420))
     // kamera kesirli kayar: düşük çözünürlüklü katmanlar tam piksele çizilir, ekrana basılırken kesir kadar ötelenir
     const cx = Math.floor(this.camX + sx)
     const cy = Math.floor(this.camY + sy)

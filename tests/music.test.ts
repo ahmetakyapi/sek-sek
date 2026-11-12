@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { SCALES, cityTheme, titleTheme, type Song } from '../game/music'
@@ -35,5 +36,16 @@ describe('müzik', () => {
     sane(a)
     expect(a.length % m.meter.reduce((x, y) => x + y, 0)).toBe(0)
     expect(cityTheme(city)).toBe(a)
+  })
+})
+
+describe('oyun efektleri', () => {
+  it('yumuşak dalgayla çalınır: kare ve testere dalga yok (bip, yapışkan tuş uyarısı gibi duyuluyordu)', () => {
+    const src = readFileSync('game/audio.ts', 'utf8')
+    const body = src.slice(src.indexOf('  sfx(name: string) {'), src.indexOf('  /** oyun müziği'))
+    expect(body.length).toBeGreaterThan(500)
+    expect(body).not.toMatch(/'square'|'sawtooth'/)
+    // aynı efekt art arda üst üste binmez
+    expect(body).toMatch(/lastSfx/)
   })
 })
