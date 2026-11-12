@@ -1748,6 +1748,10 @@ const PAINT: Record<CityKey, Painter> = {
       })
     aura(c, mood, t, 9.6, -24, 5.6, -12.4, -2.4)
   },
+  // GEÇİCİ: çizim ajanı kendi çizimlerini yapacak
+  kayseri: (...a) => PAINT.sivas(...a),
+  hatay: (...a) => PAINT.adana(...a),
+  eskisehir: (...a) => PAINT.bursa(...a),
 }
 
 /** Yerden çıkan boss'un işareti: kabaran toprak, sıçrayan çakıllar. */

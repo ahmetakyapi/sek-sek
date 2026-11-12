@@ -30,9 +30,12 @@ import { prelude as antalya } from './antalya'
 import { prelude as sanliurfa } from './sanliurfa'
 import { prelude as van } from './van'
 import { prelude as erzurum } from './erzurum'
+import { prelude as eskisehir } from './eskisehir'
+import { prelude as hatay } from './hatay'
+import { prelude as kayseri } from './kayseri'
 import type { Prelude } from './types'
 
-export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt, edirne, bursa, antalya, sanliurfa, van, erzurum }
+export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt, kayseri, hatay, eskisehir, edirne, bursa, antalya, sanliurfa, van, erzurum }
 
 const H = 24
 const ICE: CityKey[] = ['sivas', 'ardahan', 'erzurum']

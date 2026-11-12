@@ -64,6 +64,12 @@ export const SCALES: Record<CityKey, Makam> = {
   sanliurfa: { root: 59, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.19 },
   // Uşşak, göl kıyısı (Van)
   van: { root: 57, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.2 },
+  // Hüseyni, Orta Anadolu oyun havası 9/8 (Kayseri)
+  kayseri: { root: 60, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.18 },
+  // Hicaz, Antakya ağırlığı (Hatay)
+  hatay: { root: 62, steps: [0, 1, 4, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.17 },
+  // Rast, şen bir öğrenci şehri (Eskişehir)
+  eskisehir: { root: 60, steps: [0, 2, 4, 5, 7, 9, 11, 12], meter: [2, 2, 2, 2], tempo: 0.17 },
   // Hüseyni, bar havası 5/8 (Erzurum)
   erzurum: { root: 59, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 3], tempo: 0.16 },
   kocaeli: { root: 60, steps: [0, 2, 3, 5, 7, 8, 11, 12], meter: [2, 2, 2, 2], tempo: 0.2 },

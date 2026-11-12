@@ -1,3 +1,4 @@
+import { LEVELS } from '@/game/levels'
 import type { LevelDef } from '@/game/types'
 
 /**
@@ -24,7 +25,7 @@ export const SCARVES: Scarf[] = [
   { id: 'erguvan', name: 'Erguvan', nameEn: 'Judas Purple', color: '#b04a9a', shade: '#7e2e70', need: 10 },
   { id: 'firuze', name: 'Firuze', nameEn: 'Turquoise', color: '#2ab8a8', shade: '#1a8a7e', need: 15 },
   { id: 'gece', name: 'Gece Laciverti', nameEn: 'Midnight Blue', color: '#33407e', shade: '#222c5a', need: 20 },
-  { id: 'nazar', name: 'Nazar', nameEn: 'Evil Eye', color: '#f4f8ff', shade: '#4ab0e8', need: 25 },
+  { id: 'nazar', name: 'Nazar', nameEn: 'Evil Eye', color: '#f4f8ff', shade: '#4ab0e8', need: LEVELS.length },
 ]
 
 export const scarfFor = (id: string | undefined) => SCARVES.find((s) => s.id === id) ?? SCARVES[0]

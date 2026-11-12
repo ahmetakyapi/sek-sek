@@ -82,6 +82,66 @@ export interface CityStyle {
 }
 
 export const CITY: Record<CityKey, CityStyle> = {
+  kayseri: {
+    // Erciyes’in karlı silueti, bazalt taş, Selçuklu kırmızısı
+    sky: ['#4a5a86', '#a4b0d0', '#f2e8da'],
+    sun: { x: 0.72, y: 0.34, r: 14, color: '#fff2d0', glow: 'rgba(255,240,210,0.18)' },
+    far: '#b8bccc',
+    mid: '#80829a',
+    near: '#4c4c60',
+    tileTop: '#d6cec2',
+    tile: '#5e5a66',
+    tileDark: '#3a3642',
+    tileLight: '#7e7886',
+    plank: '#6a4a30',
+    accent: '#c8302a',
+    water: ['#4a8ab8', '#2e6a98', '#d0ecfa'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'snow',
+    enemyGround: 'lizard',
+    enemyFly: 'raven',
+    animal: 'horse',
+  },
+  hatay: {
+    // sıcak güney akşamı, kireçtaşı, defne yeşili
+    sky: ['#e89a62', '#f4cc9c', '#fff2da'],
+    sun: { x: 0.22, y: 0.5, r: 16, color: '#fff4cc', glow: 'rgba(255,230,180,0.2)' },
+    far: '#d6b494',
+    mid: '#ae8868',
+    near: '#785844',
+    tileTop: '#e8d8b6',
+    tile: '#c6a67e',
+    tileDark: '#8a6a4a',
+    tileLight: '#dec29a',
+    plank: '#7a5234',
+    accent: '#d6403a',
+    water: ['#3a9ab0', '#2a7a90', '#d0f0f4'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'petals',
+    enemyGround: 'scorpion',
+    enemyFly: 'wasp',
+    animal: 'cat',
+  },
+  eskisehir: {
+    // açık gök, Porsuk mavisi, Odunpazarı’nın renkli cepheleri, tuğla
+    sky: ['#68a6d6', '#b6daf0', '#f2f8ea'],
+    sun: { x: 0.8, y: 0.3, r: 13, color: '#fff8d6', glow: 'rgba(255,250,220,0.18)' },
+    far: '#a6c2c8',
+    mid: '#7898a2',
+    near: '#4c6876',
+    tileTop: '#78b65a',
+    tile: '#b06a4a',
+    tileDark: '#7a4434',
+    tileLight: '#cc8a66',
+    plank: '#6a4a30',
+    accent: '#e8794a',
+    water: ['#4aa8c8', '#2e88a8', '#d4f2fa'],
+    spike: ['#c9ced8', '#6c7080'],
+    weather: 'leaves',
+    enemyGround: 'rat',
+    enemyFly: 'pigeon',
+    animal: 'cat',
+  },
   trabzon: {
     sky: ['#3c5468', '#7e98a0', '#c8d6d0'],
     sun: null,
@@ -832,6 +892,8 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    // GEÇİCİ: çizim ajanı Eskişehir’in kendi silüetini çizecek
+    case 'eskisehir':
     case 'bursa':
       return {
         far: layer((c) => {
@@ -1323,6 +1385,8 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    // GEÇİCİ: çizim ajanı Hatay’ın kendi silüetini çizecek
+    case 'hatay':
     case 'adana':
       return {
         far: layer((c) => {
@@ -1534,6 +1598,8 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    // GEÇİCİ: çizim ajanı Kayseri’nin kendi silüetini çizecek
+    case 'kayseri':
     case 'sivas':
       return {
         far: layer((c) => {

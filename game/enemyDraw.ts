@@ -1197,6 +1197,10 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     dab(c, -1.4, 1.5, 0.9, 0.9, '#2a2220')
     line(c, [-3.2, 3.4, 4, -3.8], 0.25, '#f0e2c0', false)
   },
+  // GEÇİCİ: çizim ajanı kendi çizimlerini yapacak
+  kayseri: (...a) => KEEPSAKES.sivas(...a),
+  hatay: (...a) => KEEPSAKES.adana(...a),
+  eskisehir: (...a) => KEEPSAKES.bursa(...a),
 }
 
 /** bilinmeyen şehir: altın yıldız */

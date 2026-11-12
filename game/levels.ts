@@ -9,6 +9,9 @@ import { road as antalyaRoad } from './cities/antalya'
 import { road as sanliurfaRoad } from './cities/sanliurfa'
 import { road as vanRoad } from './cities/van'
 import { road as erzurumRoad } from './cities/erzurum'
+import { road as eskisehirRoad } from './cities/eskisehir'
+import { road as hatayRoad } from './cities/hatay'
+import { road as kayseriRoad } from './cities/kayseri'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { PRELUDES, buildArena, buildFinale } from './finales'
@@ -1055,6 +1058,9 @@ const DECOR_CYCLE: Record<string, string> = {
   sanliurfa: 'zlt',
   van: 'zlt',
   erzurum: 'lzt',
+  kayseri: 'lzt',
+  hatay: 'tzl',
+  eskisehir: 'ltz',
   diyarbakir: 'zlt',
   izmir: 'tlz',
   ankara: 'zlt',
@@ -1214,6 +1220,37 @@ export const LEVELS: LevelDef[] = [
       'Ulu Cami’nin önü: şadırvanın kenarından kenarına zıpla. Taşı her yerde sağlam mı? Meydan kapısı ileride.',
     ],
     map: roadMap(bursaRoad),
+  },
+  {
+    id: 'eskisehir',
+    city: 'eskisehir',
+    name: 'Eskişehir',
+    plate: 26,
+    subtitle: 'Porsuk’un Kıyısı',
+    difficulty: 'Kolay',
+    note: 'Eskişehir genç ve renklidir: Porsuk’ta gondol, Odunpazarı’nda cumbalı evler, sofrada çibörek. Akşamüstü köprüden bakmak bedava.',
+    npcs: [
+      { name: 'Lüleci Hüsnü Usta', look: 'usta', text: 'Lületaşı yerden yumuşak çıkar, işlendikçe fildişi gibi parlar. Elimden üç parça kaydı, renkli evlerin arasına yuvarlandı.' },
+      { name: 'Gondolcu Erkan', look: 'genc', text: 'Porsuk’ta gondol yavaş gider, acele eden suya düşer. Gondol yanaşınca bin, karşı iskelede in.' },
+      { name: 'Çiböreci Saadet Teyze', look: 'teyze', text: 'Çibörek sıcak yenir, ısırınca suyu akar. Şatonun en yüksek kulesine çıkan, damda beklemediği bir şey bulur.' },
+    ],
+    medals: [55, 85, 135],
+    quips: ['Gondoldan düştün.', 'Çibörek suyu gibi aktın.', 'Porsuk serin, sen sıcak.', 'Nasreddin Hoca güldü.'],
+    item: 'Lületaşı',
+    intro: 'Odunpazarı’nın renkli evlerinden Porsuk’un gondollarına, Sazova’nın masal şatosundan Kurşunlu Külliyesi’ne. Öğrencilerin ve masalların şehri.',
+    facts: [
+      { title: 'Odunpazarı', text: 'Odunpazarı, cumbalı ve renkli Osmanlı evleriyle ünlüdür. 2012’de UNESCO Dünya Mirası Geçici Listesi’ne alındı.' },
+      { title: 'Lületaşı', text: 'Lületaşı dünyada en çok Eskişehir çevresinde çıkarılır. Beyaz, hafif ve yumuşak bu taştan pipo ve süs eşyası oyulur.' },
+      { title: 'Çibörek', text: 'Çibörek, Kırım Tatarlarından Eskişehir’e geçmiş, kıymalı ve sulu bir hamur işidir.' },
+    ],
+    secret: { title: 'Nasreddin Hoca', text: 'Nasreddin Hoca’nın Eskişehir’in Sivrihisar ilçesindeki Hortu köyünde doğduğu kabul edilir.' },
+    hints: [
+      'Eskişehir’e hoş geldin! Odunpazarı’nın cumbalarına zıpla, damdan dama geç.',
+      'Porsuk Çayı: gondollar gidip gelir. Yanına gelince bin, karşı iskeleye varınca in.',
+      'Sazova Parkı: masal şatosunun kulesine basamaklardan çık, korsan gemisinin direğinden atla.',
+      'Kurşunlu Külliyesi: kubbelerin üstünden geç, avluda soluklan.',
+    ],
+    map: roadMap(eskisehirRoad),
   },
   {
     id: 'canakkale',
@@ -1395,6 +1432,37 @@ export const LEVELS: LevelDef[] = [
     map: nevsehir,
   },
   {
+    id: 'kayseri',
+    city: 'kayseri',
+    name: 'Kayseri',
+    plate: 38,
+    subtitle: 'Erciyes’in Eteği',
+    difficulty: 'Orta',
+    note: 'Kayseri’de mantı küçük, pastırma ince, laf az ve özdür. Erciyes’in karı yazın bile eksik olmaz; Kapalı Çarşı’da pazarlık bir sanattır.',
+    npcs: [
+      { name: 'Pastırmacı Zekeriya Usta', look: 'usta', text: 'Pastırmayı çemenle sarar, rüzgârda kurutur, bıçakla ince keseriz. Üç mantı bohçam tezgâhtan kaçtı; gördüysen haber et.' },
+      { name: 'Mantıcı Hasret Teyze', look: 'teyze', text: 'Bir kaşığa kırk mantı sığmalı yavrum, Kayseri mantısı öyle küçüktür. Şifahanenin avlusunda bir köşe hep serin kalır; duvarına yaslanan bir aralık görür.' },
+      { name: 'Dağcı Ilgaz', look: 'genc', text: 'Erciyes’e tırmanırken taştan taşa sekersin, aceleye gelmez. Tepeye varınca bütün Kayseri ayağının altındadır.' },
+    ],
+    medals: [65, 100, 160],
+    quips: ['Mantı gibi büküldün.', 'Pastırma kadar ince bir hata.', 'Erciyes sabırlıdır.', 'Pazarlık daha bitmedi.'],
+    item: 'Mantı',
+    intro: 'Kayseri Kalesi’nin bazalt surlarından Kapalı Çarşı’ya, Gevher Nesibe Şifahanesi’nden Erciyes’in karlı eteğine. Selçuklu’nun taş şehri.',
+    facts: [
+      { title: 'Erciyes Dağı', text: 'Erciyes Dağı 3.917 metreyle İç Anadolu’nun en yüksek dağıdır. Sönmüş bir yanardağdır; kayak merkezi şehrin hemen yanındadır.' },
+      { title: 'Gevher Nesibe', text: 'Gevher Nesibe Darüşşifası 1206’da Selçuklu Sultanı I. Gıyaseddin Keyhüsrev tarafından kız kardeşi adına yaptırıldı. Anadolu’nun ilk tıp okullarından biridir.' },
+      { title: 'Kayseri Mantısı', text: 'Kayseri mantısı minicik bohçalardır. Eskiden bir kaşığa kırk mantı sığması ustalık sayılırdı.' },
+    ],
+    secret: { title: 'Kültepe', text: 'Kayseri yakınındaki Kültepe’de (Kaniş) bulunan Asur ticaret tabletleri, Anadolu’nun bilinen en eski yazılı belgeleridir; 4.000 yıl öncesine uzanır.' },
+    hints: [
+      'Kayseri’ye hoş geldin! Kalenin bazalt surları yüksek: burçtan burca zıpla, dar aralıkta duvardan duvara sek.',
+      'Kapalı Çarşı: pastırma askılarının altından geç, tentelere zıpla. Kubbeli çatıdan bakan, yolu önceden görür.',
+      'Gevher Nesibe’nin avlusu: kemerlerin üstüne dash at. Bir atlayış yetmezse kemerin duvarına tutun.',
+      'Erciyes eteği: karlı yamaçta taştan taşa sek. Dash halkası seni vadinin üstünden taşır.',
+    ],
+    map: roadMap(kayseriRoad),
+  },
+  {
     id: 'adana',
     city: 'adana',
     name: 'Adana',
@@ -1418,6 +1486,37 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Varda Köprüsü', text: 'Karaisalı’daki Varda Köprüsü 1912’de Bağdat Demiryolu için yapıldı. Üzerinden hâlâ trenler geçer.' },
     hints: ['Pamuk balyası yay gibidir: üstüne düşünce seni fırlatır. Sivrisineklere dikkat!'],
     map: adana,
+  },
+  {
+    id: 'hatay',
+    city: 'hatay',
+    name: 'Hatay',
+    plate: 31,
+    subtitle: 'Medeniyetler Kavşağı',
+    difficulty: 'Orta',
+    note: 'Antakya’da sofra kalabalık, sohbet uzundur. Künefe sıcak yenir, sabun defneden yapılır, Asi yavaş akar.',
+    npcs: [
+      { name: 'Künefeci Necdet Usta', look: 'usta', text: 'Künefe sıcak yenir evladım; tel kadayıfın altında peynir uzar, üstünde şerbet parlar. Tepsiden üç dilim kaydı, yolda görürsen al.' },
+      { name: 'Sabuncu Elias Amca', look: 'amca', text: 'Defne sabununu kazanda kaynatır, aylarca kuruturuz; kokusu Uzun Çarşı’nın her köşesine siner. Kayanın dibindeki karanlık aralığa bakmayı unutma.' },
+      { name: 'Mozaikçi Zühre Teyze', look: 'teyze', text: 'Mozaik taş taş dizilir; biri eksik olursa bütün resim bozulur. Burada her şey öyledir, komşuluk da.' },
+    ],
+    medals: [65, 100, 160],
+    quips: ['Şerbet gibi aktın.', 'Künefe soğumadan kalk.', 'Asi bile senden hızlı.', 'Mozaikte bir taş eksik.'],
+    item: 'Künefe',
+    intro: 'Uzun Çarşı’nın kemerlerinden Senpiyer Kilisesi’nin kayasına, Asi’nin su dolaplarından Harbiye’nin şelalelerine. Dillerin, inançların, lezzetlerin kavşağı.',
+    facts: [
+      { title: 'Senpiyer Kilisesi', text: 'Antakya’daki Senpiyer Kilisesi kayaya oyulmuş bir mağara kilisedir ve Hristiyanlığın en eski kiliselerinden biri sayılır.' },
+      { title: 'Hatay Mozaikleri', text: 'Hatay Arkeoloji Müzesi, Roma dönemi mozaikleriyle dünyanın en zengin mozaik koleksiyonlarından birine sahiptir.' },
+      { title: 'Künefe', text: 'Künefe, tel kadayıfın arasına tuzsuz peynir konup pişirilir ve sıcak şerbetle yenir. Hatay’ın simge tatlısıdır.' },
+    ],
+    secret: { title: 'Gastronomi Şehri', text: 'Hatay, 2017’de UNESCO Yaratıcı Şehirler Ağı’na gastronomi alanında katıldı.' },
+    hints: [
+      'Hatay’a hoş geldin! Uzun Çarşı’nın kemerleri alçak: kemerin üstüne çık, damdan dama geç.',
+      'Senpiyer’in kayası dik: kaya basamaklarına zıpla, dar çatlakta duvardan duvara sek.',
+      'Asi Nehri: su dolabının kovalarına bin, yükselince karşı kıyıya atla.',
+      'Harbiye şelaleleri: ıslak taşlar kaygandır, erken dur. Şelalenin arkasındaki yol kurudur.',
+    ],
+    map: roadMap(hatayRoad),
   },
   {
     id: 'gaziantep',

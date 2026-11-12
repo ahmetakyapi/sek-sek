@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Gezgin’in yarım kalmış defterini tamamla. Yirmi beş şehir, yetmiş beş hatıra, tek yolculuk.**
+**Gezgin’in yarım kalmış defterini tamamla. Yirmi sekiz şehir, seksen dört hatıra, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -43,27 +43,30 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 2 | Edirne · Selimiye ve Kırkpınar | 22 | Kolay | Karaağaç garı, Meriç Köprüsü, çarşı, Selimiye; itilen sandıklar | Meyve Sabunu |
 | 3 | Kocaeli · Körfez ve SEKA | 41 | Kolay | Körfez kıyısı, SEKA rıhtımı, anahtarlı depo | Pişmaniye |
 | 4 | Bursa · Yeşil Bursa | 16 | Kolay | Cumalıkızık, Koza Han, teleferik; Karagöz’ün gölge platformları | Kestane Şekeri |
-| 5 | Çanakkale · Boğaz ve Truva | 17 | Kolay | Kordon, Boğaz feribotu, Kilitbahir, Truva’nın katmanları | Testi |
-| 6 | İzmir · Kordon Boyu | 35 | Kolay | Kordon yengeçleri, Kemeraltı tenteleri, Tarihi Asansör | Boyoz |
-| 7 | Antalya · Falezler ve Şelale | 07 | Orta | Kaleiçi, Hadrian Kapısı, falezler, Düden’in ıslak taşları | Portakal |
-| 8 | Ankara · Kale ve Cumbalar | 06 | Orta | Cumbalı balkonlar, kale burcunda tırmanış, koç | Tiftik |
-| 9 | Konya · Mevlâna’nın Şehri | 42 | Orta | Dönen sema halkaları, Alaeddin Tepesi, Karatay’ın anahtarı | Sikke |
-| 10 | Nevşehir · Kapadokya | 50 | Orta | Sıcak hava balonları, Derinkuyu tünelleri, çatlak köprü | Testi |
-| 11 | Adana · Seyhan ve Taşköprü | 01 | Orta | Taşköprü, Seyhan bentleri, sivrisinekler | Pamuk |
-| 12 | Gaziantep · Bakırcılar Çarşısı | 27 | Orta | Bakırcı tokmakları, fıstık bahçesi, Zeugma’nın düğmeleri | Baklava |
-| 13 | Şanlıurfa · Balıklıgöl ve Göbeklitepe | 63 | Orta | Balıklıgöl, kale, Harran evleri, Göbeklitepe’nin taşları | İsot |
-| 14 | Diyarbakır · Bazalt Surlar | 21 | Orta | Bazalt surlar, On Gözlü Köprü, Hevsel Bahçeleri, burç tırmanışı | Karpuz |
-| 15 | Mardin · Taş Teraslar | 47 | Orta | Taş teraslar, dağılan taşlar, gizli mahzen | Telkari |
-| 16 | Malatya · Kayısı Bahçeleri | 44 | Orta | Kayısı kasaları, arılar, Aslantepe | Kayısı |
-| 17 | Çorum · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli, Aslanlı Kapı | Leblebi |
-| 18 | Sinop · En Kuzeydeki Liman | 57 | Zor | Kale surları, balıkçı limanı, Hamsilos koyu, İnceburun feneri | Gemi Maketi |
-| 19 | Ordu · Fındık ve Boztepe | 52 | Zor | Dalgalı sahil, fındık yamaçları, Boztepe teleferiği | Fındık |
-| 20 | Trabzon · Horon ve Yayla | 61 | Zor | Horon halkası, çay terasları, Sümela kayalığı, Uzungöl | Sütlaç |
-| 21 | Sivas · Buzlu Kızılırmak | 58 | Zor | Kaygan buz, kurtlar, Gök Medrese bilmecesi | Kangal rozeti |
-| 22 | Van · Göl ve Kale | 65 | Zor | Van Kalesi, göl kıyısı, Akdamar; gece ile gündüz taşları | Otlu Peynir |
-| 23 | Erzurum · Dadaş Diyarı | 25 | Zor | Medrese, kümbetler, Palandöken buzu, cirit meydanı | Oltu Taşı |
-| 24 | Ardahan · Donmuş Çıldır | 75 | Zor | Donmuş Çıldır Gölü, buz delikleri, rüzgâr | Kızak Çanı |
-| 25 | Bayburt · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları, kale burcu | Kopuz |
+| 5 | Eskişehir · Porsuk’un Kıyısı | 26 | Kolay | Odunpazarı, Porsuk gondolları, Sazova şatosu, Kurşunlu | Lületaşı |
+| 6 | Çanakkale · Boğaz ve Truva | 17 | Kolay | Kordon, Boğaz feribotu, Kilitbahir, Truva’nın katmanları | Testi |
+| 7 | İzmir · Kordon Boyu | 35 | Kolay | Kordon yengeçleri, Kemeraltı tenteleri, Tarihi Asansör | Boyoz |
+| 8 | Antalya · Falezler ve Şelale | 07 | Orta | Kaleiçi, Hadrian Kapısı, falezler, Düden’in ıslak taşları | Portakal |
+| 9 | Ankara · Kale ve Cumbalar | 06 | Orta | Cumbalı balkonlar, kale burcunda tırmanış, koç | Tiftik |
+| 10 | Konya · Mevlâna’nın Şehri | 42 | Orta | Dönen sema halkaları, Alaeddin Tepesi, Karatay’ın anahtarı | Sikke |
+| 11 | Nevşehir · Kapadokya | 50 | Orta | Sıcak hava balonları, Derinkuyu tünelleri, çatlak köprü | Testi |
+| 12 | Kayseri · Erciyes’in Eteği | 38 | Orta | Kale surları, Kapalı Çarşı, Gevher Nesibe, Erciyes eteği | Mantı |
+| 13 | Adana · Seyhan ve Taşköprü | 01 | Orta | Taşköprü, Seyhan bentleri, sivrisinekler | Pamuk |
+| 14 | Hatay · Medeniyetler Kavşağı | 31 | Orta | Uzun Çarşı, Senpiyer kayası, Asi’nin su dolapları, Harbiye | Künefe |
+| 15 | Gaziantep · Bakırcılar Çarşısı | 27 | Orta | Bakırcı tokmakları, fıstık bahçesi, Zeugma’nın düğmeleri | Baklava |
+| 16 | Şanlıurfa · Balıklıgöl ve Göbeklitepe | 63 | Orta | Balıklıgöl, kale, Harran evleri, Göbeklitepe’nin taşları | İsot |
+| 17 | Diyarbakır · Bazalt Surlar | 21 | Orta | Bazalt surlar, On Gözlü Köprü, Hevsel Bahçeleri, burç tırmanışı | Karpuz |
+| 18 | Mardin · Taş Teraslar | 47 | Orta | Taş teraslar, dağılan taşlar, gizli mahzen | Telkari |
+| 19 | Malatya · Kayısı Bahçeleri | 44 | Orta | Kayısı kasaları, arılar, Aslantepe | Kayısı |
+| 20 | Çorum · Hattuşa Surları | 19 | Zor | Hitit ok tuzakları, Yerkapı tüneli, Aslanlı Kapı | Leblebi |
+| 21 | Sinop · En Kuzeydeki Liman | 57 | Zor | Kale surları, balıkçı limanı, Hamsilos koyu, İnceburun feneri | Gemi Maketi |
+| 22 | Ordu · Fındık ve Boztepe | 52 | Zor | Dalgalı sahil, fındık yamaçları, Boztepe teleferiği | Fındık |
+| 23 | Trabzon · Horon ve Yayla | 61 | Zor | Horon halkası, çay terasları, Sümela kayalığı, Uzungöl | Sütlaç |
+| 24 | Sivas · Buzlu Kızılırmak | 58 | Zor | Kaygan buz, kurtlar, Gök Medrese bilmecesi | Kangal rozeti |
+| 25 | Van · Göl ve Kale | 65 | Zor | Van Kalesi, göl kıyısı, Akdamar; gece ile gündüz taşları | Otlu Peynir |
+| 26 | Erzurum · Dadaş Diyarı | 25 | Zor | Medrese, kümbetler, Palandöken buzu, cirit meydanı | Oltu Taşı |
+| 27 | Ardahan · Donmuş Çıldır | 75 | Zor | Donmuş Çıldır Gölü, buz delikleri, rüzgâr | Kızak Çanı |
+| 28 | Bayburt · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları, kale burcu | Kopuz |
 
 ## Yolcular ve Şehir İnsanları
 
