@@ -1029,6 +1029,28 @@ export class Renderer {
         }
         break
       }
+      case 'amasya': {
+        // elma tezgâhı: kasada misket elmaları, çizgili tente
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4a32')
+        rect(b, x - 4, bot - 8, 26, 1, '#8a6a4a')
+        rect(b, x - 4, bot - 4, 26, 1, '#4e3424')
+        for (let i = 0; i < 8; i++) disc(b, x - 2 + i * 3, bot - 10 - (i % 2), 1, i % 3 ? '#e8c44a' : '#d8402e')
+        rect(b, x - 5, bot - 24, 1, 24, '#5a3c26')
+        rect(b, x + 22, bot - 24, 1, 24, '#5a3c26')
+        for (let i = 0; i < 7; i++) rect(b, x - 6 + i * 4, bot - 26, 4, 3, i % 2 ? '#f4ead8' : '#4a9a7a')
+        break
+      }
+      case 'mugla': {
+        // süngerci tezgâhı: mavi sandık, ipe dizili süngerler
+        rect(b, x - 4, bot - 8, 24, 8, '#3a6ab8')
+        rect(b, x - 4, bot - 8, 24, 1, '#6a9ad8')
+        rect(b, x - 5, bot - 26, 1, 26, '#f4f0e4')
+        rect(b, x + 20, bot - 26, 1, 26, '#f4f0e4')
+        rect(b, x - 5, bot - 25, 26, 1, '#8a6a4a')
+        for (let i = 0; i < 5; i++) disc(b, x - 1 + i * 5, bot - 21 - (i % 2), 2, i % 2 ? '#e8c66a' : '#d8b04a')
+        for (let i = 0; i < 3; i++) disc(b, x + 1 + i * 7, bot - 10, 2, '#e8c66a')
+        break
+      }
       case 'eskisehir': {
         // çibörek tavası: kızgın yağda yarım ay çibörekler
         rect(b, x - 4, bot - 6, 26, 6, '#5e4634')
@@ -1469,6 +1491,26 @@ export class Renderer {
         }
         rect(b, x + 8, bot - 13, 2, 2, '#3a2a1a')
         rect(b, x + 19, bot - 9 + (Math.floor(this.t * 6) % 3), 1, 2, '#8ad0f0')
+        break
+      }
+      case 'amasya': {
+        // kaya mezarı: kemerli oyuk, önünde basamak
+        rect(b, x, bot - 20, 16, 20, '#8a8a88')
+        rect(b, x, bot - 20, 2, 20, '#a8a8a2')
+        rect(b, x + 4, bot - 14, 8, 12, '#3a3a40')
+        disc(b, x + 8, bot - 14, 4, '#3a3a40', true)
+        rect(b, x + 2, bot - 2, 12, 2, '#b8b4a4')
+        break
+      }
+      case 'mugla': {
+        // sualtı müzesinden bir amfora, taş kaidede
+        rect(b, x + 2, bot - 3, 12, 3, '#d8cdb8')
+        disc(b, x + 8, bot - 10, 4, '#c8743a')
+        rect(b, x + 6, bot - 19, 4, 6, '#c8743a')
+        rect(b, x + 5, bot - 20, 6, 1, '#e89a5a')
+        rect(b, x + 3, bot - 17, 1, 5, '#a85a2a')
+        rect(b, x + 12, bot - 17, 1, 5, '#a85a2a')
+        rect(b, x + 6, bot - 12, 1, 4, '#e89a5a')
         break
       }
       case 'eskisehir': {
@@ -2701,7 +2743,9 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   sivas: 'VAN',
   van: 'ERZURUM',
   erzurum: 'ARDAHAN',
-  ardahan: 'BAYBURT',
+  ardahan: 'AMASYA',
+  amasya: 'MUĞLA',
+  mugla: 'BAYBURT',
   bayburt: null,
 }
 

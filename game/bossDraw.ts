@@ -1692,6 +1692,103 @@ const PAINT: Record<CityKey, Painter> = {
     ell(c, hx - 0.8, hy - 7.6, 1.7, 1.7, '#f8fcff', '#c8ccd2')
     aura(c, mood, t, hx - 6, hy - 5, hx + 8.8, hy - 1)
   },
+  // Ferhat’ın Külüngü: ahşap sap gövde, tepede iki sivri uçlu demir baş, boynunda al yazma; yorulunca yana yatar
+  amasya: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const lean = out ? 0.42 : b.state === 'attack' && b.move === 'throw' ? -0.22 : air ? Math.sin(t * 14) * 0.12 : 0
+    if (!air) feet(c, 4.2, '#5a3c26')
+    c.save()
+    c.rotate(lean)
+    // sap
+    blob(
+      c,
+      () => {
+        c.moveTo(-2.7, -2)
+        c.lineTo(-2.3, -19)
+        c.lineTo(2.3, -19)
+        c.lineTo(2.7, -2)
+        c.quadraticCurveTo(0, -0.6, -2.7, -2)
+      },
+      '#b07a48',
+      shade('#7a4e2a'),
+    )
+    stroke(c, [-0.9, -5, -0.7, -11], 0.5, '#d8a870', false)
+    // demir baş: iki uç aşağı kıvrılır, ortası sapa geçer
+    blob(
+      c,
+      () => {
+        c.moveTo(-12.5, -16.6)
+        c.quadraticCurveTo(-7, -25.6, 0, -26)
+        c.quadraticCurveTo(7, -25.6, 12.5, -16.6)
+        c.quadraticCurveTo(7, -20.2, 3.6, -20)
+        c.lineTo(3.6, -18)
+        c.lineTo(-3.6, -18)
+        c.lineTo(-3.6, -20)
+        c.quadraticCurveTo(-7, -20.2, -12.5, -16.6)
+      },
+      out ? '#8e929c' : '#a8aeb8',
+      shade('#6a6e7a'),
+    )
+    stroke(c, [-8.4, -21.6, -4, -24, 1, -24.8], 0.6, '#e4e8ee', false)
+    // al yazma: düğümü rüzgârda sallanır
+    const fl = Math.sin(t * 8) * 1.1
+    stroke(c, [-2.6, -17, 2.6, -17], 1.7, '#d83c36')
+    stroke(c, [2.4, -17, 5.4 + fl * 0.5, -14.6, 5 + fl, -12.2], 1.2, '#d83c36')
+    eye(c, -2.6, -22.2, 1.9, mood, t)
+    eye(c, 2.8, -22.2, 1.9, mood, t)
+    face(c, 0.1, -12.6, 1.5, mood, t, -6.4, -24.4)
+    c.restore()
+    // kayaya vururken sıçrayan kıvılcımlar
+    if (b.state === 'attack' && !air) {
+      for (let i = 0; i < 3; i++) {
+        const k = (t * 3.4 + i / 3) % 1
+        dab(c, 9 + k * 6 + i, -3 - k * 7 + k * k * 6, 0.9 - k * 0.5, 0.9 - k * 0.5, `rgba(255,214,90,${(1 - k).toFixed(2)})`)
+      }
+    }
+  },
+  // Poyraz Değirmeni: badanalı taş gövde, saz külah, dört yelken kanat; öfkelenince kanatlar hızlanır, yorulunca durur
+  mugla: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const run = b.state === 'attack' && b.move === 'charge' ? Math.sin(t * 22) * 1.6 : 0
+    if (!air) feet(c, 5, '#8a6a4a', run)
+    // kanatlar gövdenin arkasında döner
+    const spin = out || mood === 'sleep' ? 0.42 : t * (mad(mood) || air ? 9 : 2.2)
+    c.save()
+    c.translate(0, -20.6)
+    c.rotate(spin)
+    for (let k = 0; k < 4; k++) {
+      c.rotate(Math.PI / 2)
+      stroke(c, [0, 0, 0, -13], 0.9, '#6a4a2e')
+      fine(() => poly(c, [0.7, -4, 5, -5, 5, -12.6, 0.7, -12.6], out ? '#e4dccc' : '#fbf8f0', '#d4ccba'))
+    }
+    c.restore()
+    // gövde
+    blob(
+      c,
+      () => {
+        c.moveTo(-9, -2)
+        c.lineTo(-7, -19)
+        c.lineTo(7, -19)
+        c.lineTo(9, -2)
+        c.quadraticCurveTo(0, -0.4, -9, -2)
+      },
+      '#f6f2e6',
+      shade('#cfd4d8'),
+    )
+    stroke(c, [-8.6, -5.4, 8.6, -5.4], 1, '#3a6ab8', false)
+    // dibinde begonvil
+    for (const [x, y, r] of [[-6.6, -3.6, 1.5], [-4.8, -2.4, 1.2], [-7.2, -1.8, 1]]) dab(c, x, y, r, r * 0.8, r > 1.3 ? '#d8408a' : '#e86aa8')
+    // saz külah ve göbek
+    poly(c, [-8.6, -18.6, 0, -28, 8.6, -18.6], '#b0804a', '#7e5a30')
+    fine(() => ell(c, 0, -20.6, 1.6, 1.6, '#8a8e98', '#5a5e68'))
+    eye(c, -2.6, -13.4, 2.3, mood, t)
+    eye(c, 3.4, -13.4, 2.3, mood, t)
+    dab(c, -5.4, -10.2, 1.4, 0.9, BLUSH)
+    dab(c, 6.2, -10.2, 1.4, 0.9, BLUSH)
+    face(c, 0.4, -8.6, 1.9, mood, t, -7.2, -16.6)
+  },
   // Tepegöz: tek gözlü dev; pars postu, altın küpe, dikenli topuz, tek kaş, alt dişleri dışarıda
   bayburt: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2

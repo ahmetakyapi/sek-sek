@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Gezgin’in yarım kalmış defterini tamamla. Yirmi sekiz şehir, seksen dört hatıra, tek yolculuk.**
+**Gezgin’in yarım kalmış defterini tamamla. Otuz şehir, doksan hatıra, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -19,7 +19,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
 
-- **25 Şehir, Her Biri Kendine Has.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+- **30 Şehir, Her Biri Kendine Has.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
   Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr.
 - **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
   **gizli pul** deftere gizli bir sayfa ekler.
@@ -71,7 +71,9 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 25 | Van · Göl ve Kale | 65 | Zor | Van Kalesi, göl kıyısı, Akdamar; gece ile gündüz taşları | Otlu Peynir |
 | 26 | Erzurum · Dadaş Diyarı | 25 | Zor | Medrese, kümbetler, Palandöken buzu, cirit meydanı | Oltu Taşı |
 | 27 | Ardahan · Donmuş Çıldır | 75 | Zor | Donmuş Çıldır Gölü, buz delikleri, rüzgâr | Kızak Çanı |
-| 28 | Bayburt · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları, kale burcu | Kopuz |
+| 28 | Amasya · Yeşilırmak’ın İki Yakası | 5 | Çok Zor | Yalıboyu evleri, kral kaya mezarları, Ferhat’ın su kanalı, Bayezid Külliyesi | Elma |
+| 29 | Muğla · Bodrum’dan Ölüdeniz’e | 48 | Çok Zor | Bodrum Kalesi, yel değirmenleri, Dalyan kaya mezarları, Ölüdeniz; arkadan esen meltem | Sünger |
+| 30 | Bayburt · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları, kale burcu | Kopuz |
 
 ## Yolcular ve Şehir İnsanları
 

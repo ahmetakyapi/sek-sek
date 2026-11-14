@@ -12,6 +12,8 @@ import { road as erzurumRoad } from './cities/erzurum'
 import { road as eskisehirRoad } from './cities/eskisehir'
 import { road as hatayRoad } from './cities/hatay'
 import { road as kayseriRoad } from './cities/kayseri'
+import { road as amasyaRoad } from './cities/amasya'
+import { road as muglaRoad } from './cities/mugla'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { PRELUDES, buildArena, buildFinale } from './finales'
@@ -1076,6 +1078,8 @@ const DECOR_CYCLE: Record<string, string> = {
   trabzon: 'tzsq',
   sivas: 'tzl',
   ardahan: 'ztl',
+  amasya: 'tzl',
+  mugla: 'lzt',
   bayburt: 'tzl',
 }
 
@@ -1902,6 +1906,69 @@ export const LEVELS: LevelDef[] = [
     hints: ['Ardahan’da rüzgâr seni geri iter. Buz kaygandır, durmak için ters yöne bas.', 'Donmuş göl: çatlak buz basınca kırılır. Durmadan koş, deliklerin üstünden atla.'],
     wind: -120,
     map: ardahan,
+  },
+  {
+    id: 'amasya',
+    city: 'amasya',
+    name: 'Amasya',
+    plate: 5,
+    subtitle: 'Yeşilırmak’ın İki Yakası',
+    difficulty: 'Çok Zor',
+    note: 'Yeşilırmak şehri ikiye böler: bir yakada yalıboyu evleri, öbür yakada kayaya oyulmuş kral mezarları. Misket elmasını dalından ye, akşam olunca ırmağa vuran ışıkları seyret.',
+    npcs: [
+      { name: 'Elmacı Bedriye Teyze', look: 'teyze', text: 'Misket elması küçüktür ama kokusu sokağı tutar yavrum; bir ısır, mis gibi. Sepetimden üç tanesi yuvarlandı, biri damlara kadar kaçmış. Yolda görürsen al.' },
+      { name: 'Rehber Tolga', look: 'genc', text: 'Bu mezarları Pontus kralları için kayaya oymuşlar. Aşağıdan küçük görünür, yanına çıkınca insan kendini karınca sanar. Büyük kayanın sağ yüzündeki karanlık ağza da bak, içi boş değil.' },
+      { name: 'Kanal Bekçisi Lütfü Amca', look: 'amca', text: 'Ferhat’la Şirin’i bilirsin: Ferhat, Şirin’e kavuşmak için dağı delip şehre su getirecekmiş. Kanal hâlâ burada. Plakalara sırayla bas; su da yol da öyle açılır.' },
+    ],
+    medals: [70, 110, 170],
+    quips: ['Elma dalından uzağa düşmez.', 'Yeşilırmak serinletti mi?', 'Ferhat dağı deldi, sen düştün.', 'Krallar yukarıdan izliyor.'],
+    item: 'Elma',
+    intro: 'Yalıboyu evlerinin cumbalarından Kral Kaya Mezarları’na, Ferhat’ın su kanalından Sultan II. Bayezid Külliyesi’ne. Dağla ırmağın arasına sıkışmış şehzadeler şehri.',
+    facts: [
+      { title: 'Kral Kaya Mezarları', text: 'Harşena Dağı’nın yamacındaki anıt mezarlar, Helenistik dönemde Pontus kralları için kayaya oyuldu. Şehrin hemen her yerinden görünür.' },
+      { title: 'Amasya Genelgesi', text: 'Mustafa Kemal Paşa ve arkadaşları 22 Haziran 1919’da Amasya Genelgesi’ni yayımladı. Genelge, milletin bağımsızlığını yine milletin azim ve kararının kurtaracağını duyurdu.' },
+      { title: 'Şehzadeler Şehri', text: 'Osmanlı şehzadeleri devlet yönetimini öğrenmek için Amasya’da sancak beyliği yaptı. Şehre bu yüzden “Şehzadeler Şehri” denir.' },
+    ],
+    secret: { title: 'Strabon', text: 'Antik çağın ünlü coğrafyacısı Strabon Amasya’da doğdu. “Geographika” adlı eserinde doğduğu şehri de anlattı.' },
+    hints: [
+      'Amasya’ya hoş geldin! Yalıboyu evlerinin cumbaları basamaktır: evden eve atla, en yüksek dama da çık.',
+      'Kral Kaya Mezarları: kaya basamaklarından tepeye tırman. Yetişemediğin kayada duvara zıpla, değince yine zıpla.',
+      'Ferhat Su Kanalı: plakaya basınca mavi köprü kurulur, turuncu köprü kalkar. İkinci plaka turuncuyu geri getirir.',
+      'Sultan II. Bayezid Külliyesi: kubbelerin üstünden avluya geç. Meydan kapısı avlunun sonunda.',
+    ],
+    map: roadMap(amasyaRoad),
+  },
+  {
+    id: 'mugla',
+    city: 'mugla',
+    name: 'Muğla',
+    plate: 48,
+    subtitle: 'Bodrum’dan Ölüdeniz’e',
+    difficulty: 'Çok Zor',
+    note: 'Ege ile Akdeniz burada buluşur. Bodrum’da badanalı evlerin arasından kaleye çık, Dalyan’da kaplumbağalara yol ver, Babadağ’dan Ölüdeniz’e yukarıdan bak. Meltem hep arkandan eser.',
+    npcs: [
+      { name: 'Süngerci Hayri Kaptan', look: 'amca', text: 'Bodrum’un süngerini eskiden dalgıçlar nefesini tutup dipten çıkarırdı. İyisi yumuşak olur, suyu çeker de bırakmaz. Tekneden üç tanesi dalgaya gitti; bulursan defterine koy.' },
+      { name: 'Değirmenci Naciye Teyze', look: 'teyze', text: 'Bu değirmenler meltemle döner, buğdayı un eder yavrum. Rüzgârı arkana alırsan atlayışın uzar; dikkat et, kıyıyı aşıp taşma.' },
+      { name: 'Gönüllü Ege', look: 'genc', text: 'İztuzu’nda gece ışık yakmayız: caretta carettalar yumurtasını bu kuma bırakır, yavrular denizi ay ışığıyla bulur. Kaya mezarının sol yüzündeki karanlık ağzı gördün mü? İçeride bir şey saklı.' },
+    ],
+    medals: [70, 110, 170],
+    quips: ['Sünger gibi çektin suyu.', 'Meltem biraz fazla esti.', 'Paraşütü unuttun.', 'Kaplumbağa bile daha temkinli.'],
+    item: 'Sünger',
+    intro: 'Bodrum Kalesi’nin burçlarından yel değirmenlerine, Dalyan’ın kaya mezarlarından İztuzu kumsalına, Babadağ’dan Ölüdeniz’e. Ege’nin mavisi, badananın beyazı, begonvilin pembesi.',
+    facts: [
+      { title: 'Bodrum Kalesi', text: 'Bodrum Kalesi’ni 15. yüzyılda Saint Jean Şövalyeleri yaptı. Bugün Sualtı Arkeoloji Müzesi’dir; batık gemilerden çıkarılan eserler burada sergilenir.' },
+      { title: 'Halikarnas Mozolesi', text: 'Kral Mausolos için yapılan Halikarnas Mozolesi, antik dünyanın yedi harikasından biriydi. “Mozole” sözü onun adından gelir.' },
+      { title: 'İztuzu Kumsalı', text: 'Dalyan’daki İztuzu Kumsalı, caretta caretta deniz kaplumbağalarının yuvalama alanıdır. Yuvalar koruma altındadır.' },
+    ],
+    secret: { title: 'Herodot', text: '“Tarihin babası” sayılan Herodot, bugünkü Bodrum’da, antik Halikarnassos’ta doğdu.' },
+    hints: [
+      'Muğla’ya hoş geldin! Meltem arkandan eser. Bodrum Kalesi’nde basamaktan burca çık, tahtadan öbür burca geç.',
+      'Yel değirmenleri: platform yanaşınca bin, karşı kıyıya yaklaşınca atla. Rüzgâr atlayışını uzatır.',
+      'Dalyan kaya mezarları: basamaktan kayanın tepesine çık. İztuzu’nun ıslak kumu kaygandır, erken dur.',
+      'Babadağ: yamaçtan tepeye tırman, tahtadan tahtaya süzülerek Ölüdeniz’e in. Meydan kapısı kumsalda.',
+    ],
+    wind: 100,
+    map: roadMap(muglaRoad),
   },
   {
     id: 'bayburt',

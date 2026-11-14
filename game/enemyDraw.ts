@@ -1189,6 +1189,51 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
       dab(c, bx - 0.35, by - 0.4, 0.35, 0.3, '#a8a4c0')
     }
   },
+  // Misket elması: küçük, sarı kabuğunun bir yanı al, saplı ve yapraklı
+  amasya: (c) => {
+    line(c, [0.2, -3.2, 0.9, -5.4], 0.7, '#6a4a2a')
+    shape(
+      c,
+      () => {
+        c.moveTo(0.9, -4.6)
+        c.quadraticCurveTo(3.6, -6.4, 4.8, -3.8)
+        c.quadraticCurveTo(2.2, -3, 0.9, -4.6)
+      },
+      '#6aa840',
+      '#3e7a2a',
+    )
+    shape(
+      c,
+      () => {
+        c.moveTo(0, -3)
+        c.bezierCurveTo(3.2, -4.8, 5.6, -1.6, 4.6, 1.6)
+        c.bezierCurveTo(3.8, 4.4, 1.2, 5, 0, 4.2)
+        c.bezierCurveTo(-1.2, 5, -3.8, 4.4, -4.6, 1.6)
+        c.bezierCurveTo(-5.6, -1.6, -3.2, -4.8, 0, -3)
+      },
+      '#ecca52',
+      '#c89a2a',
+    )
+    dab(c, 1.9, 0.8, 1.9, 2.6, 'rgba(216,64,46,0.72)')
+    dab(c, -2.4, -1.2, 0.7, 1.3, '#fff6d0', -0.4)
+  },
+  // Bodrum süngeri: yumru yumru, gözenekli sarı deniz süngeri
+  mugla: (c) => {
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.6, 1.6)
+        c.bezierCurveTo(-6, -1.6, -3.6, -4.6, -1.2, -3.6)
+        c.bezierCurveTo(0.2, -5.6, 3.6, -5, 3.8, -2.6)
+        c.bezierCurveTo(6, -1.6, 5.6, 2.4, 3.4, 3.4)
+        c.bezierCurveTo(1.6, 5, -3.4, 4.6, -4.6, 1.6)
+      },
+      '#e8c66a',
+      '#c09a3e',
+    )
+    for (const [x, y, r] of [[-2.4, -0.8, 0.9], [1.2, -2.2, 0.8], [2.8, 0.8, 1], [-0.4, 1.8, 0.8], [-3, 2, 0.5], [0.4, -0.2, 0.5]] as const) dab(c, x, y, r, r * 0.8, '#a87a2a')
+    dab(c, -2.6, -2.6, 1, 0.5, '#fff2c0', -0.5)
+  },
   // Kopuz: armut gövdeli, uzun saplı ozan sazı
   bayburt: (c) => {
     line(c, [-0.6, 0.6, 4.4, -4.4], 1.1, '#7a4a24')

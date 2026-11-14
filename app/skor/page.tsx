@@ -12,7 +12,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (!d) return { title: 'Skor Kartı · Sek-Sek' }
   const l = LEVELS.find((x) => x.id === d.level)!
   const title = `${d.name || 'Bir yolcu'} ${l.name}’u ${formatTime(d.timeMs)} sürede geçti · Sek-Sek`
-  const description = `${d.deaths} düşüş, ${d.items}/3 hatıra. İstanbul’dan Bayburt’a 28 şehirlik platform oyunu: sen de dene!`
+  const description = `${d.deaths} düşüş, ${d.items}/3 hatıra. İstanbul’dan Bayburt’a 30 şehirlik platform oyunu: sen de dene!`
   const image = `/skor/kart?${shareQuery(d)}`
   return {
     title,
