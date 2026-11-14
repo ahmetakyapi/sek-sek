@@ -147,6 +147,9 @@ yetim satır bırakma.
 
 **Boss değiştirmek.** `game/boss.ts` (BOSSES: can, hareket sırası, hız; BOSS: süreler) → `npx tsx scripts/bossbot.ts <id>`
 (bot ve zayıf oyuncu botu yenmeli). Çizimi `game/bossDraw.ts`. Kural her şehirde aynı kalsın: işaret → saldırı → yorgunluk → üstüne bas.
+Zorluk kademeyle gelir (`BossDef.tier`; ayrıntı `.claude/rules/boss.md`): Kolay ve Orta şehirlerin boss'u kademe 1'dir
+ve davranışı değişmez; Zor (2) ve Çok Zor (3) boss'lar öngörülü nişan alır, dört kez sıçrar/atar, inişte şok dalgası
+yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır. Can artırmak zorluk değildir.
 
 ## Tasarım tuzakları (öğrenilmiş)
 
