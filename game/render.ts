@@ -8,7 +8,7 @@ import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
 import { TerrainHD } from './terrainDraw'
 import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
-import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, SPIKE_UP, WATER, hammerState, type World } from './sim'
+import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, SPIKE_UP, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -24,9 +24,11 @@ interface Particle {
 }
 
 /** dash izi: kopyalar arası dünya pikseli, ömür (sn), en çok kopya */
-const GHOST_GAP = 11
-const GHOST_LIFE = 0.18
-const GHOST_MAX = 3
+const GHOST_GAP = 9
+const GHOST_LIFE = 0.22
+const GHOST_MAX = 4
+/** dash'in hız çizgileri: çizgiler arası dünya pikseli (mesafeye göre bırakılır: her Hz'de aynı yoğunluk) */
+const STREAK_GAP = 5
 
 interface Ghost {
   x: number
@@ -65,6 +67,9 @@ export class Renderer {
   private city: CityKey = 'istanbul'
   private particles: Particle[] = []
   private ghosts: Ghost[] = []
+  /** son hız çizgisinin bırakıldığı yer (dash sürerken) ve sıra sayacı */
+  private streakAt: [number, number] | null = null
+  private streakN = 0
   private ambient: Ambient[] = []
   private shake = 0
   private flash = 0
@@ -249,10 +254,24 @@ export class Renderer {
         this.wallChain = 0
         break
       }
-      case 'dash':
+      case 'dash': {
         this.flash = 0.06
         this.shake = Math.max(this.shake, 1.5)
+        // kalkış: atkının renginde kıvılcım halkası geriye doğru açılır; yerdeyse ayak altından toz kalkar
+        const cx = p.x + p.w / 2
+        const cy = p.y + p.h / 2
+        const [dx, dy] = p.dashDir
+        const tint = this.scarf?.color ?? '#d83c36'
+        for (let i = 0; i < 10; i++) {
+          const a = Math.atan2(-dy, -dx) + (i / 9 - 0.5) * 2.2
+          const v = 70 + (i % 3) * 35
+          this.particles.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.22 + (i % 2) * 0.08, max: 0.3, color: i % 3 ? tint : '#fff6e0', size: i % 4 === 0 ? 2 : 1, grav: 0 })
+        }
+        if (p.grounded || dy === 0)
+          for (let i = 0; i < 5; i++) this.particles.push({ x: cx - dx * 4, y: p.y + p.h - 1, vx: -dx * (30 + i * 14), vy: -12 - i * 7, life: 0.32, max: 0.32, color: 'rgba(230,220,200,0.75)', size: i % 2 ? 1 : 2, grav: 90 })
+        this.streakAt = null
         break
+      }
       case 'death':
         this.shake = 6
         this.burst(e.x, e.y, 22, '#d6403a', 120, 2)
@@ -2294,7 +2313,26 @@ export class Renderer {
     for (const g of this.ghosts) {
       // kopyalar karakterin arkasında kalır: karaktere çok yakın olan çizilmez
       if (Math.hypot(p.x - g.x, p.y - g.y) < GHOST_GAP * 0.6) continue
-      this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.38 * (g.life / GHOST_LIFE), ghost: false, moving: true, sx: 1, sy: 1 })
+      // iz eskidikçe hem solar hem incelir: hız hissi kuyruğa doğru sivrilir
+      const k = g.life / GHOST_LIFE
+      this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k })
+    }
+    // hız çizgileri: dash boyunca gövdenin arkasında kısa, parlak çizgiler (mesafeye göre; kare hızından bağımsız)
+    if (p.dashTime > 0 && !p.dead) {
+      const at = this.streakAt
+      if (!at || Math.hypot(p.x - at[0], p.y - at[1]) >= STREAK_GAP) {
+        const n = (this.streakN = (this.streakN + 1) % 6)
+        const [dx, dy] = p.dashDir
+        // çizgi gövde boyunca üç şeritte sırayla çıkar (rastgele değil: her koşuda aynı desen)
+        const off = (n % 3) - 1
+        const tint = this.scarf?.color ?? '#d83c36'
+        this.particles.push({ x: p.x + p.w / 2 - dx * 6 - dy * off * 5, y: p.y + p.h / 2 - dy * 6 + dx * off * 6, vx: -dx * 60, vy: -dy * 60, life: 0.16, max: 0.16, color: n % 2 ? '#fff6e0' : tint, size: n % 3 === 0 ? 2 : 1, grav: 0 })
+        this.streakAt = [p.x, p.y]
+      }
+    } else if (this.streakAt) {
+      // dash bitti: küçük bir fren tozu
+      if (!p.dead && p.grounded) for (let i = 0; i < 3; i++) this.particles.push({ x: p.x + p.w / 2 + p.facing * 4, y: p.y + p.h - 1, vx: p.facing * (18 + i * 10), vy: -14 - i * 6, life: 0.26, max: 0.26, color: 'rgba(230,220,200,0.7)', size: 1, grav: 80 })
+      this.streakAt = null
     }
     if (p.dead) return
 
@@ -2330,8 +2368,11 @@ export class Renderer {
       kx = 0.92
       ky = 1.08
     } else if (p.dashTime > 0) {
-      kx = Math.abs(p.dashDir[0]) > 0.5 ? 1.12 : 0.9
-      ky = Math.abs(p.dashDir[0]) > 0.5 ? 0.9 : 1.12
+      // dash: kalkışta en çok gerilir, sonuna doğru toparlanır (yön boyunca uzar, hacim korunur)
+      const a = 0.08 + 0.14 * Math.min(1, p.dashTime / PHYS.dashTime)
+      const side = Math.abs(p.dashDir[0]) > 0.5
+      kx = side ? 1 + a : 1 - a * 0.7
+      ky = side ? 1 - a * 0.7 : 1 + a
     }
     const footX = p.x + p.w / 2
     const footY = p.y + p.h
