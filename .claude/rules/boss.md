@@ -24,10 +24,10 @@ bağlıdır, rastgelelik yoktur: aynı girdi aynı dövüşü verir.
 
   | Hareket | Kademe 2 (Zor) | Kademe 3 (Çok Zor) |
   |---|---|---|
-  | `throw` | Öngörülü nişan: oyuncunun durduğu yere değil, hızıyla (en çok koşu hızı; dash sayılmaz) varacağı yere atar | Salvo başına iki mermi (durduğu yere + varacağı yere), dört salvo; sırayla yüksek (altından koşulur) ve alçak (üstünden atlanır) |
-  | `hop` | İniş yeri oyuncunun gideceği yere göre seçilir | Aynısı + dört sıçrayış; her iniş iki yana şok dalgası yollar |
-  | `charge` | Bekleme 0,65 sn (kademe 1: 0,9), hız 185 (150) | Hız 175; duvarda yorulmaz, 0,5 sn işaretle dönüp bir kez daha toslar, ikinci çarpışta yorulur |
-  | `dive` | İşaret sürerken oyuncuya hafifçe kayar (26 px/sn), dalarken yeri sabittir | Aynısı + iki dalış (ikincisinden önce 0,5 sn işaret); her inişte şok dalgası |
+  | `throw` | Öngörülü nişan: oyuncunun durduğu yere değil, hızıyla (en çok koşu hızı; dash sayılmaz) varacağı yere atar; dört atış | Salvo başına iki mermi (durduğu yere + varacağı yere), dört salvo; sırayla yüksek (altından koşulur) ve alçak (üstünden atlanır) |
+  | `hop` | İniş yeri oyuncunun gideceği yere göre seçilir; dört sıçrayış | Aynısı + her iniş iki yana şok dalgası yollar |
+  | `charge` | Bekleme 0,65 sn (kademe 1: 0,9), hız 195 (150) | Hız 175; duvarda yorulmaz, 0,5 sn işaretle dönüp bir kez daha toslar, ikinci çarpışta yorulur |
+  | `dive` | İşaret sürerken oyuncuya hafifçe kayar (26 px/sn), dalarken yeri sabittir; inişte iki yana şok dalgası | Aynısı + iki dalış (ikincisinden önce 0,5 sn işaret) |
   | `burrow` | Çıkınca iki yana savurur | Önce bir delikte sahte kabarır (0,6 sn), sonra oyuncuya en yakın başka delikte gerçek işaretle (0,75 sn) çıkar; iki yana savurur |
   | Son can | Öfke: hamleler arası bekleme 1,25 kat kısalır (`rush`) | Aynısı |
 

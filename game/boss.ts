@@ -45,11 +45,11 @@ export const BOSSES: Record<CityKey, BossDef> = {
   bursa: { name: 'Karagöz’ün Gölgesi', nameEn: 'Karagöz’s Shadow', hp: 3, moves: ['burrow', 'hop'], speed: 0.9, tier: 1, w: 22, h: 26, taunt: 'Perdenin dibinden belirir, sonra hoplaya zıplaya gelir. Şaşkın şaşkın bakınınca üstüne bas!', tauntEn: 'It rises from the foot of the screen, then comes hopping. Stomp it when it looks around bewildered!' },
   antalya: { name: 'Aspendos Maskesi', nameEn: 'The Mask of Aspendos', hp: 3, moves: ['dive', 'throw'], speed: 1, tier: 1, w: 24, h: 24, taunt: 'Sahnenin üstünde süzülür, dalar; sonra üç defne yaprağı savurur. Yere düşünce üstüne bas!', tauntEn: 'It floats above the stage and dives, then flings three laurel leaves. Stomp it when it falls!' },
   sanliurfa: { name: 'Dikilitaş Bekçisi', nameEn: 'The Standing-Stone Keeper', hp: 4, moves: ['hop', 'burrow', 'throw'], speed: 1.05, tier: 1, w: 22, h: 28, taunt: 'On iki bin yıllık taş uyanmış: sıçrar, yerden çıkar, çakıl savurur. Yorulunca tepesine bas!', tauntEn: 'A twelve-thousand-year-old stone has woken: it leaps, rises from the ground, flings pebbles. Stomp its top when it tires!' },
-  van: { name: 'Göl Canavarı', nameEn: 'The Lake Monster', hp: 4, moves: ['dive', 'burrow', 'throw'], speed: 1.15, tier: 2, w: 26, h: 24, taunt: 'Dalarken seni izler, kıyıdan çıkıp iki yana savurur, köpüğü koştuğun yere atar. Karaya vurunca üstüne bas!', tauntEn: 'It tracks you as it dives, surfaces and flings both ways, spits foam where you are running. Stomp it when it beaches itself!' },
+  van: { name: 'Göl Canavarı', nameEn: 'The Lake Monster', hp: 4, moves: ['dive', 'burrow', 'throw'], speed: 1.15, tier: 2, w: 26, h: 24, taunt: 'Dalarken seni izler, kıyıdan çıkıp iki yana savurur, köpüğü koştuğun yere atar. İndiği yer sarsılır: dalganın üstünden atla. Karaya vurunca üstüne bas!', tauntEn: 'It tracks you as it dives, surfaces and flings both ways, spits foam where you are running. The ground shakes where it lands: jump the wave. Stomp it when it beaches itself!' },
   kayseri: { name: 'Dev Mantı', nameEn: 'The Giant Mantı', hp: 4, moves: ['hop', 'charge', 'throw'], speed: 1.05, tier: 1, w: 24, h: 22, taunt: 'Zıplar, yuvarlanır, yoğurt fırlatır. Soluklanınca üstüne bas!', tauntEn: 'It hops, rolls and flings yogurt. Stomp it when it stops for breath!' },
   hatay: { name: 'Kızgın Künefe Tepsisi', nameEn: 'The Sizzling Künefe Tray', hp: 4, moves: ['charge', 'throw', 'hop'], speed: 1.05, tier: 1, w: 26, h: 16, taunt: 'Kızgın tepsi döne döne gelir, şerbet sıçratır. Soğuyunca üstüne bas!', tauntEn: 'The hot tray spins in, then splashes syrup. Stomp it once it cools!' },
   eskisehir: { name: 'Dev Çibörek', nameEn: 'The Giant Çibörek', hp: 3, moves: ['charge', 'hop'], speed: 0.9, tier: 1, w: 24, h: 16, taunt: 'Kızgın yağdan fırlar, sonra zıplar. Sönünce üstüne bas!', tauntEn: 'It shoots out of the hot oil, then hops. Stomp it when it goes limp!' },
-  erzurum: { name: 'Palandöken Çığı', nameEn: 'The Palandöken Avalanche', hp: 4, moves: ['charge', 'hop', 'dive'], speed: 1.2, tier: 2, w: 26, h: 26, taunt: 'Buzda hızla yuvarlanır, gittiğin yere sıçrar, çökerken seni izler. Dağılıp toparlanırken üstüne bas!', tauntEn: 'It rolls fast across the ice, leaps to where you are heading and tracks you as it crashes down. Stomp it while it pulls itself together!' },
+  erzurum: { name: 'Palandöken Çığı', nameEn: 'The Palandöken Avalanche', hp: 4, moves: ['charge', 'hop', 'dive'], speed: 1.2, tier: 2, w: 26, h: 26, taunt: 'Buzda hızla yuvarlanır, gittiğin yere sıçrar, çökerken seni izler; indiği yer sarsılır, dalganın üstünden atla. Dağılıp toparlanırken üstüne bas!', tauntEn: 'It rolls fast across the ice, leaps to where you are heading and tracks you as it crashes down; the ground shakes, so jump the wave. Stomp it while it pulls itself together!' },
   izmir: { name: 'Körfez Ahtapotu', nameEn: 'The Gulf Octopus', hp: 3, moves: ['burrow'], speed: 0.9, tier: 1, w: 22, h: 22, taunt: 'İskele hangi delikten kabarıyorsa oradan çıkar; mürekkebinden atla, sersemleyince bas!', tauntEn: 'It pops out where the pier bubbles; hop over its ink, stomp it when it is dizzy!' },
   ankara: { name: 'Evrak Canavarı', nameEn: 'The Paperwork Monster', hp: 3, moves: ['throw'], speed: 0.95, tier: 1, w: 22, h: 24, taunt: 'Üç mühür fırlatır, sonra soluklanır. Mühürlerin altından yürü, soluklanınca bas!', tauntEn: 'It hurls three stamps, then catches its breath. Walk under the stamps and stomp it then!' },
   konya: { name: 'Dev Topaç', nameEn: 'The Giant Spinning Top', hp: 3, moves: ['charge', 'hop'], speed: 1, tier: 1, w: 22, h: 24, taunt: 'Dönerek gelir, sonra üç kez seker. Yorulup yalpalayınca üstüne bas!', tauntEn: 'It spins at you, then bounces three times. Stomp it when it wobbles!' },
@@ -60,9 +60,9 @@ export const BOSSES: Record<CityKey, BossDef> = {
   malatya: { name: 'Dev Kayısı', nameEn: 'The Giant Apricot', hp: 4, moves: ['hop', 'charge'], speed: 1.1, tier: 1, w: 24, h: 24, taunt: 'Önce seker, sonra yuvarlanır. Yorulunca sapına bas!', tauntEn: 'First it bounces, then it rolls. Stomp its stem when it tires!' },
   corum: { name: 'Leblebi Tavası', nameEn: 'The Roasting Pan', hp: 4, moves: ['throw', 'hop'], speed: 1.1, tier: 2, w: 26, h: 20, taunt: 'Kızgın leblebiyi koştuğun yere savurur, sonra gittiğin yere hoplar. Yön değiştir; soğuyunca üstüne bas!', tauntEn: 'It flings hot chickpeas where you are running, then hops to where you are heading. Change direction; stomp it once it cools down!' },
   ordu: { name: 'Fındık Kurdu', nameEn: 'The Hazelnut Weevil', hp: 4, moves: ['burrow', 'hop'], speed: 1.15, tier: 2, w: 22, h: 22, taunt: 'Topraktan çıkıp iki yana savurur, sonra gittiğin yere üç kez sıçrar. Sersemleyince bas!', tauntEn: 'It digs out and flings both ways, then leaps three times to where you are heading. Stomp it when it is dizzy!' },
-  trabzon: { name: 'Hamsi Kralı', nameEn: 'The Anchovy King', hp: 4, moves: ['hop', 'dive'], speed: 1.15, tier: 2, w: 26, h: 18, taunt: 'Gittiğin yere sıçrar, sonra dalarken seni izler. Yön değiştir; karaya vurunca üstüne bas!', tauntEn: 'It leaps to where you are heading, then tracks you as it dives. Change direction; stomp it when it flops ashore!' },
+  trabzon: { name: 'Hamsi Kralı', nameEn: 'The Anchovy King', hp: 4, moves: ['hop', 'dive'], speed: 1.15, tier: 2, w: 26, h: 18, taunt: 'Gittiğin yere sıçrar, sonra dalarken seni izler; indiği yer sarsılır. Yön değiştir, dalganın üstünden atla; karaya vurunca üstüne bas!', tauntEn: 'It leaps to where you are heading, then tracks you as it dives and shakes the ground. Change direction, jump the wave; stomp it when it flops ashore!' },
   sivas: { name: 'Ayaz Dede', nameEn: 'Old Man Frost', hp: 4, moves: ['throw', 'charge'], speed: 1.15, tier: 2, w: 22, h: 26, taunt: 'Kartopunu koştuğun yere atar, sonra buzda hızla kayar. Yön değiştir, üstünden atla; duvara toslayınca bas!', tauntEn: 'It throws snowballs where you are running, then slides in fast. Change direction, jump over it; stomp it when it hits the wall!' },
-  ardahan: { name: 'Dev Kaz', nameEn: 'The Giant Goose', hp: 4, moves: ['charge', 'dive'], speed: 1.2, tier: 2, w: 24, h: 24, taunt: 'Tıslayıp hızla koşar, sonra havalanır ve dalarken seni izler. Sersemleyince üstüne bas!', tauntEn: 'It hisses and charges fast, then takes off and tracks you as it dives. Stomp it when it is dizzy!' },
+  ardahan: { name: 'Dev Kaz', nameEn: 'The Giant Goose', hp: 4, moves: ['charge', 'dive'], speed: 1.2, tier: 2, w: 24, h: 24, taunt: 'Tıslayıp hızla koşar, sonra havalanır ve dalarken seni izler; indiği yer sarsılır, dalganın üstünden atla. Sersemleyince üstüne bas!', tauntEn: 'It hisses and charges fast, then takes off and tracks you as it dives; the ground shakes, so jump the wave. Stomp it when it is dizzy!' },
   amasya: { name: 'Ferhat’ın Külüngü', nameEn: 'Ferhat’s Pickaxe', hp: 4, moves: ['burrow', 'throw', 'hop'], speed: 1.2, tier: 3, w: 22, h: 26, taunt: 'Önce sahte kabarır, başka yerden çıkar; taşları ikişer savurur; dört sıçrayışı yeri sarsar, dalgasından atla. Soluklanınca üstüne bas!', tauntEn: 'It fakes one mound and bursts from another; flings stones in pairs; its four leaps shake the ground, so jump the wave. Stomp it when it stops for breath!' },
   mugla: { name: 'Poyraz Değirmeni', nameEn: 'The Northwind Mill', hp: 4, moves: ['dive', 'throw', 'charge'], speed: 1.2, tier: 3, w: 24, h: 28, taunt: 'İki kez dalar, indiği yer sarsılır; çuvalları ikişer savurur; duvardan sekip bir daha gelir. Kanatları durunca üstüne bas!', tauntEn: 'It dives twice and shakes the ground; flings sacks in pairs; bounces off the wall and charges again. Stomp it when its sails stop turning!' },
   bayburt: { name: 'Tepegöz', nameEn: 'Tepegöz the Cyclops', hp: 5, moves: ['charge', 'hop', 'throw', 'dive', 'burrow'], speed: 1.2, tier: 3, w: 26, h: 28, taunt: 'Dede Korkut’un devi her canında başka oyun oynar ve hiçbirini bir kez yapmaz: seker, döner, yeniden dalar. Gözü dönünce üstüne bas!', tauntEn: 'Dede Korkut’s giant changes its game with every heart and never does a thing just once: it bounces back, turns, dives again. Stomp it when its eye spins!' },
@@ -290,7 +290,7 @@ export function updateBoss(b: Boss, host: BossHost, dt: number) {
         b.timer -= dt
         if (b.timer <= 0) b.state = 'attack'
       } else {
-        b.x += b.dir * (tier === 1 ? 150 : tier === 2 ? 185 : 175) * k * dt
+        b.x += b.dir * (tier === 1 ? 150 : tier === 2 ? 195 : 175) * k * dt
         if (b.x <= b.min || b.x >= b.max) {
           b.x = clampX(b, b.x)
           if (tier === 3 && b.n === 0) {
@@ -337,7 +337,8 @@ export function updateBoss(b: Boss, host: BossHost, dt: number) {
         b.y += b.vy * dt
         if (b.y >= b.floor - b.h) {
           host.events.push({ type: 'bossSlam', x: bcx(), y: b.floor })
-          if (tier === 3) {
+          // kademe 2 ve 3: iniş iki yana şok dalgası yollar (üstünden atlanır)
+          if (tier > 1) {
             b.y = b.floor - b.h
             shock(b, host)
           }
@@ -376,7 +377,7 @@ export function updateBoss(b: Boss, host: BossHost, dt: number) {
           b.n++
           host.events.push({ type: 'bossSlam', x: bcx(), y: b.floor })
           if (tier === 3) shock(b, host)
-          if (b.n >= (tier === 3 ? 4 : 3)) tire(b)
+          if (b.n >= (tier > 1 ? 4 : 3)) tire(b)
           else {
             b.state = 'warn'
             b.timer = tier === 1 ? 0.45 / k : tier === 2 ? BOSS.chainMin : 0.5
@@ -442,7 +443,7 @@ export function updateBoss(b: Boss, host: BossHost, dt: number) {
       } else {
         b.timer -= dt
         if (b.timer <= 0) {
-          if (b.n >= (tier === 3 ? 4 : 3)) tire(b)
+          if (b.n >= (tier > 1 ? 4 : 3)) tire(b)
           else {
             b.state = 'warn'
             b.timer = tier === 1 ? 0.4 : BOSS.chainMin
