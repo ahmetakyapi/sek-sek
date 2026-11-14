@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { LEVELS } from '../game/levels'
 import { cityVersion } from '../lib/mapVersion'
-import { ackMapNews, cleanIncoming, cloudPart, defaultSave, isRenewed, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
+import { MAP_VERSION, ackMapNews, cleanIncoming, cloudPart, defaultSave, isRenewed, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
 
 const save = (p: Partial<Save>): Save => ({ ...defaultSave(), ...p })
 
@@ -60,12 +61,17 @@ describe('şehir başına harita sürümü', () => {
     const s = normalizeSave({ mapVersion: 7, migrated: true, unlocked: 5, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
     expect(s.best.izmir.v).toBe(cityVersion('izmir'))
     expect(s.best.izmir.stale).toBeFalsy()
-    expect(s.mapVersion).toBe(8)
+    expect(s.mapVersion).toBe(MAP_VERSION)
   })
 
   it('sonradan eklenen şehirler yeni şehir olarak listelenir', () => {
     const s = normalizeSave({ mapVersion: 7, migrated: true, unlocked: 20, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
-    expect(mapNews(s).added.sort()).toEqual(['eskisehir', 'hatay', 'kayseri'])
+    expect(mapNews(s).added.sort()).toEqual(['amasya', 'eskisehir', 'hatay', 'kayseri', 'mugla'])
+    // sürüm 8'den gelen oyuncuya yalnız son eklenen iki şehir yenidir
+    const s8 = normalizeSave({ mapVersion: 8, unlocked: 27, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
+    expect(mapNews(s8).added.sort()).toEqual(['amasya', 'mugla'])
+    // eski sırada son şehir (Bayburt) açıktı: kimliğiyle yeni sıradaki yerine taşınır
+    expect(LEVELS[s8.unlocked].id).toBe('bayburt')
     expect(mapNews(defaultSave())).toEqual({ renewed: [], added: [] })
   })
 

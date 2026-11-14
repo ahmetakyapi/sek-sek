@@ -989,6 +989,56 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     ],
   },
 
+  amasya: {
+    subtitle: 'Both Banks of the Yeşilırmak',
+    item: 'Apple',
+    intro: 'From the bay windows of the riverside houses to the Royal Rock Tombs, from Ferhat’s water channel to the Sultan Bayezid II Complex. The city of princes, squeezed between the mountain and the river.',
+    note: 'The Yeşilırmak splits the city in two: riverside houses on one bank, royal tombs carved into the rock on the other. Eat a misket apple straight from the branch, and at dusk watch the lights fall on the river.',
+    facts: [
+      { title: 'The Royal Rock Tombs', text: 'The monumental tombs on the slope of Mount Harşena were carved into the rock for the kings of Pontus in the Hellenistic period. They can be seen from almost anywhere in the city.' },
+      { title: 'The Amasya Circular', text: 'Mustafa Kemal Pasha and his companions issued the Amasya Circular on 22 June 1919. It declared that the nation’s independence would be saved by the nation’s own resolve and determination.' },
+      { title: 'City of Princes', text: 'Ottoman princes served as governors in Amasya to learn how to run the state. That is why it is called the “City of Princes”.' },
+    ],
+    secret: { title: 'Strabo', text: 'Strabo, the famous geographer of antiquity, was born in Amasya. He described his home city in his work “Geographica”.' },
+    hints: [
+      'Welcome to Amasya! The bay windows of the riverside houses are steps: hop from house to house, and climb the tallest roof too.',
+      'The Royal Rock Tombs: climb the rock steps to the top. Where you cannot reach, jump at the wall and jump again when you touch it.',
+      'Ferhat’s Water Channel: step on the plate and the blue bridge appears while the orange one lifts. The second plate brings the orange back.',
+      'The Sultan Bayezid II Complex: cross the domes into the courtyard. The square gate is at the far end.',
+    ],
+    npcs: [
+      { name: 'Auntie Bedriye the Apple Seller', text: 'A misket apple is small, but its scent fills the street, my dear; take a bite, it smells wonderful. Three rolled out of my basket, and one got as far as the rooftops. Pick them up if you see them.' },
+      { name: 'Tolga the Guide', text: 'These tombs were carved into the rock for the kings of Pontus. They look small from below; stand beside one and you feel like an ant. Take a look at the dark opening on the right face of the big rock too. It is not empty.' },
+      { name: 'Uncle Lütfü the Channel Keeper', text: 'You know Ferhat and Şirin: to win Şirin, Ferhat was to cut through the mountain and bring water to the city. The channel is still here. Step on the plates in order; that is how the water and the road both open.' },
+    ],
+    quips: ['The apple does not fall far from the tree.', 'Did the Yeşilırmak cool you off?', 'Ferhat cut through the mountain. You fell.', 'The kings are watching from above.'],
+  },
+
+  mugla: {
+    subtitle: 'From Bodrum to Ölüdeniz',
+    item: 'Sea Sponge',
+    intro: 'From the bastions of Bodrum Castle to the windmills, from the rock tombs of Dalyan to İztuzu Beach, from Babadağ down to Ölüdeniz. Aegean blue, whitewash white, bougainvillea pink.',
+    note: 'The Aegean meets the Mediterranean here. In Bodrum, climb to the castle between whitewashed houses; in Dalyan, give way to the turtles; from Babadağ, look down on Ölüdeniz. The meltem is always at your back.',
+    facts: [
+      { title: 'Bodrum Castle', text: 'Bodrum Castle was built by the Knights of St John in the 15th century. Today it is the Museum of Underwater Archaeology, displaying finds raised from ancient shipwrecks.' },
+      { title: 'The Mausoleum at Halicarnassus', text: 'Built for King Mausolus, the Mausoleum at Halicarnassus was one of the Seven Wonders of the Ancient World. The word “mausoleum” comes from his name.' },
+      { title: 'İztuzu Beach', text: 'İztuzu Beach in Dalyan is a nesting ground of the loggerhead sea turtle, Caretta caretta. The nests are protected.' },
+    ],
+    secret: { title: 'Herodotus', text: 'Herodotus, known as the “Father of History”, was born in ancient Halicarnassus, today’s Bodrum.' },
+    hints: [
+      'Welcome to Muğla! The meltem blows at your back. At Bodrum Castle, climb from the step onto the bastion and cross the plank to the next one.',
+      'The windmills: board the platform when it comes in and jump as it nears the far shore. The wind lengthens your jump.',
+      'The Dalyan rock tombs: climb from the step to the top of the rock. The wet sand of İztuzu is slippery, so stop early.',
+      'Babadağ: climb the slope to the top, then glide down plank by plank to Ölüdeniz. The square gate is on the beach.',
+    ],
+    npcs: [
+      { name: 'Captain Hayri the Sponge Diver', text: 'Divers used to hold their breath and bring Bodrum’s sponges up from the seabed. A good one is soft; it soaks up water and will not let go. Three went overboard with a wave; if you find them, put them in your notebook.' },
+      { name: 'Auntie Naciye the Miller', text: 'These mills turn with the meltem and grind wheat into flour, my dear. Put the wind behind you and your jump grows longer; mind you do not overshoot the shore.' },
+      { name: 'Ege the Volunteer', text: 'We light no lamps on İztuzu at night: the loggerheads lay their eggs in this sand, and the hatchlings find the sea by moonlight. Did you see the dark opening on the left face of the rock tomb? Something is hidden inside.' },
+    ],
+    quips: ['You soaked that up like a sponge.', 'The meltem blew a little too hard.', 'You forgot the parachute.', 'Even a turtle is more careful.'],
+  },
+
   bayburt: {
     nickname: 'Uktun',
     subtitle: 'Castle and Storm',
@@ -1071,5 +1121,5 @@ export const CREATURE_NAMES_EN: Record<string, string> = {
   gull: 'Gökçekuş', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
   hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Wolf',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',
-  cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge',
+  cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge', turtle: 'Loggerhead Turtle',
 }

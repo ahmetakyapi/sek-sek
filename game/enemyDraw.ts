@@ -801,6 +801,55 @@ const FRIENDS: Record<string, FriendPainter> = {
     softEye(c, 3.4, -10.2, 0.6, p.happy)
     softEye(c, 5.2, -10.2, 0.6, p.happy)
   },
+  // Caretta caretta: kızıl kahve kabuk, sarı karın ve yüzgeç, iri baş; kumda ağır ağır
+  turtle: (c, p) => {
+    const SKIN = '#ecd08a'
+    const SKIN_SH = '#c4a05a'
+    const fin = (x: number, y: number, len: number, rot: number, fill: string) =>
+      shape(
+        c,
+        () => {
+          const cs = Math.cos(rot)
+          const sn = Math.sin(rot)
+          const at = (u: number, v: number): [number, number] => [x + u * cs - v * sn, y + u * sn + v * cs]
+          c.moveTo(...at(0, -0.9))
+          c.quadraticCurveTo(...at(len * 0.6, -1.5), ...at(len, 0))
+          c.quadraticCurveTo(...at(len * 0.5, 1.3), ...at(0, 0.9))
+        },
+        fill,
+        SKIN_SH,
+      )
+    fin(-4.6, -2.4, 3.6, 2.7 + p.wag * 0.12, SKIN)
+    fin(-0.6, -2, 2.6, 2.2, SKIN_SH)
+    line(c, [4, -3.4, 6.2, -4.6], 1.9, SKIN)
+    shape(
+      c,
+      () => {
+        c.moveTo(-6.2, -2.4)
+        c.bezierCurveTo(-6.6, -8.8, 4.8, -9.2, 5.2, -2.6)
+        c.quadraticCurveTo(-0.5, -1.4, -6.2, -2.4)
+      },
+      '#c9783c',
+      '#96521f',
+    )
+    // kabuk pulları
+    line(c, [-4.2, -4.6, -2.6, -6.6, 0.6, -7, 3, -5.2], 0.3, '#7e4218', false)
+    line(c, [-2.6, -6.6, -2, -3.4], 0.3, '#7e4218', false)
+    line(c, [0.6, -7, 0.8, -3.4], 0.3, '#7e4218', false)
+    line(c, [-4.2, -4.6, 3.4, -4.4], 0.3, '#7e4218', false)
+    dab(c, -3.2, -6.4, 1.3, 0.5, '#e8a468', -0.6)
+    line(c, [-6, -2.5, -0.5, -1.7, 5, -2.7], 0.9, '#f0d890')
+    ell(c, 7.3, -5.2, 2.4, 2.1, SKIN, SKIN_SH)
+    dab(c, 6.2, -6.4, 0.7, 0.45, '#c9783c', -0.3)
+    dab(c, 7.6, -6.9, 0.55, 0.35, '#c9783c')
+    line(c, [8.3, -4.2, 9.4, -4.5], 0.25, INK, false)
+    softEye(c, 8, -5.6, 0.72, p.happy)
+    if (p.happy) blush(c, 6.8, -4.3)
+    // ön kürek yüzgeç
+    fin(1.8, -2.4, 4.4, 0.62 + p.wag * 0.1, SKIN)
+    dab(c, 3.2, -1.5, 0.32, 0.26, '#c9783c')
+    dab(c, 4.3, -0.8, 0.28, 0.22, '#c9783c')
+  },
 }
 
 /** bilinmeyen dost: sarı civciv */
@@ -813,7 +862,7 @@ const unknownFriend: FriendPainter = (c, p) => {
 }
 
 /** dostların boyu (kalbin çıkacağı yer) */
-const FRIEND_TOP: Record<string, number> = { flamingo: 16, horse: 16, cow: 12.5, lion: 13 }
+const FRIEND_TOP: Record<string, number> = { flamingo: 16, horse: 16, cow: 12.5, lion: 13, turtle: 10 }
 
 function heart(c: Ctx, x: number, y: number, s: number) {
   c.save()
@@ -1188,6 +1237,72 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
       ell(c, bx, by, 1.15, 1.15, '#3e3a4e')
       dab(c, bx - 0.35, by - 0.4, 0.35, 0.3, '#a8a4c0')
     }
+  },
+  // Misket elması: küçük, sarı kabuğunun güneş gören yanı çizgi çizgi al; kısa sap, tek yaprak
+  amasya: (c) => {
+    const body = () => {
+      c.moveTo(0, -2.7)
+      c.bezierCurveTo(3, -4.7, 5.7, -1.8, 4.8, 1.5)
+      c.bezierCurveTo(4, 4.5, 1.3, 5.2, 0, 4.3)
+      c.bezierCurveTo(-1.3, 5.2, -4, 4.5, -4.8, 1.5)
+      c.bezierCurveTo(-5.7, -1.8, -3, -4.7, 0, -2.7)
+    }
+    line(c, [0.1, -2.4, 0.4, -4.3, 1.3, -5.6], 0.7, '#6a4a2a')
+    shape(
+      c,
+      () => {
+        c.moveTo(0.8, -4.3)
+        c.quadraticCurveTo(2.7, -6.9, 5.3, -5.3)
+        c.quadraticCurveTo(3.5, -3.1, 0.8, -4.3)
+      },
+      '#6cb044',
+      '#3e7a2a',
+    )
+    line(c, [1.5, -4.5, 4.2, -5.1], 0.25, '#3e7a2a', false)
+    shape(c, body, '#f2d460', '#d0a030')
+    if (!halo) {
+      // al yanak kabuğun içinde kalır
+      c.save()
+      c.beginPath()
+      body()
+      c.clip()
+      dab(c, 3.9, 1.2, 3.2, 5, '#e6553c', 0.18)
+      dab(c, 5, 2.8, 2.2, 3, '#c8342c', 0.25)
+      // misketin alı çizgi çizgi yayılır
+      for (const [x, y, h] of [[0.5, -0.4, 1.5], [-0.3, 1.9, 1.1], [0.9, 2.9, 1], [-1.1, -0.2, 0.8]] as const) dab(c, x, y, 0.22, h, '#e6553c', 0.1)
+      for (const [x, y] of [[-2.6, 1.6], [-1.6, 3], [-3.2, -0.2], [-0.9, 0.2]] as const) dab(c, x, y, 0.2, 0.2, '#fff4c0')
+      c.restore()
+    }
+    line(c, [-1.3, -2.5, 0, -2, 1.3, -2.6], 0.35, '#a87a1e', false)
+    dab(c, -2.6, -1.3, 0.7, 1.4, '#fff8d8', 0.5)
+    dab(c, -3.1, 0.9, 0.3, 0.45, '#fff8d8', 0.3)
+  },
+  // Bodrum süngeri: yumru yumru, gözenekli altın sarısı deniz süngeri; dibinde bir denizyıldızı
+  mugla: (c) => {
+    puff(c, -1.6, -2.4, 1.9, 1.3, 6, 1.2, '#f0cc6c', '#c89c3e')
+    puff(c, 0.5, 0.5, 3.5, 2.8, 9, 1.75, '#f0cc6c', '#c89c3e')
+    // gözenekler: koyu oyuk, altında ışık alan dudak
+    for (const [x, y, r] of [[-1.8, -0.4, 1.05], [1.6, -1.6, 0.9], [2.9, 1.3, 0.95], [0.3, 2, 0.8], [-2.1, -2.8, 0.6]] as const) {
+      dab(c, x + 0.15, y + 0.25, r, r * 0.85, '#fff0b4')
+      dab(c, x, y, r, r * 0.8, '#a8782a')
+      dab(c, x - 0.15, y - 0.12, r * 0.55, r * 0.42, '#6e4a18')
+    }
+    for (const [x, y] of [[-0.2, -1.9], [3.6, -0.6], [-3, 1.6], [1.4, 0.3], [-0.9, 3.4]] as const) dab(c, x, y, 0.28, 0.24, '#a8782a')
+    dab(c, -3.1, -1.2, 0.9, 0.45, '#fff6cc', -0.6)
+    // denizyıldızı
+    shape(
+      c,
+      () => {
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * TAU - 1.2
+          const r = i % 2 ? 0.95 : 2.3
+          c.lineTo(-3.5 + Math.cos(a) * r, 3.5 + Math.sin(a) * r)
+        }
+      },
+      '#f2764c',
+      '#c4502e',
+    )
+    dab(c, -3.5, 3.5, 0.35, 0.35, '#ffd0a8')
   },
   // Kopuz: armut gövdeli, uzun saplı ozan sazı
   bayburt: (c) => {

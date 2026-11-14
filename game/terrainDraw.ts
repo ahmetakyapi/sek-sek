@@ -57,6 +57,8 @@ const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   trabzon: { mat: 'cyclop', cap: 'grass' },
   sivas: { mat: 'rock', cap: 'snow' },
   ardahan: { mat: 'rock', cap: 'snow' },
+  amasya: { mat: 'rock', cap: 'stone' },
+  mugla: { mat: 'ashlar', cap: 'stone' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 

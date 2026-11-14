@@ -27,5 +27,7 @@ export const FEATURES: Record<string, { tr: string; en: string }> = {
   trabzon: { tr: 'Horon halkası, çay terasları, Sümela kayalığı, Uzungöl', en: 'Horon dancers, tea terraces, the Sümela cliff, Lake Uzungöl' },
   sivas: { tr: 'Kaygan buz, kurtlar, Gök Medrese bilmecesi', en: 'Slippery ice, wolves, the Gök Madrasa riddle' },
   ardahan: { tr: 'Donmuş Çıldır Gölü, buz delikleri, rüzgâr', en: 'Frozen Lake Çıldır, ice holes, wind' },
+  amasya: { tr: 'Yalıboyu evleri, kral kaya mezarları, Ferhat’ın su kanalı, Bayezid Külliyesi', en: 'The riverside houses, the royal rock tombs, Ferhat’s water channel, the Bayezid complex' },
+  mugla: { tr: 'Bodrum Kalesi, yel değirmenleri, Dalyan kaya mezarları, Ölüdeniz; arkadan esen meltem', en: 'Bodrum Castle, the windmills, the Dalyan rock tombs, Ölüdeniz; a meltem at your back' },
   bayburt: { tr: 'Karşı rüzgâr, Çoruh salları, kale burcu', en: 'Headwind, Çoruh rafts, the castle bastion' },
 }

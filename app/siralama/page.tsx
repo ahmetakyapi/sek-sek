@@ -32,7 +32,7 @@ export default function Siralama() {
         <p className="text-[12px] font-bold tracking-[0.3em] text-accent">YOLCULAR ARASINDA</p>
         <h1 className="mt-2 font-display text-5xl text-cream">Sıralama</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted">
-          28 şehirde en hızlılar, en az düşenler, en çok hatıra toplayanlar ve bugünün meydan okuması. Bir ada dokun, yolcunun defterini aç.
+          30 şehirde en hızlılar, en az düşenler, en çok hatıra toplayanlar ve bugünün meydan okuması. Bir ada dokun, yolcunun defterini aç.
         </p>
         <div className="pixel-panel mt-6 flex h-[min(720px,calc(100dvh-140px))] min-h-[420px] flex-col p-4 sm:p-5">
           <PublicBoard />

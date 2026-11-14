@@ -164,6 +164,18 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Kaz eti ocakta, kış uzun.', 'Goose on the stove, the winter is long.'],
     ['Yaylada çiçek balı.', 'Wildflower honey from the highlands.'],
   ],
+  amasya: [
+    ['Yeşilırmak’a evlerin ışığı vurdu.', 'House lights shimmer on the Yeşilırmak.'],
+    ['Misket elması sepete dizildi.', 'Misket apples line the basket.'],
+    ['Kral mezarları kayadan bakıyor.', 'The royal tombs look down from the rock.'],
+    ['Saat Kulesi köprünün başında.', 'The Clock Tower stands by the bridge.'],
+  ],
+  mugla: [
+    ['Begonviller duvardan taştı.', 'Bougainvillea spills over the wall.'],
+    ['Yel değirmeni meltemle dönüyor.', 'A windmill turns in the meltem.'],
+    ['Caretta denize doğru yürüyor.', 'A loggerhead crawls toward the sea.'],
+    ['Gökte bir yamaç paraşütü.', 'A paraglider drifts overhead.'],
+  ],
   bayburt: [
     ['Dede Korkut’un ozanı türkü söylüyor.', 'Dede Korkut’s bard sings a folk song.'],
     ['Bayburt Kalesi rüzgârı karşılıyor.', 'Bayburt Castle meets the wind.'],

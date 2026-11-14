@@ -91,6 +91,10 @@ export const SCALES: Record<CityKey, Makam> = {
   sivas: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.16 },
   // Kafkas havası, Uşşak'a yakın
   ardahan: { root: 57, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [3, 3, 2], tempo: 0.15 },
+  // Hüseyni, Yeşilırmak kıyısında ağır bir türkü (Amasya)
+  amasya: { root: 57, steps: [0, 2, 3, 5, 7, 9, 10, 12], meter: [2, 2, 2, 2], tempo: 0.18 },
+  // Rast'a yakın, Ege zeybeği 9/8 (Muğla)
+  mugla: { root: 62, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.2 },
   // Saba'ya yakın (Re)
   bayburt: { root: 50, steps: [0, 2, 3, 4, 7, 8, 10, 12], meter: [3, 2, 2], tempo: 0.19 },
 }

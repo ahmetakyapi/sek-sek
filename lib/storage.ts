@@ -7,7 +7,7 @@ import { cityVersion, legacyVersion } from './mapVersion'
  * taşınsın. Haritanın kendisi değişince artırılmaz: o iş şehir başına sürümün (lib/mapVersion.ts), yalnız değişen
  * şehrin rekoru yenilenir.
  */
-export const MAP_VERSION = 8
+export const MAP_VERSION = 9
 /** bu sürümden önceki süreler geçersiz: bölümlere final eklendi */
 const TIMES_SINCE = 4
 
@@ -17,6 +17,8 @@ const SIXTEEN = ['istanbul', 'kocaeli', 'izmir', 'ankara', 'konya', 'nevsehir', 
 /** Edirne, Bursa, Antalya, Şanlıurfa, Van ve Erzurum eklenmeden önceki on dokuz şehir */
 /** Kayseri, Hatay ve Eskişehir’den önceki 25 şehir (harita sürümü 6 ve 7) */
 const TWENTY_FIVE = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'bayburt']
+/** Amasya ve Muğla’dan önceki 28 şehir (harita sürümü 8) */
+const TWENTY_EIGHT = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'bayburt']
 const NINETEEN = ['istanbul', 'kocaeli', 'canakkale', 'izmir', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'ardahan', 'bayburt']
 
 /** Eski sürümlerin şehir sırası: açılan şehir dizinini kimliğiyle yeni sıraya taşımak için */
@@ -28,6 +30,7 @@ const ORDERS: Record<number, string[]> = {
   5: NINETEEN,
   6: TWENTY_FIVE,
   7: TWENTY_FIVE,
+  8: TWENTY_EIGHT,
 }
 
 export interface Best {

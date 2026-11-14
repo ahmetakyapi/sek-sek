@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 28 şehrini gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 30 şehrini gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -24,8 +24,8 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
   sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
-  levels.ts      28 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
-  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir); yeni şehir buraya eklenir
+  levels.ts      30 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
+  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
   finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q boss, G kapı) → çıkış; arenayı index.ts kurar
@@ -38,7 +38,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   render.ts      iki düşük çözünürlüklü tampon (arka: gök, parallax, süs · ön: su, nesne, canlı, parçacık), arada HD zemin; adımlar arası ara değerleme, kesirli kamera
   camera.ts      kamera hesabı (DOM'suz): takip, boss kadrajı, saate bağlı yaklaşım ve sarsıntı; kare hızından bağımsız (tests/camera.test.ts)
   terrainDraw.ts elle çizilmiş zemin ve duvarlar: şehre göre taş örgüsü, mürekkep dış hat, üst örtü (taş, çimen, kar); küçük hücrelerde önbelleklenir, kamera varmadan kare bütçesiyle önceden çizilir
-  bossDraw.ts    28 boss’un vektör çizimi (ruh hâli: öfkeli, titrek, sersem, uykuda)
+  bossDraw.ts    30 boss’un vektör çizimi (ruh hâli: öfkeli, titrek, sersem, uykuda)
   enemyDraw.ts   düşmanlar, dost hayvanlar, hatıralar ve ortak nesneler (anahtar, pul, dash halkası, nazar, yay): vektör; föyü scripts/art/creatures.cjs
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
@@ -147,6 +147,9 @@ yetim satır bırakma.
 
 **Boss değiştirmek.** `game/boss.ts` (BOSSES: can, hareket sırası, hız; BOSS: süreler) → `npx tsx scripts/bossbot.ts <id>`
 (bot ve zayıf oyuncu botu yenmeli). Çizimi `game/bossDraw.ts`. Kural her şehirde aynı kalsın: işaret → saldırı → yorgunluk → üstüne bas.
+Zorluk kademeyle gelir (`BossDef.tier`; ayrıntı `.claude/rules/boss.md`): Kolay ve Orta şehirlerin boss'u kademe 1'dir
+ve davranışı değişmez; Zor (2) ve Çok Zor (3) boss'lar öngörülü nişan alır, dört kez sıçrar/atar, inişte şok dalgası
+yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır. Can artırmak zorluk değildir.
 
 ## Tasarım tuzakları (öğrenilmiş)
 

@@ -20,13 +20,13 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Sek-Sek · Şehir Şehir Anadolu',
-    description: 'İstanbul’dan Bayburt’a 28 şehirlik platform oyunu. Simitçiden kale burcuna tek defterde bir yolculuk.',
+    description: 'İstanbul’dan Bayburt’a 30 şehirlik platform oyunu. Simitçiden kale burcuna tek defterde bir yolculuk.',
   },
-  description: 'İstanbul’dan Bayburt’a 28 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir platform oyunu.',
+  description: 'İstanbul’dan Bayburt’a 30 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir platform oyunu.',
   applicationName: 'Sek-Sek',
   openGraph: {
     title: 'Sek-Sek · Şehir Şehir Anadolu',
-    description: 'İstanbul’dan Bayburt’a 28 şehir ve 84 hatıra. Martılar, cumbalar, kayısı kasaları ve Hitit ok tuzakları seni bekliyor.',
+    description: 'İstanbul’dan Bayburt’a 30 şehir ve 90 hatıra. Martılar, cumbalar, kayısı kasaları ve Hitit ok tuzakları seni bekliyor.',
     locale: 'tr_TR',
     type: 'website',
     siteName: 'Sek-Sek',

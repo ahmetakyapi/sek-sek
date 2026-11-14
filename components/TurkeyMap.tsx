@@ -123,13 +123,15 @@ const COORDS: Record<string, [number, number]> = {
   sivas: [37.02, 39.75],
   ardahan: [42.7, 41.11],
   bayburt: [40.23, 40.26],
+  amasya: [35.83, 40.65],
+  mugla: [28.36, 37.21],
 }
 
 const W = 640
 
 /**
  * Ölçüye göre harita geometrisi: `lon0` sol kenarın boylamı, `kx` derece başına birim.
- * Enlem ölçeği boylamın 1,28 katıdır (39. paralelde gerçek oran); dar ekranda `stretch` ile uzar ki 25 şehrin adı sığsın.
+ * Enlem ölçeği boylamın 1,28 katıdır (39. paralelde gerçek oran); dar ekranda `stretch` ile uzar ki bütün şehirlerin adı sığsın.
  */
 function makeGeo(stretch: number, lon0: number, kx: number) {
   const X = (lon: number) => (lon - lon0) * kx
