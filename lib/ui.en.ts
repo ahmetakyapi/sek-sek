@@ -502,4 +502,6 @@ export const UI_EN: Record<string, string> = {
   "Misafirsin: ilerlemen bu tarayıcıda": "Guest: your progress is in this browser",
   "Giriş yapınca ilerlemen hesabına kaydolur.": "Log in and your progress is saved to your account.",
   "Misafir ilerlemesi bu tarayıcıda kalır.": "Guest progress stays in this browser.",
+  'YENİLENDİ': 'RENEWED',
+  'Harita Yenilendi': 'Map Renewed',
 }

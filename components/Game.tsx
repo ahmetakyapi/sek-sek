@@ -1787,6 +1787,10 @@ export default function Game() {
                             <span className="plate absolute bottom-1 left-1 text-[11px]">
                               <span>{String(l.plate).padStart(2, '0')}</span>
                             </span>
+                            {/* haritası yenilenen şehir: rekor sıfırlandı, yeniden oynanınca rozet kalkar */}
+                            {!locked && best?.stale && best.renew && (
+                              <span className="absolute left-0 top-1 bg-gold px-1.5 py-px text-[11px] font-bold tracking-[0.06em] text-ink shadow-[0_2px_0_rgba(0,0,0,0.35)]">{t('YENİLENDİ')}</span>
+                            )}
                           </span>
                           <span className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-2.5 short:px-2.5">
                             <span className="min-w-0">
@@ -1797,7 +1801,7 @@ export default function Game() {
                               </span>
                             </span>
                             <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-muted">
-                              {locked ? t('Kilitli') : best && !best.stale ? formatTime(best.timeMs) : best ? t('Yeni Yol') : t('Yeni')}
+                              {locked ? t('Kilitli') : best && !best.stale ? formatTime(best.timeMs) : best ? <span className={best.renew ? 'font-bold text-gold' : ''}>{best.renew ? t('Harita Yenilendi') : t('Yeni Yol')}</span> : t('Yeni')}
                               {best && (
                                 <span className="flex items-center gap-1.5">
                                   {!best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}
