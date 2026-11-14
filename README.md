@@ -31,8 +31,8 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
   koleksiyoncular (hatıra, gizli pul, nazar boncuğu). Kendi satırın ilk sıralarda olmasa da görünür.
 - **Modlar.** Günlük Meydan Okuma (herkese aynı şehir ve kural, günlük sıralama, gün serisi), iki kişilik Düello
   (yan yana bölünmüş ekranda ya da sırayla, rakibin hayaletiyle), Boss Rush ve Maraton (rastgele üç şehir arka arkaya).
-- **Güncelleme ilerlemeni silmez.** Bir şehrin haritası değişirse yalnız o şehrin rekoru yenilenir; hangi şehirlerin
-  değiştiği açılışta listelenir.
+- **Güncelleme hiçbir şeyi silmez.** Bir şehrin haritası yenilense de rekorun, hatıraların ve sıralaman durur; hangi
+  şehirlerin yenilendiği açılışta listelenir, listede "Yenilendi" rozetiyle görünür.
 
 <br clear="right">
 

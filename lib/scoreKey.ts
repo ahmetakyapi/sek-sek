@@ -1,12 +1,11 @@
 import { LEVELS } from '@/game/levels'
-import { cityVersion } from './mapVersion'
 
 /**
- * Skor satırının bölüm anahtarı: şehir kimliği + şehrin harita sürümü ("istanbul@1sv4xzt").
- * Bir şehrin haritası değişince yalnız o şehrin tablosu temiz sayfadan başlar; eski satırlar silinmez ama yeni yolla
- * yarışmaz. Öteki şehirlerin tabloları olduğu gibi kalır. Sütun eklemeden, göç gerektirmeden çalışır.
+ * Skor satırının bölüm anahtarı: şehir kimliği + kalıcı ek ("istanbul@s"). Sıralama hiçbir güncellemede silinmez:
+ * harita yenilense de skorlar yerinde kalır (kullanıcı kararı, 14 Kasım 2026). Eski anahtarlar ("istanbul@8",
+ * "istanbul@<özet>") göç 0006 ile buraya taşındı; satırları duruyor ama okunmuyor.
  */
-export const scoreKey = (levelId: string) => `${levelId}@${cityVersion(levelId)}`
+export const scoreKey = (levelId: string) => `${levelId}@s`
 /** bütün şehirlerin bugünkü anahtarları (genel sıralama yalnız bunları sayar) */
 export const currentKeys = () => LEVELS.map((l) => scoreKey(l.id))
 /** anahtardan şehir kimliği; sürümsüz eski satırlar olduğu gibi döner */

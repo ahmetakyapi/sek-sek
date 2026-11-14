@@ -48,7 +48,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts
 components/      React arayüzü: Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, unvan, yol istatistikleri), Modes (Modlar: Günlük Meydan Okuma, Düello, Boss Rush, Maraton; bitiş ekranları), Race (Yan Yana Yarış: bölünmüş ekran, iki dünya ve iki çizici), ScoreBoard (Skor Tablosu: Genel, Şehirler, Günlük, Koleksiyon), About (artbook), Bestiary, HUD, dokunmatik
-lib/             storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırı şehrin kendi harita sürümüne bağlı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db
+lib/             storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db
 app/             / oyun · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /skor paylaşım · /skor/kart kartpostal · /api/*
 scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-frames (tarayıcıda 3x çözünürlükte dash hızında kayarken zemin hücresi hazır mı; kasma kanıtı), verify-perf (üretim derlemesinde gerçek oynanışta kare kaçırma; performans kanıtı), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), audit-menus (her menü dört ekran boyutunda tek bakışta sığıyor mu), audit-clearance (1 karo yüksekliğinde yürünen alçak koridor var mı), verify-rules (Dash’siz kuralının çıktığı şehirler dash atmadan bitiyor mu), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, zemin föyü ve hücre çizim süresi terrain.cjs (`--olc`), şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
 tests/           scores.test.ts (skor API'si bellekte gerçek Postgres ile: göçler, ölçüt başına güncelleme, filtreler, günlük tablo), cloud.test.ts (bulut birleşmesi, şehir başına sürüm, güncelleme notu), sim.test.ts (fizik, mekanik, final), camera.test.ts (60-240 Hz'de aynı kamera, titremesiz dash), perf.test.ts (tuval piksel bütçesi), bubble.test.ts (baloncuk karakterin üstüne binmez), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları), music.test.ts (besteler)
@@ -113,11 +113,12 @@ simge nesne `z`, NEXT_CITY) → `music.ts` SCALES → `levels.ts` LEVELS + DECOR
 malzemesi) → `public/sehirler/<id>.webp` ve `assets/cities/<id>.png` (`node scripts/art/banners.cjs <id>`) → `lib/storage.ts` ORDERS (eski sıra) → `tests/sim.test.ts`
 plaka listesi. "Bölüm ölçütleri"ndeki sekiz maddenin hepsi sağlanmadan şehir eklenmiş sayılmaz. Şehir sırası değişince (yeni şehir) `lib/storage.ts` MAP_VERSION artır ve eski sırayı ORDERS'a yaz; haritanın kendisi değişince hiçbir sayı artırılmaz (aşağıda "Harita sürümü").
 
-**Harita sürümü (kalıcı kural).** Güncelleme oyuncunun ilerlemesini toplu sıfırlamaz. Her şehrin sürümü haritasının
-özetidir (`lib/mapVersion.ts` `cityVersion`): bir şehrin haritası değişince yalnız o şehrin rekoru eskir (hatıralar, pul,
-nazar, boss kalır) ve yalnız o şehrin skor tablosu yeni sayfadan başlar (`scoreKey`: `istanbul@<özet>`). Oyuncu açılışta
-"Yolda Neler Değişti" notunu görür: yenilenen ve yeni eklenen şehirler düğme olarak listelenir, tıklarsa oynar, tıklamazsa
-hiçbir şey değişmez (`mapNews` / `ackMapNews`). Cihazdaki rekorlar girişte tabloya aktarılır (`syncBests`).
+**Harita sürümü (kalıcı kural).** Güncelleme oyuncunun hiçbir şeyini silmez: harita yenilense de rekor, hatıralar, pul,
+nazar, boss ve **sıralama** yerinde kalır (kullanıcı kararı, 14 Kasım 2026). Her şehrin sürümü haritasının özetidir
+(`lib/mapVersion.ts` `cityVersion`); yalnız bilgi vermek için kullanılır: rekoru eski haritada koşulmuş şehir açılışta
+"Yolda Neler Değişti" notunda ve şehir listesinde "Yenilendi" rozetiyle görünür (`isRenewed`, `mapNews` / `ackMapNews`),
+oyuncu yeniden oynayınca rozet kalkar. Eski hayalet koşu yeni haritada gösterilmez. Skor anahtarı kalıcıdır
+(`scoreKey`: `istanbul@s`); cihazdaki rekorlar girişte tabloya aktarılır (`syncBests`).
 
 **Skor tablosu.** Oyuncu başına şehir başına tek satır: en iyi süre (ve o koşunun düşüş/hatırası), bütün koşulardaki en az
 düşüş (`min_deaths`) ve en çok hatıra (`max_items`) ayrı tutulur, her bitiriş `plays`'i artırır. Sıralama filtresi sağ
@@ -128,7 +129,7 @@ sütunda gösterilen değeri de değiştirir. Günlük Meydan Okuma satırları 
 düşüş/eksik hatıra cezası, Tek Can (düşünce baştan), Bayraksız, Zamana Karşı (bronz süre), Dash’siz. Kural haritayı
 değiştirmez; yeni kural eklerken her şehirde bitirilebildiğini kanıtla. Etikete güvenme: İstanbul "Kolay" ama dash'siz
 bitmiyor, bu yüzden Dash’siz yalnız NO_DASH_OK listesinde çıkar (`npx tsx scripts/verify-rules.ts`; o şehirlerin haritası
-değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açılır; rekoru şehir + harita sürümü + kural başınadır.
+değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açılır; rekoru şehir + kural başınadır.
 
 **Yeni mod.** Modlar (`components/Modes.tsx`) ilerlemeye ve şehir rekoruna dokunmaz: `Game.tsx` `modeRef` (günlük, düello)
 ya da `rushRef` (Boss Rush, Maraton) doluyken `finish()` kendi dalına gider. Kurallar ve skor saf işlev olarak

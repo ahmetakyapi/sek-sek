@@ -34,13 +34,13 @@ export interface Best {
   timeMs: number
   deaths: number
   items: boolean[]
-  /** süre eski haritadan kaldı: gösterilmez, ilk yeni koşu yerine geçer (hatıralar kalır) */
+  /** süre çok eski (finalsiz, kısa) haritadan kaldı: gösterilmez, ilk yeni koşu yerine geçer (hatıralar kalır) */
   stale?: boolean
   /** rekorun koşulduğu şehir haritası (lib/mapVersion.ts cityVersion) */
   v?: string
   /** Rahat Mod'da koşuldu: skor tablosuna aktarılmaz */
   relaxed?: boolean
-  /** rekor, şehrin haritası yenilendiği için eskidi: "Yolda Neler Değişti" notunda anılır */
+  /** şehrin haritası bu rekordan sonra yenilendi: rekor durur, "Yolda Neler Değişti" notunda ve listede anılır */
   renew?: boolean
   /** oyuncunun notu gördüğü harita sürümü: aynı sürüm için not bir daha çıkmaz (cihazlar ve bulut arasında da) */
   ack?: string
@@ -163,23 +163,20 @@ export function normalizeSave(parsed: Partial<Save>): Save {
   }
   // bilinen şehirler: alan yoksa kaydın sürümündeki sıra (sonradan eklenenler "yeni" görünür)
   if (!parsed.seen) s.seen = order && (s.unlocked > 0 || Object.keys(s.best).length) ? [...order] : LEVELS.map((l) => l.id)
-  // şehir başına sürüm: sürümsüz eski rekor, kaydın sürümündeki haritaya bağlanır; haritası değişen şehrin rekoru
-  // eskir (hatıralar kalır) ve oyuncuya hangi şehirlerin yenilendiği söylenir. Öteki şehirlere dokunulmaz.
+  // şehir başına sürüm: sürümsüz eski rekor, kaydın sürümündeki haritaya bağlanır. Haritası değişen şehirde rekor,
+  // hatıralar ve sıralama olduğu gibi kalır; oyuncuya yalnız hangi şehirlerin yenilendiği söylenir.
   const best: Record<string, Best> = {}
   for (const [id, b0] of Object.entries(s.best)) {
     const b = { ...b0 }
+    // 14 Kasım'da kısa süre yayında kalan sürüm, haritası yenilenen şehrin rekorunu eskitiyordu: geri alınır
+    if (b.stale && b.renew) b.stale = false
     if (b.v === undefined && !b.stale) {
       const v = legacyVersion(id, s.mapVersion)
       if (v) b.v = v
-      else {
-        b.stale = true
-        b.renew = true
-      }
     }
-    if (!b.stale && b.v !== cityVersion(id)) {
-      b.stale = true
-      b.renew = true
-    }
+    // haritası yenilenen şehir: rekor ve hatıralar olduğu gibi kalır, yalnız "yenilendi" diye işaretlenir
+    if (!b.stale && b.v !== cityVersion(id)) b.renew = true
+    else if (b.renew && b.v === cityVersion(id)) delete b.renew
     best[id] = b
   }
   s.best = best
@@ -218,10 +215,10 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     const fresh = (x: Best) => !x.stale
     const win = fresh(b) && (!fresh(c) || b.timeMs <= c.timeMs) ? b : fresh(c) ? c : b.timeMs <= c.timeMs ? b : c
     const merged: Best = { ...win, items: win.items.map((v, i) => v || !!b.items[i] || !!c.items[i]) }
-    // eskimiş rekorda "yenilendi" izi ve oyuncunun onayı iki taraftan da taşınır: bir cihazda görülen not ötekinde çıkmaz
-    if (merged.stale) {
-      if (b.renew || c.renew) merged.renew = true
+    // "yenilendi" izi ve oyuncunun onayı iki taraftan da taşınır: bir cihazda görülen not ötekinde çıkmaz
+    {
       const now = cityVersion(id)
+      if (merged.v !== now && (b.renew || c.renew)) merged.renew = true
       const ack = b.ack === now || c.ack === now ? now : (b.ack ?? c.ack)
       if (ack) merged.ack = ack
     }
@@ -251,8 +248,11 @@ export function mergeSaves(local: Save, cloud: Save): Save {
   }
 }
 
+/** Şehrin haritası, oyuncunun rekorundan sonra yenilendi mi (rekor durur; listede "Yenilendi" rozeti çıkar) */
+export const isRenewed = (b: Best | undefined, id: string) => !!b && !b.stale && b.v !== cityVersion(id)
+
 /**
- * Güncelleme notu: haritası yenilendiği için rekoru sıfırlanan şehirler ve sonradan eklenen şehirler. Yalnız
+ * Güncelleme notu: haritası yenilenen şehirler (rekor ve sıralama durur) ve sonradan eklenen şehirler. Yalnız
  * ilerlemesi olan oyuncuya gösterilir; hiçbir şey toplu sıfırlanmaz, oyuncu istediği şehre tıklayıp oynar.
  */
 export function mapNews(s: Save): { renewed: string[]; added: string[] } {
@@ -260,7 +260,7 @@ export function mapNews(s: Save): { renewed: string[]; added: string[] } {
   const seen = new Set(s.seen ?? LEVELS.map((l) => l.id))
   const renewed = LEVELS.filter((l) => {
     const b = s.best[l.id]
-    return !!b && !!b.stale && !!b.renew && b.ack !== cityVersion(l.id)
+    return isRenewed(b, l.id) && b!.ack !== cityVersion(l.id)
   }).map((l) => l.id)
   return { renewed, added: LEVELS.filter((l) => !seen.has(l.id)).map((l) => l.id) }
 }
@@ -268,7 +268,7 @@ export function mapNews(s: Save): { renewed: string[]; added: string[] } {
 /** Not okundu: listeler boşalır, rekorlar ve hatıralar olduğu gibi kalır */
 export const ackMapNews = (s: Save): Save => ({
   ...s,
-  best: Object.fromEntries(Object.entries(s.best).map(([id, b]) => [id, b.stale && b.renew ? { ...b, ack: cityVersion(id) } : b])),
+  best: Object.fromEntries(Object.entries(s.best).map(([id, b]) => [id, isRenewed(b, id) ? { ...b, ack: cityVersion(id) } : b])),
   seen: LEVELS.map((l) => l.id),
 })
 

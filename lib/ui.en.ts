@@ -304,7 +304,6 @@ export const UI_EN: Record<string, string> = {
   "YENİ ŞEHİRLER": "NEW CITIES",
   "Yola katıldı": "Joined the road",
   "YENİLENEN HARİTALAR": "RENEWED MAPS",
-  "Rekorun sıfırlandı, hatıraların duruyor": "Your record was reset, your keepsakes remain",
   "Tamam, Menüye Dön": "OK, Back to Menu",
   "Bugün Oyna": "Play Today",
   "Modlar": "Modes",
@@ -503,5 +502,5 @@ export const UI_EN: Record<string, string> = {
   "Giriş yapınca ilerlemen hesabına kaydolur.": "Log in and your progress is saved to your account.",
   "Misafir ilerlemesi bu tarayıcıda kalır.": "Guest progress stays in this browser.",
   'YENİLENDİ': 'RENEWED',
-  'Harita Yenilendi': 'Map Renewed',
+  "Rekorun ve sıralaman duruyor; yeni yolu görmek için yeniden oyna": "Your record and ranking remain; play again to see the new route",
 }

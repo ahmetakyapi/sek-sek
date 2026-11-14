@@ -6,7 +6,6 @@ import { drizzle } from 'drizzle-orm/pglite'
 import { NextRequest } from 'next/server'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { istanbulDay, shiftDay } from '../lib/extras'
-import { cityVersion } from '../lib/mapVersion'
 
 /**
  * Skor tablosu gerçek SQL ile (bellekte Postgres: PGlite): göçler sırayla uygulanır, sonra API uçları çağrılır.
@@ -54,12 +53,16 @@ beforeAll(async () => {
   // eski genel sürümle yazılmış satırlar: İzmir'de iki sürümde de koşu, Kayseri'de yalnız 8
   await pg.query(`insert into seksek_scores (level, name, player_id, time_ms, deaths, items) values
     ('izmir@7', 'Ayşe', $1, 90000, 1, 3), ('izmir@8', 'Ayşe', $1, 95000, 0, 2), ('kayseri@8', 'Ayşe', $1, 120000, 4, 1), ('izmir@6', 'Bora', $2, 50000, 0, 3)`, [P[0].id, P[1].id])
-  await migrate(migrations.filter((f) => f >= '0005'))
+  // arada şehrin özet anahtarıyla (0005 sonrası, 0006 öncesi yayında kalan sürüm) yazılmış bir skor da olsun
+  await migrate(migrations.filter((f) => f === '0005_seksek_city_versions.sql'))
+  await pg.query(`insert into seksek_scores (level, name, player_id, time_ms, deaths, items, min_deaths, max_items, plays) values ('bursa@abc123', 'Bora', $1, 61000, 2, 2, 2, 2, 1)`, [P[1].id])
+  await migrate(migrations.filter((f) => f >= '0006'))
   await migrate(migrations.filter((f) => f >= '0005'))
 })
 
 describe('skor tablosu', () => {
-  it('eski sürümün skoru haritası değişmeyen şehirde yeni anahtara taşınır, en iyiler birleşir', async () => {
+  it('eski sürümlerin skorları kalıcı anahtara taşınır, en iyiler birleşir; sıralama güncellemede silinmez', async () => {
+    expect((await get('level=bursa')).scores[0]).toMatchObject({ name: 'Bora', timeMs: 61000 })
     const izmir = await get('level=izmir')
     expect(izmir.scores).toHaveLength(1)
     expect(izmir.scores[0]).toMatchObject({ name: 'Ayşe', timeMs: 90000, minDeaths: 0, maxItems: 3, plays: 2 })
@@ -67,7 +70,7 @@ describe('skor tablosu', () => {
     expect(kayseri.scores[0]).toMatchObject({ timeMs: 120000 })
     // sürüm 6'nın skoru taşınmaz (fizik değişti)
     expect(izmir.scores.some((r) => r.name === 'Bora')).toBe(false)
-    const rows = await pg.query<{ n: number }>(`select count(*)::int as n from seksek_scores where level = $1`, [`izmir@${cityVersion('izmir')}`])
+    const rows = await pg.query<{ n: number }>(`select count(*)::int as n from seksek_scores where level = $1`, ['izmir@s'])
     expect(rows.rows[0].n).toBe(1)
   })
 
@@ -94,7 +97,7 @@ describe('skor tablosu', () => {
     for (let i = 0; i < 12; i++) {
       const id = `00000000-0000-4000-8000-0000000001${String(i).padStart(2, '0')}`
       await pg.query(`insert into seksek_players (id, name, name_key, password_hash) values ($1, $2, $2, 'x')`, [id, `hızlı${i}`])
-      await pg.query(`insert into seksek_scores (level, name, player_id, time_ms, deaths, items) values ($1, 'x', $2, $3, 0, 3)`, [`ankara@${cityVersion('ankara')}`, id, 10000 + i])
+      await pg.query(`insert into seksek_scores (level, name, player_id, time_ms, deaths, items) values ($1, 'x', $2, $3, 0, 3)`, ['ankara@s', id, 10000 + i])
     }
     const b = await get('level=ankara&me=CEMRE')
     expect(b.scores).toHaveLength(11)
@@ -102,7 +105,7 @@ describe('skor tablosu', () => {
     expect(b.total).toBe(15)
   })
 
-  it('genel sıralama yalnız bugünkü haritaları sayar ve sıralamaya göre değişir', async () => {
+  it('genel sıralama şehirleri sayar ve sıralamaya göre değişir', async () => {
     await run(P[2], 'izmir', 200000, 9, 3)
     const g = await get('level=genel')
     const ayse = g.scores.find((r) => r.name === 'Ayşe')!

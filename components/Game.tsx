@@ -33,7 +33,7 @@ import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
 import { cityVersion } from '@/lib/mapVersion'
-import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, titleFacts, writeSave, type Player, type Save } from '@/lib/storage'
+import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, type Player, type Save } from '@/lib/storage'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
 const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
@@ -990,7 +990,7 @@ export default function Game() {
       const scoreMs = dailyScore(mode.run.rule, timeMs, w.deaths, found)
       const deaths = w.deaths
       if (mode.free) {
-        const key = ruleKey(mode.run.levelId, cityVersion(mode.run.levelId), mode.run.rule)
+        const key = ruleKey(mode.run.levelId, mode.run.rule)
         setSave((prev) => {
           const old = prev.rules?.[key]
           const best = old === undefined || scoreMs < old
@@ -1062,7 +1062,7 @@ export default function Game() {
         unlocked: Math.max(prev.unlocked, Math.min(idx + 1, LEVELS.length - 1)),
         best: {
           ...prev.best,
-          [w.level.id]: newBest ? { timeMs, deaths: w.deaths, items: mergedItems, v: cityVersion(w.level.id), ...(run.relaxed ? { relaxed: true } : {}) } : { ...best, items: mergedItems },
+          [w.level.id]: newBest ? { timeMs, deaths: w.deaths, items: mergedItems, v: cityVersion(w.level.id), ...(run.relaxed ? { relaxed: true } : {}) } : { ...best, items: mergedItems, v: cityVersion(w.level.id), renew: undefined },
         },
       }
       writeSave(next)
@@ -1307,7 +1307,7 @@ export default function Game() {
               {(
                 [
                   ['added', t('YENİ ŞEHİRLER'), t('Yola katıldı'), 'border-[#7ad88a] text-[#a8e8b2]'],
-                  ['renewed', t('YENİLENEN HARİTALAR'), t('Rekorun sıfırlandı, hatıraların duruyor'), 'border-gold text-gold'],
+                  ['renewed', t('YENİLENEN HARİTALAR'), t('Rekorun ve sıralaman duruyor; yeni yolu görmek için yeniden oyna'), 'border-gold text-gold'],
                 ] as const
               ).map(([k, title, note, tone]) =>
                 mapNotice[k].length ? (
@@ -1788,7 +1788,7 @@ export default function Game() {
                               <span>{String(l.plate).padStart(2, '0')}</span>
                             </span>
                             {/* haritası yenilenen şehir: rekor sıfırlandı, yeniden oynanınca rozet kalkar */}
-                            {!locked && best?.stale && best.renew && (
+                            {!locked && isRenewed(best, l.id) && (
                               <span className="absolute left-0 top-1 bg-gold px-1.5 py-px text-[11px] font-bold tracking-[0.06em] text-ink shadow-[0_2px_0_rgba(0,0,0,0.35)]">{t('YENİLENDİ')}</span>
                             )}
                           </span>
@@ -1801,7 +1801,7 @@ export default function Game() {
                               </span>
                             </span>
                             <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-muted">
-                              {locked ? t('Kilitli') : best && !best.stale ? formatTime(best.timeMs) : best ? <span className={best.renew ? 'font-bold text-gold' : ''}>{best.renew ? t('Harita Yenilendi') : t('Yeni Yol')}</span> : t('Yeni')}
+                              {locked ? t('Kilitli') : best && !best.stale ? formatTime(best.timeMs) : best ? t('Yeni Yol') : t('Yeni')}
                               {best && (
                                 <span className="flex items-center gap-1.5">
                                   {!best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}

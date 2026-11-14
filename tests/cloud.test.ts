@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cityVersion } from '../lib/mapVersion'
-import { ackMapNews, cleanIncoming, cloudPart, defaultSave, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
+import { ackMapNews, cleanIncoming, cloudPart, defaultSave, isRenewed, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
 
 const save = (p: Partial<Save>): Save => ({ ...defaultSave(), ...p })
 
@@ -35,48 +35,50 @@ describe('bulut kaydı birleştirme', () => {
 })
 
 describe('şehir başına harita sürümü', () => {
-  it('sürümsüz eski rekor kaydın sürümündeki haritaya bağlanır; yalnız haritası değişen şehir eskir', () => {
-    // sürüm 6 kaydı: İstanbul'un haritası 7'de değişti, İzmir'inki değişmedi
-    const s = normalizeSave({ mapVersion: 6, migrated: true, unlocked: 5, best: { istanbul: { timeMs: 50000, deaths: 0, items: [true, true, true] }, izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
-    expect(s.best.istanbul.stale).toBe(true)
-    expect(s.best.istanbul.items).toEqual([true, true, true])
-    expect(s.best.izmir.stale).toBeFalsy()
-    expect(s.best.izmir.v).toBe(cityVersion('izmir'))
-    expect(s.mapVersion).toBe(8)
-  })
-
-  it('haritası sonradan değişen şehir "yenilendi" notunda görünür, ötekiler sıfırlanmaz', () => {
+  it('haritası yenilenen şehirde rekor ve hatıralar silinmez; yalnız "yenilendi" diye işaretlenir', () => {
     const s = normalizeSave({ mapVersion: 8, unlocked: 10, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false], v: 'eski' }, ankara: { timeMs: 70000, deaths: 0, items: [false, false, false], v: cityVersion('ankara') } } })
-    expect(s.best.izmir.stale).toBe(true)
-    expect(s.best.ankara.stale).toBeFalsy()
+    expect(s.best.izmir.stale).toBeFalsy()
+    expect(s.best.izmir.timeMs).toBe(60000)
+    expect(isRenewed(s.best.izmir, 'izmir')).toBe(true)
+    expect(isRenewed(s.best.ankara, 'ankara')).toBe(false)
     expect(mapNews(s).renewed).toEqual(['izmir'])
     const ack = ackMapNews(s)
     expect(mapNews(ack).renewed).toEqual([])
-    // not kapandıktan sonra yeniden açılınca tekrar çıkmaz
     expect(mapNews(normalizeSave(ack)).renewed).toEqual([])
-    expect(ack.best.izmir.items).toEqual([true, false, false])
+    // not kapansa da listede rozet kalır (şehir yeniden oynanana dek) ve rekor durur
+    expect(isRenewed(ack.best.izmir, 'izmir')).toBe(true)
+    expect(ack.best.izmir.timeMs).toBe(60000)
+  })
+
+  it('kısa süre yayında kalan sürümün eskittiği rekor geri gelir', () => {
+    const s = normalizeSave({ mapVersion: 8, unlocked: 10, best: { bursa: { timeMs: 55000, deaths: 2, items: [true, true, false], v: 'eski', stale: true, renew: true } } })
+    expect(s.best.bursa.stale).toBe(false)
+    expect(s.best.bursa.timeMs).toBe(55000)
+  })
+
+  it('sürümsüz eski rekor kaydın sürümündeki haritaya bağlanır', () => {
+    const s = normalizeSave({ mapVersion: 7, migrated: true, unlocked: 5, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
+    expect(s.best.izmir.v).toBe(cityVersion('izmir'))
+    expect(s.best.izmir.stale).toBeFalsy()
+    expect(s.mapVersion).toBe(8)
   })
 
   it('sonradan eklenen şehirler yeni şehir olarak listelenir', () => {
     const s = normalizeSave({ mapVersion: 7, migrated: true, unlocked: 20, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
     expect(mapNews(s).added.sort()).toEqual(['eskisehir', 'hatay', 'kayseri'])
-    // yeni oyuncu hiçbir not görmez
     expect(mapNews(defaultSave())).toEqual({ renewed: [], added: [] })
   })
 
   it('not bir kez görülür: onay bulut gidiş dönüşünde kaybolmaz (sunucu da birleştirir)', () => {
     const raw = { mapVersion: 8, unlocked: 10, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false], v: 'eski' } } }
-    // bulutta notu görmemiş kayıt durur; cihaz notu görüp onaylar ve yazar
     let cloud = cloudPart(normalizeSave(raw))
     const acked = ackMapNews(normalizeSave(raw))
     for (let session = 0; session < 3; session++) {
-      // sunucu PUT: gelen ile kayıtlıyı birleştirir
       cloud = cloudPart(mergeSaves(normalizeSave(cloudPart(acked)), normalizeSave(cloud)))
-      // sonraki açılış: yerel ile bulut birleşir
       const next = mergeSaves(normalizeSave(JSON.parse(JSON.stringify(acked))), normalizeSave(cloud))
       expect(mapNews(next).renewed).toEqual([])
+      expect(next.best.izmir.timeMs).toBe(60000)
     }
-    // başka bir cihaz notu hiç görmediyse buluttaki onay ona da geçer
     expect(mapNews(mergeSaves(normalizeSave(raw), normalizeSave(cloud))).renewed).toEqual([])
   })
 

@@ -167,8 +167,8 @@ export const ruleFits = (rule: DailyRule, level: LevelDef) => !DAILY_RULES[rule]
 /** Kuralın bu şehirdeki süre sınırı (sn); sınır yoksa null */
 export const ruleLimit = (rule: DailyRule, level: LevelDef) => (DAILY_RULES[rule].limit ? Math.round(level.medals[2] * DAILY_RULES[rule].limit!) : null)
 
-/** Serbest kurallı koşuda rekorun anahtarı: şehir + harita sürümü + kural */
-export const ruleKey = (levelId: string, version: string, rule: DailyRule) => `${levelId}@${version}:${rule}`
+/** Serbest kurallı koşuda rekorun anahtarı: şehir + kural (harita yenilense de rekor durur) */
+export const ruleKey = (levelId: string, rule: DailyRule) => `${levelId}:${rule}`
 
 /** İstanbul saatiyle bugünün anahtarı (2026-11-14) */
 export const istanbulDay = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)

@@ -9,7 +9,6 @@ import { Overlay, displayName } from '@/components/ui'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
 import { DAILY_RULES, RULES, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
-import { cityVersion } from '@/lib/mapVersion'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
@@ -293,7 +292,7 @@ export function RuleSetup({ startLevel, finished, records, onStart, onBack }: { 
   const [rule, setRule] = useState<DailyRule>('ceza')
   const lv = localize(LEVELS[level], lng)
   const fits = ruleFits(rule, LEVELS[level])
-  const done = RULES.filter((r) => records[ruleKey(lv.id, cityVersion(lv.id), r)] !== undefined).length
+  const done = RULES.filter((r) => records[ruleKey(lv.id, r)] !== undefined).length
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:max-w-[min(900px,100%)] short:py-3 wide:max-w-[min(960px,100%)]">
@@ -320,7 +319,7 @@ export function RuleSetup({ startLevel, finished, records, onStart, onBack }: { 
           {RULES.map((r) => {
             const def = DAILY_RULES[r]
             const ok = ruleFits(r, LEVELS[level])
-            const best = records[ruleKey(lv.id, cityVersion(lv.id), r)]
+            const best = records[ruleKey(lv.id, r)]
             const lim = ruleLimit(r, LEVELS[level])
             return (
               <button

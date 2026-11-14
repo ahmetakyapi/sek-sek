@@ -60,12 +60,12 @@ export async function pushSave(s: Save) {
 /**
  * Cihazdaki rekorları skor tablosuna aktarır (açılışta bir kez): tabloya yazılmadan önce bitirilmiş şehirler, eski
  * sürümde yazılmış ama haritası değişmemiş şehirler ya da giriş yapmadan oynanan koşular tabloda görünsün. Sunucu
- * yalnız daha iyiyi yazar, oynama sayısını artırmaz. Yalnız şehrin bugünkü haritasında, Rahat Mod kapalıyken koşulmuş rekorlar gider.
+ * yalnız daha iyiyi yazar, oynama sayısını artırmaz. Rahat Mod kapalıyken koşulmuş bütün rekorlar gider (harita yenilense de rekor ve sıralama durur).
  */
 export async function syncBests(s: Save) {
   if (!s.player) return
   const batch = Object.entries(s.best)
-    .filter(([id, b]) => !b.stale && !b.relaxed && b.v === cityVersion(id))
+    .filter(([, b]) => !b.stale && !b.relaxed)
     .map(([level, b]) => ({ level, timeMs: b.timeMs, deaths: b.deaths, items: b.items.filter(Boolean).length }))
   if (!batch.length) return
   // aynı rekorlar bu cihazdan bir kez gider: her açılışta 28 satır yeniden yazılmasın (rekor değişince imza da değişir)
