@@ -1,63 +1,86 @@
 import type { CityRoad } from './types'
 
 /**
- * TASLAK: gerçek tasarım level-designer aşamasında. Bu harita yalnız oynanabilir bir iskelettir (çözücü geçer).
- * Muğla ana yolu, dört durak (rüzgâr batıdan, arkadan eser):
- *  1. Bodrum Kalesi: basamaktan burca çık, mazgalların üstünden yürü, aradaki tahtadan ikinci burca geç.
- *     İlk sünger iki burcun arasında, tahtanın üstünde.
- *  2. Yel Değirmenleri: denizin üstünde gidip gelen iki platform, arada değirmen adası. İkinci sünger ikinci
- *     platformun yolunda.
- *  3. Dalyan Kaya Mezarları ve İztuzu: kaya basamağından mezar kayasının tepesine çık. Gizli pul kayanın sol
- *     yüzündeki mezar odasında: karanlık ağızdan (%) girilir. Sonra dar bir su ve İztuzu'nun ıslak kumu.
- *  4. Ölüdeniz / Babadağ: yamaçtan tepeye çık, tahtadan tahtaya süzülerek in (üçüncü sünger ikinci tahtada);
- *     meydan kapısı kumsalın sonunda.
+ * Muğla ana yolu, dört durak. Meltem arkadan eser ama oyuncuyu taşımaz (atlayışı en çok bir parmak uzatır):
+ * zorluk dar inişten, zamanlamadan ve dikenin, suyun üstündeki duvar sekmesinden gelir.
+ *  1. Bodrum Kalesi: basamaktan birinci burca çık. Karşı burcun mazgalından ok gelir: mazgal dişlerinin arasında
+ *     yürüyen siperdedir, dişe çıkan ve tahtaya atlayan okun hizasındadır (altı avlu, düşen ölmez). Sonra iç kalenin
+ *     duvarına sekerek tırman (ilk sünger tepesinde), hendeğin üstünden alçak sura in (bayrak) ve aynı sekmeyi bu kez
+ *     dikenli hendeğin üstünde kapı kulesine yap.
+ *  2. Yel Değirmenleri: denizin üstünde ters fazda gidip gelen iki platform, aralarında yalnız iki karoluk değirmen
+ *     adası (bayrak): fazla hızlı atlayan adayı aşar. İkinci platformdan yine iki karoluk bir adaya, oradan suyun
+ *     içinden yükselen değirmenin duvarına atlanır ve sekerek tepesine çıkılır (ikinci sünger külahın üstünde).
+ *  3. Dalyan Kaya Mezarları ve İztuzu: basamaktan mezar kayasının duvarına atla, sekerek tepesine çık. Gizli pul kayanın sol yüzündeki mezar odasında:
+ *     karanlık ağızdan (%) girilir. Kanalı çatlak taşların üstünden durmadan geç; İztuzu'nun ıslak kumu kaydırır,
+ *     kumun ortasında diken var.
+ *  4. Ölüdeniz / Babadağ: basamaklardan ve yamacın duvarından tepeye tırman, lagünün üstünde tahtadan çatlak taşa,
+ *     çatlak taştan tahtaya süzül (önce in, sonra yeniden yüksel: üçüncü sünger en yüksek tahtada); meydan kapısı kumsalda.
  */
 export const road: CityRoad = {
   chunks: [
     [
+      '                                       C                      ',
+      '                                                              ',
+      '                                    ####          ####        ',
+      '                                    ####          ####        ',
+      '                                    ####          ####        ',
+      '                                    ####    F     ####        ',
+      '                                    ####   ####   ####        ',
+      '                              ###   ####   ####   ####        ',
+      '                              <##   ####   ####   ####        ',
+      '                  ##  ##  ==  ###   ####   ####   ####        ',
+      '              ##########      ###   ####   ####   ####        ',
+      '              ##########      ###   ####   ####   ####        ',
+      '          ### ##########      ###   ####   ####   ####        ',
+      ' P  ?  n  ### ##########  e   ###   ####^^^####^^^####    l   ',
+      '##############################################################',
+      '##############################################################',
+      '##############################################################',
+      '##############################################################',
+    ],
+    [
+      '                                       C                  ',
       '                                                          ',
-      '                           C                              ',
-      '              ##  ##  ##        ##  ##                    ',
-      '              ##########        ######                    ',
-      '         ###  ##########   ==   ######                    ',
-      ' P  ?  n ###  ##########        ######    e         l     ',
-      '##########################################################',
-      '##########################################################',
-      '##########################################################',
-      '##########################################################',
+      '                                      ####                ',
+      '                                      ####                ',
+      '                                      ####                ',
+      '                                      ####                ',
+      '                            f         ####                ',
+      '                                      ####                ',
+      '                                      ####                ',
+      ' F ?  n   |MMM      |F |      MMM|    ####        e    l  ',
+      '##########~~~~~~~~~~~##~~~~~~~~~~~##~~####~~~#############',
+      '##########~~~~~~~~~~~##~~~~~~~~~~~##~~####~~~#############',
+      '##########~~~~~~~~~~~##~~~~~~~~~~~##~~####~~~#############',
+      '##########~~~~~~~~~~~##~~~~~~~~~~~##~~####~~~#############',
     ],
     [
-      '                               C                          ',
-      '                                                          ',
-      ' F ?  n  l|MMM       |  t    |MMM       |   l       e     ',
-      '###########~~~~~~~~~~#########~~~~~~~~~~##################',
-      '###########~~~~~~~~~~#########~~~~~~~~~~##################',
-      '###########~~~~~~~~~~#########~~~~~~~~~~##################',
-      '###########~~~~~~~~~~#########~~~~~~~~~~##################',
+      '                     ##########                             ',
+      '                     ##########             f               ',
+      '                     ##########                             ',
+      '                     ##########                             ',
+      '               ####  %   ######                             ',
+      '  F ?  n       ####  %  $######   e                 ^^    l ',
+      '######################################~~XXX~~XX~~iiiiiiii###',
+      '######################################~~~~~~~~~~~###########',
+      '######################################~~~~~~~~~~~###########',
+      '######################################~~~~~~~~~~~###########',
     ],
     [
-      '                    ########                              ',
-      '                    ########                              ',
-      '              ####  ########                              ',
-      '              ####  %  #####                              ',
-      '  F ?  n      ####  % $#####                         l    ',
-      '########################################~~~iiiiiiiiii#####',
-      '########################################~~~###############',
-      '########################################~~~###############',
-      '########################################~~~###############',
-    ],
-    [
-      '              ####                                            ',
-      '              ####                                            ',
-      '          ########    ===                                     ',
-      '          ########            C                               ',
-      '      ############          ===                               ',
-      '      ############                  ===                       ',
-      '  F ? ############                              l       E     ',
-      '##############################################################',
-      '##############################################################',
-      '##############################################################',
-      '##############################################################',
+      '              ####                        C                     ',
+      '              ####                                              ',
+      '              ####   ==                  ==                     ',
+      '              ####                                              ',
+      '              ####        XX        XX                          ',
+      '              ####                           ==                 ',
+      '          ########             ==                               ',
+      '          ########                                              ',
+      '      ############                                              ',
+      '  F ? ############                                    l     E   ',
+      '##################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################',
+      '##################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################',
+      '##################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################',
+      '##################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################',
     ],
   ],
 }

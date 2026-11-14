@@ -1,34 +1,54 @@
 import type { Prelude } from './types'
 
 /**
- * TASLAK: gerçek tasarım level-designer aşamasında. Bu harita yalnız oynanabilir bir iskelettir (çözücü geçer).
- * Rüzgâr yönü: meltem batıdan, arkadan eser ve esintiyle güçlenip diner. Denizin üstünde gidip gelen iki platform,
- * arada bir ada: platform yanaşınca bin, esinti güçlenince karşıya atla.
- * Nazar boncuğu son kayalığın tepesinde: kayaya çıkıp zıplayan alır.
+ * Rüzgâr yönü: rüzgâr gülü (plaka) yönü çevirir. Lodos eserken turuncu taşlar, poyraz eserken mavi taşlar durur.
+ * İki rüzgâr gülü, üç sal, tek soru: hangi taş ne zaman lazım?
+ *  1. Sal ile kaya oyuğuna geç, rüzgâr gülüne bas (poyraz): oyuğun önünde mavi basamaklar belirir, kayanın tepesine çık.
+ *  2. Tepeden sekiye çıkan basamaklar turuncu: poyrazla gelen çıkamaz, oyuktaki rüzgâr gülü de artık aşağıda kaldı
+ *     (dönersen mavi basamaklar gider). İkinci rüzgâr gülü salın öbür ucundaki tünekte: sal ile git, bas (lodos),
+ *     sal ile geri dön. Dönüşte turuncu taş salın yolunu keser: üstünden atlanır (ya da üstünden sekiye çıkılır).
+ *  3. Seki (bayrak, lodosla alınır): son sal, yolunda yine bir turuncu taş.
+ * Kilitlenme yok: her yerden bir rüzgâr gülüne dönülür. Plakasız, yalnız birinci ya da yalnız ikinci plakayla sona
+ * varılamadığı çözücüyle denendi.
+ * Nazar boncuğu kaya oyuğunun dibinde, mavi kapının ardında: kapı yalnız lodosta açıktır, yani rüzgâr gülüne basmadan
+ * üstünden atlayan alır (basan, bir daha basıp kapıyı açabilir).
  */
 export const prelude: Prelude = {
-  medal: 60,
+  medal: 100,
   hints: [
-    'Meltem arkandan eser, bir güçlenir bir diner. Platform yanaşınca bin; esinti güçlenince atla, rüzgâr seni taşır.',
-    'İkinci geçit de aynı: platformu bekle, rüzgârı arkana al. Karşıdaki kayalığın tepesine de bir çık.',
+    'Rüzgâr gülüne basınca yön döner: turuncu lodos taşları gider, mavi poyraz taşları gelir. Bir daha basarsan geri döner. Sal yanaşınca bin; ilk rüzgâr gülü karşıdaki kaya oyuğunda.',
+    'Sekiye çıkan basamaklar turuncu, sen poyrazla geldin. Oyuktaki rüzgâr gülü aşağıda kaldı; ona dönersen mavi basamaklar gider. Denize bak: salın öbür ucunda bir tane daha var.',
+    'Son geçit. Sal yanaşınca bin, yolundaki turuncu taşın üstünden atla, karşı sekiye varınca in. Deniz derin, acele etme.',
   ],
   hintsEn: [
-    'The meltem blows at your back, rising and easing. Board the platform when it comes in; jump when the gust picks up and let the wind carry you.',
-    'The second crossing is the same: wait for the platform and put the wind behind you. Then climb to the top of the rocks on the far side.',
+    'Step on a wind rose and the wind turns: the orange lodos stones go, the blue poyraz stones come. Step again and it turns back. Board the raft when it comes in; the first wind rose is in the rock hollow across the water.',
+    'The steps up to the ledge are orange, and you came with the poyraz. The wind rose in the hollow is below you now; go back to it and the blue steps vanish. Look out to sea: there is another one at the far end of the raft’s run.',
+    'The last crossing. Board the raft when it comes in, jump over the orange stone in its way, and step off at the far ledge. The sea is deep, so do not rush.',
   ],
-  npcs: [{ name: 'Paraşüt Pilotu Alper', look: 'genc', text: 'Babadağ’dan atlayan önce rüzgâra bakar: arkadan eserse beklersin, yüzüne dönünce koşarsın. Burada tersi: meltem arkandayken atla. Kayalığın tepesinden bakmayı da unutma, Ölüdeniz’in mavisi oradan başka görünür.' }],
-  npcsEn: [{ name: 'Alper the Paragliding Pilot', text: 'Whoever jumps from Babadağ reads the wind first: if it is behind you, you wait; when it turns to your face, you run. Here it is the other way round: jump while the meltem is at your back. And do look from the top of the rocks; the blue of Ölüdeniz looks different from up there.' }],
+  npcs: [{ name: 'Paraşüt Pilotu Alper', look: 'genc', text: 'Babadağ’dan atlayan önce rüzgâra bakar: lodos mu, poyraz mı? Burada yönü sen çevirirsin; ama her çevirişte bir yol açılır, bir yol kapanır. Kaya oyuğuna girince rüzgâr gülüne hemen basma: oyuğun dibinde bir şey parlıyor, poyraz eserse kapısı kapanır.' }],
+  npcsEn: [{ name: 'Alper the Paragliding Pilot', text: 'Whoever jumps from Babadağ reads the wind first: lodos or poyraz? Here you turn it yourself, but every turn opens one way and closes another. When you enter the rock hollow, do not step on the wind rose at once: something shines at the back, and its door shuts when the poyraz blows.' }],
   chunks: [
     [
-      '                                           !                ',
-      '                                                            ',
-      '                                          ####              ',
-      '                                          ####              ',
-      ' ?  n    |MMM       |   ?    |MMM       | ####     l   k    ',
-      '##########~~~~~~~~~~##########~~~~~~~~~~####################',
-      '##########~~~~~~~~~~##########~~~~~~~~~~####################',
-      '##########~~~~~~~~~~##########~~~~~~~~~~####################',
-      '##########~~~~~~~~~~##########~~~~~~~~~~####################',
+      '                                              [                 ',
+      '                                     F ?      [                 ',
+      '                                [[ #####|MMMM     | ####        ',
+      '                                                                ',
+      '                             [[                                 ',
+      '                                                                ',
+      '                          [[                                    ',
+      '                        ? [[      [                             ',
+      '                    ###########   [      _                      ',
+      '                       ########MMMM     ###                     ',
+      '                   ]   ########                                 ',
+      '                       ########                                 ',
+      '               ]]      ########                                 ',
+      '                           ]  #                                 ',
+      '                  ]]       ]  #                                 ',
+      ' ?  n    |MMM     |     _F ] !#                              l  ',
+      '########~~~~~~~~~~~~###########~~~~~~~~~~~~~~~~~~~~~~~~~~#######',
+      '########~~~~~~~~~~~~###########~~~~~~~~~~~~~~~~~~~~~~~~~~#######',
+      '########~~~~~~~~~~~~###########~~~~~~~~~~~~~~~~~~~~~~~~~~#######',
+      '########~~~~~~~~~~~~###########~~~~~~~~~~~~~~~~~~~~~~~~~~#######',
     ],
   ],
 }
