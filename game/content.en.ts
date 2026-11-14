@@ -876,7 +876,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
       text: 'The little church on Cape Jason was built in the 19th century. It stands alone at the tip of the cape reaching into the sea.',
     },
     hints: [
-      'Wild boars roam the slopes: jump on them or dash past. The gaps on the shore are wide: jump, then dash at the top of your jump.',
+      'Wild boars roam the slopes: jump on them or dash past. The wet rocks on the shore are slippery: slide down under the cliff, dash the moment you clear it, then wall-jump up between the two walls.',
       'Tree hollows hide secrets. Use the crate spring to reach the key and open the door.',
     ],
     npcs: [
