@@ -164,8 +164,12 @@ const RULES: DailyRule[] = ['ceza', 'hiz', 'hatira']
 /** Günün meydan okuması: art arda iki gün aynı şehir gelmez */
 export function dailyRun(day: string, levels: LevelDef[]): DailyRun {
   const pick = (k: string) => hash(`gunluk:${k}`) % levels.length
-  let i = pick(day)
-  if (i === pick(shiftDay(day, -1))) i = (i + 1) % levels.length
+  // dünün gerçek seçimi de aynı kuralla bulunur (birkaç gün geriye bakmak yeter)
+  const at = (k: string, depth: number): number => {
+    const raw = pick(k)
+    return depth > 0 && raw === at(shiftDay(k, -1), depth - 1) ? (raw + 1) % levels.length : raw
+  }
+  const i = at(day, 6)
   return { day, levelId: levels[i].id, rule: RULES[(hash(`kural:${day}`) >>> 4) % RULES.length] }
 }
 
@@ -194,7 +198,11 @@ export function markDaily(prev: DailyMark | null | undefined, day: string, score
 /** İki cihazın izi birleşir: yeni gün kazanır, aynı günde iyi skor ve uzun seri */
 export function mergeDaily(a: DailyMark | null | undefined, b: DailyMark | null | undefined): DailyMark | null {
   if (!a || !b) return a ?? b ?? null
-  if (a.day !== b.day) return a.day > b.day ? a : b
+  if (a.day !== b.day) {
+    const [neu, old] = a.day > b.day ? [a, b] : [b, a]
+    // yeni iz eskisinin ertesi günüyse seri eskisinden sürer (buluttan çekmeden oynanan gün seriyi sıfırlamasın)
+    return neu.day === shiftDay(old.day, 1) ? { ...neu, streak: Math.max(neu.streak, old.streak + 1) } : neu
+  }
   return { day: a.day, bestMs: Math.min(a.bestMs, b.bestMs), streak: Math.max(a.streak, b.streak) }
 }
 

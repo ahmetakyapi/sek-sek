@@ -351,7 +351,6 @@ export const UI_EN: Record<string, string> = {
   "Bugünkü en iyin {time}": "Today’s best {time}",
   "Gün serisi: {n}": "Day streak: {n}",
   "Sıralamaya girmek için giriş yap": "Log in to join the ranking",
-  "Skor kaydedilemedi. Bağlantını kontrol et.": "Couldn’t save the score. Check your connection.",
   "Bugünün sıralamasında {rank}. sıradasın.": "You’re #{rank} in today’s ranking.",
   "↺ Yeniden Dene": "↺ Try Again",
   "BUGÜNÜN SIRALAMASI": "TODAY’S RANKING",
@@ -480,4 +479,7 @@ export const UI_EN: Record<string, string> = {
   "DEFTER EKSİKSİZ TAMAM": "NOTEBOOK FULLY COMPLETE",
   "YOLUN SONU": "END OF THE ROAD",
   "Yol bitti ama defter henüz dolmadı: {n} sayfa boş (hatıra, gizli pul, nazar boncuğu). Defteri Yol Defteri’nden izle, eksik şehirlere dön.": "The road is done but the notebook isn’t full yet: {n} pages are empty (keepsakes, secret stamps, evil eye beads). Track it in the Road Notebook and return to the cities you missed.",
+  "Günün Sıralaması": "Leaderboard",
+  "Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Yan yana yarış klavye ya da oyun kolu ister.": "One device, passed around: the second runner sees the rival’s ghost. Side-by-side racing needs a keyboard or gamepads.",
+  "Skor kaydedilemedi. Bağlantını kontrol et ya da yeniden giriş yap.": "Couldn’t save the score. Check your connection or log in again.",
 }

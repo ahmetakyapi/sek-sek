@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { cookieSession, verifyPlayer } from '@/lib/players'
 import { saves } from '@/lib/schema'
-import { cloudPart, mergeSaves, normalizeSave, type Save } from '@/lib/storage'
+import { cleanIncoming, cloudPart, mergeSaves, normalizeSave, type Save } from '@/lib/storage'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,8 +48,8 @@ export async function PUT(req: NextRequest) {
     if (!me) return NextResponse.json({ error: 'Oturum yok' }, { status: 401 })
     // sunucu da birleştirir: eski kaydı taşıyan bir cihaz (açık kalmış sekme, başka telefon) buluttaki ilerlemeyi geri alamaz
     const row = (await db().select().from(saves).where(eq(saves.playerId, me.id)).limit(1))[0]
-    const incoming = normalizeSave({ ...(body.data as Partial<Save>), accountVersion: 2 })
-    const data = row ? cloudPart(mergeSaves(incoming, normalizeSave({ ...(row.data as Partial<Save>), accountVersion: 2 }))) : body.data
+    const incoming = normalizeSave({ ...cleanIncoming(body.data as Record<string, unknown>), accountVersion: 2 })
+    const data = row ? cloudPart(mergeSaves(incoming, normalizeSave({ ...(row.data as Partial<Save>), accountVersion: 2 }))) : cloudPart(incoming)
     const now = new Date()
     await db()
       .insert(saves)

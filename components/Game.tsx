@@ -148,10 +148,13 @@ export default function Game() {
   const rushRef = useRef<Rush | null>(null)
   const modeRef = useRef<Mode | null>(null)
   /** bu koşuda biriken sayaçlar: bölüm bitince ya da bırakılınca kayda eklenir */
-  const statRef = useRef({ deaths: 0, jumps: 0, dashes: 0, stomps: 0, flushedMs: 0 })
+  const statRef = useRef({ deaths: 0, jumps: 0, dashes: 0, stomps: 0, playMs: 0 })
   /** Düello: rakibin bu turdaki koşusu (hayalet olarak yanında koşar) */
   const duelGhostRef = useRef<GhostRun | null>(null)
   const duelRef = useRef<Duel | null>(null)
+  /** hesap ekranından sonra dönülecek ekran (günlük bitişinden girişe gidildiyse) */
+  const returnRef = useRef<Screen | null>(null)
+  const saveRef = useRef<Save | null>(null)
   /** rehber açık mı (save.tutorial) ve bu bölümde hangi adımlar yapıldı */
   const tutorialOnRef = useRef(false)
   const tutRef = useRef<Tutorial>(freshTutorial(0))
@@ -197,6 +200,7 @@ export default function Game() {
     setScreenState(s)
   }, [])
 
+  saveRef.current = save
   const lang = save.lang ?? 'tr'
   const t = makeT(lang)
   const level = localize(LEVELS[levelIdx], lang)
@@ -317,7 +321,11 @@ export default function Game() {
             acc -= STEP
           }
         }
-        if (w.started && !w.complete) record(ghostRecRef.current, w)
+        if (w.started && !w.complete) {
+          record(ghostRecRef.current, w)
+          // yolda geçen süre yalnız oyun akarken birikir (menüde bekleyen dünya sayılmaz)
+          statRef.current.playMs += dt * 1000
+        }
         for (const e of w.events) {
           renderer.handle(e, w)
           soundRef.current?.sfx(e.type)
@@ -354,6 +362,8 @@ export default function Game() {
               haptic([30, 40, 30, 40, 60])
               const lv = localize(w.level, langRef.current)
               setToast({ ...lv.secret, item: makeT(langRef.current)('Gizli Pul'), key: Date.now() })
+              // modlarda bulunan şey deftere yazılmaz (kart "ilerlemen değişmez" diyor; kilitli şehir de gelebilir)
+              if (modeRef.current) break
               setSave((prev) => {
                 const next = { ...prev, stamps: { ...prev.stamps, [lv.id]: true } }
                 writeSave(next)
@@ -365,6 +375,7 @@ export default function Game() {
               haptic([20, 30, 20, 30, 50])
               const tr = makeT(langRef.current)
               setToast({ title: tr('Nazar Boncuğu'), text: tr('Gezgin’in çantasından düşmüş. Her şehirde bir tane saklı; bulana nazar değmez.'), item: tr('Gizli Bulgu'), key: Date.now() })
+              if (modeRef.current) break
               setSave((prev) => {
                 const next = { ...prev, charms: { ...prev.charms, [w.level.id]: true } }
                 writeSave(next)
@@ -385,6 +396,7 @@ export default function Game() {
               goalRef.current = 'exit'
               freezeRef.current = 0.14
               haptic([40, 50, 40, 50, 90])
+              if (modeRef.current) break
               setSave((prev) => {
                 if (prev.bosses[w.level.id]) return prev
                 const next = { ...prev, bosses: { ...prev.bosses, [w.level.id]: true } }
@@ -602,10 +614,10 @@ export default function Game() {
   /** Biriken sayaçları kayda ekler (bölüm bitince, yeniden başlayınca, menüye dönünce) */
   const flushStats = useCallback((runs = 0) => {
     const st = statRef.current
-    const playMs = Math.max(0, Math.round((worldRef.current?.time ?? 0) * 1000) - st.flushedMs)
+    const playMs = Math.round(st.playMs)
     if (!runs && !st.deaths && !st.jumps && !st.dashes && !st.stomps && playMs < 1000) return
     const add = { runs, deaths: st.deaths, jumps: st.jumps, dashes: st.dashes, stomps: st.stomps, playMs }
-    statRef.current = { deaths: 0, jumps: 0, dashes: 0, stomps: 0, flushedMs: st.flushedMs + playMs }
+    statRef.current = { deaths: 0, jumps: 0, dashes: 0, stomps: 0, playMs: 0 }
     setSave((prev) => {
       const next = { ...prev, stats: addStats(prev.stats ?? emptyStats(), add) }
       writeSave(next)
@@ -616,7 +628,6 @@ export default function Game() {
   const loadLevel = useCallback(
     (idx: number, toScreen: Screen = 'intro') => {
       flushStats()
-      statRef.current.flushedMs = 0
       levelRef.current = idx
       setLevelIdx(idx)
       const rush = rushRef.current
@@ -627,7 +638,7 @@ export default function Game() {
       if (rendererRef.current) {
         rendererRef.current.setLevel(w)
         const mode = modeRef.current
-        rendererRef.current.ghostRun = mode ? (mode.kind === 'duel' ? duelGhostRef.current : null) : !rush && ghostOnRef.current ? loadGhost(LEVELS[idx].id) : null
+        rendererRef.current.ghostRun = mode ? (mode.kind === 'duel' ? duelGhostRef.current : null) : !rush && ghostOnRef.current && !saveRef.current?.best[LEVELS[idx].id]?.stale ? loadGhost(LEVELS[idx].id) : null
       }
       inputRef.current?.clear()
       setHud(EMPTY_HUD)
@@ -721,6 +732,18 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[daily.rule].name)}: ${t(DAILY_RULES[daily.rule].text)}` })
   }
 
+  // Günlük skor tabloya: bitiş ekranı açıkken ve oyuncu girişliyken bir kez (misafir bitirip sonra giriş yaparsa da)
+  const dailyPlayer = save.player
+  useEffect(() => {
+    if (screen !== 'dailyEnd' || !dailyResult || !dailyPlayer || dailySend.status !== 'idle') return
+    const r = dailyResult
+    setDailySend({ status: 'sending', rank: null })
+    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: 'gunluk', day: r.run.day, playerId: dailyPlayer.id, token: dailyPlayer.token, timeMs: r.scoreMs, deaths: r.deaths, items: r.found }) })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((j: { rank?: number }) => setDailySend({ status: 'sent', rank: j.rank ?? null }))
+      .catch(() => setDailySend({ status: 'error', rank: null }))
+  }, [screen, dailyResult, dailyPlayer, dailySend.status])
+
   const setDuel = (d: Duel | null) => {
     duelRef.current = d
     setDuelState(d)
@@ -775,7 +798,8 @@ export default function Game() {
 
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
-    if (screen !== 'map' && screen !== 'title' && screen !== 'modes') return
+    // menü ekranlarının hepsi: yarım kalan mod bir sonraki normal koşuya taşınmasın
+    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls'].includes(screen)) return
     flushStats()
     rushRef.current = null
     if (modeRef.current) {
@@ -864,6 +888,12 @@ export default function Game() {
 
   const afterName = (next: Save) => {
     persist(next)
+    // günlük bitiş ekranından giriş yapmaya gelen oraya döner: skoru şimdi tabloya yazılır
+    if (returnRef.current) {
+      const to = returnRef.current
+      returnRef.current = null
+      return setScreen(to)
+    }
     if (!next.seenStory) {
       setStoryPage(0)
       setScreen('story')
@@ -921,14 +951,7 @@ export default function Game() {
         const next = { ...prev, meydan: mark }
         writeSave(next)
         setDailyResult({ run: mode.run, timeMs, deaths, found, scoreMs, best: mark.bestMs === scoreMs, mark })
-        const p = prev.player
-        if (p) {
-          setDailySend({ status: 'sending', rank: null })
-          fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: 'gunluk', day: mode.run.day, playerId: p.id, token: p.token, timeMs: scoreMs, deaths, items: found }) })
-            .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
-            .then((j: { rank?: number }) => setDailySend({ status: 'sent', rank: j.rank ?? null }))
-            .catch(() => setDailySend({ status: 'error', rank: null }))
-        }
+        setDailySend({ status: 'idle', rank: null })
         return next
       })
       setScreen('dailyEnd')
@@ -2011,13 +2034,14 @@ export default function Game() {
       )}
 
       {screen === 'dailyEnd' && dailyResult && (
-        <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={startDaily} onModes={() => setScreen('modes')} onLogin={() => setScreen('name')} />
+        <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={startDaily} onModes={() => setScreen('modes')} onLogin={() => ((returnRef.current = 'dailyEnd'), setScreen('name'))} />
       )}
 
       {screen === 'duelSetup' && (
         <DuelSetup
           initial={duel?.setup ?? { level: Math.min(levelIdx, save.unlocked), names: [save.player?.name ?? hero.short, lang === 'en' ? 'Guest' : 'Misafir'], heroes: [hero.id, hero.id === 'uktun' ? 'memo' : 'uktun'], bestOf: 1, style: coarse ? 'sirayla' : 'yanyana' }}
           unlocked={save.unlocked}
+          canSide={!coarse}
           onStart={duelStart}
           onBack={() => setScreen('modes')}
         />

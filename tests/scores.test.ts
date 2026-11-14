@@ -116,6 +116,9 @@ describe('skor tablosu', () => {
     await pg.query(`insert into seksek_saves (player_id, data) values ($1, $2)`, [P[2].id, JSON.stringify(data)])
     const k = await get('level=koleksiyon')
     expect(k.scores[0]).toMatchObject({ name: 'Cemre', keeps: 2, stamps: 1, charms: 2, bosses: 1, found: 5 })
+    // bozuk tipli tek bir kayıt sorguyu herkes için düşürmez
+    await pg.query(`insert into seksek_saves (player_id, data) values ($1, $2), ($3, $4)`, [P[0].id, JSON.stringify({ best: { izmir: { items: 5 } }, stamps: 'x', charms: null }), P[1].id, JSON.stringify({ best: null, bosses: [1] })])
+    expect((await get('level=koleksiyon')).scores[0]).toMatchObject({ name: 'Cemre', found: 5 })
   })
 
   it('günlük tabloya yalnız açık günler yazılır, cezalı skor önde düşük olan', async () => {

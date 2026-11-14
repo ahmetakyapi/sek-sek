@@ -72,14 +72,17 @@ export async function GET(req: NextRequest) {
     }
     if (level === 'koleksiyon') {
       const ids = [...LEVEL_IDS]
+      // bozuk tipli bir kayıt (nesne yerine metin, null) sorguyu herkes için düşürmesin
+      const obj = (k: string) => sql`case when jsonb_typeof(v.data->${k}) = 'object' then v.data->${k} else '{}'::jsonb end`
       const r = await db().execute(sql`
         with c as (
           select p.name, p.name_key,
-            (select count(*) from jsonb_each(coalesce(v.data->'best', '{}'::jsonb)) b, jsonb_array_elements(coalesce(b.value->'items', '[]'::jsonb)) i
+            (select count(*) from jsonb_each(${obj('best')}) b,
+                    jsonb_array_elements(case when jsonb_typeof(b.value->'items') = 'array' then b.value->'items' else '[]'::jsonb end) i
               where b.key in ${ids} and i = 'true'::jsonb)::int as keeps,
-            (select count(*) from jsonb_each(coalesce(v.data->'stamps', '{}'::jsonb)) x where x.key in ${ids} and x.value = 'true'::jsonb)::int as stamps,
-            (select count(*) from jsonb_each(coalesce(v.data->'charms', '{}'::jsonb)) x where x.key in ${ids} and x.value = 'true'::jsonb)::int as charms,
-            (select count(*) from jsonb_each(coalesce(v.data->'bosses', '{}'::jsonb)) x where x.key in ${ids} and x.value = 'true'::jsonb)::int as bosses
+            (select count(*) from jsonb_each(${obj('stamps')}) x where x.key in ${ids} and x.value = 'true'::jsonb)::int as stamps,
+            (select count(*) from jsonb_each(${obj('charms')}) x where x.key in ${ids} and x.value = 'true'::jsonb)::int as charms,
+            (select count(*) from jsonb_each(${obj('bosses')}) x where x.key in ${ids} and x.value = 'true'::jsonb)::int as bosses
           from seksek_saves v join seksek_players p on p.id = v.player_id),
         t as (select *, keeps + stamps + charms as total_found,
                 row_number() over (order by keeps + stamps + charms desc, bosses desc, name_key asc)::int as rank, count(*) over ()::int as total

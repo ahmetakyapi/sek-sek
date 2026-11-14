@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cityVersion } from '../lib/mapVersion'
-import { ackMapNews, cloudPart, defaultSave, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
+import { ackMapNews, cleanIncoming, cloudPart, defaultSave, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
 
 const save = (p: Partial<Save>): Save => ({ ...defaultSave(), ...p })
 
@@ -62,5 +62,30 @@ describe('şehir başına harita sürümü', () => {
     expect(mapNews(s).added.sort()).toEqual(['eskisehir', 'hatay', 'kayseri'])
     // yeni oyuncu hiçbir not görmez
     expect(mapNews(defaultSave())).toEqual({ renewed: [], added: [] })
+  })
+
+  it('not bir kez görülür: onay bulut gidiş dönüşünde kaybolmaz (sunucu da birleştirir)', () => {
+    const raw = { mapVersion: 8, unlocked: 10, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false], v: 'eski' } } }
+    // bulutta notu görmemiş kayıt durur; cihaz notu görüp onaylar ve yazar
+    let cloud = cloudPart(normalizeSave(raw))
+    const acked = ackMapNews(normalizeSave(raw))
+    for (let session = 0; session < 3; session++) {
+      // sunucu PUT: gelen ile kayıtlıyı birleştirir
+      cloud = cloudPart(mergeSaves(normalizeSave(cloudPart(acked)), normalizeSave(cloud)))
+      // sonraki açılış: yerel ile bulut birleşir
+      const next = mergeSaves(normalizeSave(JSON.parse(JSON.stringify(acked))), normalizeSave(cloud))
+      expect(mapNews(next).renewed).toEqual([])
+    }
+    // başka bir cihaz notu hiç görmediyse buluttaki onay ona da geçer
+    expect(mapNews(mergeSaves(normalizeSave(raw), normalizeSave(cloud))).renewed).toEqual([])
+  })
+
+  it('bozuk tipli bulut kaydı beklenen biçime zorlanır', () => {
+    const c = cleanIncoming({ best: { izmir: { items: 5 }, ankara: { timeMs: 1, deaths: 0, items: [true, 'x'] }, x: null }, stamps: 'x', charms: null, bosses: { izmir: true, a: 1 }, unlocked: 999 })
+    expect(c.best).toEqual({ ankara: { timeMs: 1, deaths: 0, items: [true, false, false] } })
+    expect(c.stamps).toEqual({})
+    expect(c.bosses).toEqual({ izmir: true })
+    expect(c.unlocked).toBeLessThan(100)
+    expect(cleanIncoming({ best: null }).best).toEqual({})
   })
 })

@@ -113,6 +113,8 @@ describe('Günlük Meydan Okuma', () => {
     expect(liveStreak(m, '2026-11-13')).toBe(0)
     expect(markDaily(m, '2026-11-13', 1).streak).toBe(1)
     expect(mergeDaily(m, { day: '2026-11-11', bestMs: 50000, streak: 1 })).toEqual({ day: '2026-11-11', bestMs: 50000, streak: 2 })
+    // buluttan çekmeden oynanan gün seriyi sıfırlamaz
+    expect(mergeDaily({ day: '2026-11-12', bestMs: 1, streak: 1 }, { day: '2026-11-11', bestMs: 2, streak: 6 })?.streak).toBe(7)
   })
   it('İstanbul saatiyle gün döner', () => {
     expect(istanbulDay(new Date('2026-11-14T21:30:00Z'))).toBe('2026-11-15')

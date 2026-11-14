@@ -153,6 +153,10 @@ export default function Race({
         if (ay > 0.5 || p.buttons[13]?.pressed) inp.down = true
         const pj = !!(p.buttons[0]?.pressed || p.buttons[3]?.pressed)
         const pd = !!(p.buttons[2]?.pressed || p.buttons[1]?.pressed || p.buttons[7]?.pressed)
+        if (p.buttons[9]?.pressed && phase.current === 'run') {
+          phase.current = 'pause'
+          setPaused(true)
+        }
         if (pj) inp.jump = true
         if (pj && !s.padJump) s.jumpLatch = true
         if (pd && !s.padDash) s.dashLatch = true
@@ -288,6 +292,21 @@ export default function Race({
             {count}
           </p>
         </div>
+      )}
+
+      {/* mola her zaman ekranda: yalnız oyun koluyla ya da dokunarak da çıkılabilir */}
+      {!paused && count === 0 && (
+        <button
+          className="pixel-btn absolute left-1/2 top-2 h-9 w-9 -translate-x-1/2 justify-center p-0 text-[12px]"
+          aria-label={t('Mola')}
+          onClick={() => {
+            if (phase.current !== 'run') return
+            phase.current = 'pause'
+            setPaused(true)
+          }}
+        >
+          ❚❚
+        </button>
       )}
 
       {someoneDone && !paused && (

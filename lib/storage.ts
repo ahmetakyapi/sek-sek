@@ -40,6 +40,10 @@ export interface Best {
   v?: string
   /** Rahat Mod'da koşuldu: skor tablosuna aktarılmaz */
   relaxed?: boolean
+  /** rekor, şehrin haritası yenilendiği için eskidi: "Yolda Neler Değişti" notunda anılır */
+  renew?: boolean
+  /** oyuncunun notu gördüğü harita sürümü: aynı sürüm için not bir daha çıkmaz (cihazlar ve bulut arasında da) */
+  ack?: string
 }
 
 export interface Player {
@@ -91,8 +95,6 @@ export interface Save {
   timesReset?: boolean
   /** kaydın ait olduğu harita sürümü (şehir sırası) */
   mapVersion: number
-  /** haritası yenilendiği için rekoru sıfırlanan, oyuncunun henüz görmediği şehirler */
-  renewed?: string[]
   /** oyuncunun bildiği şehirler: sonradan eklenenler "yeni şehir" notunda görünür */
   seen?: string[]
   /** arayüz dili */
@@ -112,7 +114,7 @@ const KEY = 'seksek:v1'
 /** 8 Kasım'a dek anahtar `memleket:v1`di; ilk açılışta yeni anahtara taşınır, ilerleme kaybolmaz. */
 const LEGACY_KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2, renewed: [], seen: LEVELS.map((l) => l.id) })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2, seen: LEVELS.map((l) => l.id) })
 
 export function loadSave(): Save {
   try {
@@ -161,23 +163,24 @@ export function normalizeSave(parsed: Partial<Save>): Save {
   if (!parsed.seen) s.seen = order && (s.unlocked > 0 || Object.keys(s.best).length) ? [...order] : LEVELS.map((l) => l.id)
   // şehir başına sürüm: sürümsüz eski rekor, kaydın sürümündeki haritaya bağlanır; haritası değişen şehrin rekoru
   // eskir (hatıralar kalır) ve oyuncuya hangi şehirlerin yenilendiği söylenir. Öteki şehirlere dokunulmaz.
-  const renewed = new Set(s.renewed ?? [])
   const best: Record<string, Best> = {}
   for (const [id, b0] of Object.entries(s.best)) {
     const b = { ...b0 }
     if (b.v === undefined && !b.stale) {
       const v = legacyVersion(id, s.mapVersion)
       if (v) b.v = v
-      else b.stale = true
+      else {
+        b.stale = true
+        b.renew = true
+      }
     }
     if (!b.stale && b.v !== cityVersion(id)) {
       b.stale = true
-      renewed.add(id)
+      b.renew = true
     }
     best[id] = b
   }
   s.best = best
-  s.renewed = [...renewed]
   if (s.mapVersion !== MAP_VERSION) {
     s.mapVersion = MAP_VERSION
     s.migrated = false
@@ -195,7 +198,7 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'renewed', 'seen', 'meydan', 'stats', 'maraton'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -212,7 +215,15 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     }
     const fresh = (x: Best) => !x.stale
     const win = fresh(b) && (!fresh(c) || b.timeMs <= c.timeMs) ? b : fresh(c) ? c : b.timeMs <= c.timeMs ? b : c
-    best[id] = { ...win, items: win.items.map((v, i) => v || !!b.items[i] || !!c.items[i]) }
+    const merged: Best = { ...win, items: win.items.map((v, i) => v || !!b.items[i] || !!c.items[i]) }
+    // eskimiş rekorda "yenilendi" izi ve oyuncunun onayı iki taraftan da taşınır: bir cihazda görülen not ötekinde çıkmaz
+    if (merged.stale) {
+      if (b.renew || c.renew) merged.renew = true
+      const now = cityVersion(id)
+      const ack = b.ack === now || c.ack === now ? now : (b.ack ?? c.ack)
+      if (ack) merged.ack = ack
+    }
+    best[id] = merged
   }
   const more = (a: { last: string; count: number }, b: { last: string; count: number }) => (b.count > a.count ? b : a)
   const rush = !local.rush ? cloud.rush : !cloud.rush ? local.rush : local.rush.bosses > cloud.rush.bosses || (local.rush.bosses === cloud.rush.bosses && local.rush.timeMs <= cloud.rush.timeMs) ? local.rush : cloud.rush
@@ -233,7 +244,6 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     scarf: local.scarf !== 'al' ? local.scarf : cloud.scarf,
     seenStory: local.seenStory || cloud.seenStory,
     tutorial: local.tutorial && cloud.tutorial,
-    renewed: [...new Set([...(local.renewed ?? []), ...(cloud.renewed ?? [])])].filter((id) => best[id]?.stale),
     seen: [...new Set([...(local.seen ?? []), ...(cloud.seen ?? [])])],
   }
 }
@@ -245,14 +255,22 @@ export function mergeSaves(local: Save, cloud: Save): Save {
 export function mapNews(s: Save): { renewed: string[]; added: string[] } {
   if (s.unlocked === 0 && !Object.keys(s.best).length) return { renewed: [], added: [] }
   const seen = new Set(s.seen ?? LEVELS.map((l) => l.id))
-  return { renewed: (s.renewed ?? []).filter((id) => LEVELS.some((l) => l.id === id)), added: LEVELS.filter((l) => !seen.has(l.id)).map((l) => l.id) }
+  const renewed = LEVELS.filter((l) => {
+    const b = s.best[l.id]
+    return !!b && !!b.stale && !!b.renew && b.ack !== cityVersion(l.id)
+  }).map((l) => l.id)
+  return { renewed, added: LEVELS.filter((l) => !seen.has(l.id)).map((l) => l.id) }
 }
 
 /** Not okundu: listeler boşalır, rekorlar ve hatıralar olduğu gibi kalır */
-export const ackMapNews = (s: Save): Save => ({ ...s, renewed: [], seen: LEVELS.map((l) => l.id) })
+export const ackMapNews = (s: Save): Save => ({
+  ...s,
+  best: Object.fromEntries(Object.entries(s.best).map(([id, b]) => [id, b.stale && b.renew ? { ...b, ack: cityVersion(id) } : b])),
+  seen: LEVELS.map((l) => l.id),
+})
 
 /** İlerleme sıfırlanır; ad, karakter ve ayarlar kalır */
-const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, bosses: {}, rush: null, mapVersion: MAP_VERSION, migrated: false, renewed: [] })
+const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, bosses: {}, rush: null, mapVersion: MAP_VERSION, migrated: false })
 
 /**
  * Açık ama hiç bitirilmemiş ilk şehir: `from`dan sonra aranır, yoksa baştan. Araya yeni şehir girince (Kayseri, Hatay,
@@ -309,4 +327,22 @@ export function titleFacts(s: Save, today: string): TitleFacts {
     streak: liveStreak(s.meydan, today),
     stats: s.stats ?? emptyStats(),
   }
+}
+
+const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
+const flags = (x: unknown) => (isObj(x) ? Object.fromEntries(Object.entries(x).filter(([, v]) => v === true)) : {}) as Record<string, boolean>
+
+/**
+ * Dışarıdan gelen kaydın (bulut PUT gövdesi) ilerleme alanlarını beklenen biçime zorlar: bozuk tipli bir kayıt
+ * veritabanına yazılıp bütün oyuncuların okuduğu sorguları (koleksiyon sıralaması) düşüremesin.
+ */
+export function cleanIncoming(raw: Record<string, unknown>): Partial<Save> {
+  const best: Record<string, Best> = {}
+  if (isObj(raw.best))
+    for (const [id, b] of Object.entries(raw.best)) {
+      if (!isObj(b) || !Number.isFinite(b.timeMs) || !Number.isFinite(b.deaths) || !Array.isArray(b.items)) continue
+      const items = b.items as unknown[]
+      best[id] = { ...(b as unknown as Best), items: [0, 1, 2].map((i) => items[i] === true) }
+    }
+  return { ...(raw as Partial<Save>), best, stamps: flags(raw.stamps), charms: flags(raw.charms), bosses: flags(raw.bosses), unlocked: Number.isInteger(raw.unlocked) ? Math.max(0, Math.min(LEVELS.length - 1, raw.unlocked as number)) : 0 }
 }

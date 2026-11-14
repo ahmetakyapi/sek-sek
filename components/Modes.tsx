@@ -103,7 +103,7 @@ export function ModesHub({
                   {playedToday ? t('▶ Yeniden Dene') : t('▶ Oyna')}
                 </button>
                 <button className="pixel-btn justify-center px-3" onClick={onDailyBoard}>
-                  {t('Sıralama')}
+                  {t('Günün Sıralaması')}
                 </button>
               </div>
             </section>
@@ -218,7 +218,7 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
             ) : status === 'sending' ? (
               <span className="text-muted">{t('Skorun kaydediliyor…')}</span>
             ) : status === 'error' ? (
-              <span className="text-accent-2">{t('Skor kaydedilemedi. Bağlantını kontrol et.')}</span>
+              <span className="text-accent-2">{t('Skor kaydedilemedi. Bağlantını kontrol et ya da yeniden giriş yap.')}</span>
             ) : status === 'sent' && rank ? (
               <strong className="text-gold">{t('Bugünün sıralamasında {rank}. sıradasın.', { rank })}</strong>
             ) : null}
@@ -253,10 +253,10 @@ export interface DuelSetupValue {
 }
 
 /** Düello kurulumu: iki oyuncunun adı ve kılığı, şehir (açılmış şehirlerden), tur sayısı */
-export function DuelSetup({ initial, unlocked, onStart, onBack }: { initial: DuelSetupValue; unlocked: number; onStart: (v: DuelSetupValue) => void; onBack: () => void }) {
+export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { initial: DuelSetupValue; unlocked: number; /** yan yana yarış klavye ya da oyun kolu ister: dokunmatik cihazda kapalı */ canSide: boolean; onStart: (v: DuelSetupValue) => void; onBack: () => void }) {
   const t = useT()
   const lng = useLang()
-  const [v, setV] = useState(initial)
+  const [v, setV] = useState<DuelSetupValue>(canSide ? initial : { ...initial, style: 'sirayla' })
   const open = LEVELS.slice(0, Math.min(unlocked, LEVELS.length - 1) + 1)
   const lv = localize(LEVELS[v.level], lng)
   const setName = (k: 0 | 1, name: string) => setV((p) => ({ ...p, names: (k === 0 ? [name, p.names[1]] : [p.names[0], name]) as [string, string] }))
@@ -325,13 +325,15 @@ export function DuelSetup({ initial, unlocked, onStart, onBack }: { initial: Due
             <p className="mt-3 text-[11px] font-bold tracking-[0.2em] text-muted">{t('OYNAYIŞ')}</p>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
               {(['sirayla', 'yanyana'] as const).map((k) => (
-                <button key={k} aria-pressed={v.style === k} className={`pixel-btn justify-center py-1.5 text-[13px] ${v.style === k ? 'primary' : ''}`} onClick={() => setV((p) => ({ ...p, style: k }))}>
+                <button key={k} aria-pressed={v.style === k} disabled={k === 'yanyana' && !canSide} className={`pixel-btn justify-center py-1.5 text-[13px] ${v.style === k ? 'primary' : ''}`} onClick={() => setV((p) => ({ ...p, style: k }))}>
                   {k === 'sirayla' ? t('Sırayla') : t('Yan Yana')}
                 </button>
               ))}
             </div>
             <p className="mt-1.5 text-[12px] leading-snug text-muted">
-              {v.style === 'sirayla'
+              {!canSide
+                ? t('Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Yan yana yarış klavye ya da oyun kolu ister.')
+                : v.style === 'sirayla'
                 ? t('Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Telefonda da oynanır.')
                 : t('Ekran ikiye bölünür, aynı anda koşarsınız. Klavye (WASD + F, ok tuşları + L) ya da iki oyun kolu gerekir.')}
             </p>
