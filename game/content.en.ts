@@ -317,7 +317,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     hints: [
       'Welcome to Trabzon! Climb the tea terraces and listen to the kemençe player.',
       'The horon line: the dancers jump together. Stand on their joined hands and leap to the next terrace at the top.',
-      'The Sümela cliff: cracked stones crumble, press against the wall to climb. The key is in front of the monastery.',
+      'The Sümela cliff: cracked stones crumble. After the ledge, wall-jump up between the two rocks; arrows fly from the window, so wait for the rhythm. The key is in front of the monastery.',
       'The wedding square: the koçari line stomps slowly and stays up longer. Time it to reach the table.',
       'Uzungöl: hop from boat to boat and watch out for the Gökçekuş birds.',
     ],
@@ -923,7 +923,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     hints: [
       'Ice is slippery! Press the opposite direction to stop.',
       'Twin Minaret Madrasa: bounce from wall to wall to climb between the minarets.',
-      'Gök Madrasa puzzle: there are two plates. Think about which to press, and when.',
+      'Gök Madrasa puzzle: the orange wall and the orange steps come and go with the same plate. Go in, shut the door behind you, take the key; think again before you leave.',
     ],
     npcs: [
       {
