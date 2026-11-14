@@ -1027,9 +1027,9 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     secret: { title: 'Herodotus', text: 'Herodotus, known as the “Father of History”, was born in ancient Halicarnassus, today’s Bodrum.' },
     hints: [
       'Welcome to Muğla! The meltem blows at your back. At Bodrum Castle, climb from the step onto the bastion and cross the plank to the next one.',
-      'The windmills: board the platform when it comes in and jump as it nears the far shore. The wind lengthens your jump.',
+      'The windmills: board the platform as it comes close. On the stones the wind stretches your jump; let the arrow pass, then wall-jump up the mill.',
       'The Dalyan rock tombs: climb from the step to the top of the rock. The wet sand of İztuzu is slippery, so stop early.',
-      'Babadağ: climb the slope to the top, then glide down plank by plank to Ölüdeniz. The square gate is on the beach.',
+      'Babadağ: zigzag up the planks; jumping left the wind pushes you back, so go when the gust dies down. Wall-jump up the rock spire and dash from its top. The square gate is on the beach.',
     ],
     npcs: [
       { name: 'Captain Hayri the Sponge Diver', text: 'Divers used to hold their breath and bring Bodrum’s sponges up from the seabed. A good one is soft; it soaks up water and will not let go. Three went overboard with a wave; if you find them, put them in your notebook.' },
