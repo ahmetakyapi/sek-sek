@@ -7,6 +7,7 @@ import { ItemIcon } from '@/components/HudBits'
 import { Board } from '@/components/ScoreBoard'
 import { Overlay, displayName } from '@/components/ui'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
+import { CHALLENGES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { DAILY_RULES, RULES, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
@@ -21,7 +22,7 @@ const Eyebrow = ({ children, tone = 'text-gold' }: { children: React.ReactNode; 
   </p>
 )
 
-/** Modlar: Günlük Meydan Okuma, Düello, Boss Rush. Her kart ne olduğunu, kuralını ve oyuncunun durumunu söyler. */
+/** Modlar: Günlük Meydan Okuma, Kurallı Koşu, Mücadeleler, Düello, Boss Rush, Maraton. Her kart ne olduğunu, kuralını ve oyuncunun durumunu söyler. */
 export function ModesHub({
   daily,
   mark,
@@ -39,6 +40,8 @@ export function ModesHub({
   onRules,
   ruleCount,
   rulesOpen,
+  onChallenges,
+  challengeDone,
   onBack,
 }: {
   daily: DailyRun
@@ -59,6 +62,9 @@ export function ModesHub({
   ruleCount: number
   /** en az bir şehir bitirildi mi (Kurallı Koşu bitirilen şehirlerde açılır) */
   rulesOpen: boolean
+  onChallenges: () => void
+  /** bitirilen mücadele sayısı */
+  challengeDone: number
   onBack: () => void
 }) {
   const t = useT()
@@ -130,6 +136,20 @@ export function ModesHub({
               <p className="mb-3 mt-1 text-[12px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : ruleCount ? t('{n} rekor yazdın. Sıradaki kuralı dene.', { n: ruleCount }) : t('Yedi kural, bitirdiğin bütün şehirler.')}</p>
               <button className="pixel-btn primary mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRules}>
                 {rulesOpen ? t('Kural Seç') : t('Kilitli')}
+              </button>
+            </section>
+
+            {/* Mücadeleler */}
+            <section className="flex flex-col border-2 border-accent-2/70 bg-accent-2/5 p-3.5 short:p-2.5">
+              <Eyebrow tone="text-accent-2">{t('MÜCADELELER')}</Eyebrow>
+              <p className="mt-2.5 text-center font-display text-4xl leading-none text-cream short:text-3xl">
+                ▲ {challengeDone}
+                <span className="text-[16px] text-muted">/{CHALLENGES.length}</span>
+              </p>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[12px]">{t('Zor şehirlerin en sıkı yerleri, kısa ve bayraksız. Her birinin kendi madalyası ve sıralaması var.')}</p>
+              <p className="mb-3 mt-1 text-[12px] leading-snug text-muted">{rulesOpen ? t('Bir mücadele, kesildiği şehir bitince açılır.') : t('Zor bir şehri bitirince açılır.')}</p>
+              <button className="pixel-btn primary mt-auto shrink-0 justify-center" onClick={onChallenges}>
+                {t('Mücadele Seç')}
               </button>
             </section>
 

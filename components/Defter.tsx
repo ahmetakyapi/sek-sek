@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
 import { MedalBadge, Overlay, displayName, medalFor } from '@/components/ui'
@@ -7,6 +8,7 @@ import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
 import { SCARVES, emptyStats, liveStreak, travelerTitle } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
+import { ACHIEVEMENTS, isEarned } from '@/lib/achievements'
 import { formatTime, titleFacts, type Save } from '@/lib/storage'
 
 /** Boss Rush’ın açılması için yenilmesi gereken boss sayısı */
@@ -26,6 +28,8 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
   const bosses = LEVELS.filter((l) => save.bosses[l.id]).length
   const scarves = SCARVES.filter((s) => charms >= s.need).length
   const stats = save.stats ?? emptyStats()
+  const [tab, setTab] = useState<'sehir' | 'basarim'>('sehir')
+  const got = ACHIEVEMENTS.filter((a) => isEarned(a, save)).length
   const streak = liveStreak(save.meydan, today)
   const mins = Math.round(stats.playMs / 60000)
   const hours = mins >= 60 ? t('{h} sa {m} dk', { h: Math.floor(mins / 60), m: mins % 60 }) : t('{m} dk', { m: mins })
@@ -107,7 +111,47 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           </span>
         </p>
 
-        <ul className="overlay-scroll mt-4 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 short:mt-2 wide:grid-cols-3 min-[1400px]:wide:grid-cols-4">
+        <div className="mt-3 flex items-center gap-2 short:mt-2" role="tablist">
+          {(
+            [
+              ['sehir', t('Şehirler')],
+              ['basarim', `${t('Başarımlar')} ${got}/${ACHIEVEMENTS.length}`],
+            ] as const
+          ).map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={tab === k} className={`pixel-btn px-3 py-1.5 text-[13px] ${tab === k ? 'primary' : ''}`} onClick={() => setTab(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'basarim' ? (
+          <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 wide:grid-cols-3 min-[1400px]:wide:grid-cols-4">
+            {ACHIEVEMENTS.map((a) => {
+              const [now, goal] = a.progress(save)
+              const done = now >= goal
+              return (
+                <li key={a.id} className={`flex items-center gap-3 border-2 px-3 py-2 ${done ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-xl ${done ? 'bg-gold text-ink shadow-[0_3px_0_rgba(0,0,0,0.3)]' : 'bg-panel-2 text-muted'}`}>{a.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block font-display text-[15px] leading-tight ${done ? 'text-cream' : 'text-cream/80'}`}>{t(a.name)}</span>
+                    <span className="block text-[12px] leading-snug text-muted">{t(a.text)}</span>
+                    {!done && goal > 1 && (
+                      <span className="mt-1 flex items-center gap-2">
+                        <span className="h-1.5 flex-1 overflow-hidden bg-ink">
+                          <span className="block h-full bg-accent" style={{ width: `${Math.round((now / goal) * 100)}%` }} />
+                        </span>
+                        <span className="shrink-0 text-[11px] tabular-nums text-muted">
+                          {a.id === 'hour' ? `${Math.floor(now / 60000)}/${goal / 60000} ${t('dk')}` : `${now}/${goal}`}
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+        <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 wide:grid-cols-3 min-[1400px]:wide:grid-cols-4">
           {LEVELS.map((l, i) => {
             const locked = i > save.unlocked
             const best = save.best[l.id]
@@ -138,6 +182,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
             )
           })}
         </ul>
+        )}
       </div>
     </Overlay>
   )

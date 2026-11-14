@@ -13,3 +13,6 @@ export const scoreCity = (key: string) => key.split('@')[0]
 
 /** Günlük Meydan Okuma'nın tablo anahtarı: "gunluk:2026-11-14" */
 export const dailyScoreKey = (day: string) => `gunluk:${day}`
+
+/** Mücadele haritasının tablo anahtarı: "mucadele-corum-leblebi" → "mucadele:corum-leblebi" */
+export const challengeScoreKey = (levelId: string) => `mucadele:${levelId.slice('mucadele-'.length)}`

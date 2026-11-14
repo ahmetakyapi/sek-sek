@@ -16,6 +16,7 @@ const pg = new PGlite()
 vi.mock('@/lib/db', () => ({ db: () => drizzle(pg) }))
 
 const { GET, POST } = await import('../app/api/scores/route')
+const ghostApi = await import('../app/api/ghosts/route')
 
 const sha = (t: string) => createHash('sha256').update(t).digest('hex')
 const P = [
@@ -139,5 +140,29 @@ describe('skor tablosu', () => {
     await post({ playerId: P[2].id, token: P[2].token, batch: [{ level: 'konya', timeMs: 75000, deaths: 3, items: 3 }] })
     expect((await get('level=konya')).scores[0]).toMatchObject({ timeMs: 75000, minDeaths: 1, maxItems: 3, plays: 1 })
     expect((await post({ playerId: P[2].id, token: 'yanlış', batch: [] })).status).toBe(401)
+  })
+
+  it('hayalet: yalnız tablodaki en iyi süreyle yüklenir, daha kötüsü üstüne yazmaz, adla indirilir', async () => {
+    const send = (timeMs: number, n = Math.round((timeMs / 1000) * 15)) =>
+      ghostApi.POST(new NextRequest('http://x/api/ghosts', { method: 'POST', body: JSON.stringify({ level: 'konya', timeMs, hero: 'memo', data: Array.from({ length: n * 3 }, (_, i) => i % 9), playerId: P[2].id, token: P[2].token }) }))
+    // Cemre'nin konya rekoru 75000 (önceki test)
+    expect((await send(80000)).status).toBe(409)
+    expect((await send(75000, 10)).status).toBe(400)
+    expect((await send(75000)).status).toBe(200)
+    const r = await ghostApi.GET(new NextRequest('http://x/api/ghosts?level=konya&name=cemre'))
+    const j = (await r.json()) as { name: string; hero: string; timeMs: number; data: number[] }
+    expect(j).toMatchObject({ name: 'Cemre', hero: 'memo', timeMs: 75000 })
+    expect(j.data.length).toBe(75 * 15 * 3)
+    expect((await ghostApi.GET(new NextRequest('http://x/api/ghosts?level=izmir&name=cemre'))).status).toBe(404)
+  })
+
+  it('mücadele haritası kendi tablosunda; genel sıralamaya ve toplu aktarıma girmez', async () => {
+    expect((await run(P[0], 'mucadele-corum-leblebi', 9000, 1, 0)).status).toBe(200)
+    expect((await run(P[1], 'mucadele-corum-leblebi', 8000, 0, 0)).status).toBe(200)
+    expect((await run(P[1], 'mucadele-yok', 8000, 0, 0)).status).toBe(400)
+    expect((await get('level=mucadele-corum-leblebi')).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    const r = await post({ playerId: P[0].id, token: P[0].token, batch: [{ level: 'mucadele-corum-leblebi', timeMs: 4000, deaths: 0, items: 0 }] })
+    expect(r.j).toMatchObject({ synced: 0 })
+    expect((await get('level=genel')).scores.find((x) => x.name === 'Bora')).toMatchObject({ cities: 2 })
   })
 })

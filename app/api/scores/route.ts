@@ -1,14 +1,17 @@
 import { sql, type SQL } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
+import { CHALLENGES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
 import { istanbulDay, shiftDay } from '@/lib/extras'
 import { nameKey, verifyPlayer } from '@/lib/players'
-import { currentKeys, dailyScoreKey, scoreKey } from '@/lib/scoreKey'
+import { challengeScoreKey, currentKeys, dailyScoreKey, scoreKey } from '@/lib/scoreKey'
 
 export const dynamic = 'force-dynamic'
 
 const LEVEL_IDS = new Set(LEVELS.map((l) => l.id))
+/** mücadele haritaları: `mucadele-<id>` → tabloda `mucadele:<id>` */
+const CHALLENGE_IDS = new Set(CHALLENGES.map((c) => `mucadele-${c.id}`))
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status })
 /**
@@ -46,6 +49,7 @@ async function board(key: string, order: SQL, me: string, limit: number) {
  * GET ?level=genel&sort=cities|items|deaths         → oyuncu başına toplamlar (yalnız şehirlerin bugünkü haritaları)
  * GET ?level=koleksiyon                             → hesaba kayıtlı defterden: hatıra + gizli pul + nazar boncuğu
  * GET ?level=gunluk&day=2026-11-14                  → Günlük Meydan Okuma (düşük skor önde)
+ * GET ?level=mucadele-<id>                         → mücadele haritası (en iyi süre)
  * Hepsinde &me=<ad>: oyuncu ilk sıralarda değilse kendi satırı sonda gelir. Yanıt: { scores, total }
  */
 export async function GET(req: NextRequest) {
@@ -100,6 +104,7 @@ export async function GET(req: NextRequest) {
       if (!DAY_RE.test(day)) return bad('Geçersiz gün')
       return out(await board(dailyScoreKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20))
     }
+    if (CHALLENGE_IDS.has(level)) return out(await board(challengeScoreKey(level), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10))
     if (!LEVEL_IDS.has(level)) return bad('Geçersiz bölüm')
     const order =
       sort === 'deaths'
@@ -132,8 +137,9 @@ function parseRun(b: Record<string, unknown>): Run | string {
     if (!dayOk(day)) return 'Bu günün meydan okuması kapandı'
     key = dailyScoreKey(day)
   } else if (LEVEL_IDS.has(level)) key = scoreKey(level)
+  else if (CHALLENGE_IDS.has(level)) key = challengeScoreKey(level)
   else return 'Geçersiz bölüm'
-  if (!Number.isInteger(timeMs) || timeMs < 5000 || timeMs > 3 * 3_600_000) return 'Geçersiz süre'
+  if (!Number.isInteger(timeMs) || timeMs < (key.startsWith('mucadele:') ? 3000 : 5000) || timeMs > 3 * 3_600_000) return 'Geçersiz süre'
   if (!Number.isInteger(deaths) || deaths < 0 || deaths > 9999) return 'Geçersiz düşüş sayısı'
   if (!Number.isInteger(items) || items < 0 || items > 3) return 'Geçersiz hatıra sayısı'
   return { key, timeMs, deaths, items }
@@ -169,7 +175,7 @@ export async function POST(req: NextRequest) {
   try {
     if (Array.isArray(b.batch)) {
       const runs = b.batch.slice(0, LEVELS.length).map((x) => (x && typeof x === 'object' ? parseRun(x as Record<string, unknown>) : 'x'))
-      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:'))
+      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:') && !r.key.startsWith('mucadele:'))
       const me = await verifyPlayer(b.playerId, b.token)
       if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
       for (const r of ok) await upsert(me.id, me.name, r, 0)

@@ -3,7 +3,7 @@
  * ölçülür (Overlay kabında scrollHeight - clientHeight; uzun listeler panelin içinde kendi alanında kayar, o sayılmaz).
  *
  * Kullanım: geliştirme ya da üretim sunucusu açıkken  node scripts/audit-menus.cjs [--goster klasör]
- *   PORT=3000 (varsayılan). --goster verilirse her hücrenin ekran görüntüsü klasöre yazılır.
+ *   PORT=3000 (varsayılan), ONLY=<ad parçası> yalnız o ekranlar. --goster verilirse her hücrenin ekran görüntüsü klasöre yazılır.
  * Skor API'si yakalanır ve örnek satırlar döner (veritabanı gerekmez). Kayan hücre varsa çıkış kodu 1.
  */
 const { chromium } = require('playwright')
@@ -16,10 +16,10 @@ const TOLERANCE = 2
 
 const IDS = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay']
 const best = Object.fromEntries(IDS.map((id, i) => [id, { timeMs: 60000 + i * 7000, deaths: i % 4, items: [true, i % 2 === 0, i % 3 === 0] }]))
-const SAVE = { character: 'uktun', seenStory: true, tutorial: false, unlocked: 16, best, stamps: { istanbul: true }, charms: { istanbul: true, bursa: true }, bosses: { istanbul: true, edirne: true, kocaeli: true, bursa: true }, skippedName: true, mapVersion: 8, migrated: true, accountVersion: 2, stats: { runs: 40, deaths: 120, jumps: 3000, dashes: 500, stomps: 40, playMs: 5400000 } }
+const SAVE = { character: 'uktun', seenStory: true, tutorial: false, unlocked: 16, best: { ...best, corum: { timeMs: 140000, deaths: 9, items: [true, true, true] } }, challenges: { 'corum-leblebi': 15200 }, ach: { firstCity: true }, stamps: { istanbul: true }, charms: { istanbul: true, bursa: true }, bosses: { istanbul: true, edirne: true, kocaeli: true, bursa: true }, skippedName: true, mapVersion: 8, migrated: true, accountVersion: 2, stats: { runs: 40, deaths: 120, jumps: 3000, dashes: 500, stomps: 40, playMs: 5400000 } }
 const NEWS = { ...SAVE, best: { ...best, izmir: { ...best.izmir, v: 'eski' } }, seen: IDS.filter((id) => id !== 'kayseri') }
 
-const FINISH = "eval:(()=>{const w=window.__mk.world();w.started=true;w.time=73.4;w.deaths=2;w.pickups[0].taken=true;w.complete=true;w.events.push({type:'complete'})})()"
+const FINISH = "eval:(()=>{const w=window.__mk.world();w.started=true;w.time=73.4;w.deaths=2;if(w.pickups[0])w.pickups[0].taken=true;w.complete=true;w.events.push({type:'complete'})})()"
 /** ekran adı → [kayıt, adımlar]. Adım: düğme adı · tab:ad · key:Tuş · wait:ms · eval:js */
 const SCREENS = {
   'ana-menu': [SAVE, []],
@@ -41,6 +41,9 @@ const SCREENS = {
   mola: [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape']],
   'bolum-sonu': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:900']],
   'gunluk-sonu': [SAVE, ['Modlar', '▶ Oyna', 'wait:600', FINISH, 'wait:900']],
+  mucadeleler: [SAVE, ['Modlar', 'Mücadele Seç']],
+  'mucadele-sonu': [SAVE, ['Modlar', 'Mücadele Seç', '▶ Yeniden Koş', 'wait:600', FINISH, 'wait:900']],
+  'defter-basarim': [SAVE, ['Defter', 'tab:Başarımlar']],
 }
 
 const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'Elif Su', 'Mert', 'Zeynep', 'Baran', 'Ada'].map((name, i) => ({ name, timeMs: 52000 + i * 4300, deaths: i % 7, items: 3 - (i % 3), minDeaths: i % 5, maxItems: 3, plays: 1 + (i % 6), cities: 28 - i * 2, keeps: 84 - i * 6, stamps: 28 - i * 2, charms: 20 - i, bosses: 28 - i * 2, found: 132 - i * 9, rank: i + 1, total: 11, me: false }))
@@ -49,7 +52,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
   const browser = await chromium.launch()
   const bad = []
   for (const [size, [w, h]] of Object.entries(SIZES)) {
-    for (const [name, [save, steps]] of Object.entries(SCREENS)) {
+    for (const [name, [save, steps]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: w < 800 })
       if (save) await ctx.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
       const page = await ctx.newPage()

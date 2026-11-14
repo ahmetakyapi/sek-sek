@@ -1,5 +1,7 @@
 'use client'
 
+import type { GhostRun } from '@/game/ghost'
+import { loadGhost } from './ghost'
 import { cityVersion } from './mapVersion'
 import { adoptable, cloudPart, mergeSaves, normalizeSave, type Player, type Save } from '@/lib/storage'
 
@@ -78,8 +80,24 @@ export async function syncBests(s: Save) {
   }
   try {
     const r = await fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: s.player.id, token: s.player.token, batch }) })
-    if (r.ok) localStorage.setItem(mark, sign)
+    if (r.ok) {
+      localStorage.setItem(mark, sign)
+      // cihazdaki rekor hayaletleri de (rekorla birlikte kaydedilmişti): skor tablosundan onlarla yarışılabilsin
+      for (const b of batch) {
+        const g = loadGhost(b.level)
+        if (g) await uploadGhost(s.player, b.level, b.timeMs, g)
+      }
+    }
   } catch {
     /* bir sonraki açılışta yeniden denenir */
+  }
+}
+
+/** Yeni rekorun hayaleti sunucuya: skor tablosundaki öteki yolcular "Hayaletiyle Yarış" ile indirir */
+export async function uploadGhost(p: Player, level: string, timeMs: number, g: GhostRun) {
+  try {
+    await fetch('/api/ghosts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level, timeMs, hero: g.hero, data: g.data, playerId: p.id, token: p.token }) })
+  } catch {
+    /* bir sonraki rekorda yeniden denenir */
   }
 }

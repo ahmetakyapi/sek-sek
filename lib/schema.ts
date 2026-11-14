@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 /** Tablo adları seksek_ önekli (8 Kasım'a dek ortak veritabanında memleket_ önekliydi; oyun artık kendi Neon veritabanında). */
 /** Hesaplar: kullanıcı adı (büyük/küçük harf duyarsız tekil) + scrypt ile saklanan şifre. */
@@ -49,3 +49,21 @@ export const scores = pgTable(
   (t) => [index('seksek_scores_level_time_idx').on(t.level, t.timeMs), uniqueIndex('seksek_scores_level_player_idx').on(t.level, t.playerId)],
 )
 
+
+/** Hayalet koşular: oyuncunun şehirdeki en iyi koşusunun kaydı (saniyede 15 örnek: x, y, poz). Skor tablosundan
+ *  "Hayaletiyle Yarış" bunu indirir. `v`: koşulduğu şehir haritası (harita değişince eski hayalet gösterilmez). */
+export const ghosts = pgTable(
+  'seksek_ghosts',
+  {
+    playerId: uuid('player_id')
+      .notNull()
+      .references(() => players.id, { onDelete: 'cascade' }),
+    level: text('level').notNull(),
+    v: text('v').notNull(),
+    timeMs: integer('time_ms').notNull(),
+    hero: text('hero').notNull(),
+    data: jsonb('data').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.playerId, t.level] })],
+)

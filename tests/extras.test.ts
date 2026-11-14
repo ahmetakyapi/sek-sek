@@ -3,6 +3,8 @@ import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { SCARVES, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
 import { bossLevel } from '../game/levels'
+import { CHALLENGES, challengeLevel } from '../game/challenges'
+import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
 
 describe('günün şehri ve haftanın görevi', () => {
@@ -153,5 +155,47 @@ describe('kurallar', () => {
     expect(ruleLimit('ceza', l)).toBeNull()
     expect(dailyScore('tekcan', 50000, 0, 0)).toBe(50000)
     expect(dailyScore('bayraksiz', 50000, 4, 1)).toBe(50000)
+  })
+})
+
+describe('başarımlar', () => {
+  it('kimlikler tekil, yeni oyuncu hiçbirini kazanmamış', () => {
+    expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length)
+    expect(ACHIEVEMENTS.filter((a) => isEarned(a, defaultSave()))).toEqual([])
+  })
+  it('kayıttan hesaplanır; bildirilmiş olan bir daha çıkmaz', () => {
+    const best = Object.fromEntries(LEVELS.map((l) => [l.id, { timeMs: l.medals[0] * 1000, deaths: 0, items: [true, true, true] }]))
+    const all = Object.fromEntries(LEVELS.map((l) => [l.id, true]))
+    const s = { ...defaultSave(), unlocked: LEVELS.length - 1, best, stamps: all, charms: all, bosses: all, feats: { cleanBoss: true } }
+    const ids = freshAchievements(s).map((a) => a.id)
+    for (const id of ['firstCity', 'allCities', 'keepsAll', 'stampsAll', 'charmsAll', 'bossesAll', 'goldAll', 'goldHard', 'cleanBoss']) expect(ids).toContain(id)
+    expect(ids).not.toContain('flawlessHard')
+    expect(freshAchievements({ ...s, ach: Object.fromEntries(ids.map((i) => [i, true])) })).toEqual([])
+  })
+})
+
+describe('mücadele haritaları', () => {
+  it('her kesit bir başlangıç ve bir çıkış taşır, toplanan ve bayrak taşımaz, şehrin rüzgârı kalır', () => {
+    expect(new Set(CHALLENGES.map((c) => c.id)).size).toBe(CHALLENGES.length)
+    for (const c of CHALLENGES) {
+      const l = challengeLevel(c)
+      const src = LEVELS.find((x) => x.id === c.level)!
+      expect(['Zor', 'Çok Zor']).toContain(src.difficulty)
+      const text = l.map.join('\n')
+      expect(text.match(/P/g)?.length, c.id).toBe(1)
+      expect(text.match(/E/g)?.length, c.id).toBe(1)
+      expect(text, c.id).not.toMatch(/[FC$!n?@&QGK]/)
+      expect(l.map).toHaveLength(src.map.length)
+      expect(l.wind).toBe(src.wind)
+      const w = new World(l)
+      expect(w.exit.x, c.id).toBeGreaterThan(w.start.x)
+      expect(l.medals[0]).toBeLessThan(l.medals[1])
+    }
+  })
+  it('bitirilen mücadeleler başarım sayılır', () => {
+    const one = Object.fromEntries(CHALLENGES.slice(0, 3).map((c) => [c.id, 20000]))
+    expect(freshAchievements({ ...defaultSave(), challenges: one }).map((a) => a.id)).toContain('challenge3')
+    const all = Object.fromEntries(CHALLENGES.map((c) => [c.id, 20000]))
+    expect(freshAchievements({ ...defaultSave(), challenges: all }).map((a) => a.id)).toContain('challengeAll')
   })
 })

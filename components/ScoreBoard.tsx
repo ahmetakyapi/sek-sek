@@ -37,8 +37,10 @@ const n = (x: number | undefined) => x ?? 0
  * yazar (süre, düşüş, hatıra, şehir); öteki ölçütler adın altında küçük durur. Böylece filtre değişince hem sıra
  * hem görünen değer değişir.
  */
-export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, compact = false }: { kind: BoardKind; level?: string; sort?: string; day?: string; me: string; refresh?: number; compact?: boolean }) {
+export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, compact = false, onRace }: { kind: BoardKind; level?: string; sort?: string; day?: string; me: string; refresh?: number; compact?: boolean; onRace?: (name: string) => Promise<string | null> }) {
   const t = useT()
+  const [raceMsg, setRaceMsg] = useState<{ name: string; text: string } | null>(null)
+  const [racing, setRacing] = useState('')
   const lng = useLang()
   const [rows, setRows] = useState<Row[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -47,6 +49,7 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
     let live = true
     setFailed(false)
     setRows(null)
+    setRaceMsg(null)
     const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
     fetch(`/api/scores?${q}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
@@ -77,6 +80,7 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
   if (!rows.length) return <p className="mt-3 border-2 border-dashed border-line/70 px-3 py-4 text-center text-[13px] text-muted">{kind === 'gunluk' ? t('Bugün henüz kimse koşmadı. İlk skor senin olsun!') : t('Henüz skor yok. İlk sen ol!')}</p>
 
   const lv = kind === 'city' ? LEVELS.find((l) => l.id === level) : undefined
+  const race = kind === 'city' && (!sort || sort === 'time') ? onRace : undefined
   const plural = (k: number, one: string, many: string) => (lng === 'en' ? `${k} ${k === 1 ? one : many}` : `${k} ${one}`)
 
   /** sağdaki büyük değer ve adın altındaki ayrıntı */
@@ -97,6 +101,8 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
     }
     const plays = n(r.plays) > 1 ? ` · ${t('{n} koşu', { n: n(r.plays) })}` : ''
     if (kind === 'gunluk') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
+    // mücadele haritasında hatıra yok: süre ve düşüş
+    if (level.startsWith('mucadele-')) return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
     if (sort === 'deaths') return [<>✕{n(r.minDeaths)}</>, `${formatTime(n(r.timeMs))} · ${n(r.maxItems)}/3${plays}`]
     if (sort === 'items') return [<>{n(r.maxItems)}<span className="ml-0.5 text-[12px] text-muted">/3</span><span className="ml-2 text-[15px] text-cream/80">{formatTime(n(r.timeMs))}</span></>, `✕${n(r.minDeaths)}${plays}`]
     return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
@@ -123,8 +129,25 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
                 <span className="flex items-center gap-1.5 font-display text-[19px] leading-none text-cream">
                   {medal && <MedalBadge medal={medal} />}
                   {big}
+                  {race && !r.me && (
+                    <button
+                      className="pixel-btn ml-1 px-2 py-1 font-mono text-[12px]"
+                      disabled={!!racing}
+                      aria-label={t('{name} ile Yarış', { name: r.name })}
+                      title={t('Hayaletiyle yan yana koş')}
+                      onClick={async () => {
+                        setRacing(r.name)
+                        const err = await race(r.name)
+                        setRacing('')
+                        setRaceMsg(err ? { name: r.name, text: err } : null)
+                      }}
+                    >
+                      {racing === r.name ? '…' : `◌ ${t('Yarış')}`}
+                    </button>
+                  )}
                 </span>
               </div>
+              {raceMsg?.name === r.name && <p className="px-2 pt-1 text-right text-[12px] text-muted">{raceMsg.text}</p>}
             </li>
           )
         })}
@@ -137,7 +160,7 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
 type Tab = 'genel' | 'city' | 'gunluk' | 'koleksiyon'
 
 /** Skor Tablosu ekranı: dört sekme; her sekmenin kendi sıralama seçenekleri ve kısa bir açıklaması var. */
-export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDaily }: { me: string; startCity?: number; startTab?: Tab; onDaily: () => void }) {
+export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDaily, canRace, onRace }: { me: string; startCity?: number; startTab?: Tab; onDaily: () => void; canRace?: (levelIdx: number) => boolean; onRace?: (levelIdx: number, name: string) => Promise<string | null> }) {
   const t = useT()
   const lng = useLang()
   const [tab, setTab] = useState<Tab>(startTab)
@@ -258,7 +281,7 @@ export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDa
         </div>
       )}
       <div className="overlay-scroll mt-1 min-h-[160px] flex-1 overflow-y-auto overscroll-contain pr-1 short:min-h-[72px]">
-        <Board kind={tab} level={LEVELS[idx].id} sort={sort} day={tab === 'gunluk' ? day : ''} me={me} />
+        <Board kind={tab} level={LEVELS[idx].id} sort={sort} day={tab === 'gunluk' ? day : ''} me={me} onRace={onRace && canRace?.(idx) ? (name) => onRace(idx, name) : undefined} />
       </div>
     </div>
   )
