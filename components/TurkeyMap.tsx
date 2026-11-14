@@ -186,7 +186,7 @@ const SEAS = {
 
 const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))
 
-/** Pixelify Sans'ta ortalama harf genişliği (em) */
+/** ortalama harf genişliği (em): Pixelify Sans'a göre ölçüldü; Grandstander daha dar, pay bol kalır */
 const CHAR = 0.55
 
 /**
@@ -248,7 +248,7 @@ function placeLabels(geo: Geo, fs: number, r: number, fixed: Box[]): Box[] {
   return chosen
 }
 
-/** Pixelify Sans'ta adın genişliği (em): harf sınıfına göre, kalın yazının ölçüsüyle (gerçeğinden bir iki piksel bol) */
+/** adın genişliği (em; Pixelify Sans ölçüsü, Grandstander'da bol kalır): harf sınıfına göre, kalın yazının ölçüsüyle (gerçeğinden bir iki piksel bol) */
 const textEm = (s: string) => [...s].reduce((w, c) => w + ('ıil'.includes(c) ? 0.25 : 'Iİ'.includes(c) ? 0.43 : 'mwMW'.includes(c) ? 0.78 : 'at'.includes(c) ? 0.69 : 0.6), 0)
 
 /** Dar ekranda etiket ölçüsü (ekran pikseli): yazı 11, satır kutusu 13 (taban çizgisinin 10 üstü, 3 altı) */
@@ -564,7 +564,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
         </g>
 
         {/* etiketler düğümlerin altında kalır: rozet her zaman okunur */}
-        <g aria-hidden="true" style={{ fontFamily: 'var(--font-pixel)' }}>
+        <g aria-hidden="true" style={{ fontFamily: 'var(--font-title)' }}>
           {labels.map((p, i) => p.leader && <path key={i} d={p.leader} fill="none" stroke="var(--tm-ink)" strokeWidth={ink} opacity={i > unlocked ? 0.7 : 0.9} />)}
           {LEVELS.map((l, i) => (
             <text

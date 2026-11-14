@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { '/skor/kart': ['./assets/**', './public/portreler/**'] },
   async headers() {
     return [
+      // şehir görselleri ve portreler: adı sabit, içeriği seyrek değişir; bir gün önbellek, arka planda tazeleme
+      {
+        source: '/(sehirler|portreler)/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
       {
         source: '/(.*)',
         headers: [

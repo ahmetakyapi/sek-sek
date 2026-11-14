@@ -6,7 +6,7 @@ import { PortraitFace } from '@/components/Portrait'
 import { ItemIcon, Key } from '@/components/HudBits'
 import type { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
-import { Renderer } from '@/game/render'
+import { PIXEL_BUDGET, Renderer } from '@/game/render'
 import { World } from '@/game/sim'
 import { emptyInput, type Input, type LevelDef } from '@/game/types'
 import type { DuelRun } from '@/lib/extras'
@@ -97,7 +97,9 @@ export default function Race({
     const fit = () => {
       sides.current.forEach((s, k) => {
         const c = canvases[k].current!
-        s.renderer.resize(c.clientWidth, c.clientHeight, Math.min(window.devicePixelRatio || 1, 2))
+        // iki tuval aynı anda boyanır: piksel bütçesi ikisine birlikte uygulanır (her yarı bütçenin yarısı)
+        const half = Math.sqrt(PIXEL_BUDGET / 2 / Math.max(1, c.clientWidth * c.clientHeight))
+        s.renderer.resize(c.clientWidth, c.clientHeight, Math.max(1, Math.min(window.devicePixelRatio || 1, half)))
         s.renderer.setLevel(s.world)
       })
     }

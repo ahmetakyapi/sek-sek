@@ -29,6 +29,7 @@ const SCREENS = {
   defter: [SAVE, ['Defter']],
   karakter: [SAVE, ['Karakter']],
   modlar: [SAVE, ['Modlar']],
+  'kural-sec': [SAVE, ['Modlar', 'Kural Seç']],
   'duello-kur': [SAVE, ['Modlar', 'Düello Kur']],
   'duello-sira': [SAVE, ['Modlar', 'Düello Kur', 'Sırayla', 'Düelloyu Başlat']],
   skorlar: [SAVE, ['Skorlar']],
@@ -56,7 +57,8 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
       await page.route('**/api/players/**', (r) => r.fulfill({ status: 401, json: {} }))
       let note = ''
       try {
-        await page.goto(`http://localhost:${PORT}/?debug`, { waitUntil: 'networkidle' })
+        // ?debug güncelleme notunu susturur; notun kendisi ölçülürken parametresiz açılır
+        await page.goto(`http://localhost:${PORT}/${name === 'guncelleme-notu' ? '' : '?debug'}`, { waitUntil: 'networkidle' })
         await page.waitForTimeout(500)
         for (const st of steps) {
           if (st.startsWith('key:')) await page.keyboard.press(st.slice(4))

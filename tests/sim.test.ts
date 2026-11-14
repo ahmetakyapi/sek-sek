@@ -518,3 +518,26 @@ describe('tünel ağızları', () => {
     expect(low).toEqual([])
   })
 })
+
+describe('alçak koridorlar', () => {
+  // tünel ağzıyla aynı kural, her yürünen aralık için: üstü katı, altı zemin olan 1 karoluk boşluk yan yana 2 karo
+  // sürüyorsa (ve bir ucu açıksa) gövde tavanın içinden geçiyormuş gibi görünür (scripts/audit-clearance.ts)
+  it.each(LEVELS.map((l) => [l.name, l]))('%s: 1 karo yüksekliğinde yürünen koridor yok', (_n, l) => {
+    const w = new World(l)
+    const low = (tx: number, ty: number) => !w.isSolid(tx, ty) && w.isSolid(tx, ty + 1) && w.isSolid(tx, ty - 1)
+    const runs: string[] = []
+    for (let ty = 1; ty < w.rows - 1; ty++) {
+      let start = -1
+      for (let tx = 0; tx <= w.cols; tx++) {
+        const hit = tx < w.cols && low(tx, ty)
+        if (hit && start < 0) start = tx
+        if (!hit && start >= 0) {
+          const open = (start > 0 && !w.isSolid(start - 1, ty)) || (tx < w.cols && !w.isSolid(tx, ty))
+          if (tx - start >= 2 && open) runs.push(`${start}-${tx - 1},${ty}`)
+          start = -1
+        }
+      }
+    }
+    expect(runs).toEqual([])
+  })
+})

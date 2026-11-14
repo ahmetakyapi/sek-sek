@@ -2414,13 +2414,11 @@ export class Renderer {
   }
 
   private popFamily: string | null = null
-  /** sayfanın piksel başlık fontu ve rakam fontu (next/font değişkenleri); bulunamazsa eş aralıklı */
+  /** sayfanın başlık fontu (next/font değişkeni); bulunamazsa sistem yazısı */
   private popFont() {
     if (this.popFamily === null) {
-      const css = typeof document !== 'undefined' ? getComputedStyle(document.body) : null
-      // rakamlar ayrı fonttan (yalnız U+30-39 aralığı): süre ve kombo sayıları net okunur
-      const v = [css?.getPropertyValue('--font-digits').trim(), css?.getPropertyValue('--font-pixel').trim()].filter(Boolean).join(', ')
-      this.popFamily = v ? `${v}, ui-monospace, monospace` : 'ui-monospace, monospace'
+      const v = typeof document !== 'undefined' ? getComputedStyle(document.body).getPropertyValue('--font-title').trim() : ''
+      this.popFamily = v ? `${v}, system-ui, sans-serif` : 'system-ui, sans-serif'
     }
     return this.popFamily
   }
@@ -2579,11 +2577,11 @@ export class Renderer {
 
   private textFamily: string | null = null
 
-  /** gövde yazısı: arayüzle aynı (IBM Plex Mono) */
+  /** gövde yazısı: arayüzle aynı (Figtree) */
   private textFont() {
     if (this.textFamily === null) {
-      const v = typeof document !== 'undefined' ? getComputedStyle(document.body).getPropertyValue('--font-plex').trim() : ''
-      this.textFamily = v ? `${v}, ui-monospace, monospace` : 'ui-monospace, monospace'
+      const v = typeof document !== 'undefined' ? getComputedStyle(document.body).getPropertyValue('--font-body').trim() : ''
+      this.textFamily = v ? `${v}, system-ui, sans-serif` : 'system-ui, sans-serif'
     }
     return this.textFamily
   }

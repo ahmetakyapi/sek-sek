@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, completes, dailyChallenge, dailyRun, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
+import { SCARVES, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
 
@@ -135,5 +135,23 @@ describe('Düello', () => {
     expect(duelResult(ties.slice(0, 4).concat([[r(5), r(5)]]), 3)).toEqual({ over: true, winner: -1 })
     expect(duelFirst(0)).toBe(0)
     expect(duelFirst(1)).toBe(1)
+  })
+})
+
+describe('kurallar', () => {
+  it('Dash’siz yalnız kanıtlı şehirlerde çıkar; günün kuralı şehre uyar', () => {
+    for (let i = 0; i < 200; i++) {
+      const r = dailyRun(shiftDay('2026-11-01', i), LEVELS)
+      expect(ruleFits(r.rule, LEVELS.find((l) => l.id === r.levelId)!)).toBe(true)
+    }
+    expect(ruleFits('dashsiz', LEVELS.find((l) => l.id === 'istanbul')!)).toBe(false)
+    expect(ruleFits('dashsiz', LEVELS.find((l) => l.id === 'edirne')!)).toBe(true)
+  })
+  it('Zamana Karşı sınırı bronz süredir; Tek Can ve Bayraksız skora ceza eklemez', () => {
+    const l = LEVELS[0]
+    expect(ruleLimit('zaman', l)).toBe(l.medals[2])
+    expect(ruleLimit('ceza', l)).toBeNull()
+    expect(dailyScore('tekcan', 50000, 0, 0)).toBe(50000)
+    expect(dailyScore('bayraksiz', 50000, 4, 1)).toBe(50000)
   })
 })

@@ -34,12 +34,10 @@ export async function GET(req: NextRequest) {
   // atkı: dosya adı bağlantıdaki değerden değil, SCARVES içinde bulunan kimlikten kurulur; ilk atkı adsız dosyadır
   const scarf = SCARVES.find((s) => s.id === d?.scarf) ?? SCARVES[0]
   const portraitFile = scarf === SCARVES[0] ? `${ch.id}.png` : `${ch.id}-${scarf.id}.png`
-  const [pixel, digits, bold, semi, scene, paper, stamp, kh, kv, portrait] = await Promise.all([
-    file('assets/fonts/PixelifySans-Bold.ttf'),
-    // rakamlar: Pixelify'ın 2, 5 ve 8'i karışıyor; plaka net okunsun diye Jersey 20
-    file('assets/fonts/Jersey20-Regular.ttf'),
-    file('assets/fonts/IBMPlexMono-Bold.ttf'),
-    file('assets/fonts/IBMPlexMono-SemiBold.ttf'),
+  const [pixel, bold, semi, scene, paper, stamp, kh, kv, portrait] = await Promise.all([
+    file('assets/fonts/Grandstander-Bold.ttf'),
+    file('assets/fonts/Figtree-Bold.ttf'),
+    file('assets/fonts/Figtree-SemiBold.ttf'),
     file(`assets/cities/${level.id}.png`),
     file('assets/card/paper.png'),
     file('assets/card/stamp.png'),
@@ -130,7 +128,7 @@ export async function GET(req: NextRequest) {
               <img src={sceneUrl} width={420} height={344} alt="" style={{ position: 'absolute', left: -150, top: -150 }} />
             </div>
             <div style={{ position: 'absolute', left: 20, top: 116, width: 128, display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#1a1420' }}>
-              <div style={{ display: 'flex', fontFamily: 'Digits', fontSize: 46, lineHeight: 1 }}>{plate}</div>
+              <div style={{ display: 'flex', fontFamily: 'Pixel', fontSize: 42, lineHeight: 1 }}>{plate}</div>
               <div style={{ display: 'flex', fontSize: 13, letterSpacing: 2, fontWeight: 700 }}>{level.name.toLocaleUpperCase('tr')}</div>
             </div>
           </div>
@@ -203,7 +201,6 @@ export async function GET(req: NextRequest) {
       height: 630,
       fonts: [
         { name: 'Pixel', data: pixel, weight: 700, style: 'normal' },
-        { name: 'Digits', data: digits, weight: 400, style: 'normal' },
         { name: 'Plex', data: bold, weight: 700, style: 'normal' },
         { name: 'Plex', data: semi, weight: 600, style: 'normal' },
       ],

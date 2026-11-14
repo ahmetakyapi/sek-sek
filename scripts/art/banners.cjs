@@ -30,6 +30,9 @@ const save = { character: 'uktun', skippedName: true, seenStory: true, mapVersio
       await pg.waitForTimeout(1500)
       await pg.keyboard.up('ArrowRight')
       await pg.waitForTimeout(900)
+      // konuşma baloncuğu kadraja girmesin (şehir insanının yanında durulduysa çıkar): kapat, bir kare bekle
+      await pg.evaluate(() => (window.__mk.renderer().dialog = null))
+      await pg.waitForTimeout(120)
       const data = await pg.evaluate(() => document.querySelector('canvas').toDataURL('image/png'))
       fs.writeFileSync(path.join(root, out), Buffer.from(data.split(',')[1], 'base64'))
       await pg.close()

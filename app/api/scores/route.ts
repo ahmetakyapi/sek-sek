@@ -11,7 +11,11 @@ export const dynamic = 'force-dynamic'
 const LEVEL_IDS = new Set(LEVELS.map((l) => l.id))
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status })
-const fresh = { 'Cache-Control': 'no-store' }
+/**
+ * Sıralamalar kısa süre uçta önbelleklenir: aynı tabloya art arda bakan herkes veritabanına gitmez, eskiyen yanıt
+ * arka planda tazelenir. Kendi skorunu yeni yazan oyuncu tabloyu `r` parametresiyle (ayrı anahtar) taze okur.
+ */
+const fresh = { 'Cache-Control': 'public, max-age=0, s-maxage=20, stale-while-revalidate=120' }
 
 /** Günlük tabloya yalnız dün, bugün ve yarın (saat dilimi payı) yazılır */
 const dayOk = (day: string) => {

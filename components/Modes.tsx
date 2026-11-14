@@ -8,7 +8,8 @@ import { Board } from '@/components/ScoreBoard'
 import { Overlay, displayName } from '@/components/ui'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
-import { DAILY_RULES, duelResult, duelWins, liveStreak, roundWinner, type DailyMark, type DailyRun, type DuelRounds } from '@/lib/extras'
+import { DAILY_RULES, RULES, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
+import { cityVersion } from '@/lib/mapVersion'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
@@ -36,6 +37,9 @@ export function ModesHub({
   marathonOpen,
   marathonBest,
   onMarathon,
+  onRules,
+  ruleCount,
+  rulesOpen,
   onBack,
 }: {
   daily: DailyRun
@@ -51,6 +55,11 @@ export function ModesHub({
   marathonOpen: boolean
   marathonBest: { timeMs: number } | null
   onMarathon: () => void
+  onRules: () => void
+  /** Kurallı Koşu'da yazılmış rekor sayısı */
+  ruleCount: number
+  /** en az bir şehir bitirildi mi (Kurallı Koşu bitirilen şehirlerde açılır) */
+  rulesOpen: boolean
   onBack: () => void
 }) {
   const t = useT()
@@ -106,6 +115,23 @@ export function ModesHub({
                   {t('Günün Sıralaması')}
                 </button>
               </div>
+            </section>
+
+            {/* Kurallı Koşu */}
+            <section className="flex flex-col border-2 border-accent/70 bg-accent/5 p-3.5 short:p-2.5">
+              <Eyebrow tone="text-accent">{t('KURALLI KOŞU')}</Eyebrow>
+              <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                {RULES.map((r) => (
+                  <span key={r} className="border-2 border-line bg-ink/50 px-1.5 py-0.5 text-[11px] font-bold text-cream/90">
+                    {t(DAILY_RULES[r].name)}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[12px]">{t('Şehri ve kuralı sen seç: aynı şehir her kuralla başka bir oyun. Her şehir ve kural için ayrı rekor.')}</p>
+              <p className="mb-3 mt-1 text-[12px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : ruleCount ? t('{n} rekor yazdın. Sıradaki kuralı dene.', { n: ruleCount }) : t('Yedi kural, bitirdiğin bütün şehirler.')}</p>
+              <button className="pixel-btn primary mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRules}>
+                {rulesOpen ? t('Kural Seç') : t('Kilitli')}
+              </button>
             </section>
 
             {/* Düello */}
@@ -171,9 +197,13 @@ export interface DailyResult {
   deaths: number
   found: number
   scoreMs: number
-  /** bugünkü en iyi skor tazelendi */
+  /** bugünkü en iyi skor (serbest koşuda: rekor) tazelendi */
   best: boolean
   mark: DailyMark
+  /** serbest Kurallı Koşu: günlük sıralama yok, rekor cihazda */
+  free?: boolean
+  /** kaçıncı denemede bitti (Tek Can, Zamana Karşı) */
+  tries?: number
 }
 
 /** Günlük bitiş: skorun nasıl hesaplandığı satır satır, günlük sıralama ve yeniden deneme */
@@ -191,7 +221,7 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
     <Overlay dim>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:p-6 short:grid short:max-w-[min(900px,100%)] short:grid-cols-2 short:gap-5 short:py-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{result.best ? t('BUGÜNÜN EN İYİSİ') : t('GÜNLÜK MEYDAN OKUMA')}</p>
+          <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{result.free ? (result.best ? t('YENİ REKOR') : t('KURALLI KOŞU')) : result.best ? t('BUGÜNÜN EN İYİSİ') : t('GÜNLÜK MEYDAN OKUMA')}</p>
           <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">
             {displayName(lv)} <span className="text-[16px] text-accent-2">· {t(rule.name)}</span>
           </h2>
@@ -208,10 +238,11 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
             </p>
           </div>
           <p className="mt-2 text-[13px] text-muted short:hidden">
-            {t('Bugünkü en iyin {time}', { time: formatTime(result.mark.bestMs) })} · {t('Gün serisi: {n}', { n: result.mark.streak })}
+            {result.free ? t('Bu şehir ve kuraldaki rekorun {time}', { time: formatTime(result.mark.bestMs) }) : `${t('Bugünkü en iyin {time}', { time: formatTime(result.mark.bestMs) })} · ${t('Gün serisi: {n}', { n: result.mark.streak })}`}
+            {(result.tries ?? 1) > 1 ? ` · ${t('{n}. denemede', { n: result.tries! })}` : ''}
           </p>
           <p className="mt-1 text-[13px]">
-            {!player ? (
+            {result.free ? null : !player ? (
               <button className="text-gold underline underline-offset-4" onClick={onLogin}>
                 {t('Sıralamaya girmek için giriş yap')}
               </button>
@@ -233,11 +264,87 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
           </div>
         </div>
         <div className="mt-4 flex min-h-0 flex-1 flex-col short:mt-0">
-          <Eyebrow>{t('BUGÜNÜN SIRALAMASI')}</Eyebrow>
-          <div className="overlay-scroll min-h-[120px] flex-1 overflow-y-auto pr-1">
-            <Board kind="gunluk" day={result.run.day} me={player} refresh={status === 'sent' ? 1 : 0} compact />
-          </div>
+          {result.free ? (
+            <>
+              <Eyebrow>{t('KURAL')}</Eyebrow>
+              <p className="mt-2 font-display text-xl text-cream">{t(rule.name)}</p>
+              <p className="mt-1 text-[14px] leading-relaxed text-cream/85">{t(rule.text)}</p>
+              <p className="mt-3 text-[13px] leading-snug text-muted">{t('Aynı şehri başka bir kuralla dene: Modlar → Kurallı Koşu. Her kuralın rekoru ayrı tutulur.')}</p>
+            </>
+          ) : (
+            <>
+              <Eyebrow>{t('BUGÜNÜN SIRALAMASI')}</Eyebrow>
+              <div className="overlay-scroll min-h-[120px] flex-1 overflow-y-auto pr-1">
+                <Board kind="gunluk" day={result.run.day} me={player} refresh={status === 'sent' ? 1 : 0} compact />
+              </div>
+            </>
+          )}
         </div>
+      </div>
+    </Overlay>
+  )
+}
+
+/** Kurallı Koşu kurulumu: şehir + kural; her kuralın o şehirdeki rekoru kartında yazar */
+export function RuleSetup({ startLevel, finished, records, onStart, onBack }: { startLevel: number; /** bitirilmiş şehirlerin dizinleri: kural yalnız bir kez geçilmiş şehirde açılır */ finished: number[]; records: Record<string, number>; onStart: (level: number, rule: DailyRule) => void; onBack: () => void }) {
+  const t = useT()
+  const lng = useLang()
+  const [level, setLevel] = useState(finished.includes(startLevel) ? startLevel : (finished[0] ?? 0))
+  const [rule, setRule] = useState<DailyRule>('ceza')
+  const lv = localize(LEVELS[level], lng)
+  const fits = ruleFits(rule, LEVELS[level])
+  const done = RULES.filter((r) => records[ruleKey(lv.id, cityVersion(lv.id), r)] !== undefined).length
+  return (
+    <Overlay>
+      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:max-w-[min(900px,100%)] short:py-3 wide:max-w-[min(960px,100%)]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent max-sm:hidden short:hidden">{t('AYNI ŞEHİR, BAŞKA OYUN')}</p>
+            <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Kurallı Koşu')}</h2>
+          </div>
+          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
+            {t('← Geri')}
+          </button>
+        </div>
+        <div className="mt-3 flex items-center gap-2 short:mt-2">
+          <select value={level} onChange={(e) => setLevel(Number(e.target.value))} className="min-w-0 flex-1 border-2 border-line bg-ink px-2 py-2 text-[15px] text-cream outline-none focus:border-gold" aria-label={t('Şehir')}>
+            {finished.map((i) => (
+              <option key={LEVELS[i].id} value={i}>
+                {String(LEVELS[i].plate).padStart(2, '0')} · {displayName(LEVELS[i])} · {t(LEVELS[i].difficulty)}
+              </option>
+            ))}
+          </select>
+          <span className="shrink-0 border-2 border-line bg-ink/40 px-2 py-2 text-[12px] tabular-nums text-muted">{t('{n}/{total} kural', { n: done, total: RULES.length })}</span>
+        </div>
+        <div className="overlay-scroll -mx-1 mt-3 grid min-h-0 flex-1 grid-cols-1 content-start gap-2 overflow-y-auto px-1 sm:grid-cols-2 short:mt-2 short:grid-cols-2 wide:grid-cols-3">
+          {RULES.map((r) => {
+            const def = DAILY_RULES[r]
+            const ok = ruleFits(r, LEVELS[level])
+            const best = records[ruleKey(lv.id, cityVersion(lv.id), r)]
+            const lim = ruleLimit(r, LEVELS[level])
+            return (
+              <button
+                key={r}
+                aria-pressed={rule === r}
+                disabled={!ok}
+                className={`flex flex-col border-2 px-3 py-2 text-left disabled:opacity-45 ${rule === r ? 'border-gold bg-gold/10' : 'border-line bg-ink/40 hover:bg-panel-2'}`}
+                onClick={() => setRule(r)}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="font-display text-[17px] text-cream">{t(def.name)}</span>
+                  <span className={`shrink-0 text-[12px] tabular-nums ${best !== undefined ? 'text-gold' : 'text-muted'}`}>{best !== undefined ? `★ ${formatTime(best)}` : ok ? t('Rekor Yok') : t('Bu Şehirde Yok')}</span>
+                </span>
+                <span className="mt-0.5 text-[12px] leading-snug text-muted">
+                  {t(def.text)}
+                  {lim ? ` ${t('Sınır: {s} sn.', { s: lim })}` : ''}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <button className="pixel-btn primary mt-3 w-full shrink-0 justify-center py-2.5 text-base short:mt-2 short:py-2" disabled={!fits} onClick={() => onStart(level, rule)}>
+          {t('▶ {city}: {rule}', { city: lv.name, rule: t(DAILY_RULES[rule].name) })}
+        </button>
       </div>
     </Overlay>
   )

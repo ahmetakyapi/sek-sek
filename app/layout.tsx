@@ -1,16 +1,14 @@
 import type { Metadata, Viewport } from 'next'
-import { IBM_Plex_Mono, Pixelify_Sans } from 'next/font/google'
-import localFont from 'next/font/local'
+import { Figtree, Grandstander } from 'next/font/google'
 import './globals.css'
 
-const pixel = Pixelify_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-pixel', weight: ['500', '700'] })
 /**
- * Rakamlar: Pixelify Sans'ın 2, 5 ve 8'i küçük boyda birbirine (ve S'ye) karışıyordu. Başlık fontunun önüne yalnız
- * rakam aralığını (U+30-39) kapsayan Jersey 20 (OFL) konur: süreler, skorlar ve plakalar her yerde net okunur,
- * harfler Pixelify kalır. Dosya yalnız on rakamı içerir (4 KB).
+ * Yazı dili: başlıklar Grandstander (elle yazılmış gibi, sıcak; rakamları ve Türkçe harfleri net), gövde Figtree
+ * (okunaklı, eş genişlikli rakam desteği var). Piksel font (Pixelify Sans) küçük boyda yoruyordu, 2/5/8 karışıyordu;
+ * oyunun çizimi de piksel değil, mürekkep hatlı vektör: yazı artık onunla aynı elden çıkmış gibi durur.
  */
-const digits = localFont({ src: './fonts/jersey20-digits.woff2', variable: '--font-digits', weight: '400 700', display: 'swap', declarations: [{ prop: 'unicode-range', value: 'U+30-39' }, { prop: 'size-adjust', value: '112%' }] })
-const plex = IBM_Plex_Mono({ subsets: ['latin', 'latin-ext'], variable: '--font-plex', weight: ['400', '600', '700'] })
+const title = Grandstander({ subsets: ['latin', 'latin-ext'], variable: '--font-title', weight: ['600', '700', '800'] })
+const body = Figtree({ subsets: ['latin', 'latin-ext'], variable: '--font-body', weight: ['400', '500', '600', '700'] })
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sek-sek.vercel.app'
 
@@ -48,7 +46,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="tr" className={`${digits.variable} ${pixel.variable} ${plex.variable}`}>
+    <html lang="tr" className={`${title.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   )

@@ -22,8 +22,9 @@
   --color-gold: #f2c14e;
   --color-flag: #e30a17;
   --color-sign: #1d4f91;
-  --font-display: var(--font-digits), var(--font-pixel), ui-monospace, monospace;
-  --font-mono: var(--font-plex), ui-monospace, monospace;
+  --font-display: var(--font-title), ui-rounded, system-ui, sans-serif;
+  /* gövde yazısı: sınıf adı tarihsel olarak font-mono; artık okunaklı bir sans (Figtree) */
+  --font-mono: var(--font-body), system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 html,
@@ -495,4 +496,23 @@ figcaption {
 .intro-more[open] .intro-more-arrow { transform: rotate(180deg); }
 @media (orientation: landscape) and (max-height: 520px) {
   .tut-pos[data-touch] .tut-hint { font-size: 13px; }
+}
+
+/* Satır kırma: başlıklar ve düğmeler dengeli bölünür, paragraflarda tek kelimelik yetim satır kalmaz.
+   Birbirine bağlı kısa parçalar (sayı + birim, ad + değer) .nowrap ile bölünmez. */
+h1,
+h2,
+h3,
+.pixel-btn,
+figcaption {
+  text-wrap: balance;
+}
+p,
+li,
+dd,
+blockquote {
+  text-wrap: pretty;
+}
+.nowrap {
+  white-space: nowrap;
 }

@@ -76,7 +76,6 @@ function hash(s: string) {
   return h >>> 0
 }
 
-const easy = (l: LevelDef) => l.difficulty === 'Kolay'
 const hard = (l: LevelDef) => l.difficulty === 'Zor' || l.difficulty === 'Çok Zor'
 const falls = (l: LevelDef): ChallengeKind => (hard(l) ? 'fewFalls' : 'noFall')
 
@@ -85,7 +84,7 @@ export function dailyChallenge(d: Date, levels: LevelDef[], unlocked: number): C
   const key = dayKey(d)
   const h = hash(key)
   const l = levels[h % Math.min(levels.length, unlocked + 1)]
-  const pool: ChallengeKind[] = [falls(l), 'silver', 'collector', ...(easy(l) ? (['noDash'] as const) : [])]
+  const pool: ChallengeKind[] = [falls(l), 'silver', 'collector', ...(NO_DASH_OK.includes(l.id) ? (['noDash'] as const) : [])]
   return { key, levelId: l.id, kinds: [pool[(h >>> 8) % pool.length]] }
 }
 
@@ -123,7 +122,7 @@ export const completes = (ch: Challenge, level: LevelDef, run: RunStats) => !run
  * Gün İstanbul saatine göre döner ki skor tablosu herkes için aynı anda yenilensin.
  * Skor = süre + düşüş cezası + eksik hatıra cezası; düşük skor önde. Şehrin rekoruna ve ilerlemeye dokunmaz.
  */
-export type DailyRule = 'ceza' | 'hiz' | 'hatira'
+export type DailyRule = 'ceza' | 'hiz' | 'hatira' | 'tekcan' | 'bayraksiz' | 'zaman' | 'dashsiz'
 
 export interface DailyRuleDef {
   name: string
@@ -134,6 +133,14 @@ export interface DailyRuleDef {
   perDeath: number
   /** eksik hatıra başına eklenen saniye */
   perMissing: number
+  /** düşünce koşu baştan başlar, süre sıfırlanır (skor: düşmeden bitirilen koşunun süresi) */
+  oneLife?: boolean
+  /** bayraklar çalışmaz: düşünce şehrin başına dönülür, süre akmaya devam eder */
+  noFlags?: boolean
+  /** dash kapalı (yalnız NO_DASH_OK şehirlerinde: orada dash'siz yol kanıtlı) */
+  noDash?: boolean
+  /** süre sınırı: bronz sürenin katı; dolunca koşu baştan başlar */
+  limit?: number
 }
 
 /** Kural metni (TR); İngilizcesi lib/ui.en.ts'te aynı anahtarla durur. */
@@ -141,7 +148,27 @@ export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
   ceza: { name: 'Ceza Saati', text: 'Her düşüş skoruna 8 saniye ekler. Acele et ama düşme.', speed: 1, perDeath: 8, perMissing: 0 },
   hiz: { name: 'Hızlı Dünya', text: 'Dünya %20 hızlı akar. Her düşüş 3 saniye ekler.', speed: 1.2, perDeath: 3, perMissing: 0 },
   hatira: { name: 'Hatıra Avı', text: 'Eksik her hatıra skoruna 20 saniye ekler. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 20 },
+  tekcan: { name: 'Tek Can', text: 'Düşersen koşu baştan başlar. Skor, hiç düşmeden bitirdiğin koşunun süresi.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true },
+  bayraksiz: { name: 'Bayraksız', text: 'Bayraklar çalışmaz: düşersen şehrin başına dönersin, süre akmaya devam eder.', speed: 1, perDeath: 0, perMissing: 0, noFlags: true },
+  zaman: { name: 'Zamana Karşı', text: 'Bronz süre dolmadan çıkışa var. Süre dolarsa koşu baştan başlar.', speed: 1, perDeath: 0, perMissing: 0, limit: 1 },
+  dashsiz: { name: 'Dash’siz', text: 'Dash kapalı: yalnız yürü ve zıpla. Her düşüş 3 saniye ekler.', speed: 1, perDeath: 3, perMissing: 0, noDash: true },
 }
+
+/**
+ * Dash atmadan (yalnız yürüyüp zıplayarak) çıkışına varılabildiği çözücüyle kanıtlanmış şehirler
+ * (`npx tsx scripts/verify-rules.ts`). "Kolay" etiketi yetmez: İstanbul Kolay ama dash'siz bitmiyor.
+ * Bu şehirlerden birinin haritası değişirse betiği yeniden koş; listeye şehir eklemeden önce de.
+ */
+export const NO_DASH_OK = ['edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir']
+
+/** Kural bu şehirde oynanabilir mi: Dash’siz yalnız dash'siz bittiği kanıtlanmış şehirlerde */
+export const ruleFits = (rule: DailyRule, level: LevelDef) => !DAILY_RULES[rule].noDash || NO_DASH_OK.includes(level.id)
+
+/** Kuralın bu şehirdeki süre sınırı (sn); sınır yoksa null */
+export const ruleLimit = (rule: DailyRule, level: LevelDef) => (DAILY_RULES[rule].limit ? Math.round(level.medals[2] * DAILY_RULES[rule].limit!) : null)
+
+/** Serbest kurallı koşuda rekorun anahtarı: şehir + harita sürümü + kural */
+export const ruleKey = (levelId: string, version: string, rule: DailyRule) => `${levelId}@${version}:${rule}`
 
 /** İstanbul saatiyle bugünün anahtarı (2026-11-14) */
 export const istanbulDay = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
@@ -159,7 +186,7 @@ export interface DailyRun {
   rule: DailyRule
 }
 
-const RULES: DailyRule[] = ['ceza', 'hiz', 'hatira']
+export const RULES: DailyRule[] = ['ceza', 'hiz', 'hatira', 'tekcan', 'bayraksiz', 'zaman', 'dashsiz']
 
 /** Günün meydan okuması: art arda iki gün aynı şehir gelmez */
 export function dailyRun(day: string, levels: LevelDef[]): DailyRun {
@@ -170,7 +197,9 @@ export function dailyRun(day: string, levels: LevelDef[]): DailyRun {
     return depth > 0 && raw === at(shiftDay(k, -1), depth - 1) ? (raw + 1) % levels.length : raw
   }
   const i = at(day, 6)
-  return { day, levelId: levels[i].id, rule: RULES[(hash(`kural:${day}`) >>> 4) % RULES.length] }
+  // günün kuralı şehre uyanlardan seçilir (Dash’siz yalnız Kolay şehirde çıkar)
+  const pool = RULES.filter((r) => ruleFits(r, levels[i]))
+  return { day, levelId: levels[i].id, rule: pool[(hash(`kural:${day}`) >>> 4) % pool.length] }
 }
 
 /** Günlük skor (ms): süre + cezalar */

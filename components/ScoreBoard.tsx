@@ -47,7 +47,7 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
     let live = true
     setFailed(false)
     setRows(null)
-    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(me ? { me } : {}) })
+    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
     fetch(`/api/scores?${q}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
       .then((j: { scores: Row[] }) => live && setRows(j.scores))
