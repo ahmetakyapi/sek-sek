@@ -1121,5 +1121,5 @@ export const CREATURE_NAMES_EN: Record<string, string> = {
   gull: 'Gökçekuş', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
   hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Wolf',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',
-  cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge',
+  cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge', turtle: 'Loggerhead Turtle',
 }
