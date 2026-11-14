@@ -175,7 +175,10 @@ m.put(1, 19, '?')
 m.fill(0, 20, 35, 20, 'I')
 for x0 in (7, 16, 25):
     m.fill(x0, 20, x0 + 2, 23, '~')
+    # deliğin batı kıyısı incedir: kenarda durup hazırlanılmaz, koşarak atlanır (rüzgâr karşıdan)
+    m.put(x0 - 2, 20, 'XX')
 m.put(12, 12, 'f')
+m.put(21, 19, 'F')
 m.put(31, 19, 'n')
 add('ardahan', 103, 20, m, ['Çıldır’da buz deliklerinden balık tutulur. Deliğe düşme, rüzgâr seni iter!'],
     [{'name': 'Buz Balıkçısı Sabri', 'look': 'coban', 'text': 'Göl donunca buzu delip ağ salarız, atlı kızakla eve döneriz. Rüzgârı arkana al, gerisi kolay.'}])

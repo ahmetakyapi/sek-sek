@@ -107,7 +107,6 @@ export const ASSISTS: Record<string, Assist[]> = {
     { x: 168, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
   ],
   ardahan: [
-    { x: 124, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 174, y: 19, from: [' '], to: ['F'], why: 'Uzun yol: araya bayrak (bayraklar arası en çok ~70 karo)' },
     { x: 148, y: 18, from: ['      III        '], to: ['  ##  III   ##   '], why: '27 karolık diken tarlasında adalar arası 6–8 karoydu (dash+halka zinciri): iki taş, aralar en çok 3 karo' },
   ],

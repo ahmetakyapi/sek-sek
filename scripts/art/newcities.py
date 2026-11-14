@@ -157,6 +157,7 @@ def nevsehir():
     m.fill(196, 6, 213, 19, '#')
     m.put(193, 6, 'f')
     m.put(208, 5, 'E')
+    m.fill(72, 20, 73, 20, '#')         # diken tarlasının sonunda iniş payı (zayıf oyuncu)
     return m.rows()
 
 
@@ -254,7 +255,18 @@ def trabzon():
     m.fill(98, 6, 124, 19, '#')
     m.put(93, 16, 'XX')
     m.put(95, 12, 'XX')
+    # sahanlık (bayrak) ve baca: asılı kaya ile kayalığın yüzü arasında seke seke çıkılır, pencereden ok atılır
+    m.fill(98, 0, 101, 12, ' ')
+    m.fill(97, 0, 98, 9, '#')
+    m.put(102, 9, '<')
+    m.put(100, 12, 'F')
+    # manastır önündeki yarık: ortasında çatlak taş, dibi diken; hatıra taşın üstünde
+    m.fill(106, 6, 111, 11, ' ')
+    m.fill(106, 12, 111, 12, '^')
+    m.put(108, 6, 'XX')
     m.put(108, 3, 'C')
+    # manastır kapısı: alçak kemer (2 karo), anahtar kemerin içinde asılı; geçen herkes alır
+    m.fill(114, 0, 116, 3, '#')
     m.put(115, 5, 'K')
     m.put(120, 4, 'f')
     # D — Hamsiköy düğün meydanı: koçari halkası seni düğün sofrasına taşır
@@ -274,10 +286,11 @@ def trabzon():
     m.put(170, 19, '?')
     m.fill(174, 20, 203, 23, '~')
     m.put(174, 18, '|')
-    m.put(176, 18, 'MMM')
+    # iki kayık: gidip gelme aralıkları eşit, başlangıçları ters fazda (alttaki en solda, üstteki en sağda)
+    m.put(175, 18, 'MMM')
     m.put(189, 18, '|')
-    m.put(184, 16, '|')
-    m.put(198, 16, 'MMM')
+    m.put(188, 16, '|')
+    m.put(200, 16, 'MMM')
     m.put(203, 16, '|')
     m.put(189, 12, 'C')
     m.put(182, 10, 'f')

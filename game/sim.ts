@@ -52,6 +52,9 @@ export const PHYS = {
   wallJumpVX: 150,
   wallJumpVY: 292,
   wallLock: 0.14,
+  /** rüzgârın hedef hıza katkısı (sn): havada ve yerde yürürken; Bayburt'un tam esintisi (-210) havada -21 px/sn */
+  windAir: 0.1,
+  windGround: 0.05,
   dashSpeed: 285,
   dashTime: 0.14,
   /** iki dash arası en az bu kadar (sn, dash başından): art arda spam olmaz; dash halkası bekletmez */
@@ -770,8 +773,9 @@ export class World {
         if (p.vy < 0) p.vy *= 0.45
       }
     } else {
-      // yatay kontrol
-      const target = ix * PHYS.run
+      // yatay kontrol. Rüzgâr hedef hızı kaydırır (hıza eklenen ivme, hedefe kırpılınca siliniyordu): havada her zaman,
+      // yerde yalnız yürürken; dururken itmez ki dar taşta kaydırmasın. Esinti güçlüyken atlayış belirgin uzar ya da kısalır
+      const target = ix * PHYS.run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
       let accel: number
       if (p.grounded) {
         if (p.onIce) accel = ix !== 0 ? PHYS.accelIce : PHYS.decelIce
@@ -781,7 +785,6 @@ export class World {
       if (p.wallLock > 0) accel *= 0.25
       if (p.vx < target) p.vx = Math.min(target, p.vx + accel * dt)
       else if (p.vx > target) p.vx = Math.max(target, p.vx - accel * dt)
-      p.vx += wind * (p.grounded ? 0.35 : 1) * dt
 
       // yerçekimi
       let g = PHYS.gravity
