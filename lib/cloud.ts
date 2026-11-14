@@ -68,8 +68,17 @@ export async function syncBests(s: Save) {
     .filter(([id, b]) => !b.stale && !b.relaxed && b.v === cityVersion(id))
     .map(([level, b]) => ({ level, timeMs: b.timeMs, deaths: b.deaths, items: b.items.filter(Boolean).length }))
   if (!batch.length) return
+  // aynı rekorlar bu cihazdan bir kez gider: her açılışta 28 satır yeniden yazılmasın (rekor değişince imza da değişir)
+  const mark = `seksek:tablo:${s.player.id}`
+  const sign = JSON.stringify(batch.map((b) => [b.level, cityVersion(b.level), b.timeMs, b.deaths, b.items]))
   try {
-    await fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: s.player.id, token: s.player.token, batch }) })
+    if (localStorage.getItem(mark) === sign) return
+  } catch {
+    /* depo yoksa her açılışta gönderilir */
+  }
+  try {
+    const r = await fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: s.player.id, token: s.player.token, batch }) })
+    if (r.ok) localStorage.setItem(mark, sign)
   } catch {
     /* bir sonraki açılışta yeniden denenir */
   }

@@ -768,6 +768,8 @@ export default function Game() {
     if (!snd) return
     snd.duck(screen === 'pause')
     if (screen === 'play') snd.setMusic(LEVELS[levelIdx].city)
+    // yan yana yarış kendi şehrinin müziğini çalar (Race bileşeni); menü teması üstüne binmesin
+    else if (screen === 'race') snd.setMusic(LEVELS[duelRef.current?.setup.level ?? levelIdx].city)
     else if (screen !== 'pause') snd.playTheme()
   }, [screen, levelIdx, ready])
 
