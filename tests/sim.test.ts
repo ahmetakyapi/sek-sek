@@ -3,7 +3,7 @@ import { BOSSES } from '../game/boss'
 import { POSES, gait, groundBob } from '../game/heroDraw'
 import { LEVELS } from '../game/levels'
 import { FAKE, PHYS, World } from '../game/sim'
-import { emptyInput, type Input, type LevelDef } from '../game/types'
+import { T, emptyInput, type Input, type LevelDef } from '../game/types'
 
 const mk = (map: string[], extra: Partial<LevelDef> = {}): World =>
   new World({ ...LEVELS[0], map, ...extra })
@@ -541,5 +541,34 @@ describe('alçak koridorlar', () => {
       }
     }
     expect(runs).toEqual([])
+  })
+})
+
+describe('rüzgâr', () => {
+  // düz zeminde koşup tam zıplayınca yatayda alınan yol (px)
+  const leap = (wind: number) => {
+    const w = new World({ ...LEVELS[0], wind })
+    w.started = true
+    const p = w.player
+    for (let i = 0; i < 60; i++) w.step(1 / 120, { ...emptyInput(), right: true })
+    const x0 = p.x
+    let first = true
+    for (let t = 0; t < 2 && (first || !p.grounded); t += 1 / 120) {
+      w.step(1 / 120, { ...emptyInput(), right: true, jump: true, jumpPressed: first })
+      first = false
+    }
+    return p.x - x0
+  }
+  it('arkadan esen rüzgâr atlayışı uzatır, karşıdan esen kısaltır (en az yarım karo)', () => {
+    expect(leap(100) - leap(0)).toBeGreaterThan(T * 0.25)
+    expect(leap(0) - leap(-210)).toBeGreaterThan(T * 0.5)
+  })
+  it('yerde dururken rüzgâr oyuncuyu kaydırmaz', () => {
+    const w = new World({ ...LEVELS[0], wind: -210 })
+    w.started = true
+    for (let i = 0; i < 30; i++) w.step(1 / 120, emptyInput())
+    const x0 = w.player.x
+    for (let i = 0; i < 600; i++) w.step(1 / 120, emptyInput())
+    expect(Math.abs(w.player.x - x0)).toBeLessThan(0.5)
   })
 })

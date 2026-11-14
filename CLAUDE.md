@@ -153,6 +153,10 @@ yetim satır bırakma.
 - Platformun yerden yüksekliği **en çok 32 piksel** (2 karo) olsun; 48 piksel zıplama sınırıdır, oyuncu çoğu zaman tutturamaz.
 - Oyuncu her duvara tırmanabilir: bir alanı kapatan duvar haritanın en üst satırına kadar çıkmalı.
 - Alçak tavanlı koridorda zıplama kısalır; dikenli çukur 2 karoyu geçmesin.
+- **Rüzgâr gerçek kuvvettir** (`LevelDef.wind`, `sim.ts` `PHYS.windAir` / `windGround`): havadaki hedef hızı kaydırır, yerde
+  yalnız yürürken; dururken itmez. Bayburt'un karşı rüzgârında atlayış ~0,75 karo kısalır. Esinti ~5,7 sn'de güçlenip
+  zayıflar: rüzgâra karşı atlayış en zayıf esintide de zayıf oyuncuya yetmeli. Rüzgârlı şehre dokununca
+  `audit-difficulty` koş. (14 Kasım'a dek rüzgâr hıza eklenip hedefe kırpılıyor, neredeyse hiç hissedilmiyordu.)
 - Yeni lejant: `i` ıslak taş (kaygan), `p` itilen sandık (çözücü sandık konumunu da durum sayar: az ve yerel kullan).
   Plaka ve renkli bloklar şehre göre başka görünebilir (`render.ts` SWITCH_SKIN: Bursa gölge, Van gece/gündüz); kural değişmez.
 - Sandıklı bölümde gizli hedef (pul, nazar) ileri yolun üstünde dursun: geride kalan hedef çözücünün bütçesini yakar. Şehir başına en çok iki
