@@ -39,6 +39,10 @@ export const scores = pgTable(
     timeMs: integer('time_ms').notNull(),
     deaths: integer('deaths').notNull(),
     items: integer('items').notNull(),
+    /** bütün koşulardaki en az düşüş ve en çok hatıra (en iyi süreli koşudan bağımsız) ve bitiriş sayısı */
+    minDeaths: integer('min_deaths'),
+    maxItems: integer('max_items'),
+    plays: integer('plays').default(1).notNull(),
     playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },

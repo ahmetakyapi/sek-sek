@@ -2373,10 +2373,12 @@ export class Renderer {
   }
 
   private popFamily: string | null = null
-  /** sayfanın piksel başlık fontu (next/font değişkeni); bulunamazsa eş aralıklı */
+  /** sayfanın piksel başlık fontu ve rakam fontu (next/font değişkenleri); bulunamazsa eş aralıklı */
   private popFont() {
     if (this.popFamily === null) {
-      const v = typeof document !== 'undefined' ? getComputedStyle(document.body).getPropertyValue('--font-pixel').trim() : ''
+      const css = typeof document !== 'undefined' ? getComputedStyle(document.body) : null
+      // rakamlar ayrı fonttan (yalnız U+30-39 aralığı): süre ve kombo sayıları net okunur
+      const v = [css?.getPropertyValue('--font-digits').trim(), css?.getPropertyValue('--font-pixel').trim()].filter(Boolean).join(', ')
       this.popFamily = v ? `${v}, ui-monospace, monospace` : 'ui-monospace, monospace'
     }
     return this.popFamily

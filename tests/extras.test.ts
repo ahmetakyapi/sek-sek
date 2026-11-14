@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, completes, dailyChallenge, dayKey, meets, weekKey, weeklyChallenge } from '../lib/extras'
+import { SCARVES, completes, dailyChallenge, dailyRun, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
 
@@ -84,5 +84,54 @@ describe('oynanmamış şehre yönlendirme', () => {
   it('yolun ortasındaki oyuncu kaldığı şehirden devam eder', () => {
     const s = { ...defaultSave(), unlocked: 3, best: done(all.slice(0, 3)) }
     expect(resumeFor(s)).toBe(3)
+  })
+})
+
+describe('Günlük Meydan Okuma', () => {
+  it('herkes için aynı gün aynı şehir ve kural; art arda iki gün aynı şehir gelmez', () => {
+    let prev = ''
+    for (let i = 0; i < 120; i++) {
+      const day = shiftDay('2026-11-01', i)
+      const a = dailyRun(day, LEVELS)
+      expect(dailyRun(day, LEVELS)).toEqual(a)
+      expect(a.levelId).not.toBe(prev)
+      prev = a.levelId
+    }
+  })
+  it('skor süreye cezaları ekler', () => {
+    expect(dailyScore('ceza', 60000, 2, 0)).toBe(60000 + 16000)
+    expect(dailyScore('hatira', 60000, 1, 1)).toBe(60000 + 3000 + 40000)
+    expect(dailyScore('hiz', 60000, 0, 3)).toBe(60000)
+  })
+  it('seri dün oynandıysa artar, gün atlanınca sıfırdan başlar', () => {
+    let m = markDaily(null, '2026-11-10', 90000)
+    m = markDaily(m, '2026-11-10', 80000)
+    expect(m).toEqual({ day: '2026-11-10', bestMs: 80000, streak: 1 })
+    m = markDaily(m, '2026-11-11', 99000)
+    expect(m.streak).toBe(2)
+    expect(liveStreak(m, '2026-11-12')).toBe(2)
+    expect(liveStreak(m, '2026-11-13')).toBe(0)
+    expect(markDaily(m, '2026-11-13', 1).streak).toBe(1)
+    expect(mergeDaily(m, { day: '2026-11-11', bestMs: 50000, streak: 1 })).toEqual({ day: '2026-11-11', bestMs: 50000, streak: 2 })
+  })
+  it('İstanbul saatiyle gün döner', () => {
+    expect(istanbulDay(new Date('2026-11-14T21:30:00Z'))).toBe('2026-11-15')
+  })
+})
+
+describe('Düello', () => {
+  const r = (score: number) => ({ timeMs: score, deaths: 0, score })
+  it('tek turda düşük skor kazanır', () => {
+    expect(duelResult([[r(5), r(6)]], 1)).toEqual({ over: true, winner: 0 })
+    expect(duelResult([[r(5), null]], 1).over).toBe(false)
+  })
+  it('üç turluda iki tur alan kazanır, beraberlik fazladan tur açar', () => {
+    expect(duelResult([[r(9), r(6)], [r(5), r(6)]], 3).over).toBe(false)
+    expect(duelResult([[r(9), r(6)], [r(5), r(6)], [r(9), r(8)]], 3)).toEqual({ over: true, winner: 1 })
+    const ties: DuelRounds = [[r(5), r(5)], [r(5), r(5)], [r(5), r(5)], [r(5), r(5)], [r(4), r(5)]]
+    expect(duelResult(ties, 3)).toEqual({ over: true, winner: 0 })
+    expect(duelResult(ties.slice(0, 4).concat([[r(5), r(5)]]), 3)).toEqual({ over: true, winner: -1 })
+    expect(duelFirst(0)).toBe(0)
+    expect(duelFirst(1)).toBe(1)
   })
 })

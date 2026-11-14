@@ -22,7 +22,7 @@
   --color-gold: #f2c14e;
   --color-flag: #e30a17;
   --color-sign: #1d4f91;
-  --font-display: var(--font-pixel), ui-monospace, monospace;
+  --font-display: var(--font-digits), var(--font-pixel), ui-monospace, monospace;
   --font-mono: var(--font-plex), ui-monospace, monospace;
 }
 

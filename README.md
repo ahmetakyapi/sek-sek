@@ -27,7 +27,12 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
   Dost hayvanları sevebilirsin; kırmızı hatla parlayan canlılar tehlikelidir.
 - **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, dash halkalarıyla havada ikinci dash.
 - **Artbook Havası.** Işıkla boyanmış portreler, kilim çerçeveler, defter kâğıdı kartlar, paylaşılabilir kartpostallar.
-- **Skor Tablosu.** Şehir başına ve genel sıralama; altın, gümüş ve bronz süre madalyaları.
+- **Skor Tablosu.** Dört sekme: genel sıralama, şehir şehir (süre, en az düşüş, en çok hatıra), Günlük Meydan Okuma ve
+  koleksiyoncular (hatıra, gizli pul, nazar boncuğu). Kendi satırın ilk sıralarda olmasa da görünür.
+- **Modlar.** Günlük Meydan Okuma (herkese aynı şehir ve kural, günlük sıralama, gün serisi), iki kişilik Düello
+  (yan yana bölünmüş ekranda ya da sırayla, rakibin hayaletiyle), Boss Rush ve Maraton (rastgele üç şehir arka arkaya).
+- **Güncelleme ilerlemeni silmez.** Bir şehrin haritası değişirse yalnız o şehrin rekoru yenilenir; hangi şehirlerin
+  değiştiği açılışta listelenir.
 
 <br clear="right">
 

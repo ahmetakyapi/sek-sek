@@ -1,5 +1,6 @@
 /** Hayalet koşunun cihazda saklanması (bölüm başına en iyi koşu). */
 import type { GhostRun } from '@/game/ghost'
+import { cityVersion } from './mapVersion'
 
 const key = (level: string) => `seksek:ghost:${level}`
 /** 8 Kasım'a dek önek `memleket:` idi; okurken eski anahtar yeniye taşınır. */
@@ -17,7 +18,7 @@ export function loadGhost(level: string): GhostRun | null {
     }
     if (!raw) return null
     const g = JSON.parse(raw) as GhostRun
-    return Array.isArray(g.data) && g.data.length >= 3 ? g : null
+    return Array.isArray(g.data) && g.data.length >= 3 && (!g.v || g.v === cityVersion(level)) ? g : null
   } catch {
     return null
   }
@@ -25,7 +26,7 @@ export function loadGhost(level: string): GhostRun | null {
 
 export function saveGhost(level: string, g: GhostRun) {
   try {
-    localStorage.setItem(key(level), JSON.stringify(g))
+    localStorage.setItem(key(level), JSON.stringify({ ...g, v: cityVersion(level) }))
   } catch {
     /* yer yok ya da gizli sekme: hayalet bu oturumla sınırlı */
   }

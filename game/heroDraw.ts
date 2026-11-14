@@ -16,8 +16,12 @@ export interface Pose {
   /** yerdeyse taban zemine oturtulur */
   ground?: boolean
   bob?: number
-  /** kafa ve saçın geriye savrulması (-1..1) */
+  /** saçın geriye savrulması (0 sarkık .. 1,3 dümdüz geride) */
   hair?: number
+  /** üst gövdenin kalçadan öne eğilmesi (radyan, + ileri); bacaklar eğilmez */
+  tilt?: number
+  /** atkı ucunun ve saç uçlarının dikey savrulması (-1 aşağı çekilir: yükseliş · 1 yukarı kalkar: düşüş) */
+  lift?: number
   blink?: boolean
   /** neşeli yüz (amblem, paylaşım görseli): yüksek kavisli kaş, iri göz, açık gülümseme; oyunda kullanılmaz */
   mood?: 'happy'
@@ -64,6 +68,8 @@ interface Skin {
   hatS?: string
   /** atkısız */
   bare?: boolean
+  /** kapitone mont: gövdede dilim dikişleri (Uktun) */
+  quilt?: boolean
   /** dize kadar inen giysi (etek, cübbe, kepenek) */
   robe?: boolean
   prop?: 'apron' | 'staff' | 'saz'
@@ -75,7 +81,7 @@ export const LOOKS: Record<Look, Skin> = {
     hair: '#b4482a', hairS: '#7e2c20', hairL: '#e07a46', iris: '#7a4a26',
     coat: '#efb440', coatS: '#c98424', coatL: '#ffd878', shirt: '#fbf3e2',
     scarf: '#d83c36', scarfS: '#9e2430', pants: '#4f62a0', pantsS: '#35467c',
-    boot: '#7a4630', bootS: '#4c2a1c', brow: '#7e2c20', long: true,
+    boot: '#7a4630', bootS: '#4c2a1c', brow: '#7e2c20', long: true, quilt: true,
   },
   memo: {
     skin: '#e2ad84', skinS: '#c08460', blush: 'rgba(200,110,90,0.3)',
@@ -142,6 +148,11 @@ const SHIN = 13
 const UPPER = 12
 const FORE = 10.5
 const HIP_Y = -29
+const TAU = Math.PI * 2
+/** ışığın düştüğü yerde ince vurgu, kumaş ve deri üstünde */
+const GLINT = 'rgba(255,255,255,0.34)'
+/** ayak altındaki temas gölgesi */
+const CONTACT = 'rgba(24,14,30,0.2)'
 
 function joint(x: number, y: number, a1: number, l1: number, a2: number, l2: number) {
   const kx = x + Math.sin(rad(a1)) * l1
@@ -205,11 +216,26 @@ export function blob(c: CanvasRenderingContext2D, build: () => void, fill: strin
   }
 }
 
+/** iç ayrıntı çizgisi (kıvrım, tel, dikiş): dış hattan ince, uçları yuvarlak, tek eğri */
+function fine(c: CanvasRenderingContext2D, x0: number, y0: number, cx: number, cy: number, x1: number, y1: number, w: number, color: string) {
+  c.beginPath()
+  c.moveTo(x0, y0)
+  c.quadraticCurveTo(cx, cy, x1, y1)
+  c.strokeStyle = color
+  c.lineWidth = w
+  c.lineCap = 'round'
+  c.stroke()
+}
+
 function drawLeg(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number, t: number, k: number, near: boolean) {
   const j = joint(hx, hy, t, THIGH, t - k, SHIN)
   const pants = near ? s.pants : s.pantsS
   stroke(c, [hx, hy, j.kx, j.ky, j.ex, j.ey], 8.2, pants)
-  if (near) stroke(c, [hx + 1.6, hy + 1, j.kx + 1.6, j.ky, j.ex + 1.4, j.ey - 1], 2.6, s.pantsS, false)
+  if (near) {
+    // ön kenarda tek kademe gölge, uylukta ince ışık
+    stroke(c, [hx + 1.6, hy + 1, j.kx + 1.6, j.ky, j.ex + 1.4, j.ey - 1], 2.6, s.pantsS, false)
+    stroke(c, [hx - 2.2, hy + 2.5, j.kx - 2.2, j.ky - 1.5], 1.3, GLINT, false)
+  }
   // bot: baldır yönüne göre döner, burnu ileri bakar
   const shin = t - k
   const a = rad(-shin * 0.6)
@@ -219,42 +245,59 @@ function drawLeg(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number, t
   blob(
     c,
     () => {
-      c.moveTo(-4.2, -3.5)
-      c.lineTo(3, -3.5)
-      c.quadraticCurveTo(8.4, -2.6, 8.4, 1.6)
-      c.lineTo(8.4, 3.4)
-      c.lineTo(-4.6, 3.4)
-      c.closePath()
+      c.moveTo(-4.3, -4)
+      c.lineTo(2.8, -4)
+      c.quadraticCurveTo(3.6, -1.9, 6.6, -1.2)
+      c.quadraticCurveTo(9.6, -0.2, 8.9, 3.4)
+      c.lineTo(-4.7, 3.4)
+      c.quadraticCurveTo(-5.3, -0.4, -4.3, -4)
     },
     near ? s.boot : s.bootS,
-    near ? { color: s.bootS, dx: 0, dy: -2.2 } : undefined,
+    near ? { color: s.bootS, dx: 0, dy: -1.9 } : undefined,
   )
+  if (near) {
+    // konç kıvrımı ve burunda ışık
+    fine(c, -3.4, -1.7, -0.6, -1.1, 2.2, -1.9, 0.9, s.bootS)
+    fine(c, 4.4, -0.2, 6, 0, 6.9, 0.8, 1.1, GLINT)
+  }
   c.restore()
 }
 
 function drawArm(c: CanvasRenderingContext2D, s: Skin, sx: number, sy: number, a1: number, a2: number, near: boolean) {
   const j = joint(sx, sy, a1, UPPER, a2, FORE)
+  const dx = Math.sin(rad(a2))
+  const dy = Math.cos(rad(a2))
   stroke(c, [sx, sy, j.kx, j.ky, j.ex, j.ey], 7, near ? s.coat : s.coatS)
-  if (near) stroke(c, [sx - 1.2, sy, j.kx - 1.2, j.ky, j.ex - 1, j.ey], 2, s.coatL, false)
-  // el
+  if (near) {
+    // kol ağzı (koyu bant) ve ışığa bakan kenarda vurgu
+    stroke(c, [j.ex - dx * 1.6, j.ey - dy * 1.6, j.ex + dx * 0.4, j.ey + dy * 0.4], 7, s.coatS, false)
+    stroke(c, [sx - 1.3, sy - 0.7, j.kx - 1.3, j.ky - 0.7, j.ex - 1.3 - dx * 2.6, j.ey - 0.7 - dy * 2.6], 1.9, s.coatL, false)
+  }
+  // el: bileğin ucunda yumuk avuç, öne bakan başparmak
+  const px = j.ex + dx * 2.6
+  const py = j.ey + dy * 2.6
+  const tx = px + dy * 2.5 - dx * 0.5
+  const ty = py - dx * 2.5 - dy * 0.5
   c.beginPath()
-  c.arc(j.ex + Math.sin(rad(a2)) * 2, j.ey + Math.cos(rad(a2)) * 2, 3.3, 0, Math.PI * 2)
+  c.ellipse(px, py, 3.6, 3.15, Math.atan2(dy, dx), 0, TAU)
+  c.moveTo(tx + 1.7, ty)
+  c.arc(tx, ty, 1.7, 0, TAU)
   c.strokeStyle = INK
-  c.lineWidth = 3.2
+  c.lineWidth = inkW
   c.stroke()
   c.fillStyle = near ? s.skin : s.skinS
   c.fill()
 }
 
 function drawTorso(c: CanvasRenderingContext2D, s: Skin, x: number, y: number) {
-  // ceket: omuzdan bele hafif daralan yuvarlak gövde
+  // ceket: omuzdan bele hafif daralan yuvarlak gövde, göğüs biraz önde
   blob(
     c,
     () => {
       c.moveTo(x - 8.5, y - 25)
       c.quadraticCurveTo(x, y - 28.5, x + 8.5, y - 25)
-      c.quadraticCurveTo(x + 11.5, y - 12, x + 9.5, y + 1.5)
-      c.quadraticCurveTo(x, y + 3.2, x - 9.5, y + 1.5)
+      c.quadraticCurveTo(x + 12.2, y - 13, x + 9.8, y + 1.5)
+      c.quadraticCurveTo(x, y + 3.4, x - 9.8, y + 1.5)
       c.quadraticCurveTo(x - 11.5, y - 12, x - 8.5, y - 25)
     },
     s.coat,
@@ -269,28 +312,74 @@ function drawTorso(c: CanvasRenderingContext2D, s: Skin, x: number, y: number) {
   c.fillStyle = s.shirt
   c.fill()
   c.strokeStyle = INK
-  c.lineWidth = 1.6
-  c.stroke()
-  // ceket parlaması sol kenarda
-  stroke(c, [x - 7.2, y - 22, x - 8.6, y - 10, x - 7.6, y - 2], 1.8, s.coatL, false)
-}
-
-function drawScarf(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, t: number, moving: boolean) {
-  // arka uç: ensede düğümden çıkar, koşarken rüzgârda dalgalanır
-  const len = moving ? 17 : 9
-  const wv = Math.sin(t * (moving ? 13 : 3.5))
-  c.beginPath()
-  c.moveTo(x - 6, y - 26)
-  c.bezierCurveTo(x - 6 - len * 0.4, y - 25 + wv * 2, x - 6 - len * 0.7, y - 20 - wv * 2.5, x - 6 - len, y - (moving ? 23 : 15) + wv * 3)
-  c.lineTo(x - 6 - len + 1, y - (moving ? 19 : 11) + wv * 3)
-  c.bezierCurveTo(x - 6 - len * 0.6, y - 16 - wv * 2, x - 6 - len * 0.3, y - 21 + wv, x - 5, y - 22)
-  c.closePath()
-  c.strokeStyle = INK
-  c.lineWidth = 3
+  c.lineWidth = inkW * 0.45
   c.lineJoin = 'round'
   c.stroke()
-  c.fillStyle = s.scarfS
+  // ön kapama: yakadan eteğe inen ince hat
+  fine(c, x + 5.5, y - 12, x + 6.8, y - 5, x + 5.8, y + 1.8, inkW * 0.34, INK)
+  // etek dikişi; kapitone montta (Uktun) iki dilim dikişi
+  fine(c, x - 8.6, y - 1.6, x - 1, y + 0.6, x + 5.4, y - 0.8, 0.9, s.coatS)
+  if (s.quilt) {
+    fine(c, x - 9.8, y - 8.6, x - 2, y - 6.6, x + 5.8, y - 8, 0.9, s.coatS)
+    fine(c, x - 10, y - 16, x - 2, y - 14.2, x + 5.4, y - 15.4, 0.9, s.coatS)
+  }
+  // ceket parlaması sol kenarda: omuzda dolgun, bele doğru incelir
+  stroke(c, [x - 7.4, y - 22.4, x - 8.8, y - 13], 2.1, s.coatL, false)
+  stroke(c, [x - 8.8, y - 11, x - 8.2, y - 4], 1.3, s.coatL, false)
+}
+
+/**
+ * Atkı. Arka uç ensedeki düğümden çıkan bir kurdeledir: dururken sırta sarkar ve hafifçe salınır, koşarken geriye
+ * uzanıp dalga dalga çırpınır (dalga düğümden uca doğru yürür), düşerken yukarı savrulur. lift: -1 aşağı .. 1 yukarı.
+ */
+function drawScarf(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, t: number, moving: boolean, lift: number) {
+  const ox = x - 6
+  const oy = y - 24.5
+  // uzun saçlıda uç saçın arkasından çıkacak kadar uzar (yoksa yalnız ucu görünür, yumru gibi durur)
+  const ex = moving ? (s.long ? -29 : -19) : -5.5 - Math.abs(lift) * 6
+  const ey = moving ? 1 - lift * 10 : 11 - lift * 14
+  const len = Math.hypot(ex, ey)
+  const nx = -ey / len
+  const ny = ex / len
+  const sp = moving ? 13 : 2.6
+  const amp = moving ? 2.8 : 0.8
+  // kurdelenin iki kenarı: u düğümden uca 0..1, side +1 / -1
+  const P = (u: number, side: number): [number, number] => {
+    const wv = Math.sin(t * sp - u * 4.4) * amp * u
+    const off = wv + side * (2.3 + u * 1.2)
+    return [ox + ex * u + nx * off, oy + ey * u + ny * off - Math.sin(u * Math.PI) * (moving ? 0 : 1.6)]
+  }
+  const a1 = P(0.34, 1)
+  const a2 = P(0.7, 1)
+  const a3 = P(1, 1)
+  const b1 = P(0.34, -1)
+  const b2 = P(0.7, -1)
+  const b3 = P(1.06, -1)
+  const n = P(0.84, 0)
+  c.beginPath()
+  c.moveTo(ox + 1, oy - 2.2)
+  c.bezierCurveTo(a1[0], a1[1], a2[0], a2[1], a3[0], a3[1])
+  c.lineTo(n[0], n[1])
+  c.lineTo(b3[0], b3[1])
+  c.bezierCurveTo(b2[0], b2[1], b1[0], b1[1], ox + 1.5, oy + 2.6)
+  c.closePath()
+  c.strokeStyle = INK
+  c.lineWidth = inkW * 0.94
+  c.lineJoin = 'round'
+  c.stroke()
+  c.fillStyle = s.scarf
   c.fill()
+  // kurdelenin alt yarısı gölgede
+  const m1 = P(0.34, -0.5)
+  const m2 = P(0.7, -0.5)
+  const m3 = P(0.98, -0.52)
+  c.beginPath()
+  c.moveTo(ox, oy + 1.2)
+  c.bezierCurveTo(m1[0], m1[1], m2[0], m2[1], m3[0], m3[1])
+  c.strokeStyle = s.scarfS
+  c.lineWidth = 2.1
+  c.lineCap = 'butt'
+  c.stroke()
   // boyun sargısı
   blob(
     c,
@@ -303,96 +392,145 @@ function drawScarf(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, t
     s.scarf,
     { color: s.scarfS, dx: 0, dy: -2.2 },
   )
-  // önden düşen uç
-  blob(
-    c,
-    () => {
-      c.moveTo(x + 2.5, y - 24)
-      c.lineTo(x + 6.5, y - 24)
-      c.lineTo(x + 6, y - 13)
-      c.lineTo(x + 3.8, y - 14.5)
-      c.lineTo(x + 2, y - 12.5)
-    },
-    s.scarf,
-    { color: s.scarfS, dx: -1.6, dy: 0 },
-  )
+  fine(c, x - 5.4, y - 27.4, x - 1, y - 28.6, x + 3, y - 28, 1.1, GLINT)
+  // önden düşen uç: adımla hafifçe sallanır
+  const sw = Math.sin(t * (moving ? 13 : 2.6) + 1.3) * (moving ? 1.1 : 0.3)
+  c.beginPath()
+  c.moveTo(x + 2.5, y - 24)
+  c.lineTo(x + 6.5, y - 24)
+  c.lineTo(x + 6.2 + sw, y - 12.6)
+  c.lineTo(x + 4 + sw, y - 14.6)
+  c.lineTo(x + 2 + sw, y - 12.4)
+  c.closePath()
+  c.strokeStyle = INK
+  c.lineWidth = inkW
+  c.stroke()
+  c.fillStyle = s.scarf
+  c.fill()
+  stroke(c, [x + 5.6, y - 22.6, x + 5.3 + sw, y - 14.6], 1.3, s.scarfS, false)
 }
 
-function eye(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, w: number, blink: boolean, happy = false) {
+function eye(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, w: number, blink: boolean, happy: boolean, lash: boolean) {
+  c.lineCap = 'round'
   if (blink) {
     c.beginPath()
     c.moveTo(x - w, y + 0.5)
-    c.quadraticCurveTo(x, y + 2.2, x + w, y + 0.5)
+    c.quadraticCurveTo(x, y + 2.4, x + w, y + 0.5)
+    if (lash) {
+      c.moveTo(x - w, y + 0.5)
+      c.lineTo(x - w - 1.3, y + 1.5)
+    }
     c.strokeStyle = INK
     c.lineWidth = 1.6
-    c.lineCap = 'round'
     c.stroke()
     return
   }
   // neşeli göz daha iri ve yuvarlak, kirpik çizgisi ince ve yüksek kavisli
-  const ry = happy ? 4.4 : 3.6
+  const ry = happy ? 4.4 : 3.9
   c.beginPath()
-  c.ellipse(x, y, w, ry, 0, 0, Math.PI * 2)
-  c.fillStyle = '#ffffff'
+  c.ellipse(x, y, w, ry, 0, 0, TAU)
+  c.fillStyle = '#fffdf8'
   c.fill()
   c.beginPath()
-  c.ellipse(x + w * 0.25, y + 0.4, w * 0.72, ry - 0.5, 0, 0, Math.PI * 2)
+  c.ellipse(x + w * 0.24, y + 0.35, w * 0.73, ry - 0.45, 0, 0, TAU)
   c.fillStyle = s.iris
   c.fill()
+  // irisin altı ışık alır: bakış canlanır
   c.beginPath()
-  c.ellipse(x + w * 0.3, y + 0.6, w * 0.38, happy ? 2.4 : 1.9, 0, 0, Math.PI * 2)
+  c.ellipse(x + w * 0.24, y + ry * 0.46, w * 0.5, ry * 0.3, 0, 0, TAU)
+  c.fillStyle = 'rgba(255,214,150,0.5)'
+  c.fill()
+  c.beginPath()
+  c.ellipse(x + w * 0.28, y + 0.3, w * 0.38, happy ? 2.4 : 1.95, 0, 0, TAU)
   c.fillStyle = INK
   c.fill()
+  // parıltı: büyüğü sol üstte, küçüğü sağ altta
   c.beginPath()
-  c.arc(x - w * 0.15, y - 1.2, happy ? 1.3 : 1.05, 0, Math.PI * 2)
-  if (happy) c.arc(x + w * 0.55, y + 1.7, 0.6, 0, Math.PI * 2)
+  c.arc(x - w * 0.14, y - 1.25, happy ? 1.3 : 1.12, 0, TAU)
+  c.moveTo(x + w * 0.6, y + 1.6)
+  c.arc(x + w * 0.6 - 0.58, y + 1.6, 0.58, 0, TAU)
   c.fillStyle = '#ffffff'
   c.fill()
-  // üst kirpik çizgisi
+  // göz kapağı kıvrımı: kirpik çizgisinin hemen üstünde ince bir yay (neşeli gözde kirpik zaten yüksek)
+  if (!happy) {
+    c.beginPath()
+    c.moveTo(x - w * 0.75, y - ry - 1)
+    c.quadraticCurveTo(x, y - ry - 2.7, x + w * 0.85, y - ry - 1.2)
+    c.strokeStyle = s.skinS
+    c.lineWidth = 0.85
+    c.stroke()
+  }
+  // üst kirpik çizgisi; kadında dış uçta kalkık kirpik
   c.beginPath()
   if (happy) {
     c.moveTo(x - w - 0.4, y - 0.4)
     c.quadraticCurveTo(x, y - 8, x + w + 0.4, y - 0.4)
   } else {
-    c.moveTo(x - w - 0.6, y - 1.2)
-    c.quadraticCurveTo(x, y - 5.2, x + w + 0.6, y - 1.6)
+    c.moveTo(x - w - 0.5, y - 1.5)
+    c.quadraticCurveTo(x, y - ry - 2.2, x + w + 0.5, y - 1.9)
+  }
+  if (lash) {
+    c.moveTo(x - w - 0.5, y - 1.5)
+    c.lineTo(x - w - 1.7, y - 2.9)
   }
   c.strokeStyle = INK
-  c.lineWidth = happy ? 1.4 : 1.9
-  c.lineCap = 'round'
+  c.lineWidth = happy ? 1.4 : 1.5
   c.stroke()
 }
 
-function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, blink: boolean, hair: number, happy = false) {
+/** kaş: buruna bakan ucu dolgun, dış ucu incelen fırça izi */
+function brow(c: CanvasRenderingContext2D, x0: number, y0: number, cx: number, cy: number, x1: number, y1: number, th: number, color: string) {
+  c.beginPath()
+  c.moveTo(x0, y0)
+  c.quadraticCurveTo(cx, cy, x1, y1)
+  c.lineTo(x1 + 0.1, y1 + th)
+  c.quadraticCurveTo(cx, cy + th * 1.5, x0, y0)
+  c.closePath()
+  c.fillStyle = color
+  c.fill()
+  c.strokeStyle = color
+  c.lineWidth = 0.7
+  c.lineJoin = 'round'
+  c.stroke()
+}
+
+function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, blink: boolean, hair: number, lift: number, t: number, moving: boolean, happy = false) {
   // neşeli yüzde perçem uçları kaşı örtmesin diye biraz yukarıda biter
-  const fr = happy ? 4.2 : 0
+  const fr = happy ? 3.4 : 0
   const hx = x + 1.5
   const hy = y - 47
-  // arka saç (uzun): omuzların arkasından sırta dökülür, uçları tutam tutam ayrılır; koşarken geriye savrulur
+  const fem = !!s.long || s.hat === 'yazma'
+  // arka saç (uzun): omuzların arkasından sırta dökülür, uçları tutam tutam ayrılır; savruldukça uçlar gecikerek izler
   if (s.long) {
-    const sw = hair * 3.4
+    const fl = moving ? 1 : 0.3
+    const sw = hair * 3.4 + Math.sin(t * (moving ? 11 : 1.7)) * 0.5 * fl
+    // uçların gecikmeli salınımı ve düşerken yukarı kalkışı
+    const tp = Math.sin(t * (moving ? 11 : 1.7) - 1.4) * 1.5 * fl
+    const up = lift * 5.5
     blob(
       c,
       () => {
         c.moveTo(hx - 5, hy - 20)
-        c.bezierCurveTo(hx - 21, hy - 19, hx - 24 - sw * 0.4, hy - 2, hx - 20 - sw, hy + 14)
-        c.quadraticCurveTo(hx - 21 - sw * 1.6, hy + 23, hx - 24.5 - sw * 2.2, hy + 30)
-        c.quadraticCurveTo(hx - 19 - sw * 1.6, hy + 28, hx - 17.5 - sw * 1.5, hy + 23.5)
-        c.quadraticCurveTo(hx - 16.5 - sw * 1.6, hy + 29, hx - 15.5 - sw * 1.8, hy + 33.5)
-        c.quadraticCurveTo(hx - 11.5 - sw * 1.2, hy + 29.5, hx - 11 - sw, hy + 24)
-        c.quadraticCurveTo(hx - 9 - sw * 1.1, hy + 28, hx - 6.5 - sw * 1.2, hy + 30.5)
-        c.quadraticCurveTo(hx - 3.5 - sw * 0.5, hy + 22, hx - 4, hy + 12)
+        c.bezierCurveTo(hx - 21, hy - 19, hx - 24 - sw * 0.4, hy - 2, hx - 20 - sw, hy + 14 - up * 0.3)
+        c.quadraticCurveTo(hx - 21 - sw * 1.6, hy + 23 - up * 0.7, hx - 24.5 - sw * 2.2 - tp, hy + 30 - up)
+        c.quadraticCurveTo(hx - 19 - sw * 1.6, hy + 28 - up * 0.8, hx - 17.5 - sw * 1.5, hy + 23.5 - up * 0.6)
+        c.quadraticCurveTo(hx - 16.5 - sw * 1.6, hy + 29 - up * 0.8, hx - 15.5 - sw * 1.8 - tp, hy + 33.5 - up)
+        c.quadraticCurveTo(hx - 11.5 - sw * 1.2, hy + 29.5 - up * 0.7, hx - 11 - sw, hy + 24 - up * 0.5)
+        c.quadraticCurveTo(hx - 9 - sw * 1.1, hy + 28 - up * 0.6, hx - 6.5 - sw * 1.2 - tp * 0.7, hy + 30.5 - up * 0.8)
+        c.quadraticCurveTo(hx - 3.5 - sw * 0.5, hy + 22 - up * 0.3, hx - 4, hy + 12)
         c.lineTo(hx + 1, hy + 2)
       },
       s.hair,
-      { color: s.hairS, dx: 3.4, dy: -1.5 },
+      { color: s.hairS, dx: -3.2, dy: -1.2 },
     )
-    // saç telleri: akışı izleyen ince koyu çizgiler ve bir ışık tutamı
-    stroke(c, [hx - 17, hy - 2, hx - 17.5 - sw * 0.8, hy + 12, hx - 19.5 - sw * 1.8, hy + 24], 0.9, s.hairS, false)
-    stroke(c, [hx - 11, hy + 8, hx - 12 - sw, hy + 18, hx - 13.5 - sw * 1.5, hy + 27], 0.9, s.hairS, false)
-    stroke(c, [hx - 20, hy - 6, hx - 21.4 - sw * 0.6, hy + 6, hx - 21.6 - sw * 1.2, hy + 15], 1.5, s.hairL, false)
+    // tutam ayrımları (ince mürekkep), akışı izleyen tel ve sırtta ışık şeridi
+    fine(c, hx - 16.4, hy + 6, hx - 16.6 - sw * 0.9, hy + 15 - up * 0.3, hx - 17.5 - sw * 1.5, hy + 23.5 - up * 0.6, inkW * 0.3, INK)
+    fine(c, hx - 10.4, hy + 10, hx - 10.2 - sw * 0.7, hy + 17 - up * 0.3, hx - 11 - sw, hy + 24 - up * 0.5, inkW * 0.3, INK)
+    fine(c, hx - 13.4, hy - 4, hx - 14 - sw * 0.4, hy + 6, hx - 13.4 - sw * 0.9, hy + 14 - up * 0.2, 0.9, s.hairS)
+    fine(c, hx - 20, hy - 7, hx - 22.4 - sw * 0.6, hy + 5, hx - 21.4 - sw * 1.3, hy + 16 - up * 0.4, 1.9, s.hairL)
+    fine(c, hx - 20.6 - sw * 1.6, hy + 20 - up * 0.6, hx - 21 - sw * 1.8, hy + 23 - up * 0.7, hx - 22.4 - sw * 2 - tp * 0.8, hy + 26.4 - up * 0.9, 1.1, s.hairL)
   }
-  // kulak hizasında boyun
+  // boyun: çenenin gölgesinde
   stroke(c, [hx - 1, hy + 14, hx - 1, hy + 19], 6.5, s.skinS)
   // kafa: hafif oval, çene öne doğru
   const skull = () => {
@@ -401,42 +539,50 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.bezierCurveTo(hx + 18.5, hy + 4, hx + 15, hy + 13, hx + 6, hy + 15.5)
     c.bezierCurveTo(hx - 3, hy + 17.5, hx - 14, hy + 12, hx - 15, hy - 2)
   }
-  blob(c, skull, s.skin, { color: s.skinS, dx: 3, dy: -2.4 })
+  blob(c, skull, s.skin, { color: s.skinS, dx: -1.5, dy: -2.3 })
+  // saçın (ya da başlığın) alna düşen gölgesi
+  c.beginPath()
+  if (s.long) {
+    c.moveTo(hx + 1, hy - 14)
+    c.lineTo(hx + 15.6, hy - 11)
+    c.lineTo(hx + 15.8, hy - 7.6 - fr)
+    c.quadraticCurveTo(hx + 9, hy - 9.4 - fr, hx + 1.6, hy - 11.6)
+  } else if (s.hat !== 'yazma') {
+    c.moveTo(hx - 2, hy - 12.5)
+    c.lineTo(hx + 15.2, hy - 12)
+    c.lineTo(hx + 15.5, hy - 8.8)
+    c.quadraticCurveTo(hx + 7, hy - 10.8, hx - 1, hy - 8.6)
+    c.quadraticCurveTo(hx - 4.6, hy - 4, hx - 5.6, hy + 1.6)
+    c.lineTo(hx - 7.4, hy + 1)
+  }
+  c.closePath()
+  c.fillStyle = s.skinS
+  c.fill()
   // yanaklar
   c.fillStyle = s.blush
   c.beginPath()
-  c.ellipse(hx + 2.5, hy + 6.5, 3.2, 1.9, 0, 0, Math.PI * 2)
-  c.ellipse(hx + 14.2, hy + 6.2, 2, 1.7, 0, 0, Math.PI * 2)
+  c.ellipse(hx + 2.6, hy + 7.6, 3.3, 1.9, 0, 0, TAU)
+  c.ellipse(hx + 14.3, hy + 7.2, 1.9, 1.7, 0, 0, TAU)
+  c.fill()
+  c.beginPath()
+  c.ellipse(hx + 1.6, hy + 6.7, 1.1, 0.6, -0.4, 0, TAU)
+  c.fillStyle = GLINT
   c.fill()
   // gözler: yakın göz büyük, uzak göz yüz kenarında dar
-  eye(c, s, hx + 5, hy + 0.5, 3, blink, happy)
-  eye(c, s, hx + 13.2, hy + 0.2, 2.1, blink, happy)
-  // kaşlar
-  c.strokeStyle = s.brow
-  c.lineCap = 'round'
-  c.lineWidth = s.long || s.hat === 'yazma' ? 1.6 : 2
-  c.beginPath()
-  // kaşlar gözün epey üstünde ve yukarı kavisli: yüz yumuşak ve meraklı baksın
+  eye(c, s, hx + 5, hy + 1.3, 3, blink, happy, fem)
+  eye(c, s, hx + 13.2, hy + 1, 2.1, blink, happy, false)
+  // kaşlar: gözün epey üstünde ve yukarı kavisli (yüz yumuşak ve meraklı baksın); buruna bakan uç dolgun
+  const th = fem ? 1.05 : s.beard ? 1.7 : 1.5
   if (happy) {
-    c.moveTo(hx + 1.2, hy - 7.6)
-    c.quadraticCurveTo(hx + 4.8, hy - 12, hx + 8.6, hy - 8)
-    c.moveTo(hx + 11.6, hy - 8.2)
-    c.quadraticCurveTo(hx + 13.8, hy - 11.2, hx + 16, hy - 7.6)
+    brow(c, hx + 0.8, hy - 7.8, hx + 4.8, hy - 12.6, hx + 8.8, hy - 9.2, th, s.brow)
+    brow(c, hx + 16.2, hy - 8, hx + 13.8, hy - 11.8, hx + 11.5, hy - 9.4, th * 0.9, s.brow)
   } else {
-    c.moveTo(hx + 1.4, hy - 6.2)
-    c.quadraticCurveTo(hx + 4.6, hy - 9.6, hx + 8, hy - 7.8)
-    c.moveTo(hx + 11.6, hy - 7.9)
-    c.quadraticCurveTo(hx + 13.8, hy - 9.4, hx + 15.6, hy - 7.4)
+    brow(c, hx + 0.9, hy - 6.2, hx + 4.6, hy - 10.4, hx + 8.5, hy - 8.3, th, s.brow)
+    brow(c, hx + 16, hy - 7, hx + 13.9, hy - 10, hx + 11.5, hy - 8.4, th * 0.9, s.brow)
   }
-  c.stroke()
   // burun: profilde küçük bir kıvrım
-  c.strokeStyle = s.skinS
-  c.lineWidth = 1.4
-  c.beginPath()
-  c.moveTo(hx + 10.6, hy + 3)
-  c.quadraticCurveTo(hx + 12, hy + 6, hx + 10.2, hy + 6.6)
-  c.stroke()
-  // sakal (Memo): çene hattını sarar, bıyıkla ağzı çerçeveler
+  fine(c, hx + 10.5, hy + 3.8, hx + 12.3, hy + 6.9, hx + 10.2, hy + 7.5, 1.4, s.skinS)
+  // sakal (ozan): çene hattını sarar, bıyıkla ağzı çerçeveler
   if (s.beard) {
     blob(
       c,
@@ -450,8 +596,11 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
         c.quadraticCurveTo(hx - 5, hy + 6, hx - 6, hy + 1.5)
       },
       s.beard,
-      { color: s.beardS!, dx: 2, dy: -1.6 },
+      { color: s.beardS!, dx: -1.6, dy: -1.8 },
     )
+    // sakal telleri
+    fine(c, hx - 4.6, hy + 9, hx - 2.6, hy + 12.4, hx + 0.6, hy + 13.8, 0.9, s.beardS!)
+    fine(c, hx + 3.4, hy + 11.4, hx + 5.4, hy + 14.4, hx + 8.4, hy + 15, 0.9, s.beardS!)
   }
   // kısa sakal (Memo): çene hattında koyu şerit, favoriye bağlı; ağzın üstünde ince bıyık
   if (s.trim) {
@@ -481,13 +630,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.fill()
     c.restore()
     // bıyık
-    c.strokeStyle = s.trim
-    c.lineWidth = 1.7
-    c.lineCap = 'round'
-    c.beginPath()
-    c.moveTo(hx + 6.6, hy + 9.6)
-    c.quadraticCurveTo(hx + 10.4, hy + 7.4, hx + 14.8, hy + 8.4)
-    c.stroke()
+    fine(c, hx + 6.6, hy + 9.6, hx + 10.4, hy + 7.4, hx + 14.8, hy + 8.4, 1.7, s.trim)
     // sakalın örttüğü çene hattı yeniden çekilir
     c.beginPath()
     skull()
@@ -496,7 +639,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.lineWidth = inkW
     c.stroke()
   }
-  // ağız: hafif gülümseme
+  // ağız
   if (happy) {
     // açık gülümseme: üstü düz, altı yuvarlak ağız, içinde dil
     const mouth = () => {
@@ -513,7 +656,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.save()
     c.clip()
     c.beginPath()
-    c.ellipse(hx + 10.8, hy + 14, 2.6, 1.9, 0, 0, Math.PI * 2)
+    c.ellipse(hx + 10.8, hy + 14, 2.6, 1.9, 0, 0, TAU)
     c.fillStyle = '#e8687a'
     c.fill()
     c.restore()
@@ -525,17 +668,21 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.lineJoin = 'round'
     c.stroke()
   } else {
-    c.strokeStyle = s.beard ? '#e8b8a0' : '#a8364a'
-    c.lineWidth = 1.6
+    // gülümseme: geniş, uzak köşe yukarıda; altında dudak gölgesi
     c.beginPath()
-    c.moveTo(hx + 8.5, hy + 10)
-    c.quadraticCurveTo(hx + 11, hy + 11.8, hx + 13.2, hy + 9.6)
+    c.moveTo(hx + 7.6, hy + 10)
+    c.quadraticCurveTo(hx + 10.8, hy + 12.9, hx + 14, hy + 9.5)
+    c.strokeStyle = s.beard ? '#e8b8a0' : fem ? '#b8384e' : '#8e3a3c'
+    c.lineWidth = 1.4
+    c.lineCap = 'round'
+    c.lineJoin = 'round'
     c.stroke()
+    if (!s.beard) fine(c, hx + 9.8, hy + 13.2, hx + 11.2, hy + 13.9, hx + 12.5, hy + 12.9, 0.9, s.trim ? s.trimS! : s.skinS)
   }
   // bıyık (sakalsız): ağzın üstünde iki yana sarkan kalın fırça
   if (s.mustache && !s.beard) {
     c.strokeStyle = INK
-    c.lineWidth = 4.4
+    c.lineWidth = 2.4 + inkW * 0.62
     c.lineCap = 'round'
     c.beginPath()
     c.moveTo(hx + 6.4, hy + 9.2)
@@ -545,6 +692,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.lineWidth = 2.4
     c.stroke()
   }
+  const hsh = { color: s.hairS, dx: -2.8, dy: -2.2 }
   // ön saç
   if (s.long) {
     // tepe: kabarık; yana taranmış iki uçlu perçem; şakaktan kulağın önüne inen ince bir tutam.
@@ -554,12 +702,12 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
       () => {
         c.moveTo(hx - 15.5, hy + 5)
         c.bezierCurveTo(hx - 21, hy - 14, hx - 8, hy - 28, hx + 5, hy - 25)
-        c.bezierCurveTo(hx + 13, hy - 24, hx + 19, hy - 17, hx + 18.4, hy - 9.5)
+        c.bezierCurveTo(hx + 13, hy - 24, hx + 19, hy - 17, hx + 18.4, hy - 10.5)
         // perçem uçları
-        c.quadraticCurveTo(hx + 18.8, hy - 8.6 - fr * 0.6, hx + 16.4, hy - 8.4 - fr)
-        c.quadraticCurveTo(hx + 15, hy - 11.6 - fr * 0.7, hx + 11.4, hy - 13 - fr * 0.5)
-        c.quadraticCurveTo(hx + 11, hy - 10.4 - fr, hx + 8, hy - 9.6 - fr)
-        c.quadraticCurveTo(hx + 6.4, hy - 13 - fr * 0.5, hx + 1, hy - 14.4)
+        c.quadraticCurveTo(hx + 18.8, hy - 9.6 - fr * 0.6, hx + 16.4, hy - 9.4 - fr)
+        c.quadraticCurveTo(hx + 15, hy - 12.4 - fr * 0.7, hx + 11.4, hy - 13.8 - fr * 0.5)
+        c.quadraticCurveTo(hx + 11, hy - 11.4 - fr, hx + 8, hy - 10.6 - fr)
+        c.quadraticCurveTo(hx + 6.4, hy - 13.6 - fr * 0.5, hx + 1, hy - 14.6)
         // şakak: geriye taranır, kulağın önünde sivri bir tutamla biter
         c.quadraticCurveTo(hx - 3.6, hy - 9.6, hx - 4.4, hy - 2)
         c.quadraticCurveTo(hx - 3.8, hy + 5, hx - 5.6, hy + 10.5)
@@ -567,14 +715,15 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
         c.quadraticCurveTo(hx - 11.6, hy - 1, hx - 13, hy + 5.6)
       },
       s.hair,
-      { color: s.hairS, dx: 3.2, dy: -2.4 },
+      hsh,
     )
-    // ayrım çizgisi, teller ve parlama
-    stroke(c, [hx + 1.4, hy - 14.6, hx - 2.6, hy - 20.4, hx - 9, hy - 22.6], 0.9, s.hairS, false)
-    stroke(c, [hx - 9.6, hy - 9, hx - 13.4, hy - 2], 0.9, s.hairS, false)
-    stroke(c, [hx + 8.4, hy - 13, hx + 12.6, hy - 17.6], 0.9, s.hairS, false)
-    stroke(c, [hx - 13, hy - 12, hx - 8, hy - 19.4, hx - 1, hy - 22.2], 2.2, s.hairL, false)
-    stroke(c, [hx + 6, hy - 21.6, hx + 12.4, hy - 19.4, hx + 15.4, hy - 15.4], 1.5, s.hairL, false)
+    // ayrım ve tutam çizgileri (ince mürekkep), tel ve tepede ışık şeridi
+    fine(c, hx + 1.2, hy - 14.6, hx - 1.6, hy - 20, hx - 8.6, hy - 22.8, inkW * 0.3, INK)
+    fine(c, hx + 11.4, hy - 13.8, hx + 12.6, hy - 17.6, hx + 10, hy - 21, inkW * 0.3, INK)
+    fine(c, hx - 9.6, hy - 9, hx - 12.4, hy - 6, hx - 13.4, hy - 1.6, 0.9, s.hairS)
+    fine(c, hx - 15, hy - 9, hx - 12.6, hy - 19.4, hx - 2, hy - 22.6, 2.3, s.hairL)
+    fine(c, hx + 5, hy - 22, hx + 11.4, hy - 21, hx + 15, hy - 16.4, 1.5, s.hairL)
+    fine(c, hx + 3.6, hy - 17, hx + 5.6, hy - 16.6, hx + 7, hy - 15.2, 1.1, s.hairL)
   } else if (s.curly) {
     // kıvırcık: tepede ve ensede lüle lüle, alna düşen iki bukle; favori yok
     blob(
@@ -595,56 +744,98 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
         c.quadraticCurveTo(hx - 13, hy + 4.8, hx - 15, hy + 2.5)
       },
       s.hair,
-      { color: s.hairS, dx: 3, dy: -2.2 },
+      hsh,
     )
-    // bukle kıvrımları ve parlama
-    stroke(c, [hx - 12.4, hy - 20, hx - 9.6, hy - 17.6, hx - 10.4, hy - 14.4], 0.9, s.hairS, false)
-    stroke(c, [hx - 3, hy - 24.4, hx - 0.4, hy - 21.6, hx - 2, hy - 18.4], 0.9, s.hairS, false)
-    stroke(c, [hx + 8, hy - 24.8, hx + 9.6, hy - 21.4, hx + 7.4, hy - 18.6], 0.9, s.hairS, false)
-    stroke(c, [hx - 14.4, hy - 8.4, hx - 12, hy - 6, hx - 13, hy - 3], 0.9, s.hairS, false)
-    stroke(c, [hx - 14.6, hy - 13, hx - 12.6, hy - 17.4, hx - 8.4, hy - 19], 1.9, s.hairL, false)
-    stroke(c, [hx - 5.4, hy - 21.6, hx - 1.4, hy - 24, hx + 2.6, hy - 23.4], 1.7, s.hairL, false)
-    stroke(c, [hx + 9.4, hy - 22.6, hx + 12.6, hy - 22.4], 1.5, s.hairL, false)
+    // bukle kıvrımları (tek yolda) ve lülelerin sırtında ışık
+    c.beginPath()
+    for (const [bx, by, r] of [[-11, -16, 3.4], [-1.6, -20.4, 3.6], [8.4, -20.6, 3.4], [-13.4, -5.4, 2.8], [14.4, -15.4, 2.6], [-5.4, -13.4, 2.6], [3.6, -15, 2.4]]) {
+      c.moveTo(hx + bx + r, hy + by)
+      c.arc(hx + bx, hy + by, r, 0, Math.PI * 0.9)
+    }
+    c.strokeStyle = s.hairS
+    c.lineWidth = 0.9
+    c.lineCap = 'round'
+    c.stroke()
+    fine(c, hx - 16, hy - 11.6, hx - 14.6, hy - 17, hx - 9.4, hy - 19.4, 1.9, s.hairL)
+    fine(c, hx - 6, hy - 22, hx - 2, hy - 25, hx + 2.6, hy - 24.4, 1.7, s.hairL)
+    fine(c, hx + 8.6, hy - 23.6, hx + 11.6, hy - 24, hx + 13.6, hy - 22.2, 1.5, s.hairL)
   } else if (s.hat !== 'yazma') {
-    blob(
-      c,
-      () => {
-        c.moveTo(hx - 15.5, hy + 4)
-        c.bezierCurveTo(hx - 20, hy - 12, hx - 12, hy - 25, hx + 2, hy - 23)
-        // dalgalı tepe
-        c.quadraticCurveTo(hx + 6, hy - 27, hx + 10, hy - 22.5)
-        c.quadraticCurveTo(hx + 16, hy - 23, hx + 17, hy - 15)
-        c.quadraticCurveTo(hx + 19.5, hy - 12.5, hx + 16.5, hy - 10.5)
-        c.quadraticCurveTo(hx + 12, hy - 13.5, hx + 7, hy - 12)
-        c.quadraticCurveTo(hx + 2, hy - 14.5, hx - 2, hy - 11)
-        c.quadraticCurveTo(hx - 5.5, hy - 7, hx - 7, hy - 1)
-        // favori sakala bağlanır
-        c.lineTo(hx - 7.2, hy + 5)
-        c.quadraticCurveTo(hx - 11, hy + 7, hx - 15.5, hy + 4)
-      },
-      s.hair,
-      { color: s.hairS, dx: 3, dy: -2.2 },
-    )
-    stroke(c, [hx - 10, hy - 13, hx - 5, hy - 19.5, hx + 3, hy - 20.6], 2, s.hairL, false)
-    stroke(c, [hx + 7, hy - 19.5, hx + 12, hy - 18.5], 1.6, s.hairL, false)
+    if (s.hat) {
+      // başlığın altında kalan saç: yalnız yanlar ve ense
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 15.5, hy + 4)
+          c.bezierCurveTo(hx - 19.6, hy - 8, hx - 13, hy - 19, hx + 1, hy - 18.5)
+          c.lineTo(hx + 15, hy - 14.5)
+          c.quadraticCurveTo(hx + 12, hy - 13.5, hx + 7, hy - 12)
+          c.quadraticCurveTo(hx + 2, hy - 14.5, hx - 2, hy - 11)
+          c.quadraticCurveTo(hx - 5.5, hy - 7, hx - 7, hy - 1)
+          c.lineTo(hx - 7.2, hy + 5)
+          c.quadraticCurveTo(hx - 11, hy + 7, hx - 15.5, hy + 4)
+        },
+        s.hair,
+        hsh,
+      )
+    } else {
+      // kısa saç (Memo): yanlar kısa, tepe hacimli; öne ve yukarı kabaran üç tutam
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 15.5, hy + 4)
+          c.bezierCurveTo(hx - 20, hy - 12, hx - 13, hy - 25.5, hx - 1.4, hy - 23.6)
+          c.quadraticCurveTo(hx + 2.4, hy - 28.8, hx + 7.6, hy - 24.2)
+          c.quadraticCurveTo(hx + 12.4, hy - 27.6, hx + 14.8, hy - 21.8)
+          c.quadraticCurveTo(hx + 20, hy - 20.4, hx + 18.4, hy - 14.4)
+          c.quadraticCurveTo(hx + 19.6, hy - 11.8, hx + 16.5, hy - 10.8)
+          c.quadraticCurveTo(hx + 12, hy - 13.8, hx + 7, hy - 12.2)
+          c.quadraticCurveTo(hx + 2, hy - 14.6, hx - 2, hy - 11)
+          c.quadraticCurveTo(hx - 5.5, hy - 7, hx - 7, hy - 1)
+          // favori sakala bağlanır
+          c.lineTo(hx - 7.2, hy + 5)
+          c.quadraticCurveTo(hx - 11, hy + 7, hx - 15.5, hy + 4)
+        },
+        s.hair,
+        hsh,
+      )
+      // tutam aralarında ince mürekkep, tepede ışık şeridi
+      fine(c, hx + 7.6, hy - 24.2, hx + 6.6, hy - 20.4, hx + 2.6, hy - 18.4, inkW * 0.3, INK)
+      fine(c, hx + 14.8, hy - 21.8, hx + 13.6, hy - 18.4, hx + 10, hy - 16.6, inkW * 0.3, INK)
+      fine(c, hx + 7, hy - 12.2, hx + 6.4, hy - 14.6, hx + 4, hy - 15.8, 0.9, s.hairS)
+      fine(c, hx - 0.6, hy - 22, hx + 2.6, hy - 25.6, hx + 5.4, hy - 23.8, 1.5, s.hairL)
+      fine(c, hx + 9.4, hy - 23.4, hx + 12, hy - 24.6, hx + 13.4, hy - 22, 1.3, s.hairL)
+    }
+    fine(c, hx - 15.4, hy - 6, hx - 13.6, hy - 16.4, hx - 4, hy - 20.4, 2.1, s.hairL)
+    // favoride kısa kesim telleri
+    fine(c, hx - 11.4, hy - 4, hx - 12.4, hy - 0.6, hx - 12, hy + 3, 0.9, s.hairS)
+  } else {
+    // yazmanın altından görünen ortadan ayrık saç
+    c.beginPath()
+    c.moveTo(hx - 3.6, hy - 6.4)
+    c.quadraticCurveTo(hx + 6, hy - 11.8, hx + 16.4, hy - 7.6)
+    c.quadraticCurveTo(hx + 7, hy - 10.4, hx - 3.2, hy - 4)
+    c.closePath()
+    c.fillStyle = s.hair
+    c.fill()
   }
-  // kulak: saçın arasından görünür (yazma kapatır)
+  // kulak: saçın arasından görünür (yazma kapatır); içinde kıvrım çizgisi
   if (s.hat !== 'yazma') {
-    blob(
-      c,
-      () => {
-        c.ellipse(hx - 9.6, hy + 1.6, 2.6, 3.6, 0.2, 0, Math.PI * 2)
-      },
-      s.skin,
-      { color: s.skinS, dx: 1, dy: -1 },
-    )
+    c.beginPath()
+    c.ellipse(hx - 9.6, hy + 1.6, 2.6, 3.6, 0.2, 0, TAU)
+    c.strokeStyle = INK
+    c.lineWidth = inkW
+    c.stroke()
+    c.fillStyle = s.skin
+    c.fill()
+    fine(c, hx - 10.4, hy - 0.2, hx - 8, hy + 1.2, hx - 9.6, hy + 3.4, 0.9, s.skinS)
   }
   if (s.hat) drawHat(c, s, hx, hy)
 }
 
 function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
   const col = s.hatC!
-  const sh = { color: s.hatS!, dx: 3, dy: -2.2 }
+  const dark = s.hatS!
+  const sh = { color: dark, dx: -3, dy: -2.2 }
   switch (s.hat) {
     case 'kasket':
       // sekiz köşe kasket: yayvan tepe, öne uzanan siper
@@ -660,7 +851,15 @@ function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
         col,
         sh,
       )
-      stroke(c, [hx - 12, hy - 15, hx - 4, hy - 20.5, hx + 6, hy - 20.5], 1.8, s.hairL, false)
+      // dilim dikişleri, tepe düğmesi, siperin kökü ve ışık
+      fine(c, hx - 2, hy - 23, hx - 8, hy - 19, hx - 9.6, hy - 11.6, 0.9, dark)
+      fine(c, hx - 2, hy - 23, hx + 6, hy - 20, hx + 8.4, hy - 13.4, 0.9, dark)
+      fine(c, hx + 17, hy - 13, hx + 13, hy - 12.6, hx + 9, hy - 12.9, inkW * 0.3, INK)
+      c.beginPath()
+      c.ellipse(hx - 2, hy - 23.2, 1.9, 1.1, -0.1, 0, TAU)
+      c.fillStyle = INK
+      c.fill()
+      fine(c, hx - 13.6, hy - 13, hx - 11.6, hy - 18.6, hx - 6, hy - 21, 1.8, s.hairL)
       break
     case 'toque':
       // usta kalfası: beyaz bant, üstünde kabarık tepe
@@ -676,7 +875,10 @@ function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
         col,
         sh,
       )
-      stroke(c, [hx - 13.4, hy - 13.6, hx, hy - 17.6, hx + 15, hy - 14.6], 1.2, s.hatS!, false)
+      // bant ve kabarıkların arasındaki kıvrımlar
+      fine(c, hx - 13.4, hy - 15.4, hx, hy - 19.6, hx + 15, hy - 16.4, 1.1, dark)
+      fine(c, hx - 3, hy - 30, hx - 4.4, hy - 25.6, hx - 3.4, hy - 20.6, 1, dark)
+      fine(c, hx + 13, hy - 28, hx + 9.6, hy - 25, hx + 8.6, hy - 20, 1, dark)
       break
     case 'kalpak':
       // yün kalpak: silindir, üstü hafif bombeli
@@ -692,8 +894,17 @@ function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
         col,
         sh,
       )
-      stroke(c, [hx - 10, hy - 14, hx - 9, hy - 24], 1.4, s.hairL, false)
-      stroke(c, [hx - 3, hy - 16, hx - 2.4, hy - 26], 1.2, s.hairL, false)
+      // yün dokusu: kısa kıvrık teller (tek yolda); sol kenarda ışık
+      c.beginPath()
+      for (const [dx, dy] of [[-9, -24], [-2, -26.4], [5, -25], [-6, -18.4], [1.6, -20], [8.6, -19], [-10.4, -13.6], [-2.4, -15.4]]) {
+        c.moveTo(hx + dx, hy + dy)
+        c.quadraticCurveTo(hx + dx + 1.5, hy + dy + 1.4, hx + dx + 0.5, hy + dy + 3.2)
+      }
+      c.strokeStyle = dark
+      c.lineWidth = 1
+      c.lineCap = 'round'
+      c.stroke()
+      fine(c, hx - 12.4, hy - 13, hx - 12.6, hy - 19, hx - 11.8, hy - 24.4, 1.5, GLINT)
       break
     case 'yazma':
       // yazma: başı sarar, enseden omuza düşer, çenenin altında düğümlenir
@@ -710,24 +921,30 @@ function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
         col,
         sh,
       )
+      // kumaş kıvrımları ve tepede ışık
+      fine(c, hx - 8, hy - 3, hx - 12.6, hy + 6, hx - 10.4, hy + 16.4, 0.9, dark)
+      fine(c, hx - 4, hy - 7, hx - 9, hy - 10.4, hx - 12.4, hy - 8, 0.9, dark)
+      fine(c, hx - 15, hy - 6, hx - 14, hy - 17, hx - 5, hy - 21.6, 1.7, GLINT)
       // oya ve puantiye
       c.fillStyle = '#f6d98a'
-      for (const [dx, dy] of [[-12, -8], [-6, -17], [4, -18], [-13, 6], [11, -13]]) {
-        c.beginPath()
-        c.arc(hx + dx, hy + dy, 1.1, 0, Math.PI * 2)
-        c.fill()
+      c.beginPath()
+      for (const [dx, dy] of [[-12, -9], [-6, -16.4], [4, -18], [-14, 7], [11, -13.6], [-9.4, 13]]) {
+        c.moveTo(hx + dx + 1.1, hy + dy)
+        c.arc(hx + dx, hy + dy, 1.1, 0, TAU)
       }
+      c.fill()
       break
   }
 }
 
 /**
  * Karakteri çizer. (x, y): ayak tabanı orta noktası ekran pikselinde, size: karakter boyu pikselde.
- * flip: sola bakar. t: saniye (atkı ve saç salınımı).
+ * flip: sola bakar. t: saniye (atkı ve saç salınımı, nefes).
  */
 export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x: number, y: number, size: number, flip: boolean, t: number, opts: { moving?: boolean; sx?: number; sy?: number; scarf?: string; scarfS?: string } = {}) {
   const s0 = LOOKS[look]
   const s = opts.scarf ? { ...s0, scarf: opts.scarf, scarfS: opts.scarfS ?? s0.scarfS } : s0
+  const moving = !!opts.moving
   c.save()
   c.translate(x, y)
   const k = size / 100
@@ -738,17 +955,44 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   const hipY = HIP_Y + bob
   const tx = lean * 1.3
   const ty = hipY + 1
-  const sY = ty - 22
   const [fa, na] = pose.arms
   const [fl, nl] = pose.legs
+  const tilt = pose.tilt ?? 0
+  const lift = pose.lift ?? 0
+  // nefes: dururken omuzlar ve baş çok hafif iner kalkar (saate bağlı)
+  const breath = pose.ground && !moving ? Math.sin(t * 2.6 + 0.9) * 0.45 : 0
+  const sY = ty - 22 + breath
+  // omuz dönüşü: öne savrulan kolun omzu da biraz öne gelir
+  const twist = (a: number) => Math.max(-1.6, Math.min(1.6, a * 0.03))
+  // baş: koşarken adımla hafifçe sallanır, gövde eğilince yüz ileriye bakmayı sürdürür
+  const nod = (moving && pose.ground ? nl[0] * 0.0011 : 0) - tilt * 0.45
+  /** üst gövde kalçadan eğilir; bacaklar eğilmez */
+  const upper = () => {
+    c.translate(hipX, hipY)
+    c.rotate(tilt)
+    c.translate(-hipX, -hipY)
+  }
+  if (pose.ground) {
+    // temas gölgesi: yerde, ayakların altında
+    c.beginPath()
+    c.ellipse(lean * 0.5, -0.4, 13.5, 2.3, 0, 0, TAU)
+    c.fillStyle = CONTACT
+    c.fill()
+  }
   // uzak kol ve bacak önce, gövde, yakın bacak, atkı, kafa, yakın kol
-  drawArm(c, s, tx - 4, sY, fa[0], fa[1], false)
+  c.save()
+  upper()
+  drawArm(c, s, tx - 4 + twist(fa[0]), sY, fa[0], fa[1], false)
+  c.restore()
   drawLeg(c, s, hipX - 2.5, hipY, fl[0], fl[1], false)
   drawLeg(c, s, hipX + 2, hipY, nl[0], nl[1], true)
+  c.save()
+  upper()
   if (s.prop === 'staff') {
     // çoban değneği: arkada, yere basar
     stroke(c, [tx - 15, ty - 44, tx - 13.5, -1.5], 2.6, '#6a4a2e')
     stroke(c, [tx - 15, ty - 44, tx - 11, ty - 48, tx - 8.5, ty - 44.5], 2.6, '#6a4a2e')
+    stroke(c, [tx - 15.6, ty - 40, tx - 14.5, ty - 12], 0.9, '#9a744a', false)
   }
   drawTorso(c, s, tx, ty)
   if (s.robe) {
@@ -765,8 +1009,11 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
       s.pants,
       { color: s.pantsS, dx: -3, dy: -0.5 },
     )
-    stroke(c, [tx - 4, ty + 2, tx - 5, -bob - 8], 1, s.pantsS, false)
-    stroke(c, [tx + 4, ty + 4, tx + 5, -bob - 8], 1, s.pantsS, false)
+    // pililer, kuşak ve etek ucunda ışık
+    fine(c, tx - 4, ty - 1, tx - 5.4, ty + 12, tx - 5, -bob - 7.5, 1, s.pantsS)
+    fine(c, tx + 3, ty + 1, tx + 4.6, ty + 12, tx + 4.4, -bob - 7.5, 1, s.pantsS)
+    fine(c, tx - 9, ty - 4.6, tx, ty - 3.2, tx + 6, ty - 4.4, 1.5, s.coatS)
+    fine(c, tx - 9.4, ty + 2, tx - 10.6, ty + 12, tx - 9.8, -bob - 9, 1.2, GLINT)
   }
   if (s.prop === 'apron') {
     // önlük: göğüsten dize
@@ -782,36 +1029,46 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
       '#f6f2ea',
       { color: '#cfc8ba', dx: -2, dy: 0 },
     )
+    // bel bağı ve cep
+    fine(c, tx - 4, ty - 5, tx + 2, ty - 4, tx + 7.6, ty - 5.2, 0.9, '#cfc8ba')
+    fine(c, tx - 1.6, ty + 1, tx + 1.6, ty + 3.4, tx + 5, ty + 1, 0.9, '#cfc8ba')
   }
   if (s.prop === 'saz') {
     // bağlama: gövde belde, sap omuza doğru
     stroke(c, [tx + 2, ty - 8, tx + 22, ty - 30], 2.4, '#7a4a24')
+    stroke(c, [tx + 20.4, ty - 30.6, tx + 23.4, ty - 28.4], 1.5, INK, false)
     blob(
       c,
       () => {
-        c.ellipse(tx + 1, ty - 6, 8.5, 6.2, -0.75, 0, Math.PI * 2)
+        c.ellipse(tx + 1, ty - 6, 8.5, 6.2, -0.75, 0, TAU)
       },
       '#b4733c',
-      { color: '#7a4a24', dx: 2, dy: -2 },
+      { color: '#7a4a24', dx: -2, dy: -2 },
     )
     c.fillStyle = INK
     c.beginPath()
-    c.arc(tx + 2, ty - 7, 1.3, 0, Math.PI * 2)
+    c.arc(tx + 2, ty - 7, 1.3, 0, TAU)
     c.fill()
+    fine(c, tx - 4.6, ty - 5.4, tx - 3.4, ty - 9.4, tx + 0.4, ty - 11, 1.2, GLINT)
   }
-  if (!s.bare) drawScarf(c, s, tx, ty, t, !!opts.moving)
+  if (!s.bare) drawScarf(c, s, tx, ty + breath, t, moving, lift)
   // kafa boyuna göre biraz büyük: sevimli oran
   c.save()
-  c.translate(tx + 1, ty - 28)
+  c.translate(tx + 1, ty - 28 + breath)
+  c.rotate(nod)
   c.scale(1.14, 1.14)
   c.translate(-(tx + 1), -(ty - 28))
-  drawHead(c, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0, pose.mood === 'happy')
+  drawHead(c, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0, lift, t, moving, pose.mood === 'happy')
   c.restore()
-  drawArm(c, s, tx + 4, sY, na[0], na[1], true)
+  drawArm(c, s, tx + 4 + twist(na[0]), sY, na[0], na[1], true)
+  c.restore()
   c.restore()
 }
 
-/** Koşu döngüsü (hero.py ile aynı mantık): 0 ve 4 temas, 2 ve 6 geçiş. */
+/**
+ * Koşu döngüsü: 0 ve 0,5 temas, 0,25 ve 0,75 geçiş. Gövde hafifçe öne eğilir; saç ve atkı her adımda bir kez
+ * yaylanır (ikincil hareket), kollar bacaklara ters salınır ve öndeki kol dirsekten daha çok bükülür.
+ */
 export function gait(phase: number): Pose {
   const ph = phase * Math.PI * 2 + Math.PI / 2
   const sn = Math.sin(ph)
@@ -822,25 +1079,28 @@ export function gait(phase: number): Pose {
     const bend = v > 0 ? 10 + 70 * Math.pow(v, 1.2) : 6 + 12 * -v
     return [th, bend]
   }
+  const spring = Math.sin(ph * 2)
   return {
     legs: [leg(-1), leg(1)],
     arms: [
-      [30 * sn, 30 * sn + 40 + 25 * Math.max(0, sn)],
-      [-30 * sn, -30 * sn + 40 + 25 * Math.max(0, -sn)],
+      [32 * sn, 32 * sn + 42 + 26 * Math.max(0, sn)],
+      [-32 * sn, -32 * sn + 42 + 26 * Math.max(0, -sn)],
     ],
-    lean: 2,
+    lean: 1.2,
+    tilt: 0.075 + 0.012 * spring,
     ground: true,
-    hair: -0.6,
+    hair: 0.5 + 0.22 * spring,
+    lift: 0.12 * spring,
   }
 }
 
 export const POSES: Record<string, Pose> = {
   idle: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [-8, 10]], ground: true },
-  jump: { legs: [[-16, 14], [52, 96]], arms: [[-50, -30], [115, 140]], hair: 0.8 },
-  apex: { legs: [[24, 80], [48, 96]], arms: [[-95, -70], [100, 125]], hair: 0.6, bob: -2 },
-  fall: { legs: [[-20, 24], [18, 32]], arms: [[-120, -140], [105, 125]], hair: 1 },
-  land: { legs: [[22, 70], [42, 90]], arms: [[-40, -15], [45, 75]], ground: true, hair: 0.5 },
-  wall: { legs: [[8, 30], [42, 72]], arms: [[60, 80], [150, 172]] },
-  dash: { legs: [[-80, 10], [-55, 40]], arms: [[-72, -82], [-82, -92]], lean: 4, hair: -1 },
-  wave: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [150, 190]], ground: true },
+  jump: { legs: [[-16, 14], [52, 96]], arms: [[-50, -30], [115, 140]], hair: 0.7, lift: -0.5, tilt: 0.04 },
+  apex: { legs: [[24, 80], [48, 96]], arms: [[-95, -70], [100, 125]], hair: 0.6, lift: 0.25, bob: -2 },
+  fall: { legs: [[-20, 24], [18, 32]], arms: [[-120, -140], [105, 125]], hair: 0.9, lift: 1, tilt: -0.03 },
+  land: { legs: [[22, 70], [42, 90]], arms: [[-40, -15], [45, 75]], ground: true, hair: 0.5, lift: 0.5, tilt: 0.1 },
+  wall: { legs: [[8, 30], [42, 72]], arms: [[60, 80], [112, 126]], lift: 0.4 },
+  dash: { legs: [[-78, 8], [-52, 38]], arms: [[-78, -88], [-92, -102]], lean: -2.5, tilt: 0.36, hair: 1.3 },
+  wave: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [105, 140]], ground: true },
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { cityVersion } from './mapVersion'
 import { adoptable, cloudPart, mergeSaves, normalizeSave, type Player, type Save } from '@/lib/storage'
 
 /**
@@ -53,5 +54,23 @@ export async function pushSave(s: Save) {
     await fetch('/api/players/save', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...auth(s.player) }, body: JSON.stringify({ data: cloudPart(s) }), keepalive: true })
   } catch {
     /* bir sonraki değişiklikte yeniden denenir */
+  }
+}
+
+/**
+ * Cihazdaki rekorları skor tablosuna aktarır (açılışta bir kez): tabloya yazılmadan önce bitirilmiş şehirler, eski
+ * sürümde yazılmış ama haritası değişmemiş şehirler ya da giriş yapmadan oynanan koşular tabloda görünsün. Sunucu
+ * yalnız daha iyiyi yazar, oynama sayısını artırmaz. Yalnız şehrin bugünkü haritasında, Rahat Mod kapalıyken koşulmuş rekorlar gider.
+ */
+export async function syncBests(s: Save) {
+  if (!s.player) return
+  const batch = Object.entries(s.best)
+    .filter(([id, b]) => !b.stale && !b.relaxed && b.v === cityVersion(id))
+    .map(([level, b]) => ({ level, timeMs: b.timeMs, deaths: b.deaths, items: b.items.filter(Boolean).length }))
+  if (!batch.length) return
+  try {
+    await fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: s.player.id, token: s.player.token, batch }) })
+  } catch {
+    /* bir sonraki açılışta yeniden denenir */
   }
 }

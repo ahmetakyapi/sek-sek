@@ -1,0 +1,67 @@
+-- Şehir başına harita sürümü: genel sürümle (7, 8) yazılmış skorlar, haritası o günden beri değişmemiş şehirlerde
+-- yeni anahtara kopyalanır (eski satırlar silinmez). Oyuncu başına en iyi süreli satır taşınır, en az düşüş ve en çok
+-- hatıra iki sürümün birleşimidir. Tekrar çalışırsa bir şey değişmez (ON CONFLICT DO NOTHING).
+INSERT INTO "seksek_scores" ("level", "name", "player_id", "time_ms", "deaths", "items", "min_deaths", "max_items", "plays", "created_at")
+SELECT DISTINCT ON (m.new_key, s.player_id) m.new_key, s.name, s.player_id, s.time_ms, s.deaths, s.items,
+  min(coalesce(s.min_deaths, s.deaths)) OVER (PARTITION BY m.new_key, s.player_id),
+  max(coalesce(s.max_items, s.items)) OVER (PARTITION BY m.new_key, s.player_id),
+  sum(s.plays) OVER (PARTITION BY m.new_key, s.player_id), s.created_at
+FROM "seksek_scores" s
+JOIN (VALUES
+  ('istanbul@7', 'istanbul@1sv4xzt'),
+  ('istanbul@8', 'istanbul@1sv4xzt'),
+  ('edirne@7', 'edirne@1dneooe'),
+  ('edirne@8', 'edirne@1dneooe'),
+  ('kocaeli@7', 'kocaeli@1ggkzs5'),
+  ('kocaeli@8', 'kocaeli@1ggkzs5'),
+  ('bursa@7', 'bursa@1p7g6uy'),
+  ('bursa@8', 'bursa@1p7g6uy'),
+  ('eskisehir@8', 'eskisehir@iebt82'),
+  ('canakkale@7', 'canakkale@1iyvdqy'),
+  ('canakkale@8', 'canakkale@1iyvdqy'),
+  ('izmir@7', 'izmir@1aaqgd6'),
+  ('izmir@8', 'izmir@1aaqgd6'),
+  ('antalya@7', 'antalya@nh2jzg'),
+  ('antalya@8', 'antalya@nh2jzg'),
+  ('ankara@7', 'ankara@81ar1c'),
+  ('ankara@8', 'ankara@81ar1c'),
+  ('konya@7', 'konya@h1hq6z'),
+  ('konya@8', 'konya@h1hq6z'),
+  ('nevsehir@7', 'nevsehir@mpsqhu'),
+  ('nevsehir@8', 'nevsehir@mpsqhu'),
+  ('kayseri@8', 'kayseri@rqq9ei'),
+  ('adana@7', 'adana@1pchp4f'),
+  ('adana@8', 'adana@1pchp4f'),
+  ('hatay@8', 'hatay@we4qxd'),
+  ('gaziantep@7', 'gaziantep@f6045h'),
+  ('gaziantep@8', 'gaziantep@f6045h'),
+  ('sanliurfa@7', 'sanliurfa@1h7p66s'),
+  ('sanliurfa@8', 'sanliurfa@1h7p66s'),
+  ('diyarbakir@7', 'diyarbakir@22452d'),
+  ('diyarbakir@8', 'diyarbakir@22452d'),
+  ('mardin@7', 'mardin@rjpmbo'),
+  ('mardin@8', 'mardin@rjpmbo'),
+  ('malatya@7', 'malatya@1cjo61s'),
+  ('malatya@8', 'malatya@1cjo61s'),
+  ('corum@7', 'corum@1df0pfz'),
+  ('corum@8', 'corum@1df0pfz'),
+  ('sinop@7', 'sinop@upmmd4'),
+  ('sinop@8', 'sinop@upmmd4'),
+  ('ordu@7', 'ordu@5gw88x'),
+  ('ordu@8', 'ordu@5gw88x'),
+  ('trabzon@7', 'trabzon@1hq2xv8'),
+  ('trabzon@8', 'trabzon@1hq2xv8'),
+  ('sivas@7', 'sivas@ugob7c'),
+  ('sivas@8', 'sivas@ugob7c'),
+  ('van@7', 'van@1j5ieyt'),
+  ('van@8', 'van@1j5ieyt'),
+  ('erzurum@7', 'erzurum@1ij234b'),
+  ('erzurum@8', 'erzurum@1ij234b'),
+  ('ardahan@7', 'ardahan@782qd9'),
+  ('ardahan@8', 'ardahan@782qd9'),
+  ('bayburt@7', 'bayburt@17desu6'),
+  ('bayburt@8', 'bayburt@17desu6')
+) AS m(old_key, new_key) ON m.old_key = s.level
+WHERE s.player_id IS NOT NULL
+ORDER BY m.new_key, s.player_id, s.time_ms ASC, s.created_at ASC
+ON CONFLICT ("level", "player_id") DO NOTHING

@@ -19,7 +19,7 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120,
       <div className="stamp absolute right-4 top-5 origin-top-right rotate-[5deg] text-center text-[#1a1420] shadow-lg short:top-3 short:scale-[0.7]">
         <div className="border-2 border-dashed border-[#1a1420]/40 px-2.5 py-1">
           <p className="font-display text-3xl leading-none">{plate}</p>
-          <p className="text-[9px] font-bold tracking-[0.15em]">{level.name.toLocaleUpperCase('tr')}</p>
+          <p className="text-[11px] font-bold tracking-[0.1em]">{level.name.toLocaleUpperCase('tr')}</p>
         </div>
       </div>
       <div className="absolute bottom-2 left-6 right-28">
@@ -37,13 +37,16 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120,
   )
 }
 
-export function Toggle({ label, on, onChange, hint }: { label: string; on: boolean; onChange: () => void; hint?: string }) {
+export function Toggle({ label, on, onChange, hint, tag }: { label: string; on: boolean; onChange: () => void; hint?: string; /** adın yanında hep görünen kısa uyarı (alçak ekranda açıklama gizlenir, bu kalır) */ tag?: string }) {
   return (
     <button type="button" role="switch" aria-checked={on} onClick={onChange} className="flex w-full items-center justify-between gap-3 px-1 py-2 text-left short:py-1.5">
       <span className="min-w-0">
-        <span className="block text-[14px] font-semibold text-cream short:text-[13px]">{label}</span>
+        <span className="block text-[14px] font-semibold text-cream short:text-[13px]">
+          {label}
+          {tag && <span className="ml-2 whitespace-nowrap text-[11px] font-bold tracking-[0.06em] text-accent-2">{tag}</span>}
+        </span>
         {/* alçak ekranda açıklama gizlenir: ayarlar kaydırmadan sığsın (adı başlık olarak kalır) */}
-        {hint && <span className="block text-[11px] text-muted short:hidden">{hint}</span>}
+        {hint && <span className="block text-[12px] leading-snug text-muted short:hidden">{hint}</span>}
       </span>
       <span className="px-switch" data-on={on} />
     </button>

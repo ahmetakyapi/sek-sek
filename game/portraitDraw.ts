@@ -22,6 +22,10 @@ const MID_INKW = 1.6
 const FACE_INKW = 1.45
 /** sağ kenardan vuran sıcak ışık */
 const RIM = 'rgba(255,220,170,0.8)'
+/** yüzün gölgeli kenarında daha yumuşak kenar ışığı */
+const FACE_RIM = 'rgba(255,228,196,0.6)'
+/** tenin ışık alan yerlerinde (yanak, dudak, burun) küçük parlama */
+const GLOSS = 'rgba(255,255,255,0.5)'
 /** yüz uzadıkça omuzlar, yaka ve atkı bu kadar aşağı iner */
 const BODY_DY = 6
 
@@ -219,6 +223,13 @@ function shoulders(c: Ctx, look: Look, s: Skin) {
     curve(c, 24.6, 100.6, 29, 98.6, 33, 98, 1.2, s.coatL)
     stitch(c, 6.4, 110.2, 14.4, 105.4, 22.6, 105.8, s.coatL)
     stitch(c, 79, 105.6, 88, 104.8, 95, 110.4, s.coat)
+  }
+  if (look !== 'uktun' && look !== 'memo') {
+    // kumaş kıvrımları: koltuk altından yakaya doğru toplanır
+    curve(c, 9, 113, 15, 108.4, 19.6, 108.6, 1, s.coatS)
+    curve(c, 24.4, 105, 28.6, 100.4, 33.6, 99.4, 1, s.coatS)
+    curve(c, 82.4, 108, 87, 108.4, 92.6, 113.4, 1, s.coatS)
+    curve(c, 26, 99.4, 30, 97.4, 34, 97, 1.2, s.coatL)
   }
   if (look === 'memo') {
     // ceket: omuz dikişinin yanında çift dikiş, omuzda apolet katı
@@ -483,6 +494,13 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   // ışıltı: büyük sol üstte, küçük sağ altta
   ell(c, x + gx - ir * 0.4, y - ir * 0.36, ir * 0.33, ir * 0.33, '#ffffff')
   ell(c, x + gx + ir * 0.44, y + ir * 0.5, ir * 0.15, ir * 0.15, '#ffffff')
+  // üst göz kapağı: kıvrım ile kirpik çizgisi arasında hafif ton
+  c.beginPath()
+  c.moveTo(x - rx * 0.92, y - ry * 0.5)
+  c.quadraticCurveTo(x, y - ry - 3.3, x + rx * 0.95, y - ry * 0.5)
+  c.quadraticCurveTo(x, y - ry - 1, x - rx * 0.92, y - ry * 0.5)
+  c.fillStyle = fade(s.skinS, 0.5)
+  c.fill()
   // üst kirpik çizgisi: kalın, dış uçta hafif kalkar
   c.beginPath()
   c.moveTo(x - rx - 0.9, y - 0.1)
@@ -505,6 +523,8 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   c.globalAlpha = 0.16
   curve(c, x - rx * 0.6, y + ry * 1.3, x, y + ry * 1.62, x + rx * 0.7, y + ry * 1.3, 1.3, s.skinS)
   c.globalAlpha = 1
+  // alt kirpik çizgisinin dış ucu: bakışı çerçeveler
+  curve(c, ox, y + 0.3, ox - out * rx * 0.12, y + ry * 0.62, ox - out * rx * 0.42, y + ry * 0.86, 0.75, INK)
 }
 
 /** kaş: iç ucu dolgun, dış ucu incelen dolu bir fırça izi; th kalınlık */
@@ -541,18 +561,21 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
   const th = look === 'uktun' ? 1.2 : fem ? 1 : look === 'memo' ? 1.7 : look === 'genc' ? 1.15 : 2.1
   brow(c, 51.8, 45.6, 45.4, 41.2, 38, 46.4, th, s.brow)
   brow(c, 59.2, 45.3, 64.2, 41.1, 69.8, 45.6, th, s.brow)
-  if (look === 'memo') {
-    // kaş kılları: uca doğru yatan kısa teller
+  if (th > 1.5) {
+    // kalın kaşta kıllar: uca doğru yatan kısa teller
     c.beginPath()
     for (const [x, y, d] of [[49.6, 44.6, -1], [47, 43.6, -1], [44.2, 43.3, -1], [41.6, 43.9, -1], [61, 44.3, 1], [63.4, 43.3, 1], [65.8, 43.5, 1]]) {
       c.moveTo(x, y + 0.9)
       c.lineTo(x + d * 1.3, y)
     }
-    c.strokeStyle = s.hairL
+    c.strokeStyle = look === 'memo' ? s.hairL : 'rgba(255,255,255,0.3)'
     c.lineWidth = 0.4
     c.lineCap = 'round'
     c.stroke()
   }
+  // yanağın üstünde ve burun kanadında küçük parlama: ten canlı dursun
+  ell(c, 36.8, 62.6, 1.7, 0.95, GLOSS, -0.5)
+  ell(c, 67.6, 62.2, 1.1, 0.7, 'rgba(255,255,255,0.36)', 0.4)
   // burun: gözlerin arasından inen köprü, yuvarlak uç, tek delik ve uçta ışık
   if (fem) curve(c, 59.6, 58, 62, 63.4, 60.4, 65.8, 1.1, s.skinS)
   else {
@@ -674,6 +697,7 @@ function mouth(c: Ctx, look: Look, s: Skin) {
     c.quadraticCurveTo(56.4, 75.4 + y, 51, 70.4 + y)
     c.fillStyle = look === 'teyze' ? '#e0707a' : s.blush
     c.fill()
+    ell(c, 56.8, 73.2 + y, 1.7, 0.5, 'rgba(255,255,255,0.38)', -0.08)
   }
   curve(c, 49.4, 68.8 + y, 56, 73 + y, 62.8, 68.2 + y, 1.8, col)
   if (!s.beard) {
@@ -924,63 +948,57 @@ function longHairFront(c: Ctx, s: Skin) {
   hairRim(c, s, 65.6, 18.6, 79.6, 21.6, 78.3, 43.6)
 }
 
+function shortHairPath(c: Ctx) {
+  c.moveTo(25.6, 58.5)
+  c.bezierCurveTo(19.5, 38, 28, 15.5, 49, 16)
+  // dalgalı tepe: öne doğru kabaran iki tutam
+  c.quadraticCurveTo(57, 10.5, 64, 17.6)
+  c.quadraticCurveTo(76.5, 19, 78.6, 33)
+  c.quadraticCurveTo(81.6, 41, 77.4, 49.5)
+  // alın çizgisi
+  c.quadraticCurveTo(76.2, 41.5, 71, 37.6)
+  c.quadraticCurveTo(64, 40.2, 57.4, 35.6)
+  c.quadraticCurveTo(49, 40.6, 40.6, 37)
+  c.quadraticCurveTo(34.2, 40.4, 33, 47.6)
+  // favori
+  c.lineTo(33, 61.5)
+  c.quadraticCurveTo(29.6, 61.4, 25.6, 59)
+}
+
 /** kısa saç: dalgalı tepe, alın çizgisi, favori; başlık altında yalnız yanlar görünür */
 function shortHair(c: Ctx, s: Skin) {
-  blob(
-    c,
-    () => {
-      c.moveTo(25.6, 58.5)
-      c.bezierCurveTo(19.5, 38, 28, 15.5, 49, 16)
-      // dalgalı tepe: öne doğru kabaran iki tutam
-      c.quadraticCurveTo(57, 10.5, 64, 17.6)
-      c.quadraticCurveTo(76.5, 19, 78.6, 33)
-      c.quadraticCurveTo(81.6, 41, 77.4, 49.5)
-      // alın çizgisi
-      c.quadraticCurveTo(76.2, 41.5, 71, 37.6)
-      c.quadraticCurveTo(64, 40.2, 57.4, 35.6)
-      c.quadraticCurveTo(49, 40.6, 40.6, 37)
-      c.quadraticCurveTo(34.2, 40.4, 33, 47.6)
-      // favori
-      c.lineTo(33, 61.5)
-      c.quadraticCurveTo(29.6, 61.4, 25.6, 59)
-    },
-    s.hair,
-    { color: s.hairS, dx: -3.2, dy: -2.8 },
-  )
+  blob(c, () => shortHairPath(c), s.hair, { color: s.hairS, dx: -3.2, dy: -2.8 })
   curve(c, 57.4, 35.6, 55, 28, 47, 23.6, 1, s.hairS)
   curve(c, 71, 37.6, 71.6, 30, 66, 24, 1, s.hairS)
   curve(c, 25.4, 40, 28, 25.5, 42, 20.6, 2.4, s.hairL)
   curve(c, 52, 17.6, 58, 15.6, 62.6, 19.4, 1.6, s.hairL)
 }
 
+function curlyHairPath(c: Ctx) {
+  c.moveTo(27, 52)
+  c.quadraticCurveTo(21.5, 47, 24, 41)
+  c.quadraticCurveTo(19.5, 34, 25.5, 28.5)
+  c.quadraticCurveTo(25, 20.5, 33.5, 18.5)
+  c.quadraticCurveTo(37.5, 11.5, 46, 13.5)
+  c.quadraticCurveTo(52, 8.5, 59.5, 12.5)
+  c.quadraticCurveTo(67, 10.5, 71.5, 16.5)
+  c.quadraticCurveTo(79, 18, 79.5, 25.5)
+  c.quadraticCurveTo(84.5, 31, 80.5, 37.5)
+  c.quadraticCurveTo(82.5, 44, 77.6, 49)
+  // alın: sağdan sola bukleler
+  c.quadraticCurveTo(77.4, 43, 73, 40.5)
+  c.quadraticCurveTo(69.5, 43.6, 64.5, 40.2)
+  c.quadraticCurveTo(60, 44, 54.4, 40.4)
+  c.quadraticCurveTo(49.5, 44, 44, 40.2)
+  c.quadraticCurveTo(39, 43, 35.6, 39.8)
+  c.quadraticCurveTo(32.6, 43, 32.6, 48)
+  c.quadraticCurveTo(31.6, 52, 29.4, 53.4)
+  c.quadraticCurveTo(28, 53.2, 27, 52)
+}
+
 /** gencin saçı: açık kestane, kıvırcık; tepede ve yanlarda lüle lüle kabarır, alna bukleler düşer, favori yoktur */
 function curlyHair(c: Ctx, s: Skin) {
-  blob(
-    c,
-    () => {
-      c.moveTo(27, 52)
-      c.quadraticCurveTo(21.5, 47, 24, 41)
-      c.quadraticCurveTo(19.5, 34, 25.5, 28.5)
-      c.quadraticCurveTo(25, 20.5, 33.5, 18.5)
-      c.quadraticCurveTo(37.5, 11.5, 46, 13.5)
-      c.quadraticCurveTo(52, 8.5, 59.5, 12.5)
-      c.quadraticCurveTo(67, 10.5, 71.5, 16.5)
-      c.quadraticCurveTo(79, 18, 79.5, 25.5)
-      c.quadraticCurveTo(84.5, 31, 80.5, 37.5)
-      c.quadraticCurveTo(82.5, 44, 77.6, 49)
-      // alın: sağdan sola bukleler
-      c.quadraticCurveTo(77.4, 43, 73, 40.5)
-      c.quadraticCurveTo(69.5, 43.6, 64.5, 40.2)
-      c.quadraticCurveTo(60, 44, 54.4, 40.4)
-      c.quadraticCurveTo(49.5, 44, 44, 40.2)
-      c.quadraticCurveTo(39, 43, 35.6, 39.8)
-      c.quadraticCurveTo(32.6, 43, 32.6, 48)
-      c.quadraticCurveTo(31.6, 52, 29.4, 53.4)
-      c.quadraticCurveTo(28, 53.2, 27, 52)
-    },
-    s.hair,
-    { color: s.hairS, dx: -3, dy: -2.6 },
-  )
+  blob(c, () => curlyHairPath(c), s.hair, { color: s.hairS, dx: -3, dy: -2.6 })
   // bukle kıvrımları: her lülenin içinde kısa bir yay
   for (const [x, y, r, a] of [[31, 26, 4, 0.4], [41, 19.5, 4.4, 0.1], [53, 17, 4.6, -0.1], [65, 18.5, 4.4, -0.3], [74.5, 26, 4, -0.6], [77, 37, 3.4, -0.9], [27.5, 37.5, 3.6, 0.8], [38, 31, 3.8, 0.3], [49, 28.5, 4, 0], [60.5, 29, 4, -0.2], [69.5, 33, 3.6, -0.5], [44, 36.5, 2.8, 0.2], [57, 36.6, 2.8, -0.1]]) {
     c.beginPath()
@@ -1062,20 +1080,17 @@ function memoHair(c: Ctx, s: Skin) {
   curve(c, 55, 29, 60, 26.4, 65.4, 28.4, 1.2, s.hairL)
 }
 
+function partedHairPath(c: Ctx) {
+  c.moveTo(30, 52)
+  c.quadraticCurveTo(30, 34, 54, 29)
+  c.quadraticCurveTo(72, 30, 75.6, 48)
+  c.quadraticCurveTo(70, 39.6, 59, 36.4)
+  c.quadraticCurveTo(43, 38, 33.4, 50.4)
+}
+
 /** yazmanın altından görünen ortadan ayrık saç */
 function partedHair(c: Ctx, s: Skin) {
-  blob(
-    c,
-    () => {
-      c.moveTo(30, 52)
-      c.quadraticCurveTo(30, 34, 54, 29)
-      c.quadraticCurveTo(72, 30, 75.6, 48)
-      c.quadraticCurveTo(70, 39.6, 59, 36.4)
-      c.quadraticCurveTo(43, 38, 33.4, 50.4)
-    },
-    s.hair,
-    { color: s.hairS, dx: -2.4, dy: -2 },
-  )
+  blob(c, () => partedHairPath(c), s.hair, { color: s.hairS, dx: -2.4, dy: -2 })
   curve(c, 58.4, 36.2, 57, 33, 55.4, 30, 0.9, s.hairS)
   curve(c, 34, 44.6, 40, 37.4, 50, 34, 1.5, s.hairL)
 }
@@ -1398,19 +1413,25 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   vol.addColorStop(1, fade(s.skinS, 0.45))
   c.fillStyle = vol
   c.fillRect(24, 22, 56, 66)
-  if (s.long || look === 'memo') {
-    c.fillStyle = fade(s.skinS, 0.42)
-    for (const d of [1.7, 3.4]) {
-      c.save()
-      c.translate(d * 0.3, d)
-      c.beginPath()
-      if (s.long) fringePath(c)
-      else memoTopPath(c)
-      c.fill()
-      c.restore()
-    }
+  // saçın alna düşen gölgesi: bütün kılıklarda (başlıklıda başlığın altından görünen saçın gölgesi)
+  c.fillStyle = fade(s.skinS, 0.42)
+  for (const d of [1.7, 3.4]) {
+    c.save()
+    c.translate(d * 0.3, d)
+    c.beginPath()
+    if (s.long) fringePath(c)
+    else if (look === 'memo') memoTopPath(c)
+    else if (s.hat === 'yazma') partedHairPath(c)
+    else if (look === 'genc') curlyHairPath(c)
+    else shortHairPath(c)
+    c.fill()
+    c.restore()
   }
   c.restore()
+  // sağ çene hattında sıcak kenar ışığı: yüz fondan ayrılır
+  ink(FACE_INKW)
+  rim(c, skull, FACE_RIM, -1.3, 0.3)
+  ink(MID_INKW)
   face(c, look, s, shut, fem)
   if (s.beard) beard(c, s, look === 'ozan')
   if (s.trim) trimmedBeard(c, s)

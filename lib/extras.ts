@@ -117,3 +117,193 @@ export function meets(kind: ChallengeKind, level: LevelDef, run: RunStats): bool
 
 /** Rahat Mod'daki koşu görev saymaz. */
 export const completes = (ch: Challenge, level: LevelDef, run: RunStats) => !run.relaxed && level.id === ch.levelId && ch.kinds.every((k) => meets(k, level, run))
+
+/* ── Günlük Meydan Okuma ─────────────────────────────────────────────────────
+ * Herkes için aynı gün, aynı şehir, aynı kural; kilitli şehir de olabilir (yolun ilerisinden bir tadımlık).
+ * Gün İstanbul saatine göre döner ki skor tablosu herkes için aynı anda yenilensin.
+ * Skor = süre + düşüş cezası + eksik hatıra cezası; düşük skor önde. Şehrin rekoruna ve ilerlemeye dokunmaz.
+ */
+export type DailyRule = 'ceza' | 'hiz' | 'hatira'
+
+export interface DailyRuleDef {
+  name: string
+  text: string
+  /** dünyanın akış hızı */
+  speed: number
+  /** düşüş başına eklenen saniye */
+  perDeath: number
+  /** eksik hatıra başına eklenen saniye */
+  perMissing: number
+}
+
+/** Kural metni (TR); İngilizcesi lib/ui.en.ts'te aynı anahtarla durur. */
+export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
+  ceza: { name: 'Ceza Saati', text: 'Her düşüş skoruna 8 saniye ekler. Acele et ama düşme.', speed: 1, perDeath: 8, perMissing: 0 },
+  hiz: { name: 'Hızlı Dünya', text: 'Dünya %20 hızlı akar. Her düşüş 3 saniye ekler.', speed: 1.2, perDeath: 3, perMissing: 0 },
+  hatira: { name: 'Hatıra Avı', text: 'Eksik her hatıra skoruna 20 saniye ekler. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 20 },
+}
+
+/** İstanbul saatiyle bugünün anahtarı (2026-11-14) */
+export const istanbulDay = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+
+/** anahtarı gün kadar kaydırır: shiftDay('2026-11-14', -1) → '2026-11-13' */
+export function shiftDay(day: string, n: number) {
+  const [y, m, d] = day.split('-').map(Number)
+  const t = new Date(Date.UTC(y, m - 1, d + n))
+  return t.toISOString().slice(0, 10)
+}
+
+export interface DailyRun {
+  day: string
+  levelId: string
+  rule: DailyRule
+}
+
+const RULES: DailyRule[] = ['ceza', 'hiz', 'hatira']
+
+/** Günün meydan okuması: art arda iki gün aynı şehir gelmez */
+export function dailyRun(day: string, levels: LevelDef[]): DailyRun {
+  const pick = (k: string) => hash(`gunluk:${k}`) % levels.length
+  let i = pick(day)
+  if (i === pick(shiftDay(day, -1))) i = (i + 1) % levels.length
+  return { day, levelId: levels[i].id, rule: RULES[(hash(`kural:${day}`) >>> 4) % RULES.length] }
+}
+
+/** Günlük skor (ms): süre + cezalar */
+export function dailyScore(rule: DailyRule, timeMs: number, deaths: number, found: number) {
+  const r = DAILY_RULES[rule]
+  return timeMs + deaths * r.perDeath * 1000 + Math.max(0, 3 - found) * r.perMissing * 1000
+}
+
+/** İki kişilik Düello'da bir koşunun skoru: süre + düşüş başına 5 sn */
+export const duelScore = (timeMs: number, deaths: number) => timeMs + deaths * 5000
+
+/** Günlük Meydan Okuma'nın cihazdaki izi: bugünkü en iyi skor ve kaç gün üst üste oynandığı */
+export interface DailyMark {
+  day: string
+  bestMs: number
+  streak: number
+}
+
+/** Bir bitirişten sonra iz: aynı gün en iyi skor kalır; dün de oynandıysa seri bir artar, yoksa 1'den başlar */
+export function markDaily(prev: DailyMark | null | undefined, day: string, scoreMs: number): DailyMark {
+  if (prev && prev.day === day) return { ...prev, bestMs: Math.min(prev.bestMs, scoreMs) }
+  return { day, bestMs: scoreMs, streak: prev && prev.day === shiftDay(day, -1) ? prev.streak + 1 : 1 }
+}
+
+/** İki cihazın izi birleşir: yeni gün kazanır, aynı günde iyi skor ve uzun seri */
+export function mergeDaily(a: DailyMark | null | undefined, b: DailyMark | null | undefined): DailyMark | null {
+  if (!a || !b) return a ?? b ?? null
+  if (a.day !== b.day) return a.day > b.day ? a : b
+  return { day: a.day, bestMs: Math.min(a.bestMs, b.bestMs), streak: Math.max(a.streak, b.streak) }
+}
+
+/** Seri bugün ya da dün oynandıysa sürer; daha eskiyse kopmuştur (0) */
+export const liveStreak = (m: DailyMark | null | undefined, today: string) => (m && (m.day === today || m.day === shiftDay(today, -1)) ? m.streak : 0)
+
+/* ── Düello: iki kişi aynı cihazda, aynı şehirde sırayla koşar ─────────────── */
+export interface DuelRun {
+  timeMs: number
+  deaths: number
+  score: number
+}
+
+/** her tur [birinci oyuncu, ikinci oyuncu]; henüz koşulmamış null */
+export type DuelRounds = [DuelRun | null, DuelRun | null][]
+
+/** Turu kim aldı: 0, 1, berabere -1, henüz bitmediyse null */
+export function roundWinner(r: [DuelRun | null, DuelRun | null]): 0 | 1 | -1 | null {
+  if (!r[0] || !r[1]) return null
+  return r[0].score === r[1].score ? -1 : r[0].score < r[1].score ? 0 : 1
+}
+
+export function duelWins(rounds: DuelRounds): [number, number] {
+  const w: [number, number] = [0, 0]
+  for (const r of rounds) {
+    const k = roundWinner(r)
+    if (k === 0 || k === 1) w[k]++
+  }
+  return w
+}
+
+/**
+ * Düello bitti mi, kim kazandı. Tek turda tek koşu yeter; üç turluda iki tur alan kazanır. Beraberlikler fazladan tur
+ * açar ama en çok iki tane: sonunda hâlâ eşitse toplam skoru düşük olan kazanır, o da eşitse berabere (-1).
+ */
+export function duelResult(rounds: DuelRounds, bestOf: 1 | 3): { over: boolean; winner: 0 | 1 | -1 | null } {
+  const done = rounds.filter((r) => roundWinner(r) !== null)
+  const w = duelWins(rounds)
+  const need = bestOf === 1 ? 1 : 2
+  if (w[0] >= need) return { over: true, winner: 0 }
+  if (w[1] >= need) return { over: true, winner: 1 }
+  if (done.length < bestOf + 2) return { over: false, winner: null }
+  const sum = (k: 0 | 1) => done.reduce((a, r) => a + r[k]!.score, 0)
+  return { over: true, winner: w[0] !== w[1] ? (w[0] > w[1] ? 0 : 1) : sum(0) === sum(1) ? -1 : sum(0) < sum(1) ? 0 : 1 }
+}
+
+/** turu kim açar: sırayla (ilk turu birinci oyuncu) */
+export const duelFirst = (round: number): 0 | 1 => (round % 2 === 0 ? 0 : 1)
+
+/* ── Yol istatistikleri ve unvan ────────────────────────────────────────────── */
+export interface TravelStats {
+  /** bitirilen koşu (şehir, günlük, düello, Boss Rush boss'u) */
+  runs: number
+  deaths: number
+  jumps: number
+  dashes: number
+  /** üstüne basılan düşman */
+  stomps: number
+  /** oyunda geçen süre (ms) */
+  playMs: number
+}
+
+export const emptyStats = (): TravelStats => ({ runs: 0, deaths: 0, jumps: 0, dashes: 0, stomps: 0, playMs: 0 })
+
+export const addStats = (a: TravelStats, b: Partial<TravelStats>): TravelStats => ({
+  runs: a.runs + (b.runs ?? 0),
+  deaths: a.deaths + (b.deaths ?? 0),
+  jumps: a.jumps + (b.jumps ?? 0),
+  dashes: a.dashes + (b.dashes ?? 0),
+  stomps: a.stomps + (b.stomps ?? 0),
+  playMs: a.playMs + (b.playMs ?? 0),
+})
+
+/** İki cihazın sayaçları: her birinin büyüğü (aynı oyun iki kez sayılmasın) */
+export const mergeStats = (a: TravelStats | undefined, b: TravelStats | undefined): TravelStats => {
+  const x = a ?? emptyStats()
+  const y = b ?? emptyStats()
+  return { runs: Math.max(x.runs, y.runs), deaths: Math.max(x.deaths, y.deaths), jumps: Math.max(x.jumps, y.jumps), dashes: Math.max(x.dashes, y.dashes), stomps: Math.max(x.stomps, y.stomps), playMs: Math.max(x.playMs, y.playMs) }
+}
+
+/** Unvanın dayandığı sayılar (kayıttan çıkarılır) */
+export interface TitleFacts {
+  cities: number
+  totalCities: number
+  golds: number
+  keeps: number
+  charms: number
+  bosses: number
+  streak: number
+  stats: TravelStats
+}
+
+/**
+ * Yolcunun unvanı: yolculuğun en parlak yanı. İlk tutan kazanır (yukarıdan aşağı, zordan kolaya).
+ * Metinler TR; İngilizcesi lib/ui.en.ts'te aynı anahtarla.
+ */
+export function travelerTitle(f: TitleFacts): string {
+  const all = f.totalCities
+  if (f.cities >= all && f.keeps >= all * 3 && f.charms >= all) return 'Defterin Ustası'
+  if (f.golds >= all) return 'Altın Ayak'
+  if (f.cities >= all) return 'Gezgin'
+  if (f.streak >= 7) return 'Her Gün Yolda'
+  if (f.golds >= 10) return 'Rüzgâr Gibi'
+  if (f.charms >= 15) return 'Nazar Değmez'
+  if (f.bosses >= 15) return 'Meydan Kahramanı'
+  if (f.keeps >= 40) return 'Hatıra Avcısı'
+  if (f.stats.deaths >= 300) return 'Düşe Kalka'
+  if (f.cities >= 14) return 'Yarı Yolun Yolcusu'
+  if (f.cities >= 5) return 'Yola Alışan'
+  if (f.cities >= 1) return 'Çiçeği Burnunda Yolcu'
+  return 'Yeni Yolcu'
+}

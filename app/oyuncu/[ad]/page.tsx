@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { and, eq, like, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import Logo from '@/components/Logo'
 import { medalFor } from '@/components/medal'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
 import { findByName } from '@/lib/players'
-import { SCORE_SUFFIX, scoreCity } from '@/lib/scoreKey'
+import { currentKeys, scoreCity } from '@/lib/scoreKey'
 import { scores } from '@/lib/schema'
 import { formatTime } from '@/lib/storage'
 
@@ -25,14 +25,15 @@ async function load(ad: string) {
     .select({
       level: scores.level,
       timeMs: scores.timeMs,
-      deaths: scores.deaths,
-      items: scores.items,
+      deaths: sql<number>`coalesce(${scores.minDeaths}, ${scores.deaths})`,
+      items: sql<number>`coalesce(${scores.maxItems}, ${scores.items})`,
+      plays: scores.plays,
       createdAt: scores.createdAt,
       rank: sql<number>`(select count(*)::int + 1 from seksek_scores o where o.level = ${scores.level} and o.time_ms < ${scores.timeMs})`,
     })
     .from(scores)
-    .where(and(eq(scores.playerId, player.id), like(scores.level, `%${SCORE_SUFFIX}`)))
-  // yalnız güncel harita sürümünün skorları sayılır
+    .where(and(eq(scores.playerId, player.id), inArray(scores.level, currentKeys())))
+  // yalnız şehirlerin bugünkü haritalarının skorları sayılır
   return { player, byLevel: new Map(rows.map((r) => [scoreCity(r.level), r])) }
 }
 
@@ -86,7 +87,7 @@ export default async function OyuncuPage({ params }: Props) {
         </dl>
 
         <h2 className="mt-10 font-display text-3xl text-cream">Şehir Şehir</h2>
-        <p className="mt-1 text-[13px] text-muted">Her şehirdeki en iyi süre; düşüş ve hatıra o koşudan. Sıra, şehrin bütün yolcuları arasında.</p>
+        <p className="mt-1 text-[13px] text-muted">Her şehirdeki en iyi süre, en az düşüş ve en çok hatıra. Sıra, şehrin bütün yolcuları arasında süreye göre.</p>
         <ol className="mt-4 grid gap-2">
           {LEVELS.map((l) => {
             const r = byLevel.get(l.id)
@@ -101,7 +102,7 @@ export default async function OyuncuPage({ params }: Props) {
                   <span className="block text-[12px] text-muted">
                     {r ? (
                       <>
-                        ✕{r.deaths} düşüş · {r.items}/3 hatıra · {r.rank}. sırada
+                        ✕{r.deaths} düşüş · {r.items}/3 hatıra · {r.plays} kez · {r.rank}. sırada
                         {medal && (
                           <>
                             {' · '}

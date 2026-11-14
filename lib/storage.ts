@@ -1,6 +1,12 @@
 import { LEVELS } from '@/game/levels'
+import { emptyStats, liveStreak, mergeDaily, mergeStats, type DailyMark, type TitleFacts, type TravelStats } from './extras'
+import { cityVersion, legacyVersion } from './mapVersion'
 
-/** Haritalar değişince artar: oyuncuya "yenilendi" notu gösterilir, baştan başlama önerilir. */
+/**
+ * Şehir sırası değişince (araya yeni şehir girince) artar; eski sıra ORDERS'a yazılır ki açılan şehir kimliğiyle
+ * taşınsın. Haritanın kendisi değişince artırılmaz: o iş şehir başına sürümün (lib/mapVersion.ts), yalnız değişen
+ * şehrin rekoru yenilenir.
+ */
 export const MAP_VERSION = 8
 /** bu sürümden önceki süreler geçersiz: bölümlere final eklendi */
 const TIMES_SINCE = 4
@@ -28,8 +34,12 @@ export interface Best {
   timeMs: number
   deaths: number
   items: boolean[]
-  /** süre eski (daha kısa) haritadan kaldı: gösterilmez, ilk yeni koşu yerine geçer */
+  /** süre eski haritadan kaldı: gösterilmez, ilk yeni koşu yerine geçer (hatıralar kalır) */
   stale?: boolean
+  /** rekorun koşulduğu şehir haritası (lib/mapVersion.ts cityVersion) */
+  v?: string
+  /** Rahat Mod'da koşuldu: skor tablosuna aktarılmaz */
+  relaxed?: boolean
 }
 
 export interface Player {
@@ -69,12 +79,22 @@ export interface Save {
   daily: { last: string; count: number }
   /** Haftanın Görevi: son tamamlanan hafta ve toplam */
   weekly: { last: string; count: number }
+  /** Günlük Meydan Okuma: son oynanan gün, o günün en iyi skoru, üst üste oynanan gün sayısı */
+  meydan?: DailyMark | null
+  /** yolculuğun sayaçları: zıplama, dash, düşüş, oyunda geçen süre */
+  stats?: TravelStats
   /** Boss Rush’ın en iyi süresi (ms) ve o koşudaki boss sayısı */
   rush: { timeMs: number; bosses: number } | null
+  /** Maraton'un (rastgele üç şehir arka arkaya) en iyi toplam süresi */
+  maraton?: { timeMs: number } | null
   /** eski haritalardan kalan süreler işaretlendi mi (bir kez) */
   timesReset?: boolean
-  /** kaydın ait olduğu harita sürümü */
+  /** kaydın ait olduğu harita sürümü (şehir sırası) */
   mapVersion: number
+  /** haritası yenilendiği için rekoru sıfırlanan, oyuncunun henüz görmediği şehirler */
+  renewed?: string[]
+  /** oyuncunun bildiği şehirler: sonradan eklenenler "yeni şehir" notunda görünür */
+  seen?: string[]
   /** arayüz dili */
   lang: 'tr' | 'en'
   /** eski sıradan yeni sıraya taşındı mı (aynı sürümde iki kez taşınmasın) */
@@ -92,7 +112,7 @@ const KEY = 'seksek:v1'
 /** 8 Kasım'a dek anahtar `memleket:v1`di; ilk açılışta yeni anahtara taşınır, ilerleme kaybolmaz. */
 const LEGACY_KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2 })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2, renewed: [], seen: LEVELS.map((l) => l.id) })
 
 export function loadSave(): Save {
   try {
@@ -130,13 +150,37 @@ export function normalizeSave(parsed: Partial<Save>): Save {
     }
     s.timesReset = true
   }
-  // eski sıradaki açılan şehri kimliğiyle yeni sıraya taşı (bir kez; not kapanınca sürüm güncellenir)
+  // eski sıradaki açılan şehri kimliğiyle yeni sıraya taşı (bir kez)
   const order = ORDERS[s.mapVersion]
   if (order && !parsed.migrated) {
     const id = order[Math.min(s.unlocked, order.length - 1)]
     const idx = LEVELS.findIndex((l) => l.id === id)
     s.unlocked = idx >= 0 ? idx : 0
-    s.migrated = true
+  }
+  // bilinen şehirler: alan yoksa kaydın sürümündeki sıra (sonradan eklenenler "yeni" görünür)
+  if (!parsed.seen) s.seen = order && (s.unlocked > 0 || Object.keys(s.best).length) ? [...order] : LEVELS.map((l) => l.id)
+  // şehir başına sürüm: sürümsüz eski rekor, kaydın sürümündeki haritaya bağlanır; haritası değişen şehrin rekoru
+  // eskir (hatıralar kalır) ve oyuncuya hangi şehirlerin yenilendiği söylenir. Öteki şehirlere dokunulmaz.
+  const renewed = new Set(s.renewed ?? [])
+  const best: Record<string, Best> = {}
+  for (const [id, b0] of Object.entries(s.best)) {
+    const b = { ...b0 }
+    if (b.v === undefined && !b.stale) {
+      const v = legacyVersion(id, s.mapVersion)
+      if (v) b.v = v
+      else b.stale = true
+    }
+    if (!b.stale && b.v !== cityVersion(id)) {
+      b.stale = true
+      renewed.add(id)
+    }
+    best[id] = b
+  }
+  s.best = best
+  s.renewed = [...renewed]
+  if (s.mapVersion !== MAP_VERSION) {
+    s.mapVersion = MAP_VERSION
+    s.migrated = false
   }
   // şifresiz eski yolcu kimlikleri silindi: oyuncu bir kez üye olur ya da giriş yapar
   if ((parsed.accountVersion ?? 1) < 2) {
@@ -151,7 +195,7 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'renewed', 'seen', 'meydan', 'stats', 'maraton'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -182,18 +226,33 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     daily: more(local.daily, cloud.daily),
     weekly: more(local.weekly, cloud.weekly),
     rush,
+    meydan: mergeDaily(local.meydan, cloud.meydan),
+    stats: mergeStats(local.stats, cloud.stats),
+    maraton: !local.maraton ? cloud.maraton : !cloud.maraton ? local.maraton : local.maraton.timeMs <= cloud.maraton.timeMs ? local.maraton : cloud.maraton,
     character: local.character ?? cloud.character,
     scarf: local.scarf !== 'al' ? local.scarf : cloud.scarf,
     seenStory: local.seenStory || cloud.seenStory,
     tutorial: local.tutorial && cloud.tutorial,
+    renewed: [...new Set([...(local.renewed ?? []), ...(cloud.renewed ?? [])])].filter((id) => best[id]?.stale),
+    seen: [...new Set([...(local.seen ?? []), ...(cloud.seen ?? [])])],
   }
 }
 
-/** Eski haritalarda ilerlemesi olan oyuncu: "haritalar yenilendi" notunu görmeli */
-export const needsMapNotice = (s: Save) => s.mapVersion < MAP_VERSION && (s.unlocked > 0 || Object.keys(s.best).length > 0)
+/**
+ * Güncelleme notu: haritası yenilendiği için rekoru sıfırlanan şehirler ve sonradan eklenen şehirler. Yalnız
+ * ilerlemesi olan oyuncuya gösterilir; hiçbir şey toplu sıfırlanmaz, oyuncu istediği şehre tıklayıp oynar.
+ */
+export function mapNews(s: Save): { renewed: string[]; added: string[] } {
+  if (s.unlocked === 0 && !Object.keys(s.best).length) return { renewed: [], added: [] }
+  const seen = new Set(s.seen ?? LEVELS.map((l) => l.id))
+  return { renewed: (s.renewed ?? []).filter((id) => LEVELS.some((l) => l.id === id)), added: LEVELS.filter((l) => !seen.has(l.id)).map((l) => l.id) }
+}
 
-/** Baştan başla: ilerleme sıfırlanır; ad, karakter ve ayarlar kalır */
-export const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, bosses: {}, rush: null, mapVersion: MAP_VERSION, migrated: false })
+/** Not okundu: listeler boşalır, rekorlar ve hatıralar olduğu gibi kalır */
+export const ackMapNews = (s: Save): Save => ({ ...s, renewed: [], seen: LEVELS.map((l) => l.id) })
+
+/** İlerleme sıfırlanır; ad, karakter ve ayarlar kalır */
+const restartJourney = (s: Save): Save => ({ ...s, unlocked: 0, best: {}, stamps: {}, charms: {}, bosses: {}, rush: null, mapVersion: MAP_VERSION, migrated: false, renewed: [] })
 
 /**
  * Açık ama hiç bitirilmemiş ilk şehir: `from`dan sonra aranır, yoksa baştan. Araya yeni şehir girince (Kayseri, Hatay,
@@ -213,7 +272,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {
@@ -235,4 +294,19 @@ export function formatTime(ms: number) {
   const s = Math.floor((ms % 60000) / 1000)
   const d = Math.floor((ms % 1000) / 100)
   return `${m}:${String(s).padStart(2, '0')}.${d}`
+}
+
+/** Unvanın dayandığı sayılar: bitirilen şehir, altın madalya, hatıra, nazar, boss, günlük seri */
+export function titleFacts(s: Save, today: string): TitleFacts {
+  const fresh = LEVELS.filter((l) => s.best[l.id] && !s.best[l.id].stale)
+  return {
+    cities: LEVELS.filter((l) => s.best[l.id]).length,
+    totalCities: LEVELS.length,
+    golds: fresh.filter((l) => s.best[l.id].timeMs <= l.medals[0] * 1000).length,
+    keeps: LEVELS.reduce((a, l) => a + (s.best[l.id]?.items.filter(Boolean).length ?? 0), 0),
+    charms: LEVELS.filter((l) => s.charms[l.id]).length,
+    bosses: LEVELS.filter((l) => s.bosses[l.id]).length,
+    streak: liveStreak(s.meydan, today),
+    stats: s.stats ?? emptyStats(),
+  }
 }

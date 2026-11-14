@@ -11,6 +11,8 @@ export const GHOST_HZ = 15
 export interface GhostRun {
   hero: CharacterId
   data: number[]
+  /** koşulduğu şehir haritası: harita değişince eski hayalet gösterilmez */
+  v?: string
 }
 
 export function poseOf(w: World) {

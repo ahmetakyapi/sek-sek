@@ -33,6 +33,7 @@ export default function Hakkinda() {
             <a href="#karakterler" className="hover:text-cream">Karakterler</a>
             <a href="#sehirler" className="hover:text-cream">Şehirler</a>
             <a href="#nasil" className="hover:text-cream">Nasıl Oynanır</a>
+            <Link href="/siralama" className="hover:text-cream">Sıralama</Link>
           </nav>
           <Link href="/" className="pixel-btn primary py-2 text-sm">
             ▶ Hemen Oyna

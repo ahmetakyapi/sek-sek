@@ -11,3 +11,4 @@ scripts/art/*.png
 scripts/art/sprites.json
 scripts/art/frames.json
 __pycache__/
+.claude/worktrees/

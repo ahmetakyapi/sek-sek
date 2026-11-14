@@ -16,6 +16,7 @@
     "verify:enemies": "tsx scripts/verify-enemies.ts",
     "verify:frames": "node scripts/verify-frames.cjs",
     "verify:perf": "node scripts/verify-perf.cjs",
+    "verify:menus": "node scripts/audit-menus.cjs",
     "verify:all": "bash scripts/verify-all.sh",
     "preview": "node scripts/preview.cjs",
     "sheet": "node scripts/art/sheet.cjs",
@@ -29,6 +30,7 @@
     "react-dom": "19.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@tailwindcss/postcss": "^4.3.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
