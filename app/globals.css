@@ -23,7 +23,7 @@
      accent ve accent-2 koyu zeminde yazı ve çizgi içindir (en az 4.5:1); dolu düğme zemini accent-deep, üstünde açık yazı */
   --color-accent: #7b87ff;
   --color-accent-2: #b4bcff;
-  --color-accent-deep: #4353e0;
+  --color-accent-deep: #3a48cc;
   --color-gold: #ffcc66;
   --color-flag: #e30a17;
   --color-sign: #1d4f91;
@@ -125,8 +125,8 @@ input {
 @layer components {
 /* ── Artbook dili: kilim bordürü, piksel çentikli köşeler ───────── */
 :root {
-  /* 16×10 piksel kilim motifi: baklava + göz */
-  --kilim: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' shape-rendering='crispEdges'%3E%3Crect width='16' height='10' fill='%23a82a30'/%3E%3Cpath fill='%230e0d22' d='M0 0h16v1H0zM0 9h16v1H0z'/%3E%3Cpath fill='%23f2c14e' d='M7 1h2v1H7zM6 2h4v1H6zM5 3h2v1H5zM9 3h2v1H9zM4 4h2v2H4zM10 4h2v2h-2zM5 6h2v1H5zM9 6h2v1H9zM6 7h4v1H6zM7 8h2v1H7z'/%3E%3Cpath fill='%23f3f1ff' d='M7 4h2v2H7z'/%3E%3Cpath fill='%237b87ff' d='M0 4h2v2H0zM14 4h2v2h-2zM1 3h1v1H1zM14 3h1v1h-1zM1 6h1v1H1zM14 6h1v1h-1z'/%3E%3C/svg%3E");
+  /* 16×10 piksel kilim motifi: çivit zemin, açık çivit iç hat, altın baklava, krem göz, atkı kırmızısı yan motif */
+  --kilim: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' shape-rendering='crispEdges'%3E%3Crect width='16' height='10' fill='%232a2e86'/%3E%3Cpath fill='%230e0d22' d='M0 0h16v1H0zM0 9h16v1H0z'/%3E%3Cpath fill='%23525cd6' d='M0 1h16v1H0zM0 8h16v1H0z'/%3E%3Cpath fill='%23ffcc66' d='M7 1h2v1H7zM6 2h4v1H6zM5 3h2v1H5zM9 3h2v1H9zM4 4h2v2H4zM10 4h2v2h-2zM5 6h2v1H5zM9 6h2v1H9zM6 7h4v1H6zM7 8h2v1H7z'/%3E%3Cpath fill='%23f3f1ff' d='M7 4h2v2H7z'/%3E%3Cpath fill='%23e0423a' d='M0 4h2v2H0zM14 4h2v2h-2zM1 3h1v1H1zM14 3h1v1h-1zM1 6h1v1H1zM14 6h1v1h-1z'/%3E%3C/svg%3E");
   --notch: 4px;
 }
 
@@ -207,18 +207,18 @@ input {
   outline-offset: 5px;
 }
 .pixel-btn.primary {
-  /* koyu çivit zemin + beyaz yazı (~6:1); ışık sol üstten, alt kenar koyu */
-  background: linear-gradient(180deg, #5d6bf5 0%, var(--color-accent-deep) 55%, #3442c4 100%);
+  /* koyu çivit zemin + beyaz yazı (~7:1); ışık sol üstten, alt kenar koyu */
+  background: linear-gradient(180deg, #5262ea 0%, var(--color-accent-deep) 55%, #2a36a6 100%);
   color: #fff;
   text-shadow: 0 1px 0 rgb(14 13 60 / 0.55);
   box-shadow:
-    0 -3px 0 0 #1c2270,
-    0 3px 0 0 #1c2270,
-    -3px 0 0 0 #1c2270,
-    3px 0 0 0 #1c2270,
+    0 -3px 0 0 #161b5c,
+    0 3px 0 0 #161b5c,
+    -3px 0 0 0 #161b5c,
+    3px 0 0 0 #161b5c,
     inset 0 -4px 0 rgb(0 0 0 / 0.25),
     inset 0 3px 0 rgb(255 255 255 / 0.2),
-    0 6px 18px -4px rgb(67 83 224 / 0.55);
+    0 6px 18px -4px rgb(58 72 204 / 0.55);
 }
 .pixel-btn.primary:hover {
   filter: brightness(1.1);
@@ -652,10 +652,10 @@ blockquote {
   }
   .cta {
     box-shadow:
-      0 -3px 0 0 #1c2270,
-      0 3px 0 0 #1c2270,
-      -3px 0 0 0 #1c2270,
-      3px 0 0 0 #1c2270,
+      0 -3px 0 0 #161b5c,
+      0 3px 0 0 #161b5c,
+      -3px 0 0 0 #161b5c,
+      3px 0 0 0 #161b5c,
       inset 0 -4px 0 rgb(0 0 0 / 0.25),
       inset 0 3px 0 rgb(255 255 255 / 0.2),
       0 10px 26px -6px rgb(91 108 255 / 0.6);

@@ -118,7 +118,7 @@ async function snapshot(canvas: HTMLCanvasElement, level: LevelDef | null): Prom
     c.fillText(`${String(level.plate).padStart(2, '0')} · ${new Date().toLocaleDateString('tr-TR')}`, pad + nameW + pad * 0.6, base)
     c.textAlign = 'right'
     c.font = `700 ${Math.round(foot * 0.34)}px ${title}, system-ui, sans-serif`
-    c.fillStyle = '#4353e0'
+    c.fillStyle = '#3a48cc'
     c.fillText('Sek-Sek', out.width - pad, base)
   }
   return new Promise((res, rej) => out.toBlob((b) => (b ? res(b) : rej(new Error('toBlob'))), 'image/png'))

@@ -695,12 +695,15 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
   }
   // ağız
   if (happy) {
-    // açık gülümseme: üstü düz, altı yuvarlak ağız, içinde dil
+    // açık gülümseme: burnun altında küçük, yuvarlak hatlı "D"; üst hat köşelerde hafif kalkık, içinde dil.
+    // Uzak köşe yüz kenarına değmez (profilde kama gibi görünüyordu).
+    // Kısa sakallıda (Memo) ağız sakalın ağız boşluğunu tam doldurur: yoksa yanında ten rengi bir şerit açık kalır.
+    const x0 = s.trim ? 6.7 : 8.1
     const mouth = () => {
-      c.moveTo(hx + 7.4, hy + 9.2)
-      c.quadraticCurveTo(hx + 11, hy + 10, hx + 14.6, hy + 8.6)
-      c.quadraticCurveTo(hx + 13.6, hy + 14.2, hx + 10.4, hy + 14)
-      c.quadraticCurveTo(hx + 7.8, hy + 13.6, hx + 7.4, hy + 9.2)
+      c.moveTo(hx + x0, hy + 9.5)
+      c.quadraticCurveTo(hx + 10.4, hy + 10.5, hx + 13.2, hy + 9.1)
+      c.bezierCurveTo(hx + 13.3, hy + 12.4, hx + 11.6, hy + 13.6, hx + 10.2, hy + 13.5)
+      c.bezierCurveTo(hx + x0 + 1, hy + 13.4, hx + x0 - 0.1, hy + 12, hx + x0, hy + 9.5)
     }
     c.beginPath()
     mouth()
@@ -710,7 +713,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.save()
     c.clip()
     c.beginPath()
-    c.ellipse(hx + 10.8, hy + 14, 2.6, 1.9, 0, 0, TAU)
+    c.ellipse(hx + 10.7, hy + 13.4, 2.1, 1.5, 0, 0, TAU)
     c.fillStyle = '#e8687a'
     c.fill()
     c.restore()
@@ -718,7 +721,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     mouth()
     c.closePath()
     c.strokeStyle = INK
-    c.lineWidth = 1.3
+    c.lineWidth = 1.15
     c.lineJoin = 'round'
     c.stroke()
   } else {
