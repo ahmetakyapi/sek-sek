@@ -203,7 +203,9 @@ ya da `rushRef` (Boss Rush, Maraton) doluyken `finish()` kendi dalına gider. Ku
 `lib/extras.ts`te, testi `tests/extras.test.ts`te.
 
 **Veritabanı değişikliği.** Yeni tablo ya da sütun `drizzle/NNNN_*.sql` (idempotent: `IF NOT EXISTS`) + `lib/schema.ts`;
-canlıya `npm run db:migrate` ile uygulanır (DATABASE_URL gerekir). Kod, tablo henüz yokken sessizce yerel kayda düşmeli.
+canlıya her dağıtımda kendiliğinden uygulanır (`vercel-build`: `scripts/migrate.ts --derleme`; DATABASE_URL Vercel'de
+"sensitive", dışarıdan okunamaz, derleme ortamında vardır). Göç için kullanıcıya sorma (kullanıcı kararı, 15 Kasım 2026);
+derleme günlüğünde `uygulandı:` satırlarına bak. Elle: `npm run db:migrate` (DATABASE_URL gerekir). Kod, tablo henüz yokken sessizce yerel kayda düşmeli.
 
 **Metin eklemek.** Arayüzde Türkçe metni `t('…')` ile yaz, İngilizcesini `lib/ui.en.ts`’e ekle. Bölüm metni
 `levels.ts`’e, İngilizcesi `content.en.ts`’e. Başlık ve düğmeler Title Case, paragraflar cümle düzeni; tek kelimelik
