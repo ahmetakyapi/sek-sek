@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import TouchControls from '@/components/TouchControls'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
-import { BossFigure, HeroFigure } from '@/components/Figures'
+import { BossFigure } from '@/components/Figures'
 import CityBanner, { Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
+import TitleMenu from '@/components/TitleMenu'
 import { ItemIcon, Key, KeyHints, ThingIcon, TutorialHint, type TutorialStep } from '@/components/HudBits'
 import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
@@ -45,14 +46,6 @@ import { loadGhost, saveGhost } from '@/lib/ghost'
 import { cityVersion } from '@/lib/mapVersion'
 import { freshAchievements, type Feat } from '@/lib/achievements'
 import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, type Player, type Save } from '@/lib/storage'
-
-const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
-const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
-/** 1–99 arası sayıyı yazıyla, ilk harf büyük: 45 → "Kırk beş" */
-const trCount = (n: number) => {
-  const t = [TENS[Math.floor(n / 10)], ONES[n % 10]].filter(Boolean).join(' ')
-  return t.charAt(0).toLocaleUpperCase('tr') + t.slice(1)
-}
 
 /** zorluk rozeti: yeşilden kırmızıya */
 const DIFF_TONE: Record<string, string> = {
@@ -1656,170 +1649,46 @@ export default function Game() {
 
       {screen === 'title' && (
         <Overlay>
-          <div className="rise flex w-full max-w-3xl flex-col items-center gap-0 md:flex-row md:items-center [@media(max-height:500px)_and_(min-width:560px)]:flex-row [@media(max-height:500px)_and_(min-width:560px)]:items-start">
-            {/* polaroid yalnız yer olan ekranda: alçak ve dar ekranda menü kaydırmadan sığsın diye gizlenir */}
-            <div className="relative h-[170px] w-full max-w-[320px] shrink-0 sm:h-[300px] short:hidden [@media(max-width:639px)_and_(max-height:820px)]:hidden md:mr-[-28px] md:h-[360px] md:w-[320px] [@media(max-height:500px)_and_(min-width:560px)]:mr-[-20px] [@media(max-height:500px)_and_(min-width:560px)]:h-[240px] [@media(max-height:500px)_and_(min-width:560px)]:w-[190px]">
-              {save.character ? (
-                <figure className="polaroid absolute left-1/2 top-3 w-[118px] -translate-x-1/2 rotate-[-4deg] sm:w-[200px] md:top-10 md:w-[220px] [@media(max-height:500px)_and_(min-width:560px)]:top-8 [@media(max-height:500px)_and_(min-width:560px)]:w-[150px]">
-                  <span className="tape" />
-                  <HeroFigure look={hero.id} scarf={heroScarf} className="block aspect-[64/76] w-full" />
-                  <figcaption>{hero.name}</figcaption>
-                </figure>
-              ) : (
-                <>
-                  <figure className="polaroid absolute left-[8%] top-4 w-[118px] rotate-[-7deg] sm:w-[170px] md:left-0 md:top-12 md:w-[170px] [@media(max-height:500px)_and_(min-width:560px)]:left-0 [@media(max-height:500px)_and_(min-width:560px)]:top-6 [@media(max-height:500px)_and_(min-width:560px)]:w-[120px]">
-                    <span className="tape" />
-                    <Portrait id="uktun" className="w-full" />
-                    <figcaption>Uktun</figcaption>
-                  </figure>
-                  <figure className="polaroid absolute right-[8%] top-0 w-[118px] rotate-[6deg] sm:w-[170px] md:right-6 md:top-2 md:w-[170px] [@media(max-height:500px)_and_(min-width:560px)]:right-0 [@media(max-height:500px)_and_(min-width:560px)]:top-24 [@media(max-height:500px)_and_(min-width:560px)]:w-[120px]">
-                    <span className="tape" />
-                    <Portrait id="memo" className="w-full" />
-                    <figcaption>Memo</figcaption>
-                  </figure>
-                </>
-              )}
-            </div>
-            <div className="pixel-panel relative z-10 w-full max-w-md overflow-hidden px-6 pb-4 sm:px-7 sm:pb-6 short:grid short:max-w-[min(780px,100%)] short:grid-cols-2 short:gap-x-6 short:pb-4">
-              {/* alçak ekranda (yatay telefon) iki sütun: solda tanıtım, Devam ve hesap; sağda menü */}
-              <div className="relative -mx-7 -mt-[calc(14px+1.25rem)] mb-4 h-[120px] overflow-hidden short:col-span-2 short:mb-2 short:h-[58px] [@media(min-height:501px)_and_(max-height:780px)]:h-[100px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/sehirler/istanbul.webp" alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_75%]" style={{ imageRendering: 'pixelated' }} />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1e1a29]/20 to-[#1e1a29]" />
-                <div className="kilim absolute inset-x-0 top-0" />
-                <div className="absolute bottom-1 left-7 flex items-end gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/logo-emblem.png" width={56} height={56} alt="" className="mb-1 drop-shadow-[0_3px_0_#120f1a] short:h-10 short:w-10" />
-                  <h1 className="font-display text-5xl leading-none text-cream [text-shadow:0_4px_0_#120f1a] sm:text-6xl short:text-4xl">Sek-Sek</h1>
-                </div>
-              </div>
-              <div className={`short:col-start-1 short:row-start-2 ${isFresh(save) ? 'short:hidden' : 'short:hidden [@media(min-height:501px)_and_(max-height:780px)]:hidden'}`}>
-                <p className="text-[15px] leading-relaxed text-cream/85 short:text-[14px] short:leading-snug">{t("Gezgin’in yarım kalmış defterini tamamla.")}</p>
-                <p className="hidden text-[14px] leading-relaxed text-muted sm:block short:hidden">{lang === 'en' ? `${LEVELS.length} cities. ${LEVELS.length * 3} keepsakes. One journey.` : `${trCount(LEVELS.length)} şehir. ${trCount(LEVELS.length * 3)} hatıra. Tek yolculuk.`}</p>
-              </div>
-              <button className={`pixel-btn primary w-full justify-center text-base short:col-start-1 short:row-start-3 short:mt-3 ${isFresh(save) ? 'mt-4 sm:mt-5' : 'mt-4 sm:mt-5 [@media(min-height:501px)_and_(max-height:780px)]:mt-0'}`} onClick={startJourney} autoFocus>
-                ▶ {save.unlocked > 0 || resumeIdx > 0 ? t('Devam Et: {city}', { city: LEVELS[resumeIdx].name }) : t('Yolculuğa Başla')}
-              </button>
-              <div className="mt-2 sm:mt-2.5 short:col-start-2 short:row-span-3 short:row-start-2 short:mt-0 short:self-start">
-                {/* bugünün meydan okuması: tek satırlık çağrı (yalnız yolculuğa başlamış oyuncuya) */}
-                {!isFresh(save) && (
-                  <button className="mb-2 flex w-full items-center gap-2.5 border-2 border-gold/70 bg-gold/5 px-2.5 py-1.5 text-left hover:bg-gold/10 sm:mb-2.5 short:hidden" onClick={() => (ui(), setScreen('modes'))}>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2a2438] shadow-[0_0_0_2px_#d9a441]">
-                      <ItemIcon city={dailyLevel.city} taken size={22} />
-                    </span>
-                    <span className="min-w-0 flex-1 leading-tight">
-                      <span className="block whitespace-nowrap text-[11px] font-bold tracking-[0.1em] text-gold">{t('BUGÜNÜN MEYDAN OKUMASI')}</span>
-                      <span className="block truncate text-[13px] text-cream">
-                        {dailyLevel.name} · {t(DAILY_RULES[daily.rule].name)}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-right text-[12px] tabular-nums text-muted">
-                      {save.meydan?.day === today ? <span className="text-[#7ad88a]">✓ {formatTime(save.meydan.bestMs)}</span> : <span className="text-accent-2">{t('Bugün Oyna')} ▶</span>}
-                      {liveStreak(save.meydan, today) > 1 && <span className="block">🔥 {liveStreak(save.meydan, today)}</span>}
-                    </span>
-                  </button>
-                )}
-                <div className="grid grid-cols-2 gap-2 sm:gap-2.5 short:gap-2">
-                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('map'))}>
-                    {t("Şehirler")}
-                  </button>
-                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('notebook'))}>
-                    {t("Defter")}
-                  </button>
+          <div className="title-vignette pointer-events-none fixed inset-0 -z-10" />
+          <TitleMenu
+            fresh={isFresh(save)}
+            resume={resumeIdx}
+            character={save.character ?? null}
+            hero={hero}
+            scarf={heroScarf}
+            best={save.best}
+            found={totalFound}
+            stamps={Object.values(save.stamps ?? {}).filter(Boolean).length}
+            charms={Object.values(save.charms ?? {}).filter(Boolean).length}
+            daily={isFresh(save) ? null : { level: dailyLevel, rule: t(DAILY_RULES[daily.rule].name), doneMs: save.meydan?.day === today ? formatTime(save.meydan.bestMs) : null, streak: liveStreak(save.meydan, today) }}
+            dailyPending={!isFresh(save) && save.meydan?.day !== today}
+            music={save.music}
+            player={save.player ? { name: save.player.name, title: t(travelerTitle(titleFacts(save, today))) } : null}
+            hasProgress={save.unlocked > 0 || Object.keys(save.best).length > 0}
+            onStart={startJourney}
+            onScreen={(s) => {
+              ui()
+              if (s === 'character') pickThenPlayRef.current = false
+              if (s === 'story') setStoryPage(0)
+              if (s === 'scores') setBoardTab('genel')
+              setScreen(s)
+            }}
+            onMusic={() => toggle('music')}
+            langSwitch={
+              <span className="flex items-center gap-1" role="group" aria-label={t('Dil')}>
+                {(['tr', 'en'] as const).map((l) => (
                   <button
-                    className="pixel-btn justify-center"
-                    onClick={() => {
-                      ui()
-                      pickThenPlayRef.current = false
-                      setScreen('character')
-                    }}
+                    key={l}
+                    aria-pressed={lang === l}
+                    className={`min-h-[30px] min-w-[38px] px-2 py-1 text-[12px] font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`}
+                    onClick={() => (ui(), persist({ ...save, lang: l }))}
                   >
-                    {t("Karakter")}
+                    {l.toUpperCase()}
                   </button>
-                  <button className="pixel-btn relative justify-center" onClick={() => (ui(), setScreen('modes'))}>
-                    {t('Modlar')}
-                    {!isFresh(save) && save.meydan?.day !== today && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#120f1a]" aria-label={t('Bugünün meydan okuması seni bekliyor')} />}
-                  </button>
-                  <button
-                    className="pixel-btn justify-center"
-                    onClick={() => {
-                      ui()
-                      setStoryPage(0)
-                      setScreen('story')
-                    }}
-                  >
-                    {t("Hikâye")}
-                  </button>
-                  <button className="pixel-btn justify-center" onClick={() => (ui(), setBoardTab('genel'), setScreen('scores'))}>
-                    {t("Skorlar")}
-                  </button>
-                  <button className="pixel-btn justify-center" onClick={() => (ui(), setScreen('controls'))}>
-                    {t('Ayarlar')}
-                  </button>
-                  <button className="pixel-btn justify-center" onClick={() => toggle('music')}>
-                    {t('Müzik')} {save.music ? t('Açık') : t('Kapalı')}
-                  </button>
-                </div>
-              </div>
-              <div className="mt-3 grid gap-2 border-t-2 border-line pt-2.5 text-[12px] text-muted sm:mt-4 sm:pt-3 short:col-start-1 short:row-start-4 short:mt-3 short:self-end">
-                {!save.player && (
-                  // misafir: hesap çağrısı belirgin bir kart (küçük bir bağlantı değil); ilerlemesi varsa kaybolabileceği söylenir
-                  <div className="flex items-center justify-between gap-3 bg-[#2a2236] px-3 py-2 [box-shadow:inset_0_0_0_2px_#d9a441]">
-                    <span className="min-w-0 leading-snug">
-                      <span className="block text-[12px] font-semibold text-cream sm:text-[13px]">
-                        <span className="text-gold">☁</span> {save.unlocked > 0 || Object.keys(save.best).length > 0 ? t('Misafirsin: ilerlemen bu tarayıcıda') : t('Hesabınla her cihazdan devam et')}
-                      </span>
-                      <span className="hidden text-[12px] text-muted sm:block short:hidden">{t('Giriş yapınca ilerlemen hesabına kaydolur.')}</span>
-                    </span>
-                    <button className="pixel-btn primary shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px]" onClick={() => (ui(), setScreen('name'))}>
-                      <span className="sm:hidden">{t('Giriş Yap')}</span>
-                      <span className="hidden sm:inline">{t('Giriş Yap / Üye Ol')}</span>
-                    </button>
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                  {save.player ? (
-                    <button className="flex items-center gap-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('name'))}>
-                      <span className="text-gold">◆</span>
-                      <span>
-                        {t("Hesap:")} <strong className="font-semibold text-cream">{save.player.name}</strong> <span className="text-gold">· {t(travelerTitle(titleFacts(save, today)))}</span> <span className="text-[#7ad88a]">· {t('İlerleme Hesabında')}</span>
-                      </span>
-                    </button>
-                  ) : (
-                    <span />
-                  )}
-                  <span className="flex items-center gap-3 tabular-nums short:hidden">
-                    <span>
-                      {t("Hatıra")} <strong className="text-cream">{totalFound}</strong>/{LEVELS.length * 3}
-                    </span>
-                    <span>
-                      {t("Gizli Pul")} <strong className="text-cream">{Object.values(save.stamps ?? {}).filter(Boolean).length}</strong>/{LEVELS.length}
-                    </span>
-                    <span>
-                      {t("Nazar")} <strong className="text-cream">{Object.values(save.charms ?? {}).filter(Boolean).length}</strong>/{LEVELS.length}
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <button className="-my-1.5 justify-self-start py-1.5 text-left underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), setScreen('about'))}>
-                    {t('Oyun Hakkında →')}
-                  </button>
-                  <span className="flex items-center gap-1" role="group" aria-label={t('Dil')}>
-                    {(['tr', 'en'] as const).map((l) => (
-                      <button
-                        key={l}
-                        aria-pressed={lang === l}
-                        className={`min-h-[32px] min-w-[40px] px-2.5 py-1.5 font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`}
-                        onClick={() => (ui(), persist({ ...save, lang: l }))}
-                      >
-                        {l.toUpperCase()}
-                      </button>
-                    ))}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+                ))}
+              </span>
+            }
+          />
         </Overlay>
       )}
 
