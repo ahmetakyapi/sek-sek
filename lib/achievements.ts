@@ -49,6 +49,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   // boss
   { id: 'bosses10', name: 'Meydan Okuyan', text: 'On boss yen.', icon: '♛', progress: (s) => [Math.min(10, count(s.bosses)), 10] },
   { id: 'bossesAll', name: 'Meydanların Efendisi', text: 'Bütün boss’ları yen.', icon: '♛', progress: (s) => [count(s.bosses), N] },
+  { id: 'usta10', name: 'Çırak', text: 'On şehrin ustasının görevini yap.', icon: '⚒', progress: (s) => [Math.min(10, count(s.ustalar ?? {})), 10] },
+  { id: 'ustaAll', name: 'Usta Eli', text: 'Bütün ustaların görevini yap.', icon: '⚒', progress: (s) => [count(s.ustalar ?? {}), N] },
+  { id: 'full1', name: 'Hepsi Bir Arada', text: 'Bir şehri her şeyini aynı koşuda alarak bitir (%100).', icon: '✦', progress: (s) => [Math.min(1, Object.keys(s.full ?? {}).length), 1] },
   { id: 'cleanBoss', name: 'Tek Hamlede', text: 'Bir boss’u hiç düşmeden yen.', icon: '⚔', progress: feat('cleanBoss') },
   // madalya
   { id: 'gold5', name: 'Altın Adım', text: 'Beş şehirde altın madalya al.', icon: '●', progress: (s) => [Math.min(5, golds(s)), 5] },

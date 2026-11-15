@@ -8,6 +8,7 @@ import { ACCESSORIES, accessoryFor, walletOf } from '../game/accessories'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
+import { ustaDone, ustaTask } from '../lib/ustalar'
 
 describe('günün şehri ve haftanın görevi', () => {
   it('aynı gün aynı görev, açılmamış şehir çıkmaz', () => {
@@ -251,5 +252,27 @@ describe('Kılık Dükkânı', () => {
     expect(walletOf(10, { fes: true })).toBe(0)
     expect(accessoryFor('yok-boyle')).toBe('yok')
     expect(new Set(ACCESSORIES.map((a) => a.id)).size).toBe(ACCESSORIES.length)
+  })
+})
+
+describe('şehir ustaları', () => {
+  const lv = LEVELS[0]
+  const base = { timeMs: 999999, deaths: 2, items: [true, false, true], stamp: false, charm: true, cleanBoss: false, relaxed: false }
+  it('görev türleri şehirden şehre döner, art arda aynı görev yok', () => {
+    for (let i = 1; i < LEVELS.length; i++) expect(ustaTask(i)).not.toBe(ustaTask(i - 1))
+    expect(new Set(LEVELS.map((_, i) => ustaTask(i))).size).toBe(5)
+  })
+  it('görev koşunun sonucundan doğrulanır; Rahat Mod sayılmaz', () => {
+    expect(ustaDone('items', lv, base)).toBe(false)
+    expect(ustaDone('items', lv, { ...base, items: [true, true, true] })).toBe(true)
+    expect(ustaDone('nodeath', lv, { ...base, deaths: 0 })).toBe(true)
+    expect(ustaDone('secrets', lv, { ...base, stamp: true })).toBe(true)
+    expect(ustaDone('cleanBoss', lv, { ...base, cleanBoss: true })).toBe(true)
+    expect(ustaDone('gold', lv, { ...base, timeMs: lv.medals[0] * 1000 - 1 })).toBe(true)
+    expect(ustaDone('gold', lv, base)).toBe(false)
+    expect(ustaDone('nodeath', lv, { ...base, deaths: 0, relaxed: true })).toBe(false)
+  })
+  it('her şehrin bir ustası (ilk şehir insanı) var', () => {
+    for (const l of LEVELS) expect(l.npcs.length).toBeGreaterThan(0)
   })
 })

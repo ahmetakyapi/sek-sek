@@ -125,6 +125,11 @@ const COORDS: Record<string, [number, number]> = {
   bayburt: [40.23, 40.26],
   amasya: [35.83, 40.65],
   mugla: [28.36, 37.21],
+  rize: [40.52, 41.02],
+  artvin: [41.82, 41.18],
+  kars: [43.1, 40.6],
+  bitlis: [42.11, 38.4],
+  agri: [43.05, 39.72],
 }
 
 const W = 640

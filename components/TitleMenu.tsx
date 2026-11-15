@@ -10,9 +10,11 @@ import { useLang, useT } from '@/lib/i18n'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
 const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
-/** 1–99 arası sayıyı yazıyla, ilk harf büyük: 45 → "Kırk beş" */
+/** 1–999 arası sayıyı yazıyla, ilk harf büyük: 45 → "Kırk beş", 105 → "Yüz beş" */
 const trCount = (n: number) => {
-  const t = [TENS[Math.floor(n / 10)], ONES[n % 10]].filter(Boolean).join(' ')
+  const h = Math.floor(n / 100)
+  const r = n % 100
+  const t = [h ? (h > 1 ? `${ONES[h]} yüz` : 'yüz') : '', TENS[Math.floor(r / 10)], ONES[r % 10]].filter(Boolean).join(' ')
   return t.charAt(0).toLocaleUpperCase('tr') + t.slice(1)
 }
 

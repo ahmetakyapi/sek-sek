@@ -9,7 +9,10 @@ import { Overlay, displayName } from '@/components/ui'
 import type { AccessoryId } from '@/game/accessories'
 import { BOSSES } from '@/game/boss'
 import type { CharacterId } from '@/game/characters'
-import { LEVELS } from '@/game/levels'
+import { FIRST_BOOK, LEVELS as ALL } from '@/game/levels'
+
+/** final sahnesi ilk defterin otuz şehrini anlatır; ikinci defter onun ardından açılır */
+const LEVELS = ALL.slice(0, FIRST_BOOK)
 import { ENDING, fill } from '@/game/story'
 import type { Scarf } from '@/lib/extras'
 import { endingFor, localize, useLang, useT } from '@/lib/i18n'
@@ -30,6 +33,7 @@ export default function Ending({
   onCities,
   onMirror,
   onScores,
+  onSecondBook,
 }: {
   hero: CharacterId
   heroShort: string
@@ -41,6 +45,8 @@ export default function Ending({
   onCities: () => void
   onMirror: () => void
   onScores: () => void
+  /** ikinci defterin ilk şehrine git */
+  onSecondBook: () => void
 }) {
   const t = useT()
   const lng = useLang()
@@ -136,6 +142,12 @@ export default function Ending({
               <h2 className="mt-3 font-display text-4xl text-cream short:text-3xl">{t('Ayna Yolu Açıldı')}</h2>
               <p className="mt-2 max-w-md text-[15px] leading-relaxed text-cream/90">{t('Otuz şehir şimdi bir de aynada: haritalar sağdan sola döndü, rüzgâr ters esiyor, oklar öbür yandan geliyor. Hatıra yok, tabela yok; yalnız yol ve süre.')}</p>
               <p className="mt-2 text-[13px] text-muted">{t('Modlar → Ayna Yolu. Her şehrin ayna rekoru ayrı tutulur.')}</p>
+              {ALL.length > FIRST_BOOK && (
+                <div className="mt-5 max-w-md border-2 border-gold/60 bg-gold/5 px-4 py-3">
+                  <p className="text-[11px] font-bold tracking-[0.25em] text-gold">{t('İKİNCİ DEFTER')}</p>
+                  <p className="mt-1 text-[14px] leading-relaxed text-cream/90">{t('Sahaf defteri kapatırken arasından ikinci bir defter düştü: Rize’nin çay bahçelerinden Ağrı Dağı’nın zirvesine {n} şehir daha. Halatlar, teleferikler ve yüzülecek sular seni bekliyor.', { n: ALL.length - FIRST_BOOK })}</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -151,7 +163,12 @@ export default function Ending({
             </button>
           ) : (
             <div className="flex flex-wrap justify-end gap-2">
-              <button className="pixel-btn primary" onClick={onMirror} autoFocus>
+              {ALL.length > FIRST_BOOK && (
+                <button className="pixel-btn primary" onClick={onSecondBook} autoFocus>
+                  {t('İkinci Defteri Aç →')}
+                </button>
+              )}
+              <button className={`pixel-btn ${ALL.length > FIRST_BOOK ? '' : 'primary'}`} onClick={onMirror} autoFocus={ALL.length <= FIRST_BOOK}>
                 {t('◐ Ayna Yolu')}
               </button>
               <button className="pixel-btn" onClick={onCities}>

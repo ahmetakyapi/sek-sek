@@ -38,6 +38,8 @@ const SCREENS = {
   skorlar: [SAVE, ['Skorlar']],
   'skorlar-sehir': [SAVE, ['Skorlar', 'tab:Şehirler']],
   'skorlar-gunluk': [SAVE, ['Skorlar', 'tab:Günlük']],
+  'skorlar-speedrun': [SAVE, ['Skorlar', 'tab:Speedrun']],
+  'coop-kur': [SAVE, ['Modlar', 'Co-op']],
   ayarlar: [SAVE, ['Ayarlar']],
   'ayarlar-tuslar': [SAVE, ['Ayarlar', 'opt:tab:Kontroller']],
   'foto-kipi': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:Escape', 'Fotoğraf Kipi', 'wait:300']],
@@ -54,7 +56,8 @@ const SCREENS = {
   'turnuva-sonu': [SAVE, ['Modlar', 'Turnuvaya Gir', '▶ Koş', 'wait:600', FINISH, 'wait:900']],
   dukkan: [SAVE, ['Karakter', 'Kılık Dükkânı']],
   'ayna-yolu': [ALL, ['Modlar', '◐ Aynaya Geç']],
-  final: [ALL, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1200', '▶ Defteri Kapat', 'wait:600'], '?sehir=bayburt'],
+  // final ilk kez: Bayburt'u bitiren, finali henüz görmemiş yolcu (görmüş olan Bayburt'tan sonra Rize'ye geçer)
+  final: [{ ...ALL, sawEnding: false }, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1200', '▶ Defteri Kapat', 'wait:600'], '?sehir=bayburt'],
   'yaris-daveti': [SAVE, [], '?yaris=konya~ahmet'],
 }
 

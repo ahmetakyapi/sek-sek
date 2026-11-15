@@ -99,6 +99,16 @@ export const SCALES: Record<CityKey, Makam> = {
   mugla: { root: 62, steps: [0, 2, 4, 5, 7, 9, 10, 12], meter: [2, 2, 2, 3], tempo: 0.2 },
   // Saba'ya yakın (Re)
   bayburt: { root: 50, steps: [0, 2, 3, 4, 7, 8, 10, 12], meter: [3, 2, 2], tempo: 0.19 },
+  // Karadeniz, kemençe ve tulum 7/8 (Rize)
+  rize: { root: 62, steps: [0,  2,  3,  5,  7,  9,  10,  12], meter: [2,  2,  3], tempo: 0.12 },
+  // Karadeniz yaylası 7/8 (Artvin)
+  artvin: { root: 60, steps: [0,  2,  3,  5,  7,  8,  10,  12], meter: [2,  2,  3], tempo: 0.13 },
+  // Kafkas havası, Uşşak’a yakın (Kars)
+  kars: { root: 57, steps: [0,  2,  3,  5,  7,  8,  10,  12], meter: [3,  3,  2], tempo: 0.14 },
+  // Uşşak, uzun hava ağırlığı (Bitlis)
+  bitlis: { root: 59, steps: [0,  1,  3,  5,  7,  8,  10,  12], meter: [3,  3,  2], tempo: 0.19 },
+  // Hüseyni, dağ havası 9/8 (Ağrı)
+  agri: { root: 57, steps: [0,  2,  3,  5,  7,  9,  10,  12], meter: [2,  2,  2,  3], tempo: 0.15 },
 }
 
 // ── jenerik ───────────────────────────────────────────────────────────────

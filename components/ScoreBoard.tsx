@@ -9,7 +9,7 @@ import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
 /** Tablo türü: bir şehir, genel toplamlar, hesaba kayıtlı defter, günün meydan okuması ya da haftanın turnuvası */
-export type BoardKind = 'city' | 'genel' | 'koleksiyon' | 'gunluk' | 'turnuva'
+export type BoardKind = 'city' | 'genel' | 'koleksiyon' | 'gunluk' | 'turnuva' | 'yuzde' | 'tur' | 'aynatur'
 
 interface Row {
   name: string
@@ -84,7 +84,7 @@ export function Board({
     setRows(null)
     setRaceMsg(null)
     const nameList = names?.join(',') ?? ''
-    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(week ? { week } : {}), ...(nameList ? { names: nameList } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
+    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(kind === 'yuzde' ? { city: level } : {}), ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(week ? { week } : {}), ...(nameList ? { names: nameList } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
     fetch(`/api/scores?${q}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
       .then((j: { scores: Row[] }) => live && setRows(j.scores))
@@ -141,6 +141,8 @@ export function Board({
     }
     const plays = n(r.plays) > 1 ? ` · ${t('{n} koşu', { n: n(r.plays) })}` : ''
     if (kind === 'turnuva') return [formatTime(n(r.timeMs)), `${t('3 mücadele')} · ✕${n(r.deaths)}`]
+    // speedrun: süre ve düşüş (%100'de her şey alındı, turda otuz şehir)
+    if (kind === 'yuzde' || kind === 'tur' || kind === 'aynatur') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
     if (kind === 'gunluk') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
     // mücadele haritasında hatıra yok: süre ve düşüş
     if (level.startsWith('mucadele-')) return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
@@ -258,7 +260,7 @@ export function Board({
   )
 }
 
-type Tab = 'genel' | 'city' | 'gunluk' | 'koleksiyon'
+type Tab = 'genel' | 'city' | 'gunluk' | 'koleksiyon' | 'speedrun'
 
 /** Skor Tablosu ekranı: dört sekme; her sekmenin kendi sıralama seçenekleri ve kısa bir açıklaması var. */
 export default function ScoreBoard({
@@ -302,13 +304,16 @@ export default function ScoreBoard({
     ['city', t('Şehirler')],
     ['gunluk', t('Günlük')],
     ['koleksiyon', t('Koleksiyon')],
+    ['speedrun', t('Speedrun')],
   ]
   const sorts: [string, string][] =
     tab === 'genel'
       ? [['', t('Bitirilen Şehir')], ['items', t('Hatıra')], ['deaths', t('En Az Düşüş')]]
       : tab === 'city'
         ? [['', t('Süre')], ['deaths', t('En Az Düşüş')], ['items', t('Hatıra')]]
-        : []
+        : tab === 'speedrun'
+          ? [['', '%100'], ['tur', t('Tam Tur')], ['aynatur', t('Ayna Tam Tur')]]
+          : []
   const lv = localize(LEVELS[idx], lng)
   const daily = dailyRun(day, LEVELS)
   const dailyLevel = LEVELS.find((l) => l.id === daily.levelId)!
@@ -326,13 +331,19 @@ export default function ScoreBoard({
           : sort === 'items'
             ? t('Her yolcunun bu şehirde bulduğu en çok hatıra; eşitlikte hızlı olan önde.')
             : t('Her yolcunun bu şehirdeki en iyi süresi.')
-        : tab === 'koleksiyon'
+        : tab === 'speedrun'
+          ? sort === 'tur'
+            ? t('İlk defterin otuz şehri baştan sona, arka arkaya: toplam süre.')
+            : sort === 'aynatur'
+              ? t('Otuz şehir aynada, arka arkaya: toplam süre.')
+              : t('Üç hatıra, gizli pul ve nazar boncuğu aynı koşuda alınarak bitirilen en hızlı koşu.')
+          : tab === 'koleksiyon'
           ? t('Hesaba kayıtlı defterden: hatıra, gizli pul ve nazar boncuğu toplamı.')
           : t('Herkes için aynı şehir ve aynı kural; skor süreye cezalar eklenerek hesaplanır.')
 
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col short:mt-1.5">
-      <div className="grid grid-cols-4 gap-1.5" role="tablist">
+      <div className="grid grid-cols-5 gap-1.5" role="tablist">
         {tabs.map(([k, label]) => (
           <button
             key={k}
@@ -349,7 +360,7 @@ export default function ScoreBoard({
         ))}
       </div>
 
-      {tab === 'city' && (
+      {(tab === 'city' || (tab === 'speedrun' && !sort)) && (
         <div className="mt-3 flex items-center gap-2 short:mt-1.5">
           <button aria-label={t('Önceki Şehir')} className="pixel-btn h-12 shrink-0 px-3 text-lg short:h-9" onClick={() => step(-1)}>
             ‹
@@ -401,7 +412,7 @@ export default function ScoreBoard({
           </div>
         </div>
       ) : (
-        <p className="mt-2.5 font-display text-xl text-gold short:hidden">{tab === 'city' ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : t('Koleksiyoncular')}</p>
+        <p className="mt-2.5 font-display text-xl text-gold short:hidden">{tab === 'city' || (tab === 'speedrun' && !sort) ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : tab === 'speedrun' ? (sort === 'tur' ? t('Tam Tur') : t('Ayna Tam Tur')) : t('Koleksiyoncular')}</p>
       )}
       <p className="mt-0.5 text-[12px] leading-snug text-muted short:hidden">{tab === 'city' ? `${lv.subtitle} · ${note}` : note}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 short:mt-1">
@@ -423,15 +434,15 @@ export default function ScoreBoard({
       {onlyFriends && tab !== 'koleksiyon' && friends && onFriend && <AddFriend friends={friends} me={me} onAdd={onFriend} />}
       <div className="overlay-scroll mt-1 min-h-[160px] flex-1 overflow-y-auto overscroll-contain pr-1 short:min-h-[72px]">
         <Board
-          kind={tab}
+          kind={tab === 'speedrun' ? (sort === 'tur' || sort === 'aynatur' ? sort : 'yuzde') : tab}
           level={LEVELS[idx].id}
-          sort={sort}
+          sort={tab === 'speedrun' ? '' : sort}
           day={tab === 'gunluk' ? day : ''}
           me={me}
           names={onlyFriends && tab !== 'koleksiyon' && friends ? friends : undefined}
           friends={friends}
           onFriend={onFriend}
-          onRace={onRace && canRace?.(idx) ? (name) => onRace(idx, name) : undefined}
+          onRace={tab === 'city' && onRace && canRace?.(idx) ? (name) => onRace(idx, name) : undefined}
         />
       </div>
     </div>

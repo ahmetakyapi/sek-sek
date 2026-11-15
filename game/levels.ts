@@ -14,6 +14,11 @@ import { road as hatayRoad } from './cities/hatay'
 import { road as kayseriRoad } from './cities/kayseri'
 import { road as amasyaRoad } from './cities/amasya'
 import { road as muglaRoad } from './cities/mugla'
+import { road as rizeRoad } from './cities/rize'
+import { road as artvinRoad } from './cities/artvin'
+import { road as karsRoad } from './cities/kars'
+import { road as bitlisRoad } from './cities/bitlis'
+import { road as agriRoad } from './cities/agri'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { PRELUDES, buildArena, buildFinale } from './finales'
@@ -1095,6 +1100,11 @@ const DECOR_CYCLE: Record<string, string> = {
   amasya: 'tzl',
   mugla: 'lzt',
   bayburt: 'tzl',
+  rize: 'tlz',
+  artvin: 'ztl',
+  kars: 'zlt',
+  bitlis: 'lzt',
+  agri: 'ltz',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2011,6 +2021,163 @@ export const LEVELS: LevelDef[] = [
     wind: -210,
     map: bayburt,
   },
+  // ── İkinci defter: Doğu Karadeniz ve Doğu (Bayburt'tan sonra; finalin ardından açılır)
+  {
+    id: 'rize',
+    city: 'rize',
+    name: 'Rize',
+    plate: 53,
+    subtitle: 'Çay Bahçelerinden Yaylaya',
+    difficulty: 'Orta',
+    note: 'Rize’de yağmur misafir değil, ev sahibidir. Yamaçlar baştan aşağı çay bahçesi; Fırtına Deresi taş köprülerin altından köpürerek akar. İnce belli bardakta tavşan kanı bir çay iç, sonra yaylaya çık.',
+    npcs: [
+      { name: 'Çaycı Hamdi Amca', look: 'amca', text: 'Çayı demlemek sabır ister evlat: kaynayan suyla değil, biraz dinlenmiş suyla. İnce belli bardakta tavşan kanı olacak. Yamaçtan üç yaprak uçtu, biri derenin dibine kadar gitti.' },
+      { name: 'Çay Toplayıcısı Nazmiye Teyze', look: 'teyze', text: 'Sırtımdaki küfeyle sabahtan beri yamaçtayım yavrum; en körpe iki yaprak bir tomurcuk koparılır. Yağmur dinmez burada ama çay da bu yağmurla büyür.' },
+      { name: 'Tulumcu Bayram', look: 'ozan', text: 'Tulumu bir dolduruyorum, bütün vadi horona kalkıyor! Köprünün altına bir bak, derenin karanlık tarafında bir kovuk var; oraya ancak yüzerek girilir.' },
+    ],
+    medals: [65, 100, 160],
+    quips: ['Yağmur seni de ıslattı.', 'Çay soğumadan kalk!', 'Fırtına Deresi şakaya gelmez.', 'Bir bardak daha demle.'],
+    item: 'Çay',
+    intro: 'Çay bahçelerinin teraslarından Fırtına Deresi’nin taş kemer köprülerine, ormanın içindeki Zil Kale’den Ayder Yaylası’na. Yeşilin her tonu, yağmurun her sesi.',
+    facts: [
+      { title: 'Çayın Başkenti', text: 'Türkiye’de çay tarımı Rize ve çevresinde yapılır. İlk çay fabrikası 1947’de Rize’de açıldı; bugün yamaçların neredeyse tamamı çay bahçesidir.' },
+      { title: 'Zil Kale', text: 'Fırtına Vadisi’nde, ormanın içinde yüksek bir kayalığın üstünde duran Zil Kale, Orta Çağ’dan kalmadır. Sisli günlerde bulutların arasından görünür.' },
+      { title: 'Taş Kemer Köprüler', text: 'Fırtına Deresi’nin üstünde yüzyıllardır ayakta duran tek kemerli taş köprüler vardır. En bilineni Şenyuva Köprüsü’dür.' },
+    ],
+    secret: { title: 'Tulum', text: 'Hemşin yaylalarında horonu tulum çalar. Tulum, keçi derisinden yapılan bir gaydadır; sesi vadiden vadiye taşınır.' },
+    hints: [
+      'Rize’ye hoş geldin! Çay bahçelerinin terasları basamaktır: sıra sıra yukarı çık, yağmurda kaymadan.',
+      'Fırtına Deresi: bu su derin ama boğmaz. Suya gir, zıplama tuşuyla kulaç at; yüzeyde atılan kulaç seni sudan çıkarır.',
+      'Taş kemer köprüler: ayaklara atla, kemerin üstünden geç. Sonra kayanın altından dalarak yüz: kulaç atma, batarak geç.',
+      'Zil Kale’den Ayder Yaylası’na: kayalıktan yaylaya tırman. Meydan kapısı yayla evlerinin önünde.',
+    ],
+    map: roadMap(rizeRoad),
+  },
+  {
+    id: 'artvin',
+    city: 'artvin',
+    name: 'Artvin',
+    plate: 8,
+    subtitle: 'Çoruh’un Yamaçları',
+    difficulty: 'Zor',
+    note: 'Artvin’de düz yer bulmak zordur: evler yamaca tutunur, köyler teleferikle birbirine bağlanır. Aşağıda Çoruh hırçın akar, yukarıda Kafkasör’de boğalar güreşir. Macahel’in balını tatmadan dönme.',
+    npcs: [
+      { name: 'Arıcı İsmet Amca', look: 'amca', text: 'Macahel’in arısı uslu arıdır evlat, ama kovanını bilir. Petekten üç parça yuvarlandı; biri telin ta öbür ucuna kaçmış.' },
+      { name: 'Yaylacı Nazife Teyze', look: 'teyze', text: 'Yaz gelince inekleri alıp yaylaya çıkarız yavrum. Kafkasör’de boğalar güreşir; bizim Karabaş geçen yıl üç boğayı yendi!' },
+      { name: 'Teleferikçi Doğan', look: 'genc', text: 'Köyle köy arasında yol yerine tel vardır burada; sepete otururuz, tel bizi taşır. Halatın en ucunda dur, aşağı bak: kayanın yarığında bir şey parlıyor.' },
+    ],
+    medals: [110, 155, 220],
+    quips: ['Yokuş seni yendi.', 'Teli sıkı tut!', 'Çoruh affetmez.', 'Boğa bile daha dikkatli.'],
+    item: 'Bal Peteği',
+    intro: 'Yamaca tutunmuş evlerden köy teleferiklerine, hırçın Çoruh’un vadisinden Macahel ormanlarına ve Kafkasör Yaylası’na. Her yol ya yokuş ya iniş.',
+    facts: [
+      { title: 'Kafkasör Yaylası', text: 'Kafkasör Yaylası’nda her yaz düzenlenen şenlikte boğa güreşleri yapılır. Boğalar birbirini iterek güreşir; yenilen boğa meydanı terk eder.' },
+      { title: 'Macahel', text: 'Camili-Macahel, 2005’te UNESCO Biyosfer Rezervi oldu; Türkiye’nin ilk biyosfer rezervidir. Ormanları, ayıları ve arılarıyla korunur.' },
+      { title: 'Hırçın Çoruh', text: 'Çoruh, Türkiye’nin en hızlı akan nehirlerinden biridir. Derin vadilerden geçer, üstünde barajlar ve rafting parkurları vardır.' },
+    ],
+    secret: { title: 'Kafkas Arısı', text: 'Macahel’de yaşayan Kafkas arısının dili uzundur; bu yüzden derindeki çiçek balını da toplayabilir. Bu arının soyu özenle korunur.' },
+    hints: [
+      'Artvin’e hoş geldin! Evler yamaca tutunur: damdan dama atla; geniş aralıkta dash at, cumbayla duvar arasında sek.',
+      'Köy teleferiği: tele altından zıpla, asıl. Sağa sola elle ilerle; zıplarsan ya da aşağı basarsan düz aşağı inersin.',
+      'Çoruh vadisi: sarkan halata havadayken değ, tutun. Yukarı tırman, zıplayınca bırakırsın.',
+      'Kafkasör Yaylası: telden tele, halattan halata yaylaya çık. Meydan kapısı güreş meydanının önünde.',
+    ],
+    map: roadMap(artvinRoad),
+  },
+  {
+    id: 'kars',
+    city: 'kars',
+    name: 'Kars',
+    plate: 36,
+    subtitle: 'Ani’den Sarıkamış’a',
+    difficulty: 'Zor',
+    note: 'Kars’ta kış uzun, ama sokaklar sıcaktır. Taş binaların arasından kaleye çık, Sarıkamış’ın karlı çamlarında kay, akşam Ani’nin yıkık kiliselerinin arasında gün batımını izle. Bir dilim gravyerle dön.',
+    npcs: [
+      { name: 'Peynirci Adem Usta', look: 'usta', text: 'Gravyer sabır işidir evlat: tekerleği mağarada aylarca çevirir, bekleriz. Üç dilim kesmiştim, kar üstüne düştü; biri kalenin tepesine kadar yuvarlanmış!' },
+      { name: 'Kayakçı Melek', look: 'genc', text: 'Sarıkamış’ın karı toz gibidir, kayak ayağının altında şarkı söyler. Buzda fren yoktur ama: kenara gelmeden yavaşla.' },
+      { name: 'Arkeolog Leyla Hoca', look: 'teyze', text: 'Ani’de her taşın bir hikâyesi var. Katedralin arkasındaki yıkık duvarın üstüne çık; oradan aşağı bakan, kimsenin görmediği bir oyuk görür.' },
+    ],
+    medals: [75, 115, 170],
+    quips: ['Kar seni kucakladı.', 'Buzda fren yok!', 'Kaz bile güldü.', 'Ani bin yıldır bekliyor, acele etme.'],
+    item: 'Gravyer',
+    intro: 'Taş binalı sokaklardan Kars Kalesi’ne, Sarıkamış’ın sarıçam ormanlarından buz tutmuş yamaçlara ve bin bir kiliseli Ani’ye. Karın beyazı, taşın grisi.',
+    facts: [
+      { title: 'Ani', text: 'Ani Arkeolojik Alanı, 2016’da UNESCO Dünya Mirası Listesi’ne girdi. Orta Çağ’da kalabalık bir başkentti; “bin bir kiliseli şehir” diye anılır.' },
+      { title: 'Taş Binalar', text: 'Kars’ın merkezinde Baltık mimarisiyle yapılmış taş binalar vardır. Çoğu 19. yüzyılın sonu ile 20. yüzyılın başında yapıldı.' },
+      { title: 'Sarıkamış', text: 'Sarıkamış, sarıçam ormanlarının arasındaki kayak merkeziyle bilinir. Kar burada kuru ve tozdur; kayakçılar “kristal kar” der.' },
+    ],
+    secret: { title: 'Gravyer', text: 'Kars gravyerinin yapımını bölgeye 19. yüzyılda gelen İsviçreli ustaların öğrettiği anlatılır. Büyük tekerlekler aylarca mağarada olgunlaşır.' },
+    hints: [
+      'Kars’a hoş geldin! Taş binaların saçakları basamaktır: saçaktan saçağa atla, karda kaymadan dur.',
+      'Kars Kalesi: surdan sarkan halata havadayken değ, tutun. Yukarı tırman, burca zıplayıp çık.',
+      'Sarıkamış yamacı: buz tutmuş kar kaygandır. Erken yavaşla, kenara gelmeden dur.',
+      'Ani harabeleri: yıkık duvarların üstünden geç, halattan halata. Meydan kapısı katedralin önünde.',
+    ],
+    map: roadMap(karsRoad),
+  },
+  {
+    id: 'bitlis',
+    city: 'bitlis',
+    name: 'Bitlis',
+    plate: 13,
+    subtitle: 'Vadideki Kale, Kraterdeki Göl',
+    difficulty: 'Zor',
+    note: 'Bitlis dar bir vadiye kurulmuş; evler taştan, sokaklar dereyle yan yana. Kale şehrin ortasında bir kayanın üstünde durur. Ahlat’ta mezar taşlarının işlemelerine bak, Tatvan’da Nemrut’un kraterindeki göle in.',
+    npcs: [
+      { name: 'Büryancı Ferit Usta', look: 'usta', text: 'Büryanı kuyuda pişiririz evlat: kuzu saatlerce ağır ateşte döner, eti kemikten kendiliğinden ayrılır. Üç tabak hazırlamıştım, rüzgâr biri kalenin ta tepesine savurdu!' },
+      { name: 'Taş Ustası Celal Amca', look: 'amca', text: 'Ahlat taşı yumuşaktır, keskiyle dantel gibi işlenir. Ama ayağının altında sağlamdır; taştan taşa korkmadan atla.' },
+      { name: 'Gölcü Zübeyde Teyze', look: 'teyze', text: 'Nemrut’un gölü yanardağın kalbinde durur yavrum; bir yanı buz gibi, bir yanı ılık. Gölün dibine yakın, kayanın gölgesinde ışıl ışıl bir şey var; ancak dalan bulur.' },
+    ],
+    medals: [55, 85, 130],
+    quips: ['Vadi derin, sen hızlı.', 'Halatı bıraktın!', 'Krater seni yuttu… neyse ki yüzüyorsun.', 'Büryan soğumadan kalk.'],
+    item: 'Büryan',
+    intro: 'Derenin iki yanındaki taş evlerden vadinin ortasındaki Bitlis Kalesi’ne, Ahlat’ın işlemeli mezar taşlarından Nemrut Dağı’nın krater gölüne. Taş, su ve ateşten doğmuş bir yol.',
+    facts: [
+      { title: 'Nemrut Krater Gölü', text: 'Tatvan’daki Nemrut Dağı’nın kraterinde, dünyanın en büyük krater göllerinden biri bulunur. Kraterin içinde soğuk ve sıcak su kaynakları vardır.' },
+      { title: 'Ahlat Mezar Taşları', text: 'Ahlat Selçuklu Meydan Mezarlığı, Anadolu’nun en büyük Türk-İslam mezarlığıdır. Mezar taşları dantel gibi işlenmiştir.' },
+      { title: 'Bitlis Kalesi', text: 'Bitlis dar bir vadiye kurulmuştur. Bitlis Kalesi, vadinin ortasında yükselen bir kayanın üstünde, şehre yukarıdan bakar.' },
+    ],
+    secret: { title: 'Şerefname', text: 'Bitlis beyi Şeref Han’ın 16. yüzyılın sonunda yazdığı Şerefname, bölgenin tarihini anlatan en önemli eserlerden biridir.' },
+    hints: [
+      'Bitlis’e hoş geldin! Taş evler derenin iki yanına dizilir: damdan dama atla, köprüden geç.',
+      'Bitlis Kalesi: kayadan sarkan halata havadayken değ, tutun. ↑↓ ile tırman ya da zıplayıp yeniden yakala; sonra öbür halata geç.',
+      'Ahlat mezar taşları: uzun taşların tepesine çık, taştan taşa atla. Son aralık geniş: zıpla, havada dash at.',
+      'Nemrut Krater Gölü: göl derin ama yüzülür. Zıplama kulaçtır; yüzeyde kulaç atınca sudan çıkarsın. Meydan kapısı kıyıda.',
+    ],
+    map: roadMap(bitlisRoad),
+  },
+  {
+    id: 'agri',
+    city: 'agri',
+    name: 'Ağrı',
+    plate: 4,
+    subtitle: 'Sarayın Kapısından Dağın Zirvesine',
+    difficulty: 'Çok Zor',
+    note: 'Defterin son sayfası dağın gölgesinde yazıldı. Doğubayazıt’ta İshak Paşa Sarayı’nın kapısından geç, Meteor Çukuru’na eğilip bak, sonra Ağrı Dağı’na tırman. Zirvede rüzgâr sert, manzara sonsuz.',
+    npcs: [
+      { name: 'Halıcı Zozan Teyze', look: 'teyze', text: 'Kilimi tezgâhta ilmek ilmek dokuruz yavrum; her desen bir dua, her renk bir yayla çiçeği. Üç kilimimi rüzgâr aldı götürdü, biri sarayın damına konmuş!' },
+      { name: 'Kavalcı Bedirhan Amca', look: 'coban', text: 'Sürüyü yamaca çıkarırken kaval çalarım; koyunlar sesimi tanır. Dağın rüzgârı sert eser evlat, atlarken hesaba kat.' },
+      { name: 'Dağcı Rojda', look: 'genc', text: 'Zirveye on kez çıktım, her seferinde başka bir yüzünü gördüm dağın. Çukurun karşı yamacında, telin bittiği yerin altında bir taş kovuk var; çoğu dağcı fark etmez.' },
+    ],
+    medals: [100, 150, 220],
+    quips: ['Dağ seni geri çevirdi.', 'Rüzgâr kazandı bu sefer.', 'Zirve kaçmıyor.', 'Kilimin ucu kaçtı.'],
+    item: 'Kilim',
+    intro: 'Doğubayazıt’ın sokaklarından İshak Paşa Sarayı’nın avlularına, Meteor Çukuru’ndan Ağrı Dağı’nın karlı yamaçlarına. İkinci defterin son durağı, Türkiye’nin çatısı.',
+    facts: [
+      { title: 'Ağrı Dağı', text: 'Ağrı Dağı 5137 metreyle Türkiye’nin en yüksek dağıdır. Zirvesi yıl boyu karla ve buzulla örtülüdür.' },
+      { title: 'İshak Paşa Sarayı', text: 'Doğubayazıt’taki İshak Paşa Sarayı’nın 1784’te tamamlandığı kabul edilir. Osmanlı, Selçuklu ve İran mimarisini bir araya getirir.' },
+      { title: 'Meteor Çukuru', text: 'Doğubayazıt yakınındaki Meteor Çukuru’nu 19. yüzyılın sonunda düşen bir göktaşının açtığı düşünülür.' },
+    ],
+    secret: { title: 'Ahmed-i Hani', text: 'Mem ü Zin destanını yazan şair Ahmed-i Hani’nin türbesi, İshak Paşa Sarayı’nın hemen yakınında, tepenin yamacındadır.' },
+    hints: [
+      'Ağrı’ya hoş geldin! Doğubayazıt’ın damlarından saraya doğru çık. Dağın rüzgârı karşından eser.',
+      'İshak Paşa Sarayı: avludan avluya halatla geç. Tırman, zıpla, öbür halatı yakala; sonuncudan dash ile terasa atla.',
+      'Meteor Çukuru: çukurun içi derin. Telden asılıp üstünden geç, aşağı bakma.',
+      'Ağrı Dağı: buzda erken dur, rüzgârda atlayışın kısalır. Yarıkta halattan dash at, bacada duvardan duvara sek; zirve teli kampa varır.',
+    ],
+    wind: -110,
+    map: roadMap(agriRoad),
+  },
 ]
 
 /** Yeni parçaları bölüme ekler: sona (çıkış taşınır) ya da finalden önceye. */
@@ -2077,3 +2244,5 @@ for (const l of LEVELS) {
   addFinale(l)
 }
 
+/** İlk defterin şehir sayısı: final sahnesi ve Ayna Yolu buna bağlı. İkinci defter (Rize'den Ağrı'ya) bunun ardından gelir. */
+export const FIRST_BOOK = LEVELS.findIndex((l) => l.id === 'rize')

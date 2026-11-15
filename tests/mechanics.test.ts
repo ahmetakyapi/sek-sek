@@ -115,3 +115,48 @@ describe('derin su', () => {
     expect(w.deaths + (w.player.dead ? 1 : 0)).toBeGreaterThan(0)
   })
 })
+
+describe('co-op eşi', () => {
+  const two = (w: World, secs: number, a: Partial<Input> = {}, b: Partial<Input> = {}, pressB = false) => {
+    for (let i = 0; i < Math.round(secs * 120); i++) {
+      w.step(1 / 120, { ...emptyInput(), ...a })
+      w.stepPartner(1 / 120, { ...emptyInput(), ...b, jumpPressed: pressB && i === 0 })
+    }
+  }
+  it('eş aynı dünyada yürür ve hatırayı toplar (ortak)', () => {
+    const w = mk(['            ', ' P     C    ', '############'])
+    w.enableCoop()
+    w.started = true
+    const x0 = w.player.x
+    two(w, 1.2, {}, { right: true })
+    expect(w.partner!.x).toBeGreaterThan(x0 + 60)
+    expect(w.player.x).toBeCloseTo(x0, 0)
+    expect(w.pickups[0].taken).toBe(true)
+  })
+
+  it('düşen eş partnerinin yanında doğar; dünya sıfırlanmaz', () => {
+    const w = mk(['             ', ' P   C       ', '#####^^^#####', '#############'])
+    w.enableCoop()
+    w.started = true
+    two(w, 0.6, { right: true })
+    expect(w.pickups[0].taken).toBe(true)
+    const px = w.player.x
+    two(w, 1.2, {}, { right: true })
+    expect(w.deaths).toBe(1)
+    two(w, 1)
+    const q = w.partner!
+    expect(q.dead).toBe(false)
+    expect(Math.abs(q.x - px)).toBeLessThan(16)
+    // oyuncu düşmediği için bölüm bayraktan kurulmadı: toplanan hatıra yerinde
+    expect(w.pickups[0].taken).toBe(true)
+    expect(w.player.dead).toBe(false)
+  })
+
+  it('eş çıkışa varınca bölüm biter', () => {
+    const w = mk(['            ', ' P      E   ', '############'])
+    w.enableCoop()
+    w.started = true
+    two(w, 1.5, {}, { right: true })
+    expect(w.complete).toBe(true)
+  })
+})

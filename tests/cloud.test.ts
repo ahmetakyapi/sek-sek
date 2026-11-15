@@ -66,12 +66,16 @@ describe('şehir başına harita sürümü', () => {
 
   it('sonradan eklenen şehirler yeni şehir olarak listelenir', () => {
     const s = normalizeSave({ mapVersion: 7, migrated: true, unlocked: 20, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
-    expect(mapNews(s).added.sort()).toEqual(['amasya', 'eskisehir', 'hatay', 'kayseri', 'mugla'])
+    expect(mapNews(s).added.sort()).toEqual(['agri', 'amasya', 'artvin', 'bitlis', 'eskisehir', 'hatay', 'kars', 'kayseri', 'mugla', 'rize'])
     // sürüm 8'den gelen oyuncuya yalnız son eklenen iki şehir yenidir
     const s8 = normalizeSave({ mapVersion: 8, unlocked: 27, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
-    expect(mapNews(s8).added.sort()).toEqual(['amasya', 'mugla'])
+    expect(mapNews(s8).added.sort()).toEqual(['agri', 'amasya', 'artvin', 'bitlis', 'kars', 'mugla', 'rize'])
     // eski sırada son şehir (Bayburt) açıktı: kimliğiyle yeni sıradaki yerine taşınır
     expect(LEVELS[s8.unlocked].id).toBe('bayburt')
+    // sürüm 9'dan gelen, Bayburt'u bitirmiş oyuncuya ikinci defterin ilk şehri açılır
+    const s9 = normalizeSave({ mapVersion: 9, unlocked: 29, best: { bayburt: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
+    expect(mapNews(s9).added.sort()).toEqual(['agri', 'artvin', 'bitlis', 'kars', 'rize'])
+    expect(LEVELS[s9.unlocked].id).toBe('rize')
     expect(mapNews(defaultSave())).toEqual({ renewed: [], added: [] })
   })
 

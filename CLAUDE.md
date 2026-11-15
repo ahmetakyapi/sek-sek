@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 30 şehrini gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 35 şehrini (iki defter: 30 + 5) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -24,7 +24,7 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
   sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
-  levels.ts      30 bölüm (ASCII harita, 24 satır) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
+  levels.ts      35 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
   cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
@@ -50,7 +50,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   challenges.ts  mücadele haritaları: Zor şehirlerin bayrak aralığından her açılışta kesilen kısa parkurlar (madalya `par`dan)
   mirror.ts      Ayna Yolu (Yeni Oyun+): şehir haritası sağdan sola; `LevelDef.mirror` ile platformlar ve zamanlama fazları da aynalanır
   accessories.ts Kılık Dükkânı aksesuarları (ad, fiyat) ve cüzdan; çizimi heroDraw/portraitDraw, oyunda `renderer.accessory`
-components/      React arayüzü: TitleMenu (ana menü: sıradaki şehrin kartpostalı, 30 duraklık yol çizgisi, simgeli kutucuklar; piksel simgeler dosyanın içinde), PhotoMode (Fotoğraf Kipi: moladan; kadraj ok tuşu ya da sürükleyerek, kartpostal çerçeveli PNG), KeyRemap (klavye tuş atama; `game/input.ts` KeyBindings, `save.keys`), MapGallery (/haritalar topluluk galerisi), Tournament (Haftalık Turnuva), Challenges (mücadele listesi, bitiş), Ending (final: harita, son söz, jenerik, Ayna Yolu), Mirror (Ayna Yolu listesi), Shop (Kılık Dükkânı), Album (Defter'de şehir albümü), Editor (Bölüm Düzenleyici, /duzenle; çözücü solve.worker.ts'te), Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, unvan, yol istatistikleri), Modes (Modlar: Günlük Meydan Okuma, Düello, Boss Rush, Maraton; bitiş ekranları), Race (Yan Yana Yarış: bölünmüş ekran, iki dünya ve iki çizici), ScoreBoard (Skor Tablosu: Genel, Şehirler, Günlük, Koleksiyon), About (artbook), Bestiary, HUD, dokunmatik
+components/      React arayüzü: Coop (iki kişi aynı ekranda: CoopSetup, Coop, CoopEnd; tuşlar Race KEYS), TitleMenu (ana menü: sıradaki şehrin kartpostalı, 30 duraklık yol çizgisi, simgeli kutucuklar; piksel simgeler dosyanın içinde), PhotoMode (Fotoğraf Kipi: moladan; kadraj ok tuşu ya da sürükleyerek, kartpostal çerçeveli PNG), KeyRemap (klavye tuş atama; `game/input.ts` KeyBindings, `save.keys`), MapGallery (/haritalar topluluk galerisi), Tournament (Haftalık Turnuva), Challenges (mücadele listesi, bitiş), Ending (final: harita, son söz, jenerik, Ayna Yolu), Mirror (Ayna Yolu listesi), Shop (Kılık Dükkânı), Album (Defter'de şehir albümü), Editor (Bölüm Düzenleyici, /duzenle; çözücü solve.worker.ts'te), Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, unvan, yol istatistikleri), Modes (Modlar: Günlük Meydan Okuma, Düello, Boss Rush, Maraton; bitiş ekranları), Race (Yan Yana Yarış: bölünmüş ekran, iki dünya ve iki çizici), ScoreBoard (Skor Tablosu: Genel, Şehirler, Günlük, Koleksiyon), About (artbook), Bestiary, HUD, dokunmatik
 lib/             customLevel (düzenleyicinin harita kodu: doğrulama, RLE + base64url, `customLevel()`), achievements (başarımlar: çoğu kayıttan hesaplanır, anlık olanlar `save.feats`), storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db, antiCheat (skorun fiziksel alt süresi `minScoreMs` ve hayalet makullüğü `ghostProblem`), rateLimit (`seksek_rate` tablosunda sabit pencere; tablo yoksa geçer), communityMaps (topluluk haritası kuralları: başlık, süzgeç, günlük sınır)
 app/             / oyun (`?yaris=<şehir>~<ad>` yarış daveti, `?ozel=<kod>` özel harita) · /duzenle bölüm düzenleyici · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /sehir/[id] şehir tanıtımı (30 sayfa statik; app/sitemap.ts, app/robots.ts) · /haritalar topluluk galerisi · /skor paylaşım · /skor/kart kartpostal · /api/*
 scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-frames (tarayıcıda 3x çözünürlükte dash hızında kayarken zemin hücresi hazır mı; kasma kanıtı), verify-perf (üretim derlemesinde gerçek oynanışta kare kaçırma; performans kanıtı), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), audit-menus (her menü dört ekran boyutunda tek bakışta sığıyor mu), audit-clearance (1 karo yüksekliğinde yürünen alçak koridor var mı), verify-rules (Dash’siz kuralının çıktığı şehirler dash atmadan bitiyor mu), verify-challenges (mücadele haritaları çözücüyle bitiyor mu; madalya için en hızlı süreyi yazdırır), audio-render (sesi dinlemeden kanıtla: jenerik, şehirler, boss, mola ve efektler WAV; sessiz, NaN ya da patlayan parça FAIL), verify-mirror (Ayna Yolu: aynalı harita çözücüyle bitiyor mu; `AYNA=1 npx tsx scripts/bossbot.ts` aynalı arenada boss), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, zemin föyü ve hücre çizim süresi terrain.cjs (`--olc`), şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
@@ -144,6 +144,28 @@ sıralar. Kapanmış haftaların ilk üçü oyuncu sayfasında kalıcı rozet. C
 
 **Arkadaşlar.** `save.friends` (yolcu adları, buluta da gider). Skor tablosunda ☆ ile ya da adla eklenir; her tabloya
 `names=a,b` süzgeci verilir (adlar zaten herkese açık, yanıt önbelleklenebilir). "⚔ Beni Geç Bağlantısı" `/?yaris=<şehir>~<ad>`.
+
+**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı (`FIRST_BOOK` = Rize'nin sırası). Bayburt ilk kez bitince final
+sahnesi (`Ending`) açılır, sonundaki "İkinci Defteri Aç" Rize'yi yükler. Final, Ayna Yolu ve Tam Tur ilk defterin 30
+şehriyle kalır (ikinci defterin aynası doğrulanmadı). Biten en ileri şehrin ardındaki her zaman açıktır (`normalizeSave`):
+yol uzayınca son şehri bitirmiş oyuncu yeni şehre geçer. Yeni defter eklenirse aynı kalıp.
+
+**Speedrun.** %100 (üç hatıra + pul + nazar aynı koşuda; `save.full`, skor `yuzde:<şehir>`), Tam Tur ve Ayna Tam Tur
+(ilk defterin şehirleri arka arkaya, `rushRef` kind `tur`/`aynaTur`; skor `tur`/`aynatur`, üst sınır 12 saat). Hile önleme
+alt sınırı şehrin ya da otuz şehrin toplamının fiziksel en kısa süresi. Skor Tablosu → Speedrun sekmesi. Genel sıralamaya
+ve toplu aktarıma girmez (`tests/scores.test.ts`).
+
+**Şehir ustaları.** Her şehrin ilk şehir insanı ustadır; görev `lib/ustalar.ts` (`ustaTask(sıra)` beş türden döner, art arda
+aynı olmaz): üç hatıra aynı koşuda, düşmeden, altın madalya, pul + nazar aynı koşuda, boss'u düşmeden. Görev koşu sonucundan
+doğrulanır (Rahat Mod sayılmaz), mühür `save.ustalar`; Kılık Dükkânı'nda para sayılır. Şehir kartında görünür. Yeni şehrin
+ilk kişisi esnaf olsun (usta o).
+
+**Co-op.** `World.enableCoop()` eşi (`partner`) kurar; `stepPartner` eşi aynı adımda, oyuncu kaydını geçici olarak eşe
+çevirerek yürütür: çarpışma, toplama, tehlike, bayrak, boss'a basma ve çıkış ortak koddan geçer. Düşen eş partnerinin
+yanında doğar (dünya sıfırlanmaz); oyuncu düşerse bölüm bayraktan kurulur ve eş yanına gelir. Kamera ikisinin ortasına
+bakar; uzaklık görünür alanın %80'ini aşınca geride kalan öne ışınlanır. Düşmanlar ve boss'un nişanı yalnız oyuncuyu izler.
+Co-op ilerlemeye ve rekora dokunmaz. Sim'e oyuncuya özel yeni durum eklersen eşin de taşıdığından emin ol
+(`tests/mechanics.test.ts` "co-op eşi").
 
 **Ayna Yolu ve final.** Otuz şehir bitince final sahnesi (`Ending`) ve Ayna Yolu açılır. Ayna haritası şehirden üretilir;
 sim'in sağ-sol simetrisi bozulursa (yeni nesne, x'e bağlı faz) `mirror` kipinde de düzelt, sonra `verify-mirror` ve

@@ -16,7 +16,7 @@ import { formatTime } from '@/lib/storage'
 const STEP = 1 / 120
 
 /** Yan yana yarışta tuşlar: solda WASD, sağda ok tuşları; oyun kolu varsa 1. kol sola, 2. kol sağa */
-const KEYS = [
+export const KEYS = [
   { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['KeyW', 'KeyG'], dash: ['KeyF', 'Space'] },
   { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['ArrowUp', 'KeyK'], dash: ['KeyL', 'Enter', 'Slash'] },
 ] as const

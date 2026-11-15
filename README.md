@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Gezgin’in yarım kalmış defterini tamamla. Otuz şehir, doksan hatıra, tek yolculuk.**
+**Gezgin’in yarım kalmış defterini tamamla. Otuz beş şehir, yüz beş hatıra, iki defter, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -19,18 +19,22 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
 
-- **30 Şehir, Her Biri Kendine Has.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
-  Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr.
+- **35 Şehir, İki Defter.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+  Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr. İkinci defterde
+  Rize’de derede yüzme, Artvin’de köy teleferikleri, Kars’ta kale halatları, Ağrı Dağı’nın zirvesi.
 - **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
   **gizli pul** deftere gizli bir sayfa ekler.
 - **Konuşan Şehir.** Simitçiden vapur kaptanına, mırracıdan kangal sahibine 30’u aşkın şehir insanı.
   Dost hayvanları sevebilirsin; kırmızı hatla parlayan canlılar tehlikelidir.
 - **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, dash halkalarıyla havada ikinci dash.
 - **Artbook Havası.** Işıkla boyanmış portreler, kilim çerçeveler, defter kâğıdı kartlar, paylaşılabilir kartpostallar.
-- **Skor Tablosu.** Dört sekme: genel sıralama, şehir şehir (süre, en az düşüş, en çok hatıra), Günlük Meydan Okuma ve
-  koleksiyoncular (hatıra, gizli pul, nazar boncuğu). Kendi satırın ilk sıralarda olmasa da görünür.
+- **Skor Tablosu.** Beş sekme: genel sıralama, şehir şehir (süre, en az düşüş, en çok hatıra), Günlük Meydan Okuma,
+  koleksiyoncular (hatıra, gizli pul, nazar boncuğu) ve Speedrun (%100, Tam Tur, Ayna Tam Tur). Kendi satırın ilk sıralarda olmasa da görünür.
 - **Modlar.** Günlük Meydan Okuma (herkese aynı şehir ve kural, günlük sıralama, gün serisi), iki kişilik Düello
-  (yan yana bölünmüş ekranda ya da sırayla, rakibin hayaletiyle), Boss Rush ve Maraton (rastgele üç şehir arka arkaya).
+  (yan yana bölünmüş ekranda ya da sırayla, rakibin hayaletiyle), Boss Rush, Maraton (rastgele üç şehir arka arkaya)
+  ve Co-op (iki kişi aynı ekranda, aynı şehirde).
+- **Şehir Ustaları.** Her şehrin esnafı küçük bir görev verir (düşmeden bitir, altın madalya, gizli köşeler…); usta mührü
+  Kılık Dükkânı’nda para sayılır.
 - **Güncelleme hiçbir şeyi silmez.** Bir şehrin haritası yenilense de rekorun, hatıraların ve sıralaman durur; hangi
   şehirlerin yenilendiği açılışta listelenir, listede "Yenilendi" rozetiyle görünür.
 
@@ -74,6 +78,12 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 28 | Amasya · Yeşilırmak’ın İki Yakası | 5 | Çok Zor | Yalıboyu evleri, kral kaya mezarları, Ferhat’ın su kanalı, Bayezid Külliyesi | Elma |
 | 29 | Muğla · Bodrum’dan Ölüdeniz’e | 48 | Çok Zor | Bodrum Kalesi, yel değirmenleri, Dalyan kaya mezarları, Ölüdeniz; arkadan esen meltem | Sünger |
 | 30 | Bayburt · Kale ve Fırtına | 69 | Çok Zor | Karşı rüzgâr, Çoruh salları, kale burcu | Kopuz |
+| | **İkinci Defter** | | | | |
+| 31 | Rize · Çay Bahçelerinden Yaylaya | 53 | Orta | Çay terasları, Fırtına Deresi’nde yüzme, taş kemer köprüler, Zil Kale | Çay |
+| 32 | Artvin · Çoruh’un Yamaçları | 08 | Zor | Köy teleferikleri, sarkan halatlar, Çoruh vadisi, Kafkasör Yaylası | Bal Peteği |
+| 33 | Kars · Ani’den Sarıkamış’a | 36 | Zor | Taş bina saçakları, kale halatları, buzlu Sarıkamış yamacı, Ani harabeleri | Gravyer |
+| 34 | Bitlis · Vadideki Kale, Kraterdeki Göl | 13 | Zor | Kale halatları, Ahlat mezar taşları, Nemrut krater gölünde yüzme | Büryan |
+| 35 | Ağrı · Sarayın Kapısından Dağın Zirvesine | 04 | Çok Zor | İshak Paşa Sarayı halatları, Meteor Çukuru teleferiği, buzlu yamaç, karşı rüzgâr | Kilim |
 
 ## Yolcular ve Şehir İnsanları
 

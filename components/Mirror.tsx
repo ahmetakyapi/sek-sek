@@ -2,7 +2,10 @@
 
 import { ItemIcon } from '@/components/HudBits'
 import { Overlay, displayName } from '@/components/ui'
-import { LEVELS } from '@/game/levels'
+import { FIRST_BOOK, LEVELS as ALL } from '@/game/levels'
+
+/** Ayna Yolu ilk defterin şehirleriyle: ikinci defterin aynası henüz doğrulanmadı */
+const LEVELS = ALL.slice(0, FIRST_BOOK)
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 

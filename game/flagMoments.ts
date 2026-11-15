@@ -182,4 +182,34 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Çoruh vadide kıvrılıyor.', 'The Çoruh winds through the valley.'],
     ['Baksı’da sanat dağın başında.', 'At Baksı, art sits on the mountaintop.'],
   ],
+  rize: [
+    ['Yağmur yamaçta çiseliyor.', 'Drizzle on the slope.'],
+    ['İnce belli bardakta tavşan kanı çay.', 'Deep-red tea in a tulip glass.'],
+    ['Fırtına Deresi köpürüyor.', 'The Fırtına stream foams.'],
+    ['Yaylada tulum çalıyor.', 'A tulum plays up on the pasture.'],
+  ],
+  artvin: [
+    ['Teleferik sepeti gıcırdıyor.', 'The cable basket creaks.'],
+    ['Çoruh aşağıda köpürüyor.', 'The Çoruh foams below.'],
+    ['Kovanların önünde arılar vızıldıyor.', 'Bees hum by the hives.'],
+    ['Kafkasör’de davul zurna.', 'Drum and pipe on Kafkasör.'],
+  ],
+  kars: [
+    ['Kazlar karda yürüyor.', 'Geese waddle through the snow.'],
+    ['Gravyer tekerleği mağarada dönüyor.', 'A gruyère wheel turns in the cellar.'],
+    ['Sarıkamış’ta çamlar karlı.', 'Snow on the Sarıkamış pines.'],
+    ['Ani’de rüzgâr taşlara konuşuyor.', 'At Ani the wind talks to the stones.'],
+  ],
+  bitlis: [
+    ['Dere taş evlerin arasından akıyor.', 'The stream runs between the stone houses.'],
+    ['Kuyuda büryan pişiyor.', 'Büryan roasts in the pit.'],
+    ['Ahlat taşında bir dantel deseni.', 'A lace pattern on Ahlat stone.'],
+    ['Krater gölünde buhar tütüyor.', 'Steam rises from the crater lake.'],
+  ],
+  agri: [
+    ['Sarayın kapısında taş işlemeler.', 'Carved stone at the palace gate.'],
+    ['Kaval sesi yamaçtan geliyor.', 'A kaval sounds from the slope.'],
+    ['Meteor Çukuru’na bir taş düştü.', 'A pebble falls into the Meteor Crater.'],
+    ['Zirvede bulutlar dağılıyor.', 'The clouds part at the summit.'],
+  ],
 }

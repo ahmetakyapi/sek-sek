@@ -39,6 +39,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
     [t('Gizli Pul'), stamps, n],
     [t('Nazar Boncuğu'), charms, n],
     [t('Boss'), bosses, n],
+    [t('Usta Mührü'), LEVELS.filter((l) => save.ustalar?.[l.id]).length, n],
     [t('Atkı'), scarves, SCARVES.length],
   ]
   return (
@@ -59,7 +60,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           </button>
         </div>
 
-        <div className={`mt-4 grid grid-cols-5 gap-1.5 text-center sm:gap-2 short:mt-2 ${tab === 'album' ? 'max-sm:hidden short:hidden' : ''}`}>
+        <div className={`mt-4 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 sm:gap-2 short:mt-2 short:grid-cols-6 ${tab === 'album' ? 'max-sm:hidden short:hidden' : ''}`}>
           {totals.map(([k, v, max]) => (
             <div key={k} className={`border-2 py-1.5 short:py-1 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
               <p className="font-display text-base leading-none tabular-nums text-cream sm:text-lg">

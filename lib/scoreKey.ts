@@ -11,6 +11,11 @@ export const currentKeys = () => LEVELS.map((l) => scoreKey(l.id))
 /** anahtardan şehir kimliği; sürümsüz eski satırlar olduğu gibi döner */
 export const scoreCity = (key: string) => key.split('@')[0]
 
+/** Speedrun kategorileri: %100 şehir koşusu ("yuzde:istanbul"), ilk defterin tam turu ("tur") ve aynalı tam tur ("aynatur") */
+export const fullScoreKey = (levelId: string) => `yuzde:${levelId}`
+export const TOUR_KEYS = ['tur', 'aynatur'] as const
+export type TourKey = (typeof TOUR_KEYS)[number]
+
 /** Günlük Meydan Okuma'nın tablo anahtarı: "gunluk:2026-11-14" */
 export const dailyScoreKey = (day: string) => `gunluk:${day}`
 

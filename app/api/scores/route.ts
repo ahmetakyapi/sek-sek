@@ -7,7 +7,7 @@ import { db } from '@/lib/db'
 import { istanbulDay, shiftDay, tournamentFor, tournamentKey, tournamentWeek } from '@/lib/extras'
 import { nameKey, verifyPlayer } from '@/lib/players'
 import { LIMITS, hit, ipKey, tooMany } from '@/lib/rateLimit'
-import { challengeScoreKey, currentKeys, dailyScoreKey, scoreKey } from '@/lib/scoreKey'
+import { challengeScoreKey, currentKeys, dailyScoreKey, scoreKey, fullScoreKey, TOUR_KEYS } from '@/lib/scoreKey'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,6 +133,13 @@ export async function GET(req: NextRequest) {
         from t where rank <= 20 or name_key = ${me} order by rank`)
       return out(r.rows)
     }
+    // speedrun: %100 şehir koşusu (city=) ve tam turlar
+    if (level === 'yuzde') {
+      const city = q.get('city') ?? ''
+      if (!LEVEL_IDS.has(city)) return bad('Geçersiz bölüm')
+      return out(await board(fullScoreKey(city), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
+    }
+    if ((TOUR_KEYS as readonly string[]).includes(level)) return out(await board(level, sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20, scope))
     if (CHALLENGE_IDS.has(level)) return out(await board(challengeScoreKey(level), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
     if (!LEVEL_IDS.has(level)) return bad('Geçersiz bölüm')
     const order =
@@ -181,10 +188,17 @@ function parseRun(b: Record<string, unknown>): Run | string {
     if (!weekOk(week)) return 'Bu haftanın turnuvası kapandı'
     if (!tournamentFor(week).includes(id)) return 'Bu mücadele bu haftanın turnuvasında yok'
     key = tournamentKey(week, id)
-  } else if (LEVEL_IDS.has(level)) key = scoreKey(level)
+  } else if (level === 'yuzde') {
+    const city = typeof b.city === 'string' ? b.city : ''
+    if (!LEVEL_IDS.has(city)) return 'Geçersiz bölüm'
+    key = fullScoreKey(city)
+  } else if ((TOUR_KEYS as readonly string[]).includes(level)) key = level
+  else if (LEVEL_IDS.has(level)) key = scoreKey(level)
   else if (CHALLENGE_IDS.has(level)) key = challengeScoreKey(level)
   else return 'Geçersiz bölüm'
-  if (!Number.isInteger(timeMs) || timeMs < (key.startsWith('mucadele:') || key.startsWith('turnuva:') ? 3000 : 5000) || timeMs > 3 * 3_600_000) return 'Geçersiz süre'
+  // tam tur otuz şehir sürer: üst sınır 12 saat
+  const maxMs = (TOUR_KEYS as readonly string[]).includes(key) ? 12 * 3_600_000 : 3 * 3_600_000
+  if (!Number.isInteger(timeMs) || timeMs < (key.startsWith('mucadele:') || key.startsWith('turnuva:') ? 3000 : 5000) || timeMs > maxMs) return 'Geçersiz süre'
   if (!Number.isInteger(deaths) || deaths < 0 || deaths > 9999) return 'Geçersiz düşüş sayısı'
   if (!Number.isInteger(items) || items < 0 || items > 3) return 'Geçersiz hatıra sayısı'
   return { key, timeMs, deaths, items }
@@ -227,7 +241,7 @@ export async function POST(req: NextRequest) {
     if (Array.isArray(b.batch)) {
       const runs = b.batch.slice(0, LEVELS.length).map((x) => (x && typeof x === 'object' ? parseRun(x as Record<string, unknown>) : 'x'))
       // toplu aktarımda fiziğe sığmayan rekor sessizce atlanır: öteki şehirler yine yazılsın
-      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:') && !r.key.startsWith('mucadele:') && !r.key.startsWith('turnuva:') && !tooFast(r))
+      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:') && !r.key.startsWith('mucadele:') && !r.key.startsWith('turnuva:') && !r.key.startsWith('yuzde:') && !(TOUR_KEYS as readonly string[]).includes(r.key) && !tooFast(r))
       const me = await verifyPlayer(b.playerId, b.token)
       if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
       for (const r of ok) await upsert(me.id, me.name, r, 0)

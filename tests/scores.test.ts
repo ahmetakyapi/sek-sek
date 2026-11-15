@@ -193,6 +193,25 @@ describe('skor tablosu', () => {
     expect((await get('level=genel')).scores.find((x) => x.name === 'Bora')).toMatchObject({ cities: 2 })
   })
 
+  it('speedrun: %100 şehir koşusu ve tam turlar kendi tablolarında; genel sıralamaya ve toplu aktarıma girmez', async () => {
+    const genel = async () => (await get('level=genel')).scores.find((x) => x.name === 'Bora')
+    const before = await genel()
+    expect((await run(P[0], 'yuzde', 140000, 2, 3, { city: 'izmir' })).status).toBe(200)
+    expect((await run(P[1], 'yuzde', 120000, 0, 3, { city: 'izmir' })).status).toBe(200)
+    expect((await run(P[1], 'yuzde', 120000, 0, 3, { city: 'yok' })).status).toBe(400)
+    // fiziksel en kısa yoldan hızlı %100 koşusu reddedilir
+    expect((await run(P[1], 'yuzde', 6000, 0, 3, { city: 'izmir' })).status).toBe(422)
+    expect((await get('level=yuzde&city=izmir')).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    // tam tur: otuz şehir, 3 saati aşabilir; otuz şehrin en kısa toplamından hızlısı reddedilir
+    expect((await run(P[0], 'tur', 4 * 3_600_000, 12, 0)).status).toBe(200)
+    expect((await run(P[1], 'tur', 30000, 0, 0)).status).toBe(422)
+    expect((await run(P[1], 'aynatur', 13 * 3_600_000, 0, 0)).status).toBe(400)
+    expect((await get('level=tur')).scores.map((r) => r.name)).toEqual(['Ayşe'])
+    const r = await post({ playerId: P[0].id, token: P[0].token, batch: [{ level: 'tur', timeMs: 4 * 3_600_000, deaths: 0, items: 0 }] })
+    expect(r.j).toMatchObject({ synced: 0 })
+    expect(await genel()).toEqual(before)
+  })
+
   it('turnuva: yalnız bu haftanın üç mücadelesi yazılır, üçünü bitirenler toplamla sıralanır', async () => {
     const week = tournamentWeek(istanbulDay(new Date()))
     const ids = tournamentFor(week)

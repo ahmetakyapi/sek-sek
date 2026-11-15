@@ -9,7 +9,7 @@
  */
 import { GHOST_HZ } from '@/game/ghost'
 import { CHALLENGES, challengeLevel } from '@/game/challenges'
-import { LEVELS } from '@/game/levels'
+import { LEVELS, FIRST_BOOK } from '@/game/levels'
 import { PHYS, World } from '@/game/sim'
 import { T, type LevelDef } from '@/game/types'
 import { dailyRun } from './extras'
@@ -71,6 +71,12 @@ export function minScoreMs(key: string): number {
     const c = CHALLENGES.find((x) => x.id === rest[rest.length - 1])
     return c ? minTimeMs(challengeLevel(c)) : 0
   }
+  // %100 koşusu şehrin kendi yolundan kısa olamaz; tam turlar ilk defterin bütün şehirlerinin toplamından
+  if (head === 'yuzde') {
+    const l = byId.get(rest[0])
+    return l ? minTimeMs(l) : 0
+  }
+  if (head === 'tur' || head === 'aynatur') return LEVELS.slice(0, FIRST_BOOK).reduce((a, l) => a + minTimeMs(l), 0)
   const l = byId.get(key.split('@')[0])
   return l ? minTimeMs(l) : 0
 }

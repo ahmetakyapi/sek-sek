@@ -24,6 +24,9 @@ import { PHYS, SPIKE_DOWN, SPIKE_UP, WATER, World, hammerState, restore, snapsho
 import { T, emptyInput, type LevelDef } from '../game/types'
 import { holdPlates, macros, runMacro, solve, type Macro } from './solver'
 
+/** bot bu durumlardan karar verir: yerde, halatta/teleferikte asılı ya da suda (çözücüyle aynı) */
+const rest = (p: { grounded: boolean; hang: number; swim: boolean }) => p.grounded || p.hang !== 0 || p.swim
+
 const DT = 1 / 120
 /** hamle başına en çok gecikme (sn): insanın tuşa geç basma payı */
 const LATE = 0.12
@@ -113,7 +116,7 @@ function trace(level: LevelDef, path: Macro[], start?: Snapshot, until?: (w: Wor
   const take = () => {
     const p = w.player
     const plat = p.onPlatform ? w.platforms.indexOf(p.onPlatform) : -1
-    out.push({ x: p.x, y: p.y, grounded: p.grounded, plat, rel: plat >= 0 ? p.x - w.platforms[plat].x : 0, switchOn: w.switchOn, hasKey: w.hasKey })
+    out.push({ x: p.x, y: p.y, grounded: rest(p), plat, rel: plat >= 0 ? p.x - w.platforms[plat].x : 0, switchOn: w.switchOn, hasKey: w.hasKey })
   }
   take()
   const marks: number[] = []
@@ -212,7 +215,7 @@ function act(w: World, m: Macro, late: number, settle: boolean, each: () => void
     }
   if (w.deaths === deaths && !w.complete) runMacro(w, m, each)
   if (settle)
-    for (let i = 0; i < 480 && w.deaths === deaths && !w.complete && !w.player.grounded; i++) {
+    for (let i = 0; i < 480 && w.deaths === deaths && !w.complete && !rest(w.player); i++) {
       w.step(DT, emptyInput())
       each()
     }
@@ -371,7 +374,7 @@ function play(level: LevelDef, tag: 'full' | 'weak', seed: number, log: (s: stri
         w.events.length = 0
         if (++n % 6 === 0) near = Math.min(near, clearance())
       })
-      if (w.deaths > d0 || (!w.complete && !p.grounded)) continue
+      if (w.deaths > d0 || (!w.complete && !rest(p))) continue
       const k = progress()
       const gain = k - cur
       let score: number
@@ -395,7 +398,7 @@ function play(level: LevelDef, tag: 'full' | 'weak', seed: number, log: (s: stri
           if (m.wait > 0) continue
           load(w, f1)
           act(w, m, top / 2, false, quiet)
-          if (w.deaths === d0 && (w.complete || p.grounded)) best = Math.max(best, progress() - cur)
+          if (w.deaths === d0 && (w.complete || rest(p))) best = Math.max(best, progress() - cur)
         }
         if (best > 0) c.score = 500 + best
       }
@@ -409,7 +412,7 @@ function play(level: LevelDef, tag: 'full' | 'weak', seed: number, log: (s: stri
         load(w, f0)
         act(w, c.m, late, false, quiet)
         if (w.complete) return true
-        if (w.deaths > d0 || !p.grounded || (c.score >= 1000 && progress() <= cur)) return false
+        if (w.deaths > d0 || !rest(p) || (c.score >= 1000 && progress() <= cur)) return false
         const f1 = save(w)
         // kaçış da geç basışa dayanmalı: "son anda zıplarım" diye beklenmez
         return ESCAPES.some((e) =>

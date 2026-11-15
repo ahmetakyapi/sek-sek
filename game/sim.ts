@@ -318,6 +318,12 @@ export class World {
   /** oyuncunun bu adımdan önceki ayak hizası (basma kuralı) */
   prevFeet = 0
   private prevDown = false
+  /**
+   * Co-op: ikinci oyuncu (eş). Aynı dünyayı paylaşır (toplananlar, düğmeler, bayraklar, boss ortak); düşen eş
+   * partnerinin yanında doğar, dünya sıfırlanmaz. Yalnız oyuncu (player) düşünce bölüm bayraktan yeniden kurulur.
+   */
+  partner: Player | null = null
+  private partnerPrevDown = false
   windNow = 0
   nearSign = -1
   nearNpc = -1
@@ -533,6 +539,16 @@ export class World {
     this.start = start
     this.spawn = { ...start }
     this.exit = exit
+    // derin suyun içine konan toplanabilir (hatıra, pul, nazar, anahtar) karosunu kuru boşluğa çevirmesin: çevresinin en az
+    // ikisi yüzülen suysa o karo da sudur (hatıra derenin dibinde suyun içinde durur)
+    for (const b of [...this.pickups, this.stampBox, this.charmBox, this.keyBox]) {
+      if (!b) continue
+      const tx = Math.floor((b.x + b.w / 2) / T)
+      const ty = Math.floor((b.y + b.h / 2) / T)
+      if (this.tile(tx, ty) !== EMPTY) continue
+      const wet = [this.tile(tx - 1, ty), this.tile(tx + 1, ty), this.tile(tx, ty - 1), this.tile(tx, ty + 1)].filter((t) => t === SWIM).length
+      if (wet >= 2) this.set(tx, ty, SWIM)
+    }
     this.player = this.freshPlayer(start.x, start.y)
   }
 
@@ -1595,6 +1611,55 @@ export class World {
     p.deadTimer = 0.7
     this.deaths++
     this.events.push({ type: 'death', x: p.x + p.w / 2, y: p.y + p.h / 2 })
+  }
+
+  /** Co-op'u açar: eş başlangıçta, oyuncunun hemen yanında */
+  enableCoop() {
+    this.partner = this.freshPlayer(this.player.x + 10, this.player.y)
+  }
+
+  /** Eşi oyuncunun yanına taşır (geride kaldıysa, düştüyse ya da meydan kapısından geçildiyse) */
+  bringPartner(to: Player = this.player) {
+    const q = this.partner
+    if (!q) return
+    const keep = { dead: false, deadTimer: 0 }
+    Object.assign(q, this.freshPlayer(to.x + (this.boxHitsSolid(to.x - 10, to.y, PW, PH) ? 0 : -10), to.y), keep)
+  }
+
+  /**
+   * Eşin adımı: dünyanın ortak adımından (step) sonra çağrılır. Oyuncu kaydı geçici olarak eşe çevrilir; böylece
+   * hareket, çarpışma, toplama, tehlike, bayrak, boss'a basma ve çıkış kodu iki oyuncu için de aynıdır.
+   */
+  stepPartner(dt: number, input: Input) {
+    const q = this.partner
+    if (!q || this.complete) return
+    // hareketli platform eşi de taşır (updatePlatforms yalnız oyuncuyu taşır)
+    const pl = q.onPlatform
+    if (pl && !q.dead) {
+      if (pl.dx !== 0 && !this.boxHitsSolid(q.x + pl.dx, q.y, q.w, q.h)) q.x += pl.dx
+      q.y = pl.y - q.h
+    }
+    if (q.dead) {
+      q.deadTimer -= dt
+      if (q.deadTimer <= 0) this.bringPartner(this.player.dead ? { ...this.player, x: this.spawn.x, y: this.spawn.y } : this.player)
+      return
+    }
+    const self = this as unknown as { player: Player }
+    const p1 = this.player
+    const down = this.prevDown
+    const feet = this.prevFeet
+    self.player = q
+    this.prevDown = this.partnerPrevDown
+    this.prevFeet = q.y + q.h
+    try {
+      this.updatePlayer(dt, input)
+      if (!q.dead) this.interactions()
+    } finally {
+      this.partnerPrevDown = this.prevDown
+      self.player = p1
+      this.prevDown = down
+      this.prevFeet = feet
+    }
   }
 
   respawn() {

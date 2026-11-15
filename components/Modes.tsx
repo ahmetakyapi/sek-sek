@@ -34,6 +34,7 @@ export function ModesHub({
   onDaily,
   onDailyBoard,
   onDuel,
+  onCoop,
   onRush,
   marathonOpen,
   marathonBest,
@@ -48,6 +49,9 @@ export function ModesHub({
   onMirror,
   mirrorOpen,
   mirrorDone,
+  onTour,
+  tourBest,
+  aynaTourBest,
   onBack,
 }: {
   daily: DailyRun
@@ -59,6 +63,7 @@ export function ModesHub({
   onDaily: () => void
   onDailyBoard: () => void
   onDuel: () => void
+  onCoop: () => void
   onRush: () => void
   marathonOpen: boolean
   marathonBest: { timeMs: number } | null
@@ -77,6 +82,10 @@ export function ModesHub({
   /** otuz şehir bitti mi (Ayna Yolu açık) */
   mirrorOpen: boolean
   mirrorDone: number
+  /** speedrun tam turları (ilk defter bitince açık; mirrorOpen ile aynı koşul) */
+  onTour: (kind: 'tur' | 'aynaTur') => void
+  tourBest: { timeMs: number } | null
+  aynaTourBest: { timeMs: number } | null
   onBack: () => void
 }) {
   const winner = useLastWinner(today)
@@ -259,6 +268,24 @@ export function ModesHub({
                 {marathonOpen ? t('▶ Koş') : t('Kilitli')}
               </button>
             </section>
+          </div>
+          {/* co-op: aynı ekranda iki kişi, ortak kamera */}
+          <button className="mt-3 flex shrink-0 items-center justify-between gap-3 border-2 border-accent/60 bg-accent/5 px-3.5 py-2 text-left text-[13px] text-cream hover:bg-accent/10 short:mt-2 short:py-1.5" onClick={onCoop}>
+            <span className="min-w-0 truncate">
+              <strong className="font-display text-accent-2">{t('Co-op')}</strong> <span className="text-muted">· {t('İki kişi aynı ekranda, aynı şehirde: hatıralar ve düğmeler ortak')}</span>
+            </span>
+            <span className="shrink-0 text-accent-2">▶</span>
+          </button>
+          {/* speedrun tam turları: ilk defterin otuz şehri arka arkaya (düz ve aynalı) */}
+          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] short:mt-2 short:py-1.5">
+            <strong className="font-display text-gold">{t('Speedrun')}</strong>
+            <span className="min-w-0 flex-1 truncate text-muted">{mirrorOpen ? t('Otuz şehir arka arkaya, tek süre') : t('İlk defterin otuz şehrini bitirince açılır.')}</span>
+            <button className="pixel-btn px-2.5 py-1 text-[12px]" disabled={!mirrorOpen} onClick={() => onTour('tur')}>
+              {t('Tam Tur')} {tourBest ? `· ${formatTime(tourBest.timeMs)}` : '▶'}
+            </button>
+            <button className="pixel-btn px-2.5 py-1 text-[12px]" disabled={!mirrorOpen} onClick={() => onTour('aynaTur')}>
+              ◐ {t('Ayna Tam Tur')} {aynaTourBest ? `· ${formatTime(aynaTourBest.timeMs)}` : '▶'}
+            </button>
           </div>
           {/* topluluk haritaları: yolcuların düzenleyicide çizip yayınladığı yollar (ayrı sayfa) */}
           <a href="/haritalar" className="mt-3 flex shrink-0 items-center justify-between gap-3 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] text-cream hover:border-gold/60 short:mt-2 short:py-1.5">

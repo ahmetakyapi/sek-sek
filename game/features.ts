@@ -30,4 +30,9 @@ export const FEATURES: Record<string, { tr: string; en: string }> = {
   amasya: { tr: 'Yalıboyu evleri, kral kaya mezarları, Ferhat’ın su kanalı, Bayezid Külliyesi', en: 'The riverside houses, the royal rock tombs, Ferhat’s water channel, the Bayezid complex' },
   mugla: { tr: 'Bodrum Kalesi, yel değirmenleri, Dalyan kaya mezarları, Ölüdeniz; arkadan esen meltem', en: 'Bodrum Castle, the windmills, the Dalyan rock tombs, Ölüdeniz; a meltem at your back' },
   bayburt: { tr: 'Karşı rüzgâr, Çoruh salları, kale burcu', en: 'Headwind, Çoruh rafts, the castle bastion' },
+  rize: { tr: 'Çay bahçesi terasları, Fırtına Deresi’nde yüzme, taş kemer köprüler, Zil Kale', en: 'Tea garden terraces, swimming in the Fırtına stream, stone arch bridges, Zil Castle' },
+  artvin: { tr: 'Köy teleferikleri, sarkan halatlar, Çoruh vadisi, Kafkasör Yaylası', en: 'Village cable lines, hanging ropes, the Çoruh valley, the Kafkasör pasture' },
+  kars: { tr: 'Taş bina saçakları, kale halatları, buzlu Sarıkamış yamacı, Ani harabeleri', en: 'Stone-building eaves, castle ropes, the icy Sarıkamış slope, the ruins of Ani' },
+  bitlis: { tr: 'Dere kenarı taş evler, kale halatları, Ahlat mezar taşları, Nemrut krater gölünde yüzme', en: 'Stone houses by the stream, castle ropes, the Ahlat gravestones, swimming in Nemrut’s crater lake' },
+  agri: { tr: 'Halatlı saray avluları, Meteor Çukuru üstünde teleferik, buzlu yamaç, karşı rüzgâr', en: 'Palace courtyards with ropes, a cable line over the Meteor Crater, an icy slope, a headwind' },
 }

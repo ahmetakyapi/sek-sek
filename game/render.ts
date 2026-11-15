@@ -158,6 +158,7 @@ export class Renderer {
       } else this.prev.set(o, { x: o.x, y: o.y })
     }
     keep(w.player)
+    if (w.partner) keep(w.partner)
     for (const o of w.platforms) keep(o)
     for (const o of w.enemies) keep(o)
     for (const o of w.projectiles) keep(o)
@@ -176,6 +177,7 @@ export class Renderer {
       o.y = q.y + (o.y - q.y) * alpha
     }
     mix(w.player)
+    if (w.partner) mix(w.partner)
     for (const o of w.platforms) mix(o)
     for (const o of w.enemies) mix(o)
     for (const o of w.projectiles) mix(o)
@@ -464,7 +466,21 @@ export class Renderer {
     } else {
       this.cam.x = this.camX
       this.cam.y = this.camY
+      // co-op: kamera iki oyuncunun ortasına bakar (oyuncu kaydı bu hesap için geçici olarak orta noktaya çekilir)
+      const q = w.partner
+      const p = w.player
+      const mid = q && !q.dead && !p.dead
+      const keepX = p.x
+      const keepY = p.y
+      if (mid) {
+        p.x = (p.x + q.x) / 2
+        p.y = Math.min(p.y, q.y) + Math.abs(p.y - q.y) * 0.35
+      }
       stepCamera(w, this.cam, dt, this.viewW, this.viewH)
+      if (mid) {
+        p.x = keepX
+        p.y = keepY
+      }
       this.camX = this.cam.x
       this.camY = this.cam.y
     }
@@ -580,6 +596,7 @@ export class Renderer {
     this.drawEntities(f, w)
     this.drawGhostRun(w)
     this.drawPlayer(w, dt)
+    this.drawPartner(w)
     this.drawParticles(f, dt)
     f.restore()
 
@@ -1013,6 +1030,121 @@ export class Renderer {
         for (let i = 0; i < 8; i++) rect(b, x - 5 + i * 4, bot - 24, 2, 2, '#f2c14e')
         rect(b, x - 6, bot - 24, 1, 14, '#6a4a32')
         rect(b, x + 25, bot - 24, 1, 14, '#6a4a32')
+        break
+      }
+      case 'rize': {
+        // çay ocağı: tezgâhta ince belli bardaklar, köşede pirinç semaver, yeşil beyaz tente
+        rect(b, x - 4, bot - 9, 26, 9, '#6a4a32')
+        rect(b, x - 4, bot - 9, 26, 1, '#8e6a4a')
+        rect(b, x - 6, bot - 11, 30, 2, '#f4ead8')
+        for (let i = 0; i < 4; i++) {
+          rect(b, x - 3 + i * 4, bot - 15, 3, 4, '#c0301e')
+          rect(b, x - 3 + i * 4, bot - 15, 3, 1, '#f4f8fa')
+          rect(b, x - 2 + i * 4, bot - 13, 1, 1, '#8a1e12')
+          rect(b, x - 4 + i * 4, bot - 11, 5, 1, '#d8dce4')
+        }
+        rect(b, x + 15, bot - 21, 7, 10, '#c8683a')
+        rect(b, x + 15, bot - 21, 2, 10, '#e08a5a')
+        rect(b, x + 15, bot - 17, 7, 1, '#e8b84a')
+        rect(b, x + 14, bot - 12, 9, 1, '#d8a83a')
+        rect(b, x + 22, bot - 16, 2, 1, '#d8a83a')
+        rect(b, x + 16, bot - 24, 5, 3, '#f8f6f0')
+        rect(b, x + 17, bot - 23, 1, 1, '#3a8ac8')
+        rect(b, x + 18, bot - 28 - Math.round(Math.sin(this.t * 3)), 1, 3, 'rgba(255,255,255,0.5)')
+        rect(b, x - 6, bot - 30, 1, 19, '#5a3c26')
+        rect(b, x + 25, bot - 30, 1, 19, '#5a3c26')
+        for (let i = 0; i < 8; i++) {
+          const col = i % 2 ? '#f4ead8' : '#4a8a4a'
+          rect(b, x - 7 + i * 4, bot - 32, 4, 3, col)
+          rect(b, x - 6 + i * 4, bot - 29, 2, 1, col)
+        }
+        break
+      }
+      case 'artvin': {
+        // bal tezgâhı: kavanoz kavanoz bal, süzme petek, üstünde gezinen arı
+        rect(b, x - 4, bot - 9, 26, 9, '#6e5038')
+        rect(b, x - 4, bot - 9, 26, 1, '#94704e')
+        rect(b, x - 6, bot - 11, 30, 2, '#8a6a4a')
+        for (let i = 0; i < 4; i++) {
+          rect(b, x - 3 + i * 5, bot - 17, 4, 6, '#e8a826')
+          rect(b, x - 3 + i * 5, bot - 17, 1, 6, '#f6d06a')
+          rect(b, x - 3 + i * 5, bot - 18, 4, 1, i % 2 ? '#c8302a' : '#f4ead8')
+        }
+        rect(b, x + 17, bot - 16, 7, 5, '#f2b232')
+        for (let i = 0; i < 3; i++) rect(b, x + 18 + i * 2, bot - 15 + (i % 2), 1, 1, '#b8761a')
+        rect(b, x + 19, bot - 11, 1, 2, '#f2b232')
+        const bx = x + 8 + Math.round(Math.sin(this.t * 2.4) * 6)
+        const by = bot - 22 + Math.round(Math.sin(this.t * 5) * 1.5)
+        rect(b, bx, by, 2, 1, '#f2c14e')
+        rect(b, bx + 1, by, 1, 1, '#2a2420')
+        rect(b, bx, by - 1, 1, 1, 'rgba(255,255,255,0.7)')
+        rect(b, x - 6, bot - 28, 1, 17, '#5a3c26')
+        rect(b, x + 25, bot - 28, 1, 17, '#5a3c26')
+        rect(b, x - 7, bot - 30, 34, 2, '#6a8a3a')
+        rect(b, x - 7, bot - 28, 34, 1, '#4e6a2a')
+        break
+      }
+      case 'kars': {
+        // peynir tezgâhı: üst üste gravyer tekerlekleri, biri kesik, delikleri görünür
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4c34')
+        rect(b, x - 6, bot - 10, 30, 2, '#e6edf6')
+        for (const [dx, dy] of [[-3, 0], [6, 0], [1, -5]] as const) {
+          rect(b, x + dx, bot - 15 + dy, 9, 5, '#e8c45a')
+          rect(b, x + dx, bot - 15 + dy, 9, 1, '#f6dc8a')
+          rect(b, x + dx, bot - 11 + dy, 9, 1, '#b88a2a')
+        }
+        rect(b, x + 16, bot - 15, 7, 5, '#f6d468')
+        for (const [dx, dy] of [[17, -14], [20, -12], [18, -11]] as const) rect(b, x + dx, bot + dy, 1, 1, '#c09030')
+        rect(b, x + 16, bot - 15, 1, 5, '#c88a2a')
+        rect(b, x - 6, bot - 28, 1, 18, '#5a3c26')
+        rect(b, x + 25, bot - 28, 1, 18, '#5a3c26')
+        rect(b, x - 7, bot - 30, 34, 2, '#c8302a')
+        rect(b, x - 7, bot - 31, 34, 1, '#f6f9fd')
+        for (let i = 0; i < 8; i++) rect(b, x - 6 + i * 4, bot - 28, 2, 1, '#c8302a')
+        break
+      }
+      case 'bitlis': {
+        // büryan kuyusu: taş ağızlı ocak çukuru, kapağından tüten duman; yanında pide tablası
+        rect(b, x - 4, bot - 6, 16, 6, '#8a7462')
+        rect(b, x - 5, bot - 8, 18, 2, '#a89078')
+        for (let i = 0; i < 4; i++) rect(b, x - 3 + i * 4, bot - 5, 1, 4, '#5c4a3e')
+        rect(b, x - 1, bot - 10, 10, 2, '#4e3a34')
+        rect(b, x + 3, bot - 12, 2, 2, '#4e3a34')
+        for (let k = 0; k < 3; k++) {
+          const ph = (((this.t * 0.8 + k / 3) % 1) + 1) % 1
+          rect(b, x + 3 + Math.round(Math.sin(this.t * 2 + k) * 2), bot - 14 - Math.round(ph * 14), 2 + Math.round(ph * 2), 2, `rgba(220,214,206,${(0.6 * (1 - ph)).toFixed(2)})`)
+        }
+        rect(b, x + 14, bot - 7, 12, 7, '#6e4c34')
+        rect(b, x + 13, bot - 9, 14, 2, '#f4f0e6')
+        rect(b, x + 15, bot - 12, 10, 3, '#e8b86a')
+        rect(b, x + 16, bot - 14, 7, 2, '#a8542a')
+        rect(b, x + 17, bot - 14, 2, 1, '#d88a54')
+        break
+      }
+      case 'agri': {
+        // kilim tezgâhı: ipte sallanan desenli kilimler, tezgâhta katlı yığın
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4a32')
+        for (const [dy, col] of [[0, '#b8302a'], [-2, '#2e5a8a'], [-4, '#d8a03a']] as const) {
+          rect(b, x - 2, bot - 10 + dy, 22, 2, col)
+          rect(b, x + 2, bot - 10 + dy, 2, 1, '#f4ead8')
+          rect(b, x + 12, bot - 10 + dy, 2, 1, '#f4ead8')
+        }
+        rect(b, x - 6, bot - 30, 1, 30, '#5a3c26')
+        rect(b, x + 25, bot - 30, 1, 30, '#5a3c26')
+        rect(b, x - 6, bot - 30, 32, 1, '#5a3c26')
+        for (let i = 0; i < 2; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.4 + i * 1.7) * 0.8)
+          const kx = x - 2 + i * 14 + sw
+          const col = i ? '#2e5a8a' : '#b8302a'
+          rect(b, kx, bot - 29, 10, 13, col)
+          rect(b, kx + 1, bot - 28, 8, 1, '#f2c14e')
+          rect(b, kx + 1, bot - 18, 8, 1, '#f2c14e')
+          rect(b, kx + 4, bot - 26, 2, 1, '#f4ead8')
+          rect(b, kx + 3, bot - 25, 4, 2, '#f4ead8')
+          rect(b, kx + 4, bot - 23, 2, 1, '#f4ead8')
+          rect(b, kx + 4, bot - 25, 2, 2, i ? '#b8302a' : '#2e5a8a')
+          for (let k = 0; k < 5; k++) rect(b, kx + 1 + k * 2, bot - 16, 1, 2, '#e8d8b0')
+        }
         break
       }
       case 'van': {
@@ -1526,6 +1658,100 @@ export class Renderer {
         rect(b, x + 6, bot - 16, 3, 2, '#8a6a44')
         rect(b, x + 7, bot - 14, 1, 6, '#8a6a44')
         rect(b, x + 9, bot - 17, 1, 1, '#8a6a44')
+        break
+      }
+      case 'rize': {
+        // koca pirinç semaver, taş kaidede; tepesinde demlik, buğusu tüter
+        rect(b, x + 1, bot - 3, 14, 3, '#8a8478')
+        rect(b, x + 1, bot - 3, 14, 1, '#aaa496')
+        rect(b, x + 5, bot - 5, 6, 2, '#d8a83a')
+        rect(b, x + 3, bot - 17, 10, 12, '#c8683a')
+        rect(b, x + 2, bot - 15, 12, 8, '#c8683a')
+        rect(b, x + 3, bot - 16, 2, 10, '#e08a5a')
+        rect(b, x + 12, bot - 15, 2, 8, '#9a4a26')
+        rect(b, x + 2, bot - 14, 12, 1, '#e8b84a')
+        rect(b, x + 2, bot - 9, 12, 1, '#e8b84a')
+        rect(b, x, bot - 14, 2, 1, '#d8a83a')
+        rect(b, x, bot - 14, 1, 4, '#d8a83a')
+        rect(b, x + 14, bot - 10, 2, 1, '#d8a83a')
+        rect(b, x + 15, bot - 10, 1, 2, '#d8a83a')
+        rect(b, x + 5, bot - 19, 6, 2, '#d8a83a')
+        rect(b, x + 5, bot - 23, 6, 4, '#f8f6f0')
+        rect(b, x + 6, bot - 22, 1, 1, '#3a8ac8')
+        rect(b, x + 9, bot - 21, 1, 1, '#3a8ac8')
+        rect(b, x + 11, bot - 22, 2, 1, '#f8f6f0')
+        rect(b, x + 7, bot - 24, 2, 1, '#f8f6f0')
+        if (Math.sin(this.t * 2.5) > -0.2) rect(b, x + 13, bot - 27 - Math.round(Math.sin(this.t * 2.5)), 1, 3, 'rgba(255,255,255,0.55)')
+        break
+      }
+      case 'artvin': {
+        // karakovan: oyulmuş kütük kovan, direğe asılı; ağzında arılar
+        rect(b, x + 7, bot - 14, 2, 14, '#5a4030')
+        rect(b, x + 1, bot - 26, 14, 1, '#5a4030')
+        rect(b, x + 3, bot - 25, 1, 2, '#c8b48a')
+        rect(b, x + 12, bot - 25, 1, 2, '#c8b48a')
+        rect(b, x + 1, bot - 23, 14, 9, '#8a6a46')
+        rect(b, x + 1, bot - 23, 14, 1, '#a8885a')
+        rect(b, x + 1, bot - 15, 14, 1, '#6a4e32')
+        for (const dy of [-20, -17]) rect(b, x + 1, bot + dy, 14, 1, '#6e5236')
+        rect(b, x, bot - 22, 1, 7, '#5a4030')
+        rect(b, x + 15, bot - 22, 1, 7, '#5a4030')
+        rect(b, x + 7, bot - 18, 2, 2, '#2a1e16')
+        for (let k = 0; k < 2; k++) {
+          const a = this.t * 3 + k * 3
+          const bx = x + 8 + Math.round(Math.cos(a) * 5)
+          const by = bot - 17 + Math.round(Math.sin(a * 1.3) * 3)
+          rect(b, bx, by, 2, 1, '#f2c14e')
+          rect(b, bx + 1, by, 1, 1, '#2a2420')
+        }
+        rect(b, x + 4, bot - 1, 8, 1, '#4a3424')
+        break
+      }
+      case 'kars': {
+        // Ani'den bir taş: kızıl tüften küçük kilise maketi, konik kubbe, üstünde kar
+        rect(b, x + 1, bot - 2, 14, 2, '#6c6a72')
+        rect(b, x + 2, bot - 13, 12, 11, '#9a5a4a')
+        rect(b, x + 2, bot - 13, 2, 11, '#b8786a')
+        rect(b, x + 12, bot - 13, 2, 11, '#7a4236')
+        rect(b, x + 5, bot - 18, 6, 5, '#9a5a4a')
+        for (let i = 0; i < 4; i++) rect(b, x + 5 + i, bot - 19 - i, 6 - i * 2, 1, '#8a4a3e')
+        rect(b, x + 6, bot - 22, 4, 1, '#f6f9fd')
+        rect(b, x + 1, bot - 14, 14, 1, '#f6f9fd')
+        rect(b, x + 7, bot - 9, 2, 7, '#3a2420')
+        rect(b, x + 7, bot - 10, 2, 1, '#3a2420')
+        rect(b, x + 4, bot - 11, 1, 3, '#5a3028')
+        rect(b, x + 11, bot - 11, 1, 3, '#5a3028')
+        break
+      }
+      case 'bitlis': {
+        // Ahlat mezar taşı: ince uzun, sivri tepeli, oyma kuşaklı; dibinde ot
+        rect(b, x + 5, bot - 24, 6, 24, '#8a6a58')
+        rect(b, x + 5, bot - 24, 1, 24, '#a8887a')
+        rect(b, x + 10, bot - 24, 1, 24, '#6a4e40')
+        for (let i = 0; i < 3; i++) rect(b, x + 5 + i, bot - 25 - i, 6 - i * 2, 1, '#8a6a58')
+        rect(b, x + 6, bot - 21, 4, 1, '#5a4236')
+        rect(b, x + 7, bot - 19, 2, 3, '#5a4236')
+        rect(b, x + 6, bot - 15, 4, 1, '#5a4236')
+        for (let i = 0; i < 3; i++) rect(b, x + 6 + (i % 2) * 2, bot - 13 + i * 3, 2, 1, '#5a4236')
+        rect(b, x + 3, bot - 2, 10, 2, '#6a5244')
+        for (const [dx, h] of [[3, 2], [4, 3], [12, 2]] as const) rect(b, x + dx, bot - 2 - h, 1, h, '#6a7a3a')
+        break
+      }
+      case 'agri': {
+        // dokuma tezgâhı: iki direk arasında yarısı dokunmuş kilim, gergin çözgü ipleri
+        rect(b, x + 1, bot - 26, 2, 26, '#6a4a32')
+        rect(b, x + 13, bot - 26, 2, 26, '#6a4a32')
+        rect(b, x, bot - 26, 16, 2, '#7a5a40')
+        rect(b, x, bot - 4, 16, 2, '#7a5a40')
+        for (let i = 0; i < 5; i++) rect(b, x + 4 + i * 2, bot - 24, 1, 10, '#e8d8b0')
+        rect(b, x + 3, bot - 14, 10, 10, '#b8302a')
+        rect(b, x + 3, bot - 14, 10, 1, '#f2c14e')
+        rect(b, x + 7, bot - 12, 2, 1, '#f4ead8')
+        rect(b, x + 6, bot - 11, 4, 2, '#2e5a8a')
+        rect(b, x + 7, bot - 9, 2, 1, '#f4ead8')
+        rect(b, x + 3, bot - 6, 10, 1, '#2e5a8a')
+        const sh = Math.round(Math.sin(this.t * 2) * 3)
+        rect(b, x + 7 + sh, bot - 15, 3, 1, '#d8a03a')
         break
       }
       case 'van': {
@@ -2603,6 +2829,25 @@ export class Renderer {
     this.heroes = []
   }
 
+  /** co-op eşinin karakteri (öbür kılık) */
+  partnerLook: Look = 'memo'
+  partnerScarf: { color: string; shade: string } | null = null
+
+  /** Co-op eşi: oyuncuyla aynı pozlar (iz ve toz yok); dash hakkı bitince atkısı soluklaşır */
+  private drawPartner(w: World) {
+    const q = w.partner
+    if (!q || q.dead) return
+    let pose: Pose
+    if (q.dashTime > 0) pose = POSES.dash
+    else if (q.hang) pose = POSES.hang
+    else if (q.swim && !q.grounded) pose = POSES.swim
+    else if (!q.grounded) pose = q.wallDir !== 0 && q.vy > 0 ? POSES.wall : q.vy < -70 ? POSES.jump : q.vy < 70 ? POSES.apex : POSES.fall
+    else if (Math.abs(q.vx) > 8) pose = gait(((q.runTime * 15) / 8) % 1)
+    else pose = POSES.idle
+    const spent = !q.canDash
+    this.heroes.push({ look: this.partnerLook, pose: { ...pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2, y: q.y + q.h, flip: q.facing < 0, alpha: 1, ghost: false, moving: Math.abs(q.vx) > 40 || !q.grounded, sx: 1, sy: 1, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade })
+  }
+
   private drawPlayer(w: World, dt: number) {
     const p = w.player
     const look = this.character.id
@@ -3023,7 +3268,12 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   ardahan: 'AMASYA',
   amasya: 'MUĞLA',
   mugla: 'BAYBURT',
-  bayburt: null,
+  bayburt: 'RİZE',
+  rize: 'ARTVİN',
+  artvin: 'KARS',
+  kars: 'BİTLİS',
+  bitlis: 'AĞRI',
+  agri: null,
 }
 
 function hexA(hex: string, a: number) {

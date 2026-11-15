@@ -15,7 +15,7 @@ const plate = (n: number) => String(n).padStart(2, '0')
 
 export const metadata: Metadata = {
   title: 'Oyun Hakkında · Sek-Sek',
-  description: 'Sek-Sek nedir: İstanbul’dan Bayburt’a 30 şehir, 90 hatıra, iki yolcu ve Gezgin’in yarım kalmış defteri.',
+  description: 'Sek-Sek nedir: İstanbul’dan Ağrı Dağı’na 35 şehir, 105 hatıra, iki yolcu ve Gezgin’in yarım kalmış defteri.',
   alternates: { canonical: '/hakkinda' },
 }
 
@@ -163,7 +163,7 @@ export default function Hakkinda() {
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-end">
             <div>
               <p className="text-[12px] font-bold tracking-[0.3em] text-accent">ROTA</p>
-              <h2 className="mt-2 font-display text-4xl text-cream">Otuz Şehir, Artan Zorluk</h2>
+              <h2 className="mt-2 font-display text-4xl text-cream">Otuz Beş Şehir, İki Defter</h2>
               <p className="mt-3 leading-relaxed text-muted">
                 Her şehir yeni bir şey öğretir, bir sonraki onu bekler. Kolay İstanbul’dan Çok Zor Bayburt’a; her şehirde üç hatıra, altın-gümüş-bronz süre madalyaları
                 ve konuşmayı seven yerel insanlar.

@@ -73,6 +73,11 @@ describe('bölüm verisi', () => {
       ['Amasya', 5],
       ['Muğla', 48],
       ['Bayburt', 69],
+      ['Rize', 53],
+      ['Artvin', 8],
+      ['Kars', 36],
+      ['Bitlis', 13],
+      ['Ağrı', 4],
     ])
   })
 })

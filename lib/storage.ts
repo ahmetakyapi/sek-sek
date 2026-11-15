@@ -7,7 +7,7 @@ import { cityVersion, legacyVersion } from './mapVersion'
  * taşınsın. Haritanın kendisi değişince artırılmaz: o iş şehir başına sürümün (lib/mapVersion.ts), yalnız değişen
  * şehrin rekoru yenilenir.
  */
-export const MAP_VERSION = 9
+export const MAP_VERSION = 10
 /** bu sürümden önceki süreler geçersiz: bölümlere final eklendi */
 const TIMES_SINCE = 4
 
@@ -19,6 +19,8 @@ const SIXTEEN = ['istanbul', 'kocaeli', 'izmir', 'ankara', 'konya', 'nevsehir', 
 const TWENTY_FIVE = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'bayburt']
 /** Amasya ve Muğla’dan önceki 28 şehir (harita sürümü 8) */
 const TWENTY_EIGHT = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'bayburt']
+/** İkinci defterden (Rize, Artvin, Kars, Bitlis, Ağrı) önceki 30 şehir (harita sürümü 9) */
+const THIRTY = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt']
 const NINETEEN = ['istanbul', 'kocaeli', 'canakkale', 'izmir', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'ardahan', 'bayburt']
 
 /** Eski sürümlerin şehir sırası: açılan şehir dizinini kimliğiyle yeni sıraya taşımak için */
@@ -31,6 +33,7 @@ const ORDERS: Record<number, string[]> = {
   6: TWENTY_FIVE,
   7: TWENTY_FIVE,
   8: TWENTY_EIGHT,
+  9: THIRTY,
 }
 
 export interface Best {
@@ -124,6 +127,13 @@ export interface Save {
   sawEnding?: boolean
   /** mücadele haritalarının en iyi süreleri (ms), mücadele kimliğiyle */
   challenges?: Record<string, number>
+  /** şehir ustalarının mühürleri (lib/ustalar.ts): şehir kimliği → görev yapıldı */
+  ustalar?: Record<string, boolean>
+  /** Speedrun %100: üç hatıra, pul ve nazar aynı koşuda alınarak bitirilen şehrin en iyi süresi (ms) */
+  full?: Record<string, number>
+  /** Speedrun tam turları: ilk defterin bütün şehirleri arka arkaya (düz ve aynalı) */
+  tur?: { timeMs: number; deaths: number } | null
+  aynaTur?: { timeMs: number; deaths: number } | null
   /** Maraton'un (rastgele üç şehir arka arkaya) en iyi toplam süresi */
   maraton?: { timeMs: number } | null
   /** eski haritalardan kalan süreler işaretlendi mi (bir kez) */
@@ -194,6 +204,9 @@ export function normalizeSave(parsed: Partial<Save>): Save {
     const idx = LEVELS.findIndex((l) => l.id === id)
     s.unlocked = idx >= 0 ? idx : 0
   }
+  // bitirilmiş en ileri şehrin ardındaki açıktır: yol uzayınca (ikinci defter) son şehri bitirmiş oyuncu yeni şehre geçebilir
+  const done = LEVELS.reduce((m, l, i) => (s.best[l.id] ? i : m), -1)
+  s.unlocked = Math.max(s.unlocked, Math.min(done + 1, LEVELS.length - 1))
   // bilinen şehirler: alan yoksa kaydın sürümündeki sıra (sonradan eklenenler "yeni" görünür)
   if (!parsed.seen) s.seen = order && (s.unlocked > 0 || Object.keys(s.best).length) ? [...order] : LEVELS.map((l) => l.id)
   // şehir başına sürüm: sürümsüz eski rekor, kaydın sürümündeki haritaya bağlanır. Haritası değişen şehirde rekor,
@@ -230,7 +243,7 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'sawEnding'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -282,6 +295,10 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     owned: { ...cloud.owned, ...local.owned },
     accessory: local.accessory ?? cloud.accessory,
     sawEnding: local.sawEnding || cloud.sawEnding,
+    ustalar: { ...cloud.ustalar, ...local.ustalar },
+    full: Object.fromEntries([...Object.entries(cloud.full ?? {}), ...Object.entries(local.full ?? {})].map(([k, v]) => [k, Math.min(v, cloud.full?.[k] ?? v, local.full?.[k] ?? v)])),
+    tur: !local.tur ? cloud.tur : !cloud.tur ? local.tur : local.tur.timeMs <= cloud.tur.timeMs ? local.tur : cloud.tur,
+    aynaTur: !local.aynaTur ? cloud.aynaTur : !cloud.aynaTur ? local.aynaTur : local.aynaTur.timeMs <= cloud.aynaTur.timeMs ? local.aynaTur : cloud.aynaTur,
     maraton: !local.maraton ? cloud.maraton : !cloud.maraton ? local.maraton : local.maraton.timeMs <= cloud.maraton.timeMs ? local.maraton : cloud.maraton,
     character: local.character ?? cloud.character,
     scarf: local.scarf !== 'al' ? local.scarf : cloud.scarf,

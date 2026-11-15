@@ -32,10 +32,12 @@ import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager, normalizeKeys } from '@/game/input'
 import PhotoMode from '@/components/PhotoMode'
 import KeyRemap from '@/components/KeyRemap'
+import Coop, { CoopEnd, CoopSetup, type CoopResult } from '@/components/Coop'
 import { useInstallPrompt } from '@/lib/useInstallPrompt'
+import { USTA_TEXT, ustaDone, ustaTask } from '@/lib/ustalar'
 import { BOSSES } from '@/game/boss'
 import { CHALLENGES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
-import { LEVELS, bossLevel } from '@/game/levels'
+import { LEVELS, bossLevel, FIRST_BOOK } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
 import { STORY, fill } from '@/game/story'
@@ -78,7 +80,7 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'photo' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
+type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
@@ -104,6 +106,8 @@ interface Result {
   ghost?: GhostRun
   /** skor tablosundan seçilen bir yolcunun hayaletine karşı koşuldu */
   rival?: { name: string; timeMs: number; beaten: boolean }
+  /** speedrun %100: bu koşuda şehrin her şeyi alındı (best: %100 rekoru tazelendi) */
+  full?: { best: boolean; prev?: number }
 }
 
 /** Skor tablosundan seçilen yolcunun hayaleti: yalnız o şehirde, koşu boyunca yanında koşar */
@@ -116,8 +120,8 @@ interface Rival {
 
 /** Boss Rush: yenilmiş bekçiler arka arkaya; süre ve düşüş birikir */
 interface Rush {
-  /** boss: yalnız arenalar · maraton: üç şehir baştan sona */
-  kind: 'boss' | 'maraton'
+  /** boss: yalnız arenalar · maraton: üç şehir baştan sona · tur / aynaTur: ilk defterin bütün şehirleri (speedrun) */
+  kind: 'boss' | 'maraton' | 'tur' | 'aynaTur'
   order: number[]
   i: number
   timeMs: number
@@ -192,6 +196,8 @@ export default function Game() {
   const triesRef = useRef(0)
   /** boss uyandığında düşüş sayısı: hiç düşmeden yenilirse başarım */
   const bossDeathsRef = useRef(-1)
+  /** bu koşuda boss hiç düşmeden yenildi (usta görevi) */
+  const bossCleanRef = useRef(false)
   const rivalRef = useRef<Rival | null>(null)
   const saveRef = useRef<Save | null>(null)
   /** rehber açık mı (save.tutorial) ve bu bölümde hangi adımlar yapıldı */
@@ -236,8 +242,12 @@ export default function Game() {
   const [achToast, setAchToast] = useState<{ at: number; name: string; icon: string; more: number } | null>(null)
   const [setTab, setSetTab] = useState<'ayar' | 'tus'>('ayar')
   const [boardTab, setBoardTab] = useState<'genel' | 'gunluk'>('genel')
-  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: 'boss' | 'maraton' } | null>(null)
+  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: Rush['kind'] } | null>(null)
+  /** tam tur sunucuya yazıldıysa sırası (speedrun tablosu) */
+  const [tourSent, setTourSent] = useState<string | null>(null)
   const [coarse, setCoarse] = useState(false)
+  /** co-op: şehir, iki kılık, bitiş sonucu; key her başlatışta artar (bileşen yeniden kurulur) */
+  const [coop, setCoop] = useState<{ level: number; heroes: [CharacterId, CharacterId]; result: CoopResult | null; key: number } | null>(null)
   const [ready, setReady] = useState(false)
   const [storyPage, setStoryPage] = useState(0)
   const [canFull, setCanFull] = useState(false)
@@ -260,6 +270,8 @@ export default function Game() {
   const heroScarf = scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)
   const charmCount = LEVELS.filter((l) => save.charms[l.id]).length
   /** yolda bulunan bütün parçalar (hatıra + pul + nazar): Kılık Dükkânı'nın parası */
+  /** Kılık Dükkânı'nın parası: bulunan parçalar ve usta mühürleri */
+  const ustaCount = Object.values(save.ustalar ?? {}).filter(Boolean).length
   const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
   const heroAcc = accessoryFor(save.accessory)
   // ?debug (ölçüm ve görsel betikleri): güncelleme notu ekranı kapatmasın
@@ -507,7 +519,10 @@ export default function Game() {
             case 'bossDown':
               goalRef.current = 'exit'
               freezeRef.current = 0.14
-              if (bossDeathsRef.current === w.deaths) addFeat('cleanBoss')
+              if (bossDeathsRef.current === w.deaths) {
+                addFeat('cleanBoss')
+                bossCleanRef.current = true
+              }
               bossDeathsRef.current = -1
               haptic([40, 50, 40, 50, 90])
               if (modeRef.current) break
@@ -578,7 +593,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else if (sc === 'photo') {
@@ -587,7 +602,7 @@ export default function Game() {
       } else {
         acc = 0
         // yan yana yarışın kendi iki tuvali ve döngüsü var: arkadaki dünya boşuna çizilmez
-        if (sc === 'race') return
+        if (sc === 'race' || sc === 'coop') return
       }
       // adımlar arası ara değerleme yalnız oyun akarken: menüde dünya değişken adımla ilerler
       renderer.render(w, dt, sc === 'play' ? acc / STEP : 1)
@@ -792,12 +807,13 @@ export default function Game() {
       setLevelIdx(idx)
       const rush = rushRef.current
       const ch = challengeRef.current?.level === LEVELS[idx].id ? challengeRef.current : null
-      const ay = aynaRef.current === LEVELS[idx].id
+      const ay = aynaRef.current === LEVELS[idx].id || rush?.kind === 'aynaTur'
       const cu = customRef.current?.city === LEVELS[idx].city ? customRef.current : null
       const w = new World(cu ?? (ch ? challengeLevel(ch) : ay ? mirrorLevel(LEVELS[idx]) : rush?.kind === 'boss' ? bossLevel(LEVELS[idx]) : LEVELS[idx]))
       worldRef.current = w
       ghostRecRef.current = []
       dashRef.current = 0
+      bossCleanRef.current = false
       const plain = !rush && !ch && !ay && !cu && !modeRef.current
       const pbSplit = saveRef.current?.splitTimes?.[LEVELS[idx].id]
       splitRef.current = { rec: [], pb: plain && pbSplit?.v === cityVersion(LEVELS[idx].id) ? pbSplit.t : null, on: plain && saveRef.current?.splits !== false }
@@ -869,6 +885,20 @@ export default function Game() {
     loadLevel(order[0], 'play')
     beginPlay()
     setCpToast({ at: Date.now() + 1, text: t('Maraton: {cities}', { cities: order.map((i) => LEVELS[i].name).join(' → ') }) })
+  }
+
+  /** Speedrun tam turu: ilk defterin bütün şehirleri baştan sona (aynalıda haritalar sağdan sola). İlk defter bitince açılır. */
+  const startTour = (kind: 'tur' | 'aynaTur') => {
+    if (!LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])) return
+    const order = [...Array(FIRST_BOOK).keys()]
+    soundRef.current?.unlock()
+    ui()
+    modeRef.current = null
+    aynaRef.current = null
+    rushRef.current = { kind, order, i: 0, timeMs: 0, deaths: 0 }
+    loadLevel(order[0], 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: t(kind === 'tur' ? 'Tam Tur: {n} şehir arka arkaya' : 'Ayna Tam Tur: {n} şehir arka arkaya', { n: order.length }) })
   }
 
   /** Boss Rush: yenilmiş bekçiler şehir sırasıyla, arka arkaya. */
@@ -963,7 +993,7 @@ export default function Game() {
   /** Kılık Dükkânı: parça karşılığı aksesuar alır ya da takar */
   const buyAccessory = (id: AccessoryId) => {
     const item = ACCESSORIES.find((a) => a.id === id)
-    if (!item || walletOf(foundTotal, save.owned) < item.price) return
+    if (!item || walletOf(foundTotal + ustaCount, save.owned) < item.price) return
     ui()
     persist({ ...save, owned: { ...(save.owned ?? {}), [id]: true }, accessory: id })
   }
@@ -1098,6 +1128,25 @@ export default function Game() {
     else if (screen === 'race') snd.setMusic(LEVELS[duelRef.current?.setup.level ?? levelIdx].city)
     else if (screen !== 'pause' && screen !== 'photo') snd.playTheme()
   }, [screen, levelIdx, ready])
+
+  // speedrun tam turu bitince (Rahat Mod değilse) skor tablosuna: "tur" ya da "aynatur"
+  useEffect(() => {
+    setTourSent(null)
+    const r = rushResult
+    const p = save.player
+    if (!r || r.relaxed || (r.kind !== 'tur' && r.kind !== 'aynaTur') || !p) return
+    let live = true
+    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: r.kind === 'tur' ? 'tur' : 'aynatur', playerId: p.id, token: p.token, timeMs: r.timeMs, deaths: r.deaths, items: 0 }) })
+      .then((res) => res.json())
+      .then((j: { rank?: number; total?: number }) => {
+        if (live && j.rank) setTourSent(makeT(langRef.current)('Speedrun tablosunda {rank}. sıradasın ({total} yolcu).', { rank: j.rank, total: j.total ?? j.rank }))
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rushResult])
 
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
@@ -1287,6 +1336,15 @@ export default function Game() {
       const total = { timeMs: rush.timeMs, deaths: rush.deaths, bosses: rush.order.length }
       const kind = rush.kind
       setSave((prev) => {
+        if (kind === 'tur' || kind === 'aynaTur') {
+          const old = prev[kind]
+          const best = !relaxed && (!old || total.timeMs < old.timeMs)
+          setRushResult({ ...total, best, relaxed, kind })
+          if (!best) return prev
+          const next = { ...prev, [kind]: { timeMs: total.timeMs, deaths: total.deaths } }
+          writeSave(next)
+          return next
+        }
         if (kind === 'maraton') {
           const best = !relaxed && (!prev.maraton || total.timeMs < prev.maraton.timeMs)
           setRushResult({ ...total, best, relaxed, kind })
@@ -1372,12 +1430,19 @@ export default function Game() {
       if (w.level.difficulty === 'Çok Zor' && w.deaths === 0 && !relaxedRef.current) queueMicrotask(() => addFeat('flawlessHard'))
       if (newBest) saveGhost(w.level.id, { hero: prev.character ?? 'uktun', data: ghostRecRef.current })
       const mergedItems = items.map((v, i) => v || !!best?.items[i])
+      // speedrun %100: üç hatıra, gizli pul ve nazar boncuğu aynı koşuda (boss zaten yenildi: kapıdan geçildi)
+      const full = items.every(Boolean) && (!w.stampBox || w.stampTaken) && (!w.charmBox || w.charmTaken)
+      const oldFull = prev.full?.[w.level.id]
+      const fullBest = full && !run.relaxed && (oldFull === undefined || timeMs < oldFull)
       const earned: string[] = []
       const day = dailyChallenge(now, LEVELS, prev.unlocked)
       const week = weeklyChallenge(now, LEVELS, prev.unlocked)
       const daily = prev.daily.last !== day.key && completes(day, w.level, run) ? { last: day.key, count: prev.daily.count + 1 } : prev.daily
       const weekly = prev.weekly.last !== week.key && completes(week, w.level, run) ? { last: week.key, count: prev.weekly.count + 1 } : prev.weekly
       if (daily !== prev.daily) earned.push('Günün Şehri Tamam')
+      // usta görevi: şehrin ilk şehir insanının görevi bu koşuda yapıldıysa mühür
+      const ustaNew = !prev.ustalar?.[w.level.id] && ustaDone(ustaTask(idx), w.level, { timeMs, deaths: w.deaths, items, stamp: !w.stampBox || w.stampTaken, charm: !w.charmBox || w.charmTaken, cleanBoss: bossCleanRef.current, relaxed: run.relaxed })
+      if (ustaNew) earned.push('Usta Mührü Kazandın')
       if (weekly !== prev.weekly) earned.push('Haftanın Görevi Tamam')
       const next: Save = {
         ...prev,
@@ -1390,6 +1455,8 @@ export default function Game() {
           ...prev.best,
           [w.level.id]: newBest ? { timeMs, deaths: w.deaths, items: mergedItems, v: cityVersion(w.level.id), ...(run.relaxed ? { relaxed: true } : {}) } : { ...best, items: mergedItems, v: cityVersion(w.level.id), renew: undefined },
         },
+        ...(fullBest ? { full: { ...prev.full, [w.level.id]: timeMs } } : {}),
+        ...(ustaNew ? { ustalar: { ...prev.ustalar, [w.level.id]: true } } : {}),
         // rekor koşunun bayrak süreleri: bir sonraki koşunun ara süreleri bunlarla kıyaslanır
         ...(newBest && splitRef.current.rec.length ? { splitTimes: { ...prev.splitTimes, [w.level.id]: { v: cityVersion(w.level.id), t: [...splitRef.current.rec] } } } : {}),
       }
@@ -1399,7 +1466,7 @@ export default function Game() {
       const beaten = !!rival && timeMs < rival.timeMs
       // Rahat Mod'da geçmek başarım saymaz
       if (beaten && !relaxedRef.current) queueMicrotask(() => addFeat('ghostBeaten'))
-      setResult({ timeMs, deaths: w.deaths, items, newBest, relaxed: relaxedRef.current, earned, ...(newBest ? { ghost: { hero: prev.character ?? 'uktun', data: [...ghostRecRef.current] } } : {}), ...(rival ? { rival: { name: rival.name, timeMs: rival.timeMs, beaten } } : {}) })
+      setResult({ timeMs, deaths: w.deaths, items, newBest, relaxed: relaxedRef.current, earned, ...(newBest ? { ghost: { hero: prev.character ?? 'uktun', data: [...ghostRecRef.current] } } : {}), ...(rival ? { rival: { name: rival.name, timeMs: rival.timeMs, beaten } } : {}), ...(full && !run.relaxed ? { full: { best: fullBest, prev: oldFull } } : {}) })
       return next
     })
     setScreen('complete')
@@ -1581,7 +1648,7 @@ export default function Game() {
       {screen === 'play' && (
         <>
           <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
-            label={modeRef.current?.kind === 'daily' ? `${modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('DÜELLO')} · ${duel.setup.names[duel.turn]}` : customRef.current ? t('Özel Harita') : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t('Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined}
+            label={modeRef.current?.kind === 'daily' ? `${modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('DÜELLO')} · ${duel.setup.names[duel.turn]}` : customRef.current ? t('Özel Harita') : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined}
             penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' ? (d: number) => duelScore(0, d) : undefined}
             onPause={() => setScreen('pause')} />
           {titleCard > 0 && hud.time < 0.05 && (
@@ -1817,7 +1884,7 @@ export default function Game() {
               <span className="font-normal tracking-normal text-cream sm:hidden short:inline">· {lang === 'en' ? scarfFor(save.scarf).nameEn : scarfFor(save.scarf).name}</span>
               <span className="kilim h-[6px] flex-1 opacity-50" />
               <button className="pixel-btn px-2.5 py-1 text-[12px] font-bold tracking-normal" onClick={() => (ui(), setScreen('shop'))}>
-                {t('Kılık Dükkânı · {n}', { n: walletOf(foundTotal, save.owned) })}
+                {t('Kılık Dükkânı · {n}', { n: walletOf(foundTotal + ustaCount, save.owned) })}
               </button>
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2 short:mt-1.5">
@@ -2090,6 +2157,22 @@ export default function Game() {
                   <ItemIcon city={level.city} taken size={28} />
                   <span>{t('Üç {item} topla, meydandaki boss’u yen.', { item: level.item })}</span>
                 </p>
+                {(() => {
+                  const usta = level.npcs[0]
+                  if (!usta) return null
+                  const done = !!save.ustalar?.[level.id]
+                  return (
+                    <p className="mt-2 flex items-start gap-2 text-[13px] leading-snug text-muted">
+                      <span className={`mt-px shrink-0 font-bold ${done ? 'text-[#7ad88a]' : 'text-gold'}`} aria-hidden>
+                        {done ? '✓' : '✦'}
+                      </span>
+                      <span>
+                        <strong className="font-semibold text-cream">{usta.name}:</strong> {t(USTA_TEXT[ustaTask(levelIdx)], { item: level.item })}
+                        {done && <span className="ml-1 whitespace-nowrap text-[#7ad88a]">{t('Mühür Alındı')}</span>}
+                      </span>
+                    </p>
+                  )
+                })()}
                 {introBest && (
                   <p className="mt-2 flex items-center gap-2 text-[13px] text-muted tabular-nums">
                     {t('En İyi Süre')} <strong className="text-cream">{formatTime(introBest.timeMs)}</strong>
@@ -2209,11 +2292,13 @@ export default function Game() {
           heroName={hero.short}
           heroId={hero.id}
           onPlayer={(p) => persist({ ...save, player: p, skippedName: !p })}
-          nextIdx={levelIdx + 1 < LEVELS.length ? levelIdx + 1 : nextUnplayed(save, levelIdx)}
+          // ilk defterin son şehri ilk kez bitince sıradaki şehir yerine final sahnesi ("Defteri Kapat")
+          nextIdx={levelIdx === FIRST_BOOK - 1 && !save.sawEnding ? null : levelIdx + 1 < LEVELS.length ? levelIdx + 1 : nextUnplayed(save, levelIdx)}
           onNext={() => {
             // sondaki şehirden sonra: oynanmamış bir şehir varsa ona, yoksa defterin sonuna
             const n = levelIdx + 1 < LEVELS.length ? levelIdx + 1 : nextUnplayed(save, levelIdx)
-            if (n === null) setScreen('end')
+            // ilk defterin son şehri (Bayburt) ilk kez bitince final sahnesi; ikinci defter onun ardından açılır
+            if (n === null || (levelIdx === FIRST_BOOK - 1 && !save.sawEnding)) setScreen('end')
             else loadLevel(n)
           }}
           onRetry={() => loadLevel(levelIdx, 'play')}
@@ -2346,6 +2431,7 @@ export default function Game() {
           onDaily={startDaily}
           onDailyBoard={() => (ui(), setBoardTab('gunluk'), setScreen('scores'))}
           onDuel={() => (ui(), setScreen('duelSetup'))}
+          onCoop={() => (ui(), setScreen('coopSetup'))}
           onRush={startRush}
           marathonOpen={save.unlocked + 1 >= MARATHON_CITIES}
           marathonBest={save.maraton ?? null}
@@ -2356,8 +2442,11 @@ export default function Game() {
           onChallenges={() => (ui(), setScreen('challenges'))}
           onTournament={() => (ui(), setScreen('tournament'))}
           onMirror={() => (ui(), setScreen('mirror'))}
-          mirrorOpen={LEVELS.every((l) => save.best[l.id])}
+          mirrorOpen={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])}
           mirrorDone={Object.keys(save.ayna ?? {}).length}
+          onTour={startTour}
+          tourBest={save.tur ?? null}
+          aynaTourBest={save.aynaTur ?? null}
           tournament={save.turnuva ?? null}
           challengeDone={CHALLENGES.filter((c) => save.challenges?.[c.id]).length}
           onBack={() => setScreen('title')}
@@ -2435,19 +2524,61 @@ export default function Game() {
         />
       )}
 
+      {screen === 'coopSetup' && (
+        <CoopSetup
+          unlocked={save.unlocked}
+          hero={hero.id}
+          canPlay={!coarse || (typeof navigator !== 'undefined' && !!navigator.getGamepads && [...navigator.getGamepads()].filter(Boolean).length >= 2)}
+          onStart={(level, heroes) => {
+            soundRef.current?.unlock()
+            ui()
+            setCoop((c) => ({ level, heroes, result: null, key: (c?.key ?? 0) + 1 }))
+            setScreen('coop')
+          }}
+          onBack={() => setScreen('modes')}
+        />
+      )}
+      {screen === 'coop' && coop && (
+        <Coop
+          key={coop.key}
+          level={LEVELS[coop.level]}
+          heroes={coop.heroes}
+          sound={soundRef.current}
+          onDone={(r) => {
+            setCoop((c) => (c ? { ...c, result: r } : c))
+            setScreen('coopEnd')
+          }}
+          onQuit={() => setScreen('modes')}
+        />
+      )}
+      {screen === 'coopEnd' && coop?.result && (
+        <CoopEnd
+          level={LEVELS[coop.level]}
+          heroes={coop.heroes}
+          result={coop.result}
+          onAgain={() => {
+            setCoop((c) => (c ? { ...c, result: null, key: c.key + 1 } : c))
+            setScreen('coop')
+          }}
+          onMenu={() => setScreen('modes')}
+        />
+      )}
+
       {screen === 'duelEnd' && duel && <DuelEnd setup={duel.setup} rounds={duel.rounds} onRematch={() => duelStart(duel.setup)} onSetup={() => setScreen('duelSetup')} onMenu={() => setScreen('modes')} />}
 
       {screen === 'rushEnd' && rushResult && (
         <Overlay dim>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{rushResult.best ? t('YENİ REKOR') : rushResult.kind === 'boss' ? t('BOSS RUSH') : t('MARATON')}</p>
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{rushResult.best ? t('YENİ REKOR') : rushResult.kind === 'boss' ? t('BOSS RUSH') : rushResult.kind === 'tur' ? t('TAM TUR') : rushResult.kind === 'aynaTur' ? t('AYNA TAM TUR') : t('MARATON')}</p>
             <h2 className="mt-2 font-display text-6xl tabular-nums text-cream">{formatTime(rushResult.timeMs)}</h2>
             <p className="mt-2 text-[13px] text-muted">{rushResult.kind === 'boss' ? t('{n} boss · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths }) : t('{n} şehir · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths })}</p>
             {rushResult.relaxed && <p className="mt-2 text-[12px] text-muted">{t("Rahat Mod’da koştun: rekor yazılmadı.")}</p>}
             {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'boss' && save.rush && <p className="mt-2 text-[12px] text-muted">{t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })}</p>}
+            {!rushResult.best && !rushResult.relaxed && (rushResult.kind === 'tur' || rushResult.kind === 'aynaTur') && save[rushResult.kind] && <p className="mt-2 text-[12px] text-muted">{t('Rekorun: {time}', { time: formatTime(save[rushResult.kind]!.timeMs) })}</p>}
+            {(rushResult.kind === 'tur' || rushResult.kind === 'aynaTur') && tourSent && <p className="mt-2 text-[12px] text-[#7ad88a]">{tourSent}</p>}
             {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'maraton' && save.maraton && <p className="mt-2 text-[12px] text-muted">{t('Maraton rekorun: {time}', { time: formatTime(save.maraton.timeMs) })}</p>}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <button className="pixel-btn primary justify-center" onClick={rushResult.kind === 'boss' ? startRush : startMarathon} autoFocus>
+              <button className="pixel-btn primary justify-center" onClick={rushResult.kind === 'boss' ? startRush : rushResult.kind === 'tur' || rushResult.kind === 'aynaTur' ? () => startTour(rushResult.kind as 'tur' | 'aynaTur') : startMarathon} autoFocus>
                 {t("↺ Yeniden Koş")}
               </button>
               <button className="pixel-btn justify-center" onClick={() => setScreen('modes')}>
@@ -2470,10 +2601,11 @@ export default function Game() {
           onCities={() => setScreen('map')}
           onScores={() => setScreen('scores')}
           onMirror={() => setScreen('mirror')}
+          onSecondBook={() => loadLevel(FIRST_BOOK)}
         />
       )}
-      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} wearing={heroAcc} wallet={walletOf(foundTotal, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), persist({ ...save, accessory: id }))} onBack={() => setScreen('character')} />}
-      {screen === 'mirror' && <MirrorList best={save.ayna ?? {}} open={LEVELS.every((l) => save.best[l.id])} onStart={startMirror} onBack={() => setScreen('modes')} />}
+      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} wearing={heroAcc} wallet={walletOf(foundTotal + ustaCount, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), persist({ ...save, accessory: id }))} onBack={() => setScreen('character')} />}
+      {screen === 'mirror' && <MirrorList best={save.ayna ?? {}} open={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])} onStart={startMirror} onBack={() => setScreen('modes')} />}
       {screen === 'custom' && custom && (
         <Overlay dim>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
@@ -2725,6 +2857,8 @@ function Complete({
       setSent({ first: !!j.first, better: j.better ?? { time: true, deaths: false, items: false }, bestMs: j.bestMs ?? result.timeMs, total: j.total ?? 0 })
       // yeni rekor tablodaysa hayaleti de sunucuya: öteki yolcular onunla yarışabilsin
       if (result.ghost && (j.first || j.better?.time)) void uploadGhost(p, level.id, result.timeMs, result.ghost)
+      // %100 koşusu kendi tablosuna da (speedrun); hata sessiz: asıl skor yazıldı
+      if (result.full) void fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: 'yuzde', city: level.id, playerId: p.id, token: p.token, timeMs: result.timeMs, deaths: result.deaths, items: 3 }) }).catch(() => {})
       setStatus('sent')
       setRefresh((r) => r + 1)
     } catch (e2) {
@@ -2764,6 +2898,11 @@ function Complete({
                 {result.rival && (
                   <p className={`mt-1 text-[13px] font-semibold ${result.rival.beaten ? 'text-gold' : 'text-muted'}`}>
                     ◌ {result.rival.beaten ? t('{name} hayaletini {d} farkla geçtin', { name: result.rival.name, d: formatTime(result.rival.timeMs - result.timeMs) }) : t('{name} hayaleti {d} önde bitirdi', { name: result.rival.name, d: formatTime(result.timeMs - result.rival.timeMs) })}
+                  </p>
+                )}
+                {result.full && (
+                  <p className="mt-1 text-[13px] font-semibold text-gold">
+                    ✦ {result.full.best ? (result.full.prev === undefined ? t('%100 koşu: her şey tek seferde!') : t('Yeni %100 rekoru ({d} daha hızlı)', { d: formatTime(result.full.prev - result.timeMs) })) : t('%100 koşu · rekorun {time}', { time: formatTime(result.full.prev ?? result.timeMs) })}
                   </p>
                 )}
               </div>

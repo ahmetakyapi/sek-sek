@@ -924,6 +924,150 @@ export function drawFriend(c: CanvasRenderingContext2D, animal: string, x: numbe
 type ItemPainter = (c: Ctx) => void
 
 const KEEPSAKES: Record<CityKey, ItemPainter> = {
+  // Çay: ince belli bardakta tavşan kanı çay, beyaz tabak, kenarda şeker
+  rize: (c) => {
+    ell(c, 0, 4.4, 5.4, 1.3, '#f8f6f0', '#c8ccd4')
+    dab(c, 0, 4.2, 3, 0.55, '#d8dce4')
+    // bardak: ağzı ve dibi geniş, beli ince
+    const glass = () => {
+      c.moveTo(-2.9, -4.6)
+      c.lineTo(2.9, -4.6)
+      c.quadraticCurveTo(1.1, -0.6, 2.5, 3.9)
+      c.lineTo(-2.5, 3.9)
+      c.quadraticCurveTo(-1.1, -0.6, -2.9, -4.6)
+    }
+    shape(c, glass, '#eef6f8')
+    if (!halo) {
+      // çay: ağızdan bir parmak aşağıda
+      c.save()
+      c.beginPath()
+      glass()
+      c.clip()
+      c.fillStyle = '#c0301e'
+      c.fillRect(-4, -3.4, 8, 7.4)
+      c.fillStyle = '#e2552e'
+      c.fillRect(-4, -3.4, 8, 0.7)
+      c.restore()
+      c.strokeStyle = INK
+      c.lineWidth = INKW
+      c.beginPath()
+      glass()
+      c.closePath()
+      c.stroke()
+    }
+    line(c, [-2.6, -4.6, 2.6, -4.6], 0.35, '#ffffff', false)
+    dab(c, -1.6, -1.6, 0.35, 1.5, 'rgba(255,255,255,0.65)', 0.2)
+    // şeker küpü ve kaşık
+    poly(c, [3.4, 3.6, 4.8, 3.6, 4.8, 2.3, 3.4, 2.3], '#ffffff', '#d8dce4')
+    line(c, [-3.2, 3.8, -5.4, 2.2], 0.45, '#c8ccd4')
+  },
+  // Bal peteği: altıgen gözler, köşesinden süzülen bal
+  artvin: (c) => {
+    const hex = (x: number, y: number, r: number) => {
+      const p: number[] = []
+      for (let i = 0; i < 6; i++) p.push(x + Math.cos((i * Math.PI) / 3) * r, y + Math.sin((i * Math.PI) / 3) * r)
+      return p
+    }
+    poly(c, [-5, -3.2, 5, -4.4, 5.4, 3.4, -4.6, 4.4], '#e8a826', '#b8761a')
+    for (const [x, y] of [[-2.6, -1.6], [0.4, -2.6], [3.2, -1.2], [-2.2, 1.8], [0.8, 0.8], [3.4, 2.2]] as const) {
+      if (!halo) {
+        c.beginPath()
+        const p = hex(x, y, 1.45)
+        c.moveTo(p[0], p[1])
+        for (let i = 2; i < 12; i += 2) c.lineTo(p[i], p[i + 1])
+        c.closePath()
+        c.fillStyle = '#f6c84a'
+        c.fill()
+        c.strokeStyle = '#a8681a'
+        c.lineWidth = 0.4
+        c.stroke()
+      }
+      dab(c, x - 0.4, y - 0.4, 0.45, 0.35, '#fff0b0')
+    }
+    // damla
+    shape(
+      c,
+      () => {
+        c.moveTo(-3.4, 4)
+        c.quadraticCurveTo(-3.2, 5.4, -2.5, 6.4)
+        c.quadraticCurveTo(-1.4, 5.4, -1.8, 4.1)
+      },
+      '#f2b232',
+    )
+  },
+  // Gravyer: delikli sarı peynir dilimi, kabuğu koyu
+  kars: (c) => {
+    poly(c, [-5.6, 3.6, 5.2, 3.6, 5.2, -0.6, -5.6, -3.6], '#f6d468', '#c8a03a')
+    poly(c, [-5.6, -3.6, 5.2, -0.6, 5.2, 0.4, -5.6, -2.6], '#fbe492')
+    line(c, [5.2, -0.6, 5.2, 3.6], 0.9, '#c88a2a')
+    for (const [x, y, r] of [[-3, 1.4, 1], [0.6, 2, 0.75], [2.8, 0.6, 1.05], [-0.8, -0.2, 0.55], [4, 2.7, 0.45]] as const) {
+      ell(c, x, y, r, r * 0.85, '#d8ac3e')
+      dab(c, x + r * 0.2, y + r * 0.25, r * 0.55, r * 0.4, '#c09030')
+    }
+    // kenarda yarım delik
+    if (!halo) {
+      c.beginPath()
+      c.arc(-2, 3.6, 0.8, Math.PI, 0)
+      c.fillStyle = '#c09030'
+      c.fill()
+    }
+  },
+  // Büryan: tabakta kızarmış kuzu, altında pide, yanında soğan ve biber
+  bitlis: (c) => {
+    ell(c, 0, 3.6, 5.8, 1.6, '#f4f0e6', '#c8c2b0')
+    // pide
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.8, 2.8)
+        c.quadraticCurveTo(-5, 0.6, -2.6, 0.4)
+        c.lineTo(3, 0.4)
+        c.quadraticCurveTo(5.2, 0.6, 4.8, 2.8)
+        c.closePath()
+      },
+      '#e8b86a',
+      '#b8843a',
+    )
+    // et: kızarmış iri parça, üstü yanık izli
+    shape(
+      c,
+      () => {
+        c.moveTo(-3.6, 1.2)
+        c.bezierCurveTo(-4.2, -3.4, 2.6, -4.6, 3.8, -0.6)
+        c.quadraticCurveTo(4, 1.4, 2.4, 1.6)
+        c.closePath()
+      },
+      '#a8542a',
+      '#6e3216',
+    )
+    line(c, [-1.8, -1.6, -0.6, 0.4], 0.35, '#5a2410', false)
+    line(c, [0.6, -2.6, 1.8, -0.6], 0.35, '#5a2410', false)
+    dab(c, -1.6, -2.2, 0.9, 0.45, '#d88a54', -0.4)
+    // kemik ucu
+    line(c, [3.2, -1.2, 4.8, -2.6], 0.9, '#f4ead0')
+    ell(c, 5, -2.8, 0.7, 0.7, '#f4ead0')
+    // soğan halkası ve biber
+    ell(c, -4.4, 1.6, 1.1, 0.7, '#f0d8f0', '#c0a0c4')
+    line(c, [2.6, 2.4, 4.6, 1.8], 0.8, '#4e9a3a')
+  },
+  // Kilim: kırmızı zeminde göz motifi, saçaklı iki uç
+  agri: (c) => {
+    for (const x of [-3.6, -2.2, -0.8, 0.6, 2, 3.4]) {
+      line(c, [x, -4.8, x, -6], 0.35, '#e8d8b0', false)
+      line(c, [x, 4.8, x, 6], 0.35, '#e8d8b0', false)
+    }
+    poly(c, [-4.4, -4.8, 4.4, -4.8, 4.4, 4.8, -4.4, 4.8], '#b8302a', '#7e1e1c')
+    if (!halo) {
+      c.strokeStyle = '#f2c14e'
+      c.lineWidth = 0.5
+      c.strokeRect(-3.5, -3.9, 7, 7.8)
+    }
+    // ortada elibelinde / göz motifi
+    poly(c, [0, -3, 2.4, 0, 0, 3, -2.4, 0], '#2e5a8a')
+    poly(c, [0, -1.6, 1.2, 0, 0, 1.6, -1.2, 0], '#f4ead8')
+    dab(c, 0, 0, 0.5, 0.5, '#b8302a')
+    for (const [x, y] of [[-2.6, -2.9], [2.6, -2.9], [-2.6, 2.9], [2.6, 2.9]] as const) poly(c, [x, y - 0.7, x + 0.7, y, x, y + 0.7, x - 0.7, y], '#f4ead8')
+  },
   // Simit: susamlı halka
   istanbul: (c) => {
     ring(c, 0, 0, 3.5, 2.4, '#c47a2c')
