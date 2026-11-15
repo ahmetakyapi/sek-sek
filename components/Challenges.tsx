@@ -24,7 +24,7 @@ export function ChallengeList({ best, finished, player, onStart, onBack }: { bes
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(960px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('{n}/{m} BİTTİ', { n: done, m: CHALLENGES.length })}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('{n}/{m} BİTTİ', { n: done, m: CHALLENGES.length })}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Mücadeleler')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
@@ -46,12 +46,12 @@ export function ChallengeList({ best, finished, player, onStart, onBack }: { bes
                     aria-pressed={pick.id === c.id}
                     onClick={() => setPick(c)}
                   >
-                    <span className={`flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2438] ${open ? '' : 'grayscale'}`}>
+                    <span className={`flex h-8 w-8 items-center justify-center rounded-full bg-[#221f4a] ${open ? '' : 'grayscale'}`}>
                       <ItemIcon city={lv.city} taken={open} size={22} />
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate font-semibold text-cream">{t(c.name)}</span>
-                      <span className="block truncate text-[12px] text-muted">
+                      <span className="block truncate text-[13px] text-muted">
                         {displayName(lv)} · {t(lv.difficulty)}
                       </span>
                     </span>
@@ -84,7 +84,7 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
   return (
     <section className="border-2 border-line bg-ink/40 p-3 short:p-2">
       <p className="font-display text-xl leading-tight text-cream">{t(c.name)}</p>
-      <p className="text-[12px] text-muted">
+      <p className="text-[13px] text-muted">
         {displayName(lv)} · <span className="nowrap">{t('Altın {g} sn · Gümüş {s} sn · Bronz {b} sn', { g: m[0], s: m[1], b: m[2] })}</span>
       </p>
       <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-2">
@@ -137,7 +137,7 @@ export function ChallengeEnd({
     <Overlay dim>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:p-6 short:grid short:max-w-[min(900px,100%)] short:grid-cols-2 short:gap-5 short:py-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{result.best ? t('YENİ REKOR') : result.week ? t('HAFTALIK TURNUVA') : t('MÜCADELE')}</p>
+          <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{result.best ? t('YENİ REKOR') : result.week ? t('HAFTALIK TURNUVA') : t('MÜCADELE')}</p>
           <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t(c.name)}</h2>
           <p className="mt-3 flex items-center gap-3 font-display text-5xl leading-none tabular-nums text-cream short:mt-1.5 short:text-4xl">
             {formatTime(result.timeMs)}
@@ -148,7 +148,7 @@ export function ChallengeEnd({
             {result.prev && !result.best ? ` · ${t('Rekorun {time}', { time: formatTime(result.prev) })}` : ''}
             {result.prev && result.best ? ` · ${t('{d} daha hızlı', { d: formatTime(result.prev - result.timeMs) })}` : ''}
           </p>
-          {result.relaxed && <p className="mt-1 text-[12px] text-muted">{t('Rahat Mod’da koştun: rekor yazılmadı.')}</p>}
+          {result.relaxed && <p className="mt-1 text-[13px] text-muted">{t('Rahat Mod’da koştun: rekor yazılmadı.')}</p>}
           <p className="mt-1 text-[13px]">
             {result.relaxed ? null : !player ? (
               <button className="text-gold underline underline-offset-4" onClick={onLogin}>

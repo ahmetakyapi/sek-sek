@@ -19,7 +19,7 @@ const DIFF_TONE: Record<LevelDef['difficulty'], string> = {
 }
 
 const Eyebrow = ({ children, tone = 'text-gold' }: { children: React.ReactNode; tone?: string }) => (
-  <p className={`flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] ${tone}`}>
+  <p className={`flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] ${tone}`}>
     {children} <span className="kilim h-[6px] flex-1 opacity-50" />
   </p>
 )
@@ -104,7 +104,7 @@ export default function Album({ save }: { save: Save }) {
               >
                 <span className="relative block aspect-[16/7] overflow-hidden">
                   <img src={`/sehirler/${c.id}.webp`} alt="" className={`h-full w-full object-cover ${seen ? '' : off ? 'opacity-20 brightness-0' : 'opacity-35 grayscale'}`} style={{ imageRendering: 'pixelated', objectPosition: '50% 70%' }} />
-                  <span className="plate absolute left-1 top-1 text-[11px]">
+                  <span className="plate absolute left-1 top-1 text-[12px]">
                     <span>{String(c.plate).padStart(2, '0')}</span>
                   </span>
                   {off && <span className="absolute right-1 top-0.5 text-[13px] text-muted" aria-hidden>🔒</span>}{/* slop-ok: şehir listesi ve mücadelelerdeki kilit işaretiyle aynı (Game.tsx, Challenges.tsx) */}
@@ -122,11 +122,11 @@ export default function Album({ save }: { save: Save }) {
           <button className={`pixel-btn px-2 py-1 text-[13px] ${open ? '' : 'hidden'} side:hidden`} onClick={() => setOpen(false)} aria-label={t('Albüme Dön')}>
             {t('← Albüm')}
           </button>
-          <p className="hidden min-w-0 truncate pl-1.5 text-[11px] font-bold tracking-[0.22em] text-gold side:block">{t('ŞEHİR ALBÜMÜ')}</p>
+          <p className="hidden min-w-0 truncate pl-1.5 text-[12px] font-bold tracking-[0.14em] text-gold side:block">{t('ŞEHİR ALBÜMÜ')}</p>
           <button className="pixel-btn ml-auto px-2 py-1 text-[13px]" onClick={() => go(sel - 1)} aria-label={t('Önceki Şehir: {city}', { city: prev.name })} title={t('Önceki Şehir: {city}', { city: prev.name })}>
             ←
           </button>
-          <span className="min-w-[48px] text-center text-[12px] tabular-nums text-muted">
+          <span className="min-w-[48px] text-center text-[13px] tabular-nums text-muted">
             {sel + 1}/{n}
           </span>
           <button className="pixel-btn px-2 py-1 text-[13px]" onClick={() => go(sel + 1)} aria-label={t('Sonraki Şehir: {city}', { city: next.name })} title={t('Sonraki Şehir: {city}', { city: next.name })}>
@@ -149,7 +149,7 @@ export default function Album({ save }: { save: Save }) {
           <div className="space-y-4 p-3 sm:p-4 short:space-y-3">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <p className="text-[14px] text-cream/90">{l.subtitle}</p>
-              <span className={`border px-1.5 py-px text-[11px] font-bold ${DIFF_TONE[l.difficulty]}`}>{t(l.difficulty)}</span>
+              <span className={`border px-1.5 py-px text-[12px] font-bold ${DIFF_TONE[l.difficulty]}`}>{t(l.difficulty)}</span>
             </div>
 
             {!visited ? (
@@ -163,7 +163,7 @@ export default function Album({ save }: { save: Save }) {
               <>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-2 border-line bg-panel-2 px-3 py-2">
                   <div>
-                    <p className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('EN İYİ SÜRE')}</p>
+                    <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('EN İYİ SÜRE')}</p>
                     <p className="font-display text-xl tabular-nums text-cream">{best.stale ? '—' : formatTime(best.timeMs)}</p>
                   </div>
                   {!best.stale && <MedalBadge medal={medalFor(base, best.timeMs)} size="lg" />}
@@ -221,7 +221,7 @@ export default function Album({ save }: { save: Save }) {
                 <section className="flex items-center gap-3 border-2 border-line bg-panel-2 px-3 py-2">
                   <BossFigure city={l.city} className={`h-16 w-16 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('MEYDANIN BOSS’U')}</p>
+                    <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('MEYDANIN BOSS’U')}</p>
                     <p className="font-display text-[15px] leading-tight text-cream">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : '???'}</p>
                     <p className="mt-0.5 text-[13px] leading-snug text-muted">{beaten ? (lang === 'en' ? boss.tauntEn : boss.taunt) : t('Meydanın boss’unu yen, sayfası açılsın.')}</p>
                   </div>

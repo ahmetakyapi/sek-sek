@@ -37,7 +37,7 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:max-w-[min(900px,100%)] short:py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent-2">{t('CO-OP · 2 KİŞİ')}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent-2">{t('CO-OP · 2 KİŞİ')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Birlikte Yolculuk')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
@@ -56,8 +56,8 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
                 aria-label={t('Kılığı Değiştir')}
               >
                 <Portrait id={heroes[k]} className="w-[48px] short:w-[38px]" />
-                <span className="min-w-0 text-[12px] leading-snug text-muted">
-                  <span className="block text-[11px] font-bold tracking-[0.15em]">{t('{n}. OYUNCU', { n: k + 1 })}</span>
+                <span className="min-w-0 text-[13px] leading-snug text-muted">
+                  <span className="block text-[12px] font-bold tracking-[0.15em]">{t('{n}. OYUNCU', { n: k + 1 })}</span>
                   <span className="block font-display text-[16px] text-cream">{CHARACTERS[heroes[k]].short}</span>
                   <span className="mt-1 flex flex-wrap gap-1">
                     {(k === 0 ? ['W', 'A', 'S', 'D', 'F'] : ['↑', '←', '↓', '→', 'L']).map((c) => (
@@ -69,7 +69,7 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
             ))}
           </div>
           <div className="mt-3 short:mt-0">
-            <p className="text-[11px] font-bold tracking-[0.2em] text-muted">{t('ŞEHİR')}</p>
+            <p className="text-[12px] font-bold tracking-[0.14em] text-muted">{t('ŞEHİR')}</p>
             <div className="mt-1.5 grid max-h-[180px] grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3 short:max-h-[150px]">
               {open.map((l, i) => (
                 <button key={l.id} aria-pressed={i === lvl} className={`flex items-center gap-1.5 border-2 px-2 py-1.5 text-left text-[13px] ${i === lvl ? 'border-gold bg-gold/10 text-cream' : 'border-line bg-ink/40 text-cream/80'}`} onClick={() => setLvl(i)}>
@@ -78,12 +78,12 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[12px] text-muted">
+            <p className="mt-2 text-[13px] text-muted">
               {displayName(LEVELS[lvl])} · {t(lv.difficulty)}
             </p>
           </div>
         </div>
-        {!canPlay && <p className="mt-2 text-[12px] text-accent-2">{t('Co-op için klavye ya da iki oyun kolu gerekir.')}</p>}
+        {!canPlay && <p className="mt-2 text-[13px] text-accent-2">{t('Co-op için klavye ya da iki oyun kolu gerekir.')}</p>}
         <button className="pixel-btn primary mt-3 justify-center py-2.5 text-base" disabled={!canPlay} onClick={() => onStart(lvl, heroes)} autoFocus>
           {t('▶ Birlikte Başla')}
         </button>
@@ -271,12 +271,12 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
   return (
     <div className="absolute inset-0 z-30 bg-ink">
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={t('Oyun Alanı')} />
-      <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-2 bg-ink/85 py-1 pl-1 pr-2.5 [box-shadow:0_0_0_2px_#3d3550]">
+      <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-2 bg-ink/85 py-1 pl-1 pr-2.5 [box-shadow:0_0_0_2px_#37337a]">
         <PortraitFace id={heroes[0]} />
         <PortraitFace id={heroes[1]} />
         <div className="leading-tight">
           <p className="font-display text-[14px] text-cream">{level.name}</p>
-          <p className="flex items-center gap-1 text-[11px] text-muted">
+          <p className="flex items-center gap-1 text-[12px] text-muted">
             {[0, 1, 2].map((i) => (
               <ItemIcon key={i} city={level.city} taken={!!hud.items[i]} size={12} />
             ))}
@@ -284,15 +284,15 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
           </p>
         </div>
       </div>
-      <p className="pointer-events-none absolute right-2 top-2 bg-ink/85 px-2.5 py-1 font-display text-2xl tabular-nums text-cream [box-shadow:0_0_0_2px_#3d3550]">{formatTime((hud.time * 1000) | 0)}</p>
+      <p className="pointer-events-none absolute right-2 top-2 bg-ink/85 px-2.5 py-1 font-display text-2xl tabular-nums text-cream [box-shadow:0_0_0_2px_#37337a]">{formatTime((hud.time * 1000) | 0)}</p>
       {count > 0 && (
         <>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p key={count} className="rise font-display text-[120px] leading-none text-cream [text-shadow:0_8px_0_#120f1a]">
+            <p key={count} className="rise font-display text-[120px] leading-none text-cream [text-shadow:0_8px_0_#0e0d22]">
               {count}
             </p>
           </div>
-          <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center gap-6 text-[12px] text-cream">
+          <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center gap-6 text-[13px] text-cream">
             {[
               ['W', 'A', 'D', 'F'],
               ['↑', '←', '→', 'L'],
@@ -309,7 +309,7 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
       )}
       {!paused && count === 0 && (
         <button
-          className="pixel-btn absolute left-1/2 top-2 h-9 w-9 -translate-x-1/2 justify-center p-0 text-[12px]"
+          className="pixel-btn absolute left-1/2 top-2 h-9 w-9 -translate-x-1/2 justify-center p-0 text-[13px]"
           aria-label={t('Mola')}
           onClick={() => {
             if (phase.current !== 'run') return
@@ -323,7 +323,7 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
       {paused && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/70 p-4">
           <div className="pixel-panel w-full max-w-xs p-5 text-center">
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('MOLA')}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('MOLA')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream">{t('Birlikte Mola')}</h2>
             <div className="mt-4 grid gap-2.5">
               <button
@@ -353,7 +353,7 @@ export function CoopEnd({ level, heroes, result, onAgain, onMenu }: { level: Lev
   return (
     <Overlay dim>
       <div className="rise pixel-panel w-full max-w-md p-6 text-center">
-        <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('BİRLİKTE BİTİRDİNİZ')}</p>
+        <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('BİRLİKTE BİTİRDİNİZ')}</p>
         <div className="mt-3 flex items-end justify-center gap-1" aria-hidden>
           <Portrait id={heroes[0]} className="w-[64px]" />
           <Portrait id={heroes[1]} className="w-[64px]" />

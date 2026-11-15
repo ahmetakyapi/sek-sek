@@ -23,7 +23,7 @@ export default function Shop({ hero, scarf, owned, wearing, wallet, onBuy, onWea
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('CÜZDAN: {n} PARÇA', { n: wallet })}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('CÜZDAN: {n} PARÇA', { n: wallet })}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Kılık Dükkânı')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
@@ -38,7 +38,7 @@ export default function Shop({ hero, scarf, owned, wearing, wallet, onBuy, onWea
             </div>
             <div className="mt-3 w-full text-center max-sm:mt-0 max-sm:text-left short:mt-0 short:text-left">
               <p className="font-display text-xl text-cream short:text-base">{lng === 'en' ? item.nameEn : item.name}</p>
-              <p className="text-[12px] text-muted">{pick === 'yok' ? t('Sade yolcu') : has ? (wearing === pick ? t('Takılı') : t('Senin')) : t('{n} parça', { n: item.price })}</p>
+              <p className="text-[13px] text-muted">{pick === 'yok' ? t('Sade yolcu') : has ? (wearing === pick ? t('Takılı') : t('Senin')) : t('{n} parça', { n: item.price })}</p>
               <div className="mt-2">
                 {has ? (
                   <button className="pixel-btn primary w-full justify-center" disabled={wearing === pick} onClick={() => onWear(pick)}>
@@ -58,8 +58,8 @@ export default function Shop({ hero, scarf, owned, wearing, wallet, onBuy, onWea
               return (
                 <button key={a.id} aria-pressed={pick === a.id} onClick={() => setPick(a.id)} className={`flex flex-col items-center border-2 bg-panel-2 p-2 ${pick === a.id ? 'border-gold' : 'border-line hover:border-accent-2'}`}>
                   <Portrait id={hero} scarf={scarf} accessory={a.id} className={`w-[72px] short:w-[52px] ${mine ? '' : 'opacity-80'}`} />
-                  <span className="mt-1 truncate text-[12px] font-semibold text-cream">{lng === 'en' ? a.nameEn : a.name}</span>
-                  <span className={`text-[11px] ${wearing === a.id ? 'text-gold' : 'text-muted'}`}>{wearing === a.id ? t('Takılı') : mine ? t('Senin') : t('{n} parça', { n: a.price })}</span>
+                  <span className="mt-1 truncate text-[13px] font-semibold text-cream">{lng === 'en' ? a.nameEn : a.name}</span>
+                  <span className={`text-[12px] ${wearing === a.id ? 'text-gold' : 'text-muted'}`}>{wearing === a.id ? t('Takılı') : mine ? t('Senin') : t('{n} parça', { n: a.price })}</span>
                 </button>
               )
             })}

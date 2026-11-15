@@ -9,7 +9,7 @@ import { LEVELS } from '@/game/levels'
 
 const FEATURES = Object.fromEntries(Object.entries(FEATURE_TEXT).map(([k, v]) => [k, v.tr]))
 
-const DIFF_COLOR: Record<string, string> = { Kolay: '#7fc97a', Orta: '#f2c14e', Zor: '#f08a4a', 'Çok Zor': '#e5484d' }
+const DIFF_COLOR: Record<string, string> = { Kolay: '#7fc97a', Orta: '#ffcc66', Zor: '#f08a4a', 'Çok Zor': '#e5484d' }
 
 const plate = (n: number) => String(n).padStart(2, '0')
 
@@ -45,11 +45,11 @@ export default function Hakkinda() {
       <section className="relative isolate overflow-hidden border-b-2 border-line">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/sehirler/istanbul.webp" alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover object-[60%_80%]" style={{ imageRendering: 'pixelated' }} />
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#120f1a_0%,rgba(18,15,26,0.92)_38%,rgba(18,15,26,0.35)_70%,rgba(18,15,26,0.15)_100%)] max-md:bg-[linear-gradient(180deg,rgba(18,15,26,0.35)_0%,rgba(18,15,26,0.82)_45%,#120f1a_100%)]" />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#0e0d22_0%,rgba(14,13,34,0.92)_38%,rgba(14,13,34,0.35)_70%,rgba(14,13,34,0.15)_100%)] max-md:bg-[linear-gradient(180deg,rgba(14,13,34,0.35)_0%,rgba(14,13,34,0.82)_45%,#0e0d22_100%)]" />
         <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-ink to-transparent" />
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-20 pt-14 md:min-h-[640px] md:grid-cols-[1.1fr_1fr] md:pt-16">
           <div>
-            <h1 className="font-display leading-[0.95] text-cream [text-shadow:0_5px_0_#120f1a]">
+            <h1 className="font-display leading-[0.95] text-cream [text-shadow:0_5px_0_#0e0d22]">
               <span className="block whitespace-nowrap text-[clamp(44px,9vw,88px)]">Şehir Şehir</span>
               <span className="block whitespace-nowrap text-[clamp(52px,11vw,112px)] text-accent-2">Anadolu</span>
             </h1>
@@ -92,8 +92,8 @@ export default function Hakkinda() {
               <Portrait id="memo" className="w-full" />
               <figcaption>Memo · Diyarbakır</figcaption>
             </figure>
-            <div className="stamp absolute bottom-2 left-[38%] rotate-[-4deg] text-center text-[#1a1420]">
-              <div className="border-2 border-dashed border-[#1a1420]/40 px-3 py-1.5">
+            <div className="stamp absolute bottom-2 left-[38%] rotate-[-4deg] text-center text-[#12112c]">
+              <div className="border-2 border-dashed border-[#12112c]/40 px-3 py-1.5">
                 <p className="font-display text-4xl leading-none">34</p>
                 <p className="text-[10px] font-bold tracking-[0.2em]">İSTANBUL</p>
               </div>

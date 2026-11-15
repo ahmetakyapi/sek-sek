@@ -82,13 +82,13 @@ export async function GET(req: NextRequest) {
 
   return new ImageResponse(
     (
-      <div style={{ width: 1200, height: 630, display: 'flex', position: 'relative', background: '#120f1a', fontFamily: 'Plex' }}>
+      <div style={{ width: 1200, height: 630, display: 'flex', position: 'relative', background: '#0e0d22', fontFamily: 'Plex' }}>
         {/* ── illüstrasyon levhası: şehrin piksel sahnesi */}
         <div style={{ position: 'absolute', left: 20, top: 20, width: 720, height: 590, display: 'flex' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={sceneUrl} width={720} height={590} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 720, height: 590, display: 'flex', background: 'linear-gradient(180deg, rgba(18,15,26,0.55) 0%, rgba(18,15,26,0) 28%, rgba(18,15,26,0) 48%, rgba(18,15,26,0.92) 100%)' }} />
-          <div style={{ position: 'absolute', left: 36, top: 30, display: 'flex', color: '#f5a571', fontSize: 20, letterSpacing: 5, fontWeight: 700 }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 720, height: 590, display: 'flex', background: 'linear-gradient(180deg, rgba(14,13,34,0.55) 0%, rgba(14,13,34,0) 28%, rgba(14,13,34,0) 48%, rgba(14,13,34,0.92) 100%)' }} />
+          <div style={{ position: 'absolute', left: 36, top: 30, display: 'flex', color: '#b4bcff', fontSize: 20, letterSpacing: 5, fontWeight: 700 }}>
             {`${en ? 'THE ROAD NOTEBOOK · PAGE' : 'YOL DEFTERİ · SAYFA'} ${String(idx + 1).padStart(2, '0')} / ${String(LEVELS.length).padStart(2, '0')}`}
           </div>
           {/* posta damgası */}
@@ -100,8 +100,8 @@ export async function GET(req: NextRequest) {
             </div>
           </div>
           <div style={{ position: 'absolute', left: 36, bottom: 34, display: 'flex', flexDirection: 'column' }}>
-            {level.nickname ? <div style={{ display: 'flex', fontFamily: 'Pixel', fontSize: 34, color: '#f5a571', textShadow: '0 4px 0 #120f1a', marginBottom: 4 }}>{`(${level.nickname})`}</div> : null}
-            <div style={{ display: 'flex', color: '#f4ead8', fontFamily: 'Pixel', fontSize: 104, lineHeight: 1, textShadow: '0 6px 0 #120f1a', whiteSpace: 'nowrap' }}>{level.name}</div>
+            {level.nickname ? <div style={{ display: 'flex', fontFamily: 'Pixel', fontSize: 34, color: '#b4bcff', textShadow: '0 4px 0 #0e0d22', marginBottom: 4 }}>{`(${level.nickname})`}</div> : null}
+            <div style={{ display: 'flex', color: '#f3f1ff', fontFamily: 'Pixel', fontSize: 104, lineHeight: 1, textShadow: '0 6px 0 #0e0d22', whiteSpace: 'nowrap' }}>{level.name}</div>
             <div style={{ display: 'flex', marginTop: 10, color: '#d8cfe6', fontSize: 24, fontWeight: 600 }}>{`${lv.subtitle} · ${T(level.difficulty)}`}</div>
           </div>
         </div>
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={sceneUrl} width={420} height={344} alt="" style={{ position: 'absolute', left: -150, top: -150 }} />
             </div>
-            <div style={{ position: 'absolute', left: 20, top: 116, width: 128, display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#1a1420' }}>
+            <div style={{ position: 'absolute', left: 20, top: 116, width: 128, display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#12112c' }}>
               <div style={{ display: 'flex', fontFamily: 'Pixel', fontSize: 42, lineHeight: 1 }}>{plate}</div>
               <div style={{ display: 'flex', fontSize: 13, letterSpacing: 2, fontWeight: 700 }}>{level.name.toLocaleUpperCase('tr')}</div>
             </div>

@@ -27,7 +27,7 @@ export { medalFor, type Medal } from '@/components/medal'
 import type { Medal } from '@/components/medal'
 
 const MEDAL: Record<Medal, { label: string; color: string; ring: string }> = {
-  altin: { label: 'Altın', color: '#f2c14e', ring: '#b8862a' },
+  altin: { label: 'Altın', color: '#ffcc66', ring: '#b8862a' },
   gumus: { label: 'Gümüş', color: '#d7dde6', ring: '#8f99a8' },
   bronz: { label: 'Bronz', color: '#d08a52', ring: '#8a5530' },
 }
@@ -36,7 +36,7 @@ export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?:
   const t = useT()
   if (!medal) return null
   const m = MEDAL[medal]
-  const d = size === 'lg' ? 'h-9 w-9 text-[10px]' : 'h-4 w-4 text-[0px]'
+  const d = size === 'lg' ? 'h-9 w-9 text-[11px]' : 'h-4 w-4 text-[0px]'
   return (
     <span className="inline-flex items-center gap-1.5" title={t('{m} Madalya', { m: t(m.label) })}>
       <span className={`inline-flex items-center justify-center rounded-full border-2 font-bold text-ink ${d}`} style={{ background: m.color, borderColor: m.ring }}>

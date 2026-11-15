@@ -7,24 +7,24 @@ import { INK, LOOKS, POSES, blob, drawHero, gait, setInkWidth, stroke } from '..
 
 type Ctx = CanvasRenderingContext2D
 
-const SKY = '#3b2a58'
-const DUSK = '#6a3560'
+const SKY = '#23205a'
+const DUSK = '#3c3a8c'
 const SUN = '#ffe29a'
 const SUN_S = '#f2c14e'
-const RING = '#e8794a'
-const RING_S = '#c9503c'
-const HILL = '#1c1426'
-const FAR = '#4d3068'
+const RING = '#6b7cff'
+const RING_S = '#4a56c9'
+const HILL = '#120f2e'
+const FAR = '#33307a'
 const SCARF = '#e0423a'
 const SCARF_S = '#a3262f'
-const CREAM = '#f4ead8'
+const CREAM = '#f3f1ff'
 const SKIN = LOOKS.uktun.skin
 /** heroDraw'ın kendi dış hat kalınlığı (çizim biriminde) */
 const HERO_INK = 3.2
 
 const circle = (c: Ctx, x: number, y: number, r: number) => () => c.arc(x, y, r, 0, Math.PI * 2)
 
-/** Güneş: kiremit halka + altın disk; gölge sağ altta (ışık sol üstten). */
+/** Güneş: çivit halka + altın disk; gölge sağ altta (ışık sol üstten). */
 function sun(c: Ctx, x: number, y: number, r: number, ink: number) {
   setInkWidth(ink)
   blob(c, circle(c, x, y, r), RING, { color: RING_S, dx: -r * 0.07, dy: -r * 0.07 })

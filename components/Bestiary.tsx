@@ -98,7 +98,7 @@ function Icon({ entry }: { entry: Entry }) {
     setSrc(cv.toDataURL())
   }, [entry])
   return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center bg-ink/60 [box-shadow:inset_0_0_0_2px_#3d3550]">
+    <span className="grid h-10 w-10 shrink-0 place-items-center bg-ink/60 [box-shadow:inset_0_0_0_2px_#37337a]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {src && <img src={src} alt="" width={40} height={40} className="h-10 w-10" />}
     </span>
@@ -114,14 +114,14 @@ export default function Bestiary({ level }: { level: LevelDef }) {
   if (!list.length) return null
   return (
     <div className="mt-4">
-      <p className="text-[11px] font-bold tracking-[0.22em] text-muted">{t('BU ŞEHİRDE')}</p>
+      <p className="text-[12px] font-bold tracking-[0.14em] text-muted">{t('BU ŞEHİRDE')}</p>
       <ul className="mt-1.5 grid gap-2 sm:grid-cols-2">
         {list.map((e) => (
           <li key={e.id} className={`flex min-w-0 items-center gap-2 border-2 py-1 pl-1 pr-2.5 ${e.friend ? 'border-[#4f9a5a] bg-[#4f9a5a]/10' : 'border-[#c8283a]/80 bg-[#c8283a]/10'}`}>
             <Icon entry={e} />
             <span className="leading-tight">
               <span className="block truncate font-display text-[13px] text-cream">{lang === 'en' ? (CREATURE_NAMES_EN[e.key] ?? t(e.name)) : e.name}</span>
-              <span className={`block text-[11px] leading-snug ${e.friend ? 'text-[#8fd09a]' : 'text-[#ff8a8a]'}`}>{t(e.note)}</span>
+              <span className={`block text-[12px] leading-snug ${e.friend ? 'text-[#8fd09a]' : 'text-[#ff8a8a]'}`}>{t(e.note)}</span>
             </span>
           </li>
         ))}

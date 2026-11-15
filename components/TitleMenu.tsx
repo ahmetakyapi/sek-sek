@@ -6,6 +6,7 @@ import Portrait from '@/components/Portrait'
 import type { CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
 import type { CityKey, LevelDef } from '@/game/types'
+import { useState } from 'react'
 import { useLang, useT } from '@/lib/i18n'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
@@ -66,6 +67,10 @@ export default function TitleMenu(props: {
   player: { name: string; title: string } | null
   hasProgress: boolean
   onStart: () => void
+  /** yol çizgisinden seçilen (açık) şehre git */
+  onCity: (index: number) => void
+  /** açılan en ileri şehrin sırası */
+  unlocked: number
   onScreen: (s: 'map' | 'notebook' | 'character' | 'modes' | 'story' | 'scores' | 'controls' | 'name' | 'about') => void
   onMusic: () => void
   langSwitch: React.ReactNode
@@ -73,7 +78,10 @@ export default function TitleMenu(props: {
   const t = useT()
   const lang = useLang()
   const total = LEVELS.length
-  const level = LEVELS[props.resume]
+  // yol çizgisinden seçilen durak (null: sıradaki); kartpostal ve düğme onu gösterir
+  const [pick, setPick] = useState<number | null>(null)
+  const shown = pick ?? props.resume
+  const level = LEVELS[shown]
   const done = LEVELS.filter((l) => props.best[l.id]).length
   const started = !props.fresh && (props.hasProgress || props.resume > 0)
   const up = (s: string) => s.toLocaleUpperCase(lang === 'en' ? 'en' : 'tr')
@@ -110,54 +118,77 @@ export default function TitleMenu(props: {
         <section className="flex min-w-0 flex-col" aria-label={t('Sıradaki Durak')}>
           <header className="mb-3 flex items-center gap-3 md:hidden short:mb-2 tight:mb-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-emblem.png" width={44} height={44} alt="" className="drop-shadow-[0_3px_0_#120f1a] short:h-9 short:w-9" />
+            <img src="/logo-emblem.png" width={44} height={44} alt="" className="drop-shadow-[0_3px_0_#0e0d22] short:h-9 short:w-9" />
             <div className="min-w-0">
-              <h1 className="font-display text-[34px] leading-none text-cream [text-shadow:0_3px_0_#120f1a] short:text-[28px]">Sek-Sek</h1>
-              <p className="truncate text-[12px] text-muted short:hidden tight:hidden">{t('Gezgin’in yarım kalmış defterini tamamla.')}</p>
+              <h1 className="font-display text-[34px] leading-none text-cream [text-shadow:0_3px_0_#0e0d22] short:text-[28px]">Sek-Sek</h1>
+              <p className="truncate text-[13px] text-muted short:hidden tight:hidden">{t('Gezgin’in yarım kalmış defterini tamamla.')}</p>
             </div>
           </header>
 
-          <div className="postcard relative h-[150px] overflow-hidden tight:h-[124px] sm:h-[180px] md:h-auto md:min-h-[230px] md:flex-1 short:h-[118px] short:flex-none">
+          <div className="postcard relative h-[150px] overflow-hidden tight:h-[124px] sm:h-[180px] md:h-auto md:min-h-[230px] md:flex-1 short:h-[106px] short:flex-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/sehirler/${level.id}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_62%]" />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(18_15_26/0.55)_0%,transparent_32%,transparent_48%,rgb(18_15_26/0.92)_100%)]" />
-            <p className="absolute left-3 top-3 flex items-center gap-1.5 bg-ink/75 px-2 py-1 text-[11px] font-bold tracking-[0.16em] text-gold backdrop-blur-[2px]">
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(14_13_34/0.55)_0%,transparent_32%,transparent_48%,rgb(14_13_34/0.92)_100%)]" />
+            <p className="absolute left-3 top-3 flex items-center gap-1.5 bg-ink/75 px-2 py-1 text-[12px] font-bold tracking-[0.16em] text-gold backdrop-blur-[2px]">
               <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" />
-              {up(started ? t('Sıradaki Durak') : t('İlk Durak'))}
+              {up(pick !== null ? (props.best[level.id] ? t('Geçilen Durak') : t('Açık Durak')) : started ? t('Sıradaki Durak') : t('İlk Durak'))}
             </p>
-            <div className="stamp absolute right-3 top-3 rotate-[4deg] text-center text-[#1a1420] short:scale-[0.8] short:origin-top-right">
-              <div className="border-2 border-dashed border-[#1a1420]/40 px-2 py-0.5">
+            <div className="stamp absolute right-3 top-3 rotate-[4deg] text-center text-[#12112c] short:scale-[0.8] short:origin-top-right">
+              <div className="border-2 border-dashed border-[#12112c]/40 px-2 py-0.5">
                 <p className="font-display text-[26px] leading-none">{plate}</p>
-                <p className="text-[10px] font-bold tracking-[0.08em]">{t(level.difficulty).toLocaleUpperCase(lang === 'en' ? 'en' : 'tr')}</p>
+                <p className="text-[11px] font-bold tracking-[0.08em]">{t(level.difficulty).toLocaleUpperCase(lang === 'en' ? 'en' : 'tr')}</p>
               </div>
             </div>
             <div className="absolute inset-x-3 bottom-2.5">
-              <h2 className="font-display text-[34px] leading-none text-cream [text-shadow:0_3px_0_#120f1a] sm:text-[40px] short:text-[28px]">
+              <h2 className="font-display text-[34px] leading-none text-cream [text-shadow:0_3px_0_#0e0d22] sm:text-[40px] short:text-[28px]">
                 {level.name}
                 {level.nickname && <span className="ml-2 whitespace-nowrap text-[18px] text-accent-2">({level.nickname})</span>}
               </h2>
             </div>
           </div>
 
-          {/* 30 duraklık yol çizgisi: bitenler altın, sıradaki turuncu */}
+          {/* yol çizgisi: bitenler altın, sıradaki turuncu; açık bir durağa dokununca kartpostal o şehri gösterir */}
           <div className="mt-3 short:mt-2">
-            <div className="mb-1.5 flex items-baseline justify-between text-[11px] font-bold tracking-[0.14em] text-muted">
+            <div className="mb-1.5 flex items-baseline justify-between text-[12px] font-bold tracking-[0.14em] text-muted">
               <span>{up(t('Yolculuk'))}</span>
-              <span className="tabular-nums tracking-normal text-cream">
-                {done}
-                <span className="text-muted">/{total}</span>
+              <span className="flex items-baseline gap-2 tabular-nums tracking-normal text-cream">
+                {pick !== null && (
+                  <button className="text-[12px] font-semibold text-accent-2 underline-offset-2 hover:underline" onClick={() => setPick(null)}>
+                    {t('↺ Sıradaki')}
+                  </button>
+                )}
+                <span>
+                  {done}
+                  <span className="text-muted">/{total}</span>
+                </span>
               </span>
             </div>
-            <div className="flex gap-[3px]" role="img" aria-label={t('{n}/{m} Şehir Bitti', { n: done, m: total })}>
-              {LEVELS.map((l, i) => (
-                <span key={l.id} className={`h-2 flex-1 ${i === props.resume ? 'route-now bg-accent' : props.best[l.id] ? 'bg-gold' : 'bg-line'}`} />
-              ))}
+            <div className="flex gap-[3px]" role="group" aria-label={t('{n}/{m} Şehir Bitti', { n: done, m: total })}>
+              {LEVELS.map((l, i) => {
+                const open = !props.fresh && i <= props.unlocked
+                const on = i === shown
+                const color = i === props.resume ? 'route-now bg-accent' : props.best[l.id] ? 'bg-gold' : 'bg-line'
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    disabled={!open}
+                    title={open ? l.name : `${l.name} · ${t('Kilitli')}`}
+                    aria-label={open ? l.name : `${l.name} (${t('Kilitli')})`}
+                    aria-pressed={on}
+                    onClick={() => setPick(i === props.resume ? null : i)}
+                    className="group relative flex h-5 flex-1 items-center disabled:cursor-not-allowed"
+                  >
+                    <span className={`block w-full transition-[height] ${color} ${on ? 'h-3.5 shadow-[0_0_0_2px_#f3f1ff]' : 'h-2 group-hover:h-3 group-enabled:group-hover:brightness-125'}`} />
+                  </button>
+                )
+              })}
             </div>
           </div>
 
-          <button className="pixel-btn primary cta mt-4 w-full justify-center py-3.5 text-[17px] tight:mt-3 tight:py-3 short:mt-3 short:py-2.5 short:text-base" onClick={props.onStart} autoFocus>
+          <button className="pixel-btn primary cta mt-3 w-full justify-center py-3.5 text-[17px] tight:mt-2.5 tight:py-3 short:mt-2 short:py-2.5 short:text-base" onClick={() => (pick !== null ? props.onCity(pick) : props.onStart())} autoFocus>
             <span aria-hidden>▶</span>
-            {started ? t('Devam Et: {city}', { city: level.name }) : t('Yolculuğa Başla')}
+            {pick !== null ? t('{city} Şehrine Git', { city: level.name }) : started ? t('Devam Et: {city}', { city: level.name }) : t('Yolculuğa Başla')}
           </button>
         </section>
 
@@ -165,9 +196,9 @@ export default function TitleMenu(props: {
         <nav className="mt-4 tight:mt-3 flex min-w-0 flex-col md:mt-0 short:mt-0" aria-label={t('Ana Menü')}>
           <header className="mb-4 hidden items-center gap-3.5 md:flex short:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-emblem.png" width={60} height={60} alt="" className="drop-shadow-[0_3px_0_#120f1a]" />
+            <img src="/logo-emblem.png" width={60} height={60} alt="" className="drop-shadow-[0_3px_0_#0e0d22]" />
             <div className="min-w-0">
-              <h1 className="font-display text-[52px] leading-[0.9] text-cream [text-shadow:0_4px_0_#120f1a]">Sek-Sek</h1>
+              <h1 className="font-display text-[52px] leading-[0.9] text-cream [text-shadow:0_4px_0_#0e0d22]">Sek-Sek</h1>
               <p className="mt-1.5 text-[14px] leading-snug text-cream/85">{t('Gezgin’in yarım kalmış defterini tamamla.')}</p>
               <p className="text-[13px] leading-snug text-muted">{lang === 'en' ? `${total} cities. ${total * 3} keepsakes. One journey.` : `${trCount(total)} şehir. ${trCount(total * 3)} hatıra. Tek yolculuk.`}</p>
             </div>
@@ -175,16 +206,16 @@ export default function TitleMenu(props: {
 
           {props.daily && (
             <button className="daily-card mb-3 flex w-full items-center gap-3 px-3 py-2 text-left short:hidden tight:hidden" onClick={() => props.onScreen('modes')}>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2a2438] shadow-[0_0_0_2px_#d9a441]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441]">
                 <ItemIcon city={props.daily.level.city as CityKey} taken size={24} />
               </span>
               <span className="min-w-0 flex-1 leading-tight">
-                <span className="block whitespace-nowrap text-[11px] font-bold tracking-[0.12em] text-gold">{up(t('Bugünün Meydan Okuması'))}</span>
+                <span className="block whitespace-nowrap text-[12px] font-bold tracking-[0.12em] text-gold">{up(t('Bugünün Meydan Okuması'))}</span>
                 <span className="block truncate text-[13px] text-cream">
                   {props.daily.level.name} · {props.daily.rule}
                 </span>
               </span>
-              <span className="shrink-0 text-right text-[12px] tabular-nums">
+              <span className="shrink-0 text-right text-[13px] tabular-nums">
                 {props.daily.doneMs ? <span className="text-[#7ad88a]">✓ {props.daily.doneMs}</span> : <span className="font-semibold text-accent-2">{t('Bugün Oyna')} ▶</span>}
                 {props.daily.streak > 1 && <span className="block text-muted">🔥 {props.daily.streak}</span>}
               </span>
@@ -205,7 +236,7 @@ export default function TitleMenu(props: {
             <Mini icon="music" label={t('Müzik')} off={!props.music} aria={`${t('Müzik')} ${props.music ? t('Açık') : t('Kapalı')}`} onClick={props.onMusic} />
           </div>
 
-          <footer className="mt-auto pt-3 text-[12px] text-muted short:pt-2 tight:pt-2.5">
+          <footer className="mt-auto pt-3 text-[13px] text-muted short:pt-2 tight:pt-2.5">
             {props.player ? (
               <button className="account-row flex w-full items-center gap-2.5 px-2.5 py-2 text-left" onClick={() => props.onScreen('name')}>
                 <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-panel-2 shadow-[0_0_0_2px_#d9a441]">
@@ -213,16 +244,16 @@ export default function TitleMenu(props: {
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">
                   <span className="block truncate text-[13px] font-semibold text-cream">{props.player.name}</span>
-                  <span className="block truncate text-[11px] text-gold">{props.player.title}</span>
+                  <span className="block truncate text-[12px] text-gold">{props.player.title}</span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1 text-[11px] text-[#7ad88a]">
+                <span className="flex shrink-0 items-center gap-1 text-[12px] text-[#7ad88a]">
                   <span aria-hidden>☁</span>
                   <span className="hidden sm:inline">{t('İlerleme Hesabında')}</span>
                 </span>
               </button>
             ) : (
               <div className="flex items-center justify-between gap-3 bg-[#2a2236] px-3 py-2 [box-shadow:inset_0_0_0_2px_#d9a441]">
-                <span className="min-w-0 text-[12px] font-semibold leading-snug text-cream sm:text-[13px]">
+                <span className="min-w-0 text-[13px] font-semibold leading-snug text-cream sm:text-[13px]">
                   <span className="text-gold">☁</span> {props.hasProgress ? t('Misafirsin: ilerlemen bu tarayıcıda') : t('Hesabınla her cihazdan devam et')}
                 </span>
                 <button className="pixel-btn primary shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px]" onClick={() => props.onScreen('name')}>
@@ -259,9 +290,9 @@ function Tile({ icon, label, sub, onClick, dot, dotLabel }: { icon: IconName; la
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block font-display text-[17px] text-cream short:text-[15px]">{label}</span>
-        <span className="block truncate text-[11px] text-muted">{sub}</span>
+        <span className="block truncate text-[12px] text-muted">{sub}</span>
       </span>
-      {dot && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#120f1a]" aria-label={dotLabel} />}
+      {dot && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={dotLabel} />}
     </button>
   )
 }
@@ -273,7 +304,7 @@ function Mini({ icon, label, onClick, off, aria }: { icon: IconName; label: stri
         <PxIcon name={icon} className={`h-4 w-4 ${off ? 'text-muted' : 'text-gold'}`} />
         {off && <span className="absolute left-[-2px] top-1/2 h-[2px] w-5 -rotate-45 bg-accent" />}
       </span>
-      <span className="text-[11px] font-semibold text-cream short:hidden" aria-hidden>{label}</span>
+      <span className="text-[12px] font-semibold text-cream short:hidden" aria-hidden>{label}</span>
     </button>
   )
 }

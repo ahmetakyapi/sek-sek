@@ -44,7 +44,7 @@ function Thumb({ code, city }: { code: string; city: string }) {
     c.fillRect(0, 0, cv.width, cv.height)
     const color: Record<string, string> = {
       '#': p.tile, X: p.tileDark, '>': p.tileDark, '<': p.tileDark, i: p.tileLight, '=': p.plank, '~': p.water[0], I: p.water[2],
-      '^': p.spike[0], v: p.spike[0], S: p.accent, C: '#f2c14e', F: '#e30a17', E: '#f2c14e', P: '#f4ead8', e: p.enemyGround, f: p.enemyFly,
+      '^': p.spike[0], v: p.spike[0], S: p.accent, C: '#ffcc66', F: '#e30a17', E: '#ffcc66', P: '#f3f1ff', e: p.enemyGround, f: p.enemyFly,
     }
     r.map.forEach((row, y) => {
       for (let x = 0; x < w; x++) {

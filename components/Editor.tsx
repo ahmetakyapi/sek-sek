@@ -763,7 +763,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
               >
                 <Swatch tool={x.tool} look={look} />
                 <span className="min-w-0 flex-1 whitespace-nowrap lg:truncate">{t(x.name)}</span>
-                <kbd className="hidden text-[11px] text-muted sm:inline">{x.key}</kbd>
+                <kbd className="hidden text-[12px] text-muted sm:inline">{x.key}</kbd>
               </button>
             ))}
           </section>
@@ -896,7 +896,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                   {drafts.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center gap-2 border-2 border-line px-2 py-1.5 text-[14px]">
                       <span className="min-w-0 flex-1 truncate text-cream">{d.name}</span>
-                      <span className="text-[12px] text-muted">
+                      <span className="text-[13px] text-muted">
                         {LEVELS.find((l) => l.city === d.city)?.name} · {date(d.at)}
                       </span>
                       <button type="button" className="pixel-btn px-2.5 py-1 text-[13px]" onClick={() => openDraft(d)}>

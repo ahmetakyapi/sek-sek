@@ -17,7 +17,7 @@ const sane = (s: Song) => {
     }
   }
   // ezgi baştan sona çalar: uzun bir sessizlik (iki ölçüden uzun) yok
-  const lead = s.events.filter((e) => e.inst === 'ney' || e.inst === 'saz').sort((a, b) => a.at - b.at)
+  const lead = s.events.filter((e) => e.inst === 'ney' || e.inst === 'kanun' || e.inst === 'keys').sort((a, b) => a.at - b.at)
   expect(lead.length).toBeGreaterThan(20)
 }
 
@@ -34,10 +34,13 @@ describe('müzik', () => {
     const m = SCALES[city]
     const a = cityTheme(city)
     sane(a)
-    expect(a.length % m.meter.reduce((x, y) => x + y, 0)).toBe(0)
+    // rahatlatıcı arka plan müziği: 4/4, on altılık ızgara; armoni şehrin makamının içinde
+    expect(a.length % 16).toBe(0)
+    const pcs = new Set(m.steps.map((x) => (m.root + x) % 12))
+    for (const e of a.events) if (e.inst === 'keys' || e.inst === 'ney' || e.inst === 'kanun') for (const n of e.midi) expect(pcs.has(n % 12)).toBe(true)
     expect(cityTheme(city)).toBe(a)
-    // boss katmanı usulün gruplarına göre vurur
-    expect(a.pulse).toEqual(m.meter)
+    // boss katmanı dört vuruşa göre vurur
+    expect(a.pulse).toEqual([4, 4, 4, 4])
     // tel çalgılar (bağlama, kanun) ve ney birlikte: düzenleme katmanlı
     expect(a.events.some((e) => e.inst === 'kanun')).toBe(true)
   })

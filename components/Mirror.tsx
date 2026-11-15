@@ -20,7 +20,7 @@ export default function MirrorList({ best, open, onStart, onBack }: { best: Reco
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(960px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('YENİ OYUN+ · {n}/{m}', { n: done, m: LEVELS.length })}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('YENİ OYUN+ · {n}/{m}', { n: done, m: LEVELS.length })}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Ayna Yolu')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
@@ -38,12 +38,12 @@ export default function MirrorList({ best, open, onStart, onBack }: { best: Reco
             return (
               <li key={l.id}>
                 <button disabled={!ok} onClick={() => onStart(i)} className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-2 px-2 py-1.5 text-left ${ok ? 'border-line bg-ink/40 hover:border-accent-2' : 'border-dashed border-line/60 opacity-50'}`}>
-                  <span className="flex h-8 w-8 -scale-x-100 items-center justify-center rounded-full bg-[#2a2438]">
+                  <span className="flex h-8 w-8 -scale-x-100 items-center justify-center rounded-full bg-[#221f4a]">
                     <ItemIcon city={l.city} taken={!!best[l.id]} size={22} />
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate font-semibold text-cream">{displayName(lv)}</span>
-                    <span className="block text-[11px] text-muted">{t(lv.difficulty)}</span>
+                    <span className="block text-[12px] text-muted">{t(lv.difficulty)}</span>
                   </span>
                   <span className="font-display text-[15px] tabular-nums text-cream">{best[l.id] ? formatTime(best[l.id]) : ok ? '▶' : '🔒'}</span>
                 </button>

@@ -54,7 +54,7 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(960px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{left === 1 ? t('BUGÜN SON GÜN') : t('BİTİŞE {n} GÜN', { n: left })}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{left === 1 ? t('BUGÜN SON GÜN') : t('BİTİŞE {n} GÜN', { n: left })}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Haftalık Turnuva')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
@@ -74,7 +74,7 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
               const medal = ms ? medalFor(challengeLevel(c), ms) : null
               return (
                 <section key={id} className="mb-1.5 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 border-2 border-line bg-ink/40 px-2.5 py-2 short:py-1">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2a2438] font-display text-[15px] text-gold shadow-[0_0_0_2px_#d9a441]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#221f4a] font-display text-[15px] text-gold shadow-[0_0_0_2px_#d9a441]">
                     {i + 1}
                   </span>
                   <span className="min-w-0">
@@ -82,7 +82,7 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
                       <ItemIcon city={lv.city} taken size={18} />
                       {t(c.name)}
                     </span>
-                    <span className="flex items-center gap-1.5 text-[12px] text-muted">
+                    <span className="flex items-center gap-1.5 text-[13px] text-muted">
                       {displayName(lv)} · {ms ? formatTime(ms) : t('henüz koşulmadı')}
                       {medal && <MedalBadge medal={medal} />}
                     </span>
@@ -100,9 +100,9 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
           </div>
           <div className="flex min-h-0 flex-col">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] font-bold tracking-[0.22em] text-gold">{t('BU HAFTANIN SIRALAMASI')}</p>
+              <p className="text-[12px] font-bold tracking-[0.14em] text-gold">{t('BU HAFTANIN SIRALAMASI')}</p>
               {friends.length > 0 && (
-                <button aria-pressed={onlyFriends} className={`pixel-btn px-2 py-1 text-[12px] ${onlyFriends ? 'primary' : ''}`} onClick={() => setOnlyFriends((v) => !v)}>
+                <button aria-pressed={onlyFriends} className={`pixel-btn px-2 py-1 text-[13px] ${onlyFriends ? 'primary' : ''}`} onClick={() => setOnlyFriends((v) => !v)}>
                   ★ {t('Arkadaşlar')}
                 </button>
               )}

@@ -32,7 +32,7 @@ interface Row {
 
 const n = (x: number | undefined) => x ?? 0
 /** kürsü renkleri: altın, gümüş, bronz */
-const PODIUM = ['#f2c14e', '#d7dde6', '#d08a52']
+const PODIUM = ['#ffcc66', '#d7dde6', '#d08a52']
 /** adın baş harfi için sabit, sıcak bir renk (adın özetinden) */
 const AVATARS = ['#e07a5f', '#81b29a', '#f2cc8f', '#8ecae6', '#c8a2d6', '#f4a261', '#a8dadc', '#e9c46a']
 const avatarColor = (name: string) => AVATARS[[...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % AVATARS.length]
@@ -99,7 +99,7 @@ export function Board({
     return (
       <p className="mt-3 flex flex-wrap items-center gap-3 text-[13px] text-muted">
         {t('Skor tablosuna şu an ulaşılamıyor.')}
-        <button className="pixel-btn px-3 py-1.5 text-[12px]" onClick={() => setRetry((x) => x + 1)}>
+        <button className="pixel-btn px-3 py-1.5 text-[13px]" onClick={() => setRetry((x) => x + 1)}>
           {t('Tekrar Dene')}
         </button>
       </p>
@@ -129,15 +129,15 @@ export function Board({
       return [
         <>
           {n(r.found)}
-          <span className="ml-1 text-[11px] text-muted">{t('parça')}</span>
+          <span className="ml-1 text-[12px] text-muted">{t('parça')}</span>
         </>,
         t('{k} hatıra · {s} pul · {c} nazar · {b} boss', { k: n(r.keeps), s: n(r.stamps), c: n(r.charms), b: n(r.bosses) }),
       ]
     if (kind === 'genel') {
       const sub = [plural(n(r.cities), t('şehir'), 'cities'), plural(n(r.items), t('hatıra'), 'keepsakes'), `✕${n(r.deaths)}`, formatTime(n(r.timeMs))]
-      if (sort === 'items') return [<>{n(r.items)}<span className="ml-0.5 text-[12px] text-muted">/{LEVELS.length * 3}</span></>, sub.filter((_, i) => i !== 1).join(' · ')]
+      if (sort === 'items') return [<>{n(r.items)}<span className="ml-0.5 text-[13px] text-muted">/{LEVELS.length * 3}</span></>, sub.filter((_, i) => i !== 1).join(' · ')]
       if (sort === 'deaths') return [<>✕{n(r.deaths)}</>, sub.filter((_, i) => i !== 2).join(' · ')]
-      return [<>{n(r.cities)}<span className="ml-0.5 text-[12px] text-muted">/{LEVELS.length}</span></>, sub.filter((_, i) => i !== 0).join(' · ')]
+      return [<>{n(r.cities)}<span className="ml-0.5 text-[13px] text-muted">/{LEVELS.length}</span></>, sub.filter((_, i) => i !== 0).join(' · ')]
     }
     const plays = n(r.plays) > 1 ? ` · ${t('{n} koşu', { n: n(r.plays) })}` : ''
     if (kind === 'turnuva') return [formatTime(n(r.timeMs)), `${t('3 mücadele')} · ✕${n(r.deaths)}`]
@@ -147,7 +147,7 @@ export function Board({
     // mücadele haritasında hatıra yok: süre ve düşüş
     if (level.startsWith('mucadele-')) return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
     if (sort === 'deaths') return [<>✕{n(r.minDeaths)}</>, `${formatTime(n(r.timeMs))} · ${n(r.maxItems)}/3${plays}`]
-    if (sort === 'items') return [<>{n(r.maxItems)}<span className="ml-0.5 text-[12px] text-muted">/3</span><span className="ml-2 text-[15px] text-cream/80">{formatTime(n(r.timeMs))}</span></>, `✕${n(r.minDeaths)}${plays}`]
+    if (sort === 'items') return [<>{n(r.maxItems)}<span className="ml-0.5 text-[13px] text-muted">/3</span><span className="ml-2 text-[15px] text-cream/80">{formatTime(n(r.timeMs))}</span></>, `✕${n(r.minDeaths)}${plays}`]
     return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
   }
 
@@ -192,7 +192,7 @@ export function Board({
                     <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`truncate font-semibold text-cream underline-offset-4 hover:underline ${compact ? '' : 'text-[16px]'}`}>
                       {r.name}
                     </a>
-                    {r.me && <span className="shrink-0 text-[11px] font-bold tracking-[0.12em] text-gold">{t('SEN')}</span>}
+                    {r.me && <span className="shrink-0 text-[12px] font-bold tracking-[0.12em] text-gold">{t('SEN')}</span>}
                     {onFriend && !r.me && (
                       <button
                         className={`shrink-0 px-0.5 text-[15px] leading-none ${friends?.includes(r.name) ? 'text-gold' : 'text-muted hover:text-cream'}`}
@@ -206,7 +206,7 @@ export function Board({
                   </span>
                   <span className={`mt-1 flex flex-wrap gap-1 ${compact ? 'max-h-[22px] overflow-hidden' : ''}`}>
                     {sub.split(' · ').map((part) => (
-                      <span key={part} className="whitespace-nowrap border border-line/80 bg-ink/40 px-1.5 py-px text-[12px] leading-snug text-cream/75">
+                      <span key={part} className="whitespace-nowrap border border-line/80 bg-ink/40 px-1.5 py-px text-[13px] leading-snug text-cream/75">
                         {part}
                       </span>
                     ))}
@@ -228,7 +228,7 @@ export function Board({
                       <span />
                     ) : (
                       <button
-                        className="pixel-btn w-full justify-center px-1.5 py-1 font-mono text-[12px]"
+                        className="pixel-btn w-full justify-center px-1.5 py-1 font-mono text-[13px]"
                         disabled={!!racing}
                         aria-label={t('{name} ile Yarış', { name: r.name })}
                         title={t('Hayaletiyle yan yana koş')}
@@ -250,12 +250,12 @@ export function Board({
                     ))}
                 </span>
               </div>
-              {raceMsg?.name === r.name && <p className="px-2 pt-1 text-right text-[12px] text-muted">{raceMsg.text}</p>}
+              {raceMsg?.name === r.name && <p className="px-2 pt-1 text-right text-[13px] text-muted">{raceMsg.text}</p>}
             </li>
           )
         })}
       </ol>
-      <p className="mt-2 text-right text-[11px] text-muted">{t('{n} yolcu bu tabloda', { n: rows[0].total })}</p>
+      <p className="mt-2 text-right text-[12px] text-muted">{t('{n} yolcu bu tabloda', { n: rows[0].total })}</p>
     </>
   )
 }
@@ -349,7 +349,7 @@ export default function ScoreBoard({
             key={k}
             role="tab"
             aria-selected={tab === k}
-            className={`pixel-btn justify-center px-1 py-1.5 text-[12px] sm:text-[13px] short:py-1 ${tab === k ? 'primary' : ''}`}
+            className={`pixel-btn justify-center px-1 py-1.5 text-[13px] sm:text-[13px] short:py-1 ${tab === k ? 'primary' : ''}`}
             onClick={() => {
               setTab(k)
               setSort('')
@@ -374,11 +374,11 @@ export default function ScoreBoard({
                 className={`flex h-12 shrink-0 snap-center items-center gap-2 border-2 px-2.5 text-left transition-colors short:h-9 ${i === idx ? 'border-gold bg-gold/15 text-cream' : 'border-line bg-ink/40 text-cream/80 hover:border-accent-2'}`}
                 onClick={() => setIdx(i)}
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2a2438] short:h-7 short:w-7">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#221f4a] short:h-7 short:w-7">
                   <ItemIcon city={l.city} taken size={20} />
                 </span>
                 <span className="leading-none">
-                  <span className="block text-[10px] font-bold tracking-[0.12em] text-muted">{String(l.plate).padStart(2, '0')}</span>
+                  <span className="block text-[11px] font-bold tracking-[0.12em] text-muted">{String(l.plate).padStart(2, '0')}</span>
                   <span className="block whitespace-nowrap text-[14px] font-semibold">{l.name}</span>
                 </span>
               </button>
@@ -392,13 +392,13 @@ export default function ScoreBoard({
 
       {tab === 'gunluk' ? (
         <div className="mt-2.5 flex items-center gap-3 border-2 border-gold/70 bg-gold/5 px-3 py-2 short:mt-1.5 short:py-1">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2a2438] shadow-[0_0_0_2px_#d9a441]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441]">
             <ItemIcon city={dailyLevel.city} taken size={30} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold tracking-[0.2em] text-gold">{day === today ? t('BUGÜN') : t('DÜN')} · {t(rule.name).toLocaleUpperCase(lng)}</p>
+            <p className="text-[12px] font-bold tracking-[0.14em] text-gold">{day === today ? t('BUGÜN') : t('DÜN')} · {t(rule.name).toLocaleUpperCase(lng)}</p>
             <p className="truncate font-display text-lg leading-tight text-cream">{displayName(dailyLevel)}</p>
-            <p className="text-[12px] leading-snug text-muted short:hidden">{t(rule.text)}</p>
+            <p className="text-[13px] leading-snug text-muted short:hidden">{t(rule.text)}</p>
           </div>
           <div className="flex shrink-0 flex-col gap-1.5">
             {day === today ? (
@@ -406,7 +406,7 @@ export default function ScoreBoard({
                 {t('▶ Oyna')}
               </button>
             ) : null}
-            <button className="pixel-btn px-2 py-1 text-[12px]" onClick={() => setDay(day === today ? shiftDay(today, -1) : today)}>
+            <button className="pixel-btn px-2 py-1 text-[13px]" onClick={() => setDay(day === today ? shiftDay(today, -1) : today)}>
               {day === today ? t('Dünkü') : t('Bugünkü')}
             </button>
           </div>
@@ -414,7 +414,7 @@ export default function ScoreBoard({
       ) : (
         <p className="mt-2.5 font-display text-xl text-gold short:hidden">{tab === 'city' || (tab === 'speedrun' && !sort) ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : tab === 'speedrun' ? (sort === 'tur' ? t('Tam Tur') : t('Ayna Tam Tur')) : t('Koleksiyoncular')}</p>
       )}
-      <p className="mt-0.5 text-[12px] leading-snug text-muted short:hidden">{tab === 'city' ? `${lv.subtitle} · ${note}` : note}</p>
+      <p className="mt-0.5 text-[13px] leading-snug text-muted short:hidden">{tab === 'city' ? `${lv.subtitle} · ${note}` : note}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 short:mt-1">
         {sorts.length > 0 && (
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Sıralama')}>
@@ -489,7 +489,7 @@ function AddFriend({ friends, me, onAdd }: { friends: string[]; me: string; onAd
       <button className="pixel-btn px-2.5 py-1.5 text-[13px]" type="submit">
         {t('＋ Ekle')}
       </button>
-      <span className="w-full text-[12px] text-muted">{msg || t('Satırlardaki ☆ ile de ekleyebilirsin.')}</span>
+      <span className="w-full text-[13px] text-muted">{msg || t('Satırlardaki ☆ ile de ekleyebilirsin.')}</span>
     </form>
   )
 }

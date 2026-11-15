@@ -17,7 +17,7 @@ const CLIPS = process.env.TEL ? [
   ['tel-saz-50', 2, `s.musicOn=false; s.pluckSfx(50, 0.8, 0.05, 'saz')`],
 ] : [
   ['jenerik', 24, `s.playTheme()`],
-  ['istanbul', 24, `s.setMusic('istanbul')`],
+  ['istanbul', 50, `s.setMusic('istanbul')`],
   ['trabzon', 18, `s.setMusic('trabzon')`],
   ['erzurum-boss', 16, `s.setMusic('erzurum'); s.setIntense(true)`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],

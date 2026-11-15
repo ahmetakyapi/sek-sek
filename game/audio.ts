@@ -4,9 +4,10 @@ import { SCALES, cityTheme, titleTheme, type Inst, type NoteEvent, type Song } f
 /**
  * Tamamen sentezlenmiş ses: harici dosya yok. Müziğin notaları music.ts'te.
  *
- * Tel çalgılar (bağlama, kanun) Karplus-Strong tel benzetimiyle bir kez üretilip nota başına önbelleğe alınır;
- * bağlamanın çift teli hafif akortsuz iki kopyayla çalar. Ney alttan kayarak girer, nefesi duyulur. Her çalgının
- * stereoda yeri ve kendi yankı payı var. Boss uyanınca usule ek vuruşlar girer; molada müzik süzgeçle boğuklaşır.
+ * Rahatlatıcı arka plan müziği (lo-fi): Rhodes benzeri elektrik piyano, sıcak alt bas, yumuşak bas davul, fırçalı kenar
+ * vuruşu, kapalı zil; ezgide ney (alttan girer, nefesi duyulur) ve kanun (Karplus-Strong tel benzetimi, nota başına
+ * önbellek). Tek adımlar hafif geç çalar (swing). Her çalgının stereoda yeri ve yankı payı var. Boss uyanınca ritim
+ * sıklaşır ama sakin kalır; molada müzik süzgeçle boğuklaşır. Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
  */
 
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
@@ -17,15 +18,13 @@ const MUSIC_VOL = 0.42
 /** çalgı başına stereo yeri (-1 sol, 1 sağ) ve yankıya giden pay */
 const CHANNEL: Record<Inst, { pan: number; wet: number }> = {
   ney: { pan: 0.18, wet: 0.55 },
-  saz: { pan: -0.22, wet: 0.3 },
   kanun: { pan: 0.35, wet: 0.45 },
-  arp: { pan: 0.3, wet: 0.4 },
-  bass: { pan: 0, wet: 0.06 },
   pad: { pan: 0, wet: 0.5 },
-  dum: { pan: -0.05, wet: 0.08 },
-  tek: { pan: 0.12, wet: 0.12 },
-  ka: { pan: 0.22, wet: 0.12 },
-  zil: { pan: -0.3, wet: 0.5 },
+  keys: { pan: -0.08, wet: 0.45 },
+  sub: { pan: 0, wet: 0.03 },
+  kick: { pan: 0, wet: 0.05 },
+  rim: { pan: 0.15, wet: 0.25 },
+  hat: { pan: 0.25, wet: 0.15 },
 }
 
 /** olayın kimliğinden sabit küçük sapma (0-1): insan eli gibi hafif oynak zaman ve güç, her döngüde aynı */
@@ -46,8 +45,8 @@ export class Sound {
   private lastSfx = new Map<string, number>()
   private reverb: ConvolverNode | null = null
   private noiseBuf: AudioBuffer | null = null
-  /** tel benzetimi önbelleği: "çalgı:nota" → tampon */
-  private plucks = new Map<string, AudioBuffer>()
+  /** tel benzetimi önbelleği: nota → tampon */
+  private plucks = new Map<number, AudioBuffer>()
   private timer: number | null = null
   private nextTime = 0
   private stepIdx = 0
@@ -231,144 +230,133 @@ export class Sound {
     src.start(t, Math.random() * 0.5, dur + 0.05)
   }
 
-  /** tel çekişi efekt yolunda (toplama, bayrak, karar): oyunun kendi bağlaması */
-  private pluckSfx(midi: number, vol: number, at?: number, kind: 'saz' | 'kanun' = 'kanun') {
-    if (!this.ac || !this.sfxBus) return
-    const t = at ?? this.ac.currentTime
-    const src = this.ac.createBufferSource()
-    src.buffer = this.pluck(kind, midi)
-    const g = this.ac.createGain()
-    g.gain.value = vol
-    src.connect(g)
-    g.connect(this.sfxBus)
-    src.start(t)
-  }
-
   /** şehrin makamından derece → MIDI (efektler şehrin dizisinde çalar) */
   private scaleNote(d: number, oct = 1) {
     const sc = SCALES[this.city]
     return sc.root + 12 * oct + sc.steps[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7)
   }
 
+  /** müzikteki elektrik piyanoyla aynı tınıda kısa çan: efektler müzikle karışır, kulağı yormaz */
+  private chime(midi: number, vol: number, at?: number, dur = 0.5) {
+    if (!this.ac || !this.sfxBus) return
+    const ac = this.ac
+    const t = at ?? ac.currentTime
+    const f = mtof(midi)
+    const g = ac.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.linearRampToValueAtTime(vol, t + 0.008)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    g.connect(this.sfxBus)
+    const o = ac.createOscillator()
+    o.type = 'sine'
+    o.frequency.value = f
+    const b = ac.createOscillator()
+    b.type = 'sine'
+    b.frequency.value = f * 4.01
+    const bg = ac.createGain()
+    bg.gain.setValueAtTime(0.14, t)
+    bg.gain.exponentialRampToValueAtTime(0.0001, t + Math.min(0.2, dur))
+    o.connect(g)
+    b.connect(bg)
+    bg.connect(g)
+    for (const x of [o, b]) {
+      x.start(t)
+      x.stop(t + dur + 0.05)
+    }
+  }
+
   /**
-   * Oyun efektleri: yumuşak, yuvarlak sesler (sinüs, üçgen ve tel çekişi; kare ve testere dalga yok: bip gibi,
-   * yapışkan tuş uyarısı gibi duyuluyordu). Hepsi alçak geçiren süzgeçten geçer; aynı efekt 60 ms içinde ikinci kez
-   * çalmaz. Sık çalan efektlerin perdesi her seferinde biraz oynar (makine gibi tekrar etmesin); nota dizileri
-   * setTimeout'la değil ses saatine göre zamanlanır.
+   * Oyun efektleri: müzikle uyumlu, yumuşak ve kısa (sinüs, üçgen, müzikteki piyanoyla aynı tınıda çan; kare ve testere
+   * dalga yok: bip gibi, yapışkan tuş uyarısı gibi duyuluyordu). Notalar şehrin makamından, sık çalanlar (zıplama, iniş)
+   * çok kısık ve perdesi biraz oynar; gürültü yalnız süzülmüş hava sesi olarak. Hepsi alçak geçiren süzgeçten geçer; aynı
+   * efekt 60 ms içinde ikinci kez çalmaz; diziler ses saatine göre zamanlanır.
    */
   sfx(name: string) {
     if (!this.sfxOn || !this.ac) return
     const now = this.ac.currentTime
     if (now - (this.lastSfx.get(name) ?? -1) < 0.06) return
     this.lastSfx.set(name, now)
-    const vary = 1 + (Math.random() - 0.5) * 0.08
+    const vary = 1 + (Math.random() - 0.5) * 0.05
     switch (name) {
       case 'jump':
-        // kısa, yukarı kalkan bir "hop": gövde + hafif hava
-        this.tone(290 * vary, 0.14, 'sine', 0.08, 300)
-        this.tone(580 * vary, 0.06, 'triangle', 0.018, 320)
-        return this.noise(0.06, 0.025, 2400, now, 0.8)
-      case 'grab':
-        // halata tutunma: kısa tel gerilmesi + el sesi
-        this.noise(0.05, 0.06, 1800, now, 1.5)
-        return this.tone(196 * vary, 0.12, 'triangle', 0.05, 40)
-      case 'swim':
-        // kulaç: süzgeçli su çalkantısı
-        this.noise(0.16, 0.08, 700 * vary, now, 0.8)
-        return this.noise(0.1, 0.04, 2200, now + 0.04, 1.2)
+        // yumuşak bir "hop": kısa, yukarı kayan sinüs
+        return this.tone(330 * vary, 0.1, 'sine', 0.04, 140)
       case 'walljump':
-        this.tone(350 * vary, 0.13, 'sine', 0.075, 330)
-        this.noise(0.05, 0.05, 900, now, 1.4)
-        return this.tone(700 * vary, 0.05, 'triangle', 0.02, 260)
+        this.tone(392 * vary, 0.1, 'sine', 0.04, 150)
+        return this.noise(0.05, 0.015, 1200, now, 0.7, 'lowpass')
       case 'dash':
-        // atkı rüzgârı: süzgeci kayan hışırtı + aşağı inen ton
-        this.noise(0.22, 0.14, 1600 * vary, now, 0.9)
-        this.noise(0.12, 0.06, 3200, now + 0.02, 2)
-        return this.tone(540 * vary, 0.14, 'triangle', 0.028, -300)
+        // süzülmüş hava: alçak geçiren hışırtı, sert değil
+        this.noise(0.18, 0.05, 1100 * vary, now, 0.6, 'lowpass')
+        return this.tone(520 * vary, 0.12, 'sine', 0.018, -180)
       case 'land':
-        this.noise(0.06, 0.09, 360 * vary, now, 0.9)
-        return this.tone(110 * vary, 0.06, 'sine', 0.05, -30)
+        return this.tone(140 * vary, 0.07, 'sine', 0.035, -40)
       case 'death':
-        // yumuşak bir "puf": toz bulutu ve inen iki nota (ceza gibi değil)
-        this.noise(0.35, 0.16, 500, now, 0.7)
-        this.tone(330, 0.16, 'triangle', 0.08, -60, now)
-        return this.tone(247, 0.4, 'triangle', 0.08, -110, now + 0.13)
+        // yumuşak, inen iki nota: ceza gibi değil, "olsun, yeniden"
+        this.chime(this.scaleNote(4, 0), 0.07, now, 0.35)
+        this.chime(this.scaleNote(2, 0), 0.07, now + 0.14, 0.5)
+        return this.tone(110, 0.25, 'sine', 0.05, -30, now)
       case 'collect': {
-        // hatıra: şehrin dizisinde kanun teli, ardından parıltı
-        const n = this.scaleNote(4, 1)
-        this.pluckSfx(n, 0.55, now)
-        this.pluckSfx(n + 12 - (SCALES[this.city].steps[4] - SCALES[this.city].steps[2]), 0.45, now + 0.08)
-        return this.tone(mtof(n + 24), 0.25, 'sine', 0.03, 0, now + 0.12)
+        // hatıra: makamdan iki çan, ikincisi tiz
+        this.chime(this.scaleNote(4, 1), 0.075, now, 0.6)
+        return this.chime(this.scaleNote(7, 1), 0.06, now + 0.09, 0.8)
       }
       case 'checkpoint':
-        // şehrin makamından yükselen dört tel: bayrak göndere çıkarken
-        ;[0, 2, 4, 7].forEach((d, i) => this.pluckSfx(this.scaleNote(d, 0), i === 3 ? 0.6 : 0.45, now + i * 0.09, 'saz'))
+        // bayrak: makamdan yükselen yumuşak arpej
+        ;[0, 2, 4, 7].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.055, now + i * 0.1, i === 3 ? 0.9 : 0.5))
         return
       case 'spring':
-        this.tone(190, 0.28, 'triangle', 0.13, 520)
-        return this.tone(380, 0.2, 'sine', 0.04, 700, now + 0.02)
+        return this.tone(220, 0.22, 'sine', 0.06, 330)
       case 'stomp':
-        // ezme: tok gümleme + küçük "pop"
-        this.noise(0.08, 0.14, 700, now, 1)
-        this.tone(180, 0.12, 'sine', 0.1, -100)
-        return this.tone(660 * vary, 0.07, 'triangle', 0.04, 220, now + 0.03)
+        // ezme: tok, yumuşak bir "pop"
+        this.tone(160, 0.1, 'sine', 0.06, -70)
+        return this.chime(this.scaleNote(4, 1), 0.04, now + 0.02, 0.25)
       case 'crumble':
-        this.noise(0.25, 0.13, 260, now, 0.8)
-        return this.noise(0.12, 0.06, 900, now + 0.08, 1.5)
+        return this.noise(0.22, 0.05, 420, now, 0.6, 'lowpass')
       case 'shoot':
-        this.noise(0.07, 0.06, 2600, now, 2)
-        return this.tone(900, 0.06, 'triangle', 0.015, -400)
+        return this.noise(0.06, 0.03, 1800, now, 1.2)
       case 'complete': {
-        // karar: makamda inen kısa bir cümle ve tonikte tutulan tel
-        const seq = [7, 5, 4, 2, 0]
-        seq.forEach((d, i) => this.pluckSfx(this.scaleNote(d, 1), 0.5, now + i * 0.1, 'kanun'))
-        this.pluckSfx(this.scaleNote(0, 0), 0.6, now + 0.52, 'saz')
-        return this.tone(mtof(this.scaleNote(0, 1)), 0.9, 'sine', 0.05, 0, now + 0.52)
+        // karar: makamda inen kısa cümle ve tonik
+        ;[7, 5, 4, 2].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.06, now + i * 0.11, 0.5))
+        return this.chime(this.scaleNote(0, 1), 0.075, now + 0.48, 1.4)
       }
       case 'pet':
-        // küçük, sevimli iki nota
-        this.tone(880, 0.07, 'sine', 0.08)
-        return this.tone(1175, 0.1, 'sine', 0.07, 0, now + 0.07)
+        this.chime(this.scaleNote(4, 1), 0.045, now, 0.25)
+        return this.chime(this.scaleNote(7, 1), 0.04, now + 0.07, 0.35)
       case 'crystal':
-        this.tone(1046, 0.08, 'triangle', 0.1)
-        return this.tone(1568, 0.16, 'sine', 0.09, 0, now + 0.05)
+        return this.chime(this.scaleNote(7, 1), 0.05, now, 0.4)
       case 'key':
-        ;[659, 880, 1175].forEach((f, i) => this.tone(f, 0.18, 'triangle', 0.11, 0, now + i * 0.07))
+        ;[0, 4, 7].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.055, now + i * 0.08, 0.5))
         return
       case 'stamp':
-        ;[0, 2, 4, 7, 9].forEach((d, i) => this.pluckSfx(this.scaleNote(d, 1), 0.5, now + i * 0.085))
+        ;[0, 2, 4, 7, 9].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.05, now + i * 0.09, 0.6))
         return
       case 'charm':
-        // nazar: cam çınlaması
-        ;[784, 988, 1175, 1568].forEach((f, i) => {
-          this.tone(f, 0.3, 'sine', 0.09, 0, now + i * 0.08)
-          this.tone(f * 2.01, 0.2, 'sine', 0.02, 0, now + i * 0.08)
-        })
+        // nazar: cam gibi, tiz ama yumuşak
+        ;[4, 7, 9, 11].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.045, now + i * 0.08, 0.7))
         return
       case 'warp':
-        this.noise(0.3, 0.13, 1200, now, 0.6)
-        return this.tone(392, 0.38, 'triangle', 0.09, 420)
+        this.noise(0.3, 0.04, 900, now, 0.5, 'lowpass')
+        return this.tone(330, 0.35, 'sine', 0.05, 330)
       case 'bossWake':
-        // davul gibi derin gümbürtü ve yükselen uğultu
-        this.noise(0.5, 0.2, 160, now, 0.7)
-        this.tone(73, 0.7, 'sine', 0.16, -12)
-        return this.tone(147, 0.6, 'triangle', 0.05, 30, now + 0.1)
+        // derin, yumuşak bir uğultu
+        this.tone(73, 0.7, 'sine', 0.1, -10)
+        return this.chime(this.scaleNote(0, 0), 0.05, now + 0.1, 0.9)
       case 'bossSlam':
-        this.noise(0.2, 0.22, 240, now, 0.8)
-        return this.tone(70, 0.22, 'sine', 0.16, -25)
+        return this.tone(70, 0.22, 'sine', 0.1, -20)
       case 'bossHit':
-        this.noise(0.1, 0.16, 1100, now, 1)
-        this.pluckSfx(this.scaleNote(4, 1), 0.5, now)
-        return this.pluckSfx(this.scaleNote(7, 1), 0.55, now + 0.07)
+        this.chime(this.scaleNote(4, 1), 0.06, now, 0.4)
+        return this.chime(this.scaleNote(7, 1), 0.06, now + 0.07, 0.5)
       case 'bossDown':
-        // zafer: makamda yükselen tel dizisi ve tonik
-        ;[0, 2, 4, 5, 7, 9].forEach((d, i) => this.pluckSfx(this.scaleNote(d, 1), 0.5, now + i * 0.09, i % 2 ? 'kanun' : 'saz'))
-        return this.tone(mtof(this.scaleNote(0, 1)), 1.2, 'sine', 0.06, 0, now + 0.55)
+        ;[0, 2, 4, 5, 7, 9].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.055, now + i * 0.09, 0.6))
+        return this.chime(this.scaleNote(0, 2), 0.06, now + 0.6, 1.4)
       case 'switch':
-        this.noise(0.08, 0.13, 700, now, 1.2)
-        return this.tone(330, 0.1, 'triangle', 0.07, 120)
+        return this.chime(this.scaleNote(2, 1), 0.05, now, 0.3)
+      case 'grab':
+        return this.tone(196 * vary, 0.08, 'sine', 0.035, 30)
+      case 'swim':
+        return this.noise(0.14, 0.03, 650 * vary, now, 0.6, 'lowpass')
       case 'ui':
-        return this.tone(560, 0.05, 'sine', 0.03)
+        return this.tone(560, 0.04, 'sine', 0.022)
     }
   }
 
@@ -461,7 +449,9 @@ export class Sound {
     }
     while (this.nextTime < this.ac.currentTime + 0.3) {
       const i = this.stepIdx % song.length
-      for (const e of song.byStep[i]) this.voice(e, this.nextTime, song.step)
+      // lo-fi sallantısı: tek adımlar biraz geç çalar
+      const t = this.nextTime + (i % 2 ? song.swing * song.step : 0)
+      for (const e of song.byStep[i]) this.voice(e, t, song.step)
       if (this.intense && song.pulse.length) this.battle(i, this.nextTime, song)
       this.nextTime += song.step
       this.stepIdx++
@@ -479,11 +469,10 @@ export class Sound {
       a += g
     }
     const at = (inst: Inst, vol: number, midi: number[] = [], dur = 1) => this.voice({ at: step, dur, inst, midi, vol }, t, song.step)
-    if (groupStart) at('dum', pos === 0 ? 0.3 : 0.2)
-    else at('ka', 0.06)
-    // yarım adımda da ka: dövüşte usul iki kat sıklaşır
-    this.voice({ at: step + 0.5, dur: 0.5, inst: 'ka', midi: [], vol: 0.035 }, t + song.step / 2, song.step)
-    if (pos === 0) at('bass', 0.12, [SCALES[this.city].root - 24 < 36 ? SCALES[this.city].root - 12 : SCALES[this.city].root - 24], 2)
+    // dövüşte ritim sıklaşır ama sakin kalır: her vuruşta yumuşak bas davul, aralarda zil, ölçü başında pes bas
+    if (groupStart) at('kick', pos === 0 ? 0.2 : 0.13)
+    at('hat', groupStart ? 0.03 : 0.02)
+    if (pos === 0) at('sub', 0.1, [SCALES[this.city].root - 24 < 36 ? SCALES[this.city].root - 12 : SCALES[this.city].root - 24], 4)
   }
 
   /** bir notayı çalgısıyla çalar */
@@ -491,7 +480,7 @@ export class Sound {
     const ac = this.ac!
     const out = this.channel(e.inst)
     const dur = e.dur * step
-    const drum = e.inst === 'dum' || e.inst === 'tek' || e.inst === 'ka'
+    const drum = e.inst === 'kick' || e.inst === 'rim' || e.inst === 'hat'
     // insan eli: ezgide en çok 12 ms gecikme, güçte ±8 % (her döngüde aynı)
     const w = wobble(e.at * 31 + (e.midi[0] ?? 7))
     const t = t0 + (drum ? w * 0.004 : w * 0.012)
@@ -541,61 +530,18 @@ export class Sound {
         }
         return
       }
-      case 'saz':
-      case 'kanun':
-      case 'arp': {
-        // tel: önbellekteki Karplus-Strong tamponu; bağlamada çift tel (ikincisi hafif akortsuz ve geç)
-        const kind = e.inst === 'saz' ? 'saz' : 'kanun'
-        const buf = this.pluck(kind, e.midi[0])
-        const ring = e.inst === 'saz' ? Math.max(0.35, dur * 1.2) : 0.6
+      case 'kanun': {
+        // kanun: önbellekteki Karplus-Strong tel tamponu, tırnakla çekilmiş kısa tını
+        const src = ac.createBufferSource()
+        src.buffer = this.pluck(e.midi[0])
         const g = ac.createGain()
-        g.gain.setValueAtTime(vol * (kind === 'saz' ? 1.6 : 1.3), t)
-        g.gain.setValueAtTime(vol * (kind === 'saz' ? 1.6 : 1.3), t + ring)
-        g.gain.exponentialRampToValueAtTime(0.0001, t + ring + 0.15)
+        g.gain.setValueAtTime(vol * 1.3, t)
+        g.gain.setValueAtTime(vol * 1.3, t + 0.6)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75)
+        src.connect(g)
         g.connect(out)
-        const strings = kind === 'saz' ? [0, 1] : [0]
-        for (const s of strings) {
-          const src = ac.createBufferSource()
-          src.buffer = buf
-          if (s) src.playbackRate.value = 1.0035
-          const sg = ac.createGain()
-          sg.gain.value = s ? 0.6 : 1
-          src.connect(sg)
-          sg.connect(g)
-          src.start(t + s * 0.006)
-          src.stop(t + ring + 0.2)
-        }
-        return
-      }
-      case 'bass': {
-        // bas: yuvarlak alt ton + hafif tel çekişi (küçük hoparlörde de duyulsun diye ikinci harmonik)
-        const f = mtof(e.midi[0])
-        const o = ac.createOscillator()
-        o.type = 'triangle'
-        o.frequency.value = f
-        const sub = ac.createOscillator()
-        sub.type = 'sine'
-        sub.frequency.value = f
-        const h2 = ac.createOscillator()
-        h2.type = 'sine'
-        h2.frequency.value = f * 2
-        const hg = ac.createGain()
-        hg.gain.value = 0.25
-        const g = ac.createGain()
-        const end = Math.max(0.2, dur * 0.9)
-        g.gain.setValueAtTime(0.0001, t)
-        g.gain.exponentialRampToValueAtTime(vol, t + 0.012)
-        g.gain.exponentialRampToValueAtTime(vol * 0.55, t + end * 0.5)
-        g.gain.exponentialRampToValueAtTime(0.0001, t + end)
-        o.connect(g)
-        sub.connect(g)
-        h2.connect(hg)
-        hg.connect(g)
-        g.connect(out)
-        for (const x of [o, sub, h2]) {
-          x.start(t)
-          x.stop(t + end + 0.05)
-        }
+        src.start(t)
+        src.stop(t + 0.8)
         return
       }
       case 'pad': {
@@ -628,76 +574,127 @@ export class Sound {
         }
         return
       }
-      case 'dum': {
-        // darbuka düm: perdesi düşen pes gövde + deri tokluğu
+      case 'keys': {
+        // elektrik piyano (Rhodes benzeri): sinüs gövde + çan gibi ikinci kısmi ses, yumuşak giriş, yavaş titreşim
+        const g = ac.createGain()
+        const ring = Math.max(0.6, dur * 1.1)
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.linearRampToValueAtTime(vol, t + 0.012)
+        g.gain.exponentialRampToValueAtTime(vol * 0.45, t + 0.35)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + ring + 0.4)
+        const trem = ac.createOscillator()
+        trem.frequency.value = 4.6
+        const tg = ac.createGain()
+        tg.gain.value = vol * 0.12
+        trem.connect(tg)
+        tg.connect(g.gain)
+        const lp = ac.createBiquadFilter()
+        lp.type = 'lowpass'
+        lp.frequency.value = 2400
+        g.connect(lp)
+        lp.connect(out)
+        const nodes: OscillatorNode[] = [trem]
+        for (const n of e.midi) {
+          const f = mtof(n)
+          const o = ac.createOscillator()
+          o.type = 'sine'
+          o.frequency.value = f
+          const bell = ac.createOscillator()
+          bell.type = 'sine'
+          bell.frequency.value = f * 4.01
+          const bg = ac.createGain()
+          bg.gain.setValueAtTime(0.18, t)
+          bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.25)
+          const og = ac.createGain()
+          og.gain.value = 1 / Math.max(1, e.midi.length * 0.8)
+          o.connect(og)
+          bell.connect(bg)
+          bg.connect(og)
+          og.connect(g)
+          nodes.push(o, bell)
+        }
+        for (const x of nodes) {
+          x.start(t)
+          x.stop(t + ring + 0.45)
+        }
+        return
+      }
+      case 'sub': {
+        // sıcak alt bas: yuvarlak sinüs, kısa yumuşak giriş
+        const f = mtof(e.midi[0])
         const o = ac.createOscillator()
         o.type = 'sine'
-        o.frequency.setValueAtTime(140, t)
-        o.frequency.exponentialRampToValueAtTime(58, t + 0.14)
+        o.frequency.value = f
+        const h = ac.createOscillator()
+        h.type = 'triangle'
+        h.frequency.value = f * 2
+        const hg = ac.createGain()
+        hg.gain.value = 0.12
         const g = ac.createGain()
-        g.gain.setValueAtTime(vol, t)
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32)
+        const end = Math.max(0.3, dur)
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.linearRampToValueAtTime(vol, t + 0.03)
+        g.gain.setValueAtTime(vol, t + end * 0.6)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + end + 0.1)
+        o.connect(g)
+        h.connect(hg)
+        hg.connect(g)
+        g.connect(out)
+        for (const x of [o, h]) {
+          x.start(t)
+          x.stop(t + end + 0.15)
+        }
+        return
+      }
+      case 'kick': {
+        // yumuşak bas davul: perdesi hızla düşen sinüs, tıkırtısız
+        const o = ac.createOscillator()
+        o.type = 'sine'
+        o.frequency.setValueAtTime(110, t)
+        o.frequency.exponentialRampToValueAtTime(45, t + 0.12)
+        const g = ac.createGain()
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.linearRampToValueAtTime(vol, t + 0.005)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3)
         o.connect(g)
         g.connect(out)
         o.start(t)
-        o.stop(t + 0.34)
-        this.hit(t, 0.03, vol * 0.25, 900, out, 1.5)
+        o.stop(t + 0.32)
         return
       }
-      case 'tek':
-      case 'ka': {
-        // tek: kenardan çınlayan parlak vuruş; ka: parmak ucuyla, kısık ve kısa
-        const tek = e.inst === 'tek'
-        this.hit(t, tek ? 0.08 : 0.035, vol, tek ? 3000 : 5200, out, tek ? 2.5 : 1.2)
-        if (tek) {
-          const o = ac.createOscillator()
-          o.type = 'sine'
-          o.frequency.setValueAtTime(660, t)
-          o.frequency.exponentialRampToValueAtTime(600, t + 0.07)
-          const g = ac.createGain()
-          g.gain.setValueAtTime(vol * 0.45, t)
-          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09)
-          o.connect(g)
-          g.connect(out)
-          o.start(t)
-          o.stop(t + 0.1)
-        }
+      case 'rim': {
+        // fırçalı kenar vuruşu: kısa, boğuk gürültü + küçük gövde
+        this.hit(t, 0.09, vol, 1800, out, 0.9)
+        const o = ac.createOscillator()
+        o.type = 'triangle'
+        o.frequency.setValueAtTime(330, t)
+        const g = ac.createGain()
+        g.gain.setValueAtTime(vol * 0.35, t)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05)
+        o.connect(g)
+        g.connect(out)
+        o.start(t)
+        o.stop(t + 0.06)
         return
       }
-      case 'zil': {
-        // parmak zili: uyumsuz kısmi seslerle uzun çınlama
-        for (const [r, a] of [
-          [1, 1],
-          [2.76, 0.5],
-          [5.4, 0.25],
-        ]) {
-          const o = ac.createOscillator()
-          o.type = 'sine'
-          o.frequency.value = 1700 * r
-          const g = ac.createGain()
-          g.gain.setValueAtTime(vol * a, t)
-          g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1 / r)
-          o.connect(g)
-          g.connect(out)
-          o.start(t)
-          o.stop(t + 1.2)
-        }
+      case 'hat': {
+        // kapalı zil: çok kısa, yumuşatılmış tiz gürültü
+        this.hit(t, 0.035, vol, 7000, out, 0.7)
         return
       }
     }
   }
 
   /**
-   * Karplus-Strong tel benzetimi: gürültüyle başlayan, perde boyunda geciktirilip ortalanarak sönen dalga.
-   * Bağlama: daha parlak çekiş ve uzun tını; kanun: tırnakla çekilmiş, kısa ve tiz. Nota başına bir kez üretilir.
+   * Karplus-Strong tel benzetimi (kanun): gürültüyle başlayan, perde boyunda geciktirilip ortalanarak sönen dalga;
+   * tırnakla çekilmiş, kısa ve tiz. Nota başına bir kez, ilk çalındığında üretilir.
    */
-  private pluck(kind: 'saz' | 'kanun', midi: number): AudioBuffer {
-    const key = `${kind}:${midi}`
-    const hit = this.plucks.get(key)
+  private pluck(midi: number): AudioBuffer {
+    const hit = this.plucks.get(midi)
     if (hit) return hit
     const ac = this.ac!
     const sr = ac.sampleRate
-    const sec = kind === 'saz' ? 1.4 : 0.9
+    const sec = 0.9
     const len = Math.floor(sr * sec)
     const buf = ac.createBuffer(1, len, sr)
     const d = buf.getChannelData(0)
@@ -709,13 +706,13 @@ export class Sound {
     const ring = new Float32Array(n)
     // çekiş: süzülmüş gürültü (kanunda daha yumuşak, bağlamada tırnak gibi parlak)
     let lp = 0
-    const bright = kind === 'saz' ? 0.85 : 0.6
+    const bright = 0.6
     for (let i = 0; i < n; i++) {
       lp += (Math.random() * 2 - 1 - lp) * bright
       ring[i] = lp
     }
     // sönüm: tiz notalar daha çabuk söner; bağlamanın teli uzun tınlar
-    const decay = kind === 'saz' ? 0.9965 : 0.993
+    const decay = 0.993
     const damp = Math.pow(decay, 440 / mtof(midi))
     let idx = 0
     let prev = 0
@@ -737,7 +734,7 @@ export class Sound {
     for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(d[i]))
     const k = peak > 0 ? 0.9 / peak : 1
     for (let i = 0; i < len; i++) d[i] *= k * Math.min(1, i / 40)
-    this.plucks.set(key, buf)
+    this.plucks.set(midi, buf)
     return buf
   }
 

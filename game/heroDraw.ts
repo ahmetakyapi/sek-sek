@@ -24,6 +24,8 @@ export interface Pose {
   /** atkı ucunun ve saç uçlarının dikey savrulması (-1 aşağı çekilir: yükseliş · 1 yukarı kalkar: düşüş) */
   lift?: number
   blink?: boolean
+  /** kol uzunluğu çarpanı (uzak, yakın kol ya da ikisi): asılırken kollar çizgi film gibi esner, eller başın üstünde tutar */
+  reach?: number | [number, number]
   /** neşeli yüz (amblem, paylaşım görseli): yüksek kavisli kaş, iri göz, açık gülümseme; oyunda kullanılmaz */
   mood?: 'happy'
 }
@@ -161,6 +163,57 @@ function joint(x: number, y: number, a1: number, l1: number, a2: number, l2: num
   return { kx, ky, ex: kx + Math.sin(rad(a2)) * l2, ey: ky + Math.cos(rad(a2)) * l2 }
 }
 
+/** Halat tırmanışında halatın gövdeye göre yeri (çizim biriminde, ileri +): karakter halatın biraz arkasında durur */
+export const ROPE_X = 24
+
+/**
+ * Halat tırmanışı (yan profil): iki el de önde, halatın üstünde; biri başın üstünde kavrar, öbürü göğüs hizasında
+ * çeker. `k` (-1..1) döngünün evresi: eller sırayla yer değiştirir. Eller ters kinematikle (iki kemik) tam halata
+ * oturur, kol hedefe hafif bükük varacak kadar uzar (çizgi film esnemesi); dizler öne, halatı sarar.
+ */
+export function climbPose(k: number): Pose {
+  const low = -72
+  const high = -102
+  const u = (k + 1) / 2
+  const reachTo = (sx: number, ty: number, elbow: number): { a: [number, number]; r: number } => {
+    const sy = -50
+    const dx = ROPE_X - sx
+    const dy = ty - sy
+    const d = Math.hypot(dx, dy)
+    const r = Math.max(1, (d / (UPPER + FORE)) * 1.08)
+    const l1 = UPPER * r
+    const l2 = FORE * r
+    const cosA = Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)))
+    // uzak kolun dirseği geriye, yakın kolunki öne bakar: yakın kol yüzün önünden geçmez
+    const a1 = Math.atan2(dx, dy) + elbow * Math.acos(cosA)
+    const ex = sx + Math.sin(a1) * l1
+    const ey = sy + Math.cos(a1) * l1
+    const a2 = Math.atan2(ROPE_X - ex, ty - ey)
+    return { a: [(a1 * 180) / Math.PI, (a2 * 180) / Math.PI], r }
+  }
+  const fa = reachTo(-4, low + (high - low) * u, 1)
+  const na = reachTo(4, high + (low - high) * u, -1)
+  return { reach: [fa.r, na.r], arms: [fa.a, na.a], legs: [[38 + 14 * k, 78], [52 - 14 * k, 92]], hair: 0.2, lift: 0.1 }
+}
+
+/** kolun uzunluk çarpanı: pozda tek sayı ya da [uzak, yakın] */
+const armReach = (pose: Pose, i: number) => (Array.isArray(pose.reach) ? pose.reach[i] : (pose.reach ?? 1))
+
+/**
+ * Pozdaki iki elin yeri (çizim biriminde, ayak tabanı 0,0; çevrilmemiş): asılan karakter ellerini tele / halata
+ * oturtmak için. Gövde eğimi (tilt) hesaba katılmaz: asılma pozlarında eğim yoktur.
+ */
+export function handPos(pose: Pose): { x: number; y: number }[] {
+  const tx = (pose.lean ?? 0) * 1.3
+  const sY = HIP_Y + (pose.bob ?? 0) + 1 - 22
+  const twist = (a: number) => Math.max(-1.6, Math.min(1.6, a * 0.03))
+  return pose.arms.map(([a1, a2], i) => {
+    const r = armReach(pose, i)
+    const j = joint(tx + (i ? 4 : -4) + twist(a1), sY, a1, UPPER * r, a2, FORE * r)
+    return { x: j.ex + Math.sin(rad(a2)) * 2.6, y: j.ey + Math.cos(rad(a2)) * 2.6 }
+  })
+}
+
 /** yerdeki pozda en alttaki tabanın zemine oturması için gereken dikey kayma */
 export function groundBob(p: Pose) {
   let low = -Infinity
@@ -264,8 +317,8 @@ function drawLeg(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number, t
   c.restore()
 }
 
-function drawArm(c: CanvasRenderingContext2D, s: Skin, sx: number, sy: number, a1: number, a2: number, near: boolean) {
-  const j = joint(sx, sy, a1, UPPER, a2, FORE)
+function drawArm(c: CanvasRenderingContext2D, s: Skin, sx: number, sy: number, a1: number, a2: number, near: boolean, reach = 1) {
+  const j = joint(sx, sy, a1, UPPER * reach, a2, FORE * reach)
   const dx = Math.sin(rad(a2))
   const dy = Math.cos(rad(a2))
   stroke(c, [sx, sy, j.kx, j.ky, j.ex, j.ey], 7, near ? s.coat : s.coatS)
@@ -1282,7 +1335,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   // uzak kol ve bacak önce, gövde, yakın bacak, atkı, kafa, yakın kol
   c.save()
   upper()
-  drawArm(c, s, tx - 4 + twist(fa[0]), sY, fa[0], fa[1], false)
+  drawArm(c, s, tx - 4 + twist(fa[0]), sY, fa[0], fa[1], false, armReach(pose, 0))
   c.restore()
   drawLeg(c, s, hipX - 2.5, hipY, fl[0], fl[1], false)
   drawLeg(c, s, hipX + 2, hipY, nl[0], nl[1], true)
@@ -1362,7 +1415,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   c.translate(-(tx + 1), -(ty - 28))
   drawHead(c, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0, lift, t, moving, pose.mood === 'happy', acc)
   c.restore()
-  drawArm(c, s, tx + 4 + twist(na[0]), sY, na[0], na[1], true)
+  drawArm(c, s, tx + 4 + twist(na[0]), sY, na[0], na[1], true, armReach(pose, 1))
   c.restore()
   c.restore()
 }
@@ -1405,8 +1458,4 @@ export const POSES: Record<string, Pose> = {
   wall: { legs: [[8, 30], [42, 72]], arms: [[60, 80], [112, 126]], lift: 0.4 },
   dash: { legs: [[-78, 8], [-52, 38]], arms: [[-78, -88], [-92, -102]], lean: -2.5, tilt: 0.36, hair: 1.3 },
   wave: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [105, 140]], ground: true },
-  /** halatta ya da teleferikte: iki kol yukarıda, bacaklar sarkık */
-  hang: { legs: [[-6, 10], [8, 16]], arms: [[-168, -176], [168, 176]], hair: 0.3, lift: 0.2 },
-  /** suda kulaç: kollar öne, bacaklar çırpar (render saatle oynatır) */
-  swim: { legs: [[-30, 20], [30, 40]], arms: [[-110, -80], [110, 80]], hair: 1, lift: 0.6, tilt: 0.12 },
 }

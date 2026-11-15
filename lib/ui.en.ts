@@ -889,4 +889,8 @@ export const UI_EN: Record<string, string> = {
   "{city} · {deaths} düşüş · {items}/3 hatıra": "{city} · {deaths} falls · {items}/3 keepsakes",
   "Co-op": "Co-op",
   "İki kişi aynı ekranda, aynı şehirde: hatıralar ve düğmeler ortak": "Two players, one screen, one city: shared keepsakes and switches",
+  'Geçilen Durak': 'Visited Stop',
+  'Açık Durak': 'Open Stop',
+  '↺ Sıradaki': '↺ Next Stop',
+  '{city} Şehrine Git': 'Go to {city}',
 }

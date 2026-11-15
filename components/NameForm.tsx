@@ -84,13 +84,13 @@ export default function NameForm({ player, onDone }: { player: Player; onDone: (
           autoCapitalize="words"
           enterKeyHint="done"
           placeholder={t("Adın")}
-          className="min-w-0 flex-1 bg-ink px-3 py-2.5 font-display text-xl text-cream outline-none [box-shadow:0_-2px_0_0_#3d3550,0_2px_0_0_#3d3550,-2px_0_0_0_#3d3550,2px_0_0_0_#3d3550] focus:[box-shadow:0_-2px_0_0_#f2c14e,0_2px_0_0_#f2c14e,-2px_0_0_0_#f2c14e,2px_0_0_0_#f2c14e]"
+          className="min-w-0 flex-1 bg-ink px-3 py-2.5 font-display text-xl text-cream outline-none [box-shadow:0_-2px_0_0_#37337a,0_2px_0_0_#37337a,-2px_0_0_0_#37337a,2px_0_0_0_#37337a] focus:[box-shadow:0_-2px_0_0_#ffcc66,0_2px_0_0_#ffcc66,-2px_0_0_0_#ffcc66,2px_0_0_0_#ffcc66]"
         />
         <button className="pixel-btn primary shrink-0 justify-center" disabled={state !== 'free'}>
           {state === 'saving' ? '…' : t('Adı Kaydet')}
         </button>
       </div>
-      <p className={`text-[12px] ${state === 'free' ? 'text-gold' : state === 'taken' || state === 'error' ? 'text-accent-2' : 'text-muted'}`} aria-live="polite">
+      <p className={`text-[13px] ${state === 'free' ? 'text-gold' : state === 'taken' || state === 'error' ? 'text-accent-2' : 'text-muted'}`} aria-live="polite">
         {hint}
       </p>
     </form>

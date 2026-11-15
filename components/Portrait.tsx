@@ -76,7 +76,7 @@ export function PortraitFace({ id, scale = 1, scarf, accessory }: { id: Characte
   const ref = usePortraitCanvas(id, true, scarf, accessory)
   const size = 38 * scale
   return (
-    <span className="relative block shrink-0 bg-[#f4ead8] p-[2px] [box-shadow:0_0_0_2px_#d9a441,0_2px_0_2px_rgba(0,0,0,0.35)]" style={{ width: size + 4, height: size + 4 }} aria-hidden>
+    <span className="relative block shrink-0 bg-[#f3f1ff] p-[2px] [box-shadow:0_0_0_2px_#d9a441,0_2px_0_2px_rgba(0,0,0,0.35)]" style={{ width: size + 4, height: size + 4 }} aria-hidden>
       <canvas ref={ref} className="block" style={{ width: size, height: size }} />
     </span>
   )

@@ -30,7 +30,7 @@ const SS = 4
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seksek-ikon-'))
   const bundle = path.join(dir, 's.js')
   await esbuild.build({ entryPoints: [path.join(__dirname, 'emblem.ts')], bundle: true, format: 'iife', globalName: 'S', outfile: bundle, logLevel: 'silent' })
-  fs.writeFileSync(path.join(dir, 'index.html'), `<!doctype html><body style="margin:0;background:#2a2438"><canvas id="c"></canvas><script src="s.js"></script><script>
+  fs.writeFileSync(path.join(dir, 'index.html'), `<!doctype html><body style="margin:0;background:#221f4a"><canvas id="c"></canvas><script src="s.js"></script><script>
 const KINDS = {
   round: (c, n) => S.drawEmblem(c, n, { round: true }),
   square: (c, n) => S.drawEmblem(c, n),
@@ -55,7 +55,7 @@ window.one = (kind, n) => window.make(kind, n).toDataURL('image/png')
 window.sheet = () => {
   const W = 1500, H = 1010
   const cv = document.getElementById('c'); cv.width = W; cv.height = H
-  const c = cv.getContext('2d'); c.fillStyle = '#2a2438'; c.fillRect(0, 0, W, H)
+  const c = cv.getContext('2d'); c.fillStyle = '#221f4a'; c.fillRect(0, 0, W, H)
   const label = (t, x, y, col) => { c.fillStyle = col || '#fff'; c.font = '13px sans-serif'; c.fillText(t, x, y) }
   const put = (kind, n, x, y, zoom) => { const im = window.make(kind, n); c.imageSmoothingEnabled = !zoom; c.drawImage(im, x, y, n * (zoom || 1), n * (zoom || 1)); c.imageSmoothingEnabled = true }
   label('icon.png 512 (yuvarlak, saydam köşe)', 16, 20); put('round', 512, 16, 30)
@@ -94,9 +94,9 @@ window.sheet = () => {
   c.save(); c.beginPath(); c.roundRect(32 + 3 * 70, 596, 60, 60, 14); c.clip(); put('square', 60, 32 + 3 * 70, 596); c.restore()
   // arayüzdeki boylar
   label('arayüz: logo-emblem 56 ve 40, koyu panelde', 16, 700)
-  c.fillStyle = '#1e1a29'; c.fillRect(16, 710, 512, 84)
+  c.fillStyle = '#171538'; c.fillRect(16, 710, 512, 84)
   put('round', 56, 32, 724); put('round', 40, 110, 732)
-  c.fillStyle = '#f4ead8'; c.font = '700 26px monospace'; c.fillText('Sek-Sek', 160, 762)
+  c.fillStyle = '#f3f1ff'; c.font = '700 26px monospace'; c.fillText('Sek-Sek', 160, 762)
   // paylaşım sahnesi (yazısız), yarı boy
   label('paylaşım sahnesi (yazı icons.cjs --og ile dizilir)', 548, 720)
   c.save(); c.translate(548, 730); c.scale(0.44, 0.44); c.beginPath(); c.rect(0, 0, 1200, 630); c.clip(); S.drawShare(c, 1200, 630); c.restore()
@@ -141,13 +141,13 @@ window.sheet = () => {
     await p.evaluate(() => {
       const el = document.createElement('div')
       el.innerHTML = `
-        <div style="position:fixed;inset:0;z-index:2147483647;width:1200px;height:630px;overflow:hidden;background:#3b2a58">
+        <div style="position:fixed;inset:0;z-index:2147483647;width:1200px;height:630px;overflow:hidden;background:#23205a">
           <canvas id="og-scene" width="1200" height="630" style="position:absolute;inset:0"></canvas>
           <div style="position:absolute;left:68px;top:74px;width:560px">
             <canvas id="og-emblem" width="224" height="224" style="width:112px;height:112px;display:block"></canvas>
-            <div class="font-display" style="margin-top:26px;font-size:124px;line-height:1;color:#f4ead8;text-shadow:0 7px 0 #22161f;white-space:nowrap">Sek-Sek</div>
-            <div style="margin-top:26px;font-family:var(--font-mono);font-weight:600;font-size:23px;line-height:1.4;color:#f4ead8;white-space:nowrap">Gezgin’in yarım kalmış defterini tamamla.</div>
-            <div style="display:inline-block;margin-top:24px;padding:9px 18px 10px;font-family:var(--font-mono);font-weight:700;font-size:25px;line-height:1;color:#22161f;background:#f2c14e;border:4px solid #22161f;border-radius:12px;box-shadow:0 5px 0 #22161f">25 şehir · 75 hatıra</div>
+            <div class="font-display" style="margin-top:26px;font-size:124px;line-height:1;color:#f3f1ff;text-shadow:0 7px 0 #15123a;white-space:nowrap">Sek-Sek</div>
+            <div style="margin-top:26px;font-family:var(--font-mono);font-weight:600;font-size:23px;line-height:1.4;color:#f3f1ff;white-space:nowrap">Gezgin’in yarım kalmış defterini tamamla.</div>
+            <div style="display:inline-block;margin-top:24px;padding:9px 18px 10px;font-family:var(--font-mono);font-weight:700;font-size:25px;line-height:1;color:#15123a;background:#ffcc66;border:4px solid #15123a;border-radius:12px;box-shadow:0 5px 0 #15123a">35 şehir · 105 hatıra</div>
           </div>
         </div>`
       document.body.appendChild(el)

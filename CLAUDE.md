@@ -43,8 +43,8 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
   portraitDraw.ts vesikalık portreler (vektör, heroDraw fırçalarıyla; sekiz kılık, atkı rengi parametreli). Sunucu kartı için public/portreler/<kılık>.png: `node scripts/art/portraits.cjs` (çizim ya da LOOKS değişince yeniden üret)
-  audio.ts       WebAudio efektleri ve çalgılar: bağlama ve kanun Karplus-Strong tel benzetimi (nota başına önbellek, akort ±1 cent), ney (alttan giriş, nefes), bas, dem, darbuka, zil; çalgı başına stereo yer ve yankı payı, ana sınırlayıcı, boss dövüşünde ek usul katmanı (`setIntense`), molada süzgeçle boğuklaşma, efekt/müzik ses düzeyi (`setVolumes`)
-  music.ts       besteler veri olarak: menülerde jenerik teması, oyunda şehrin makamı (SCALES) ve usulünde, şehrin adından tohumlanan sabit tema (sakin giriş, ikinci geçişte kanun cevabı ve zil, cümle sonunda darbuka dolgusu; `Song.pulse` usulün grupları)
+  audio.ts       WebAudio: rahatlatıcı arka plan müziği çalgıları (Rhodes benzeri piyano `keys`, alt bas `sub`, yumuşak davul `kick`/`rim`/`hat`, ney, kanun Karplus-Strong, dem), swing, çalgı başına stereo ve yankı, ana sınırlayıcı; boss'ta sıklaşan ama sakin ritim (`setIntense`), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında, kısık
+  music.ts       besteler veri olarak: jenerik (aynı ezgi ve akorlar, lo-fi düzenleme, ~76 BPM) ve şehir müzikleri (4/4, ~78 BPM, şehrin makamından yedili akorlar, seyrek ezgi; A piyano · B davul+bas · C ney · D kanun; şehirden tohumlanan sabit beste)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts, sunucusu app/api/ghosts (skor tablosundan "◌ Yarış")
   challenges.ts  mücadele haritaları: Zor şehirlerin bayrak aralığından her açılışta kesilen kısa parkurlar (madalya `par`dan)
@@ -242,6 +242,9 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
   Şehre özgü düşman: Ordu saksağanı (`j`), dalda tüner, altından geçene uyarıp dalar.
 - Konuşma ve tabela sözü ekranın altına kutu olarak değil, konuşanın başının üstüne baloncuk olarak çizilir (karakteri kapatmaz).
   Oynanış sırasında çıkan yazılar (bayrak sözü, ölüm lafı) üstte HUD'ın altında, küçük ve soluk durur; oynanış alanına girmez.
+- **Renk (Alacakaranlık teması).** Tokenlar `app/globals.css` `@theme`: koyu zeminde yazı ve çizgi için `accent` / `accent-2`
+  (açık çivit, en az 4.5:1), dolu düğme zemini için `accent-deep` ve üstünde beyaz yazı. Mavi üstüne koyu yazı yazılmaz.
+  Amblem renkleri `scripts/art/emblem.ts`; değişince `node scripts/art/icons.cjs --og`.
 - **Yazı dili.** Başlıklar Grandstander, gövde Figtree (`app/layout.tsx` `--font-title` / `--font-body`; tuvalde
   `render.ts` popFont / textFont; kartpostalda `assets/fonts/*.ttf`). Piksel font kullanılmaz: küçük boyda yoruyor,
   2/5/8 karışıyordu. Yeni bir yazı ailesi denersen Türkçe harflere (İ ı Ğ Ş) ve rakamlara (süre, plaka, skor) bak.

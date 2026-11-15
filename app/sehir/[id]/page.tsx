@@ -8,7 +8,7 @@ import { LEVELS } from '@/game/levels'
 
 /** Şehir başına tanıtım sayfası: arama motoru ve paylaşım için; oyuna `?sehir=` ile girer (kilit kuralı oyunda kalır). */
 
-const DIFF_COLOR: Record<string, string> = { Kolay: '#7fc97a', Orta: '#f2c14e', Zor: '#f08a4a', 'Çok Zor': '#e5484d' }
+const DIFF_COLOR: Record<string, string> = { Kolay: '#7fc97a', Orta: '#ffcc66', Zor: '#f08a4a', 'Çok Zor': '#e5484d' }
 
 const plate = (n: number) => String(n).padStart(2, '0')
 

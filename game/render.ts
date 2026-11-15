@@ -4,11 +4,12 @@ import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
 import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
-import { INK, POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
+import { INK, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
+import type { Player } from './sim'
 import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
@@ -92,8 +93,6 @@ export class Renderer {
   accessory: AccessoryId = 'yok'
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
-  /** halattaki oyuncunun önceki karedeki yeri: kıpırdıyorsa kollar sırayla uzanır */
-  private prevHang: [number, number] | null = null
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
   shakeScale = 1
   /** fotoğraf kipi: kamera oyuncuyu bırakır, oyuncunun kaydırdığı yere bakar (dünya pikseli) */
@@ -2823,10 +2822,89 @@ export class Renderer {
       c.globalAlpha = h.alpha
       // hayalet koşu soluk renkli (tek kopya); dash izi filtresiz, çünkü filtre her çizimde pahalı
       if (h.ghost) c.filter = 'saturate(0.35) brightness(1.25)'
+      if (h.rot) {
+        const px = (h.x - cx) * sc
+        const py = (h.y - (h.pivot ?? 0) - cy) * sc
+        c.translate(px, py)
+        c.rotate(h.flip ? -h.rot : h.rot)
+        c.translate(-px, -py)
+      }
       drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc })
       c.restore()
     }
     this.heroes = []
+  }
+
+  /** asılma ve yüzme pozlarının evresi (oyuncu başına): yalnız hareket ederken ilerler */
+  private holdPhase = new WeakMap<Player, { x: number; y: number; ph: number }>()
+
+  /**
+   * Halatta, teleferikte ve suda poz. Teleferikte eller tam tele oturur (karakter pozun el yüksekliği kadar aşağı çizilir),
+   * ilerlerken eller sırayla tele uzanır, gövde ve bacaklar salınır. Halatta eller sırayla tırmanır, bacaklar halatı kavrar.
+   * Suda ilerlerken gövde yatar ve serbest stil kulaç atar (kollar sırayla döner, bacaklar çırpar); dururken dik durup
+   * kollarıyla suyu iter. Saate bağlı; evre yalnız hareket ederken ilerler.
+   */
+  private holdPose(p: Player): { pose: Pose; rot: number; pivot: number; dy: number; dx?: number; moving: boolean } | null {
+    // suda: yüzerken ya da başı suyun içindeyken (dibe bassa da) yüzme pozu
+    const under = p.swim && this.world?.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + 1) / T)) === SWIM
+    if (!p.hang && !(p.swim && (!p.grounded || under))) return null
+    let st = this.holdPhase.get(p)
+    if (!st) this.holdPhase.set(p, (st = { x: p.x, y: p.y, ph: 0 }))
+    const moved = Math.hypot(p.x - st.x, p.y - st.y) > 0.05
+    st.x = p.x
+    st.y = p.y
+    const dt = this.frameDt
+    const size = HERO_SIZE
+    if (p.hang === 2) {
+      if (moved) st.ph += dt * 7.5
+      const r = moved ? Math.sin(st.ph) : 0
+      const sway = moved ? Math.sin(st.ph) : Math.sin(this.t * 1.7) * 0.25
+      // eller başın üstünde telde, baş telin altında; kollar V: biri öne uzanırken öbürü geride tutar, yüz açıkta kalır
+      const far = 158 - 8 * r
+      const near = 204 + 8 * r
+      const pose: Pose = { arms: [[far, far + 4], [near, near - 4]], legs: [[-4 + sway * 16, 12 + Math.abs(sway) * 8], [8 + sway * 12, 20]], hair: 0.25, lift: 0.15, reach: 2.6 }
+      const top = Math.min(...handPos(pose).map((h) => h.y)) * (size / 100)
+      // tel, oyuncu kutusunun 1 px üstünde: en yüksek el tam tele değer
+      const dy = p.y + 1 - top - (p.y + p.h)
+      return { pose, rot: sway * 0.07, pivot: -top, dy, moving: moved }
+    }
+    if (p.hang === 1) {
+      if (moved) st.ph += dt * 5.5
+      // Halat tırmanışı (yan profil): karakter halatın biraz arkasında, halat yüzünün önünden geçer. İki el de önde,
+      // halatın üstünde: ikisi de başın üstünde, biri yukarı uzanırken öbürü aşağı çeker; tırmanırken sırayla yer değiştirirler.
+      // Eller ters kinematikle (iki kemik) tam halata oturur; dizler öne, halatı sarar.
+      const pose = climbPose(moved ? Math.sin(st.ph) : 0.6)
+      // halatın tepesinde eller boşta kalmasın: en yüksek el halatın ucunun biraz altında tutulur (yalnız çizim)
+      const w = this.world
+      let dy = 0
+      if (w) {
+        const tx = Math.floor((p.x + p.w / 2) / T)
+        // halatın tepesi: ayak hizasından (oyuncu halatın ucunun üstüne taşmış olabilir) yukarı doğru
+        let ty = Math.floor((p.y + p.h - 2) / T)
+        while (ty > 0 && w.tile(tx, ty - 1) === ROPE) ty--
+        const top = Math.min(...handPos(pose).map((h) => h.y)) * (size / 100)
+        dy = Math.max(0, ty * T + 3 - (p.y + p.h + top))
+      }
+      // karakter halatın arkasında: halat yüzünün önünden geçsin
+      return { pose, rot: 0, pivot: 0, dy, dx: -p.facing * 7, moving: moved }
+    }
+    // su
+    const horizontal = Math.abs(p.vx) > 22
+    st.ph += dt * (horizontal ? 6.5 : 3.2)
+    const ph = st.ph
+    if (horizontal) {
+      // serbest stil: kollar karşıt evrede tam tur döner, bacaklar hızlı çırpar; gövde neredeyse yatay
+      const a = (ph * 180) / Math.PI
+      const pose: Pose = { arms: [[a % 360, (a % 360) - 25], [(a + 180) % 360, ((a + 180) % 360) - 25]], legs: [[-6 + Math.sin(ph * 2.2) * 16, 10], [6 - Math.sin(ph * 2.2) * 16, 10]], hair: 1.1, lift: 0.3 }
+      return { pose, rot: 1.3, pivot: size * 0.29, dy: -2, moving: true }
+    }
+    // suda durma: dik, kollar yanlarda suyu iter, bacaklar bisiklet çevirir; kulaçta (yükselirken) kollar aşağı iter
+    const up = p.vy < -60
+    const k = Math.sin(ph)
+    const pose: Pose = up
+      ? { arms: [[-30, -10], [30, 10]], legs: [[-10, 8], [10, 8]], hair: 0.4, lift: -0.6 }
+      : { arms: [[95 + k * 25, 70 + k * 25], [-95 - k * 25, -70 - k * 25]], legs: [[-18 + k * 22, 40], [18 - k * 22, 40]], hair: 0.7, lift: 0.4 }
+    return { pose, rot: 0, pivot: 0, dy: 2, moving: true }
   }
 
   /** co-op eşinin karakteri (öbür kılık) */
@@ -2838,14 +2916,14 @@ export class Renderer {
     const q = w.partner
     if (!q || q.dead) return
     let pose: Pose
+    const hold = q.dashTime > 0 ? null : this.holdPose(q)
     if (q.dashTime > 0) pose = POSES.dash
-    else if (q.hang) pose = POSES.hang
-    else if (q.swim && !q.grounded) pose = POSES.swim
+    else if (hold) pose = hold.pose
     else if (!q.grounded) pose = q.wallDir !== 0 && q.vy > 0 ? POSES.wall : q.vy < -70 ? POSES.jump : q.vy < 70 ? POSES.apex : POSES.fall
     else if (Math.abs(q.vx) > 8) pose = gait(((q.runTime * 15) / 8) % 1)
     else pose = POSES.idle
     const spent = !q.canDash
-    this.heroes.push({ look: this.partnerLook, pose: { ...pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2, y: q.y + q.h, flip: q.facing < 0, alpha: 1, ghost: false, moving: Math.abs(q.vx) > 40 || !q.grounded, sx: 1, sy: 1, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade })
+    this.heroes.push({ look: this.partnerLook, pose: { ...pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2 + (hold?.dx ?? 0), y: q.y + q.h + (hold?.dy ?? 0), flip: q.facing < 0, alpha: 1, ghost: false, moving: hold ? hold.moving : Math.abs(q.vx) > 40 || !q.grounded, sx: 1, sy: 1, rot: hold?.rot, pivot: hold?.pivot, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade })
   }
 
   private drawPlayer(w: World, dt: number) {
@@ -2895,18 +2973,10 @@ export class Renderer {
 
     // poz: koşu, koşu süresinden sürekli hesaplanır (kare atlamadan akar)
     let pose: Pose
+    const hold = p.dashTime > 0 ? null : this.holdPose(p)
     if (p.dashTime > 0) pose = POSES.dash
-    else if (p.hang) {
-      // tırmanırken ya da elle ilerlerken kollar sırayla uzanır
-      const moving = this.prevHang && (Math.abs(p.x - this.prevHang[0]) > 0.01 || Math.abs(p.y - this.prevHang[1]) > 0.01)
-      const sw = moving ? Math.sin(this.t * 12) * 14 : Math.sin(this.t * 2) * 3
-      const h = POSES.hang
-      pose = { ...h, arms: [[h.arms[0][0] + sw, h.arms[0][1] + sw], [h.arms[1][0] - sw, h.arms[1][1] - sw]], legs: [[h.legs[0][0] + sw * 0.5, h.legs[0][1]], [h.legs[1][0] - sw * 0.5, h.legs[1][1]]] }
-    } else if (p.swim && !p.grounded) {
-      const k = Math.sin(this.t * 7)
-      const sw = POSES.swim
-      pose = { ...sw, arms: [[sw.arms[0][0] + k * 40, sw.arms[0][1] + k * 40], [sw.arms[1][0] - k * 40, sw.arms[1][1] - k * 40]], legs: [[sw.legs[0][0] + k * 20, sw.legs[0][1]], [sw.legs[1][0] - k * 20, sw.legs[1][1]]] }
-    } else if (!p.grounded) pose = p.wallDir !== 0 && p.vy > 0 ? POSES.wall : p.vy < -70 ? POSES.jump : p.vy < 70 ? POSES.apex : POSES.fall
+    else if (hold) pose = hold.pose
+    else if (!p.grounded) pose = p.wallDir !== 0 && p.vy > 0 ? POSES.wall : p.vy < -70 ? POSES.jump : p.vy < 70 ? POSES.apex : POSES.fall
     else if (p.landTimer > 0.05) pose = POSES.land
     else if (Math.abs(p.vx) > 8) pose = gait(((p.runTime * 15) / 8) % 1)
     else if (this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) {
@@ -2918,7 +2988,6 @@ export class Renderer {
       pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
     }
     pose = { ...pose, blink: this.t % 3.4 < 0.12 }
-    this.prevHang = p.hang ? [p.x, p.y] : null
 
     // esneme: zıplarken incelip uzar, konarken basılır (hacim korunur, abartısız)
     let kx = 1
@@ -2942,7 +3011,7 @@ export class Renderer {
     const moving = Math.abs(p.vx) > 40 || !p.grounded
     // dash hakkı bitince atkı soluklaşır: ne zaman yeniden dash atabileceğin görünür
     const spent = !p.canDash
-    this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade, acc: this.accessory })
+    this.heroes.push({ look, pose, x: footX + (hold?.dx ?? 0), y: footY + (hold?.dy ?? 0), flip: p.facing < 0, alpha: 1, ghost: false, moving: hold ? hold.moving : moving, sx: hold ? 1 : kx, sy: hold ? 1 : ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade, acc: this.accessory, rot: hold?.rot, pivot: hold?.pivot })
 
     this.petTimer = Math.max(0, this.petTimer - dt)
     // koşu tozu ve duvar kayma kıvılcımı
@@ -3224,6 +3293,9 @@ interface HeroDraw {
   scarf?: string
   scarfS?: string
   acc?: AccessoryId
+  /** bütün gövdenin dönüşü (radyan, ileri +): yüzerken yatar, telde salınır; `pivot` ayak tabanından yukarı (dünya px) */
+  rot?: number
+  pivot?: number
 }
 
 interface Pop {

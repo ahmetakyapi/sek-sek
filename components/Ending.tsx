@@ -65,7 +65,7 @@ export default function Ending({
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 text-center sm:p-6 short:py-3">
-        <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{[t('OTUZ ŞEHİR'), notebookLeft === 0 ? t('DEFTER EKSİKSİZ TAMAM') : t('YOLUN SONU'), t('JENERİK'), t('YENİ OYUN+')][page]}</p>
+        <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{[t('OTUZ ŞEHİR'), notebookLeft === 0 ? t('DEFTER EKSİKSİZ TAMAM') : t('YOLUN SONU'), t('JENERİK'), t('YENİ OYUN+')][page]}</p>
         <div className="mt-2 min-h-0 flex-1 overflow-hidden" key={page}>
           {page === 0 && (
             <div className="flex h-full flex-col items-center">
@@ -97,33 +97,33 @@ export default function Ending({
               <div className="credits-roll mx-auto max-w-md">
                 <p className="font-display text-3xl text-cream">Sek-Sek</p>
                 <p className="mt-1 text-[13px] text-muted">{t('Türkiye’nin otuz şehrinde bir yol defteri')}</p>
-                <p className="mt-8 text-[11px] font-bold tracking-[0.3em] text-gold">{t('YOLCULAR')}</p>
+                <p className="mt-8 text-[12px] font-bold tracking-[0.18em] text-gold">{t('YOLCULAR')}</p>
                 <div className="mt-2 flex justify-center gap-3">
                   <Portrait id="uktun" className="w-[64px]" />
                   <Portrait id="memo" className="w-[64px]" />
                 </div>
                 <p className="mt-1 text-[14px] text-cream">Uktun · Memo</p>
-                <p className="mt-8 text-[11px] font-bold tracking-[0.3em] text-gold">{t('MEYDAN BEKÇİLERİ')}</p>
+                <p className="mt-8 text-[12px] font-bold tracking-[0.18em] text-gold">{t('MEYDAN BEKÇİLERİ')}</p>
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-left">
                   {LEVELS.map((l) => (
                     <p key={l.id} className="flex items-center gap-2 text-[13px] text-cream/90">
                       <BossFigure city={l.city} className="h-[26px] w-[30px] shrink-0" />
                       <span className="min-w-0">
                         <span className="block truncate">{lng === 'en' ? BOSSES[l.city].nameEn : BOSSES[l.city].name}</span>
-                        <span className="block text-[11px] text-muted">{displayName(l)}</span>
+                        <span className="block text-[12px] text-muted">{displayName(l)}</span>
                       </span>
                     </p>
                   ))}
                 </div>
-                <p className="mt-8 text-[11px] font-bold tracking-[0.3em] text-gold">{t('YOLDA TANIŞTIKLARIN')}</p>
+                <p className="mt-8 text-[12px] font-bold tracking-[0.18em] text-gold">{t('YOLDA TANIŞTIKLARIN')}</p>
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[13px]">
                   {people.map((p, i) => (
                     <p key={i} className="truncate text-cream/85">
-                      {p.name} <span className="text-[11px] text-muted">· {p.city}</span>
+                      {p.name} <span className="text-[12px] text-muted">· {p.city}</span>
                     </p>
                   ))}
                 </div>
-                <p className="mt-8 text-[11px] font-bold tracking-[0.3em] text-gold">{t('HATIRALAR')}</p>
+                <p className="mt-8 text-[12px] font-bold tracking-[0.18em] text-gold">{t('HATIRALAR')}</p>
                 <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                   {LEVELS.map((l) => (
                     <ItemIcon key={l.id} city={l.city} taken size={22} />
@@ -144,7 +144,7 @@ export default function Ending({
               <p className="mt-2 text-[13px] text-muted">{t('Modlar → Ayna Yolu. Her şehrin ayna rekoru ayrı tutulur.')}</p>
               {ALL.length > FIRST_BOOK && (
                 <div className="mt-5 max-w-md border-2 border-gold/60 bg-gold/5 px-4 py-3">
-                  <p className="text-[11px] font-bold tracking-[0.25em] text-gold">{t('İKİNCİ DEFTER')}</p>
+                  <p className="text-[12px] font-bold tracking-[0.16em] text-gold">{t('İKİNCİ DEFTER')}</p>
                   <p className="mt-1 text-[14px] leading-relaxed text-cream/90">{t('Sahaf defteri kapatırken arasından ikinci bir defter düştü: Rize’nin çay bahçelerinden Ağrı Dağı’nın zirvesine {n} şehir daha. Halatlar, teleferikler ve yüzülecek sular seni bekliyor.', { n: ALL.length - FIRST_BOOK })}</p>
                 </div>
               )}

@@ -57,11 +57,11 @@ export function ThingIcon({ kind, taken, size = 18 }: { kind: 'stamp' | 'charm';
 export function Key({ children, wide = false, dim = false }: { children: React.ReactNode; wide?: boolean; dim?: boolean }) {
   return (
     <kbd
-      className={`inline-flex h-7 items-center justify-center px-2 font-mono text-[12px] font-bold leading-none transition-opacity duration-200 ${wide ? 'min-w-[64px]' : 'min-w-7'} ${dim ? 'opacity-40' : ''}`}
+      className={`inline-flex h-7 items-center justify-center px-2 font-mono text-[13px] font-bold leading-none transition-opacity duration-200 ${wide ? 'min-w-[64px]' : 'min-w-7'} ${dim ? 'opacity-40' : ''}`}
       style={{
-        background: 'linear-gradient(180deg,#3a3250,#2a2438)',
-        color: '#f4ead8',
-        boxShadow: '0 -2px 0 0 #4a4160, 0 2px 0 0 #120f1a, -2px 0 0 0 #3d3550, 2px 0 0 0 #3d3550, inset 0 -3px 0 rgba(0,0,0,0.35)',
+        background: 'linear-gradient(180deg,#2f2b6a,#221f4a)',
+        color: '#f3f1ff',
+        boxShadow: '0 -2px 0 0 #4a4160, 0 2px 0 0 #0e0d22, -2px 0 0 0 #37337a, 2px 0 0 0 #37337a, inset 0 -3px 0 rgba(0,0,0,0.35)',
       }}
     >
       {children}
@@ -78,7 +78,7 @@ export function KeyHints({ canDash, idle, keys }: { canDash: boolean; idle: bool
       className={`pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 transition-opacity duration-500 ${idle ? 'opacity-100' : 'opacity-30'}`}
       aria-hidden
     >
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-ink/70 px-4 py-2.5 text-[12px] text-cream/90 [box-shadow:0_-2px_0_0_#3d3550,0_2px_0_0_#3d3550,-2px_0_0_0_#3d3550,2px_0_0_0_#3d3550]">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-ink/70 px-4 py-2.5 text-[13px] text-cream/90 [box-shadow:0_-2px_0_0_#37337a,0_2px_0_0_#37337a,-2px_0_0_0_#37337a,2px_0_0_0_#37337a]">
         <span className="flex items-center gap-1.5">
           <Key>{k.left}</Key>
           <Key>{k.right}</Key>

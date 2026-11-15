@@ -7,7 +7,7 @@ import type { Player } from '@/lib/storage'
 const NAME_RE = /^[\p{L}\p{N} _.-]{2,16}$/u
 
 const field =
-  'w-full min-w-0 bg-ink px-3 py-2.5 text-cream outline-none [box-shadow:0_-2px_0_0_#3d3550,0_2px_0_0_#3d3550,-2px_0_0_0_#3d3550,2px_0_0_0_#3d3550] focus:[box-shadow:0_-2px_0_0_#f2c14e,0_2px_0_0_#f2c14e,-2px_0_0_0_#f2c14e,2px_0_0_0_#f2c14e]'
+  'w-full min-w-0 bg-ink px-3 py-2.5 text-cream outline-none [box-shadow:0_-2px_0_0_#37337a,0_2px_0_0_#37337a,-2px_0_0_0_#37337a,2px_0_0_0_#37337a] focus:[box-shadow:0_-2px_0_0_#ffcc66,0_2px_0_0_#ffcc66,-2px_0_0_0_#ffcc66,2px_0_0_0_#ffcc66]'
 
 /** Üye ol / giriş yap: kullanıcı adı + şifre. Oturum anahtarı cihazda kalır, tekrar giriş gerekmez. */
 export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = true }: { onDone: (p: Player) => void; onMode?: (m: 'signup' | 'login') => void; suggestion?: string; autoFocus?: boolean }) {
@@ -81,14 +81,14 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
   return (
     <form onSubmit={submit} className="grid gap-3">
       {/* tek parça sekme çubuğu: iki iri düğme yerine */}
-      <div className="grid grid-cols-2 bg-ink/60 p-1 [box-shadow:inset_0_0_0_2px_#3d3550]" role="tablist">
+      <div className="grid grid-cols-2 bg-ink/60 p-1 [box-shadow:inset_0_0_0_2px_#37337a]" role="tablist">
         {(['signup', 'login'] as const).map((m) => (
           <button
             key={m}
             type="button"
             role="tab"
             aria-selected={mode === m}
-            className={`py-1.5 text-sm font-semibold transition-colors ${mode === m ? 'bg-accent text-ink' : 'text-muted hover:text-cream'}`}
+            className={`py-1.5 text-sm font-semibold transition-colors ${mode === m ? 'bg-accent-deep text-white' : 'text-muted hover:text-cream'}`}
             onClick={() => {
               setMode(m)
               onMode?.(m)
@@ -99,7 +99,7 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
         ))}
       </div>
       <label className="grid gap-1">
-        <span className="text-[11px] font-bold tracking-[0.2em] text-muted">{t('KULLANICI ADI')}</span>
+        <span className="text-[12px] font-bold tracking-[0.14em] text-muted">{t('KULLANICI ADI')}</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -114,13 +114,13 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
         />
         {/* varsayılan açıklama yalnız geniş ekranda; telefonda yalnız durum (boşta, alınmış, geçersiz) görünür: form ekrana sığsın */}
         {nameHint && (
-          <span className={`text-[12px] ${avail === 'free' ? 'text-gold' : avail === 'taken' ? 'text-accent-2' : 'text-muted'} ${avail === 'idle' ? 'hidden sm:inline short:hidden' : ''}`} aria-live="polite">
+          <span className={`text-[13px] ${avail === 'free' ? 'text-gold' : avail === 'taken' ? 'text-accent-2' : 'text-muted'} ${avail === 'idle' ? 'hidden sm:inline short:hidden' : ''}`} aria-live="polite">
             {nameHint}
           </span>
         )}
       </label>
       <label className="grid gap-1">
-        <span className="text-[11px] font-bold tracking-[0.2em] text-muted">{t('ŞİFRE')}</span>
+        <span className="text-[12px] font-bold tracking-[0.14em] text-muted">{t('ŞİFRE')}</span>
         <span className="flex gap-2">
           <input
             type={show ? 'text' : 'password'}
@@ -132,14 +132,14 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
             placeholder={mode === 'signup' ? t('En az 6 karakter') : ''}
             className={`${field} text-base placeholder:text-muted/70`}
           />
-          <button type="button" className="pixel-btn shrink-0 px-3 text-[12px]" onClick={() => setShow((v) => !v)} aria-pressed={show}>
+          <button type="button" className="pixel-btn shrink-0 px-3 text-[13px]" onClick={() => setShow((v) => !v)} aria-pressed={show}>
             {show ? t('Gizle') : t('Göster')}
           </button>
         </span>
-        {mode === 'signup' && password && !passOk && <span className="text-[12px] text-accent-2">{t('En az 6 karakter.')}</span>}
+        {mode === 'signup' && password && !passOk && <span className="text-[13px] text-accent-2">{t('En az 6 karakter.')}</span>}
       </label>
       {err && (
-        <p className="text-[12px] text-accent-2" aria-live="polite">
+        <p className="text-[13px] text-accent-2" aria-live="polite">
           {err}
         </p>
       )}

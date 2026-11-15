@@ -47,7 +47,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1100px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('YOLCULUĞUN ÖZETİ')}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('YOLCULUĞUN ÖZETİ')}</p>
             <h2 className="mt-1 flex flex-wrap items-baseline gap-x-3 font-display text-3xl text-cream short:text-2xl">
               {t('Yol Defteri')}
               <span className="border-2 border-gold bg-gold/10 px-2 py-0.5 text-[13px] tracking-[0.06em] text-gold" title={t('Unvanın: yolculuğunun en parlak yanı')}>
@@ -67,7 +67,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
                 {v}
                 <span className="text-sm text-muted">/{max}</span>
               </p>
-              <p className="mt-1 truncate px-0.5 text-[11px] text-muted">{k}</p>
+              <p className="mt-1 truncate px-0.5 text-[12px] text-muted">{k}</p>
             </div>
           ))}
         </div>
@@ -75,15 +75,15 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
         {/* Albüm açıkken görev ve istatistik satırları sayfaya yer bırakır */}
         <div className={`mt-3 grid-cols-2 gap-2 sm:grid-cols-3 short:hidden ${tab === 'album' ? 'hidden' : 'grid'}`}>
           <div className="border-2 border-line bg-ink/40 px-3 py-2 max-sm:hidden">
-            <p className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('GÖREVLER')}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('GÖREVLER')}</p>
             <p className="mt-0.5 text-[13px] text-cream">{t('{d} gün · {w} hafta tamamlandı', { d: save.daily.count, w: save.weekly.count })}</p>
           </div>
           <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" onClick={onModes}>
-            <span className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('GÜNLÜK MEYDAN OKUMA')}</span>
+            <span className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('GÜNLÜK MEYDAN OKUMA')}</span>
             <span className="text-[13px]">{streak ? t('🔥 {n} günlük seri', { n: streak }) : t('▶ Bugün Oyna, Seriyi Başlat')}</span>
           </button>
           <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" onClick={onModes}>
-            <span className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('BOSS RUSH')}</span>
+            <span className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('BOSS RUSH')}</span>
             <span className="text-[13px]">
               {bosses < RUSH_NEEDS
                 ? t('Önce {n} Boss Yen', { n: RUSH_NEEDS })
@@ -95,7 +95,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
         </div>
 
         {/* yol istatistikleri: küçük sayaçlar, bir bakışta */}
-        <p className={`mt-2 flex-wrap gap-x-4 gap-y-0.5 text-[12px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs && tab !== 'album' ? 'flex' : 'hidden'}`}>
+        <p className={`mt-2 flex-wrap gap-x-4 gap-y-0.5 text-[13px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs && tab !== 'album' ? 'flex' : 'hidden'}`}>
           {(
             [
               [t('Koşu'), stats.runs],
@@ -140,13 +140,13 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
                   <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-xl ${done ? 'bg-gold text-ink shadow-[0_3px_0_rgba(0,0,0,0.3)]' : 'bg-panel-2 text-muted'}`}>{a.icon}</span>
                   <span className="min-w-0 flex-1">
                     <span className={`block font-display text-[15px] leading-tight ${done ? 'text-cream' : 'text-cream/80'}`}>{t(a.name)}</span>
-                    <span className="block text-[12px] leading-snug text-muted">{t(a.text)}</span>
+                    <span className="block text-[13px] leading-snug text-muted">{t(a.text)}</span>
                     {!done && goal > 1 && (
                       <span className="mt-1 flex items-center gap-2">
                         <span className="h-1.5 flex-1 overflow-hidden bg-ink">
                           <span className="block h-full bg-accent" style={{ width: `${Math.round((now / goal) * 100)}%` }} />
                         </span>
-                        <span className="shrink-0 text-[11px] tabular-nums text-muted">
+                        <span className="shrink-0 text-[12px] tabular-nums text-muted">
                           {a.id === 'hour' ? `${Math.floor(now / 60000)}/${goal / 60000} ${t('dk')}` : `${now}/${goal}`}
                         </span>
                       </span>
@@ -165,7 +165,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
             const boss = BOSSES[l.city]
             return (
               <li key={l.id} className={`flex items-center gap-2.5 border-2 px-2.5 py-1.5 ${locked ? 'border-line/50 opacity-50' : 'border-line bg-panel-2'}`}>
-                <span className="plate shrink-0 text-[11px]">
+                <span className="plate shrink-0 text-[12px]">
                   <span>{String(l.plate).padStart(2, '0')}</span>
                 </span>
                 <div className="min-w-0 flex-1">
@@ -181,7 +181,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
                     <ThingIcon kind="stamp" taken={!!save.stamps[l.id]} size={17} />
                     <ThingIcon kind="charm" taken={!!save.charms[l.id]} size={17} />
                   </p>
-                  <p className="mt-0.5 truncate text-[11px] text-muted">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Boss: ???')}</p>
+                  <p className="mt-0.5 truncate text-[12px] text-muted">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Boss: ???')}</p>
                 </div>
                 <BossFigure city={l.city} className={`h-10 w-10 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
               </li>

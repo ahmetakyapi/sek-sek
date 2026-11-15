@@ -65,13 +65,13 @@ export default function PhotoMode({ canvas, renderer, level, onClose }: { canvas
 
   return (
     <div className="absolute inset-0 z-20 cursor-grab touch-none active:cursor-grabbing" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-      <div className="pointer-events-none absolute inset-3 border-2 border-cream/25 [box-shadow:inset_0_0_0_1px_rgb(18_15_26/0.4)]" />
-      <p className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+14px)] text-center text-[12px] text-cream/80 [text-shadow:0_1px_2px_#120f1a]">
+      <div className="pointer-events-none absolute inset-3 border-2 border-cream/25 [box-shadow:inset_0_0_0_1px_rgb(14_13_34/0.4)]" />
+      <p className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+14px)] text-center text-[13px] text-cream/80 [text-shadow:0_1px_2px_#0e0d22]">
         {t('Kadrajı kaydırmak için sürükle ya da ok tuşlarını kullan')}
       </p>
-      {note && <p className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+40px)] text-center font-display text-[15px] text-gold [text-shadow:0_2px_0_#120f1a]">{note}</p>}
+      {note && <p className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+40px)] text-center font-display text-[15px] text-gold [text-shadow:0_2px_0_#0e0d22]">{note}</p>}
       <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+14px)] flex justify-center px-3" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 bg-ink/80 p-2 backdrop-blur-[2px] [box-shadow:inset_0_0_0_2px_#3d3550]">
+        <div className="flex items-center gap-2 bg-ink/80 p-2 backdrop-blur-[2px] [box-shadow:inset_0_0_0_2px_#37337a]">
           <button className="pixel-btn px-3 py-2 text-[13px]" onClick={onClose}>
             {t('← Mola')}
           </button>
@@ -118,7 +118,7 @@ async function snapshot(canvas: HTMLCanvasElement, level: LevelDef | null): Prom
     c.fillText(`${String(level.plate).padStart(2, '0')} · ${new Date().toLocaleDateString('tr-TR')}`, pad + nameW + pad * 0.6, base)
     c.textAlign = 'right'
     c.font = `700 ${Math.round(foot * 0.34)}px ${title}, system-ui, sans-serif`
-    c.fillStyle = '#e8794a'
+    c.fillStyle = '#4353e0'
     c.fillText('Sek-Sek', out.width - pad, base)
   }
   return new Promise((res, rej) => out.toBlob((b) => (b ? res(b) : rej(new Error('toBlob'))), 'image/png'))
