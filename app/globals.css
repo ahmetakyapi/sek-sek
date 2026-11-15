@@ -671,3 +671,41 @@ blockquote {
     transition: none;
   }
 }
+
+/* ayarlardaki ses düzeyi çubuğu: piksel ray, altın tutamak */
+.px-range {
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+.px-range::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #17131f;
+  box-shadow: inset 0 0 0 2px var(--color-line);
+}
+.px-range::-moz-range-track {
+  height: 6px;
+  background: #17131f;
+  box-shadow: inset 0 0 0 2px var(--color-line);
+}
+.px-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 18px;
+  margin-top: -6px;
+  background: var(--color-gold);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.25), 0 0 0 2px var(--color-ink);
+}
+.px-range::-moz-range-thumb {
+  width: 14px;
+  height: 18px;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-gold);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.25), 0 0 0 2px var(--color-ink);
+}
+.px-range:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}

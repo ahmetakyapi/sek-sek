@@ -2,9 +2,11 @@ import { sql, type SQL } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { CHALLENGES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
+import { minScoreMs } from '@/lib/antiCheat'
 import { db } from '@/lib/db'
 import { istanbulDay, shiftDay, tournamentFor, tournamentKey, tournamentWeek } from '@/lib/extras'
 import { nameKey, verifyPlayer } from '@/lib/players'
+import { LIMITS, hit, ipKey, tooMany } from '@/lib/rateLimit'
 import { challengeScoreKey, currentKeys, dailyScoreKey, scoreKey } from '@/lib/scoreKey'
 
 export const dynamic = 'force-dynamic'
@@ -188,6 +190,9 @@ function parseRun(b: Record<string, unknown>): Run | string {
   return { key, timeMs, deaths, items }
 }
 
+/** Biçimi doğru ama fiziğe sığmayan koşu (haritanın en kısa süresinden hızlı): 422 ile reddedilir (lib/antiCheat.ts) */
+const tooFast = (r: Run) => r.timeMs < minScoreMs(r.key)
+
 /**
  * Oyuncunun o tablodaki satırı: en iyi süre (ve o koşunun düşüş, hatırası), bütün koşulardaki en az düşüş ve en çok
  * hatıra ayrı ayrı tutulur; her bitiriş oynama sayısını artırır. Tek sorguda, yarışsız (ON CONFLICT).
@@ -212,13 +217,17 @@ async function upsert(playerId: string, name: string, r: Run, played: number) {
  *   tazelendiğini ve süre sıralamasını söyler.
  * POST {playerId, token, batch: [{level, timeMs, deaths, items}]} → cihazdaki rekorlar tabloya aktarılır (girişte bir
  *   kez; tabloda olmayan ya da daha iyi olanlar yazılır, oynama sayısı artmaz).
+ * Haritanın fiziksel en kısa süresinden hızlı koşu 422 (lib/antiCheat.ts); IP başına saatte 60 istek, aşınca 429.
  */
 export async function POST(req: NextRequest) {
   const b = ((await req.json().catch(() => null)) ?? {}) as Record<string, unknown>
+  const wait = await hit(LIMITS.score, ipKey(req))
+  if (wait) return tooMany(wait, 'Çok sık skor gönderildi, biraz sonra tekrar dene')
   try {
     if (Array.isArray(b.batch)) {
       const runs = b.batch.slice(0, LEVELS.length).map((x) => (x && typeof x === 'object' ? parseRun(x as Record<string, unknown>) : 'x'))
-      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:') && !r.key.startsWith('mucadele:') && !r.key.startsWith('turnuva:'))
+      // toplu aktarımda fiziğe sığmayan rekor sessizce atlanır: öteki şehirler yine yazılsın
+      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:') && !r.key.startsWith('mucadele:') && !r.key.startsWith('turnuva:') && !tooFast(r))
       const me = await verifyPlayer(b.playerId, b.token)
       if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
       for (const r of ok) await upsert(me.id, me.name, r, 0)
@@ -226,6 +235,7 @@ export async function POST(req: NextRequest) {
     }
     const run = parseRun(b)
     if (typeof run === 'string') return bad(run)
+    if (tooFast(run)) return bad('Bu süre haritanın en kısa yolundan bile hızlı', 422)
     const me = await verifyPlayer(b.playerId, b.token)
     if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
     const d = db()

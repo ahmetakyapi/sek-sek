@@ -47,9 +47,25 @@ export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?:
   )
 }
 
+type Rumble = { playEffect?: (type: 'dual-rumble', p: { duration: number; strongMagnitude: number; weakMagnitude: number; startDelay?: number }) => Promise<unknown> }
+
+/** Telefonda titreşim, bağlı oyun kolunda gürleme (aynı desen: titreş, dur, titreş…) */
 export function haptic(ms: number | number[]) {
   try {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(ms)
+    if (typeof navigator === 'undefined') return
+    if ('vibrate' in navigator) navigator.vibrate(ms)
+    const pads = navigator.getGamepads ? navigator.getGamepads() : []
+    const parts = Array.isArray(ms) ? ms : [ms]
+    for (const p of pads) {
+      const act = (p as (Gamepad & { vibrationActuator?: Rumble }) | null)?.vibrationActuator
+      if (!act?.playEffect) continue
+      // desendeki her titreşim parçası sırasıyla; kısa vuruşlar kolda hafif, uzunlar güçlü
+      let at = 0
+      parts.forEach((d, i) => {
+        if (i % 2 === 0) void act.playEffect!('dual-rumble', { startDelay: at, duration: Math.max(20, d * 1.5), strongMagnitude: Math.min(1, d / 60), weakMagnitude: 0.5 }).catch(() => {})
+        at += d
+      })
+    }
   } catch {
     /* desteklenmiyor */
   }

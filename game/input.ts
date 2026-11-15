@@ -1,5 +1,56 @@
 import { emptyInput, type Input } from './types'
 
+/** Yeniden atanabilen eylemler. Yukarı (kapı, merdiven) sabit kalır: ↑ / W */
+export type KeyAction = 'left' | 'right' | 'down' | 'jump' | 'dash'
+export type KeyBindings = Record<KeyAction, string[]>
+export const KEY_ACTIONS: KeyAction[] = ['left', 'right', 'jump', 'dash', 'down']
+// Shift yok: Windows'ta art arda 5 Shift "Yapışkan Tuşlar" sesini ve penceresini açar, dash'e hızlı basan oyuncuyu böler
+export const DEFAULT_KEYS: KeyBindings = {
+  left: ['ArrowLeft', 'KeyA'],
+  right: ['ArrowRight', 'KeyD'],
+  down: ['ArrowDown', 'KeyS'],
+  jump: ['ArrowUp', 'KeyW', 'KeyZ', 'KeyK', 'KeyC'],
+  dash: ['Space', 'KeyX', 'KeyJ', 'KeyL'],
+}
+/** Oyunun kendi işi olan tuşlar atanamaz: mola, checkpoint, sekme ve tarayıcı tuşları */
+export const RESERVED_KEYS = ['Escape', 'KeyP', 'KeyR', 'Tab', 'MetaLeft', 'MetaRight', 'ShiftLeft', 'ShiftRight', 'F5', 'F11', 'F12']
+
+/** Kayıttaki atamayı sağlamlaştırır: eksik eylem varsayılandan, boş liste varsayılandan gelir */
+export function normalizeKeys(k?: Partial<KeyBindings> | null): KeyBindings {
+  const out = { ...DEFAULT_KEYS }
+  for (const a of KEY_ACTIONS) {
+    const v = k?.[a]
+    if (Array.isArray(v) && v.length) out[a] = v.filter((c) => typeof c === 'string' && !RESERVED_KEYS.includes(c))
+    if (!out[a].length) out[a] = DEFAULT_KEYS[a]
+  }
+  return out
+}
+
+/** Bir tuşu bir eyleme bağlar: başka eylemden alınır (bir tuş tek iş yapar), eylemin listesinin başına girer */
+export function bindKey(k: KeyBindings, action: KeyAction, code: string): KeyBindings {
+  if (RESERVED_KEYS.includes(code)) return k
+  const out = {} as KeyBindings
+  for (const a of KEY_ACTIONS) out[a] = k[a].filter((c) => c !== code)
+  out[action] = [code, ...out[action]].slice(0, 5)
+  // tuşu elinden alınan eylem boş kalmasın
+  for (const a of KEY_ACTIONS) if (!out[a].length) out[a] = DEFAULT_KEYS[a].filter((c) => !Object.values(out).flat().includes(c)).slice(0, 1)
+  return out
+}
+
+/** Tuş kodunu okunur ada çevirir: KeyZ → Z, ArrowLeft → ←, Space → Boşluk */
+export function keyLabel(code: string, lang: 'tr' | 'en' = 'tr'): string {
+  const arrows: Record<string, string> = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' }
+  if (arrows[code]) return arrows[code]
+  if (code === 'Space') return lang === 'en' ? 'Space' : 'Boşluk'
+  if (code === 'Enter') return 'Enter'
+  if (code.startsWith('Key')) return code.slice(3)
+  if (code.startsWith('Digit')) return code.slice(5)
+  if (code.startsWith('Numpad')) return 'Num ' + code.slice(6)
+  if (code === 'ControlLeft' || code === 'ControlRight') return 'Ctrl'
+  if (code === 'AltLeft' || code === 'AltRight') return 'Alt'
+  return code.replace(/(Left|Right)$/, '')
+}
+
 /**
  * Klavye + oyun kolu + dokunmatik. Basışlar "mandallanır": iki kare arasında
  * yapılan kısa bir dokunuş bile kaçmaz, ilk simülasyon adımı tüketir.
@@ -13,6 +64,7 @@ export class InputManager {
   touch = { x: 0, y: 0, jump: false, dash: false }
   /** joystick'in tuttuğu yön (-1, 0, 1): eşikte titremesin diye bırakma eşiği daha düşük */
   private stickDir = 0
+  private bind: KeyBindings = DEFAULT_KEYS
   onPause: (() => void) | null = null
   onRetry: (() => void) | null = null
 
@@ -23,8 +75,8 @@ export class InputManager {
     // tekrar olayı da tuşu basılı sayar: odak kayıp geri gelince ilk basış kaçmışsa yürüyüş sürsün
     this.keys.add(k)
     if (e.repeat) return
-    if (JUMP_KEYS.includes(k)) this.jumpLatch = true
-    if (DASH_KEYS.includes(k)) this.dashLatch = true
+    if (this.bind.jump.includes(k)) this.jumpLatch = true
+    if (this.bind.dash.includes(k)) this.dashLatch = true
     if (k === 'Escape' || k === 'KeyP') this.onPause?.()
     if (k === 'KeyR') this.onRetry?.()
   }
@@ -38,6 +90,10 @@ export class InputManager {
   private blur = () => {
     this.keys.clear()
     this.touch = { x: 0, y: 0, jump: false, dash: false }
+  }
+
+  setBindings(b: KeyBindings) {
+    this.bind = b
   }
 
   attach() {
@@ -80,11 +136,12 @@ export class InputManager {
   sample(): Input {
     const i = emptyInput()
     const k = this.keys
-    i.left = k.has('ArrowLeft') || k.has('KeyA')
-    i.right = k.has('ArrowRight') || k.has('KeyD')
+    const b = this.bind
+    i.left = b.left.some((c) => k.has(c))
+    i.right = b.right.some((c) => k.has(c))
     i.up = k.has('ArrowUp') || k.has('KeyW')
-    i.down = k.has('ArrowDown') || k.has('KeyS')
-    i.jump = JUMP_KEYS.some((c) => k.has(c)) || this.touch.jump
+    i.down = b.down.some((c) => k.has(c))
+    i.jump = b.jump.some((c) => k.has(c)) || this.touch.jump
 
     // dokunmatik joystick: basmak için 0,28, bırakmak için 0,18 (eşikte titreyen başparmak yönü açıp kapatmasın)
     const tx = this.touch.x
@@ -123,6 +180,3 @@ export class InputManager {
   }
 }
 
-const JUMP_KEYS = ['ArrowUp', 'KeyW', 'KeyZ', 'KeyK', 'KeyC']
-// Shift yok: Windows'ta art arda 5 Shift "Yapışkan Tuşlar" sesini ve penceresini açar, dash'e hızlı basan oyuncuyu böler
-const DASH_KEYS = ['Space', 'KeyX', 'KeyJ', 'KeyL']

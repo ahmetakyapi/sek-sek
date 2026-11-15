@@ -1,6 +1,7 @@
 'use client'
 
-import { useT } from '@/lib/i18n'
+import { useLang, useT } from '@/lib/i18n'
+import { keyLabel, normalizeKeys, type KeyBindings } from '@/game/input'
 import { useEffect, useState } from 'react'
 import { drawKeepsake, drawThing } from '@/game/enemyDraw'
 import type { CityKey } from '@/game/types'
@@ -69,8 +70,9 @@ export function Key({ children, wide = false, dim = false }: { children: React.R
 }
 
 /** Masaüstü tuş ipuçları: oyuncu hareketsiz kaldıkça belirginleşir; dash tuşu hazır olunca parlar. */
-export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean }) {
+export function KeyHints({ canDash, idle, keys }: { canDash: boolean; idle: boolean; keys?: KeyBindings }) {
   const t = useT()
+  const k = keyNames(keys, useLang())
   return (
     <div
       className={`pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 transition-opacity duration-500 ${idle ? 'opacity-100' : 'opacity-30'}`}
@@ -78,17 +80,17 @@ export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean })
     >
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-ink/70 px-4 py-2.5 text-[12px] text-cream/90 [box-shadow:0_-2px_0_0_#3d3550,0_2px_0_0_#3d3550,-2px_0_0_0_#3d3550,2px_0_0_0_#3d3550]">
         <span className="flex items-center gap-1.5">
-          <Key>←</Key>
-          <Key>→</Key>
+          <Key>{k.left}</Key>
+          <Key>{k.right}</Key>
           {t('Yürü')}
         </span>
         <span className="flex items-center gap-1.5">
-          <Key>↑</Key>
+          <Key>{k.jump}</Key>
           {t('Zıpla')}
         </span>
         <span className={`flex items-center gap-1.5 ${canDash ? 'text-gold' : 'text-muted'}`}>
-          <Key wide dim={!canDash}>
-            Space
+          <Key wide={k.dash.length > 2} dim={!canDash}>
+            {k.dash}
           </Key>
           {t('Dash')}
           <span className={`inline-block h-2 w-2 ${canDash ? 'bg-[#d6403a] shadow-[0_0_6px_#d6403a]' : 'bg-[#7f8ca8]'}`} />
@@ -102,14 +104,22 @@ export function KeyHints({ canDash, idle }: { canDash: boolean; idle: boolean })
   )
 }
 
+/** Atanmış tuşların ilk (birincil) olanlarının okunur adı: rehber ve ipuçları oyuncunun tuşunu gösterir */
+function keyNames(keys: KeyBindings | undefined, lang: string) {
+  const b = normalizeKeys(keys)
+  const l = lang === 'en' ? 'en' : 'tr'
+  return { left: keyLabel(b.left[0], l), right: keyLabel(b.right[0], l), jump: keyLabel(b.jump[0], l), dash: keyLabel(b.dash[0], l) }
+}
+
 export type TutorialStep = 'walk' | 'jump' | 'collect' | 'flag' | 'dash'
 
 /**
  * İlk oynayışın adım adım rehberi: tek satır, diyalog kutusunun yerinde (alt orta; telefonda yatayda iki kontrolün arası).
  * Klavyede tuşu, dokunmatikte kontrolün adını söyler.
  */
-export function TutorialHint({ step, touch }: { step: TutorialStep; touch: boolean }) {
+export function TutorialHint({ step, touch, keys }: { step: TutorialStep; touch: boolean; keys?: KeyBindings }) {
   const t = useT()
+  const k = keyNames(keys, useLang())
   const body: Record<TutorialStep, React.ReactNode> = touch
     ? {
         walk: t('Sol Yarı: Yürü'),
@@ -121,19 +131,19 @@ export function TutorialHint({ step, touch }: { step: TutorialStep; touch: boole
     : {
         walk: (
           <>
-            <Key>→</Key> {t('Yürü')}
+            <Key>{k.right}</Key> {t('Yürü')}
           </>
         ),
         jump: (
           <>
-            <Key>↑</Key> {t('Zıpla')}
+            <Key>{k.jump}</Key> {t('Zıpla')}
           </>
         ),
         collect: t('Hatırayı Topla'),
         flag: t('Bayrağa Dokun: Düşersen Buradan Başlarsın'),
         dash: (
           <>
-            <Key wide>Space</Key> {t('Dash')}
+            <Key wide={k.dash.length > 2}>{k.dash}</Key> {t('Dash')}
           </>
         ),
       }

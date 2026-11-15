@@ -52,3 +52,30 @@ export function Toggle({ label, on, onChange, hint, tag }: { label: string; on: 
     </button>
   )
 }
+
+/** Açık/kapalı ayarın altında ince ses düzeyi çubuğu (0-100). Kapalıyken gizlenir: liste kısa kalsın. */
+export function Level({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <label className="flex items-center gap-3 px-1 pb-2 pt-0.5 text-[12px] text-muted short:pb-1.5">
+      <span className="w-14 shrink-0">{label}</span>
+      <input type="range" min={0} max={100} step={5} value={Math.round(value * 100)} onChange={(e) => onChange(Number(e.target.value) / 100)} className="px-range min-w-0 flex-1" aria-label={label} />
+      <span className="w-9 shrink-0 text-right tabular-nums text-cream">{Math.round(value * 100)}</span>
+    </label>
+  )
+}
+
+/** Birkaç seçenekten biri: küçük, yan yana düğmeler (Rahat Mod hızı gibi) */
+export function Choice<T extends string | number>({ label, value, options, onChange }: { label: string; value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
+  return (
+    <div className="flex items-center gap-3 px-1 pb-2 pt-0.5 text-[12px] text-muted short:pb-1.5" role="group" aria-label={label}>
+      <span className="shrink-0">{label}</span>
+      <span className="ml-auto flex gap-1">
+        {options.map((o) => (
+          <button key={String(o.v)} type="button" aria-pressed={value === o.v} onClick={() => onChange(o.v)} className={`min-h-[28px] min-w-[42px] px-2 py-1 text-[12px] font-bold tabular-nums ${value === o.v ? 'bg-gold text-ink' : 'bg-ink/40 text-muted hover:text-cream [box-shadow:inset_0_0_0_2px_#3d3550]'}`}>
+            {o.label}
+          </button>
+        ))}
+      </span>
+    </div>
+  )
+}

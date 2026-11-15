@@ -17,13 +17,19 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  # her bölüm gerçek fizikle ayrı ayrı oynanır; yavaş şehirler birbirini beklemez
+  # her şehir gerçek fizikle ayrı bir işte: bölüm (çözücü) → yeniden doğuş (her bayraktan çıkışa) → boss (bot + zayıf oyuncu).
+  # Üç denetim aynı işte sırayla koşar (npm ci bir kez); yavaş şehirler birbirini beklemez.
+  # Şehir listesi: npx tsx -e "import { LEVELS } from './game/levels'; console.log(LEVELS.map(l=>l.id).join(' '))"
   levels:
     runs-on: ubuntu-latest
+    # çözücüsü uzun süren şehirlere daha geniş süre. Yerelde (4 çekirdek, paralel) verify-levels: Nevşehir ~17 dk;
+    # İzmir, Konya, Gaziantep, Trabzon, Kayseri, Amasya, Ordu, Hatay, Çorum 3-9 dk; gerisi 1 dk altı. verify-respawn
+    # her bayraktan yeniden çözdüğü için bunun birkaç katını sürebilir.
+    timeout-minutes: ${{ matrix.level == 'nevsehir' && 120 || contains(fromJSON('["izmir","konya","gaziantep","trabzon","kayseri","amasya","ordu","hatay","corum"]'), matrix.level) && 75 || 30 }}
     strategy:
       fail-fast: false
       matrix:
-        level: [istanbul, kocaeli, izmir, ankara, konya, nevsehir, adana, gaziantep, mardin, malatya, corum, ordu, trabzon, sivas, ardahan, bayburt]
+        level: [istanbul, edirne, kocaeli, bursa, eskisehir, canakkale, izmir, antalya, ankara, konya, nevsehir, kayseri, adana, hatay, gaziantep, sanliurfa, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, van, erzurum, ardahan, amasya, mugla, bayburt]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,4 +37,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsx scripts/verify-levels.ts ${{ matrix.level }}
+      - name: Bölüm (verify-levels)
+        run: npx tsx scripts/verify-levels.ts ${{ matrix.level }}
+      - name: Yeniden doğuş (verify-respawn)
+        if: ${{ !cancelled() }}
+        run: npx tsx scripts/verify-respawn.ts ${{ matrix.level }}
+      - name: Boss (bossbot)
+        if: ${{ !cancelled() }}
+        run: npx tsx scripts/bossbot.ts ${{ matrix.level }}

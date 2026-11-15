@@ -8,7 +8,7 @@ import type { CityKey } from './types'
  *   tohumlanmış sabit bir beste. Her açılışta aynı ezgi çalar; rastgele yürüyüş değil, akılda kalan bir tema.
  */
 
-export type Inst = 'ney' | 'saz' | 'arp' | 'bass' | 'pad' | 'dum' | 'tek' | 'ka'
+export type Inst = 'ney' | 'saz' | 'kanun' | 'arp' | 'bass' | 'pad' | 'dum' | 'tek' | 'ka' | 'zil'
 
 export interface NoteEvent {
   /** başladığı adım */
@@ -30,6 +30,8 @@ export interface Song {
   events: NoteEvent[]
   /** adım başına o adımda başlayan notalar (çalarken arama yapılmasın) */
   byStep: NoteEvent[][]
+  /** usulün grupları (adım): boss dövüşünde ek vuruşlar buna göre düşer; jenerikte boş */
+  pulse: number[]
 }
 
 interface Makam {
@@ -163,6 +165,15 @@ function titleSong(): Song {
         const up = [ch[0] + 12, ch[1] + 12, ch[2] + 12, ch[0] + 24]
         ;[0, 1, 2, 3, 2, 1, 2, 3].forEach((k, j) => ev.push({ at: at0 + j, dur: 1, inst: 'arp', midi: [up[k]], vol: 0.045 }))
       }
+      // B'nin ilk ölçüsünde ve dönüşte parmak zili; son A'da kanun ezginin uzun notalarına tizden cevap verir
+      if (sec.drums && i % 4 === 0) ev.push({ at: at0, dur: 1, inst: 'zil', midi: [], vol: 0.03 })
+      if (sec.arp && sec.mel === TITLE_A) {
+        let p = at0
+        for (const [n, d] of m) {
+          if (n !== null && d >= 3 && p + 2 < at0 + BAR) ev.push({ at: p + 2, dur: 1, inst: 'kanun', midi: [n + 12], vol: 0.05 })
+          p += d
+        }
+      }
       if (sec.drums) {
         ev.push({ at: at0, dur: 1, inst: 'dum', midi: [], vol: 0.3 })
         ev.push({ at: at0 + 3, dur: 1, inst: 'ka', midi: [], vol: 0.06 })
@@ -173,7 +184,7 @@ function titleSong(): Song {
     })
     bar += sec.mel.length
   }
-  return song('title', 60 / 92 / 2, bar * BAR, ev)
+  return song('title', 60 / 92 / 2, bar * BAR, ev, [])
 }
 
 // ── şehir besteleri ───────────────────────────────────────────────────────
@@ -265,32 +276,41 @@ function citySong(city: CityKey, m: Makam): Song {
             if (pass === 1 && pi === 2) {
               ev.push({ at: s, dur: len, inst: 'ney', midi: [deg(m, d)], vol: 0.11 })
               if (len > 1) ev.push({ at: s, dur: len, inst: 'saz', midi: [deg(m, d) - 12], vol: 0.06 })
-            } else ev.push({ at: s, dur: len, inst: 'saz', midi: [deg(m, d)], vol: 0.11 })
+            } else {
+              ev.push({ at: s, dur: len, inst: 'saz', midi: [deg(m, d)], vol: 0.11 })
+              // ikinci geçişte kanun uzun notalara tizden cevap verir (soru-cevap)
+              if (pass === 1 && len >= 2 && s + 1 < at0 + beats) ev.push({ at: s + 1, dur: 1, inst: 'kanun', midi: [deg(m, d) + 12], vol: 0.045 })
+            }
           }
           s += len
         }
+        // ikinci geçişin cümle başlarında parmak zili
+        if (pass === 1 && bi === 0) ev.push({ at: at0, dur: 1, inst: 'zil', midi: [], vol: 0.025 })
         const r = roots[(pi * 4 + bi) % roots.length]
         const root = deg(m, r) - 12
         ev.push({ at: at0, dur: beats, inst: 'pad', midi: [root, root + 7], vol: 0.035 })
+        // giriş: ilk cümlede yalnız düm ve bas (usul yavaş yavaş dolar); her cümlenin son ölçüsünde darbuka dolgusu
+        const intro = pass === 0 && pi === 0
+        const fill = bi === 3 && pi === form.length - 1
         // bas usulün güçlü vuruşlarında: düm kök, diğer gruplar beşli
         let a = 0
         m.meter.forEach((g, gi) => {
           ev.push({ at: at0 + a, dur: Math.max(1, g - 1), inst: 'bass', midi: [lift(gi === 0 ? root - 12 : root - 5)], vol: gi === 0 ? 0.15 : 0.1 })
           // darbuka: ilk grup düm, ötekiler tek, grup içi boşluklarda hafif ka
-          ev.push({ at: at0 + a, dur: 1, inst: gi === 0 ? 'dum' : 'tek', midi: [], vol: gi === 0 ? 0.28 : 0.11 })
-          for (let k = 1; k < g; k++) if (pass === 1 || k === g - 1) ev.push({ at: at0 + a + k, dur: 1, inst: 'ka', midi: [], vol: 0.045 })
+          if (gi === 0 || !intro) ev.push({ at: at0 + a, dur: 1, inst: gi === 0 ? 'dum' : 'tek', midi: [], vol: gi === 0 ? (intro ? 0.2 : 0.28) : 0.11 })
+          if (!intro) for (let k = 1; k < g; k++) if (pass === 1 || fill || k === g - 1) ev.push({ at: at0 + a + k, dur: 1, inst: 'ka', midi: [], vol: fill ? 0.03 + 0.012 * k : 0.045 })
           a += g
         })
       }),
     )
   }
-  return song(city, m.tempo, bars * 2 * beats, ev)
+  return song(city, m.tempo, bars * 2 * beats, ev, m.meter)
 }
 
-function song(id: string, step: number, length: number, events: NoteEvent[]): Song {
+function song(id: string, step: number, length: number, events: NoteEvent[], pulse: number[]): Song {
   const byStep: NoteEvent[][] = Array.from({ length }, () => [])
   for (const e of events) byStep[e.at].push(e)
-  return { id, step, length, events, byStep }
+  return { id, step, length, events, byStep, pulse }
 }
 
 let titleCache: Song | null = null

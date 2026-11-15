@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import AuthForm from '@/components/AuthForm'
 import { CITY, type CityStyle } from '@/game/art'
 import { LEVELS } from '@/game/levels'
 import type { CityKey } from '@/game/types'
+import { TITLE_MAX, titleProblem } from '@/lib/communityMaps'
 import { MAX_W, MIN_W, ROWS, SAMPLE_MAP, customLevel, decodeMap, encodeMap, validateMap, type Sym } from '@/lib/customLevel'
 import { LangProvider, useLang, useT, type Lang } from '@/lib/i18n'
 import type { SolveReply, SolveRequest } from './solve.worker'
@@ -57,6 +59,10 @@ interface Draft {
   city: CityKey
   at: number
 }
+
+/** Topluluğa yayın: giriş yapan oyuncu (çerezden ya da yerel kayıttan), başlık ve sonuç */
+type Author = { id: string; name: string; token?: string }
+type PublishState = { s: 'idle' } | { s: 'sending' } | { s: 'done'; id: number } | { s: 'dup' } | { s: 'error'; msg: string }
 
 type SolveState = { s: 'idle' } | { s: 'running' } | { s: 'won'; seconds: number } | { s: 'fail'; unsure: boolean; far: { x: number; y: number } } | { s: 'error' }
 
@@ -324,6 +330,9 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   const [draftName, setDraftName] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
   const [share, setShare] = useState<{ url: string; copied: boolean } | null>(null)
+  const [author, setAuthor] = useState<Author | null | undefined>(undefined)
+  const [pubTitle, setPubTitle] = useState('')
+  const [pub, setPub] = useState<PublishState>({ s: 'idle' })
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
   const [cell, setCell] = useState(20)
   const [look, setLook] = useState<Look | null>(null)
@@ -365,8 +374,24 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
 
   useEffect(() => setLook(lookFor(city)), [city])
 
-  // paylaşım bağlantısı eski haritayı göstermesin
-  useEffect(() => setShare(null), [code])
+  // paylaşım bağlantısı ve yayın sonucu eski haritayı göstermesin
+  useEffect(() => {
+    setShare(null)
+    setPub({ s: 'idle' })
+  }, [code])
+
+  // yayın için oturum: çerezden; çerezden önceki girişler yerel kayıttaki anahtarla
+  useEffect(() => {
+    let live = true
+    const local = readStore<{ player?: Author | null }>('seksek:v1')?.player ?? null
+    fetch('/api/players/me', { cache: 'no-store' })
+      .then((r) => (r.ok ? (r.json() as Promise<{ player?: Author | null }>) : null))
+      .then((j) => live && setAuthor(j?.player ?? local))
+      .catch(() => live && setAuthor(local))
+    return () => {
+      live = false
+    }
+  }, [])
 
   // çalışmayı her değişiklikte sakla: sayfa yenilense de kaybolmasın
   useEffect(() => writeStore(WORK_KEY, { map, city }), [map, city])
@@ -597,6 +622,25 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     setShare({ url, copied })
   }
 
+  const titleIssue = pubTitle.trim() ? titleProblem(pubTitle) : null
+
+  const publish = async () => {
+    if (!code || solveState.s !== 'won' || titleProblem(pubTitle)) return
+    setPub({ s: 'sending' })
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (author?.token) headers['x-seksek-oyuncu'] = `${author.id}.${author.token}`
+      const r = await fetch('/api/maps', { method: 'POST', headers, body: JSON.stringify({ code, title: pubTitle, solved: true }) })
+      const j = (await r.json().catch(() => ({}))) as { id?: number; error?: string }
+      if (r.ok && j.id) return setPub({ s: 'done', id: j.id })
+      if (r.status === 409) return setPub({ s: 'dup' })
+      if (r.status === 401) setAuthor(null)
+      setPub({ s: 'error', msg: r.status === 503 ? 'Topluluk haritaları şu an kapalı.' : (j.error ?? 'Yayınlanamadı, biraz sonra yeniden dene.') })
+    } catch {
+      setPub({ s: 'error', msg: 'Yayınlanamadı, biraz sonra yeniden dene.' })
+    }
+  }
+
   const saveDraft = () => {
     const name = draftName.trim() || t('Adsız Harita')
     const d: Draft = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, code, map, city, at: Date.now() }
@@ -756,6 +800,55 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                 <div className="grid gap-1">
                   <p className="text-[13px] text-muted">{share.copied ? t('Bağlantı panoya kopyalandı.') : t('Bağlantıyı seçip kopyala:')}</p>
                   <input readOnly value={share.url} onFocus={(e) => e.currentTarget.select()} className="w-full border-2 border-line bg-ink px-2 py-1.5 text-[13px] text-cream" aria-label={t('Paylaşım Bağlantısı')} />
+                </div>
+              )}
+              {!problem && solveState.s === 'won' && (
+                <div className="grid gap-2 border-t-2 border-line pt-3">
+                  <h2 className="font-display text-xl text-cream">{t('Topluluğa Yayınla')}</h2>
+                  {pub.s === 'done' || pub.s === 'dup' ? (
+                    <p className="text-[14px] text-gold">
+                      {pub.s === 'done' ? t('Yayınlandı! Haritan artık galeride.') : t('Bu harita zaten yayında.')}{' '}
+                      <Link href="/haritalar" className="text-cream underline underline-offset-4">
+                        {t('Topluluk Haritaları')} →
+                      </Link>
+                    </p>
+                  ) : author === null ? (
+                    <div className="grid max-w-md gap-2">
+                      <p className="text-[14px] text-muted">{t('Yayınlamak için giriş gerekir: oyundaki hesabınla gir ya da hemen üye ol.')}</p>
+                      <AuthForm autoFocus={false} onDone={(p) => setAuthor(p)} />
+                    </div>
+                  ) : (
+                    <form
+                      className="grid gap-2"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        void publish()
+                      }}
+                    >
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          value={pubTitle}
+                          onChange={(e) => setPubTitle(e.target.value)}
+                          maxLength={TITLE_MAX}
+                          placeholder={t('Haritanın adı (3–40 karakter)')}
+                          className="min-w-0 flex-1 border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream"
+                          aria-label={t('Harita Başlığı')}
+                        />
+                        <button type="submit" className="pixel-btn primary py-1.5 text-sm" disabled={!author || pub.s === 'sending' || !!titleProblem(pubTitle)}>
+                          {pub.s === 'sending' ? t('Yayınlanıyor…') : t('Topluluğa Yayınla')}
+                        </button>
+                      </div>
+                      <p className="text-[13px] text-muted">
+                        {author ? t('{name} adıyla yayınlanır; herkes galeride görüp oynayabilir.', { name: author.name }) : t('Oturum denetleniyor…')}
+                      </p>
+                      {titleIssue && <p className="text-[13px] text-accent-2">{t(titleIssue)}</p>}
+                      {pub.s === 'error' && (
+                        <p role="alert" className="text-[13px] text-accent-2">
+                          {t(pub.msg)}
+                        </p>
+                      )}
+                    </form>
+                  )}
                 </div>
               )}
             </section>

@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Figtree, Grandstander } from 'next/font/google'
+import PwaRegister from '@/components/PwaRegister'
+import Telemetry from '@/components/Telemetry'
 import './globals.css'
 
 /**
@@ -47,7 +49,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className={`${title.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PwaRegister />
+        <Telemetry />
+      </body>
     </html>
   )
 }

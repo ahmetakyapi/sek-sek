@@ -105,9 +105,9 @@ menüde göz kırpar, seçtiğin atkı rengini taşır.
 
 | | Hareket | Zıpla | Dash at | Diğer |
 |---|---|---|---|---|
-| **Klavye** | ← → · A D | ↑ · W · Z (basılı tut, daha yükseğe) | Space · X · Shift (8 yöne) | ↓ ince platformdan in · Esc mola · R bayraktan dön |
+| **Klavye** | ← → · A D | ↑ · W · Z (basılı tut, daha yükseğe) | Space · X (8 yöne) | ↓ ince platformdan in · Esc mola · R bayraktan dön · tuşlar Ayarlar'dan değişir |
 | **Dokunmatik** | Sol yarıda yüzen joystick | ZIPLA | DASH (joystick yönünde) | Büyük tuş seçeneği |
-| **Oyun kolu** | Sol çubuk | A · Y | X · B · RT | |
+| **Oyun kolu** | Sol çubuk | A · Y | X · B · RT | Start mola · destekleyen kollarda titreşim |
 
 Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da bir düşmana basınca yenilenir:
 atkın kırmızıysa hazırsın, griyse harcadın.

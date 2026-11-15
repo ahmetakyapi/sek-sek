@@ -260,6 +260,13 @@ export function ModesHub({
               </button>
             </section>
           </div>
+          {/* topluluk haritaları: yolcuların düzenleyicide çizip yayınladığı yollar (ayrı sayfa) */}
+          <a href="/haritalar" className="mt-3 flex shrink-0 items-center justify-between gap-3 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] text-cream hover:border-gold/60 short:mt-2 short:py-1.5">
+            <span className="min-w-0 truncate">
+              <strong className="font-display text-gold">{t('Topluluk Haritaları')}</strong> <span className="text-muted">· {t('Yolcuların çizdiği yolları oyna, kendininkini yayınla')}</span>
+            </span>
+            <span className="shrink-0 text-accent-2">→</span>
+          </a>
         </div>
       </div>
     </Overlay>

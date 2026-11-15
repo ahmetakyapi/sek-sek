@@ -69,8 +69,21 @@ export interface Save {
   tutorial: boolean
   controlSize: 'normal' | 'buyuk'
   keyHints: boolean
-  /** Rahat Mod: dünya %80 hızda; skorlar tabloya yazılmaz */
+  /** Rahat Mod: dünya yavaş akar (relaxedSpeed, varsayılan %80); skorlar tabloya yazılmaz */
   relaxed: boolean
+  /** Rahat Mod hızı: 0.6 / 0.7 / 0.8 / 0.9 */
+  relaxedSpeed?: number
+  /** ses düzeyleri (0-1); açık/kapalı sfx ve music alanlarında kalır */
+  sfxVol?: number
+  musicVol?: number
+  /** ekran sarsıntısı: tanımsızsa işletim sisteminin "hareketi azalt" tercihine uyar */
+  shake?: boolean
+  /** bayraklarda rekor koşuya göre ara süre (+/-) */
+  splits?: boolean
+  /** rekor koşunun bayrak süreleri (ms): şehir → harita sürümü + süreler */
+  splitTimes?: Record<string, { v: string; t: number[] }>
+  /** yeniden atanmış klavye tuşları (game/input.ts KeyBindings) */
+  keys?: Partial<Record<'left' | 'right' | 'down' | 'jump' | 'dash', string[]>>
   /** en iyi koşunun hayaleti görünsün mü */
   ghost: boolean
   player: Player | null

@@ -89,6 +89,10 @@ export class Renderer {
   accessory: AccessoryId = 'yok'
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
+  /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
+  shakeScale = 1
+  /** fotoğraf kipi: kamera oyuncuyu bırakır, oyuncunun kaydırdığı yere bakar (dünya pikseli) */
+  photo: { x: number; y: number } | null = null
   /** sahnedeki yazıların dili */
   lang: 'tr' | 'en' = 'tr'
   /** yüzen kısa yazılar: kombo, duvar zinciri, +1 */
@@ -423,6 +427,12 @@ export class Renderer {
   }
 
   /* ── Kamera (hesabı game/camera.ts) ─────────────────────── */
+  /** fotoğraf kipine girerken kameranın şu anki yeri; görünür alanın boyu (dünya pikseli) */
+  photoStart() {
+    this.photo = { x: this.camX, y: this.camY }
+    return { w: this.viewW, h: this.viewH }
+  }
+
   private clampCam(w: World) {
     ;[this.camX, this.camY] = clampCam(w, this.camX, this.camY, this.viewW, this.viewH)
   }
@@ -438,14 +448,24 @@ export class Renderer {
     const s = CITY[this.city]
 
     // kamera: saate bağlı (game/camera.ts), kare hızından bağımsız
-    this.cam.x = this.camX
-    this.cam.y = this.camY
-    stepCamera(w, this.cam, dt, this.viewW, this.viewH)
-    this.camX = this.cam.x
-    this.camY = this.cam.y
+    if (this.photo) {
+      // fotoğraf kipi: kamera sınırlar içinde serbest; yumuşak yaklaşım (üstel, kare hızından bağımsız)
+      const [px, py] = clampCam(w, this.photo.x, this.photo.y, this.viewW, this.viewH)
+      this.photo.x = px
+      this.photo.y = py
+      const k = 1 - Math.pow(0.0005, dt)
+      this.camX += (px - this.camX) * k
+      this.camY += (py - this.camY) * k
+    } else {
+      this.cam.x = this.camX
+      this.cam.y = this.camY
+      stepCamera(w, this.cam, dt, this.viewW, this.viewH)
+      this.camX = this.cam.x
+      this.camY = this.cam.y
+    }
     this.shake = Math.max(0, this.shake - dt * 18)
     // küçük ekranda büyütme oranı yüksek: aynı sarsıntı ekranda daha büyük görünür, orana göre küçülür
-    const [sx, sy] = shakeOffset(this.t, this.shake * Math.min(1, this.viewW / 420))
+    const [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * Math.min(1, this.viewW / 420))
     // kamera kesirli kayar: düşük çözünürlüklü katmanlar tam piksele çizilir, ekrana basılırken kesir kadar ötelenir
     const cx = Math.floor(this.camX + sx)
     const cy = Math.floor(this.camY + sy)

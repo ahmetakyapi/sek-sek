@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
         source: '/(sehirler|portreler)/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
       },
+      // service worker: tarayıcı her açılışta yeni sürümü sorsun (eski worker eski önbellekte takılı kalmasın)
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
       {
         source: '/(.*)',
         headers: [

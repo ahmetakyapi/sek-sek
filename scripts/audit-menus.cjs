@@ -39,6 +39,8 @@ const SCREENS = {
   'skorlar-sehir': [SAVE, ['Skorlar', 'tab:Şehirler']],
   'skorlar-gunluk': [SAVE, ['Skorlar', 'tab:Günlük']],
   ayarlar: [SAVE, ['Ayarlar']],
+  'ayarlar-tuslar': [SAVE, ['Ayarlar', 'opt:tab:Kontroller']],
+  'foto-kipi': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:Escape', 'Fotoğraf Kipi', 'wait:300']],
   hesap: [SAVE, ['Giriş Yap']],
   'sehir-karti': [SAVE, ['Devam Et']],
   mola: [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape']],
@@ -77,7 +79,12 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
           if (st.startsWith('key:')) await page.keyboard.press(st.slice(4))
           else if (st.startsWith('wait:')) await page.waitForTimeout(Number(st.slice(5)))
           else if (st.startsWith('eval:')) await page.evaluate(st.slice(5))
-          else await page.getByRole(st.startsWith('tab:') ? 'tab' : 'button', { name: st.replace(/^tab:/, '') }).first().click({ timeout: 4000 })
+          // opt: yalnız bazı boyutlarda olan adım (ör. geniş ekranda sekme yok, iki sütun yan yana): yoksa geçilir
+          else if (st.startsWith('opt:')) {
+            const s2 = st.slice(4)
+            const loc = page.getByRole(s2.startsWith('tab:') ? 'tab' : 'button', { name: s2.replace(/^tab:/, '') }).first()
+            if (await loc.isVisible()) await loc.click({ timeout: 4000 })
+          } else await page.getByRole(st.startsWith('tab:') ? 'tab' : 'button', { name: st.replace(/^tab:/, '') }).first().click({ timeout: 4000 })
           await page.waitForTimeout(350)
         }
         await page.waitForTimeout(400)

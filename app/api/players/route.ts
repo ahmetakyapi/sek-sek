@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { NAME_ERR, NAME_RE, PASS_ERR, cleanName, clearSessionCookie, closeSession, cookieSession, findByName, hashPassword, nameKey, openSession, setSessionCookie, validPassword, verifyPlayer } from '@/lib/players'
+import { LIMITS, hit, ipKey, tooMany } from '@/lib/rateLimit'
 import { players } from '@/lib/schema'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
   const password = body?.password
   if (!NAME_RE.test(name)) return bad(NAME_ERR)
   if (!validPassword(password)) return bad(PASS_ERR)
+  const wait = await hit(LIMITS.signup, ipKey(req))
+  if (wait) return tooMany(wait, 'Bu bağlantıdan çok fazla hesap açıldı, biraz sonra tekrar dene')
   try {
     if (await findByName(name)) return bad('Bu kullanıcı adı alınmış, başka bir ad dene', 409)
     const passwordHash = await hashPassword(password)

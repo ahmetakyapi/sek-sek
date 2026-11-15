@@ -2,6 +2,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { GHOST_HZ } from '@/game/ghost'
 import { LEVELS } from '@/game/levels'
+import { ghostProblem } from '@/lib/antiCheat'
 import { db } from '@/lib/db'
 import { cityVersion } from '@/lib/mapVersion'
 import { cookieSession, findByName, verifyPlayer } from '@/lib/players'
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
 /**
  * POST {level, timeMs, hero, data} → oyuncunun bu şehirdeki hayaleti (yalnız daha iyiyse yazılır). Süre, skor
  * tablosundaki en iyi süresiyle aynı olmalı ve örnek sayısı süreyle uyuşmalı: tabloda olmayan koşu hayalet olmaz.
+ * Fiziğe sığmayan hayalet (lib/antiCheat.ts ghostProblem) 422 ile reddedilir. Hayaletsiz skor yine geçerlidir.
  */
 export async function POST(req: NextRequest) {
   const text = await req.text()
@@ -60,8 +62,11 @@ export async function POST(req: NextRequest) {
     const me = c ? await verifyPlayer(c.id, c.token) : await verifyPlayer(b.playerId, b.token)
     if (!me) return bad('Oturum doğrulanamadı', 401)
     const d = db()
-    const best = (await d.execute(sql`select time_ms as "timeMs" from seksek_scores where level = ${scoreKey(level)} and player_id = ${me.id} limit 1`)).rows[0] as { timeMs: number } | undefined
+    const best = (await d.execute(sql`select time_ms as "timeMs", deaths from seksek_scores where level = ${scoreKey(level)} and player_id = ${me.id} limit 1`)).rows[0] as { timeMs: number; deaths: number } | undefined
     if (!best || Math.abs(best.timeMs - timeMs) > 50) return bad('Bu süre tabloda yok', 409)
+    // hayalet fiziğe sığmalı: örnekler arası hız, ışınlanmalar (yalnız doğuş yerine, düşüş sayısı kadar), başlangıç ve çıkış
+    const problem = ghostProblem(LEVELS.find((l) => l.id === level)!, data as number[], best.deaths)
+    if (problem) return bad(problem, 422)
     const v = cityVersion(level)
     await d.execute(sql`
       insert into seksek_ghosts (player_id, level, v, time_ms, hero, data, updated_at)

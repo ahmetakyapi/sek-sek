@@ -163,7 +163,7 @@ export default function Hakkinda() {
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-end">
             <div>
               <p className="text-[12px] font-bold tracking-[0.3em] text-accent">ROTA</p>
-              <h2 className="mt-2 font-display text-4xl text-cream">On Altı Şehir, Artan Zorluk</h2>
+              <h2 className="mt-2 font-display text-4xl text-cream">Otuz Şehir, Artan Zorluk</h2>
               <p className="mt-3 leading-relaxed text-muted">
                 Her şehir yeni bir şey öğretir, bir sonraki onu bekler. Kolay İstanbul’dan Çok Zor Bayburt’a; her şehirde üç hatıra, altın-gümüş-bronz süre madalyaları
                 ve konuşmayı seven yerel insanlar.
@@ -188,12 +188,17 @@ export default function Hakkinda() {
                 </div>
                 <div className="flex flex-1 flex-col p-4">
                   <h3 className="font-display text-xl leading-tight text-cream">
-                    {l.name}
-                    {l.nickname && <span className="text-accent-2"> ({l.nickname})</span>}
+                    <Link href={`/sehir/${l.id}`} className="hover:text-accent-2">
+                      {l.name}
+                      {l.nickname && <span className="text-accent-2"> ({l.nickname})</span>}
+                    </Link>
                   </h3>
                   <p className="text-[12px] text-muted">{l.subtitle}</p>
                   <p className="mt-2 text-[13px] leading-snug text-cream/85">{FEATURES[l.id]}</p>
                   <p className="mt-auto pt-3 text-[12px] text-gold">◆ Hatıra: {l.item}</p>
+                  <Link href={`/sehir/${l.id}`} className="mt-2 text-[12px] font-bold text-accent hover:text-cream">
+                    Şehri Tanı →
+                  </Link>
                 </div>
               </li>
             ))}

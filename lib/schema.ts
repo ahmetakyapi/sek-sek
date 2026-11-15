@@ -20,6 +20,18 @@ export const sessions = pgTable('seksek_sessions', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+/** Hız sınırı sayaçları (sabit pencere): anahtar = işlem + IP ya da ad özeti + pencere. Düz IP saklanmaz; süresi geçen
+ *  satırlar ara sıra silinir (lib/rateLimit.ts). */
+export const rate = pgTable(
+  'seksek_rate',
+  {
+    key: text('key').primaryKey(),
+    count: integer('count').default(0).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [index('seksek_rate_expires_idx').on(t.expiresAt)],
+)
+
 /** Bulut kaydı: hesaba bağlı ilerleme (açılan şehirler, süreler, pul, nazar, rozetler). Tarayıcının yerel deposu
  *  silinse de (Safari 7 gün kullanılmayan sitenin deposunu siler) giriş yapan oyuncu kaldığı yerden devam eder. */
 export const saves = pgTable('seksek_saves', {
@@ -66,4 +78,45 @@ export const ghosts = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [primaryKey({ columns: [t.playerId, t.level] })],
+)
+
+/** Topluluk Haritaları: düzenleyicide çözücüyle sınanıp yayınlanan özel haritalar (/haritalar). `code` harita kodudur
+ *  (lib/customLevel), aynı harita iki kez yayınlanmaz. `author` yayın anındaki ad; galeri güncel adı oyuncudan okur. */
+export const maps = pgTable(
+  'seksek_maps',
+  {
+    id: serial('id').primaryKey(),
+    code: text('code').notNull(),
+    title: text('title').notNull(),
+    playerId: uuid('player_id')
+      .notNull()
+      .references(() => players.id, { onDelete: 'cascade' }),
+    author: text('author').notNull(),
+    city: text('city').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    plays: integer('plays').default(0).notNull(),
+    likes: integer('likes').default(0).notNull(),
+  },
+  (t) => [
+    uniqueIndex('seksek_maps_code_idx').on(t.code),
+    index('seksek_maps_created_idx').on(t.createdAt),
+    index('seksek_maps_likes_idx').on(t.likes, t.createdAt),
+    index('seksek_maps_plays_idx').on(t.plays, t.createdAt),
+    index('seksek_maps_player_idx').on(t.playerId, t.createdAt),
+  ],
+)
+
+/** Beğeniler: oyuncu bir haritayı bir kez beğenir (aç/kapa); sayısı seksek_maps.likes'ta da tutulur. */
+export const mapLikes = pgTable(
+  'seksek_map_likes',
+  {
+    mapId: integer('map_id')
+      .notNull()
+      .references(() => maps.id, { onDelete: 'cascade' }),
+    playerId: uuid('player_id')
+      .notNull()
+      .references(() => players.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.mapId, t.playerId] })],
 )

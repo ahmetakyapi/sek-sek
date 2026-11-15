@@ -6,7 +6,10 @@ import { drizzle } from 'drizzle-orm/pglite'
 import { NextRequest } from 'next/server'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CHALLENGES } from '../game/challenges'
-import { istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
+import { LEVELS } from '../game/levels'
+import { World } from '../game/sim'
+import { minTimeMs } from '../lib/antiCheat'
+import { dailyRun, istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
 
 /**
  * Skor tablosu gerçek SQL ile (bellekte Postgres: PGlite): göçler sırayla uygulanır, sonra API uçları çağrılır.
@@ -18,6 +21,8 @@ vi.mock('@/lib/db', () => ({ db: () => drizzle(pg) }))
 
 const { GET, POST } = await import('../app/api/scores/route')
 const ghostApi = await import('../app/api/ghosts/route')
+const loginApi = await import('../app/api/players/login/route')
+const playersApi = await import('../app/api/players/route')
 
 const sha = (t: string) => createHash('sha256').update(t).digest('hex')
 const P = [
@@ -36,11 +41,23 @@ async function migrate(files: string[]) {
   }
 }
 
-const post = async (body: Record<string, unknown>) => {
-  const r = await POST(new NextRequest('http://x/api/scores', { method: 'POST', body: JSON.stringify(body) }))
+// her istek ayrı IP'den: hız sınırı (IP başına saatte 60 skor) yalnız kendi testinde sınansın
+let ipSeq = 0
+const nextIp = () => `10.0.${(++ipSeq >> 8) & 255}.${ipSeq & 255}`
+const post = async (body: Record<string, unknown>, ip = nextIp()) => {
+  const r = await POST(new NextRequest('http://x/api/scores', { method: 'POST', body: JSON.stringify(body), headers: { 'x-forwarded-for': ip } }))
   return { status: r.status, j: (await r.json()) as Record<string, unknown> }
 }
 const run = (p: (typeof P)[number], level: string, timeMs: number, deaths: number, items: number, extra = {}) => post({ level, playerId: p.id, token: p.token, timeMs, deaths, items, ...extra })
+/** Başlangıçtan çıkışa düz çizgide, fizik hızının altında yürüyen hayalet (n örnek); `edit` örnekleri bozar */
+function walk(levelId: string, n: number, edit?: (data: number[]) => void) {
+  const w = new World(LEVELS.find((l) => l.id === levelId)!)
+  const a = { x: w.player.x, y: w.player.y }
+  const b = { x: w.exit.x, y: w.exit.y + 8 }
+  const data = Array.from({ length: n }, (_, k) => [Math.round(a.x + ((b.x - a.x) * k) / (n - 1)), Math.round(a.y + ((b.y - a.y) * k) / (n - 1)), 1]).flat()
+  edit?.(data)
+  return data
+}
 const get = async (q: string) => {
   const r = await GET(new NextRequest(`http://x/api/scores?${q}`))
   return (await r.json()) as { scores: Record<string, unknown>[]; total: number }
@@ -144,11 +161,20 @@ describe('skor tablosu', () => {
   })
 
   it('hayalet: yalnız tablodaki en iyi süreyle yüklenir, daha kötüsü üstüne yazmaz, adla indirilir', async () => {
-    const send = (timeMs: number, n = Math.round((timeMs / 1000) * 15)) =>
-      ghostApi.POST(new NextRequest('http://x/api/ghosts', { method: 'POST', body: JSON.stringify({ level: 'konya', timeMs, hero: 'memo', data: Array.from({ length: n * 3 }, (_, i) => i % 9), playerId: P[2].id, token: P[2].token }) }))
+    const send = (timeMs: number, n = Math.round((timeMs / 1000) * 15), edit?: (data: number[]) => void) =>
+      ghostApi.POST(new NextRequest('http://x/api/ghosts', { method: 'POST', body: JSON.stringify({ level: 'konya', timeMs, hero: 'memo', data: walk('konya', n, edit), playerId: P[2].id, token: P[2].token }) }))
     // Cemre'nin konya rekoru 75000 (önceki test)
     expect((await send(80000)).status).toBe(409)
     expect((await send(75000, 10)).status).toBe(400)
+    // fiziğe sığmayan hayalet: yolun ortasında doğuş yeri olmayan bir yere ışınlanma, ya da çıkışta bitmeyen koşu
+    const teleport = await send(75000, undefined, (d) => { d[600 * 3] += 400 })
+    expect(teleport.status).toBe(422)
+    expect(((await teleport.json()) as { error: string }).error).toMatch(/fizikten hızlı/)
+    const stop = (d: number[]) => {
+      const at = d.length - 300 * 3
+      for (let i = at; i < d.length; i += 3) [d[i], d[i + 1]] = [d[at - 3], d[at - 2]]
+    }
+    expect((await send(75000, undefined, stop)).status).toBe(422)
     expect((await send(75000)).status).toBe(200)
     const r = await ghostApi.GET(new NextRequest('http://x/api/ghosts?level=konya&name=cemre'))
     const j = (await r.json()) as { name: string; hero: string; timeMs: number; data: number[] }
@@ -174,17 +200,72 @@ describe('skor tablosu', () => {
     expect((await go(P[0], ids[0], 9000, '2020-H01')).status).toBe(400)
     const other = CHALLENGES.find((c) => !ids.includes(c.id))!.id
     expect((await go(P[0], other, 9000)).status).toBe(400)
-    for (const [i, id] of ids.entries()) await go(P[0], id, 10000 + i)
-    await go(P[1], ids[0], 5000)
-    await go(P[1], ids[1], 5000)
-    const last = await go(P[1], ids[2], 5000)
-    expect(last.j).toMatchObject({ week: { total: 15000, rank: 1 } })
-    await go(P[2], ids[0], 4000) // tek mücadele: sıralamaya girmez
+    for (const [i, id] of ids.entries()) await go(P[0], id, 30000 + i)
+    await go(P[1], ids[0], 25000)
+    await go(P[1], ids[1], 25000)
+    const last = await go(P[1], ids[2], 25000)
+    expect(last.j).toMatchObject({ week: { total: 75000, rank: 1 } })
+    await go(P[2], ids[0], 20000) // tek mücadele: sıralamaya girmez
     const b = await get(`level=turnuva&week=${week}`)
     expect(b.scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
-    expect(b.scores[1]).toMatchObject({ timeMs: 30003 })
+    expect(b.scores[1]).toMatchObject({ timeMs: 90003 })
     // arkadaş süzgeci: yalnız verilen adlar ve oyuncunun kendisi
     expect((await get(`level=turnuva&week=${week}&names=ayşe&me=Cemre`)).scores.map((r) => r.name)).toEqual(['Ayşe'])
     expect((await get('level=ankara&names=bora,cemre')).scores.map((r) => r.name)).toEqual(['Bora', 'Cemre'])
+  })
+})
+
+describe('hile önleme ve hız sınırı', () => {
+  it('haritanın fiziksel en kısa süresinden hızlı koşu 422 ile reddedilir; toplu aktarımda sessizce atlanır', async () => {
+    const floor = minTimeMs(LEVELS.find((l) => l.id === 'sivas')!)
+    expect(floor).toBeGreaterThan(5000)
+    const r = await run(P[0], 'sivas', floor - 1, 0, 3)
+    expect(r.status).toBe(422)
+    expect(r.j.error).toMatch(/hızlı/)
+    expect((await run(P[0], 'sivas', floor + 1, 0, 3)).status).toBe(200)
+    const b = await post({ playerId: P[1].id, token: P[1].token, batch: [{ level: 'sivas', timeMs: floor - 1, deaths: 0, items: 3 }, { level: 'van', timeMs: 200000, deaths: 0, items: 3 }] })
+    expect(b.j).toMatchObject({ synced: 1 })
+    // günlük: o günün şehrinin sınırı (skor süre + ceza, süreden kısa olamaz)
+    const today = istanbulDay(new Date())
+    const dayFloor = minTimeMs(LEVELS.find((l) => l.id === dailyRun(today, LEVELS).levelId)!)
+    expect((await run(P[2], 'gunluk', dayFloor - 1, 0, 3, { day: today })).status).toBe(dayFloor - 1 < 5000 ? 400 : 422)
+  })
+
+  it('skor: IP başına saatte 60 istek, sonra 429 ve Retry-After', async () => {
+    for (let i = 0; i < 60; i++) expect((await post({ level: 'yok' }, '9.9.9.9')).status).toBe(400)
+    const r = await POST(new NextRequest('http://x/api/scores', { method: 'POST', body: '{}', headers: { 'x-forwarded-for': '9.9.9.9, 10.0.0.1' } }))
+    expect(r.status).toBe(429)
+    expect(Number(r.headers.get('retry-after'))).toBeGreaterThan(0)
+    expect(Number(r.headers.get('retry-after'))).toBeLessThanOrEqual(3600)
+    // başka IP etkilenmez; düz IP tabloda saklanmaz
+    expect((await post({ level: 'yok' }, '9.9.9.8')).status).toBe(400)
+    const keys = (await pg.query<{ key: string }>('select key from seksek_rate')).rows.map((x) => x.key)
+    expect(keys.some((k) => k.includes('9.9.9'))).toBe(false)
+  })
+
+  it('giriş: IP başına ve ad başına 15 dakikada 10 deneme', async () => {
+    const login = (name: string, ip: string) => loginApi.POST(new NextRequest('http://x/api/players/login', { method: 'POST', body: JSON.stringify({ name, password: 'yanlış-şifre' }), headers: { 'x-forwarded-for': ip } }))
+    for (let i = 0; i < 10; i++) expect((await login(`kimse${i}`, '7.7.7.7')).status).toBe(401)
+    expect((await login('kimse-son', '7.7.7.7')).status).toBe(429)
+    // aynı ada farklı IP'lerden deneme de sayılır
+    for (let i = 0; i < 10; i++) expect((await login('Hedef', `8.8.8.${i}`)).status).toBe(401)
+    const r = await login('HEDEF', '8.8.9.9')
+    expect(r.status).toBe(429)
+    expect(r.headers.get('retry-after')).toBeTruthy()
+  })
+
+  it('kayıt: IP başına saatte 5 hesap', async () => {
+    const signup = (name: string) => playersApi.POST(new NextRequest('http://x/api/players', { method: 'POST', body: JSON.stringify({ name, password: 'gizli123' }), headers: { 'x-forwarded-for': '6.6.6.6' } }))
+    for (let i = 0; i < 5; i++) expect((await signup(`yeni${i}`)).status).toBe(200)
+    expect((await signup('yeni5')).status).toBe(429)
+  })
+
+  it('sayaç tablosu yoksa (göç uygulanmamış) istek sessizce geçer', async () => {
+    await pg.query('alter table seksek_rate rename to seksek_rate_x')
+    try {
+      for (let i = 0; i < 3; i++) expect((await post({ level: 'yok' }, '9.9.9.9')).status).toBe(400)
+    } finally {
+      await pg.query('alter table seksek_rate_x rename to seksek_rate')
+    }
   })
 })

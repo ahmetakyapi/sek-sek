@@ -36,6 +36,10 @@ describe('müzik', () => {
     sane(a)
     expect(a.length % m.meter.reduce((x, y) => x + y, 0)).toBe(0)
     expect(cityTheme(city)).toBe(a)
+    // boss katmanı usulün gruplarına göre vurur
+    expect(a.pulse).toEqual(m.meter)
+    // tel çalgılar (bağlama, kanun) ve ney birlikte: düzenleme katmanlı
+    expect(a.events.some((e) => e.inst === 'kanun')).toBe(true)
   })
 })
 

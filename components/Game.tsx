@@ -5,7 +5,7 @@ import TouchControls from '@/components/TouchControls'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { BossFigure } from '@/components/Figures'
-import CityBanner, { Toggle } from '@/components/CityBanner'
+import CityBanner, { Choice, Level, Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
 import TitleMenu from '@/components/TitleMenu'
@@ -29,7 +29,10 @@ import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } 
 import { MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
-import { InputManager } from '@/game/input'
+import { InputManager, normalizeKeys } from '@/game/input'
+import PhotoMode from '@/components/PhotoMode'
+import KeyRemap from '@/components/KeyRemap'
+import { useInstallPrompt } from '@/lib/useInstallPrompt'
 import { BOSSES } from '@/game/boss'
 import { CHALLENGES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
 import { LEVELS, bossLevel } from '@/game/levels'
@@ -75,7 +78,7 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
+type Screen = 'title' | 'photo' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
@@ -155,6 +158,12 @@ export default function Game() {
   const soundRef = useRef<Sound | null>(null)
   const screenRef = useRef<Screen>('title')
   const relaxedRef = useRef(false)
+  // "Ana Ekrana Ekle": tarayıcının yükleme olayı oyun açılır açılmaz yakalanır, Ayarlar'da düğme olur
+  const installer = useInstallPrompt()
+  /** Rahat Mod hızı (0.6-0.9) */
+  const speedRef = useRef(0.8)
+  /** ara süreler: bu koşunun bayrak süreleri ve kıyaslanan rekor koşununkiler (yalnız yolculukta) */
+  const splitRef = useRef<{ rec: number[]; pb: number[] | null; on: boolean }>({ rec: [], pb: null, on: false })
   const ghostOnRef = useRef(true)
   /** bu koşunun hayalet kaydı */
   const ghostRecRef = useRef<number[]>([])
@@ -198,7 +207,7 @@ export default function Game() {
   const [save, setSave] = useState<Save>(defaultSave)
   const [hud, setHud] = useState<HudState>(EMPTY_HUD)
   const [tutStep, setTutStep] = useState<TutorialStep | null>(null)
-  const [cpToast, setCpToast] = useState<{ at: number; text: string } | null>(null)
+  const [cpToast, setCpToast] = useState<{ at: number; text: string; delta?: number | null } | null>(null)
   // hesap ekranı: üye ol / giriş sekmesi (başlık ona göre) ve çıkış onayı
   const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup')
   const [confirmOut, setConfirmOut] = useState(false)
@@ -281,11 +290,12 @@ export default function Game() {
 
   useEffect(() => {
     relaxedRef.current = save.relaxed
+    speedRef.current = save.relaxedSpeed ?? 0.8
     ghostOnRef.current = save.ghost
     tutorialOnRef.current = save.tutorial
     if (!save.tutorial) setTutStep(null)
     if (!save.ghost && rendererRef.current) rendererRef.current.ghostRun = null
-  }, [save.relaxed, save.ghost, save.tutorial])
+  }, [save.relaxed, save.relaxedSpeed, save.ghost, save.tutorial])
 
   useEffect(() => {
     const s = loadSave()
@@ -367,6 +377,17 @@ export default function Game() {
     document.addEventListener('touchend', noDoubleTap, { passive: false })
 
     let raf = 0
+    // fotoğraf kipi: ok tuşları / WASD kadrajı kaydırır (dünya pikseli/sn; kare hızından bağımsız)
+    const photoTick = (dt: number) => {
+      const p = renderer.photo
+      if (!p) return
+      const i = input.sample()
+      const v = 240 * dt
+      if (i.left) p.x -= v
+      if (i.right) p.x += v
+      if (i.up || i.jump) p.y -= v
+      if (i.down) p.y += v
+    }
     let last = performance.now()
     let acc = 0
     let hudTimer = 0
@@ -385,9 +406,9 @@ export default function Game() {
           renderer.render(w, dt * 0.15)
           return
         }
-        // Rahat Mod: dünya %80 hızda akar. Modlarda hız kuralındır (Hızlı Dünya %120), Rahat Mod sayılmaz
+        // Rahat Mod: dünya seçilen hızda (%60-90) akar. Modlarda hız kuralındır (Hızlı Dünya %120), Rahat Mod sayılmaz
         const mode = modeRef.current
-        acc += dt * (mode ? (mode.kind === 'daily' ? DAILY_RULES[mode.run.rule].speed : 1) : relaxedRef.current ? 0.8 : 1)
+        acc += dt * (mode ? (mode.kind === 'daily' ? DAILY_RULES[mode.run.rule].speed : 1) : relaxedRef.current ? speedRef.current : 1)
         // girdi yalnızca en az bir adım koşacaksa okunur: 120/144 Hz ekranda adımsız karede basış tüketilip kaybolmasın
         if (acc >= STEP) {
           const inp = input.sample()
@@ -438,7 +459,14 @@ export default function Game() {
               haptic(10)
               const moments = FLAG_MOMENTS[w.level.city]
               const m = moments[e.index % moments.length]
-              setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0] })
+              // ara süre: bu bayrağa ilk varış, rekor koşudaki aynı bayrakla kıyaslanır
+              const sp = splitRef.current
+              let delta: number | null = null
+              if (sp.on && sp.rec[e.index] === undefined) {
+                sp.rec[e.index] = Math.round(w.time * 1000)
+                if (sp.pb?.[e.index] !== undefined) delta = sp.rec[e.index] - sp.pb[e.index]
+              }
+              setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0], delta })
               break
             }
             case 'stamp': {
@@ -534,6 +562,9 @@ export default function Game() {
         hudTimer += dt
         if (hudTimer > 0.1) {
           hudTimer = 0
+          // boss uyanıkken müzik yoğunlaşır (usule ek vuruşlar); yenilince ya da uyurken sakinleşir
+          const bs = w.boss?.state
+          soundRef.current?.setIntense(!!bs && bs !== 'sleep' && bs !== 'down')
           const moving = Math.abs(w.player.vx) > 5 || !w.player.grounded
           idleRef.current = moving ? 0 : idleRef.current + 0.1
           setHud({ time: w.time, deaths: w.deaths, items: w.pickups.map((p) => p.taken), canDash: w.player.canDash && w.player.dashCool <= 0, idle: w.time < 6 || idleRef.current > 1.5, goal: goalRef.current })
@@ -550,6 +581,9 @@ export default function Game() {
       } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror') {
         w.step(dt, emptyInput())
         w.events.length = 0
+      } else if (sc === 'photo') {
+        acc = 0
+        photoTick(dt)
       } else {
         acc = 0
         // yan yana yarışın kendi iki tuvali ve döngüsü var: arkadaki dünya boşuna çizilmez
@@ -595,6 +629,7 @@ export default function Game() {
     input.onPause = () => {
       if (screenRef.current === 'play') setScreen('pause')
       else if (screenRef.current === 'pause') setScreen('play')
+      else if (screenRef.current === 'photo') closePhoto()
     }
     input.onRetry = () => {
       if (screenRef.current === 'play') worldRef.current?.retryFromCheckpoint()
@@ -740,6 +775,16 @@ export default function Game() {
     })
   }, [])
 
+  const openPhoto = () => {
+    rendererRef.current?.photoStart()
+    inputRef.current?.clear()
+    setScreen('photo')
+  }
+  const closePhoto = () => {
+    if (rendererRef.current) rendererRef.current.photo = null
+    setScreen('pause')
+  }
+
   const loadLevel = useCallback(
     (idx: number, toScreen: Screen = 'intro') => {
       flushStats()
@@ -753,6 +798,9 @@ export default function Game() {
       worldRef.current = w
       ghostRecRef.current = []
       dashRef.current = 0
+      const plain = !rush && !ch && !ay && !cu && !modeRef.current
+      const pbSplit = saveRef.current?.splitTimes?.[LEVELS[idx].id]
+      splitRef.current = { rec: [], pb: plain && pbSplit?.v === cityVersion(LEVELS[idx].id) ? pbSplit.t : null, on: plain && saveRef.current?.splits !== false }
       if (rendererRef.current) {
         rendererRef.current.setLevel(w)
         const mode = modeRef.current
@@ -1044,11 +1092,11 @@ export default function Game() {
   useEffect(() => {
     const snd = soundRef.current
     if (!snd) return
-    snd.duck(screen === 'pause')
+    snd.duck(screen === 'pause' || screen === 'photo')
     if (screen === 'play') snd.setMusic(LEVELS[levelIdx].city)
     // yan yana yarış kendi şehrinin müziğini çalar (Race bileşeni); menü teması üstüne binmesin
     else if (screen === 'race') snd.setMusic(LEVELS[duelRef.current?.setup.level ?? levelIdx].city)
-    else if (screen !== 'pause') snd.playTheme()
+    else if (screen !== 'pause' && screen !== 'photo') snd.playTheme()
   }, [screen, levelIdx, ready])
 
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
@@ -1342,6 +1390,8 @@ export default function Game() {
           ...prev.best,
           [w.level.id]: newBest ? { timeMs, deaths: w.deaths, items: mergedItems, v: cityVersion(w.level.id), ...(run.relaxed ? { relaxed: true } : {}) } : { ...best, items: mergedItems, v: cityVersion(w.level.id), renew: undefined },
         },
+        // rekor koşunun bayrak süreleri: bir sonraki koşunun ara süreleri bunlarla kıyaslanır
+        ...(newBest && splitRef.current.rec.length ? { splitTimes: { ...prev.splitTimes, [w.level.id]: { v: cityVersion(w.level.id), t: [...splitRef.current.rec] } } } : {}),
       }
       writeSave(next)
       setResumeIdx(resumeFor(next))
@@ -1378,7 +1428,19 @@ export default function Game() {
     if (!snd) return
     snd.sfxOn = save.sfx
     snd.musicOn = save.music
-  }, [save.sfx, save.music, ready])
+    snd.setVolumes(save.sfxVol ?? 1, save.musicVol ?? 1)
+  }, [save.sfx, save.music, save.sfxVol, save.musicVol, ready])
+
+  // tuş ataması ve ekran sarsıntısı: kayıttan girdiye ve çizime
+  useEffect(() => {
+    inputRef.current?.setBindings(normalizeKeys(save.keys))
+  }, [save.keys, ready])
+  useEffect(() => {
+    const r = rendererRef.current
+    if (!r) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    r.shakeScale = (save.shake ?? !reduce) ? 1 : 0
+  }, [save.shake, ready])
 
   const fullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen()
@@ -1440,16 +1502,28 @@ export default function Game() {
   )
 
   // ayarlar tek yerde: Mola ve Ayarlar ekranı aynı listeyi gösterir; her seçeneğin altında ne işe yaradığı yazar
+  const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const settingsList = (
     <div className="mt-1 grid divide-y-2 divide-line/60 short:grid-cols-2 short:gap-x-4 short:divide-y-0">
-      <Toggle label={t('Ses Efektleri')} hint={t('Zıplama, toplama ve vuruş sesleri')} on={save.sfx} onChange={() => toggle('sfx')} />
-      <Toggle label={t('Müzik')} hint={t('Her şehrin kendi makamında ezgisi')} on={save.music} onChange={() => toggle('music')} />
+      <div>
+        <Toggle label={t('Ses Efektleri')} hint={t('Zıplama, toplama ve vuruş sesleri')} on={save.sfx} onChange={() => toggle('sfx')} />
+        {save.sfx && <Level label={t('Düzey')} value={save.sfxVol ?? 1} onChange={(v) => persist({ ...save, sfxVol: v })} />}
+      </div>
+      <div>
+        <Toggle label={t('Müzik')} hint={t('Her şehrin kendi makamında ezgisi')} on={save.music} onChange={() => toggle('music')} />
+        {save.music && <Level label={t('Düzey')} value={save.musicVol ?? 1} onChange={(v) => persist({ ...save, musicVol: v })} />}
+      </div>
       <Toggle label={t('Dokunmatik Kontroller')} hint={t('Ekranda joystick ve tuşlar. Kapatırsan klavye ya da oyun koluyla oynarsın.')} on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
       {/* ikisi de hep listede: dokunmatik açılıp kapanınca liste zıplamasın */}
       <Toggle label={t('Tuş İpuçları')} hint={t('Klavyeyle oynarken ekranın altında tuş rehberi')} on={save.keyHints} onChange={() => persist({ ...save, keyHints: !save.keyHints })} />
       <Toggle label={t('Büyük Tuşlar')} hint={t('Dokunmatik kontrollerde daha geniş dokunma alanı')} on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
       <Toggle label={t('Hayalet Koşu')} hint={t('Bir şehri bitirdikten sonra, oradaki en iyi koşunun soluk hayaleti yanında koşar.')} on={save.ghost} onChange={() => persist({ ...save, ghost: !save.ghost })} />
-      <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun %80 hızda akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.')} on={save.relaxed} onChange={() => persist({ ...save, relaxed: !save.relaxed })} />
+      <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekor koşuna göre kaç saniye önde ya da geride olduğun')} on={save.splits !== false} onChange={() => persist({ ...save, splits: save.splits === false })} />
+      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır. Kapalıyken görüntü hep sabit kalır.')} on={save.shake ?? !reduceMotion} onChange={() => persist({ ...save, shake: !(save.shake ?? !reduceMotion) })} />
+      <div>
+        <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.')} on={save.relaxed} onChange={() => persist({ ...save, relaxed: !save.relaxed })} />
+        {save.relaxed && <Choice label={t('Oyun Hızı')} value={save.relaxedSpeed ?? 0.8} options={[0.6, 0.7, 0.8, 0.9].map((v) => ({ v, label: `%${Math.round(v * 100)}` }))} onChange={(v) => persist({ ...save, relaxedSpeed: v })} />}
+      </div>
     </div>
   )
 
@@ -1530,7 +1604,7 @@ export default function Game() {
             {npc >= 0 && level.npcs[npc] ? `${level.npcs[npc].name}: ${level.npcs[npc].text}` : (hint ?? '')}
           </p>
           {npc < 0 && !hint && tutStep && !coach ? (
-            <TutorialHint key={tutStep} step={tutStep} touch={showTouch} />
+            <TutorialHint key={tutStep} step={tutStep} touch={showTouch} keys={normalizeKeys(save.keys)} />
           ) : null}
           {quip && (
             // ölünce şehrin lafı: oynanış alanında değil, üstte HUD'ın altında; küçük ve soluk (yeniden doğuşu kapatmaz)
@@ -1569,13 +1643,19 @@ export default function Game() {
               <div className="max-w-[min(88vw,380px)] border-l-2 border-[#e30a17] bg-ink/60 px-3 py-1.5 text-left backdrop-blur-[2px]">
                 <p className="flex items-center gap-1.5 font-display text-[13px] text-cream/90">
                   <span className="text-[#e30a17]">⚑</span> {t("Checkpoint")}
+                  {cpToast.delta != null && (
+                    <span className={`ml-auto pl-3 font-mono text-[13px] font-bold tabular-nums ${cpToast.delta <= 0 ? 'text-[#7ad88a]' : 'text-[#f08a80]'}`} title={t('Rekor Koşuya Göre')}>
+                      {cpToast.delta <= 0 ? '−' : '+'}
+                      {(Math.abs(cpToast.delta) / 1000).toFixed(2)}
+                    </span>
+                  )}
                 </p>
                 <p className="text-[12px] italic leading-snug text-gold/85 [text-wrap:balance]">{cpToast.text}</p>
               </div>
             </div>
           )}
           {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} canDash={hud.canDash} focus={tutStep === 'walk' ? 'stick' : tutStep === 'jump' ? 'jump' : tutStep === 'dash' ? 'dash' : null} />}
-          {!showTouch && save.keyHints && !save.tutorial && <KeyHints canDash={hud.canDash} idle={hud.idle} />}
+          {!showTouch && save.keyHints && !save.tutorial && <KeyHints canDash={hud.canDash} idle={hud.idle} keys={normalizeKeys(save.keys)} />}
         </>
       )}
 
@@ -2043,6 +2123,8 @@ export default function Game() {
         </Overlay>
       )}
 
+      {screen === 'photo' && <PhotoMode canvas={canvasRef.current} renderer={rendererRef.current} level={level} onClose={closePhoto} />}
+
       {screen === 'pause' && (
         <Overlay dim>
           <div className="rise pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-md overflow-x-clip overflow-y-auto px-6 pb-5 short:max-w-[min(820px,100%)] short:pb-3 wide:max-w-[min(900px,100%)] wide:px-8 wide:pb-7">
@@ -2091,9 +2173,14 @@ export default function Game() {
                   </button>
                 </div>
                 {cityCard}
-                <button className="pixel-btn mt-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
-                  {t('⚙ Ayarlar')}
-                </button>
+                <div className="mt-3 flex gap-2 short:mt-2">
+                  <button className="pixel-btn flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
+                    {t('◉ Fotoğraf Kipi')}
+                  </button>
+                  <button className="pixel-btn flex-1 justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
+                    {t('⚙ Ayarlar')}
+                  </button>
+                </div>
               </div>
               <div className={`min-w-0 side:mt-0 side:block ${pauseSet ? '' : 'hidden'}`}>
                 <button className="pixel-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
@@ -2190,12 +2277,20 @@ export default function Game() {
                     ))}
                   </span>
                 </span>
-                {canFull && (
-                  <button className="pixel-btn px-3 py-1.5 text-[12px]" onClick={fullscreen}>
-                    {t('⛶ Tam Ekrana Geç')}
-                  </button>
-                )}
+                <span className="flex flex-wrap gap-2">
+                  {installer.canInstall && (
+                    <button className="pixel-btn primary px-3 py-1.5 text-[12px]" onClick={() => void installer.install()}>
+                      {t('⤓ Ana Ekrana Ekle')}
+                    </button>
+                  )}
+                  {canFull && (
+                    <button className="pixel-btn px-3 py-1.5 text-[12px]" onClick={fullscreen}>
+                      {t('⛶ Tam Ekrana Geç')}
+                    </button>
+                  )}
+                </span>
               </div>
+              {installer.iosHint && <p className="mt-2 text-[12px] text-muted">{t('Uygulama gibi açmak için Safari’de Paylaş → Ana Ekrana Ekle.')}</p>}
               <button className="mt-2 text-[12px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), persist({ ...save, tutorial: true }))} disabled={save.tutorial}>
                 {save.tutorial ? t('Rehber açık: sıradaki oyunda adım adım gösterilecek.') : t('Oyun içi rehberi yeniden göster')}
               </button>
@@ -2204,23 +2299,8 @@ export default function Game() {
               <p className="hidden items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold wide:flex">
                 {t('KONTROLLER')} <span className="kilim h-[6px] flex-1 opacity-50" />
               </p>
-            <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2 short:mt-2 short:grid-cols-3 short:gap-5 short:text-[13px]">
-              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 short:gap-y-1">
-                <dt className="font-display text-gold">{t("Klavye")}</dt>
-                <dd />
-                <dt className="text-muted">{t("Yürü")}</dt>
-                <dd>← → / A D</dd>
-                <dt className="text-muted">{t("Zıpla")}</dt>
-                <dd>↑ / W / Z</dd>
-                <dt className="text-muted">{t("Dash")}</dt>
-                <dd className="text-gold">{t('Boşluk / X')}</dd>
-                <dt className="text-muted">{t('İnce Platformdan İn')}</dt>
-                <dd>↓</dd>
-                <dt className="text-muted">{t("Mola")}</dt>
-                <dd>Esc / P</dd>
-                <dt className="text-muted">{t('Checkpoint’e Dön')}</dt>
-                <dd>R</dd>
-              </dl>
+            <KeyRemap keys={save.keys} onChange={(k) => persist({ ...save, keys: k })} />
+            <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2 short:mt-2 short:gap-5 short:text-[13px]">
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 short:gap-y-1">
                 <dt className="font-display text-gold">{t("Dokunmatik")}</dt>
                 <dd />
@@ -2231,13 +2311,17 @@ export default function Game() {
                 <dt className="text-muted">{t("Dash")}</dt>
                 <dd>{t("Joystick yönünde")}</dd>
               </dl>
-              <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1.5 [@media(min-width:640px)_and_(min-height:501px)]:col-start-2">
+              <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1.5">
                 <dt className="font-display text-gold">{t("Oyun Kolu")}</dt>
                 <dd />
                 <dt className="text-muted">A / Y</dt>
                 <dd>{t("Zıpla")}</dd>
                 <dt className="text-muted">X / B / RT</dt>
                 <dd>{t("Dash")}</dd>
+                <dt className="text-muted">Start</dt>
+                <dd>{t("Mola")}</dd>
+                <dt className="text-muted">{t('Titreşim')}</dt>
+                <dd>{t('Destekleyen kollarda açık')}</dd>
               </dl>
             </div>
             <p className="mt-4 text-[12px] leading-relaxed text-muted short:mt-2 short:leading-snug">
