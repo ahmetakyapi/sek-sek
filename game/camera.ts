@@ -5,7 +5,7 @@
  * saniyede aynı yere varır; sarsıntı her karede rastgele sayı çekmez (yüksek Hz'de titreme olur), zamanla
  * dalgalanır. Yeni kamera davranışı eklerken bu dosyaya ekle ve testi genişlet.
  */
-import { ONEWAY, PHYS, WATER, type World } from './sim'
+import { ONEWAY, PHYS, SWIM, WATER, type World } from './sim'
 import { T } from './types'
 
 export const CAM = {
@@ -71,7 +71,7 @@ export function lookDown(w: World, vh: number): number {
     const tx = cx + p.facing * d
     let ty = feet
     // ilk basılacak yer (zemin, tahta ya da su: tehlike de görünmeli)
-    while (ty < w.rows && !w.isSolid(tx, ty) && w.tile(tx, ty) !== ONEWAY && w.tile(tx, ty) !== WATER) ty++
+    while (ty < w.rows && !w.isSolid(tx, ty) && w.tile(tx, ty) !== ONEWAY && w.tile(tx, ty) !== WATER && w.tile(tx, ty) !== SWIM) ty++
     drop = Math.max(drop, (ty - feet) * T)
   }
   const ahead = drop > 3 * T ? drop * 0.6 : 0

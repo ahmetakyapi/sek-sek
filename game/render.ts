@@ -4,12 +4,12 @@ import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
 import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
-import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
+import { INK, POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
-import { BLOCK_A, BLOCK_B, BOSS_GATE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, SPIKE_UP, WATER, hammerState, type World } from './sim'
+import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -25,6 +25,9 @@ interface Particle {
 }
 
 /** dash izi: kopyalar arası dünya pikseli, ömür (sn), en çok kopya */
+/** yüzülen su: açık turkuaz (yüzey, derin, dalga) — öldüren suyla karışmasın */
+const SWIM_COLORS = ['#5cc4cf', '#3fa9b8', '#a8eef2']
+
 const GHOST_GAP = 9
 const GHOST_LIFE = 0.22
 const GHOST_MAX = 4
@@ -89,6 +92,8 @@ export class Renderer {
   accessory: AccessoryId = 'yok'
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
+  /** halattaki oyuncunun önceki karedeki yeri: kıpırdıyorsa kollar sırayla uzanır */
+  private prevHang: [number, number] | null = null
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
   shakeScale = 1
   /** fotoğraf kipi: kamera oyuncuyu bırakır, oyuncunun kaydırdığı yere bakar (dünya pikseli) */
@@ -602,10 +607,12 @@ export class Renderer {
 
     c.drawImage(this.fbuf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
 
+    this.drawRopesHD(w, hdX, hdY)
     this.drawThingsHD(w, hdX, hdY)
     this.drawCratesHD(w, hdX, hdY)
     this.drawBossHD(w, hdX, hdY)
     this.drawHeroes(hdX, hdY)
+    this.drawSwimHD(w, hdX, hdY)
     this.drawLabels(w, hdX, hdY)
     unblend()
   }
@@ -1832,6 +1839,7 @@ export class Renderer {
     for (let tx = x0; tx <= x1; tx++) {
       const t = w.tile(tx, w.rows - 1)
       if (t === WATER) rect(b, tx * T, lh, T, h, s.water[1])
+      else if (t === SWIM) rect(b, tx * T, lh, T, h, SWIM_COLORS[1])
       else if (t === EMPTY || t === SPIKE_UP) {
         b.fillStyle = pit
         b.fillRect(tx * T, lh, T, h)
@@ -1959,14 +1967,17 @@ export class Renderer {
     for (let tx = x0; tx <= x1; tx++) {
       let depth = 0
       for (let ty = 0; ty < w.rows; ty++) {
-        if (w.tile(tx, ty) !== WATER) {
+        const kind = w.tile(tx, ty)
+        if (kind !== WATER && kind !== SWIM) {
           depth = 0
           continue
         }
+        // yüzülen su açık turkuaz (öldüren su şehrin koyu suyu): ikisi karışmasın
+        const pal = kind === SWIM ? SWIM_COLORS : s.water
         const surface = depth === 0
         const x = tx * T
         const y = ty * T
-        rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), s.water[ty % 2 ? 1 : 0])
+        rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), pal[ty % 2 ? 1 : 0])
         // derinlik: aşağı indikçe koyulaşır
         const dk = Math.min(0.42, depth * 0.11)
         if (dk > 0) rect(b, x, y, T, T, `rgba(8,14,36,${dk.toFixed(2)})`)
@@ -1974,7 +1985,7 @@ export class Renderer {
         if (surface) {
           for (let i = 0; i < 16; i++) {
             const h = Math.round(Math.sin(this.t * 3 + (x + i) * 0.35) * 1.2)
-            rect(b, x + i, y + 6 + h, 1, 2, s.water[2])
+            rect(b, x + i, y + 6 + h, 1, 2, pal[2])
             // dalga tepesinde köpük
             if (h < 0) rect(b, x + i, y + 6 + h, 1, 1, 'rgba(240,250,255,0.75)')
           }
@@ -1984,8 +1995,8 @@ export class Renderer {
             if ((Math.floor(this.t * 2 + tx + g) & 3) !== 0) rect(b, x + gx, y + 9 + g * 3, 2, 1, 'rgba(255,255,255,0.55)')
           }
           // kıyıya vuran köpük
-          const shoreL = w.tile(tx - 1, ty) !== WATER && w.tile(tx - 1, ty) !== 0
-          const shoreR = w.tile(tx + 1, ty) !== WATER && w.tile(tx + 1, ty) !== 0
+          const shoreL = w.tile(tx - 1, ty) !== kind && w.tile(tx - 1, ty) !== 0
+          const shoreR = w.tile(tx + 1, ty) !== kind && w.tile(tx + 1, ty) !== 0
           const surf = Math.round((Math.sin(this.t * 2.2 + tx) + 1) * 1.5)
           if (shoreL) rect(b, x, y + 5, 2 + surf, 2, 'rgba(240,250,255,0.7)')
           if (shoreR) rect(b, x + T - 2 - surf, y + 5, 2 + surf, 2, 'rgba(240,250,255,0.7)')
@@ -2220,6 +2231,158 @@ export class Renderer {
   /** İtilebilen sandıklar: tahta kasa, çapraz kuşak; oyundaki öbür vektör çizimlerle aynı mürekkep hat. */
   /** dost hayvanların bu karedeki yerleri (süs döngüsü doldurur, HD katman çizer) */
   private friends: { x: number; bot: number }[] = []
+
+  /**
+   * Halat (dikey, örgülü kenevir) ve teleferik halatı (yatay çelik tel): ekran çözünürlüğünde, mürekkep dış hatlı.
+   * Halatın ucu saatle hafifçe salınır; tutunan oyuncunun altındaki kısım onunla birlikte durur.
+   */
+  private drawRopesHD(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const x0 = Math.max(0, Math.floor(cx / T) - 1)
+    const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T) + 1)
+    const y0 = Math.max(0, Math.floor(cy / T) - 1)
+    const y1 = Math.min(w.rows - 1, Math.ceil((cy + this.viewH) / T) + 1)
+    const X = (x: number) => (x - cx) * sc
+    const Y = (y: number) => (y - cy) * sc
+    c.save()
+    c.lineCap = 'round'
+    for (let tx = x0; tx <= x1; tx++) {
+      for (let ty = y0; ty <= y1; ty++) {
+        if (w.tile(tx, ty) !== ROPE || w.tile(tx, ty - 1) === ROPE) continue
+        let end = ty
+        while (w.tile(tx, end + 1) === ROPE) end++
+        const top = ty * T
+        const bot = (end + 1) * T - 2
+        const mx = tx * T + T / 2
+        const sway = Math.sin(this.t * 1.6 + tx) * 1.6
+        const path = () => {
+          c.beginPath()
+          c.moveTo(X(mx), Y(top))
+          c.quadraticCurveTo(X(mx + sway * 0.4), Y((top + bot) / 2), X(mx + sway), Y(bot))
+        }
+        path()
+        c.strokeStyle = INK
+        c.lineWidth = sc * 3.4
+        c.stroke()
+        path()
+        c.strokeStyle = '#c49a5a'
+        c.lineWidth = sc * 2
+        c.stroke()
+        // örgü: çapraz kısa çizgiler
+        c.strokeStyle = '#8a6434'
+        c.lineWidth = sc * 0.7
+        for (let y = top + 3; y < bot - 2; y += 4) {
+          const k = (y - top) / Math.max(1, bot - top)
+          const ox = mx + sway * k * k
+          c.beginPath()
+          c.moveTo(X(ox - 0.9), Y(y))
+          c.lineTo(X(ox + 0.9), Y(y + 1.6))
+          c.stroke()
+        }
+        // tepede bağ, uçta düğüm
+        c.fillStyle = '#8a6434'
+        c.strokeStyle = INK
+        c.lineWidth = sc * 0.8
+        for (const [px, py, r] of [
+          [mx, top + 1, 2.2],
+          [mx + sway, bot, 1.9],
+        ] as const) {
+          c.beginPath()
+          c.arc(X(px), Y(py), r * sc, 0, Math.PI * 2)
+          c.fill()
+          c.stroke()
+        }
+      }
+      // teleferik: yataydaki halat koşuları soldan sağa bir kez çizilir
+      for (let ty = y0; ty <= y1; ty++) {
+        if (w.tile(tx, ty) !== CABLE || w.tile(tx - 1, ty) === CABLE) continue
+        let end = tx
+        while (w.tile(end + 1, ty) === CABLE) end++
+        const yy = ty * T + 8
+        const a = tx * T
+        const b = (end + 1) * T
+        const sag = Math.min(4, (b - a) / 40)
+        const line = () => {
+          c.beginPath()
+          c.moveTo(X(a), Y(yy))
+          c.quadraticCurveTo(X((a + b) / 2), Y(yy + sag * 2), X(b), Y(yy))
+        }
+        line()
+        c.strokeStyle = INK
+        c.lineWidth = sc * 2.6
+        c.stroke()
+        line()
+        c.strokeStyle = '#8f96a3'
+        c.lineWidth = sc * 1.3
+        c.stroke()
+        // uçlarda makara
+        c.fillStyle = '#5a5f6a'
+        c.strokeStyle = INK
+        c.lineWidth = sc * 0.8
+        for (const px of [a + 2, b - 2]) {
+          c.beginPath()
+          c.arc(X(px), Y(yy), 2.4 * sc, 0, Math.PI * 2)
+          c.fill()
+          c.stroke()
+        }
+      }
+    }
+    c.restore()
+  }
+
+  /** Yüzülen suyun yüzü ve içi karakterin önünde yarı saydam: yüzen yolcu suyun içinde görünür. */
+  private drawSwimHD(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const x0 = Math.max(0, Math.floor(cx / T) - 1)
+    const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T) + 1)
+    const y0 = Math.max(0, Math.floor(cy / T) - 1)
+    const y1 = Math.min(w.rows - 1, Math.ceil((cy + this.viewH) / T) + 1)
+    let any = false
+    for (let tx = x0; tx <= x1 && !any; tx++) for (let ty = y0; ty <= y1; ty++) if (w.tile(tx, ty) === SWIM) {
+      any = true
+      break
+    }
+    if (!any) return
+    c.save()
+    for (let tx = x0; tx <= x1; tx++) {
+      for (let ty = y0; ty <= y1; ty++) {
+        if (w.tile(tx, ty) !== SWIM) continue
+        const surface = w.tile(tx, ty - 1) !== SWIM
+        const top = ty * T + (surface ? 6 : 0)
+        c.fillStyle = 'rgba(70,180,200,0.34)'
+        c.fillRect((tx * T - cx) * sc, (top - cy) * sc, T * sc + 0.5, (ty * T + T - top) * sc + 0.5)
+        if (surface) {
+          c.strokeStyle = 'rgba(235,252,255,0.7)'
+          c.lineWidth = sc * 0.9
+          c.beginPath()
+          for (let i = 0; i <= 16; i += 2) {
+            const yy = top + Math.sin(this.t * 3 + (tx * T + i) * 0.35) * 1.1
+            if (i === 0) c.moveTo((tx * T + i - cx) * sc, (yy - cy) * sc)
+            else c.lineTo((tx * T + i - cx) * sc, (yy - cy) * sc)
+          }
+          c.stroke()
+        }
+      }
+    }
+    // yüzen oyuncunun kabarcıkları (saatle yükselir, rastgele değil)
+    const p = w.player
+    if (p.swim && !p.dead) {
+      c.strokeStyle = 'rgba(235,252,255,0.8)'
+      c.lineWidth = sc * 0.7
+      for (let i = 0; i < 3; i++) {
+        const ph = (this.t * 0.9 + i / 3) % 1
+        const bx = p.x + p.w / 2 + Math.sin(this.t * 4 + i * 2) * 2 + (i - 1) * 2
+        const by = p.y - ph * 14
+        if (w.tile(Math.floor(bx / T), Math.floor(by / T)) !== SWIM) continue
+        c.beginPath()
+        c.arc((bx - cx) * sc, (by - cy) * sc, (0.8 + i * 0.3) * sc, 0, Math.PI * 2)
+        c.stroke()
+      }
+    }
+    c.restore()
+  }
 
   /** Toplananlar, yaylar, dost hayvanlar ve düşmanlar: ekran çözünürlüğünde, vektör (enemyDraw.ts). */
   private drawThingsHD(w: World, cx: number, cy: number) {
@@ -2488,7 +2651,17 @@ export class Renderer {
     // poz: koşu, koşu süresinden sürekli hesaplanır (kare atlamadan akar)
     let pose: Pose
     if (p.dashTime > 0) pose = POSES.dash
-    else if (!p.grounded) pose = p.wallDir !== 0 && p.vy > 0 ? POSES.wall : p.vy < -70 ? POSES.jump : p.vy < 70 ? POSES.apex : POSES.fall
+    else if (p.hang) {
+      // tırmanırken ya da elle ilerlerken kollar sırayla uzanır
+      const moving = this.prevHang && (Math.abs(p.x - this.prevHang[0]) > 0.01 || Math.abs(p.y - this.prevHang[1]) > 0.01)
+      const sw = moving ? Math.sin(this.t * 12) * 14 : Math.sin(this.t * 2) * 3
+      const h = POSES.hang
+      pose = { ...h, arms: [[h.arms[0][0] + sw, h.arms[0][1] + sw], [h.arms[1][0] - sw, h.arms[1][1] - sw]], legs: [[h.legs[0][0] + sw * 0.5, h.legs[0][1]], [h.legs[1][0] - sw * 0.5, h.legs[1][1]]] }
+    } else if (p.swim && !p.grounded) {
+      const k = Math.sin(this.t * 7)
+      const sw = POSES.swim
+      pose = { ...sw, arms: [[sw.arms[0][0] + k * 40, sw.arms[0][1] + k * 40], [sw.arms[1][0] - k * 40, sw.arms[1][1] - k * 40]], legs: [[sw.legs[0][0] + k * 20, sw.legs[0][1]], [sw.legs[1][0] - k * 20, sw.legs[1][1]]] }
+    } else if (!p.grounded) pose = p.wallDir !== 0 && p.vy > 0 ? POSES.wall : p.vy < -70 ? POSES.jump : p.vy < 70 ? POSES.apex : POSES.fall
     else if (p.landTimer > 0.05) pose = POSES.land
     else if (Math.abs(p.vx) > 8) pose = gait(((p.runTime * 15) / 8) % 1)
     else if (this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) {
@@ -2500,6 +2673,7 @@ export class Renderer {
       pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
     }
     pose = { ...pose, blink: this.t % 3.4 < 0.12 }
+    this.prevHang = p.hang ? [p.x, p.y] : null
 
     // esneme: zıplarken incelip uzar, konarken basılır (hacim korunur, abartısız)
     let kx = 1

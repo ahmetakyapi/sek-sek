@@ -70,6 +70,8 @@ export const emptyInput = (): Input => ({
 export type GameEvent =
   | { type: 'jump' }
   | { type: 'walljump' }
+  | { type: 'grab' }
+  | { type: 'swim' }
   | { type: 'dash' }
   | { type: 'land' }
   | { type: 'death'; x: number; y: number }

@@ -1405,4 +1405,8 @@ export const POSES: Record<string, Pose> = {
   wall: { legs: [[8, 30], [42, 72]], arms: [[60, 80], [112, 126]], lift: 0.4 },
   dash: { legs: [[-78, 8], [-52, 38]], arms: [[-78, -88], [-92, -102]], lean: -2.5, tilt: 0.36, hair: 1.3 },
   wave: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [105, 140]], ground: true },
+  /** halatta ya da teleferikte: iki kol yukarıda, bacaklar sarkık */
+  hang: { legs: [[-6, 10], [8, 16]], arms: [[-168, -176], [168, 176]], hair: 0.3, lift: 0.2 },
+  /** suda kulaç: kollar öne, bacaklar çırpar (render saatle oynatır) */
+  swim: { legs: [[-30, 20], [30, 40]], arms: [[-110, -80], [110, 80]], hair: 1, lift: 0.6, tilt: 0.12 },
 }

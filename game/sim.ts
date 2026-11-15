@@ -19,6 +19,12 @@ export const BLOCK_B = 12
 export const BOSS_GATE = 13
 /** ıslak taş: buz kadar değil ama kaygan (yağmurlu şehirler) */
 export const WET = 14
+/** halat (L): havadayken değince tutunulur; yukarı/aşağı tırmanılır, zıplayınca bırakılır */
+export const ROPE = 15
+/** teleferik halatı (R): altından asılınır, sağa sola elle ilerlenir; zıplayınca ya da aşağıya basınca bırakılır */
+export const CABLE = 16
+/** derin su (W): yüzülür; zıplama kulaç atar, yüzeyde atılan kulaç sudan çıkarır. Öldüren ~ suyundan ayrıdır */
+export const SWIM = 17
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
@@ -63,6 +69,18 @@ export const PHYS = {
   dashBuffer: 0.12,
   springV: 470,
   stompV: 270,
+  /** halatta tırmanma, teleferikte elle ilerleme hızı (px/sn) */
+  ropeClimb: 72,
+  cableMove: 70,
+  /** halattan bırakınca aynı halatı yeniden tutmadan önce (sn) */
+  regrab: 0.22,
+  /** suda: yerçekimi, batma hızı, kulaç, yüzeyden çıkış, yüzme hızı */
+  swimGravity: 320,
+  swimSink: 70,
+  swimStroke: 170,
+  swimLeap: 300,
+  swimRun: 76,
+  strokeCool: 0.18,
 } as const
 
 export interface Box {
@@ -96,6 +114,13 @@ export interface Player extends Box {
   deadTimer: number
   runTime: number
   landTimer: number
+  /** 0: serbest · 1: halatta · 2: teleferikte */
+  hang: 0 | 1 | 2
+  /** halattan bırakıldıktan sonra yeniden tutma beklemesi */
+  regrab: number
+  /** suyun içinde (gövdenin ortası W karosunda) */
+  swim: boolean
+  strokeCool: number
 }
 
 export interface Platform extends Box {
@@ -346,6 +371,15 @@ export class World {
           case '~':
             this.set(tx, ty, WATER)
             break
+          case 'L':
+            this.set(tx, ty, ROPE)
+            break
+          case 'R':
+            this.set(tx, ty, CABLE)
+            break
+          case 'W':
+            this.set(tx, ty, SWIM)
+            break
           case '>':
           case '<':
             this.set(tx, ty, TURRET)
@@ -576,6 +610,10 @@ export class World {
       deadTimer: 0,
       runTime: 0,
       landTimer: 0,
+      hang: 0,
+      regrab: 0,
+      swim: false,
+      strokeCool: 0,
     }
   }
 
@@ -733,6 +771,14 @@ export class World {
     const iy = (input.down ? 1 : 0) - (input.up ? 1 : 0)
     if (ix !== 0 && p.dashTime <= 0) p.facing = ix > 0 ? 1 : -1
 
+    // halat ve teleferik: tutunurken yerçekimi yok, kendi hareketi var
+    p.regrab = Math.max(0, p.regrab - dt)
+    p.strokeCool = Math.max(0, p.strokeCool - dt)
+    if (p.hang === 0 && p.regrab <= 0 && !p.grounded && p.dashTime <= 0) this.tryGrab()
+    if (p.hang !== 0) {
+      if (this.updateHang(dt, input, ix, iy)) return
+    }
+
     // aşağıya basınca tek yönlü platformdan in (eski "aşağı + zıpla" da çalışır)
     const downPressed = input.down && !this.prevDown
     this.prevDown = input.down
@@ -780,21 +826,34 @@ export class World {
     } else {
       // yatay kontrol. Rüzgâr hedef hızı kaydırır (hıza eklenen ivme, hedefe kırpılınca siliniyordu): havada her zaman,
       // yerde yalnız yürürken; dururken itmez ki dar taşta kaydırmasın. Esinti güçlüyken atlayış belirgin uzar ya da kısalır
-      const target = ix * PHYS.run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
+      p.swim = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === SWIM
+      const target = p.swim ? ix * PHYS.swimRun : ix * PHYS.run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
       let accel: number
       if (p.grounded) {
         if (p.onIce) accel = ix !== 0 ? PHYS.accelIce : PHYS.decelIce
         else if (p.onWet) accel = ix !== 0 ? PHYS.accelWet : PHYS.decelWet
         else accel = ix !== 0 ? PHYS.accelGround : PHYS.decelGround
       } else accel = ix !== 0 ? PHYS.accelAir : PHYS.dragAir
+      if (p.swim) accel = 520
       if (p.wallLock > 0) accel *= 0.25
       if (p.vx < target) p.vx = Math.min(target, p.vx + accel * dt)
       else if (p.vx > target) p.vx = Math.max(target, p.vx - accel * dt)
 
-      // yerçekimi
-      let g = PHYS.gravity
-      if (p.vy < 0 && !input.jump) g *= PHYS.lowJumpMul
-      p.vy = Math.min(PHYS.fallMax, p.vy + g * dt)
+      // yerçekimi (suda yavaş batar; dash suda da yenilenir)
+      let g = p.swim ? PHYS.swimGravity : PHYS.gravity
+      if (p.vy < 0 && !input.jump && !p.swim) g *= PHYS.lowJumpMul
+      p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax, p.vy + g * dt)
+      if (p.swim) {
+        p.canDash = true
+        // kulaç: her zıplama basışı; başı yüzeye yakınsa sudan sıçrayarak çıkar
+        if (p.buffer > 0 && p.strokeCool <= 0) {
+          const head = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y - 3) / T))
+          p.vy = head === SWIM ? -PHYS.swimStroke : -PHYS.swimLeap
+          p.buffer = 0
+          p.strokeCool = PHYS.strokeCool
+          this.events.push({ type: 'swim' })
+        }
+      }
 
       // duvar
       p.wallDir = 0
@@ -805,7 +864,7 @@ export class World {
       }
 
       // zıplama
-      if (p.buffer > 0) {
+      if (p.buffer > 0 && !p.swim) {
         if (p.grounded || p.coyote > 0) {
           p.vy = -PHYS.jumpV
           p.buffer = 0
@@ -858,6 +917,97 @@ export class World {
       p.vx = 0
     }
     if (p.y > this.rows * T + 24) this.kill()
+  }
+
+  /** Havadayken gövdenin değdiği halat ya da teleferik: tutunulur. Halatta oyuncu halatın ortasına çekilir. */
+  private tryGrab() {
+    const p = this.player
+    const cx = Math.floor((p.x + p.w / 2) / T)
+    const y0 = Math.floor((p.y + 2) / T)
+    const y1 = Math.floor((p.y + p.h - 2) / T)
+    for (let ty = y0; ty <= y1; ty++) {
+      if (this.tile(cx, ty) !== ROPE) continue
+      const nx = cx * T + (T - p.w) / 2
+      if (this.boxHitsSolid(nx, p.y, p.w, p.h)) return
+      p.x = nx
+      p.hang = 1
+      break
+    }
+    // teleferik: halat başın hizasında (gövdenin üst yarısı halat karosunda)
+    if (!p.hang && p.vy > -120) {
+      const ty = Math.floor((p.y + 1) / T)
+      if (this.tile(cx, ty) === CABLE) {
+        const ny = ty * T + 7
+        if (!this.boxHitsSolid(p.x, ny, p.w, p.h)) {
+          p.y = ny
+          p.hang = 2
+        }
+      }
+    }
+    if (p.hang) {
+      p.vx = 0
+      p.vy = 0
+      p.canDash = true
+      p.dashQueued = 0
+      p.wallDir = 0
+      this.events.push({ type: 'grab' })
+    }
+  }
+
+  /** Tutunurken hareket; serbest kaldıysa false döner (normal fizik sürer). */
+  private updateHang(dt: number, input: Input, ix: number, iy: number): boolean {
+    const p = this.player
+    const cx = Math.floor((p.x + p.w / 2) / T)
+    const release = (vy: number, vx: number) => {
+      p.hang = 0
+      p.regrab = PHYS.regrab
+      p.vy = vy
+      p.vx = vx
+      p.buffer = 0
+    }
+    if (input.dashPressed) {
+      // dash atınca bırakır, dash normal yoldan atılır
+      p.hang = 0
+      p.regrab = PHYS.regrab
+      return false
+    }
+    if (p.hang === 1) {
+      if (p.buffer > 0) {
+        release(-PHYS.jumpV * 0.92, ix * PHYS.run)
+        this.events.push({ type: 'jump' })
+        return false
+      }
+      // tırmanma: halatın bittiği yerde durur; aşağıda halat biterse bırakır
+      if (iy !== 0) {
+        const ny = p.y + iy * PHYS.ropeClimb * dt
+        const probe = iy < 0 ? Math.floor((ny + 3) / T) : Math.floor((ny + p.h - 2) / T)
+        if (this.tile(cx, probe) === ROPE && !this.boxHitsSolid(p.x, ny, p.w, p.h)) p.y = ny
+        else if (iy > 0) {
+          release(0, 0)
+          return false
+        }
+      }
+    } else {
+      // teleferikten bırakınca düz aşağı inilir (yukarı sıçrayan, düşerken aynı teli yeniden yakalardı)
+      if (p.buffer > 0 || (input.down && iy > 0)) {
+        release(0, ix * PHYS.run * 0.6)
+        p.regrab = 0.35
+        return false
+      }
+      if (ix !== 0) {
+        p.facing = ix > 0 ? 1 : -1
+        const nx = p.x + ix * PHYS.cableMove * dt
+        const ncx = Math.floor((nx + p.w / 2) / T)
+        const ty = Math.floor((p.y - 7 + 1) / T)
+        if (this.tile(ncx, ty) === CABLE && !this.boxHitsSolid(nx, p.y, p.w, p.h)) p.x = nx
+      }
+    }
+    p.vx = 0
+    p.vy = 0
+    p.grounded = false
+    p.coyote = 0
+    p.runTime = 0
+    return true
   }
 
   private standingOnOneway(): boolean {
@@ -947,7 +1097,7 @@ export class World {
       c.y = ny
       // su ya da harita dışı: kaybolur, biraz sonra yerinde belirir
       const mid = this.tile(Math.floor((c.x + c.w / 2) / T), Math.floor((c.y + c.h / 2) / T))
-      if (mid === WATER || c.y > this.rows * T + 16) {
+      if (mid === WATER || mid === SWIM || c.y > this.rows * T + 16) {
         c.sunk = 1.4
         c.vy = 0
       }

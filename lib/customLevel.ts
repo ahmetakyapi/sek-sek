@@ -17,7 +17,7 @@ export const MAX_W = 320
 export const MAX_ITEMS = 3
 
 /** İzinli simgeler; sıra kodun parçasıdır (boşluk 0). Süsler sim.ts'te yalnız çizilen, oyunu etkilemeyenlerdir. */
-export const SYMBOLS = [' ', '#', '=', '^', 'v', 'I', 'i', 'X', '~', 'S', 'F', 'C', 'e', 'f', '>', '<', 'P', 'E', 't', 'l', 'w', 'b'] as const
+export const SYMBOLS = [' ', '#', '=', '^', 'v', 'I', 'i', 'X', '~', 'S', 'F', 'C', 'e', 'f', '>', '<', 'P', 'E', 't', 'l', 'w', 'b', 'L', 'R', 'W'] as const
 export type Sym = (typeof SYMBOLS)[number]
 
 /** Kodda şehrin sırası; kalıcı (yeni şehir sona). */

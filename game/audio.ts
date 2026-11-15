@@ -268,6 +268,14 @@ export class Sound {
         this.tone(290 * vary, 0.14, 'sine', 0.08, 300)
         this.tone(580 * vary, 0.06, 'triangle', 0.018, 320)
         return this.noise(0.06, 0.025, 2400, now, 0.8)
+      case 'grab':
+        // halata tutunma: kısa tel gerilmesi + el sesi
+        this.noise(0.05, 0.06, 1800, now, 1.5)
+        return this.tone(196 * vary, 0.12, 'triangle', 0.05, 40)
+      case 'swim':
+        // kulaç: süzgeçli su çalkantısı
+        this.noise(0.16, 0.08, 700 * vary, now, 0.8)
+        return this.noise(0.1, 0.04, 2200, now + 0.04, 1.2)
       case 'walljump':
         this.tone(350 * vary, 0.13, 'sine', 0.075, 330)
         this.noise(0.05, 0.05, 900, now, 1.4)

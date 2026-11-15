@@ -42,6 +42,9 @@ const TOOLS: Array<{ tool: Tool; name: string; key: string }> = [
   { tool: 'l', name: 'Fener (Süs)', key: 'L' },
   { tool: 'w', name: 'Pencere (Süs)', key: 'W' },
   { tool: 'b', name: 'Bayrak Süsü', key: 'B' },
+  { tool: 'L', name: 'Halat', key: 'Y' },
+  { tool: 'R', name: 'Teleferik Halatı', key: 'J' },
+  { tool: 'W', name: 'Derin Su (Yüzülür)', key: 'N' },
 ]
 
 const DRAFTS_KEY = 'seksek:taslaklar'
@@ -255,6 +258,24 @@ function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: number,
       c.fillStyle = look.cream
       c.fillRect(x + 7.5 * u, y + 3 * u, u, 10 * u)
       c.fillRect(x + 3 * u, y + 7.5 * u, 10 * u, u)
+      break
+    case 'L':
+      c.fillStyle = '#c49a5a'
+      c.fillRect(x + 7 * u, y, 2 * u, s)
+      c.fillStyle = '#8a6434'
+      for (let i = 1; i < 16; i += 4) c.fillRect(x + 7 * u, y + i * u, 2 * u, u)
+      break
+    case 'R':
+      c.fillStyle = '#8f96a3'
+      c.fillRect(x, y + 7 * u, s, 2 * u)
+      c.fillStyle = '#5a5f6a'
+      c.fillRect(x + 6 * u, y + 6 * u, 4 * u, 4 * u)
+      break
+    case 'W':
+      c.fillStyle = '#3fa9b8'
+      c.fillRect(x, y + 3 * u, s, s - 3 * u)
+      c.fillStyle = '#a8eef2'
+      c.fillRect(x, y + 3 * u, s, u)
       break
     case 'b':
       c.fillStyle = look.cream

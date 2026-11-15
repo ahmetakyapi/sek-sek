@@ -841,4 +841,7 @@ export const UI_EN: Record<string, string> = {
   'Bu süre haritanın en kısa yolundan bile hızlı': "This time is faster than the map's shortest possible route",
   '⤓ Ana Ekrana Ekle': '⤓ Add to Home Screen',
   'Uygulama gibi açmak için Safari’de Paylaş → Ana Ekrana Ekle.': 'To open it like an app, tap Share → Add to Home Screen in Safari.',
+  Halat: 'Rope',
+  'Teleferik Halatı': 'Cable Line',
+  'Derin Su (Yüzülür)': 'Deep Water (Swimmable)',
 }

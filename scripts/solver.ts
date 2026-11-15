@@ -81,12 +81,19 @@ export function runMacro(w: World, m: Macro, each: () => void) {
   let t = 0
   let air = false
   const limit = m.wait > 0 ? m.wait : 2.6
+  let hang = w.player.hang
   while (t < limit) {
     w.step(DT, inputAt(m, t, prev))
     t += DT
     each()
     if (w.complete) break
     if (w.deaths > deaths) break
+    // halata ya da teleferiğe yeni tutundu: buradan yeni dallar açılır; tutunurken de makro kısa sürer
+    const p = w.player
+    if (p.hang && (!hang || (t > 0.3 && t >= m.hold && !(m.jump > 0 && t < m.jump + 0.05)))) break
+    hang = p.hang
+    // suda yere basılmaz: makro kısa tutulur ki kulaç kulaç dallansın
+    if (p.swim && t >= 0.5) break
     if (!w.player.grounded) air = true
     const jumping = m.jump > 0 || m.dashAt > 0
     if (m.wait === 0 && w.player.grounded && t > 0.05) {
@@ -116,7 +123,9 @@ function key(s: Snapshot, w: World) {
   // bayrak numarası anahtarda yok: çözücü ölen dalı atar, bayraktan hiç doğmaz; bayrak eklemek aramayı katlamasın
   // sandıkların yeri durumun parçası: itilen sandık yolu değiştirir
   const crates = s.crates.map(([x, y]) => `${Math.round(x / 8)}.${Math.round(y / 16)}`).join(',')
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates].join('|')
+  // halatta/teleferikte asılı ya da suda olmak ayrı durum: aynı yerde serbest düşen oyuncuyla birleşmesin
+  const held = p.hang ? `h${p.hang}` : p.swim ? `s${Math.round(p.vy / 60)}` : ''
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, held].join('|')
 }
 
 export interface SolveResult {
@@ -248,7 +257,8 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
         const hit = w.complete || (opts.goal !== undefined && w.deaths === deaths && w.player.grounded && opts.goal.reached(w))
         if (hit && !goal) goal = { from: s, via: m }
         if (hit) won = true
-        if (w.deaths > deaths || w.complete || !w.player.grounded) continue
+        // yerde, halatta/teleferikte asılı ya da suda olan durum yeni dal olur (havada kalan olmaz)
+        if (w.deaths > deaths || w.complete || !(w.player.grounded || w.player.hang || w.player.swim)) continue
         if (mx(w.player.x) > mx(far.x)) far = { x: w.player.x, y: w.player.y }
         const ns = snapshot(w)
         const k = key(ns, w)
