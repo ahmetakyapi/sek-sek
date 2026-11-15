@@ -140,7 +140,7 @@ export default function TouchControls({ input, big = false, canDash = true, focu
         </button>
         <button type="button" aria-label={t("Zıpla")} className="pointer-events-auto mb-8 p-2" {...btn('jump')}>
           <span
-            className={`flex flex-col items-center justify-center rounded-full border-2 border-[#b4bcff] font-display text-base text-white shadow-[inset_0_-5px_0_rgba(0,0,0,0.3)] transition-transform duration-75 ${focus === 'jump' ? 'tut-focus' : ''} ${pressed.jump ? 'translate-y-0.5 scale-95 bg-[#5262ea]' : 'bg-accent-deep/90'}`}
+            className={`flex flex-col items-center justify-center rounded-full border-2 border-[#b4bcff] font-display text-base text-white shadow-[inset_0_-5px_0_rgba(0,0,0,0.3)] transition-transform duration-75 ${focus === 'jump' ? 'tut-focus' : ''} ${pressed.jump ? 'translate-y-0.5 scale-95 bg-[#4554d8]' : 'bg-accent-deep/90'}`}
             style={{ width: jumpD, height: jumpD }}
           >
             <span className="text-2xl leading-none">▲</span>

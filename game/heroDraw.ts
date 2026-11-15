@@ -1202,8 +1202,11 @@ function drawHeadAcc(c: CanvasRenderingContext2D, acc: AccessoryId, hx: number, 
       c.stroke()
       break
     }
-    case 'papatya': {
-      // papatya tacı: başın üstünden geçen ince yeşil sap, arada yapraklar ve beş papatya
+    case 'papatya':
+    case 'defne': {
+      // papatya tacı: başın üstünden geçen ince yeşil sap, arada yapraklar ve beş papatya.
+      // defne tacı (usta mühürleriyle açılır): aynı sap altın, çiçek yerine sık altın yapraklar
+      const laurel = acc === 'defne'
       const P = (u: number): [number, number] => {
         const a = (1 - u) * (1 - u)
         const b = 2 * u * (1 - u)
@@ -1218,11 +1221,14 @@ function drawHeadAcc(c: CanvasRenderingContext2D, acc: AccessoryId, hx: number, 
       c.lineWidth = 1.6 + inkW * 0.6
       c.lineCap = 'round'
       c.stroke()
-      c.strokeStyle = '#5c9a3e'
+      c.strokeStyle = laurel ? '#c9922a' : '#5c9a3e'
       c.lineWidth = 1.6
       c.stroke()
-      // yapraklar: sapın iki yanına sivri yeşil damlalar
-      for (const [u, side] of [[0.18, 1], [0.4, -1], [0.62, 1], [0.84, -1]]) {
+      // yapraklar: sapın iki yanına sivri damlalar (defnede iki kat sık)
+      const leaves: number[][] = laurel
+        ? [0.06, 0.18, 0.3, 0.42, 0.54, 0.66, 0.78, 0.9].flatMap((u) => [[u, 1], [u + 0.05, -1]])
+        : [[0.18, 1], [0.4, -1], [0.62, 1], [0.84, -1]]
+      for (const [u, side] of leaves) {
         const [lx, ly] = P(u)
         const a = u * 1.6 - 1.4 + side * 0.9
         c.save()
@@ -1235,14 +1241,15 @@ function drawHeadAcc(c: CanvasRenderingContext2D, acc: AccessoryId, hx: number, 
             c.quadraticCurveTo(2.2, -2.2, 5, 0)
             c.quadraticCurveTo(2.2, 2.2, 0, 0)
           },
-          '#6eae48',
+          laurel ? '#f0c050' : '#6eae48',
         )
         c.restore()
       }
-      for (const [u, r] of [[0.04, 3.6], [0.27, 4.2], [0.5, 4.6], [0.73, 4.3], [0.95, 3.8]]) {
-        const [dx, dy] = P(u)
-        daisy(c, dx, dy, r, u * 2)
-      }
+      if (!laurel)
+        for (const [u, r] of [[0.04, 3.6], [0.27, 4.2], [0.5, 4.6], [0.73, 4.3], [0.95, 3.8]]) {
+          const [dx, dy] = P(u)
+          daisy(c, dx, dy, r, u * 2)
+        }
       break
     }
   }

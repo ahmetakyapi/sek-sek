@@ -2424,7 +2424,7 @@ export default function Game() {
         </Overlay>
       )}
 
-      {screen === 'notebook' && <Defter save={save} today={today} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} />}
+      {screen === 'notebook' && <Defter save={save} today={today} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => persist({ ...save, music: true })} />}
 
       {screen === 'modes' && (
         <ModesHub
@@ -2610,7 +2610,7 @@ export default function Game() {
           onSecondBook={() => loadLevel(FIRST_BOOK)}
         />
       )}
-      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} wearing={heroAcc} wallet={walletOf(foundTotal + ustaCount, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), persist({ ...save, accessory: id }))} onBack={() => setScreen('character')} />}
+      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} seals={ustaCount} wearing={heroAcc} wallet={walletOf(foundTotal + ustaCount, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), persist({ ...save, accessory: id }))} onBack={() => setScreen('character')} />}
       {screen === 'mirror' && <MirrorList best={save.ayna ?? {}} open={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])} onStart={startMirror} onBack={() => setScreen('modes')} />}
       {screen === 'custom' && custom && (
         <Overlay dim>

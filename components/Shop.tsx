@@ -12,12 +12,15 @@ import { useLang, useT } from '@/lib/i18n'
  * Kılık Dükkânı: yolda bulunan her parça (hatıra, gizli pul, nazar boncuğu) bir akçe sayılır; aksesuarlar bununla
  * alınır, bir kez alınan her zaman takılabilir. Önizleme seçilen aksesuarla portrede görünür.
  */
-export default function Shop({ hero, scarf, owned, wearing, wallet, onBuy, onWear, onBack }: { hero: CharacterId; scarf: Scarf | null; owned: Record<string, boolean>; wearing: AccessoryId; wallet: number; onBuy: (id: AccessoryId) => void; onWear: (id: AccessoryId) => void; onBack: () => void }) {
+export default function Shop({ hero, scarf, owned, seals, wearing, wallet, onBuy, onWear, onBack }: { hero: CharacterId; scarf: Scarf | null; owned: Record<string, boolean>; seals: number; wearing: AccessoryId; wallet: number; onBuy: (id: AccessoryId) => void; onWear: (id: AccessoryId) => void; onBack: () => void }) {
   const t = useT()
   const lng = useLang()
   const [pick, setPick] = useState<AccessoryId>(wearing)
   const item = ACCESSORIES.find((a) => a.id === pick)!
-  const has = pick === 'yok' || owned[pick]
+  // mühürle açılanlar parayla alınmaz: yeterli Usta Mührü varsa senindir
+  const isMine = (a: (typeof ACCESSORIES)[number]) => a.id === 'yok' || !!owned[a.id] || (a.seals !== undefined && seals >= a.seals)
+  const has = isMine(item)
+  const priceLabel = (a: (typeof ACCESSORIES)[number]) => (a.seals !== undefined ? t('{n} Usta Mührü', { n: a.seals }) : t('{n} parça', { n: a.price }))
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3">
@@ -38,12 +41,14 @@ export default function Shop({ hero, scarf, owned, wearing, wallet, onBuy, onWea
             </div>
             <div className="mt-3 w-full text-center max-sm:mt-0 max-sm:text-left short:mt-0 short:text-left">
               <p className="font-display text-xl text-cream short:text-base">{lng === 'en' ? item.nameEn : item.name}</p>
-              <p className="text-[13px] text-muted">{pick === 'yok' ? t('Sade yolcu') : has ? (wearing === pick ? t('Takılı') : t('Senin')) : t('{n} parça', { n: item.price })}</p>
+              <p className="text-[13px] text-muted">{pick === 'yok' ? t('Sade yolcu') : has ? (wearing === pick ? t('Takılı') : t('Senin')) : priceLabel(item)}</p>
               <div className="mt-2">
                 {has ? (
                   <button className="pixel-btn primary w-full justify-center" disabled={wearing === pick} onClick={() => onWear(pick)}>
                     {wearing === pick ? t('Takılı') : t('Tak')}
                   </button>
+                ) : item.seals !== undefined ? (
+                  <p className="text-[13px] leading-snug text-cream/85">{t('Şehir ustalarının görevlerini yap: {n} mühür daha.', { n: item.seals - seals })}</p>
                 ) : (
                   <button className="pixel-btn primary w-full justify-center" disabled={wallet < item.price} onClick={() => onBuy(pick)}>
                     {wallet < item.price ? t('{n} parça daha bul', { n: item.price - wallet }) : t('Al · {n} Parça', { n: item.price })}
@@ -54,12 +59,12 @@ export default function Shop({ hero, scarf, owned, wearing, wallet, onBuy, onWea
           </div>
           <div className="overlay-scroll grid min-h-0 grid-cols-2 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-3 short:grid-cols-3">
             {ACCESSORIES.map((a) => {
-              const mine = a.id === 'yok' || owned[a.id]
+              const mine = isMine(a)
               return (
                 <button key={a.id} aria-pressed={pick === a.id} onClick={() => setPick(a.id)} className={`flex flex-col items-center border-2 bg-panel-2 p-2 ${pick === a.id ? 'border-gold' : 'border-line hover:border-accent-2'}`}>
                   <Portrait id={hero} scarf={scarf} accessory={a.id} className={`w-[72px] short:w-[52px] ${mine ? '' : 'opacity-80'}`} />
                   <span className="mt-1 truncate text-[13px] font-semibold text-cream">{lng === 'en' ? a.nameEn : a.name}</span>
-                  <span className={`text-[12px] ${wearing === a.id ? 'text-gold' : 'text-muted'}`}>{wearing === a.id ? t('Takılı') : mine ? t('Senin') : t('{n} parça', { n: a.price })}</span>
+                  <span className={`text-[12px] ${wearing === a.id ? 'text-gold' : 'text-muted'}`}>{wearing === a.id ? t('Takılı') : mine ? t('Senin') : priceLabel(a)}</span>
                 </button>
               )
             })}

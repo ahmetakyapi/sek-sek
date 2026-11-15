@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Album from '@/components/Album'
+import MusicBox from '@/components/MusicBox'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
 import { MedalBadge, Overlay, displayName, medalFor } from '@/components/ui'
+import type { Sound } from '@/game/audio'
 import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
 import { SCARVES, emptyStats, liveStreak, travelerTitle } from '@/lib/extras'
@@ -19,7 +21,7 @@ export const RUSH_NEEDS = 3
  * Yol Defteri: yolculukta toplanan her şey tek sayfada. Şehir başına üç hatıra, gizli pul, nazar boncuğu
  * ve meydanın bekçisi; üstte toplamlar, görev rozetleri ve Boss Rush.
  */
-export default function Defter({ save, today, onClose, onModes }: { save: Save; today: string; onClose: () => void; onModes: () => void }) {
+export default function Defter({ save, today, sound, onClose, onModes, onMusicOn }: { save: Save; today: string; sound: Sound | null; onClose: () => void; onModes: () => void; onMusicOn: () => void }) {
   const t = useT()
   const lang = useLang()
   const n = LEVELS.length
@@ -29,7 +31,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
   const bosses = LEVELS.filter((l) => save.bosses[l.id]).length
   const scarves = SCARVES.filter((s) => charms >= s.need).length
   const stats = save.stats ?? emptyStats()
-  const [tab, setTab] = useState<'sehir' | 'album' | 'basarim'>('sehir')
+  const [tab, setTab] = useState<'sehir' | 'album' | 'basarim' | 'muzik'>('sehir')
   const got = ACHIEVEMENTS.filter((a) => isEarned(a, save)).length
   const streak = liveStreak(save.meydan, today)
   const mins = Math.round(stats.playMs / 60000)
@@ -60,7 +62,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           </button>
         </div>
 
-        <div className={`mt-4 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 sm:gap-2 short:mt-2 short:grid-cols-6 ${tab === 'album' ? 'max-sm:hidden short:hidden' : ''}`}>
+        <div className={`mt-4 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 sm:gap-2 short:mt-2 short:grid-cols-6 ${tab === 'album' || tab === 'muzik' ? 'max-sm:hidden short:hidden' : ''}`}>
           {totals.map(([k, v, max]) => (
             <div key={k} className={`border-2 py-1.5 short:py-1 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
               <p className="font-display text-base leading-none tabular-nums text-cream sm:text-lg">
@@ -73,7 +75,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
         </div>
 
         {/* Albüm açıkken görev ve istatistik satırları sayfaya yer bırakır */}
-        <div className={`mt-3 grid-cols-2 gap-2 sm:grid-cols-3 short:hidden ${tab === 'album' ? 'hidden' : 'grid'}`}>
+        <div className={`mt-3 grid-cols-2 gap-2 sm:grid-cols-3 short:hidden ${tab === 'album' || tab === 'muzik' ? 'hidden' : 'grid'}`}>
           <div className="border-2 border-line bg-ink/40 px-3 py-2 max-sm:hidden">
             <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('GÖREVLER')}</p>
             <p className="mt-0.5 text-[13px] text-cream">{t('{d} gün · {w} hafta tamamlandı', { d: save.daily.count, w: save.weekly.count })}</p>
@@ -95,7 +97,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
         </div>
 
         {/* yol istatistikleri: küçük sayaçlar, bir bakışta */}
-        <p className={`mt-2 flex-wrap gap-x-4 gap-y-0.5 text-[13px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs && tab !== 'album' ? 'flex' : 'hidden'}`}>
+        <p className={`mt-2 flex-wrap gap-x-4 gap-y-0.5 text-[13px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs && tab !== 'album' && tab !== 'muzik' ? 'flex' : 'hidden'}`}>
           {(
             [
               [t('Koşu'), stats.runs],
@@ -114,15 +116,16 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           </span>
         </p>
 
-        <div className="mt-3 flex items-center gap-2 short:mt-2" role="tablist">
+        <div className="mt-3 -mx-1 flex shrink-0 items-center gap-2 overflow-x-auto p-1 short:mt-2" role="tablist">
           {(
             [
               ['sehir', t('Şehirler')],
               ['album', t('Albüm')],
               ['basarim', `${t('Başarımlar')} ${got}/${ACHIEVEMENTS.length}`],
+              ['muzik', t('Müzik Kutusu')],
             ] as const
           ).map(([k, label]) => (
-            <button key={k} role="tab" aria-selected={tab === k} className={`pixel-btn px-3 py-1.5 text-[13px] ${tab === k ? 'primary' : ''}`} onClick={() => setTab(k)}>
+            <button key={k} role="tab" aria-selected={tab === k} className={`pixel-btn shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px] ${tab === k ? 'primary' : ''}`} onClick={() => setTab(k)}>
               {label}
             </button>
           ))}
@@ -130,6 +133,8 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
 
         {tab === 'album' ? (
           <Album save={save} />
+        ) : tab === 'muzik' ? (
+          <MusicBox save={save} sound={sound} onMusicOn={onMusicOn} />
         ) : tab === 'basarim' ? (
           <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
             {ACHIEVEMENTS.map((a) => {

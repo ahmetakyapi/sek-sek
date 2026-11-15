@@ -894,6 +894,14 @@ export function buildLayers(city: CityKey): Layers {
             const h = Math.min(slope(x), base)
             rect(c, x, h, 1, B - h, s.mid)
           }
+          // Çoruh: vadinin dibinde turkuaz, hızlı akan nehir; ön katmanın (kıyı ağaçları) üstünde görünür kalır.
+          // Eskiden ön katmanın en altındaydı ve zeminin arkasında kalıyordu.
+          const river = base + 8
+          rect(c, 0, river - 1, LAYER_W, 1, '#2a4a40')
+          rect(c, 0, river, LAYER_W, 11, '#3a9aa8')
+          rect(c, 0, river, LAYER_W, 2, '#5cc0c8')
+          rect(c, 0, river + 11, LAYER_W, 1, '#2a4a40')
+          for (let i = 0; i < 46; i++) rect(c, (i * 37) % LAYER_W, river + 3 + ((i * 5) % 7), 5 + (i % 3) * 4, 1, 'rgba(230,252,252,0.7)')
           for (let x = 10; x < 560; x += 30 + Math.floor(r() * 20)) {
             const y = slope(x) + 8 + Math.floor(r() * 14)
             rect(c, x, y - 10, 14, 10, '#e6e0d2')
@@ -921,9 +929,6 @@ export function buildLayers(city: CityKey): Layers {
           const r = rng(1314)
           const base = B - 24
           rect(c, 0, base, LAYER_W, 40, s.near)
-          // Çoruh: turkuaz, hızlı akan
-          rect(c, 0, base + 6, LAYER_W, 10, '#3a9aa8')
-          for (let i = 0; i < 30; i++) rect(c, (i * 41) % LAYER_W, base + 7 + ((i * 5) % 8), 6 + (i % 3) * 4, 1, 'rgba(220,250,250,0.6)')
           // kıyıda çam ve kayın
           for (let x = 4; x < LAYER_W; x += 18 + Math.floor(r() * 16)) {
             const h = 14 + Math.floor(r() * 12)

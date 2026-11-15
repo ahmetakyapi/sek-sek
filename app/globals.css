@@ -23,7 +23,7 @@
      accent ve accent-2 koyu zeminde yazı ve çizgi içindir (en az 4.5:1); dolu düğme zemini accent-deep, üstünde açık yazı */
   --color-accent: #7b87ff;
   --color-accent-2: #b4bcff;
-  --color-accent-deep: #3a48cc;
+  --color-accent-deep: #2f3cb0;
   --color-gold: #ffcc66;
   --color-flag: #e30a17;
   --color-sign: #1d4f91;
@@ -207,18 +207,18 @@ input {
   outline-offset: 5px;
 }
 .pixel-btn.primary {
-  /* koyu çivit zemin + beyaz yazı (~7:1); ışık sol üstten, alt kenar koyu */
-  background: linear-gradient(180deg, #5262ea 0%, var(--color-accent-deep) 55%, #2a36a6 100%);
+  /* koyu çivit zemin + beyaz yazı (~8:1); ışık sol üstten, alt kenar koyu */
+  background: linear-gradient(180deg, #4554d8 0%, var(--color-accent-deep) 55%, #232d8e 100%);
   color: #fff;
   text-shadow: 0 1px 0 rgb(14 13 60 / 0.55);
   box-shadow:
-    0 -3px 0 0 #161b5c,
-    0 3px 0 0 #161b5c,
-    -3px 0 0 0 #161b5c,
-    3px 0 0 0 #161b5c,
+    0 -3px 0 0 #10144a,
+    0 3px 0 0 #10144a,
+    -3px 0 0 0 #10144a,
+    3px 0 0 0 #10144a,
     inset 0 -4px 0 rgb(0 0 0 / 0.25),
     inset 0 3px 0 rgb(255 255 255 / 0.2),
-    0 6px 18px -4px rgb(58 72 204 / 0.55);
+    0 6px 18px -4px rgb(47 60 176 / 0.6);
 }
 .pixel-btn.primary:hover {
   filter: brightness(1.1);
@@ -652,10 +652,10 @@ blockquote {
   }
   .cta {
     box-shadow:
-      0 -3px 0 0 #161b5c,
-      0 3px 0 0 #161b5c,
-      -3px 0 0 0 #161b5c,
-      3px 0 0 0 #161b5c,
+      0 -3px 0 0 #10144a,
+      0 3px 0 0 #10144a,
+      -3px 0 0 0 #10144a,
+      3px 0 0 0 #10144a,
       inset 0 -4px 0 rgb(0 0 0 / 0.25),
       inset 0 3px 0 rgb(255 255 255 / 0.2),
       0 10px 26px -6px rgb(91 108 255 / 0.6);

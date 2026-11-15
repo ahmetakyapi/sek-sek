@@ -1484,8 +1484,10 @@ function headAcc(c: Ctx, acc: AccessoryId, sw: number) {
       c.stroke()
       break
     }
-    case 'papatya': {
-      // önden görünen yarım halka: alnın üstünden şakaktan şakağa
+    case 'papatya':
+    case 'defne': {
+      // önden görünen yarım halka: alnın üstünden şakaktan şakağa (defne: altın sap, çiçeksiz sık altın yapraklar)
+      const laurel = acc === 'defne'
       const P = (a: number): [number, number] => [52 + Math.cos(a) * 30, 25 + Math.sin(a) * 9]
       c.beginPath()
       c.ellipse(52, 25, 30, 9, 0, -0.15, Math.PI + 0.15)
@@ -1493,10 +1495,10 @@ function headAcc(c: Ctx, acc: AccessoryId, sw: number) {
       c.lineWidth = 2 + inkw
       c.lineCap = 'round'
       c.stroke()
-      c.strokeStyle = '#5c9a3e'
+      c.strokeStyle = laurel ? '#c9922a' : '#5c9a3e'
       c.lineWidth = 2
       c.stroke()
-      for (const a of [0.3, 0.95, 1.6, 2.3, 2.9]) {
+      for (const a of laurel ? [-0.05, 0.3, 0.62, 0.95, 1.28, 1.6, 1.92, 2.3, 2.6, 2.9, 3.2] : [0.3, 0.95, 1.6, 2.3, 2.9]) {
         const [x, y] = P(a)
         c.save()
         c.translate(x, y)
@@ -1508,11 +1510,11 @@ function headAcc(c: Ctx, acc: AccessoryId, sw: number) {
             c.quadraticCurveTo(3.4, -3.2, 8, 0)
             c.quadraticCurveTo(3.4, 3.2, 0, 0)
           },
-          '#6eae48',
+          laurel ? '#f0c050' : '#6eae48',
         )
         c.restore()
       }
-      for (const [a, r] of [[-0.05, 5], [0.62, 5.8], [1.28, 6.4], [1.9, 6.2], [2.55, 5.8], [3.2, 5]]) {
+      for (const [a, r] of laurel ? [] : [[-0.05, 5], [0.62, 5.8], [1.28, 6.4], [1.9, 6.2], [2.55, 5.8], [3.2, 5]]) {
         const [x, y] = P(a)
         daisy(c, x, y, r, a)
       }

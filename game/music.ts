@@ -3,9 +3,9 @@ import type { CityKey } from './types'
 /**
  * Besteli müzik: notalar burada veri olarak durur, sesi audio.ts çalar. DOM'suz, testlenebilir.
  *
- * - Jenerik (menüler): Re minörde, B kısmında Hicaz renkli, ney ve sazla 32 ölçülük tema.
- * - Oyun (şehir başına): şehrin makamı (dizi), usulü (aksak ölçü grupları) ve hızıyla, şehrin adından
- *   tohumlanmış sabit bir beste. Her açılışta aynı ezgi çalar; rastgele yürüyüş değil, akılda kalan bir tema.
+ * - Jenerik (menüler): Re minörde, B kısmında Hicaz renkli tema; lo-fi düzenleme (piyano, ney, kanun, yumuşak davul).
+ * - Oyun (şehir başına): şehrin makamından yedili akorlar ve seyrek ezgi, 4/4 ve swing; şehrin adından tohumlanmış
+ *   sabit bir beste. Her açılışta aynı ezgi çalar. Defter'deki Müzik Kutusu bunları dinletir.
  */
 
 export type Inst = 'ney' | 'kanun' | 'keys' | 'pad' | 'sub' | 'kick' | 'rim' | 'hat'
