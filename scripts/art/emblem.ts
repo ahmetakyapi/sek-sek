@@ -15,8 +15,8 @@ const RING = '#6b7cff'
 const RING_S = '#4a56c9'
 const HILL = '#120f2e'
 const FAR = '#33307a'
-const SCARF = '#e0423a'
-const SCARF_S = '#a3262f'
+const SCARF = '#2fb3c0'
+const SCARF_S = '#1a7f8c'
 const CREAM = '#f3f1ff'
 const SKIN = LOOKS.uktun.skin
 /** heroDraw'ın kendi dış hat kalınlığı (çizim biriminde) */
@@ -97,7 +97,7 @@ export interface EmblemOpts {
   inset?: number
 }
 
-/** Ana amblem: gün batımı diskinin önünde seken kırmızı atkılı Uktun. */
+/** Ana amblem: gün batımı diskinin önünde seken turkuaz atkılı Uktun (sarı güneş ve ceketle kırmızı yan yana gelmesin). */
 export function drawEmblem(c: Ctx, size: number, o: EmblemOpts = {}) {
   const k = size / 100
   c.save()
@@ -136,7 +136,7 @@ function frame(c: Ctx, size: number) {
   c.restore()
 }
 
-// ── sekme işareti (favicon): cepheden yüz + kırmızı atkı, altın güneşin önünde ──
+// ── sekme işareti (favicon): cepheden yüz + turkuaz atkı, altın güneşin önünde ──
 
 const MARK_HAIR = '#c4532a'
 const BLUSH = '#f0a08c'
