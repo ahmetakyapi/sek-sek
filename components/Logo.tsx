@@ -1,4 +1,4 @@
-/** Amblem (public/logo-emblem.png: güneşin önünde seken kırmızı atkılı Uktun, vektör; scripts/art/icons.cjs üretir) + yazı. */
+/** Amblem (public/logo-emblem.png: güneşin önünde seken turkuaz atkılı Uktun, vektör; scripts/art/icons.cjs üretir) + yazı. */
 export function Emblem({ size = 40, className = '' }: { size?: number; className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/logo-emblem.png" width={size} height={size} alt="" className={className} />

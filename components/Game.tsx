@@ -23,6 +23,7 @@ import MirrorList from '@/components/Mirror'
 import Shop from '@/components/Shop'
 import { ACCESSORIES, accessoryFor, walletOf, type AccessoryId } from '@/game/accessories'
 import { mirrorLevel } from '@/game/mirror'
+import { LOOKS } from '@/game/heroDraw'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
 import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
@@ -1907,7 +1908,7 @@ export default function Game() {
                     aria-label={lang === 'en' ? sc.nameEn : sc.name}
                     className={`flex items-center gap-2 border-2 bg-panel-2 px-1.5 py-1.5 text-[12px] sm:px-2.5 sm:text-[13px] short:px-1.5 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold text-cream' : 'border-line text-muted hover:border-accent-2'} ${open ? '' : 'opacity-45'}`}
                   >
-                    <span className="h-5 w-5 border-2 border-ink sm:h-4 sm:w-4" style={{ background: `linear-gradient(135deg, ${sc.color} 55%, ${sc.shade} 55%)` }} />
+                    <span className="h-5 w-5 border-2 border-ink sm:h-4 sm:w-4" style={{ background: sc.id === 'al' ? `linear-gradient(135deg, ${LOOKS[hero.id].scarf} 55%, ${LOOKS[hero.id].scarfS} 55%)` : `linear-gradient(135deg, ${sc.color} 55%, ${sc.shade} 55%)` }} />
                     <span className="max-sm:hidden short:hidden">{lang === 'en' ? sc.nameEn : sc.name}</span>
                     {!open && <span className="tabular-nums max-sm:hidden short:hidden">· {charmCount}/{sc.need}</span>}
                   </button>
@@ -2416,7 +2417,7 @@ export default function Game() {
               </dl>
             </div>
             <p className="mt-4 text-[13px] leading-relaxed text-muted short:mt-2 short:leading-snug">
-              {t("Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da düşmana basınca yenilenir: atkın kırmızıysa hazır, griyse harcandı.")}
+              {t("Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da düşmana basınca yenilenir: atkın renkliyse hazır, griyse harcandı.")}
             </p>
             </div>
             </div>

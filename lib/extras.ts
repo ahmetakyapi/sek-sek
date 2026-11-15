@@ -19,7 +19,9 @@ export interface Scarf {
 
 /** Atkı renkleri: ilki herkese açık, ötekiler bulunan nazar boncuklarıyla açılır. */
 export const SCARVES: Scarf[] = [
-  { id: 'al', name: 'Al', nameEn: 'Crimson', color: '#d83c36', shade: '#9e2430', need: 0 },
+  // ilk atkı karakterin kendi atkısıdır (Uktun turkuaz, Memo kırmızı); renk örneği kılıktan gelir (ownScarf)
+  { id: 'al', name: 'Kendi Atkısı', nameEn: 'Own Scarf', color: '#d83c36', shade: '#9e2430', need: 0 },
+  { id: 'kizil', name: 'Al', nameEn: 'Crimson', color: '#d83c36', shade: '#9e2430', need: 0 },
   { id: 'safran', name: 'Safran', nameEn: 'Saffron', color: '#f2b632', shade: '#c08a24', need: 1 },
   { id: 'cini', name: 'Çini Mavisi', nameEn: 'Tile Blue', color: '#2e8fd0', shade: '#1e68a0', need: 3 },
   { id: 'zeytin', name: 'Zeytin Yeşili', nameEn: 'Olive Green', color: '#6a9a3e', shade: '#4a7228', need: 6 },

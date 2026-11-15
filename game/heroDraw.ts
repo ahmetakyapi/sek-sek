@@ -83,7 +83,8 @@ export const LOOKS: Record<Look, Skin> = {
     skin: '#fbd3b4', skinS: '#e8a98a', blush: 'rgba(240,120,110,0.45)',
     hair: '#b4482a', hairS: '#7e2c20', hairL: '#e07a46', iris: '#7a4a26',
     coat: '#efb440', coatS: '#c98424', coatL: '#ffd878', shirt: '#fbf3e2',
-    scarf: '#d83c36', scarfS: '#9e2430', pants: '#4f62a0', pantsS: '#35467c',
+    // sarı ceketin üstünde kırmızı yerine turkuaz atkı (logoyla aynı)
+    scarf: '#2fb3c0', scarfS: '#1a7f8c', pants: '#4f62a0', pantsS: '#35467c',
     boot: '#7a4630', bootS: '#4c2a1c', brow: '#7e2c20', long: true, quilt: true,
   },
   memo: {

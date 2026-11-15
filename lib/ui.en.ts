@@ -36,7 +36,7 @@ export const UI_EN: Record<string, string> = {
   Dokunmatik: 'Touch',
   Dost: 'Friend',
   'Dost: yanına git, sev': 'Friend: go say hello',
-  'Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da düşmana basınca yenilenir: atkın kırmızıysa hazır, griyse harcandı.': 'Hold towards a wall and jump to climb it. Dash recharges when you land or stomp an enemy: a red scarf means ready, grey means spent.',
+  'Duvara doğru basılı tutup zıplarsan tırmanırsın. Dash yere değince ya da düşmana basınca yenilenir: atkın renkliyse hazır, griyse harcandı.': 'Hold towards a wall and jump to climb it. Dash recharges when you land or stomp an enemy: a coloured scarf means ready, grey means spent.',
   Düşüş: 'Falls',
   GEÇİLDİ: 'CLEARED',
   'Genel Sıralama': 'Overall Ranking',

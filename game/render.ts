@@ -4,7 +4,7 @@ import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
 import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
-import { INK, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
+import { INK, LOOKS, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
@@ -274,7 +274,7 @@ export class Renderer {
         const cx = p.x + p.w / 2
         const cy = p.y + p.h / 2
         const [dx, dy] = p.dashDir
-        const tint = this.scarf?.color ?? '#d83c36'
+        const tint = this.scarf?.color ?? LOOKS[this.character.id].scarf
         for (let i = 0; i < 10; i++) {
           const a = Math.atan2(-dy, -dx) + (i / 9 - 0.5) * 2.2
           const v = 70 + (i % 3) * 35
@@ -2955,7 +2955,7 @@ export class Renderer {
         const [dx, dy] = p.dashDir
         // çizgi gövde boyunca üç şeritte sırayla çıkar (rastgele değil: her koşuda aynı desen)
         const off = (n % 3) - 1
-        const tint = this.scarf?.color ?? '#d83c36'
+        const tint = this.scarf?.color ?? LOOKS[this.character.id].scarf
         this.particles.push({ x: p.x + p.w / 2 - dx * 6 - dy * off * 5, y: p.y + p.h / 2 - dy * 6 + dx * off * 6, vx: -dx * 60, vy: -dy * 60, life: 0.16, max: 0.16, color: n % 2 ? '#fff6e0' : tint, size: n % 3 === 0 ? 2 : 1, grav: 0 })
         this.streakAt = [p.x, p.y]
       }
