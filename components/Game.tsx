@@ -16,7 +16,15 @@ import ScoreBoard, { Board } from '@/components/ScoreBoard'
 import Race from '@/components/Race'
 import { DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, type DailyResult, type DuelSetupValue } from '@/components/Modes'
 import { ChallengeEnd, ChallengeList, type ChallengeResult } from '@/components/Challenges'
-import { LangProvider, characterFor, endingFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
+import { TournamentHub } from '@/components/Tournament'
+import Ending from '@/components/Ending'
+import MirrorList from '@/components/Mirror'
+import Shop from '@/components/Shop'
+import { ACCESSORIES, accessoryFor, walletOf, type AccessoryId } from '@/game/accessories'
+import { mirrorLevel } from '@/game/mirror'
+import { customLevel, decodeMap } from '@/lib/customLevel'
+import type { LevelDef } from '@/game/types'
+import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
 import { MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
@@ -26,11 +34,11 @@ import { CHALLENGES, challengeLevel, type Challenge as MapChallenge } from '@/ga
 import { LEVELS, bossLevel } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
-import { ENDING, STORY, fill } from '@/game/story'
+import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { CHALLENGE_TEXT, DAILY_RULES, SCARVES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScore, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleLimit } from '@/lib/extras'
+import { CHALLENGE_TEXT, DAILY_RULES, SCARVES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScore, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleLimit, markTournament, tournamentWeek } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -74,7 +82,7 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'challenges' | 'challengeEnd'
+type Screen = 'title' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
@@ -165,6 +173,12 @@ export default function Game() {
   const modeRef = useRef<Mode | null>(null)
   /** koşulan mücadele haritası: dünya şehrin kesitinden kurulur, bitiş kendi dalına gider */
   const challengeRef = useRef<MapChallenge | null>(null)
+  /** mücadele turnuva için koşuluyorsa haftası */
+  const tournamentRef = useRef<string | null>(null)
+  /** Ayna Yolu'nda koşulan şehir */
+  const aynaRef = useRef<string | null>(null)
+  /** düzenleyiciden gelen özel harita (koşu sürerken) */
+  const customRef = useRef<LevelDef | null>(null)
   /** bu koşuda biriken sayaçlar: bölüm bitince ya da bırakılınca kayda eklenir */
   const statRef = useRef({ deaths: 0, jumps: 0, dashes: 0, stomps: 0, playMs: 0 })
   /** Düello: rakibin bu turdaki koşusu (hayalet olarak yanında koşar) */
@@ -205,6 +219,13 @@ export default function Game() {
   const [result, setResult] = useState<Result | null>(null)
   const [duel, setDuelState] = useState<Duel | null>(null)
   const [dailyResult, setDailyResult] = useState<DailyResult | null>(null)
+  /** paylaşılan özel harita: ?ozel=<kod> */
+  const [custom, setCustom] = useState<{ code: string; level: LevelDef } | { error: string } | null>(null)
+  const [customResult, setCustomResult] = useState<{ timeMs: number; deaths: number; found: number } | null>(null)
+  const [mirrorResult, setMirrorResult] = useState<{ idx: number; timeMs: number; deaths: number; best: boolean; prev?: number; relaxed: boolean } | null>(null)
+  const [weekRank, setWeekRank] = useState<{ total: number; rank: number } | null>(null)
+  /** paylaşılan bağlantıdan gelen yarış daveti: ?yaris=<şehir>~<ad> */
+  const [invite, setInvite] = useState<{ idx: number; name: string; msg?: string } | null>(null)
   const [challengeResult, setChallengeResult] = useState<ChallengeResult | null>(null)
   const [challengeSend, setChallengeSend] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null }>({ status: 'idle', rank: null })
   const [dailySend, setDailySend] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null }>({ status: 'idle', rank: null })
@@ -236,6 +257,9 @@ export default function Game() {
   /** seçilen atkı (al ise karakterin kendi atkısı: null) */
   const heroScarf = scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)
   const charmCount = LEVELS.filter((l) => save.charms[l.id]).length
+  /** yolda bulunan bütün parçalar (hatıra + pul + nazar): Kılık Dükkânı'nın parası */
+  const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
+  const heroAcc = accessoryFor(save.accessory)
   // ?debug (ölçüm ve görsel betikleri): güncelleme notu ekranı kapatmasın
   const mapNotice = quiet ? { renewed: [], added: [] } : mapNews(save)
   const now = new Date()
@@ -247,6 +271,21 @@ export default function Game() {
   challenges[1][2] = save.weekly.last === challenges[1][1].key
 
   /* ── kurulum ─────────────────────────────────────────────── */
+  useEffect(() => {
+    if (rendererRef.current) rendererRef.current.accessory = accessoryFor(save.accessory)
+  }, [save.accessory])
+
+  // final sahnesi görüldü: Ayna Yolu'nun kapısı açılmış sayılır
+  useEffect(() => {
+    if (screen !== 'end') return
+    setSave((prev) => {
+      if (prev.sawEnding) return prev
+      const next = { ...prev, sawEnding: true }
+      writeSave(next)
+      return next
+    })
+  }, [screen])
+
   useEffect(() => {
     relaxedRef.current = save.relaxed
     ghostOnRef.current = save.ghost
@@ -271,10 +310,27 @@ export default function Game() {
       screenRef.current = 'modes'
       setScreenState('modes')
     }
+    // düzenleyicide yapılmış özel harita
+    const oz = qs.get('ozel')
+    if (oz) {
+      const d = decodeMap(oz)
+      setCustom('error' in d ? { error: d.error } : { code: oz, level: customLevel(d.map, d.city) })
+      screenRef.current = 'custom'
+      setScreenState('custom')
+    }
+    // arkadaşın gönderdiği yarış bağlantısı: o şehirde onun hayaletiyle koşmaya çağırır (şehir kilitli olsa da)
+    const [inviteCity, inviteName] = (qs.get('yaris') ?? '').split('~')
+    const inviteIdx = LEVELS.findIndex((l) => l.id === inviteCity)
+    if (inviteIdx >= 0 && inviteName) {
+      setInvite({ idx: inviteIdx, name: inviteName.slice(0, 16) })
+      screenRef.current = 'invite'
+      setScreenState('invite')
+    }
     setCanFull(!!document.documentElement.requestFullscreen)
     const canvas = canvasRef.current!
     const renderer = new Renderer(canvas)
     renderer.character = CHARACTERS[s.character ?? 'uktun']
+    renderer.accessory = accessoryFor(s.accessory)
     const input = new InputManager()
     const sound = new Sound()
     sound.sfxOn = s.sfx
@@ -498,7 +554,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'challenges') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else {
@@ -698,7 +754,9 @@ export default function Game() {
       setLevelIdx(idx)
       const rush = rushRef.current
       const ch = challengeRef.current?.level === LEVELS[idx].id ? challengeRef.current : null
-      const w = new World(ch ? challengeLevel(ch) : rush?.kind === 'boss' ? bossLevel(LEVELS[idx]) : LEVELS[idx])
+      const ay = aynaRef.current === LEVELS[idx].id
+      const cu = customRef.current?.city === LEVELS[idx].city ? customRef.current : null
+      const w = new World(cu ?? (ch ? challengeLevel(ch) : ay ? mirrorLevel(LEVELS[idx]) : rush?.kind === 'boss' ? bossLevel(LEVELS[idx]) : LEVELS[idx]))
       worldRef.current = w
       ghostRecRef.current = []
       dashRef.current = 0
@@ -706,7 +764,7 @@ export default function Game() {
         rendererRef.current.setLevel(w)
         const mode = modeRef.current
         const rival = rivalRef.current?.level === LEVELS[idx].id ? rivalRef.current.run : null
-        rendererRef.current.ghostRun = mode ? (mode.kind === 'duel' ? duelGhostRef.current : null) : rival ?? (!rush && !ch && ghostOnRef.current && !saveRef.current?.best[LEVELS[idx].id]?.stale ? loadGhost(LEVELS[idx].id) : null)
+        rendererRef.current.ghostRun = mode ? (mode.kind === 'duel' ? duelGhostRef.current : null) : rival ?? (!rush && !ch && !ay && !cu && ghostOnRef.current && !saveRef.current?.best[LEVELS[idx].id]?.stale ? loadGhost(LEVELS[idx].id) : null)
       }
       inputRef.current?.clear()
       setHud(EMPTY_HUD)
@@ -814,17 +872,71 @@ export default function Game() {
   }, [screen, dailyResult, dailyPlayer, dailySend.status])
 
   /** Mücadele haritası: şehrin en sıkı kesiti; ilerlemeye ve şehir rekoruna dokunmaz */
-  const startChallenge = (c: MapChallenge) => {
+  const startChallenge = (c: MapChallenge, week: string | null = null) => {
     soundRef.current?.unlock()
     ui()
     rushRef.current = null
     modeRef.current = null
     rivalRef.current = null
     challengeRef.current = c
+    tournamentRef.current = week
+    setWeekRank(null)
     setChallengeSend({ status: 'idle', rank: null })
     loadLevel(LEVELS.findIndex((l) => l.id === c.level), 'play')
     beginPlay()
-    setCpToast({ at: Date.now() + 1, text: `▲ ${t(c.name)}` })
+    setCpToast({ at: Date.now() + 1, text: `${week ? `${t('Turnuva')} · ` : '▲ '}${t(c.name)}` })
+  }
+
+  /** Ayna Yolu: şehrin aynalanmış haritası; ilerlemeye dokunmaz, rekoru ayrı */
+  const startMirror = (idx: number) => {
+    soundRef.current?.unlock()
+    ui()
+    rushRef.current = null
+    modeRef.current = null
+    rivalRef.current = null
+    challengeRef.current = null
+    tournamentRef.current = null
+    aynaRef.current = LEVELS[idx].id
+    loadLevel(idx, 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: `◐ ${t('Ayna Yolu')} · ${LEVELS[idx].name}` })
+  }
+
+  /** Özel harita: düzenleyiciden gelen kod; ilerlemeye ve rekorlara dokunmaz */
+  const startCustom = () => {
+    if (!custom || 'error' in custom) return
+    soundRef.current?.unlock()
+    ui()
+    rushRef.current = null
+    modeRef.current = null
+    rivalRef.current = null
+    challengeRef.current = null
+    tournamentRef.current = null
+    aynaRef.current = null
+    customRef.current = custom.level
+    loadLevel(LEVELS.findIndex((l) => l.city === custom.level.city), 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: t('Özel Harita') })
+  }
+
+  /** Kılık Dükkânı: parça karşılığı aksesuar alır ya da takar */
+  const buyAccessory = (id: AccessoryId) => {
+    const item = ACCESSORIES.find((a) => a.id === id)
+    if (!item || walletOf(foundTotal, save.owned) < item.price) return
+    ui()
+    persist({ ...save, owned: { ...(save.owned ?? {}), [id]: true }, accessory: id })
+  }
+
+  /** Arkadaş listesine ekler ya da çıkarır (skor tablosundaki ☆) */
+  const toggleFriend = (name: string) => {
+    setSave((prev) => {
+      const list = prev.friends ?? []
+      const key = name.toLocaleLowerCase('tr')
+      const has = list.some((f) => f.toLocaleLowerCase('tr') === key)
+      const next = { ...prev, friends: has ? list.filter((f) => f.toLocaleLowerCase('tr') !== key) : [...list, name].slice(-50) }
+      writeSave(next)
+      return next
+    })
   }
 
   // mücadele skoru tabloya: bitiş ekranı açıkken, oyuncu girişliyse ve rekor yeniyse bir kez
@@ -832,9 +944,13 @@ export default function Game() {
     if (screen !== 'challengeEnd' || !challengeResult || challengeResult.relaxed || !dailyPlayer || challengeSend.status !== 'idle') return
     const r = challengeResult
     setChallengeSend({ status: 'sending', rank: null })
-    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: `mucadele-${r.id}`, playerId: dailyPlayer.id, token: dailyPlayer.token, timeMs: r.timeMs, deaths: r.deaths, items: 0 }) })
+    const body = r.week ? { level: 'turnuva', week: r.week, challenge: r.id } : { level: `mucadele-${r.id}` }
+    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, playerId: dailyPlayer.id, token: dailyPlayer.token, timeMs: r.timeMs, deaths: r.deaths, items: 0 }) })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-      .then((j: { rank?: number }) => setChallengeSend({ status: 'sent', rank: j.rank ?? null }))
+      .then((j: { rank?: number; week?: { total: number; rank: number } | null }) => {
+        setWeekRank(j.week ?? null)
+        setChallengeSend({ status: 'sent', rank: j.rank ?? null })
+      })
       .catch(() => setChallengeSend({ status: 'error', rank: null }))
   }, [screen, challengeResult, dailyPlayer, challengeSend.status])
 
@@ -945,11 +1061,14 @@ export default function Game() {
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
     // menü ekranlarının hepsi: yarım kalan mod bir sonraki normal koşuya taşınmasın
-    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'challenges'].includes(screen)) return
+    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'challenges', 'tournament', 'invite', 'shop', 'mirror'].includes(screen)) return
     flushStats()
     rushRef.current = null
     rivalRef.current = null
     challengeRef.current = null
+    tournamentRef.current = null
+    aynaRef.current = null
+    customRef.current = null
     if (modeRef.current) {
       modeRef.current = null
       duelGhostRef.current = null
@@ -1054,7 +1173,47 @@ export default function Game() {
     const idx = levelRef.current
     const timeMs = Math.round(w.time * 1000)
     flushStats(1)
+    if (customRef.current) {
+      setCustomResult({ timeMs, deaths: w.deaths, found: w.pickups.filter((p) => p.taken).length })
+      setScreen('customEnd')
+      return
+    }
+    const ay = aynaRef.current
+    if (ay) {
+      const relaxed = relaxedRef.current
+      const deaths = w.deaths
+      setSave((prev) => {
+        const old = prev.ayna?.[ay]
+        const best = !relaxed && (old === undefined || timeMs < old)
+        setMirrorResult({ idx, timeMs, deaths, best, prev: old, relaxed })
+        if (!best) return prev
+        const next = { ...prev, ayna: { ...(prev.ayna ?? {}), [ay]: timeMs } }
+        writeSave(next)
+        return next
+      })
+      setScreen('mirrorEnd')
+      return
+    }
     const ch = challengeRef.current
+    const week = tournamentRef.current
+    if (ch && week) {
+      const relaxed = relaxedRef.current
+      const deaths = w.deaths
+      setSave((prev) => {
+        const old = prev.turnuva?.week === week ? prev.turnuva.best[ch.id] : undefined
+        const { mark, best } = markTournament(prev.turnuva, week, ch.id, timeMs)
+        setChallengeResult({ id: ch.id, timeMs, deaths, best: best && !relaxed, prev: old, relaxed, week })
+        // turnuva koşusu mücadelenin kendi rekorunu da tazeler
+        const chBest = !relaxed && (prev.challenges?.[ch.id] === undefined || timeMs < prev.challenges[ch.id])
+        if (relaxed || (!best && !chBest)) return prev
+        const next = { ...prev, turnuva: mark, ...(chBest ? { challenges: { ...(prev.challenges ?? {}), [ch.id]: timeMs } } : {}) }
+        writeSave(next)
+        return next
+      })
+      setChallengeSend({ status: 'idle', rank: null })
+      setScreen('challengeEnd')
+      return
+    }
     if (ch) {
       const relaxed = relaxedRef.current
       const deaths = w.deaths
@@ -1355,7 +1514,7 @@ export default function Game() {
       {screen === 'play' && (
         <>
           <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
-            label={modeRef.current?.kind === 'daily' ? `${modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('DÜELLO')} · ${duel.setup.names[duel.turn]}` : challengeRef.current ? `▲ ${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t('Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined}
+            label={modeRef.current?.kind === 'daily' ? `${modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('DÜELLO')} · ${duel.setup.names[duel.turn]}` : customRef.current ? t('Özel Harita') : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t('Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined}
             penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' ? (d: number) => duelScore(0, d) : undefined}
             onPause={() => setScreen('pause')} />
           {titleCard > 0 && hud.time < 0.05 && (
@@ -1690,7 +1849,7 @@ export default function Game() {
                     className={`group flex min-w-0 flex-col items-center border-2 bg-panel-2 p-2.5 text-left transition-colors duration-150 sm:p-4 short:flex-row short:items-stretch short:gap-3 short:p-2.5 wide:flex-row wide:items-stretch wide:gap-4 hover:border-accent-2 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold' : 'border-line'}`}
                   >
                     <div className="portrait-frame mx-auto w-full max-w-[150px] shrink-0 sm:w-[220px] sm:max-w-none short:mx-0 short:w-[96px] short:self-center wide:mx-0 wide:w-[190px] wide:self-center">
-                      <Portrait id={id} scarf={heroScarf} className="block w-full" />
+                      <Portrait id={id} scarf={heroScarf} accessory={heroAcc} className="block w-full" />
                     </div>
                     <div className="mt-2 flex w-full min-w-0 flex-col short:mt-0 wide:mt-0">
                       <p className="flex flex-wrap items-baseline justify-between gap-x-2 font-display text-lg text-cream sm:text-2xl short:text-lg">
@@ -1708,6 +1867,9 @@ export default function Game() {
               {t("ATKI RENGİ")}
               <span className="font-normal tracking-normal text-cream sm:hidden short:inline">· {lang === 'en' ? scarfFor(save.scarf).nameEn : scarfFor(save.scarf).name}</span>
               <span className="kilim h-[6px] flex-1 opacity-50" />
+              <button className="pixel-btn px-2.5 py-1 text-[12px] font-bold tracking-normal" onClick={() => (ui(), setScreen('shop'))}>
+                {t('Kılık Dükkânı · {n}', { n: walletOf(foundTotal, save.owned) })}
+              </button>
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2 short:mt-1.5">
               {SCARVES.map((sc) => {
@@ -1743,7 +1905,7 @@ export default function Game() {
                 <div className="flex items-end gap-4">
                   <figure className="polaroid relative w-[60px] shrink-0 rotate-[-5deg] sm:w-[88px] short:hidden">
                     <span className="tape" />
-                    <Portrait id={hero.id} scarf={heroScarf} className="w-full" />
+                    <Portrait id={hero.id} scarf={heroScarf} accessory={heroAcc} className="w-full" />
                     <figcaption>{hero.short}</figcaption>
                   </figure>
                   <div className="min-w-0 pb-1">
@@ -1846,7 +2008,7 @@ export default function Game() {
             </div>
             <div className="mt-2 flex items-end gap-4 sm:mt-3 short:row-span-3 short:mt-2 short:self-start">
               <div className="portrait-frame w-[90px] shrink-0 sm:w-[130px] short:hidden">
-                <Portrait id={hero.id} scarf={heroScarf} className="block w-full" />
+                <Portrait id={hero.id} scarf={heroScarf} accessory={heroAcc} className="block w-full" />
               </div>
               <Notebook page={storyPage} />
             </div>
@@ -2111,14 +2273,14 @@ export default function Game() {
 
       {screen === 'scores' && (
         <Overlay>
-          <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-lg flex-col p-5 sm:p-6 short:max-w-[min(720px,100%)] short:py-3">
+          <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:p-7 short:max-w-[min(760px,100%)] short:py-3 wide:max-w-[min(900px,100%)]">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Skor Tablosu")}</h2>
               <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                 {t("← Geri")}
               </button>
             </div>
-            <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} onDaily={startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} />
+            <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} onDaily={startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} friends={save.friends ?? []} onFriend={toggleFriend} />
           </div>
         </Overlay>
       )}
@@ -2239,19 +2401,52 @@ export default function Game() {
           ruleCount={Object.keys(save.rules ?? {}).length}
           rulesOpen={Object.keys(save.best).length > 0}
           onChallenges={() => (ui(), setScreen('challenges'))}
+          onTournament={() => (ui(), setScreen('tournament'))}
+          onMirror={() => (ui(), setScreen('mirror'))}
+          mirrorOpen={LEVELS.every((l) => save.best[l.id])}
+          mirrorDone={Object.keys(save.ayna ?? {}).length}
+          tournament={save.turnuva ?? null}
           challengeDone={CHALLENGES.filter((c) => save.challenges?.[c.id]).length}
           onBack={() => setScreen('title')}
         />
       )}
       {screen === 'challenges' && <ChallengeList best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
+      {screen === 'tournament' && <TournamentHub mark={save.turnuva} player={save.player?.name ?? ''} friends={save.friends ?? []} onStart={(c) => startChallenge(c, tournamentWeek(today))} onBack={() => setScreen('modes')} />}
+      {screen === 'invite' && invite && (
+        <Overlay dim>
+          <div className="rise pixel-panel w-full max-w-md p-6 text-center">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('YARIŞ DAVETİ')}</p>
+            <h2 className="mt-2 font-display text-3xl text-cream">{t('{name} Seni Yarışa Çağırıyor', { name: invite.name })}</h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-cream/85">{t('{city} şehrinde onun en iyi koşusunun hayaletiyle yan yana koşacaksın. Geçebilir misin?', { city: displayName(LEVELS[invite.idx]) })}</p>
+            {invite.msg && <p className="mt-2 text-[13px] text-accent-2">{invite.msg}</p>}
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <button
+                className="pixel-btn primary justify-center"
+                autoFocus
+                onClick={async () => {
+                  const err = await startRace(invite.idx, invite.name)
+                  if (err) setInvite({ ...invite, msg: err })
+                  else history.replaceState(null, '', location.pathname)
+                }}
+              >
+                {t('◌ Yarış')}
+              </button>
+              <button className="pixel-btn justify-center" onClick={() => (history.replaceState(null, '', location.pathname), setScreen('title'))}>
+                {t('Ana Menü')}
+              </button>
+            </div>
+          </div>
+        </Overlay>
+      )}
       {screen === 'challengeEnd' && challengeResult && (
         <ChallengeEnd
           result={challengeResult}
           player={save.player?.name ?? ''}
           status={challengeSend.status}
           rank={challengeSend.rank}
-          onRetry={() => startChallenge(CHALLENGES.find((c) => c.id === challengeResult.id)!)}
-          onList={() => setScreen('challenges')}
+          weekRank={weekRank}
+          onRetry={() => startChallenge(CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null)}
+          onList={() => setScreen(challengeResult.week ? 'tournament' : 'challenges')}
           onLogin={() => ((returnRef.current = 'challengeEnd'), setScreen('name'))}
         />
       )}
@@ -2311,30 +2506,89 @@ export default function Game() {
       )}
 
       {screen === 'end' && (
-        <Overlay>
+        <Ending
+          hero={hero.id}
+          heroShort={hero.short}
+          scarf={heroScarf}
+          accessory={heroAcc}
+          totalFound={totalFound}
+          totalMs={Object.values(save.best).reduce((a, b) => a + (b.stale ? 0 : b.timeMs), 0)}
+          notebookLeft={notebookLeft}
+          onCities={() => setScreen('map')}
+          onScores={() => setScreen('scores')}
+          onMirror={() => setScreen('mirror')}
+        />
+      )}
+      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} wearing={heroAcc} wallet={walletOf(foundTotal, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), persist({ ...save, accessory: id }))} onBack={() => setScreen('character')} />}
+      {screen === 'mirror' && <MirrorList best={save.ayna ?? {}} open={LEVELS.every((l) => save.best[l.id])} onStart={startMirror} onBack={() => setScreen('modes')} />}
+      {screen === 'custom' && custom && (
+        <Overlay dim>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
-            <div className="flex justify-center">
-              <div className="portrait-frame w-[180px] max-sm:w-[120px] short:hidden">
-                <Portrait id={hero.id} scarf={heroScarf} className="block w-full" />
-              </div>
-            </div>
-            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{notebookLeft === 0 ? t('DEFTER EKSİKSİZ TAMAM') : t('YOLUN SONU')}</p>
-            <h2 className="mt-2 font-display text-4xl text-cream">{(endingFor(lang) ?? ENDING).title}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-cream/90">{fill((endingFor(lang) ?? ENDING).text, hero.short)}</p>
-            <p className="mt-3 text-[12px] text-muted">
-              {t('{n} / {total} hatıra · Toplam en iyi süre {time}', { n: totalFound, total: LEVELS.length * 3, time: formatTime(Object.values(save.best).reduce((a, b) => a + (b.stale ? 0 : b.timeMs), 0)) })}
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('BÖLÜM DÜZENLEYİCİ')}</p>
+            <h2 className="mt-2 font-display text-3xl text-cream">{'error' in custom ? t('Bu Harita Açılamadı') : t('Özel Harita')}</h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-cream/85">
+              {'error' in custom ? t(custom.error) : t('Biri senin için bir yol çizmiş: {city} temasında, {w} sütun. Rekorlarına ve ilerlemene dokunmaz.', { city: displayName(LEVELS.find((l) => l.city === custom.level.city)!), w: custom.level.map[0].length })}
             </p>
-            {notebookLeft > 0 && (
-              <p className="mt-2 border-2 border-dashed border-gold/60 px-3 py-2 text-[13px] leading-snug text-gold">
-                {t('Yol bitti ama defter henüz dolmadı: {n} sayfa boş (hatıra, gizli pul, nazar boncuğu). Defteri Yol Defteri’nden izle, eksik şehirlere dön.', { n: notebookLeft })}
-              </p>
-            )}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <button className="pixel-btn primary justify-center" onClick={() => setScreen('map')}>
-                {t("Şehirler")}
+              {'error' in custom ? null : (
+                <button className="pixel-btn primary justify-center" onClick={startCustom} autoFocus>
+                  {t('▶ Oyna')}
+                </button>
+              )}
+              <a className="pixel-btn justify-center" href={'error' in custom ? '/duzenle' : `/duzenle?kod=${custom.code}`}>
+                {t('Düzenleyicide Aç')}
+              </a>
+              <button className="pixel-btn col-span-2 justify-center" onClick={() => (history.replaceState(null, '', location.pathname), setCustom(null), setScreen('title'))}>
+                {t('Ana Menü')}
               </button>
-              <button className="pixel-btn justify-center" onClick={() => setScreen('scores')}>
-                {t("Skor Tablosu")}
+            </div>
+          </div>
+        </Overlay>
+      )}
+      {screen === 'customEnd' && customResult && custom && !('error' in custom) && (
+        <Overlay dim>
+          <div className="rise pixel-panel w-full max-w-md p-6 text-center">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('ÖZEL HARİTA')}</p>
+            <p className="mt-2 flex items-center justify-center gap-3 font-display text-6xl tabular-nums text-cream">
+              {formatTime(customResult.timeMs)}
+              {medalFor(custom.level, customResult.timeMs) && <MedalBadge medal={medalFor(custom.level, customResult.timeMs)} size="lg" />}
+            </p>
+            <p className="mt-2 text-[13px] text-muted">
+              {t('{deaths} düşüş', { deaths: customResult.deaths })}
+              {custom.level.map.join('').includes('C') ? ` · ${t('{n} hatıra', { n: customResult.found })}` : ''}
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <button className="pixel-btn primary justify-center" onClick={startCustom} autoFocus>
+                {t('↺ Yeniden Koş')}
+              </button>
+              <a className="pixel-btn justify-center" href={`/duzenle?kod=${custom.code}`}>
+                {t('Düzenleyicide Aç')}
+              </a>
+              <button className="pixel-btn col-span-2 justify-center" onClick={() => (history.replaceState(null, '', location.pathname), setCustom(null), setScreen('title'))}>
+                {t('Ana Menü')}
+              </button>
+            </div>
+          </div>
+        </Overlay>
+      )}
+      {screen === 'mirrorEnd' && mirrorResult && (
+        <Overlay dim>
+          <div className="rise pixel-panel w-full max-w-md p-6 text-center">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{mirrorResult.best ? t('YENİ AYNA REKORU') : t('AYNA YOLU')}</p>
+            <h2 className="mt-1 font-display text-3xl text-cream">{displayName(LEVELS[mirrorResult.idx])}</h2>
+            <p className="mt-2 font-display text-6xl tabular-nums text-cream">{formatTime(mirrorResult.timeMs)}</p>
+            <p className="mt-2 text-[13px] text-muted">
+              {t('{deaths} düşüş', { deaths: mirrorResult.deaths })}
+              {mirrorResult.prev !== undefined && !mirrorResult.best ? ` · ${t('Rekorun {time}', { time: formatTime(mirrorResult.prev) })}` : ''}
+              {save.best[LEVELS[mirrorResult.idx].id] ? ` · ${t('Asıl yoldaki rekorun {time}', { time: formatTime(save.best[LEVELS[mirrorResult.idx].id].timeMs) })}` : ''}
+            </p>
+            {mirrorResult.relaxed && <p className="mt-2 text-[12px] text-muted">{t('Rahat Mod’da koştun: rekor yazılmadı.')}</p>}
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <button className="pixel-btn primary justify-center" onClick={() => startMirror(mirrorResult.idx)} autoFocus>
+                {t('↺ Yeniden Koş')}
+              </button>
+              <button className="pixel-btn justify-center" onClick={() => setScreen('mirror')}>
+                {t('Ayna Yolu')}
               </button>
             </div>
           </div>
@@ -2480,6 +2734,19 @@ function Complete({
       await navigator.clipboard.writeText(shareUrl())
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
+    } catch {
+      /* izin yok */
+    }
+  }
+
+  // hayaletimle yarışa çağıran bağlantı: açan, bu şehirde bu koşunun hayaletiyle yan yana koşar
+  const [dared, setDared] = useState(false)
+  const copyDare = async () => {
+    if (!player) return
+    try {
+      await navigator.clipboard.writeText(`${location.origin}/?yaris=${level.id}~${encodeURIComponent(player.name)}`)
+      setDared(true)
+      setTimeout(() => setDared(false), 2200)
     } catch {
       /* izin yok */
     }
@@ -2658,6 +2925,11 @@ function Complete({
               <a className="pixel-btn justify-center py-2.5 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`} download={`sek-sek-${level.id}.png`}>
                 {t('Kartı İndir')}
               </a>
+              {player && (
+                <button className="pixel-btn col-span-2 justify-center py-2.5 text-sm" onClick={copyDare}>
+                  {dared ? t('Kopyalandı: arkadaşına gönder') : t('⚔ Beni Geç Bağlantısı')}
+                </button>
+              )}
             </div>
             {/* madalya süreleri: hangisi alındı, sıradaki hedefe ne kadar kaldı */}
             <p className="mt-5 flex items-center gap-2 text-[11px] font-bold tracking-[0.22em] text-gold">

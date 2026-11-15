@@ -10,6 +10,7 @@ import { findByName } from '@/lib/players'
 import { currentKeys, scoreCity } from '@/lib/scoreKey'
 import { scores } from '@/lib/schema'
 import { formatTime } from '@/lib/storage'
+import { istanbulDay, tournamentWeek } from '@/lib/extras'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,8 +34,19 @@ async function load(ad: string) {
     })
     .from(scores)
     .where(and(eq(scores.playerId, player.id), inArray(scores.level, currentKeys())))
+  // Haftalık Turnuva kürsüleri: kapanmış haftalarda üçü de bitirenler arasında ilk üç (kalıcı rozet)
+  const week = tournamentWeek(istanbulDay(new Date()))
+  const podium = await db()
+    .execute(
+      sql`with w as (select split_part(level, ':', 2) as week, player_id, sum(time_ms) as total, count(*) as n
+                     from seksek_scores where level like 'turnuva:%' group by 1, 2),
+          r as (select week, player_id, row_number() over (partition by week order by total asc)::int as rank from w where n = 3 and week < ${week})
+          select rank, count(*)::int as n from r where player_id = ${player.id} and rank <= 3 group by rank`,
+    )
+    .then((r) => Object.fromEntries((r.rows as { rank: number; n: number }[]).map((x) => [x.rank, x.n])) as Record<number, number>)
+    .catch(() => ({}) as Record<number, number>)
   // yalnız şehirlerin bugünkü haritalarının skorları sayılır
-  return { player, byLevel: new Map(rows.map((r) => [scoreCity(r.level), r])) }
+  return { player, podium, byLevel: new Map(rows.map((r) => [scoreCity(r.level), r])) }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -45,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OyuncuPage({ params }: Props) {
   const data = await load((await params).ad)
   if (!data) notFound()
-  const { player, byLevel } = data
+  const { player, podium, byLevel } = data
   const done = LEVELS.filter((l) => byLevel.has(l.id))
   const totalTime = done.reduce((a, l) => a + byLevel.get(l.id)!.timeMs, 0)
   const totalDeaths = done.reduce((a, l) => a + byLevel.get(l.id)!.deaths, 0)
@@ -76,6 +88,17 @@ export default async function OyuncuPage({ params }: Props) {
         <p className="text-[12px] font-bold tracking-[0.3em] text-accent">YOLCU DEFTERİ</p>
         <h1 className="mt-2 break-words font-display text-5xl text-cream">{player.name}</h1>
         <p className="mt-2 text-muted">{since} tarihinden beri yolda.</p>
+        {[1, 2, 3].some((r) => podium[r]) && (
+          <p className="mt-3 flex flex-wrap gap-2" aria-label="Haftalık Turnuva kürsüleri">
+            {([1, 2, 3] as const).map((r) =>
+              podium[r] ? (
+                <span key={r} className="border-2 px-2.5 py-1 text-[13px] font-bold" style={{ borderColor: ['#e3a92c', '#c9d0da', '#c97a44'][r - 1], color: ['#e3a92c', '#c9d0da', '#c97a44'][r - 1] }}>
+                  {['🥇', '🥈', '🥉'][r - 1]} Turnuva {['Birincisi', 'İkincisi', 'Üçüncüsü'][r - 1]}{podium[r] > 1 ? ` × ${podium[r]}` : ''}
+                </span>
+              ) : null,
+            )}
+          </p>
+        )}
 
         <dl className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
           {stats.map(([k, v], i) => (

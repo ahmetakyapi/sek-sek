@@ -30,10 +30,18 @@ const cache = new Map<string, LevelDef>()
 /** Bölümün metinlerini seçili dile çevirir; harita ve sayılar aynı kalır. */
 export function localize(level: LevelDef, lang: Lang): LevelDef {
   if (lang === 'tr') return level
-  const en = LEVELS_EN[level.id]
-  if (!en) return level
   const hit = cache.get(level.id)
   if (hit) return hit
+  // şehirden türetilen haritalar (mücadele, Ayna Yolu, özel harita): tabela ve kişi yok, şehrin metinleri çevrilir
+  if (!LEVELS_EN[level.id] && !level.hints.length && !level.npcs.length) {
+    const base = LEVELS_EN[level.city]
+    if (!base) return level
+    const out: LevelDef = { ...level, subtitle: base.subtitle, item: base.item, intro: base.intro, note: base.note, facts: base.facts, secret: base.secret, quips: base.quips }
+    cache.set(level.id, out)
+    return out
+  }
+  const en = LEVELS_EN[level.id]
+  if (!en) return level
   // imza bölümünün ipucu ve kişisi, Türkçedekiyle aynı sıraya girer
   const sig = SIGNATURES[level.id]
   let hints = en.hints

@@ -5,7 +5,8 @@ import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
 import { NextRequest } from 'next/server'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { istanbulDay, shiftDay } from '../lib/extras'
+import { CHALLENGES } from '../game/challenges'
+import { istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
 
 /**
  * Skor tablosu gerçek SQL ile (bellekte Postgres: PGlite): göçler sırayla uygulanır, sonra API uçları çağrılır.
@@ -164,5 +165,26 @@ describe('skor tablosu', () => {
     const r = await post({ playerId: P[0].id, token: P[0].token, batch: [{ level: 'mucadele-corum-leblebi', timeMs: 4000, deaths: 0, items: 0 }] })
     expect(r.j).toMatchObject({ synced: 0 })
     expect((await get('level=genel')).scores.find((x) => x.name === 'Bora')).toMatchObject({ cities: 2 })
+  })
+
+  it('turnuva: yalnız bu haftanın üç mücadelesi yazılır, üçünü bitirenler toplamla sıralanır', async () => {
+    const week = tournamentWeek(istanbulDay(new Date()))
+    const ids = tournamentFor(week)
+    const go = (p: (typeof P)[number], id: string, timeMs: number, w = week) => post({ level: 'turnuva', week: w, challenge: id, playerId: p.id, token: p.token, timeMs, deaths: 0, items: 0 })
+    expect((await go(P[0], ids[0], 9000, '2020-H01')).status).toBe(400)
+    const other = CHALLENGES.find((c) => !ids.includes(c.id))!.id
+    expect((await go(P[0], other, 9000)).status).toBe(400)
+    for (const [i, id] of ids.entries()) await go(P[0], id, 10000 + i)
+    await go(P[1], ids[0], 5000)
+    await go(P[1], ids[1], 5000)
+    const last = await go(P[1], ids[2], 5000)
+    expect(last.j).toMatchObject({ week: { total: 15000, rank: 1 } })
+    await go(P[2], ids[0], 4000) // tek mücadele: sıralamaya girmez
+    const b = await get(`level=turnuva&week=${week}`)
+    expect(b.scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    expect(b.scores[1]).toMatchObject({ timeMs: 30003 })
+    // arkadaş süzgeci: yalnız verilen adlar ve oyuncunun kendisi
+    expect((await get(`level=turnuva&week=${week}&names=ayşe&me=Cemre`)).scores.map((r) => r.name)).toEqual(['Ayşe'])
+    expect((await get('level=ankara&names=bora,cemre')).scores.map((r) => r.name)).toEqual(['Bora', 'Cemre'])
   })
 })

@@ -5,6 +5,7 @@ import { CHARACTERS, type CharacterDef } from './characters'
 import { BOSSES } from './boss'
 import { drawBoss } from './bossDraw'
 import { POSES, drawHero, gait, type Look, type Pose } from './heroDraw'
+import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
@@ -84,6 +85,8 @@ export class Renderer {
   character: CharacterDef = CHARACTERS.uktun
   /** oyuncunun seçtiği atkı rengi (yoksa karakterin kendi atkısı) */
   scarf: { color: string; shade: string } | null = null
+  /** Kılık Dükkânı'ndan takılan aksesuar (game/accessories.ts) */
+  accessory: AccessoryId = 'yok'
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
   /** sahnedeki yazıların dili */
@@ -2411,7 +2414,7 @@ export class Renderer {
       c.globalAlpha = h.alpha
       // hayalet koşu soluk renkli (tek kopya); dash izi filtresiz, çünkü filtre her çizimde pahalı
       if (h.ghost) c.filter = 'saturate(0.35) brightness(1.25)'
-      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS })
+      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc })
       c.restore()
     }
     this.heroes = []
@@ -2436,7 +2439,7 @@ export class Renderer {
       if (Math.hypot(p.x - g.x, p.y - g.y) < GHOST_GAP * 0.6) continue
       // iz eskidikçe hem solar hem incelir: hız hissi kuyruğa doğru sivrilir
       const k = g.life / GHOST_LIFE
-      this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k })
+      this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory })
     }
     // hız çizgileri: dash boyunca gövdenin arkasında kısa, parlak çizgiler (mesafeye göre; kare hızından bağımsız)
     if (p.dashTime > 0 && !p.dead) {
@@ -2500,7 +2503,7 @@ export class Renderer {
     const moving = Math.abs(p.vx) > 40 || !p.grounded
     // dash hakkı bitince atkı soluklaşır: ne zaman yeniden dash atabileceğin görünür
     const spent = !p.canDash
-    this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade })
+    this.heroes.push({ look, pose, x: footX, y: footY, flip: p.facing < 0, alpha: 1, ghost: false, moving, sx: kx, sy: ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade, acc: this.accessory })
 
     this.petTimer = Math.max(0, this.petTimer - dt)
     // koşu tozu ve duvar kayma kıvılcımı
@@ -2781,6 +2784,7 @@ interface HeroDraw {
   sy: number
   scarf?: string
   scarfS?: string
+  acc?: AccessoryId
 }
 
 interface Pop {

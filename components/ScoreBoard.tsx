@@ -8,8 +8,8 @@ import { DAILY_RULES, dailyRun, istanbulDay, shiftDay } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
-/** Tablo türü: bir şehir, genel toplamlar, hesaba kayıtlı defter ya da günün meydan okuması */
-export type BoardKind = 'city' | 'genel' | 'koleksiyon' | 'gunluk'
+/** Tablo türü: bir şehir, genel toplamlar, hesaba kayıtlı defter, günün meydan okuması ya da haftanın turnuvası */
+export type BoardKind = 'city' | 'genel' | 'koleksiyon' | 'gunluk' | 'turnuva'
 
 interface Row {
   name: string
@@ -31,13 +31,46 @@ interface Row {
 }
 
 const n = (x: number | undefined) => x ?? 0
+/** kürsü renkleri: altın, gümüş, bronz */
+const PODIUM = ['#f2c14e', '#d7dde6', '#d08a52']
+/** adın baş harfi için sabit, sıcak bir renk (adın özetinden) */
+const AVATARS = ['#e07a5f', '#81b29a', '#f2cc8f', '#8ecae6', '#c8a2d6', '#f4a261', '#a8dadc', '#e9c46a']
+const avatarColor = (name: string) => AVATARS[[...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % AVATARS.length]
 
 /**
  * Sıralama listesi: ilk satırlar + (ilk sıralarda değilse) oyuncunun kendi satırı. Sağ sütun seçili ölçütü büyük
  * yazar (süre, düşüş, hatıra, şehir); öteki ölçütler adın altında küçük durur. Böylece filtre değişince hem sıra
  * hem görünen değer değişir.
  */
-export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, compact = false, onRace }: { kind: BoardKind; level?: string; sort?: string; day?: string; me: string; refresh?: number; compact?: boolean; onRace?: (name: string) => Promise<string | null> }) {
+export function Board({
+  kind,
+  level = '',
+  sort = '',
+  day = '',
+  week = '',
+  me,
+  refresh = 0,
+  compact = false,
+  onRace,
+  names,
+  friends,
+  onFriend,
+}: {
+  kind: BoardKind
+  level?: string
+  sort?: string
+  day?: string
+  week?: string
+  me: string
+  refresh?: number
+  compact?: boolean
+  onRace?: (name: string) => Promise<string | null>
+  /** yalnız bu oyuncular (arkadaş süzgeci) */
+  names?: string[]
+  /** arkadaş listesi: satırda ☆/★ düğmesi */
+  friends?: string[]
+  onFriend?: (name: string) => void
+}) {
   const t = useT()
   const [raceMsg, setRaceMsg] = useState<{ name: string; text: string } | null>(null)
   const [racing, setRacing] = useState('')
@@ -50,7 +83,8 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
     setFailed(false)
     setRows(null)
     setRaceMsg(null)
-    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
+    const nameList = names?.join(',') ?? ''
+    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(week ? { week } : {}), ...(nameList ? { names: nameList } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
     fetch(`/api/scores?${q}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
       .then((j: { scores: Row[] }) => live && setRows(j.scores))
@@ -58,7 +92,8 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
     return () => {
       live = false
     }
-  }, [kind, level, sort, day, me, refresh, retry])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, level, sort, day, week, names?.join(','), me, refresh, retry])
 
   if (failed)
     return (
@@ -77,7 +112,12 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
         ))}
       </ol>
     )
-  if (!rows.length) return <p className="mt-3 border-2 border-dashed border-line/70 px-3 py-4 text-center text-[13px] text-muted">{kind === 'gunluk' ? t('Bugün henüz kimse koşmadı. İlk skor senin olsun!') : t('Henüz skor yok. İlk sen ol!')}</p>
+  if (!rows.length)
+    return (
+      <p className="mt-3 border-2 border-dashed border-line/70 px-3 py-4 text-center text-[13px] text-muted">
+        {names ? t('Arkadaşların bu tabloda henüz yok.') : kind === 'gunluk' ? t('Bugün henüz kimse koşmadı. İlk skor senin olsun!') : kind === 'turnuva' ? t('Bu hafta üç mücadeleyi de bitiren henüz yok. İlk sen ol!') : t('Henüz skor yok. İlk sen ol!')}
+      </p>
+    )
 
   const lv = kind === 'city' ? LEVELS.find((l) => l.id === level) : undefined
   const race = kind === 'city' && (!sort || sort === 'time') ? onRace : undefined
@@ -100,6 +140,7 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
       return [<>{n(r.cities)}<span className="ml-0.5 text-[12px] text-muted">/{LEVELS.length}</span></>, sub.filter((_, i) => i !== 0).join(' · ')]
     }
     const plays = n(r.plays) > 1 ? ` · ${t('{n} koşu', { n: n(r.plays) })}` : ''
+    if (kind === 'turnuva') return [formatTime(n(r.timeMs)), `${t('3 mücadele')} · ✕${n(r.deaths)}`]
     if (kind === 'gunluk') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
     // mücadele haritasında hatıra yok: süre ve düşüş
     if (level.startsWith('mucadele-')) return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
@@ -108,43 +149,103 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
     return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
   }
 
+  /** sağdaki değerin dolu oranı: bitirilen şehir, hatıra, koleksiyon (süre ve düşüşte çubuk yok) */
+  const progress = (r: Row): number | null => {
+    if (kind === 'genel') return sort === 'deaths' ? null : sort === 'items' ? n(r.items) / (LEVELS.length * 3) : n(r.cities) / LEVELS.length
+    if (kind === 'koleksiyon') return n(r.found) / (LEVELS.length * 5)
+    if (kind === 'city' && sort === 'items') return n(r.maxItems) / 3
+    return null
+  }
+
   return (
     <>
-      <ol className="mt-2 grid gap-1 text-[14px] tabular-nums">
+      <ol className={`mt-2 grid tabular-nums ${compact ? 'gap-1 text-[14px]' : 'gap-1.5 text-[15px]'}`}>
         {rows.map((r, i) => {
           const gap = i > 0 && r.rank > rows[i - 1].rank + 1
           const [big, sub] = cells(r)
           const medal = lv && (kind === 'city' && (!sort || sort === 'time')) ? medalFor(lv, n(r.timeMs)) : null
+          const fill = progress(r)
+          const podium = r.rank <= 3 ? PODIUM[r.rank - 1] : null
           return (
             <li key={`${r.name}-${r.rank}`} className={gap ? 'mt-2 border-t-2 border-dashed border-line/70 pt-2' : ''}>
-              <div className={`grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-2.5 px-2 ${compact ? 'py-1' : 'py-1.5'} ${r.me ? 'bg-accent/25 outline outline-2 outline-accent/60' : i % 2 ? '' : 'bg-panel-2/60'}`}>
-                <span className={`text-center font-display text-[17px] leading-none ${r.rank === 1 ? 'text-[#f2c14e]' : r.rank === 2 ? 'text-[#d7dde6]' : r.rank === 3 ? 'text-[#d08a52]' : 'text-muted'}`}>{r.rank}</span>
-                <span className="min-w-0">
-                  <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className="block truncate font-semibold text-cream underline-offset-4 hover:underline">
-                    {r.name}
-                    {r.me && <span className="ml-1.5 text-[11px] font-bold tracking-[0.12em] text-gold">{t('SEN')}</span>}
-                  </a>
-                  <span className={`block text-[12px] leading-snug text-muted ${kind === 'koleksiyon' ? '' : 'truncate'}`}>{sub}</span>
+              <div
+                className={`grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-2 border-l-4 sm:grid-cols-[2.25rem_auto_minmax(0,1fr)_auto] sm:gap-x-2.5 short:grid-cols-[2.25rem_minmax(0,1fr)_auto] px-2.5 ${compact ? 'py-1.5' : 'py-2.5 short:py-1.5'} ${r.me ? 'bg-accent/20 outline outline-2 outline-accent/60' : podium ? 'bg-panel-2/80' : i % 2 ? 'bg-panel-2/25' : 'bg-panel-2/55'}`}
+                style={{ borderLeftColor: podium ?? 'transparent' }}
+              >
+                <span
+                  className={`flex items-center justify-center justify-self-center font-display leading-none ${podium ? 'h-8 w-8 rounded-full text-[16px] text-ink' : 'text-[17px] text-muted'}`}
+                  style={podium ? { background: podium, boxShadow: '0 0 0 2px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.18)' } : undefined}
+                >
+                  {r.rank}
                 </span>
-                <span className="flex items-center gap-1.5 font-display text-[19px] leading-none text-cream">
-                  {medal && <MedalBadge medal={medal} />}
-                  {big}
-                  {race && !r.me && (
-                    <button
-                      className="pixel-btn ml-1 px-2 py-1 font-mono text-[12px]"
-                      disabled={!!racing}
-                      aria-label={t('{name} ile Yarış', { name: r.name })}
-                      title={t('Hayaletiyle yan yana koş')}
-                      onClick={async () => {
-                        setRacing(r.name)
-                        const err = await race(r.name)
-                        setRacing('')
-                        setRaceMsg(err ? { name: r.name, text: err } : null)
-                      }}
-                    >
-                      {racing === r.name ? '…' : `◌ ${t('Yarış')}`}
-                    </button>
-                  )}
+                <span
+                  aria-hidden
+                  className={`flex items-center justify-center rounded-full font-display text-ink max-sm:hidden short:hidden ${compact ? 'h-8 w-8 text-[15px]' : 'h-10 w-10 text-[18px]'}`}
+                  style={{ background: avatarColor(r.name), boxShadow: '0 0 0 2px rgba(0,0,0,0.35)' }}
+                >
+                  {r.name.slice(0, 1).toLocaleUpperCase('tr')}
+                </span>
+                <span className="min-w-0">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`truncate font-semibold text-cream underline-offset-4 hover:underline ${compact ? '' : 'text-[16px]'}`}>
+                      {r.name}
+                    </a>
+                    {r.me && <span className="shrink-0 text-[11px] font-bold tracking-[0.12em] text-gold">{t('SEN')}</span>}
+                    {onFriend && !r.me && (
+                      <button
+                        className={`shrink-0 px-0.5 text-[15px] leading-none ${friends?.includes(r.name) ? 'text-gold' : 'text-muted hover:text-cream'}`}
+                        aria-label={friends?.includes(r.name) ? t('{name} Arkadaşlarından Çıkar', { name: r.name }) : t('{name} Arkadaş Ekle', { name: r.name })}
+                        aria-pressed={friends?.includes(r.name)}
+                        onClick={() => onFriend(r.name)}
+                      >
+                        {friends?.includes(r.name) ? '★' : '☆'}
+                      </button>
+                    )}
+                  </span>
+                  <span className={`mt-1 flex flex-wrap gap-1 ${compact ? 'max-h-[22px] overflow-hidden' : ''}`}>
+                    {sub.split(' · ').map((part) => (
+                      <span key={part} className="whitespace-nowrap border border-line/80 bg-ink/40 px-1.5 py-px text-[12px] leading-snug text-cream/75">
+                        {part}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+                {/* sağ blok sabit sütunlu: rozet, değer ve Yarış düğmesi her satırda aynı hizada */}
+                <span className={`grid items-center gap-x-2 ${race ? 'grid-cols-[1.25rem_minmax(4.5rem,auto)_2.25rem] sm:grid-cols-[1.25rem_minmax(5.5rem,auto)_4.75rem]' : 'grid-cols-[1.25rem_minmax(4.5rem,auto)] sm:grid-cols-[1.25rem_minmax(5.5rem,auto)]'}`}>
+                  <span className="flex justify-center">{medal && <MedalBadge medal={medal} />}</span>
+                  <span className="flex flex-col items-end gap-1.5">
+                    <span className={`whitespace-nowrap text-right font-display leading-none text-cream ${compact ? 'text-[19px]' : 'text-[22px]'}`}>{big}</span>
+                    {fill !== null && (
+                      <span className="block h-1.5 w-full min-w-[4.5rem] bg-ink/70 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]" aria-hidden>
+                        <span className="block h-full" style={{ width: `${Math.round(Math.min(1, fill) * 100)}%`, background: podium ?? 'var(--color-accent, #e07a3f)' }} />
+                      </span>
+                    )}
+                  </span>
+                  {race &&
+                    (r.me ? (
+                      <span />
+                    ) : (
+                      <button
+                        className="pixel-btn w-full justify-center px-1.5 py-1 font-mono text-[12px]"
+                        disabled={!!racing}
+                        aria-label={t('{name} ile Yarış', { name: r.name })}
+                        title={t('Hayaletiyle yan yana koş')}
+                        onClick={async () => {
+                          setRacing(r.name)
+                          const err = await race(r.name)
+                          setRacing('')
+                          setRaceMsg(err ? { name: r.name, text: err } : null)
+                        }}
+                      >
+                        {racing === r.name ? (
+                          '…'
+                        ) : (
+                          <>
+                            ◌<span className="max-sm:hidden">&nbsp;{t('Yarış')}</span>
+                          </>
+                        )}
+                      </button>
+                    ))}
                 </span>
               </div>
               {raceMsg?.name === r.name && <p className="px-2 pt-1 text-right text-[12px] text-muted">{raceMsg.text}</p>}
@@ -160,7 +261,27 @@ export function Board({ kind, level = '', sort = '', day = '', me, refresh = 0, 
 type Tab = 'genel' | 'city' | 'gunluk' | 'koleksiyon'
 
 /** Skor Tablosu ekranı: dört sekme; her sekmenin kendi sıralama seçenekleri ve kısa bir açıklaması var. */
-export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDaily, canRace, onRace }: { me: string; startCity?: number; startTab?: Tab; onDaily: () => void; canRace?: (levelIdx: number) => boolean; onRace?: (levelIdx: number, name: string) => Promise<string | null> }) {
+export default function ScoreBoard({
+  me,
+  startCity = 0,
+  startTab = 'genel',
+  onDaily,
+  canRace,
+  onRace,
+  friends,
+  onFriend,
+}: {
+  me: string
+  startCity?: number
+  startTab?: Tab
+  onDaily: () => void
+  canRace?: (levelIdx: number) => boolean
+  onRace?: (levelIdx: number, name: string) => Promise<string | null>
+  /** arkadaş listesi (adlar); ☆ ile eklenir, süzgeçte yalnız onlar ve oyuncu görünür */
+  friends?: string[]
+  onFriend?: (name: string) => void
+}) {
+  const [onlyFriends, setOnlyFriends] = useState(false)
   const t = useT()
   const lng = useLang()
   const [tab, setTab] = useState<Tab>(startTab)
@@ -217,7 +338,7 @@ export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDa
             key={k}
             role="tab"
             aria-selected={tab === k}
-            className={`pixel-btn justify-center px-1 py-1.5 text-[12px] sm:text-[13px] ${tab === k ? 'primary' : ''}`}
+            className={`pixel-btn justify-center px-1 py-1.5 text-[12px] sm:text-[13px] short:py-1 ${tab === k ? 'primary' : ''}`}
             onClick={() => {
               setTab(k)
               setSort('')
@@ -229,18 +350,30 @@ export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDa
       </div>
 
       {tab === 'city' && (
-        <div className="mt-2.5 flex items-center gap-2">
-          <button aria-label={t('Önceki Şehir')} className="pixel-btn shrink-0 px-2.5 py-1.5" onClick={() => step(-1)}>
+        <div className="mt-3 flex items-center gap-2 short:mt-1.5">
+          <button aria-label={t('Önceki Şehir')} className="pixel-btn h-12 shrink-0 px-3 text-lg short:h-9" onClick={() => step(-1)}>
             ‹
           </button>
-          <div ref={strip} className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto py-1">
+          <div ref={strip} className="strip-fade no-scrollbar flex flex-1 snap-x gap-2 overflow-x-auto scroll-px-6 px-6 py-1">
             {LEVELS.map((l, i) => (
-              <button key={l.id} data-on={i === idx ? 1 : 0} className={`pixel-btn shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[12px] ${i === idx ? 'primary' : ''}`} onClick={() => setIdx(i)}>
-                {String(l.plate).padStart(2, '0')} {l.name}
+              <button
+                key={l.id}
+                data-on={i === idx ? 1 : 0}
+                aria-pressed={i === idx}
+                className={`flex h-12 shrink-0 snap-center items-center gap-2 border-2 px-2.5 text-left transition-colors short:h-9 ${i === idx ? 'border-gold bg-gold/15 text-cream' : 'border-line bg-ink/40 text-cream/80 hover:border-accent-2'}`}
+                onClick={() => setIdx(i)}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2a2438] short:h-7 short:w-7">
+                  <ItemIcon city={l.city} taken size={20} />
+                </span>
+                <span className="leading-none">
+                  <span className="block text-[10px] font-bold tracking-[0.12em] text-muted">{String(l.plate).padStart(2, '0')}</span>
+                  <span className="block whitespace-nowrap text-[14px] font-semibold">{l.name}</span>
+                </span>
               </button>
             ))}
           </div>
-          <button aria-label={t('Sonraki Şehir')} className="pixel-btn shrink-0 px-2.5 py-1.5" onClick={() => step(1)}>
+          <button aria-label={t('Sonraki Şehir')} className="pixel-btn h-12 shrink-0 px-3 text-lg short:h-9" onClick={() => step(1)}>
             ›
           </button>
         </div>
@@ -271,18 +404,81 @@ export default function ScoreBoard({ me, startCity = 0, startTab = 'genel', onDa
         <p className="mt-2.5 font-display text-xl text-gold short:hidden">{tab === 'city' ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : t('Koleksiyoncular')}</p>
       )}
       <p className="mt-0.5 text-[12px] leading-snug text-muted short:hidden">{tab === 'city' ? `${lv.subtitle} · ${note}` : note}</p>
-      {sorts.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={t('Sıralama')}>
-          {sorts.map(([k, label]) => (
-            <button key={k || 'default'} aria-pressed={sort === k} className={`pixel-btn px-2.5 py-1.5 text-[13px] ${sort === k ? 'primary' : ''}`} onClick={() => setSort(k)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 short:mt-1">
+        {sorts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Sıralama')}>
+            {sorts.map(([k, label]) => (
+              <button key={k || 'default'} aria-pressed={sort === k} className={`pixel-btn px-2.5 py-1.5 text-[13px] ${sort === k ? 'primary' : ''}`} onClick={() => setSort(k)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {tab !== 'koleksiyon' && friends && onFriend && (
+          <button aria-pressed={onlyFriends} className={`pixel-btn ml-auto px-2.5 py-1.5 text-[13px] ${onlyFriends ? 'primary' : ''}`} onClick={() => setOnlyFriends((v) => !v)}>
+            ★ {t('Arkadaşlar')} {friends.length ? `(${friends.length})` : ''}
+          </button>
+        )}
+      </div>
+      {onlyFriends && tab !== 'koleksiyon' && friends && onFriend && <AddFriend friends={friends} me={me} onAdd={onFriend} />}
       <div className="overlay-scroll mt-1 min-h-[160px] flex-1 overflow-y-auto overscroll-contain pr-1 short:min-h-[72px]">
-        <Board kind={tab} level={LEVELS[idx].id} sort={sort} day={tab === 'gunluk' ? day : ''} me={me} onRace={onRace && canRace?.(idx) ? (name) => onRace(idx, name) : undefined} />
+        <Board
+          kind={tab}
+          level={LEVELS[idx].id}
+          sort={sort}
+          day={tab === 'gunluk' ? day : ''}
+          me={me}
+          names={onlyFriends && tab !== 'koleksiyon' && friends ? friends : undefined}
+          friends={friends}
+          onFriend={onFriend}
+          onRace={onRace && canRace?.(idx) ? (name) => onRace(idx, name) : undefined}
+        />
       </div>
     </div>
+  )
+}
+
+/** Adla arkadaş ekleme: ad gerçekten bir yolcuya ait mi diye sorulur */
+function AddFriend({ friends, me, onAdd }: { friends: string[]; me: string; onAdd: (name: string) => void }) {
+  const t = useT()
+  const [name, setName] = useState('')
+  const [msg, setMsg] = useState('')
+  const add = async () => {
+    const n = name.trim().replace(/\s+/g, ' ')
+    if (!n) return
+    const key = n.toLocaleLowerCase('tr')
+    if (key === me.toLocaleLowerCase('tr')) return setMsg(t('Kendini ekleyemezsin.'))
+    if (friends.some((f) => f.toLocaleLowerCase('tr') === key)) return setMsg(t('Zaten arkadaşın.'))
+    try {
+      const r = (await (await fetch(`/api/players?name=${encodeURIComponent(n)}`)).json()) as { available?: boolean; reason?: string }
+      if (r.available !== false || r.reason) return setMsg(t('Bu adla bir yolcu yok.'))
+    } catch {
+      return setMsg(t('Şu an kontrol edilemiyor.'))
+    }
+    onAdd(n)
+    setName('')
+    setMsg(t('{name} eklendi.', { name: n }))
+  }
+  return (
+    <form
+      className="mt-2 flex flex-wrap items-center gap-1.5"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void add()
+      }}
+    >
+      <input
+        className="min-w-0 flex-1 border-2 border-line bg-ink/60 px-2 py-1.5 text-[13px] text-cream placeholder:text-muted"
+        value={name}
+        maxLength={16}
+        onChange={(e) => (setName(e.target.value), setMsg(''))}
+        placeholder={t('Yolcu adı')}
+        aria-label={t('Arkadaş Adı')}
+      />
+      <button className="pixel-btn px-2.5 py-1.5 text-[13px]" type="submit">
+        {t('＋ Ekle')}
+      </button>
+      <span className="w-full text-[12px] text-muted">{msg || t('Satırlardaki ☆ ile de ekleyebilirsin.')}</span>
+    </form>
   )
 }

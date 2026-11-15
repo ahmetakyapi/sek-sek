@@ -8,8 +8,9 @@ import { Board } from '@/components/ScoreBoard'
 import { Overlay, displayName } from '@/components/ui'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { CHALLENGES } from '@/game/challenges'
+import { useLastWinner } from '@/components/Tournament'
 import { LEVELS } from '@/game/levels'
-import { DAILY_RULES, RULES, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
+import { DAILY_RULES, RULES, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
@@ -42,6 +43,11 @@ export function ModesHub({
   rulesOpen,
   onChallenges,
   challengeDone,
+  onTournament,
+  tournament,
+  onMirror,
+  mirrorOpen,
+  mirrorDone,
   onBack,
 }: {
   daily: DailyRun
@@ -65,8 +71,19 @@ export function ModesHub({
   onChallenges: () => void
   /** bitirilen mücadele sayısı */
   challengeDone: number
+  onTournament: () => void
+  tournament: TournamentMark | null
+  onMirror: () => void
+  /** otuz şehir bitti mi (Ayna Yolu açık) */
+  mirrorOpen: boolean
+  mirrorDone: number
   onBack: () => void
 }) {
+  const winner = useLastWinner(today)
+  const week = tournamentWeek(today)
+  const tIds = tournamentFor(week)
+  const tDone = tournament?.week === week ? tIds.filter((id) => tournament.best[id] !== undefined).length : 0
+  const tTotal = tournamentTotal(tournament, week)
   const t = useT()
   const lng = useLang()
   const lv = LEVELS.find((l) => l.id === daily.levelId)!
@@ -120,6 +137,31 @@ export function ModesHub({
                   {t('Günün Sıralaması')}
                 </button>
               </div>
+            </section>
+
+            {/* Haftalık Turnuva */}
+            <section className="flex flex-col border-2 border-gold/70 bg-gold/5 p-3.5 short:p-2.5">
+              <Eyebrow>{t('HAFTALIK TURNUVA')}</Eyebrow>
+              <div className="mt-2.5 flex items-center justify-center gap-2">
+                {tIds.map((id, i) => {
+                  const c = CHALLENGES.find((x) => x.id === id)!
+                  const lvl = LEVELS.find((l) => l.id === c.level)!
+                  const done = tournament?.week === week && tournament.best[id] !== undefined
+                  return (
+                    <span key={id} className={`flex h-10 w-10 items-center justify-center rounded-full bg-[#2a2438] short:h-8 short:w-8 ${done ? 'shadow-[0_0_0_2px_#d9a441]' : 'shadow-[0_0_0_2px_#3d3550]'} ${i === 1 ? '-translate-y-1.5' : ''}`}>
+                      <ItemIcon city={lvl.city} taken={done} size={26} />
+                    </span>
+                  )
+                })}
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[12px]">{t('Bu hafta herkes aynı üç mücadelede. Toplam süreyle sıralanır, pazar gecesi kapanır.')}</p>
+              <p className="mb-3 mt-1 text-[12px] leading-snug text-muted">
+                {tTotal ? t('Toplamın {time}', { time: formatTime(tTotal) }) : t('{n}/3 bitti', { n: tDone })}
+                {winner ? ` · ${t('Geçen hafta: {name}', { name: winner.name })}` : ''}
+              </p>
+              <button className="pixel-btn primary mt-auto shrink-0 justify-center" onClick={onTournament}>
+                {t('Turnuvaya Gir')}
+              </button>
             </section>
 
             {/* Kurallı Koşu */}
@@ -184,6 +226,20 @@ export function ModesHub({
               </p>
               <button className="pixel-btn mt-auto shrink-0 justify-center" disabled={!rushOpen} onClick={onRush}>
                 {rushOpen ? t('▶ Koş') : t('Kilitli')}
+              </button>
+            </section>
+
+            {/* Ayna Yolu */}
+            <section className={`flex flex-col border-2 p-3.5 short:p-2.5 ${mirrorOpen ? 'border-accent-2/70 bg-accent-2/5' : 'border-dashed border-line/70'}`}>
+              <Eyebrow tone="text-accent-2">{t('AYNA YOLU · YENİ OYUN+')}</Eyebrow>
+              <div className="mt-2.5 flex items-end justify-center gap-0.5" aria-hidden>
+                <Portrait id="uktun" className={`w-[52px] short:w-[38px] ${mirrorOpen ? '' : 'opacity-40 grayscale'}`} />
+                <Portrait id="uktun" className={`w-[52px] -scale-x-100 opacity-60 short:w-[38px] ${mirrorOpen ? '' : 'grayscale'}`} />
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[12px]">{t('Otuz şehir aynada: sağdan sola, ters rüzgârla. Yalnız yol ve süre.')}</p>
+              <p className="mb-3 mt-1 text-[12px] leading-snug text-muted">{mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık. İlk ayna rekorunu yaz.')) : t('Otuz şehrin hepsini bitirince açılır.')}</p>
+              <button className="pixel-btn mt-auto shrink-0 justify-center" disabled={!mirrorOpen} onClick={onMirror}>
+                {mirrorOpen ? t('◐ Aynaya Geç') : t('Kilitli')}
               </button>
             </section>
 

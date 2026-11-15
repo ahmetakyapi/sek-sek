@@ -40,6 +40,8 @@ export interface LevelDef {
   quips: string[]
   /** yatay rüzgâr ivmesi (px/s²); periyodik esintiyle çarpılır */
   wind?: number
+  /** Ayna Yolu: harita sağdan sola çevrilmiş (game/mirror.ts); hareketli platformlar da ayna fazında başlar */
+  mirror?: boolean
   /** final eklenince hesaplanır: finalin ipuçları ve kişileri listelerde nereden başlıyor */
   finaleAt?: { hint: number; npc: number }
   map: string[]

@@ -4,6 +4,7 @@
  * yan profilden çizilir; kol ve bacaklar eklem açılarıyla (dikeyden derece, + ileri) döner.
  * Birim: karakter boyu ~100 birim, ayak tabanı orta noktası (0, 0), y yukarı eksi.
  */
+import { COVERS_HEAD, ON_HEAD, type AccessoryId } from './accessories'
 
 export type Look = 'uktun' | 'memo' | 'amca' | 'teyze' | 'usta' | 'genc' | 'coban' | 'ozan'
 
@@ -494,7 +495,7 @@ function brow(c: CanvasRenderingContext2D, x0: number, y0: number, cx: number, c
   c.stroke()
 }
 
-function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, blink: boolean, hair: number, lift: number, t: number, moving: boolean, happy = false) {
+function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, blink: boolean, hair: number, lift: number, t: number, moving: boolean, happy = false, acc: AccessoryId = 'yok') {
   // neşeli yüzde perçem uçları kaşı örtmesin diye biraz yukarıda biter
   const fr = happy ? 3.4 : 0
   const hx = x + 1.5
@@ -760,7 +761,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     fine(c, hx - 6, hy - 22, hx - 2, hy - 25, hx + 2.6, hy - 24.4, 1.7, s.hairL)
     fine(c, hx + 8.6, hy - 23.6, hx + 11.6, hy - 24, hx + 13.6, hy - 22.2, 1.5, s.hairL)
   } else if (s.hat !== 'yazma') {
-    if (s.hat) {
+    if (s.hat || COVERS_HEAD.has(acc)) {
       // başlığın altında kalan saç: yalnız yanlar ve ense
       blob(
         c,
@@ -829,7 +830,10 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
     c.fill()
     fine(c, hx - 10.4, hy - 0.2, hx - 8, hy + 1.2, hx - 9.6, hy + 3.4, 0.9, s.skinS)
   }
-  if (s.hat) drawHat(c, s, hx, hy)
+  if (acc === 'gozluk') drawGlasses(c, hx, hy)
+  // başa takılan aksesuar kılığın şapkasının yerine geçer; yazma örtüdür, kalır ve başlık üstüne oturur
+  if (s.hat && (s.hat === 'yazma' || !ON_HEAD.has(acc))) drawHat(c, s, hx, hy)
+  if (ON_HEAD.has(acc)) drawHeadAcc(c, acc, hx, hy + (s.long ? -2.5 : s.hat === 'yazma' ? -1.5 : 0), t, moving, hair, lift)
 }
 
 function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
@@ -937,14 +941,310 @@ function drawHat(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number) {
   }
 }
 
+// ── Kılık Dükkânı aksesuarları (game/accessories.ts) ─────────────────────
+
+/** papatya: sekiz beyaz yaprak, sarı göbek; yaprakların hepsi tek yolda (önce mürekkep, sonra beyaz) */
+function daisy(c: CanvasRenderingContext2D, x: number, y: number, r: number, rot: number) {
+  c.beginPath()
+  for (let i = 0; i < 8; i++) {
+    const a = rot + (i * TAU) / 8
+    const px = x + Math.cos(a) * r * 0.62
+    const py = y + Math.sin(a) * r * 0.62
+    c.moveTo(px + Math.cos(a) * r * 0.42, py + Math.sin(a) * r * 0.42)
+    c.ellipse(px, py, r * 0.42, r * 0.2, a, 0, TAU)
+  }
+  c.strokeStyle = INK
+  c.lineWidth = inkW * 0.55
+  c.lineJoin = 'round'
+  c.stroke()
+  c.fillStyle = '#fffaf0'
+  c.fill()
+  blob(c, () => c.arc(x, y, r * 0.34, 0, TAU), '#f2b33a', { color: '#c97f1c', dx: -0.6, dy: -0.6 })
+}
+
+/** yuvarlak gözlük: ince altın çerçeve, camda ışık; uzak cam yüz döndüğü için dar, sap kulağa uzanır */
+function drawGlasses(c: CanvasRenderingContext2D, hx: number, hy: number) {
+  const rimPath = () => {
+    c.beginPath()
+    c.ellipse(hx + 5, hy + 1.3, 4.7, 4.6, 0, 0, TAU)
+    c.moveTo(hx + 15.9, hy + 1)
+    c.ellipse(hx + 13.6, hy + 1, 2.3, 4.4, 0, 0, TAU)
+    c.moveTo(hx + 9.7, hy + 0.6)
+    c.quadraticCurveTo(hx + 10.5, hy - 0.6, hx + 11.3, hy + 0.4)
+    c.moveTo(hx + 0.3, hy + 0.4)
+    c.lineTo(hx - 8.2, hy - 0.6)
+  }
+  // cam: çok hafif mavi, sol üstte ışık
+  c.beginPath()
+  c.ellipse(hx + 5, hy + 1.3, 4.7, 4.6, 0, 0, TAU)
+  c.ellipse(hx + 13.6, hy + 1, 2.3, 4.4, 0, 0, TAU)
+  c.fillStyle = 'rgba(200,228,255,0.22)'
+  c.fill()
+  c.lineCap = 'round'
+  c.lineJoin = 'round'
+  rimPath()
+  c.strokeStyle = INK
+  c.lineWidth = 2.5
+  c.stroke()
+  rimPath()
+  c.strokeStyle = '#d6a23a'
+  c.lineWidth = 1.05
+  c.stroke()
+  fine(c, hx + 2.2, hy - 0.8, hx + 3, hy - 2.4, hx + 4.8, hy - 2.6, 1, 'rgba(255,255,255,0.75)')
+}
+
+/** başa takılan aksesuar (baş koordinatında). hair: geriye savrulma, lift: dikey savrulma (püskül ve ponpon izler) */
+function drawHeadAcc(c: CanvasRenderingContext2D, acc: AccessoryId, hx: number, hy: number, t: number, moving: boolean, hair: number, lift: number) {
+  const sway = Math.sin(t * (moving ? 11 : 1.8) - 0.8) * (moving ? 1.2 : 0.5)
+  switch (acc) {
+    case 'fes': {
+      // kırmızı keçe fes: tepesi hafif geriye yatık kesik koni; tepeden geriye siyah püskül sarkar
+      const col = '#c7302f'
+      const dark = '#8c1c24'
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 13.6, hy - 10.6)
+          c.quadraticCurveTo(hx, hy - 15.8, hx + 13.4, hy - 14.4)
+          c.lineTo(hx + 8.4, hy - 33.4)
+          c.quadraticCurveTo(hx - 1.6, hy - 35.6, hx - 10.6, hy - 31)
+        },
+        col,
+        { color: dark, dx: -3, dy: -1.2 },
+      )
+      // tepe yüzü (koyu), ışık ve kenar dikişi
+      fine(c, hx - 10, hy - 30.2, hx - 1, hy - 32, hx + 8, hy - 31.8, 1.2, dark)
+      fine(c, hx - 9.2, hy - 13.4, hx - 10, hy - 21, hx - 8, hy - 28, 1.7, 'rgba(255,190,170,0.5)')
+      fine(c, hx - 12.4, hy - 13.6, hx, hy - 18.4, hx + 12.4, hy - 17.4, 0.9, dark)
+      // püskül: düğümden kordon, ucunda saçaklı demet
+      const ax = hx - 1
+      const ay = hy - 33.6
+      const ex = ax - 9 - hair * 4 + sway * 0.6
+      const ey = ay + 13 - hair * 7 - lift * 4 + sway * 0.4
+      stroke(c, [ax, ay, (ax + ex) / 2 - 1.5, (ay + ey) / 2 - 2.5, ex, ey], 1.2, '#2e2430')
+      const da = Math.atan2(ey - ay, ex - ax) - Math.PI / 2
+      c.save()
+      c.translate(ex, ey)
+      c.rotate(da * 0.6)
+      blob(
+        c,
+        () => {
+          c.moveTo(-1.1, -0.6)
+          c.lineTo(1.1, -0.6)
+          c.quadraticCurveTo(2.8, 4, 2.6, 6.8)
+          c.lineTo(-2.6, 6.8)
+          c.quadraticCurveTo(-2.8, 4, -1.1, -0.6)
+        },
+        '#3a2c3a',
+      )
+      stroke(c, [-0.9, 2.2, -1.2, 6.2], 0.6, '#7a6478', false)
+      stroke(c, [0.8, 2.2, 1, 6.2], 0.6, '#7a6478', false)
+      c.restore()
+      c.beginPath()
+      c.arc(ax, ay, 1.4, 0, TAU)
+      c.fillStyle = '#2e2430'
+      c.fill()
+      break
+    }
+    case 'hasir': {
+      // hasır şapka: geniş kenar, yuvarlak tepe, kırmızı kurdele; örgü çizgileri
+      const col = '#e9c46c'
+      const dark = '#b98d3c'
+      const lite = '#fae3a4'
+      blob(
+        c,
+        () => {
+          c.ellipse(hx + 1.5, hy - 12.6, 26, 4.6, -0.1, 0, TAU)
+        },
+        col,
+        { color: dark, dx: 0, dy: -2.2 },
+      )
+      fine(c, hx - 20, hy - 12, hx - 12, hy - 15, hx - 4, hy - 15.6, 1.2, lite)
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 11.6, hy - 12.2)
+          c.bezierCurveTo(hx - 13.4, hy - 29, hx + 12.6, hy - 31.6, hx + 13.6, hy - 14.6)
+          c.quadraticCurveTo(hx + 1, hy - 15.4, hx - 11.6, hy - 12.2)
+        },
+        col,
+        { color: dark, dx: -3, dy: -1.4 },
+      )
+      // kurdele
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 11.8, hy - 12.4)
+          c.quadraticCurveTo(hx + 1, hy - 15.6, hx + 13.6, hy - 14.8)
+          c.lineTo(hx + 13.2, hy - 19.2)
+          c.quadraticCurveTo(hx + 1, hy - 20.2, hx - 12.2, hy - 16.6)
+        },
+        '#c8343a',
+        { color: '#8e2028', dx: 0, dy: -1.2 },
+      )
+      // örgü: tepe ve kenarda kısa kıvrımlar, tepede ışık
+      fine(c, hx - 6, hy - 21, hx - 2, hy - 26.6, hx + 5, hy - 27, 0.9, dark)
+      fine(c, hx - 9, hy - 20.6, hx - 4, hy - 23.4, hx + 9, hy - 22.4, 0.9, dark)
+      fine(c, hx + 16, hy - 13.6, hx + 21, hy - 13.4, hx + 25, hy - 14.6, 0.9, dark)
+      fine(c, hx - 10, hy - 21, hx - 9.6, hy - 25.4, hx - 4.6, hy - 27.4, 1.6, lite)
+      break
+    }
+    case 'bere': {
+      // örgü bere: başı tepeden saran kubbe, kıvrık kenar, tepede ponpon
+      const col = '#4c6ab4'
+      const dark = '#33498a'
+      const lite = '#7c98d8'
+      const px = hx - 3.5 - hair * 3.2 + sway * 0.4
+      const py = hy - 31.5 + lift * 1.5
+      const pom = () => {
+        for (let i = 0; i < 9; i++) {
+          const a = (i * TAU) / 9
+          const r = i % 2 ? 5 : 5.6
+          if (i === 0) c.moveTo(px + Math.cos(a) * r, py + Math.sin(a) * r)
+          else c.lineTo(px + Math.cos(a) * r, py + Math.sin(a) * r)
+        }
+      }
+      blob(c, pom, '#f4ead2', { color: '#cdbd9a', dx: -1.6, dy: -1.6 })
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 16.6, hy - 7.4)
+          c.bezierCurveTo(hx - 19.4, hy - 31, hx + 16, hy - 33, hx + 17.6, hy - 11.6)
+          c.quadraticCurveTo(hx + 1, hy - 14, hx - 16.6, hy - 7.4)
+        },
+        col,
+        { color: dark, dx: -3, dy: -1.6 },
+      )
+      // örgü dokusu: tepeye doğru toplanan ilmek sıraları
+      fine(c, hx - 8, hy - 15.4, hx - 7.4, hy - 22, hx - 3.6, hy - 27.4, 0.9, dark)
+      fine(c, hx + 1.6, hy - 17, hx + 2.4, hy - 22.6, hx + 1.6, hy - 28.4, 0.9, dark)
+      fine(c, hx + 10, hy - 16, hx + 10.4, hy - 21, hx + 7.6, hy - 26, 0.9, dark)
+      fine(c, hx - 14.6, hy - 14, hx - 13.6, hy - 22, hx - 7.6, hy - 27, 1.7, lite)
+      // kıvrık kenar: ayrı bant, üstünde fitil çizgileri
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 17, hy - 6.6)
+          c.quadraticCurveTo(hx + 1, hy - 13.6, hx + 18, hy - 11)
+          c.lineTo(hx + 17.4, hy - 16.4)
+          c.quadraticCurveTo(hx + 1, hy - 18.4, hx - 17.4, hy - 11.6)
+        },
+        col,
+        { color: dark, dx: 0, dy: -1.8 },
+      )
+      c.beginPath()
+      for (let i = 0; i < 8; i++) {
+        const u = i / 7
+        const x0 = hx - 14.6 + u * 29
+        const y0 = hy - 8.6 - Math.sin(u * 2.3) * 3.6
+        c.moveTo(x0, y0)
+        c.lineTo(x0 + 0.3, y0 - 4.4)
+      }
+      c.strokeStyle = dark
+      c.lineWidth = 0.8
+      c.lineCap = 'round'
+      c.stroke()
+      break
+    }
+    case 'papatya': {
+      // papatya tacı: başın üstünden geçen ince yeşil sap, arada yapraklar ve beş papatya
+      const P = (u: number): [number, number] => {
+        const a = (1 - u) * (1 - u)
+        const b = 2 * u * (1 - u)
+        const d = u * u
+        return [a * (hx - 16) + b * (hx - 5) + d * (hx + 15.5), a * (hy - 7.5) + b * (hy - 28) + d * (hy - 16.6)]
+      }
+      c.beginPath()
+      const s0 = P(0)
+      c.moveTo(s0[0], s0[1])
+      c.quadraticCurveTo(hx - 5, hy - 28, hx + 15.5, hy - 16.6)
+      c.strokeStyle = INK
+      c.lineWidth = 1.6 + inkW * 0.6
+      c.lineCap = 'round'
+      c.stroke()
+      c.strokeStyle = '#5c9a3e'
+      c.lineWidth = 1.6
+      c.stroke()
+      // yapraklar: sapın iki yanına sivri yeşil damlalar
+      for (const [u, side] of [[0.18, 1], [0.4, -1], [0.62, 1], [0.84, -1]]) {
+        const [lx, ly] = P(u)
+        const a = u * 1.6 - 1.4 + side * 0.9
+        c.save()
+        c.translate(lx, ly)
+        c.rotate(a)
+        blob(
+          c,
+          () => {
+            c.moveTo(0, 0)
+            c.quadraticCurveTo(2.2, -2.2, 5, 0)
+            c.quadraticCurveTo(2.2, 2.2, 0, 0)
+          },
+          '#6eae48',
+        )
+        c.restore()
+      }
+      for (const [u, r] of [[0.04, 3.6], [0.27, 4.2], [0.5, 4.6], [0.73, 4.3], [0.95, 3.8]]) {
+        const [dx, dy] = P(u)
+        daisy(c, dx, dy, r, u * 2)
+      }
+      break
+    }
+  }
+}
+
+/** kilim heybe: kalçada, gövdenin arkasında sallanır (gövdeden önce çizilir); uzun saçın altında kalmaz */
+function drawBag(c: CanvasRenderingContext2D, tx: number, ty: number, sw: number) {
+  c.save()
+  c.translate(tx - 9, ty - 15)
+  c.rotate(sw * 0.04)
+  const bag = () => {
+    c.moveTo(1.5, 0)
+    c.lineTo(-8, 0.2)
+    c.quadraticCurveTo(-12.6, 0.4, -12.6, 4.6)
+    c.lineTo(-12.2, 15.4)
+    c.quadraticCurveTo(-12, 19, -8, 19)
+    c.lineTo(1.5, 18.6)
+  }
+  blob(c, bag, '#ad3430', { color: '#7a2024', dx: -2.6, dy: 0 })
+  // kilim deseni: hardal bant ve içinde lacivert zikzak, kapak çizgisi, alt uçta püsküller
+  c.save()
+  c.beginPath()
+  bag()
+  c.closePath()
+  c.clip()
+  c.fillStyle = '#e8b04a'
+  c.fillRect(-14, 8, 16, 5.4)
+  c.beginPath()
+  c.moveTo(-14, 10.7)
+  for (let i = 0; i < 7; i++) c.lineTo(-12.4 + i * 2.3, i % 2 ? 9 : 12.4)
+  c.strokeStyle = '#2c4a7a'
+  c.lineWidth = 1.3
+  c.lineJoin = 'miter'
+  c.stroke()
+  c.restore()
+  fine(c, -12.4, 5, -6, 5.8, 1.4, 5.2, inkW * 0.32, INK)
+  fine(c, -10.8, 2.4, -11.2, 7, -10.8, 16, 1.2, 'rgba(255,200,170,0.45)')
+  stroke(c, [-9.6, 19, -10, 22.4], 1.1, '#e8b04a')
+  stroke(c, [-6, 19, -6.2, 22.6], 1.1, '#e8b04a')
+  stroke(c, [-2.4, 18.9, -2.4, 22.4], 1.1, '#e8b04a')
+  c.restore()
+}
+
+/** heybenin askısı: heybeden sırta, omzun üstünden göğsü çaprazlama geçer (gövdeden sonra çizilir) */
+function drawStrap(c: CanvasRenderingContext2D, tx: number, ty: number) {
+  stroke(c, [tx - 9.6, ty - 14, tx - 8.4, ty - 21.6, tx - 4, ty - 26.4, tx + 1, ty - 22, tx + 9.2, ty - 6.4], 2.1, '#7a4a2a')
+  stroke(c, [tx - 3.4, ty - 25.6, tx + 1.2, ty - 21.6], 0.8, 'rgba(255,220,180,0.5)', false)
+}
+
 /**
  * Karakteri çizer. (x, y): ayak tabanı orta noktası ekran pikselinde, size: karakter boyu pikselde.
  * flip: sola bakar. t: saniye (atkı ve saç salınımı, nefes).
  */
-export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x: number, y: number, size: number, flip: boolean, t: number, opts: { moving?: boolean; sx?: number; sy?: number; scarf?: string; scarfS?: string } = {}) {
+export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x: number, y: number, size: number, flip: boolean, t: number, opts: { moving?: boolean; sx?: number; sy?: number; scarf?: string; scarfS?: string; acc?: AccessoryId } = {}) {
   const s0 = LOOKS[look]
   const s = opts.scarf ? { ...s0, scarf: opts.scarf, scarfS: opts.scarfS ?? s0.scarfS } : s0
   const moving = !!opts.moving
+  const acc = opts.acc ?? 'yok'
   c.save()
   c.translate(x, y)
   const k = size / 100
@@ -994,6 +1294,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
     stroke(c, [tx - 15, ty - 44, tx - 11, ty - 48, tx - 8.5, ty - 44.5], 2.6, '#6a4a2e')
     stroke(c, [tx - 15.6, ty - 40, tx - 14.5, ty - 12], 0.9, '#9a744a', false)
   }
+  if (acc === 'heybe') drawBag(c, tx, ty, Math.sin(t * (moving ? 13 : 2.2)) * (moving ? 1 : 0.3) + (pose.ground ? 0 : lift * 2))
   drawTorso(c, s, tx, ty)
   if (s.robe) {
     // etek / cübbe: belden bileğe, hafif açılarak iner
@@ -1033,6 +1334,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
     fine(c, tx - 4, ty - 5, tx + 2, ty - 4, tx + 7.6, ty - 5.2, 0.9, '#cfc8ba')
     fine(c, tx - 1.6, ty + 1, tx + 1.6, ty + 3.4, tx + 5, ty + 1, 0.9, '#cfc8ba')
   }
+  if (acc === 'heybe') drawStrap(c, tx, ty)
   if (s.prop === 'saz') {
     // bağlama: gövde belde, sap omuza doğru
     stroke(c, [tx + 2, ty - 8, tx + 22, ty - 30], 2.4, '#7a4a24')
@@ -1058,7 +1360,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   c.rotate(nod)
   c.scale(1.14, 1.14)
   c.translate(-(tx + 1), -(ty - 28))
-  drawHead(c, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0, lift, t, moving, pose.mood === 'happy')
+  drawHead(c, s, tx + 1, ty, !!pose.blink, pose.hair ?? 0, lift, t, moving, pose.mood === 'happy', acc)
   c.restore()
   drawArm(c, s, tx + 4 + twist(na[0]), sY, na[0], na[1], true)
   c.restore()

@@ -48,9 +48,15 @@ export default async function SkorPage({ searchParams }: Props) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/skor/kart?${shareQuery(d)}`} alt={`${l.name}: ${formatTime(d.timeMs)}, ${d.deaths} düşüş, ${d.items}/3 hatıra`} width={1200} height={630} className="pixel-panel mt-6 h-auto w-full p-0" />
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href={`/?sehir=${l.id}`} className="pixel-btn primary px-6 py-3">
-                ▶ {l.name} Rekorunu Kır
-              </Link>
+              {d.name ? (
+                <Link href={`/?yaris=${l.id}~${encodeURIComponent(d.name)}`} className="pixel-btn primary px-6 py-3">
+                  ◌ {d.name} Hayaletiyle Yarış
+                </Link>
+              ) : (
+                <Link href={`/?sehir=${l.id}`} className="pixel-btn primary px-6 py-3">
+                  ▶ {l.name} Rekorunu Kır
+                </Link>
+              )}
               <Link href="/hakkinda" className="pixel-btn px-6 py-3">
                 Oyunu Tanı
               </Link>

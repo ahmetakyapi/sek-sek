@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
+import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
 import { bossLevel } from '../game/levels'
+import { mirrorLevel } from '../game/mirror'
+import { ACCESSORIES, accessoryFor, walletOf } from '../game/accessories'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
@@ -197,5 +199,57 @@ describe('mücadele haritaları', () => {
     expect(freshAchievements({ ...defaultSave(), challenges: one }).map((a) => a.id)).toContain('challenge3')
     const all = Object.fromEntries(CHALLENGES.map((c) => [c.id, 20000]))
     expect(freshAchievements({ ...defaultSave(), challenges: all }).map((a) => a.id)).toContain('challengeAll')
+  })
+})
+
+describe('haftalık turnuva', () => {
+  it('her hafta üç farklı şehirden üç mücadele, aynı hafta hep aynı', () => {
+    for (const w of ['2026-H46', '2026-H47', '2027-H01']) {
+      const ids = tournamentFor(w)
+      expect(ids).toEqual(tournamentFor(w))
+      expect(new Set(ids.map((id) => CHALLENGES.find((c) => c.id === id)!.level)).size).toBe(3)
+    }
+    expect(tournamentFor('2026-H46')).not.toEqual(tournamentFor('2026-H47'))
+  })
+  it('kayıt: hafta dönünce sıfırlanır, aynı haftada en iyisi kalır, iki cihaz birleşir', () => {
+    const [a, b, c] = tournamentFor('2026-H46')
+    let m = markTournament(null, '2026-H46', a, 9000).mark
+    expect(markTournament(m, '2026-H46', a, 9500).best).toBe(false)
+    m = markTournament(m, '2026-H46', b, 8000).mark
+    expect(tournamentTotal(m, '2026-H46')).toBeNull()
+    m = markTournament(m, '2026-H46', c, 7000).mark
+    expect(tournamentTotal(m, '2026-H46')).toBe(24000)
+    expect(markTournament(m, '2026-H47', a, 9000).mark.best).toEqual({ [a]: 9000 })
+    expect(mergeTournament({ week: '2026-H46', best: { [a]: 5000 } }, m)?.best[a]).toBe(5000)
+    expect(mergeTournament({ week: '2026-H47', best: {} }, m)?.week).toBe('2026-H47')
+  })
+})
+
+describe('Ayna Yolu', () => {
+  it('harita sağdan sola döner, oklar ters bakar, rüzgâr ters eser; toplanan ve konuşan çıkar', () => {
+    for (const l of LEVELS) {
+      const m = mirrorLevel(l)
+      const w = Math.max(...l.map.map((r) => r.length))
+      expect(m.map.every((r) => r.length === w), l.id).toBe(true)
+      expect(m.map.join(''), l.id).not.toMatch(/[C$!n?]/)
+      const count = (map: string[], c: string) => map.join('').split(c).length - 1
+      expect(count(m.map, '<')).toBe(count(l.map, '>'))
+      expect(count(m.map, 'P')).toBe(1)
+      expect(m.wind ?? 0).toBe(l.wind ? -l.wind : 0)
+      const a = new World(l)
+      const b = new World(m)
+      // başlangıç tam ayna yerinde
+      expect(b.start.x).toBeCloseTo(a.cols * 16 - a.start.x - 12)
+    }
+  })
+})
+
+describe('Kılık Dükkânı', () => {
+  it('cüzdan bulunan parçalardan alınanların fiyatı düşülerek hesaplanır, eksiye inmez', () => {
+    expect(walletOf(40, {})).toBe(40)
+    expect(walletOf(40, { papatya: true, gozluk: true })).toBe(5)
+    expect(walletOf(10, { fes: true })).toBe(0)
+    expect(accessoryFor('yok-boyle')).toBe('yok')
+    expect(new Set(ACCESSORIES.map((a) => a.id)).size).toBe(ACCESSORIES.length)
   })
 })

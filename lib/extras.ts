@@ -1,4 +1,5 @@
 import { LEVELS } from '@/game/levels'
+import { CHALLENGES } from '@/game/challenges'
 import type { LevelDef } from '@/game/types'
 
 /**
@@ -343,4 +344,48 @@ export function travelerTitle(f: TitleFacts): string {
   if (f.cities >= 5) return 'Yola Alışan'
   if (f.cities >= 1) return 'Çiçeği Burnunda Yolcu'
   return 'Yeni Yolcu'
+}
+
+/**
+ * Haftalık Turnuva: her hafta (pazartesi-pazar, İstanbul saatiyle) herkes için aynı üç mücadele haritası. Sıralama üçünü de
+ * bitirenlerin toplam süresiyle; skor satırları `turnuva:<hafta>:<mücadele>` anahtarıyla skor tablosunda durur.
+ */
+export const TOURNAMENT_SIZE = 3
+export const tournamentWeek = (day: string) => weekKey(new Date(`${day}T12:00:00`))
+export function tournamentFor(week: string): Challenge3 {
+  const pool = CHALLENGES.map((c) => c.id)
+  const out: string[] = []
+  for (let i = 0; out.length < TOURNAMENT_SIZE; i++) {
+    const id = pool[hash(`turnuva:${week}:${i}`) % pool.length]
+    // aynı şehirden iki kesit aynı haftaya düşmesin
+    if (!out.some((o) => CHALLENGES.find((c) => c.id === o)!.level === CHALLENGES.find((c) => c.id === id)!.level)) out.push(id)
+  }
+  return out as Challenge3
+}
+type Challenge3 = [string, string, string]
+/** turnuva skorunun tablo anahtarı */
+export const tournamentKey = (week: string, id: string) => `turnuva:${week}:${id}`
+/** cihazdaki turnuva kaydı: yalnız bu haftanınki tutulur */
+export interface TournamentMark {
+  week: string
+  best: Record<string, number>
+}
+export function markTournament(m: TournamentMark | null | undefined, week: string, id: string, timeMs: number): { mark: TournamentMark; best: boolean } {
+  const cur = m?.week === week ? m.best : {}
+  const best = cur[id] === undefined || timeMs < cur[id]
+  return { mark: { week, best: best ? { ...cur, [id]: timeMs } : cur }, best }
+}
+/** üçü de bitince toplam süre */
+export const tournamentTotal = (m: TournamentMark | null | undefined, week: string) => {
+  if (m?.week !== week) return null
+  const ids = tournamentFor(week)
+  return ids.every((id) => m.best[id] !== undefined) ? ids.reduce((a, id) => a + m.best[id], 0) : null
+}
+/** iki cihazın turnuva kaydı: daha yeni hafta kazanır, aynı haftada her mücadelenin en iyisi */
+export function mergeTournament(a: TournamentMark | null | undefined, b: TournamentMark | null | undefined): TournamentMark | null {
+  if (!a || !b) return a ?? b ?? null
+  if (a.week !== b.week) return a.week > b.week ? a : b
+  const best = { ...b.best }
+  for (const [k, v] of Object.entries(a.best)) best[k] = Math.min(v, best[k] ?? v)
+  return { week: a.week, best }
 }

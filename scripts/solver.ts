@@ -5,7 +5,7 @@
  */
 import type { LevelDef } from '../game/types'
 import { World, snapshot, restore, type Snapshot } from '../game/sim'
-import { emptyInput, type Input } from '../game/types'
+import { T, emptyInput, type Input } from '../game/types'
 
 const DT = 1 / 120
 
@@ -151,7 +151,9 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   // (yenilebilirliği tests/boss.test.ts oynayarak doğrular)
   w.boss = null
   const ms = macros(opts.moves ?? 'all')
-  let far = { x: 0, y: 0 }
+  // ilerleme yönü: Ayna Yolu'nda çıkış solda, arama da sola doğru ilerlemeyi öne alır
+  const mx = (x: number) => (level.mirror ? w.cols * T - x : x)
+  let far = { x: w.player.x, y: w.player.y }
   if (opts.start) restore(w, opts.start)
   const arrivals: SolveResult['arrivals'] = []
   const arrive = (index: number) => {
@@ -165,7 +167,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   // hedefli tur: eksik kalan bir hedefe en yakın durumlar önce açılır
   let target: { x: number; y: number } | null = opts.goal ?? null
   const pool: Snapshot[] = []
-  const pri = (q: Snapshot) => (target ? -Math.hypot(q.player.x - target.x, q.player.y - target.y) : q.player.x - q.player.y * 0.3 + ((q.player.x * 7 + q.player.y * 13) % 40))
+  const pri = (q: Snapshot) => (target ? -Math.hypot(q.player.x - target.x, q.player.y - target.y) : mx(q.player.x) - q.player.y * 0.3 + ((mx(q.player.x) * 7 + q.player.y * 13) % 40))
   const push = (q: Snapshot & { pr?: number }, keep = true) => {
     if (keep) pool.push(q)
     q.pr = pri(q)
@@ -247,7 +249,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
         if (hit && !goal) goal = { from: s, via: m }
         if (hit) won = true
         if (w.deaths > deaths || w.complete || !w.player.grounded) continue
-        if (w.player.x > far.x) far = { x: w.player.x, y: w.player.y }
+        if (mx(w.player.x) > mx(far.x)) far = { x: w.player.x, y: w.player.y }
         const ns = snapshot(w)
         const k = key(ns, w)
         if (!seen.has(k)) {

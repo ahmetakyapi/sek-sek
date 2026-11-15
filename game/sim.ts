@@ -316,6 +316,8 @@ export class World {
         const ch = row[tx] ?? ' '
         const px = tx * T
         const py = ty * T
+        // zamanlama fazları asıl haritadaki sütundan: aynalı harita aynı ritimde işler
+        const ox = level.mirror ? this.cols - 1 - tx : tx
         switch (ch) {
           case '#':
             this.set(tx, ty, SOLID)
@@ -347,7 +349,7 @@ export class World {
           case '>':
           case '<':
             this.set(tx, ty, TURRET)
-            this.turrets.push({ tx, ty, dir: ch === '>' ? 1 : -1, timer: 0.6 + ((tx * 7 + ty * 3) % 10) / 10 })
+            this.turrets.push({ tx, ty, dir: ch === '>' ? 1 : -1, timer: 0.6 + ((ox * 7 + ty * 3) % 10) / 10 })
             break
           case 'P':
             start = { x: px + (T - PW) / 2, y: py + T - PH }
@@ -368,7 +370,7 @@ export class World {
             this.enemies.push(enemy('ground', px + 2, py + 6, 12, 10))
             break
           case 'f':
-            this.enemies.push({ ...enemy('fly', px + 2, py + 4, 12, 8), phase: tx * 0.7 })
+            this.enemies.push({ ...enemy('fly', px + 2, py + 4, 12, 8), phase: ox * 0.7 })
             break
           case 'h':
             this.enemies.push(enemy('hopper', px + 2, py + 6, 12, 10))
@@ -377,7 +379,7 @@ export class World {
             this.enemies.push(enemy('charger', px + 1, py + 4, 14, 12))
             break
           case 'u':
-            this.enemies.push({ ...enemy('bat', px + 2, py + 4, 12, 8), phase: tx * 0.9 })
+            this.enemies.push({ ...enemy('bat', px + 2, py + 4, 12, 8), phase: ox * 0.9 })
             break
           case 'x':
             this.enemies.push(enemy('spiky', px + 2, py + 7, 12, 9))
@@ -459,7 +461,7 @@ export class World {
           case 'Y': {
             let d = ty + 1
             while (d < map.length && !'#I=X'.includes(map[d][tx] ?? ' ')) d++
-            this.hammers.push({ x: px, top: py, bottom: (d - 1) * T, offset: (tx * 0.37) % HAMMER_CYCLE })
+            this.hammers.push({ x: px, top: py, bottom: (d - 1) * T, offset: (ox * 0.37) % HAMMER_CYCLE })
             break
           }
           case 'a':
@@ -510,8 +512,10 @@ export class World {
       // merkez yerleştirilen yerde; 2 karo yarıçapla döner, komşular ters yönde
       const cx = x + w / 2
       const cy = y + 4
-      const a0 = (tx % 2) * Math.PI
-      const dir = tx % 4 < 2 ? 1 : -1
+      // aynalı haritada dönüş, asıl haritadaki halkanın tam ayna görüntüsü: aynı başlangıç, ters yön
+      const otx = this.level.mirror ? this.cols - tx - n : tx
+      const a0 = this.level.mirror ? Math.PI - (otx % 2) * Math.PI : (tx % 2) * Math.PI
+      const dir: 1 | -1 = (otx % 4 < 2) !== !!this.level.mirror ? 1 : -1
       const r = 2 * T
       return { x: cx + Math.cos(a0) * r - w / 2, y: cy + Math.sin(a0) * r, w, h: 6, axis, min: 0, max: 0, dir, speed: 1.35, dx: 0, dy: 0, cx, cy, r, a0 }
     }
@@ -541,7 +545,8 @@ export class World {
       min = (u + 1) * T
       max = (d - 1) * T
     }
-    return { x, y, w, h: 6, axis, min, max, dir: 1, speed: axis === 'x' ? 42 : 36, dx: 0, dy: 0 }
+    // aynalı haritada yatay platform ilk önce sola gider (asıl haritanın ayna görüntüsü)
+    return { x, y, w, h: 6, axis, min, max, dir: axis === 'x' && this.level.mirror ? -1 : 1, speed: axis === 'x' ? 42 : 36, dx: 0, dy: 0 }
   }
 
   private freshPlayer(x: number, y: number): Player {

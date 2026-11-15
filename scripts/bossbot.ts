@@ -95,7 +95,8 @@ export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number
     w.turrets.length = 0
     const b = w.boss
     if (!b) return { won: false, deaths: 0, seconds: 0, hpLeft: -1 }
-    const flag = [...w.checkpoints].sort((x, y) => y.x - x.x)[0]
+    // arenanın bayrağı yolun sonundaki bayraktır (Ayna Yolu'nda en solda)
+    const flag = [...w.checkpoints].sort((x, y) => (level.mirror ? x.x - y.x : y.x - x.x))[0]
     const p = w.player
     p.x = flag.x + 2
     p.y = flag.y + flag.h - p.h
@@ -159,11 +160,13 @@ export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number
 }
 
 if (process.argv[1]?.endsWith('bossbot.ts')) {
-  void import('../game/levels').then(({ LEVELS }) => {
+  // AYNA=1: Ayna Yolu'nun aynalanmış arenasında dövüşür
+  void Promise.all([import('../game/levels'), import('../game/mirror')]).then(([{ LEVELS }, { mirrorLevel }]) => {
     const only = process.argv[2]
     const show = (r: BotResult) => (r.won ? `${String(Math.round(r.seconds)).padStart(3)} sn, ${r.deaths} düşüş` : `yenemedi (kalan can ${r.hpLeft}, ${r.deaths} düşüş)`)
     let fail = false
-    for (const l of LEVELS.filter((x) => !only || x.id === only)) {
+    for (const l0 of LEVELS.filter((x) => !only || x.id === only)) {
+      const l = process.env.AYNA ? mirrorLevel(l0) : l0
       const t0 = Date.now()
       const runs = [fightBoss(l), fightBoss(l, { weak: true }), fightBoss(l, { sight: 'telegraph', limit: 240 }), fightBoss(l, { weak: true, sight: 'telegraph', limit: 240 })]
       const ok = runs.every((r) => r.won)

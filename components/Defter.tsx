@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Album from '@/components/Album'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
 import { MedalBadge, Overlay, displayName, medalFor } from '@/components/ui'
@@ -28,7 +29,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
   const bosses = LEVELS.filter((l) => save.bosses[l.id]).length
   const scarves = SCARVES.filter((s) => charms >= s.need).length
   const stats = save.stats ?? emptyStats()
-  const [tab, setTab] = useState<'sehir' | 'basarim'>('sehir')
+  const [tab, setTab] = useState<'sehir' | 'album' | 'basarim'>('sehir')
   const got = ACHIEVEMENTS.filter((a) => isEarned(a, save)).length
   const streak = liveStreak(save.meydan, today)
   const mins = Math.round(stats.playMs / 60000)
@@ -42,7 +43,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
   ]
   return (
     <Overlay>
-      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1280px,100%)]">
+      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1100px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold tracking-[0.3em] text-accent">{t('YOLCULUĞUN ÖZETİ')}</p>
@@ -58,10 +59,10 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-5 gap-1.5 text-center sm:gap-2 short:mt-2">
+        <div className={`mt-4 grid grid-cols-5 gap-1.5 text-center sm:gap-2 short:mt-2 ${tab === 'album' ? 'max-sm:hidden short:hidden' : ''}`}>
           {totals.map(([k, v, max]) => (
-            <div key={k} className={`border-2 py-2 short:py-1 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
-              <p className="font-display text-base leading-none tabular-nums text-cream sm:text-xl">
+            <div key={k} className={`border-2 py-1.5 short:py-1 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
+              <p className="font-display text-base leading-none tabular-nums text-cream sm:text-lg">
                 {v}
                 <span className="text-sm text-muted">/{max}</span>
               </p>
@@ -70,7 +71,8 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           ))}
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 short:hidden">
+        {/* Albüm açıkken görev ve istatistik satırları sayfaya yer bırakır */}
+        <div className={`mt-3 grid-cols-2 gap-2 sm:grid-cols-3 short:hidden ${tab === 'album' ? 'hidden' : 'grid'}`}>
           <div className="border-2 border-line bg-ink/40 px-3 py-2 max-sm:hidden">
             <p className="text-[11px] font-bold tracking-[0.18em] text-gold">{t('GÖREVLER')}</p>
             <p className="mt-0.5 text-[13px] text-cream">{t('{d} gün · {w} hafta tamamlandı', { d: save.daily.count, w: save.weekly.count })}</p>
@@ -92,7 +94,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
         </div>
 
         {/* yol istatistikleri: küçük sayaçlar, bir bakışta */}
-        <p className={`mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[12px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs ? '' : 'hidden'}`}>
+        <p className={`mt-2 flex-wrap gap-x-4 gap-y-0.5 text-[12px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs && tab !== 'album' ? 'flex' : 'hidden'}`}>
           {(
             [
               [t('Koşu'), stats.runs],
@@ -115,6 +117,7 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           {(
             [
               ['sehir', t('Şehirler')],
+              ['album', t('Albüm')],
               ['basarim', `${t('Başarımlar')} ${got}/${ACHIEVEMENTS.length}`],
             ] as const
           ).map(([k, label]) => (
@@ -124,8 +127,10 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
           ))}
         </div>
 
-        {tab === 'basarim' ? (
-          <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 wide:grid-cols-3 min-[1400px]:wide:grid-cols-4">
+        {tab === 'album' ? (
+          <Album save={save} />
+        ) : tab === 'basarim' ? (
+          <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
             {ACHIEVEMENTS.map((a) => {
               const [now, goal] = a.progress(save)
               const done = now >= goal
@@ -151,33 +156,33 @@ export default function Defter({ save, today, onClose, onModes }: { save: Save; 
             })}
           </ul>
         ) : (
-        <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 wide:grid-cols-3 min-[1400px]:wide:grid-cols-4">
+        <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 wide:grid-cols-4">
           {LEVELS.map((l, i) => {
             const locked = i > save.unlocked
             const best = save.best[l.id]
             const beaten = !!save.bosses[l.id]
             const boss = BOSSES[l.city]
             return (
-              <li key={l.id} className={`flex items-center gap-3 border-2 px-3 py-2 ${locked ? 'border-line/50 opacity-50' : 'border-line bg-panel-2'}`}>
+              <li key={l.id} className={`flex items-center gap-2.5 border-2 px-2.5 py-1.5 ${locked ? 'border-line/50 opacity-50' : 'border-line bg-panel-2'}`}>
                 <span className="plate shrink-0 text-[11px]">
                   <span>{String(l.plate).padStart(2, '0')}</span>
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 font-display text-base leading-tight text-cream">
+                  <p className="flex items-center gap-1.5 font-display text-[15px] leading-tight text-cream">
                     <span className="truncate">{displayName(l)}</span>
                     {best && !best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}
                   </p>
                   <p className="mt-1 flex items-center gap-1.5" title={localize(l, lang).item}>
                     {[0, 1, 2].map((k) => (
-                      <ItemIcon key={k} city={l.city} taken={!!best?.items[k]} size={20} />
+                      <ItemIcon key={k} city={l.city} taken={!!best?.items[k]} size={17} />
                     ))}
                     <span className="mx-0.5 h-4 w-px bg-line" />
-                    <ThingIcon kind="stamp" taken={!!save.stamps[l.id]} size={20} />
-                    <ThingIcon kind="charm" taken={!!save.charms[l.id]} size={20} />
+                    <ThingIcon kind="stamp" taken={!!save.stamps[l.id]} size={17} />
+                    <ThingIcon kind="charm" taken={!!save.charms[l.id]} size={17} />
                   </p>
                   <p className="mt-0.5 truncate text-[11px] text-muted">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Boss: ???')}</p>
                 </div>
-                <BossFigure city={l.city} className={`h-12 w-12 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
+                <BossFigure city={l.city} className={`h-10 w-10 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
               </li>
             )
           })}

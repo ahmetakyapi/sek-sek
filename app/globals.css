@@ -516,3 +516,34 @@ blockquote {
 .nowrap {
   white-space: nowrap;
 }
+
+/* Final jeneriği: yazılar aşağıdan yukarı akar, üstte ve altta solar */
+.credits-mask {
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+}
+.credits-roll {
+  animation: credits-roll 38s linear forwards;
+  padding-top: 100%;
+}
+@keyframes credits-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .credits-roll {
+    animation: none;
+    padding-top: 0;
+  }
+  .credits-mask {
+    overflow-y: auto;
+  }
+}
+
+/* yatay kayan şerit: kenarlarda yarım kesik düğme yerine yumuşak geçiş */
+.strip-fade {
+  mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}

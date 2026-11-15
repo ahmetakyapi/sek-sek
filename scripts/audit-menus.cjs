@@ -17,6 +17,9 @@ const TOLERANCE = 2
 const IDS = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay']
 const best = Object.fromEntries(IDS.map((id, i) => [id, { timeMs: 60000 + i * 7000, deaths: i % 4, items: [true, i % 2 === 0, i % 3 === 0] }]))
 const SAVE = { character: 'uktun', seenStory: true, tutorial: false, unlocked: 16, best: { ...best, corum: { timeMs: 140000, deaths: 9, items: [true, true, true] } }, challenges: { 'corum-leblebi': 15200 }, ach: { firstCity: true }, stamps: { istanbul: true }, charms: { istanbul: true, bursa: true }, bosses: { istanbul: true, edirne: true, kocaeli: true, bursa: true }, skippedName: true, mapVersion: 8, migrated: true, accountVersion: 2, stats: { runs: 40, deaths: 120, jumps: 3000, dashes: 500, stomps: 40, playMs: 5400000 } }
+/** bütün şehirlerin kimlikleri (oyunun kendisinden): final ve Ayna Yolu için hepsi bitmiş yolcu */
+const LEVEL_IDS = JSON.parse(require('node:child_process').execSync(`npx tsx -e "import { LEVELS } from './game/levels'; console.log(JSON.stringify(LEVELS.map((l) => l.id)))"`, { encoding: 'utf8' }))
+const ALL = { ...SAVE, unlocked: 99, best: Object.fromEntries(LEVEL_IDS.map((id, i) => [id, { timeMs: 60000 + i * 1000, deaths: 1, items: [true, true, true] }])), sawEnding: true }
 const NEWS = { ...SAVE, best: { ...best, izmir: { ...best.izmir, v: 'eski' } }, seen: IDS.filter((id) => id !== 'kayseri') }
 
 const FINISH = "eval:(()=>{const w=window.__mk.world();w.started=true;w.time=73.4;w.deaths=2;if(w.pickups[0])w.pickups[0].taken=true;w.complete=true;w.events.push({type:'complete'})})()"
@@ -44,6 +47,13 @@ const SCREENS = {
   mucadeleler: [SAVE, ['Modlar', 'Mücadele Seç']],
   'mucadele-sonu': [SAVE, ['Modlar', 'Mücadele Seç', '▶ Yeniden Koş', 'wait:600', FINISH, 'wait:900']],
   'defter-basarim': [SAVE, ['Defter', 'tab:Başarımlar']],
+  'defter-album': [SAVE, ['Defter', 'tab:Albüm']],
+  turnuva: [SAVE, ['Modlar', 'Turnuvaya Gir']],
+  'turnuva-sonu': [SAVE, ['Modlar', 'Turnuvaya Gir', '▶ Koş', 'wait:600', FINISH, 'wait:900']],
+  dukkan: [SAVE, ['Karakter', 'Kılık Dükkânı']],
+  'ayna-yolu': [ALL, ['Modlar', '◐ Aynaya Geç']],
+  final: [ALL, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1200', '▶ Defteri Kapat', 'wait:600'], '?sehir=bayburt'],
+  'yaris-daveti': [SAVE, [], '?yaris=konya~ahmet'],
 }
 
 const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'Elif Su', 'Mert', 'Zeynep', 'Baran', 'Ada'].map((name, i) => ({ name, timeMs: 52000 + i * 4300, deaths: i % 7, items: 3 - (i % 3), minDeaths: i % 5, maxItems: 3, plays: 1 + (i % 6), cities: 28 - i * 2, keeps: 84 - i * 6, stamps: 28 - i * 2, charms: 20 - i, bosses: 28 - i * 2, found: 132 - i * 9, rank: i + 1, total: 11, me: false }))
@@ -52,7 +62,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
   const browser = await chromium.launch()
   const bad = []
   for (const [size, [w, h]] of Object.entries(SIZES)) {
-    for (const [name, [save, steps]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
+    for (const [name, [save, steps, query]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: w < 800 })
       if (save) await ctx.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
       const page = await ctx.newPage()
@@ -61,7 +71,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
       let note = ''
       try {
         // ?debug güncelleme notunu susturur; notun kendisi ölçülürken parametresiz açılır
-        await page.goto(`http://localhost:${PORT}/${name === 'guncelleme-notu' ? '' : '?debug'}`, { waitUntil: 'networkidle' })
+        await page.goto(`http://localhost:${PORT}/${name === 'guncelleme-notu' ? '' : `?debug${query ? `&${query.slice(1)}` : ''}`}`, { waitUntil: 'networkidle' })
         await page.waitForTimeout(500)
         for (const st of steps) {
           if (st.startsWith('key:')) await page.keyboard.press(st.slice(4))

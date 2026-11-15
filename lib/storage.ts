@@ -1,5 +1,5 @@
 import { LEVELS } from '@/game/levels'
-import { emptyStats, liveStreak, mergeDaily, mergeStats, type DailyMark, type TitleFacts, type TravelStats } from './extras'
+import { emptyStats, liveStreak, mergeDaily, mergeStats, mergeTournament, type DailyMark, type TitleFacts, type TournamentMark, type TravelStats } from './extras'
 import { cityVersion, legacyVersion } from './mapVersion'
 
 /**
@@ -98,6 +98,17 @@ export interface Save {
   ach?: Record<string, boolean>
   /** Kurallı Koşu rekorları: ruleKey(şehir, harita sürümü, kural) → en iyi skor (ms) */
   rules?: Record<string, number>
+  /** arkadaşlar: yolcu adları (skor tablosunda ☆ ile eklenir) */
+  friends?: string[]
+  /** bu haftanın turnuva rekorları */
+  turnuva?: TournamentMark | null
+  /** Ayna Yolu (Yeni Oyun+) rekorları (ms), şehir kimliğiyle */
+  ayna?: Record<string, number>
+  /** kılık dükkânında alınan aksesuarlar ve takılı olan */
+  owned?: Record<string, boolean>
+  accessory?: string
+  /** final sahnesi görüldü mü */
+  sawEnding?: boolean
   /** mücadele haritalarının en iyi süreleri (ms), mücadele kimliğiyle */
   challenges?: Record<string, number>
   /** Maraton'un (rastgele üç şehir arka arkaya) en iyi toplam süresi */
@@ -206,7 +217,7 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'sawEnding'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -251,6 +262,13 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     ach: { ...cloud.ach, ...local.ach },
     rules: Object.fromEntries([...Object.entries(cloud.rules ?? {}), ...Object.entries(local.rules ?? {})].map(([k, v]) => [k, Math.min(v, cloud.rules?.[k] ?? v, local.rules?.[k] ?? v)])),
     challenges: Object.fromEntries([...Object.entries(cloud.challenges ?? {}), ...Object.entries(local.challenges ?? {})].map(([k, v]) => [k, Math.min(v, cloud.challenges?.[k] ?? v, local.challenges?.[k] ?? v)])),
+    ayna: Object.fromEntries([...Object.entries(cloud.ayna ?? {}), ...Object.entries(local.ayna ?? {})].map(([k, v]) => [k, Math.min(v, cloud.ayna?.[k] ?? v, local.ayna?.[k] ?? v)])),
+    turnuva: mergeTournament(local.turnuva, cloud.turnuva),
+    // arkadaş listesinden çıkarılan biri buluttan geri gelmesin: bu cihazın listesi önce gelir
+    friends: local.friends ?? cloud.friends,
+    owned: { ...cloud.owned, ...local.owned },
+    accessory: local.accessory ?? cloud.accessory,
+    sawEnding: local.sawEnding || cloud.sawEnding,
     maraton: !local.maraton ? cloud.maraton : !cloud.maraton ? local.maraton : local.maraton.timeMs <= cloud.maraton.timeMs ? local.maraton : cloud.maraton,
     character: local.character ?? cloud.character,
     scarf: local.scarf !== 'al' ? local.scarf : cloud.scarf,
@@ -305,7 +323,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null, rules: {}, challenges: {}, feats: {}, ach: {} })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null, rules: {}, challenges: {}, feats: {}, ach: {}, turnuva: null, ayna: {}, sawEnding: false, owned: {}, accessory: undefined })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {
