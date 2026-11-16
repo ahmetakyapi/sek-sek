@@ -35,7 +35,8 @@ export default function Shop({ hero, scarf, owned, seals, wearing, wallet, onBuy
         </div>
         <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Yolda bulduğun her hatıra, gizli pul ve nazar boncuğu bir parça sayılır. Aldığın aksesuar senindir; istediğin zaman tak, çıkar.')}</p>
         <div className="mt-3 grid min-h-0 flex-1 gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] short:mt-2 short:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] short:gap-3">
-          <div className="flex min-h-0 flex-col items-center max-sm:flex-row max-sm:gap-3 short:flex-row short:items-start short:gap-2">
+          {/* sol: çerçeveli kart sağdaki ızgara kadar uzar (iki sütun dengeli); altta cüzdan özeti */}
+          <div className="flex min-h-0 flex-col items-center border-2 border-line bg-ink/30 p-3 max-sm:flex-row max-sm:gap-3 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 short:flex-row short:items-start short:gap-2 short:border-0 short:bg-transparent short:p-0">
             <div className="portrait-frame w-full max-w-[220px] shrink-0 max-sm:w-[110px] short:w-[84px]">
               <Portrait id={hero} scarf={scarf} accessory={pick} className="block w-full" />
             </div>
@@ -55,6 +56,20 @@ export default function Shop({ hero, scarf, owned, seals, wearing, wallet, onBuy
                   </button>
                 )}
               </div>
+            </div>
+            <div className="mt-auto grid w-full grid-cols-3 gap-1.5 pt-3 text-center max-sm:hidden short:hidden">
+              {(
+                [
+                  [wallet, t('Parça')],
+                  [seals, t('Mühür')],
+                  [`${ACCESSORIES.filter(isMine).length}/${ACCESSORIES.length}`, t('Kılık')],
+                ] as const
+              ).map(([v, k]) => (
+                <div key={k} className="border-2 border-line bg-ink/40 py-1.5">
+                  <p className="font-display text-lg leading-none tabular-nums text-cream">{v}</p>
+                  <p className="mt-0.5 text-[12px] text-muted">{k}</p>
+                </div>
+              ))}
             </div>
           </div>
           <div className="overlay-scroll grid min-h-0 grid-cols-2 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-3 short:grid-cols-3">

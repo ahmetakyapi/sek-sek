@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { CITY } from '@/game/art'
 import { LEVELS } from '@/game/levels'
 import type { CityKey } from '@/game/types'
 import type { CommunityMap, MapSort } from '@/lib/communityMaps'
 import { decodeMap } from '@/lib/customLevel'
-import { thumbColors } from '@/lib/editorKit'
+import MapThumb from '@/components/MapThumb'
 import { LangProvider, useLang, useT, type Lang } from '@/lib/i18n'
 
 /**
@@ -26,40 +26,11 @@ const THUMB_MIN_W = 100
 
 const cityName = (c: string) => LEVELS.find((l) => l.city === c)?.name ?? c
 
-/** Haritanın kuşbakışı: karo başına bir piksel, şehrin paletiyle (lib/editorKit.ts thumbColors) */
+/** Topluluk haritasının kuşbakışı (kodu çözülür, MapThumb çizer) */
 function Thumb({ code, city }: { code: string; city: string }) {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const cv = ref.current
-    const c = cv?.getContext('2d')
-    const r = decodeMap(code)
-    if (!cv || !c || 'error' in r) return
-    const p = CITY[(CITY[city as CityKey] ? city : r.city) as CityKey]
-    const w = r.map[0].length
-    // kısa haritada gök kartın sonuna dek sürer (kart ~4:1), zemin son sütunla uzar
-    cv.width = Math.max(w, THUMB_MIN_W)
-    cv.height = r.map.length
-    const sky = c.createLinearGradient(0, 0, 0, cv.height)
-    p.sky.forEach((col, i) => sky.addColorStop(i / (p.sky.length - 1), col))
-    c.fillStyle = sky
-    c.fillRect(0, 0, cv.width, cv.height)
-    const color = thumbColors(p)
-    r.map.forEach((row, y) => {
-      for (let x = 0; x < w; x++) {
-        const ch = row[x]
-        const col = color[ch]
-        if (!col) continue
-        c.fillStyle = ch === '#' && y > 0 && r.map[y - 1][x] !== '#' ? p.tileTop : col
-        c.fillRect(x, ch === 'E' || ch === 'F' ? y - 1 : y, 1, ch === 'E' || ch === 'F' ? 2 : 1)
-      }
-      const last = row[w - 1]
-      if (cv.width > w && (last === '#' || last === '~')) {
-        c.fillStyle = last === '#' ? (y > 0 && r.map[y - 1][w - 1] !== '#' ? p.tileTop : p.tile) : p.water[0]
-        c.fillRect(w, y, cv.width - w, 1)
-      }
-    })
-  }, [code, city])
-  return <canvas ref={ref} className="block h-full w-auto max-w-none" style={{ imageRendering: 'pixelated' }} aria-hidden />
+  const r = decodeMap(code)
+  if ('error' in r) return null
+  return <MapThumb map={r.map} city={(CITY[city as CityKey] ? city : r.city) as CityKey} minW={THUMB_MIN_W} />
 }
 
 function Card({ m, onLike, onPlay }: { m: CommunityMap; onLike: (m: CommunityMap) => void; onPlay: (m: CommunityMap) => void }) {
