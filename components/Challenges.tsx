@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
+import MapThumb from '@/components/MapThumb'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, displayName } from '@/components/ui'
@@ -43,17 +44,17 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
               return (
                 <li key={c.id}>
                   <button
-                    className={`mb-1 grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 border-2 px-2.5 py-1.5 text-left ${pick.id === c.id ? 'border-gold bg-gold/10' : 'border-line bg-ink/40 hover:bg-panel-2/60'} ${open ? '' : 'opacity-60'}`}
+                    className={`mb-1 grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 border-2 px-2.5 py-1 text-left ${pick.id === c.id ? 'border-gold bg-gold/10' : 'border-line bg-ink/40 hover:bg-panel-2/60'} ${open ? '' : 'opacity-60'}`}
                     aria-pressed={pick.id === c.id}
                     onClick={() => setPick(c)}
                   >
-                    <span className={`flex h-8 w-8 items-center justify-center rounded-full bg-[#221f4a] ${open ? '' : 'grayscale'}`}>
-                      <ItemIcon city={lv.city} taken={open} size={22} />
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-full bg-[#221f4a] ${open ? '' : 'grayscale'}`}>
+                      <ItemIcon city={lv.city} taken={open} size={20} />
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate font-semibold text-cream">{t(c.name)}</span>
                       <span className="block truncate text-[13px] text-muted">
-                        {displayName(lv)} · {t(lv.difficulty)}
+                        {displayName(lv)} · {rage ? t('Öfke Parkuru') : t(lv.difficulty)}
                       </span>
                     </span>
                     <span className="flex items-center gap-1.5 font-display text-[16px] tabular-nums text-cream">
@@ -67,8 +68,14 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
           </ol>
           <div className="flex min-h-0 flex-col">
             <ChallengeCard c={pick} open={finished.has(pick.level)} best={best[pick.id]} onStart={() => onStart(pick)} />
-            <div className="overlay-scroll mt-1 min-h-[100px] flex-1 overflow-y-auto pr-1 max-sm:hidden short:hidden">
-              <Board kind="city" level={challengeLevel(pick).id} me={player} compact />
+            {/* sıralama: çerçeveli kutu sağ sütunun kalanını doldurur (boşken de yerini tutar, iki sütun dengeli) */}
+            <div className="mt-3 flex min-h-[100px] flex-1 flex-col border-2 border-line bg-ink/30 p-2.5 max-sm:hidden short:hidden">
+              <p className={`flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] ${rage ? 'text-coral' : 'text-gold'}`}>
+                {t('SIRALAMA')} <span className="kilim h-[6px] flex-1 opacity-50" />
+              </p>
+              <div className="overlay-scroll mt-1.5 min-h-0 flex-1 overflow-y-auto pr-1">
+                <Board kind="city" level={challengeLevel(pick).id} me={player} compact />
+              </div>
             </div>
           </div>
         </div>
@@ -81,13 +88,47 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
   const t = useT()
   const lng = useLang()
   const lv = localize(LEVELS.find((l) => l.id === c.level)!, lng)
-  const m = challengeLevel(c).medals
+  const level = challengeLevel(c)
+  const m = level.medals
+  // haritadan kısa bilgiler: uzunluk, bayrak, tehlike ve zamanlamalı engeller (sağ sütun liste kadar dolu, dengeli)
+  const all = level.map.join('')
+  const n = (re: RegExp) => (all.match(re) ?? []).length
+  const facts: Array<[string, number]> = [
+    [t('Karo'), level.map[0].length],
+    [t('Bayrak'), n(/F/g)],
+    [t('Diken'), n(/[\^v]/g)],
+    [t('Düşman'), n(/[efhcuxj]/g)],
+    [t('Ok Tuzağı'), n(/[<>]/g)],
+    [t('Zamanlı'), n(/[{}YMN]/g)],
+  ]
   return (
     <section className="border-2 border-line bg-ink/40 p-3 short:p-2">
       <p className="font-display text-xl leading-tight text-cream">{t(c.name)}</p>
-      <p className="text-[13px] text-muted">
-        {displayName(lv)} · <span className="nowrap">{t('Altın {g} sn · Gümüş {s} sn · Bronz {b} sn', { g: m[0], s: m[1], b: m[2] })}</span>
-      </p>
+      <p className="text-[13px] text-muted">{displayName(lv)}</p>
+      <div className="mt-2 h-14 overflow-hidden border-2 border-line bg-ink short:h-10">
+        <MapThumb map={level.map} city={lv.city} className="block h-full w-full" />
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 short:hidden">
+        {facts.map(([k, v]) => (
+          <div key={k} className="border-2 border-line bg-ink/30 px-1 py-1">
+            <p className="font-display text-[15px] leading-none tabular-nums text-cream">{v}</p>
+            <p className="mt-0.5 truncate text-[11px] text-muted">{k}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[13px]">
+        {(
+          [
+            ['altin', m[0], t('Altın')],
+            ['gumus', m[1], t('Gümüş')],
+            ['bronz', m[2], t('Bronz')],
+          ] as const
+        ).map(([k, v, name]) => (
+          <span key={k} className="flex items-center gap-1 border-2 border-line bg-ink/30 px-1.5 py-0.5 tabular-nums text-cream">
+            <MedalBadge medal={k} /> {name} {v} sn
+          </span>
+        ))}
+      </div>
       <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-2">
         <button className="pixel-btn primary justify-center" disabled={!open} onClick={onStart} autoFocus>
           {open ? (best ? t('▶ Yeniden Koş') : t('▶ Koş')) : t('{city} bitince açılır', { city: lv.name })}

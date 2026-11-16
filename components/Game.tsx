@@ -2432,7 +2432,9 @@ export default function Game() {
               <p className="hidden items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold wide:flex">
                 {t('OYUN')} <span className="kilim h-[6px] flex-1 opacity-50" />
               </p>
-              {settingsList}
+              {/* geniş ekranda sıkı kutucuklar: sol sütun sağdaki kontrollerle aynı boyda kalır */}
+              <div className="wide:hidden">{settingsList}</div>
+              <div className="hidden wide:block">{settingsPause}</div>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t-2 border-line/60 pt-2.5">
                 <span className="flex items-center gap-2 text-[14px] font-semibold text-cream">
                   {t('Dil')}
@@ -2451,7 +2453,7 @@ export default function Game() {
                     </button>
                   )}
                   {canFull && (
-                    <button className="pixel-btn px-3 py-1.5 text-[13px]" onClick={fullscreen}>
+                    <button className="pixel-btn px-3 py-1.5 text-[13px] wide:hidden" onClick={fullscreen}>
                       {t('⛶ Tam Ekrana Geç')}
                     </button>
                   )}

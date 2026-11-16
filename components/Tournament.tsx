@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
+import MapThumb from '@/components/MapThumb'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, displayName } from '@/components/ui'
@@ -66,14 +67,16 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
           {winner ? ` ${t('Geçen haftanın birincisi: {name} ({time}).', { name: winner.name, time: formatTime(winner.timeMs) })}` : ''}
         </p>
         <div className="mt-3 grid min-h-0 flex-1 gap-3 max-sm:grid-rows-[auto_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] short:mt-2 short:grid-cols-2">
-          <div className="overlay-scroll min-h-0 overflow-y-auto pr-1">
+          {/* sol sütun sağdaki sıralama kadar uzar: her mücadele kartı eşit pay alır, altında kesitin kuşbakışı */}
+          <div className="flex min-h-0 flex-col gap-1.5">
             {ids.map((id, i) => {
               const c = CHALLENGES.find((x) => x.id === id)!
               const lv = localize(LEVELS.find((l) => l.id === c.level)!, lng)
               const ms = best[id]
               const medal = ms ? medalFor(challengeLevel(c), ms) : null
               return (
-                <section key={id} className="mb-1.5 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 border-2 border-line bg-ink/40 px-2.5 py-2 short:py-1">
+                <section key={id} className="flex min-h-0 flex-1 flex-col border-2 border-line bg-ink/40 px-2.5 py-2 short:py-1">
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#221f4a] font-display text-[15px] text-gold shadow-[0_0_0_2px_#d9a441]">
                     {i + 1}
                   </span>
@@ -90,10 +93,14 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
                   <button className={`pixel-btn justify-center px-3 py-1.5 text-[13px] ${ms ? '' : 'primary'}`} onClick={() => onStart(c)} autoFocus={i === ids.findIndex((x) => !best[x])}>
                     {ms ? t('↺ Yeniden') : t('▶ Koş')}
                   </button>
+                  </div>
+                  <div className="mt-1.5 min-h-[24px] flex-1 overflow-hidden border-2 border-line bg-ink max-sm:hidden short:hidden">
+                    <MapThumb map={challengeLevel(c).map} city={lv.city} className="block h-full w-full" />
+                  </div>
                 </section>
               )
             })}
-            <p className="mt-2 flex items-baseline justify-between gap-3 border-t-2 border-line px-1 pt-2">
+            <p className="mt-0.5 flex shrink-0 items-baseline justify-between gap-3 border-t-2 border-line px-1 pt-2">
               <span className="text-[13px] font-bold text-gold">{t('Toplamın')}</span>
               <span className="font-display text-2xl leading-none tabular-nums text-cream">{total ? formatTime(total) : `${Object.keys(best).filter((k) => ids.includes(k)).length}/3`}</span>
             </p>
