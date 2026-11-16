@@ -2474,10 +2474,13 @@ export class Renderer {
     c.lineCap = 'round'
     for (let tx = x0; tx <= x1; tx++) {
       for (let ty = y0; ty <= y1; ty++) {
-        if (w.tile(tx, ty) !== ROPE || w.tile(tx, ty - 1) === ROPE) continue
+        // koşunun başı görüş alanının üstünde kalsa da halat çizilir: ilk görünen hücreden tepeye yürü
+        if (w.tile(tx, ty) !== ROPE || (ty > y0 && w.tile(tx, ty - 1) === ROPE)) continue
+        let start = ty
+        while (start > 0 && w.tile(tx, start - 1) === ROPE) start--
         let end = ty
         while (w.tile(tx, end + 1) === ROPE) end++
-        const top = ty * T
+        const top = start * T
         const bot = (end + 1) * T - 2
         const mx = tx * T + T / 2
         const sway = Math.sin(this.t * 1.6 + tx) * 1.6
@@ -2521,11 +2524,14 @@ export class Renderer {
       }
       // teleferik: yataydaki halat koşuları soldan sağa bir kez çizilir
       for (let ty = y0; ty <= y1; ty++) {
-        if (w.tile(tx, ty) !== CABLE || w.tile(tx - 1, ty) === CABLE) continue
+        // başı ekranın solunda kalan tel de çizilir (eskiden kamera kayınca tel yok olup geri geliyordu)
+        if (w.tile(tx, ty) !== CABLE || (tx > x0 && w.tile(tx - 1, ty) === CABLE)) continue
+        let start = tx
+        while (start > 0 && w.tile(start - 1, ty) === CABLE) start--
         let end = tx
         while (w.tile(end + 1, ty) === CABLE) end++
         const yy = ty * T + 8
-        const a = tx * T
+        const a = start * T
         const b = (end + 1) * T
         const sag = Math.min(4, (b - a) / 40)
         const line = () => {
@@ -2533,14 +2539,22 @@ export class Renderer {
           c.moveTo(X(a), Y(yy))
           c.quadraticCurveTo(X((a + b) / 2), Y(yy + sag * 2), X(b), Y(yy))
         }
+        // kalın çelik tel: mürekkep hat, gövde, üstte ince parıltı (açık gökte de seçilsin)
         line()
         c.strokeStyle = INK
-        c.lineWidth = sc * 2.6
+        c.lineWidth = sc * 3.6
         c.stroke()
         line()
-        c.strokeStyle = '#8f96a3'
-        c.lineWidth = sc * 1.3
+        c.strokeStyle = '#7d8592'
+        c.lineWidth = sc * 2
         c.stroke()
+        c.save()
+        c.translate(0, -sc * 0.5)
+        line()
+        c.strokeStyle = 'rgba(232,240,248,0.75)'
+        c.lineWidth = sc * 0.6
+        c.stroke()
+        c.restore()
         // uçlarda makara
         c.fillStyle = '#5a5f6a'
         c.strokeStyle = INK

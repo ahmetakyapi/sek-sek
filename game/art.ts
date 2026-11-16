@@ -20,6 +20,20 @@ export function rect(c: Ctx, x: number, y: number, w: number, h: number, color: 
 }
 
 /** Piksel daire (kenar yumuşatmasız) */
+/**
+ * Arka planda gerilmiş tel (teleferik): her sütunda tam piksele oturur, basamak aralarını doldurur.
+ * Kesirli y'li 1x1 noktalar yarı saydam kesik çizgiye dönüşüyor, kamera kayınca tel kaybolup geri geliyordu.
+ */
+function wire(c: Ctx, x0: number, x1: number, yAt: (x: number) => number, color: string, thick = 2) {
+  let prev = Math.round(yAt(x0))
+  for (let x = x0; x < x1; x++) {
+    const y = Math.round(yAt(x))
+    const top = Math.min(y, prev)
+    rect(c, x, top, 1, Math.abs(y - prev) + thick, color)
+    prev = y
+  }
+}
+
 export function disc(c: Ctx, cx: number, cy: number, r: number, color: string, top = false) {
   c.fillStyle = color
   for (let y = -r; y <= (top ? 0 : r); y++) {
@@ -910,20 +924,19 @@ export function buildLayers(city: CityKey): Layers {
             rect(c, x + 9, y - 7, 2, 3, '#3a3a40')
             rect(c, x + 1, y, 12, 1, '#5a4030')
           }
-          // köy teleferiği: vadinin üstünden gerilmiş iki tel, sepetli vagon
-          for (let x = 40; x < 600; x++) {
-            const y = base - 104 + (x - 40) * 0.12 + ((x - 320) / 280) ** 2 * -14 + 14
-            rect(c, x, y, 1, 1, '#2a3430')
-            rect(c, x, y + 3, 1, 1, 'rgba(42,52,48,0.6)')
-          }
+          // köy teleferiği: vadinin üstünden gerilmiş iki kalın tel, sepetli vagon
+          const cable = (x: number) => base - 104 + (x - 40) * 0.12 + ((x - 320) / 280) ** 2 * -14 + 14
+          wire(c, 40, 600, cable, '#1e2622')
+          wire(c, 40, 600, (x) => cable(x) + 4, '#3a4640', 1)
           for (const cx of [210, 430]) {
-            const y = base - 104 + (cx - 40) * 0.12 + ((cx - 320) / 280) ** 2 * -14 + 14
-            rect(c, cx, y, 1, 5, '#2a3430')
-            rect(c, cx - 4, y + 5, 9, 6, '#c8a040')
+            const y = Math.round(cable(cx)) + 2
+            rect(c, cx, y, 1, 4, '#1e2622')
+            rect(c, cx - 5, y + 4, 11, 7, '#1e2622')
+            rect(c, cx - 4, y + 5, 9, 5, '#d8a838')
             rect(c, cx - 3, y + 6, 7, 2, '#3a3a40')
           }
-          rect(c, 36, base - 108, 4, 16, '#2a3430')
-          rect(c, 598, base - 46, 4, 20, '#2a3430')
+          rect(c, 36, base - 108, 4, 16, '#1e2622')
+          rect(c, 598, base - 46, 4, 20, '#1e2622')
         }),
         near: layer((c) => {
           const r = rng(1314)
@@ -1396,7 +1409,7 @@ export function buildLayers(city: CityKey): Layers {
             rect(c, 215 + i, y, 1, B - y, s.far)
             if (y < B - 128) rect(c, 215 + i, y, 1, Math.min(12, B - 126 - y + ((i * 7) % 5)), '#f4f8fa')
           }
-          for (let x = 120; x < 300; x += 2) rect(c, x, B - 70 - Math.round((x - 120) * 0.4), 1, 1, 'rgba(40,60,50,0.6)')
+          wire(c, 120, 300, (x) => B - 70 - (x - 120) * 0.4, '#3a5046', 1)
           rect(c, 200, B - 100, 6, 5, '#d6403a')
         }),
         mid: layer((c) => {
@@ -2141,10 +2154,12 @@ export function buildLayers(city: CityKey): Layers {
             const h = B - 70 - Math.max(0, 70 - Math.abs(x - 470) * 0.5)
             rect(c, x, h, 1, B - h, s.mid)
           }
-          for (let x = 60; x < 470; x += 2) rect(c, x, B - 120 - (x - 60) * 0.08, 2, 1, '#2a3a30')
+          wire(c, 60, 470, (x) => B - 120 - (x - 60) * 0.08, '#22302a')
+          rect(c, 57, B - 122, 3, 30, '#22302a')
+          rect(c, 469, B - 154, 3, 16, '#22302a')
           for (const cx of [160, 300]) {
-            const y = B - 120 - (cx - 60) * 0.08
-            rect(c, cx, y, 1, 6, '#2a3a30')
+            const y = Math.round(B - 120 - (cx - 60) * 0.08)
+            rect(c, cx, y, 1, 6, '#22302a')
             rect(c, cx - 5, y + 6, 11, 8, '#d6403a')
             rect(c, cx - 4, y + 8, 9, 3, '#cfe8f0')
           }
