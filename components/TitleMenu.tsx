@@ -1,4 +1,5 @@
 'use client'
+import { ic } from '@/components/ui'
 
 import { ItemIcon } from '@/components/HudBits'
 import { HeroFigure } from '@/components/Figures'
@@ -155,7 +156,7 @@ export default function TitleMenu(props: {
               <span className="flex items-baseline gap-2 tabular-nums tracking-normal text-cream">
                 {pick !== null && (
                   <button className="text-[12px] font-semibold text-accent-2 underline-offset-2 hover:underline" onClick={() => setPick(null)}>
-                    {t('↺ Sıradaki')}
+                    {ic(t('↺ Sıradaki'))}
                   </button>
                 )}
                 <span>

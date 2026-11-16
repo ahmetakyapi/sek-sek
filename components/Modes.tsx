@@ -5,7 +5,7 @@ import Portrait from '@/components/Portrait'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon } from '@/components/HudBits'
 import { Board } from '@/components/ScoreBoard'
-import { Overlay, displayName } from '@/components/ui'
+import { Overlay, displayName, ic } from '@/components/ui'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { CHALLENGES, RAGE_COURSES } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
@@ -119,7 +119,7 @@ export function ModesHub({
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Modlar')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <div className="overlay-scroll -mx-1 mt-4 min-h-0 flex-1 overflow-y-auto px-1 short:mt-2">
@@ -150,7 +150,7 @@ export function ModesHub({
               </div>
               <div className="mt-2.5 grid grid-cols-[1fr_auto] gap-2">
                 <button className="pixel-btn primary justify-center" onClick={onDaily} autoFocus>
-                  {playedToday ? t('▶ Yeniden Dene') : t('▶ Oyna')}
+                  {ic(playedToday ? t('▶ Yeniden Dene') : t('▶ Oyna'))}
                 </button>
                 <button className="pixel-btn justify-center px-3" onClick={onDailyBoard}>
                   {t('Günün Sıralaması')}
@@ -250,7 +250,7 @@ export function ModesHub({
                   : t('Açılması için {n} boss yen ({k}/{n}).', { n: rushNeeds, k: bossesBeaten })}
               </p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rushOpen} onClick={onRush}>
-                {rushOpen ? t('▶ Koş') : t('Kilitli')}
+                {ic(rushOpen ? t('▶ Oyna') : t('Kilitli'))}
               </button>
             </section>
 
@@ -267,7 +267,7 @@ export function ModesHub({
               <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Açtığın şehirlerden rastgele üçü, baştan sona arka arkaya. Tek nefeste ne kadar hızlısın?')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{marathonOpen ? (marathonBest ? t('Maraton rekorun: {time}', { time: formatTime(marathonBest.timeMs) }) : t('Her koşuda başka üç şehir. İlk rekoru sen yaz.')) : t('Açılması için üç şehir aç.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!marathonOpen} onClick={onMarathon}>
-                {marathonOpen ? t('▶ Koş') : t('Kilitli')}
+                {ic(marathonOpen ? t('▶ Oyna') : t('Kilitli'))}
               </button>
             </section>
 
@@ -312,7 +312,7 @@ export function ModesHub({
               <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Otuz şehir aynada: sağdan sola, ters rüzgârla. Yalnız yol ve süre.')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık. İlk ayna rekorunu yaz.')) : t('Otuz şehrin hepsini bitirince açılır.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!mirrorOpen} onClick={onMirror}>
-                {mirrorOpen ? t('◐ Aynaya Geç') : t('Kilitli')}
+                {ic(mirrorOpen ? t('◐ Aynaya Geç') : t('Kilitli'))}
               </button>
             </section>
           </div>
@@ -414,7 +414,7 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
           </p>
           <div className="mt-4 grid grid-cols-2 gap-2.5 short:mt-2">
             <button className="pixel-btn primary justify-center whitespace-nowrap short:py-2" onClick={onRetry} autoFocus>
-              {t('↺ Yeniden Dene')}
+              {ic(t('↺ Yeniden Dene'))}
             </button>
             <button className="pixel-btn justify-center" onClick={onModes}>
               {t('Modlar')}
@@ -462,7 +462,7 @@ export function RuleSetup({ rage, startLevel, finished, records, onStart, onBack
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{rage ? t('Sinir Bozucu') : t('Kurallı Koşu')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <div className="mt-3 flex items-center gap-2 short:mt-2">
@@ -502,7 +502,7 @@ export function RuleSetup({ rage, startLevel, finished, records, onStart, onBack
           })}
         </div>
         <button className="pixel-btn primary mt-3 w-full shrink-0 justify-center py-2.5 text-base short:mt-2 short:py-2" disabled={!fits} onClick={() => onStart(level, rule)}>
-          {t('▶ {city}: {rule}', { city: lv.name, rule: t(DAILY_RULES[rule].name) })}
+          {ic(t('▶ {city}: {rule}', { city: lv.name, rule: t(DAILY_RULES[rule].name) }))}
         </button>
       </div>
     </Overlay>
@@ -541,7 +541,7 @@ export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { ini
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Düello Kur')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <div className="overlay-scroll -mx-1 mt-3 min-h-0 flex-1 overflow-y-auto px-1 short:grid short:grid-cols-2 short:gap-4">
@@ -584,7 +584,7 @@ export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { ini
                 ))}
               </select>
               <button className="pixel-btn shrink-0 px-3 py-2 text-[13px]" onClick={() => setV((p) => ({ ...p, level: Math.floor(Math.random() * open.length) }))}>
-                {t('🎲 Rastgele')}
+                {ic(t('🎲 Rastgele'))}
               </button>
             </div>
             <p className="mt-1.5 text-[13px] leading-snug text-muted">{lv.subtitle} · {t('Altın süre {s} sn', { s: lv.medals[0] })}</p>
@@ -615,7 +615,7 @@ export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { ini
           </div>
         </div>
         <button className="pixel-btn primary mt-3 w-full shrink-0 justify-center py-2.5 text-base short:mt-2 short:py-2" disabled={!ready} onClick={() => onStart({ ...v, names: [v.names[0].trim(), v.names[1].trim()] })}>
-          {t('▶ Düelloyu Başlat')}
+          {ic(t('▶ Düelloyu Başlat'))}
         </button>
       </div>
     </Overlay>
@@ -657,7 +657,7 @@ export function DuelTurn({ setup, rounds, round, turn, onGo, onQuit }: { setup: 
         <p className="mt-1 text-[13px] text-muted short:hidden">{both ? t('Oyun kolu takılıysa birinci kol sola, ikinci kol sağa bağlanır. Üçten geri sayılır.') : t('Cihaz sıradaki oyuncuya geçsin. Hareket edince süre başlar.')}</p>
         <div className="mt-4 grid grid-cols-[1fr_auto] gap-2.5">
           <button className="pixel-btn primary justify-center py-2.5 text-base" onClick={onGo} autoFocus>
-            {t('▶ Hazırım')}
+            {ic(t('▶ Hazırım'))}
           </button>
           <button className="pixel-btn justify-center" onClick={onQuit}>
             {t('Bitir')}
@@ -696,7 +696,7 @@ export function DuelEnd({ setup, rounds, onRematch, onSetup, onMenu }: { setup: 
           <h2 className="mt-3 font-display text-4xl text-cream short:text-3xl">{res.winner === -1 ? t('Berabere!') : t('{name} Kazandı!', { name: setup.names[res.winner ?? 0] })}</h2>
           <div className="mt-4 grid grid-cols-3 gap-2 short:mt-3">
             <button className="pixel-btn primary justify-center" onClick={onRematch} autoFocus>
-              {t('↺ Rövanş')}
+              {ic(t('↺ Rövanş'))}
             </button>
             <button className="pixel-btn justify-center" onClick={onSetup}>
               {t('Ayarlar')}

@@ -1,7 +1,7 @@
 'use client'
 
 import { ItemIcon } from '@/components/HudBits'
-import { Overlay, displayName } from '@/components/ui'
+import { Overlay, displayName, ic } from '@/components/ui'
 import { FIRST_BOOK, LEVELS as ALL } from '@/game/levels'
 
 /** Ayna Yolu ilk defterin şehirleriyle: ikinci defterin aynası henüz doğrulanmadı */
@@ -24,7 +24,7 @@ export default function MirrorList({ best, open, onStart, onBack }: { best: Reco
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Ayna Yolu')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">

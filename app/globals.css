@@ -172,6 +172,15 @@ input {
   display: none;
 }
 
+/* düğme yazısının başındaki simge (ic()): yazıdan bir nefes ayrı durur; düğmede flex aralığı yeter */
+.ico {
+  display: inline-block;
+  margin-right: 0.4em;
+}
+.pixel-btn > .ico {
+  margin-right: 0;
+}
+
 .pixel-btn {
   display: inline-flex;
   align-items: center;

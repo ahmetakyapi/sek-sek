@@ -43,7 +43,7 @@ const SCREENS = [
       const tap = (l) => (opt.hasTouch ? l.tap() : l.click())
       await tap(pg.getByRole('button', { name: /Devam|Başla|Yolculu|Continue|Start/ }).first())
       await pg.waitForTimeout(700)
-      await tap(pg.getByRole('button', { name: /▶/ }))
+      await tap(pg.getByRole('button', { name: /^(Başla|Start)$/ }))
       await pg.waitForTimeout(1500)
       await pg.evaluate(() => {
         window.__mk.world().kill = () => {}

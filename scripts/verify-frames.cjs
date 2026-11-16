@@ -37,7 +37,7 @@ const SCREENS = [
       await pg.waitForTimeout(3000)
       await pg.getByRole('button', { name: /Devam|Başla|Yolculu|Continue|Start/ }).first().click()
       await pg.waitForTimeout(700)
-      await pg.getByRole('button', { name: /▶/ }).click()
+      await pg.getByRole('button', { name: /^(Başla|Start)$/ }).click()
       await pg.waitForTimeout(1500)
       // karakter dash hızında, gökte (çarpışmasız) bölüm boyunca taşınır; ölüm ve ışınlanma kapalı
       const r = await pg.evaluate(
