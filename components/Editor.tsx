@@ -58,6 +58,7 @@ const TILES: TileDef[] = [
   { sym: ']', name: 'Beliren Blok', desc: 'Başta yok; plakaya basınca katılaşır (köprü, basamak).', key: ']', cat: 'nesne' },
   { sym: 'S', name: 'Yay', desc: 'Üstüne basanı yedi karo kadar yukarı fırlatır.', key: '9', cat: 'nesne' },
   { sym: '*', name: 'Dash Halkası', desc: 'Değince dash’i yeniler: havada ikinci dash için.', key: '*', cat: 'nesne' },
+  { sym: 'T', name: 'Nitro Tüpü', desc: 'Alınınca 3 saniye hızlı koşu, atlayış uzar; birkaç saniyede yeniden dolar.', key: 'S', cat: 'nesne' },
   { sym: 'p', name: 'Sandık', desc: 'İtilir, üstüne çıkılır; en çok iki, küçük kapalı alanda.', key: 'X', cat: 'nesne' },
   { sym: 'M', name: 'Raylı Platform ↔', desc: 'Yan yana koyduğun kadar geniş; ray sonuna (|) ya da duvara dek gidip gelir.', key: 'V', cat: 'hareketli' },
   { sym: '|', name: 'Ray Sonu', desc: 'Yatay raylı platformun döndüğü yer; oyunda görünmez.', key: '|', cat: 'hareketli' },
@@ -381,6 +382,19 @@ function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: number,
       c.arc(x + 8 * u, y + 8 * u, 5 * u, 0, Math.PI * 2)
       c.stroke()
       disc(c, x + 8 * u, y + 8 * u, 1.5 * u, look.cream)
+      break
+    case 'T':
+      // nitro tüpü: kırmızı gövde, beyaz bant, turuncu alev
+      c.fillStyle = '#ff9a3c'
+      c.beginPath()
+      c.moveTo(x + 5.5 * u, y + 4 * u)
+      c.lineTo(x + 8 * u, y + 0.5 * u)
+      c.lineTo(x + 10.5 * u, y + 4 * u)
+      c.fill()
+      c.fillStyle = '#d6403a'
+      c.fillRect(x + 4.5 * u, y + 4 * u, 7 * u, 11 * u)
+      c.fillStyle = look.cream
+      c.fillRect(x + 4.5 * u, y + 8 * u, 7 * u, 2.5 * u)
       break
     case 'p':
       c.fillStyle = p.plank

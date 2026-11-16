@@ -1045,4 +1045,6 @@ export const UI_EN: Record<string, string> = {
   'Yol Defteri’nin teması': 'The theme of the Road Notebook',
   '{n} Usta Mührü': '{n} Master Seals',
   'Şehir ustalarının görevlerini yap: {n} mühür daha.': 'Do the city masters’ tasks: {n} more seals.',
+  "Nitro Tüpü": "Nitro Canister",
+  "Alınınca 3 saniye hızlı koşu, atlayış uzar; birkaç saniyede yeniden dolar.": "Grab it for 3 seconds of fast running and longer jumps; it refills after a few seconds.",
 }

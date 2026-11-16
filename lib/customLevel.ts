@@ -31,6 +31,7 @@ export const SINGLES = ['P', 'E', '$', '!', 'K'] as const
 export const SYMBOLS = [
   ' ', '#', '=', '^', 'v', 'I', 'i', 'X', '~', 'S', 'F', 'C', 'e', 'f', '>', '<', 'P', 'E', 't', 'l', 'w', 'b', 'L', 'R', 'W',
   '$', '!', 'K', 'D', '%', '*', 'p', '_', '[', ']', 'M', 'N', '|', ':', 'B', 'Y', 'h', 'c', 'u', 'x', 'j',
+  'T',
 ] as const
 export type Sym = (typeof SYMBOLS)[number]
 
