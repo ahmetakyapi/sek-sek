@@ -4,7 +4,7 @@
  * verify-levels (geçilebilir mi) ve audit-difficulty (ne kadar hassas oyun istiyor) kullanır.
  */
 import type { LevelDef } from '../game/types'
-import { World, snapshot, restore, type Snapshot } from '../game/sim'
+import { RHYTHM, RHYTHM_A, RHYTHM_B, World, snapshot, restore, type Snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 const DT = 1 / 120
@@ -113,6 +113,17 @@ export function holdPlates(w: World) {
   for (const pl of w.plates) pl.pressed = !p.dead && p.grounded && p.x < pl.x + pl.w && p.x + p.w > pl.x && p.y + 2 < pl.y + pl.h && p.y + 2 + p.h > pl.y
 }
 
+/** oyuncunun 10 karo çevresinde ritim bloğu var mı */
+function rhythmNear(w: World, x: number, y: number) {
+  const cx = Math.floor(x / 16)
+  const cy = Math.floor(y / 16)
+  for (let ty = cy - 6; ty <= cy + 6; ty++) for (let tx = cx - 10; tx <= cx + 10; tx++) {
+    const t = w.tile(tx, ty)
+    if (t === RHYTHM_A || t === RHYTHM_B) return true
+  }
+  return false
+}
+
 function key(s: Snapshot, w: World) {
   const p = s.player
   // sema halkaları ve tokmaklar ortak saate bağlı: konumları yerine saatin evresi yeter
@@ -127,7 +138,9 @@ function key(s: Snapshot, w: World) {
   const held = p.hang ? `h${p.hang}` : p.swim ? `s${Math.round(p.vy / 60)}` : ''
   // nitroyla koşan oyuncu aynı yerde yürüyenle birleşmesin (yarım saniyelik dilimler)
   const boost = p.nitro > 0 ? `n${Math.ceil(p.nitro * 2)}` : ''
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, held, boost].join('|')
+  // ritim blokları saate bağlı: yakında ritim bloğu varsa evre (takım + dörtte bir dilim) durumun parçası
+  const beat = w.hasRhythm && rhythmNear(w, p.x, p.y) ? `${Math.floor(s.clock / RHYTHM.half) % 2}.${Math.floor(((s.clock % RHYTHM.half) / RHYTHM.half) * 4)}` : ''
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, held, boost, beat].join('|')
 }
 
 export interface SolveResult {

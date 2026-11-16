@@ -6,8 +6,10 @@ import { SCALES, cityTheme, titleTheme, type Inst, type NoteEvent, type Song } f
  *
  * Rahatlatıcı arka plan müziği (lo-fi): Rhodes benzeri elektrik piyano, sıcak alt bas, yumuşak bas davul, fırçalı kenar
  * vuruşu, kapalı zil; ezgide ney (alttan girer, nefesi duyulur) ve kanun (Karplus-Strong tel benzetimi, nota başına
- * önbellek). Tek adımlar hafif geç çalar (swing). Her çalgının stereoda yeri ve yankı payı var. Boss uyanınca ritim
- * sıklaşır ama sakin kalır; molada müzik süzgeçle boğuklaşır. Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
+ * önbellek; uzun notada tremolo). Tek adımlar hafif geç çalar (swing). Her çalgının stereoda yeri, oda yankısı payı ve
+ * tempoya bağlı sağ-sol sekişen yankı (noktalı sekizlik) payı var. Boss uyanınca altta sakin bir dövüş katmanı (usule
+ * basan davul, durakta pedal bas, kanunda 3+3+2 ostinato) birkaç saniyede kabarır, bitince söner; molada müzik süzgeçle
+ * boğuklaşır. Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
  */
 
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
@@ -16,15 +18,15 @@ const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
 const MUSIC_VOL = 0.42
 
 /** çalgı başına stereo yeri (-1 sol, 1 sağ) ve yankıya giden pay */
-const CHANNEL: Record<Inst, { pan: number; wet: number }> = {
-  ney: { pan: 0.18, wet: 0.55 },
-  kanun: { pan: 0.35, wet: 0.45 },
-  pad: { pan: 0, wet: 0.5 },
-  keys: { pan: -0.08, wet: 0.45 },
-  sub: { pan: 0, wet: 0.03 },
-  kick: { pan: 0, wet: 0.05 },
-  rim: { pan: 0.15, wet: 0.25 },
-  hat: { pan: 0.25, wet: 0.15 },
+const CHANNEL: Record<Inst, { pan: number; wet: number; echo: number }> = {
+  ney: { pan: 0.18, wet: 0.5, echo: 0.22 },
+  kanun: { pan: 0.35, wet: 0.42, echo: 0.2 },
+  pad: { pan: 0, wet: 0.5, echo: 0 },
+  keys: { pan: -0.12, wet: 0.42, echo: 0.07 },
+  sub: { pan: 0, wet: 0.03, echo: 0 },
+  kick: { pan: 0, wet: 0.05, echo: 0 },
+  rim: { pan: 0.15, wet: 0.25, echo: 0.05 },
+  hat: { pan: 0.25, wet: 0.15, echo: 0 },
 }
 
 /** olayın kimliğinden sabit küçük sapma (0-1): insan eli gibi hafif oynak zaman ve güç, her döngüde aynı */
@@ -44,6 +46,9 @@ export class Sound {
   /** aynı efekt art arda tetiklenirse üst üste binmesin: son çalınış zamanı */
   private lastSfx = new Map<string, number>()
   private reverb: ConvolverNode | null = null
+  /** sekişen yankı: girişi ve iki gecikmesi (sağ-sol); süresi bestenin temposuna göre */
+  private echoIn: GainNode | null = null
+  private echoTaps: DelayNode[] = []
   private noiseBuf: AudioBuffer | null = null
   /** tel benzetimi önbelleği: nota → tampon */
   private plucks = new Map<number, AudioBuffer>()
@@ -62,6 +67,8 @@ export class Sound {
   private ducked = false
   /** boss dövüşü: usule ek vuruşlar ve pes bas */
   private intense = false
+  /** dövüş katmanının gücü (0-1): birden girmez, birkaç saniyede kabarır ve söner */
+  private heat = 0
   sfxOn = true
   private _musicOn = true
   private _musicVol = 1
@@ -114,6 +121,34 @@ export class Sound {
       wet.gain.value = 0.42
       this.reverb.connect(wet)
       wet.connect(this.musicGain)
+      // sağ-sol sekişen yankı: sol gecikme → sağ gecikme → sola geri; her dönüşte tizler biraz söner
+      this.echoIn = this.ac.createGain()
+      const dl = this.ac.createDelay(2)
+      const dr = this.ac.createDelay(2)
+      const out = this.ac.createGain()
+      out.gain.value = 0.5
+      for (const [d, pan, to] of [
+        [dl, -0.7, dr],
+        [dr, 0.7, dl],
+      ] as const) {
+        const lp = this.ac.createBiquadFilter()
+        lp.type = 'lowpass'
+        lp.frequency.value = 2600
+        const fb = this.ac.createGain()
+        fb.gain.value = 0.38
+        d.connect(lp)
+        lp.connect(fb)
+        fb.connect(to)
+        const p = this.ac.createStereoPanner ? this.ac.createStereoPanner() : null
+        if (p) {
+          p.pan.value = pan
+          lp.connect(p)
+          p.connect(out)
+        } else lp.connect(out)
+      }
+      this.echoIn.connect(dl)
+      out.connect(this.musicGain)
+      this.echoTaps = [dl, dr]
       // seçilmiş ama ses kilidi yüzünden bekleyen beste şimdi başlar
       if (this.song) this.play(this.song, true)
     }
@@ -324,6 +359,12 @@ export class Sound {
         return this.chime(this.scaleNote(7, 1), 0.04, now + 0.07, 0.35)
       case 'crystal':
         return this.chime(this.scaleNote(7, 1), 0.05, now, 0.4)
+      case 'beat':
+        // ritim blokları değişti: çok kısık, yumuşak bir tık (metronom)
+        return this.chime(this.scaleNote(4, 0), 0.018, now, 0.12)
+      case 'perfect':
+        ;[0, 4, 7, 12].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.05, now + i * 0.04, 0.35))
+        return
       case 'nitro':
         // nitro: hızla yükselen üç nota
         ;[0, 4, 7].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.05, now + i * 0.045, 0.3))
@@ -412,6 +453,8 @@ export class Sound {
     bus.gain.exponentialRampToValueAtTime(1, this.ac.currentTime + 0.6)
     bus.connect(this.musicGain)
     this.songBus = bus
+    this.heat = 0
+    for (const d of this.echoTaps) d.delayTime.setValueAtTime(song.echo, this.ac.currentTime)
     // tel notaları ilk çalındıkları anda üretilir (nota başına <1 ms): beste başında topluca üretmek zayıf telefonda
     // şehre girişte kare kaçırtır; çalma 0,3 sn önden zamanlandığı için gecikme duyulmaz
     this.stepIdx = 0
@@ -425,7 +468,7 @@ export class Sound {
     let ch = this.channels[inst]
     if (!ch) {
       ch = ac.createGain()
-      const { pan, wet } = CHANNEL[inst]
+      const { pan, wet, echo } = CHANNEL[inst]
       const p = ac.createStereoPanner ? ac.createStereoPanner() : null
       if (p) {
         p.pan.value = pan
@@ -437,6 +480,13 @@ export class Sound {
       ch.connect(send)
       send.connect(this.reverb!)
       this.sends.push(send)
+      if (echo && this.echoIn) {
+        const es = ac.createGain()
+        es.gain.value = echo
+        ch.connect(es)
+        es.connect(this.echoIn)
+        this.sends.push(es)
+      }
       this.channels[inst] = ch
     }
     return ch
@@ -452,31 +502,43 @@ export class Sound {
       return
     }
     while (this.nextTime < this.ac.currentTime + 0.3) {
-      const i = this.stepIdx % song.length
+      // giriş bir kez çalar; döngü bestenin döndüğü yerden sürer
+      const n = this.stepIdx
+      const i = n < song.length ? n : song.loop + ((n - song.loop) % (song.length - song.loop))
       // lo-fi sallantısı: tek adımlar biraz geç çalar
       const t = this.nextTime + (i % 2 ? song.swing * song.step : 0)
       for (const e of song.byStep[i]) this.voice(e, t, song.step)
-      if (this.intense && song.pulse.length) this.battle(i, this.nextTime, song)
+      // dövüş katmanı ~3 sn'de kabarır, ~2 sn'de söner
+      this.heat = this.intense ? Math.min(1, this.heat + song.step / 3) : Math.max(0, this.heat - song.step / 2)
+      if (this.heat > 0 && song.pulse.length) this.battle(i, t, song)
       this.nextTime += song.step
       this.stepIdx++
     }
   }
 
-  /** boss dövüşü katmanı: her grubun başında güçlü düm, aralarda sık ka, ölçü başında pes bas */
+  /**
+   * Boss dövüşü katmanı (dört vuruş): birinci ve üçüncü vuruşta yumuşak bas davul, ikinci ve dördüncüde fırça, on
+   * altılık kısık zil, durakta pedal bas ve kanunda 3+3+2 ostinato (durak, durak, güçlü). Gerilim ritimden ve pedaldan
+   * gelir; ses yükselmez, sertleşmez. Gücü `heat` ile kabarıp söner.
+   */
   private battle(step: number, t: number, song: Song) {
     const beats = song.pulse.reduce((a, b) => a + b, 0)
     const pos = step % beats
-    let a = 0
-    let groupStart = false
-    for (const g of song.pulse) {
-      if (pos === a) groupStart = true
-      a += g
-    }
-    const at = (inst: Inst, vol: number, midi: number[] = [], dur = 1) => this.voice({ at: step, dur, inst, midi, vol }, t, song.step)
-    // dövüşte ritim sıklaşır ama sakin kalır: her vuruşta yumuşak bas davul, aralarda zil, ölçü başında pes bas
-    if (groupStart) at('kick', pos === 0 ? 0.2 : 0.13)
-    at('hat', groupStart ? 0.03 : 0.02)
-    if (pos === 0) at('sub', 0.1, [SCALES[this.city].root - 24 < 36 ? SCALES[this.city].root - 12 : SCALES[this.city].root - 24], 4)
+    const bar = Math.floor(step / beats)
+    const h = this.heat
+    const at = (inst: Inst, vol: number, midi: number[] = [], dur = 1) => this.voice({ at: step, dur, inst, midi, vol: vol * h }, t, song.step)
+    const sc = SCALES[this.city]
+    if (pos === 0) at('kick', 0.18)
+    else if (pos === beats / 2) at('kick', 0.12)
+    else if (pos === beats - 2 && bar % 2) at('kick', 0.07)
+    if (pos === beats / 4 || pos === (3 * beats) / 4) at('rim', 0.055)
+    at('hat', pos % 4 === 0 ? 0.026 : pos % 2 === 0 ? 0.018 : 0.011)
+    const low = sc.root - 24 < 36 ? sc.root - 12 : sc.root - 24
+    if (pos === 0) at('sub', 0.08, [low], 8)
+    else if (pos === beats / 2) at('sub', 0.05, [low], 6)
+    const k = sc.root < 60 ? sc.root + 12 : sc.root
+    if (pos === 0 || pos === 6) at('kanun', 0.022, [k])
+    else if (pos === 12) at('kanun', 0.019, [k + sc.steps[4]])
   }
 
   /** bir notayı çalgısıyla çalar */
@@ -492,15 +554,22 @@ export class Sound {
     switch (e.inst) {
       case 'ney': {
         // ney: notaya alttan kayarak girer, yavaş açılan vibrato, nefes sesi
+        // süsleme: alttan kayarak (0,14 sn) ya da üst perdeye çarpıp düşerek girer; süslemesiz notada hafif alttan
         const f = mtof(e.midi[0])
+        const f0 = e.from ? mtof(e.from) : f * 0.982
+        const grace = !!e.from && e.from > e.midi[0]
         const o = ac.createOscillator()
         o.type = 'sine'
-        o.frequency.setValueAtTime(f * 0.982, t)
-        o.frequency.exponentialRampToValueAtTime(f, t + 0.07)
         const o2 = ac.createOscillator()
         o2.type = 'triangle'
-        o2.frequency.setValueAtTime(f * 2 * 0.982, t)
-        o2.frequency.exponentialRampToValueAtTime(f * 2, t + 0.07)
+        for (const [x, k] of [
+          [o, 1],
+          [o2, 2],
+        ] as const) {
+          x.frequency.setValueAtTime(f0 * k, t)
+          if (grace) x.frequency.setValueAtTime(f0 * k, t + 0.055)
+          x.frequency.exponentialRampToValueAtTime(f * k, t + (grace ? 0.08 : e.from ? 0.14 : 0.07))
+        }
         const lfo = ac.createOscillator()
         lfo.frequency.value = 4.8 + w * 0.8
         const lg = ac.createGain()
@@ -535,17 +604,25 @@ export class Sound {
         return
       }
       case 'kanun': {
-        // kanun: önbellekteki Karplus-Strong tel tamponu, tırnakla çekilmiş kısa tını
-        const src = ac.createBufferSource()
-        src.buffer = this.pluck(e.midi[0])
-        const g = ac.createGain()
-        g.gain.setValueAtTime(vol * 1.3, t)
-        g.gain.setValueAtTime(vol * 1.3, t + 0.6)
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75)
-        src.connect(g)
-        g.connect(out)
-        src.start(t)
-        src.stop(t + 0.8)
+        // kanun: önbellekteki Karplus-Strong tel tamponu, tırnakla çekilmiş kısa tını; tremoloda nota boyunca sık
+        // tekrar (en çok 14 çekiş), kabarıp söner
+        const buf = this.pluck(e.midi[0])
+        const n = e.trem ? Math.min(14, Math.max(2, Math.floor(dur / 0.09))) : 1
+        for (let k = 0; k < n; k++) {
+          const tk = t + k * 0.09
+          const a = e.trem ? vol * (0.45 + 0.7 * Math.sin((Math.PI * (k + 0.5)) / n)) : vol * 1.3
+          const ring = e.trem ? 0.16 : Math.min(0.75, Math.max(0.35, dur + 0.2))
+          const src = ac.createBufferSource()
+          src.buffer = buf
+          const g = ac.createGain()
+          g.gain.setValueAtTime(a, tk)
+          g.gain.setValueAtTime(a, tk + ring * 0.8)
+          g.gain.exponentialRampToValueAtTime(0.0001, tk + ring)
+          src.connect(g)
+          g.connect(out)
+          src.start(tk)
+          src.stop(tk + ring + 0.05)
+        }
         return
       }
       case 'pad': {
@@ -592,9 +669,10 @@ export class Sound {
         tg.gain.value = vol * 0.12
         trem.connect(tg)
         tg.connect(g.gain)
+        // yumuşak basılan nota daha boğuk, güçlüsü biraz parlak (piyanonun doğası)
         const lp = ac.createBiquadFilter()
         lp.type = 'lowpass'
-        lp.frequency.value = 2400
+        lp.frequency.value = 1500 + vol * 9000
         g.connect(lp)
         lp.connect(out)
         const nodes: OscillatorNode[] = [trem]

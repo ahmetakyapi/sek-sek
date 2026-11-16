@@ -1,3 +1,4 @@
+import { createContext, useContext } from 'react'
 import { useLang, useT } from '@/lib/i18n'
 import type { LevelDef } from '@/game/types'
 
@@ -37,7 +38,21 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120,
   )
 }
 
+/** Sıkı ayar kutucukları (mola): açıklama kutucuğun ipucunda, ad ve anahtar tek satırda; iki sütunlu ızgaraya dizilir */
+export const CompactToggles = createContext(false)
+
 export function Toggle({ label, on, onChange, hint, tag }: { label: string; on: boolean; onChange: () => void; hint?: string; /** adın yanında hep görünen kısa uyarı (alçak ekranda açıklama gizlenir, bu kalır) */ tag?: string }) {
+  const compact = useContext(CompactToggles)
+  if (compact)
+    return (
+      <button type="button" role="switch" aria-checked={on} onClick={onChange} title={hint} className={`flex w-full items-center justify-between gap-2 border-2 px-2.5 py-2 text-left transition-colors short:py-1.5 ${on ? 'border-gold/50 bg-gold/5' : 'border-line bg-ink/30 hover:bg-panel-2/60'}`}>
+        <span className="min-w-0 text-[13px] font-semibold leading-tight text-cream">
+          {label}
+          {tag && <span className="block text-[12px] font-bold text-accent-2">{tag}</span>}
+        </span>
+        <span className="px-switch shrink-0" data-on={on} />
+      </button>
+    )
   return (
     <button type="button" role="switch" aria-checked={on} onClick={onChange} className="flex w-full items-center justify-between gap-3 px-1 py-2 text-left short:py-1.5">
       <span className="min-w-0">

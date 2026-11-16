@@ -924,6 +924,91 @@ export function drawFriend(c: CanvasRenderingContext2D, animal: string, x: numbe
 type ItemPainter = (c: Ctx) => void
 
 const KEEPSAKES: Record<CityKey, ItemPainter> = {
+  // Kiraz: sapları tepede birleşmiş iki parlak Giresun kirazı, yanında bir yaprak
+  giresun: (c) => {
+    line(c, [-2.6, 1, -1.2, -3.2, 0.6, -5.4], 0.6, '#5a7a2a')
+    line(c, [2.8, 1.8, 2, -2.4, 0.6, -5.4], 0.6, '#5a7a2a')
+    shape(
+      c,
+      () => {
+        c.moveTo(0.6, -5.4)
+        c.quadraticCurveTo(3.4, -7.6, 5.8, -5.2)
+        c.quadraticCurveTo(3, -3.6, 0.6, -5.4)
+      },
+      '#6cb044',
+      '#3e7a2a',
+    )
+    line(c, [1.4, -5.4, 4.6, -5.4], 0.25, '#3e7a2a', false)
+    ell(c, -2.6, 2.6, 3, 2.8, '#d0243a', '#8a1426')
+    ell(c, 2.8, 3.2, 3, 2.8, '#c01e34', '#7e1222')
+    for (const [x, y] of [[-2.6, 0.1], [2.8, 0.7]] as const) dab(c, x, y + 0.2, 0.5, 0.3, '#6a1020')
+    dab(c, -3.7, 1.7, 0.9, 0.6, '#ff9aa4', -0.5)
+    dab(c, 1.7, 2.3, 0.9, 0.6, '#ff9aa4', -0.5)
+    dab(c, -4, 2.9, 0.3, 0.3, '#ffe4e8')
+  },
+  // Yazma: tahta kalıpla basılmış kare yemeni; çivit kenar, kök boya kırmızısı çiçekler, iki kenarı saçaklı
+  tokat: (c) => {
+    for (let i = 1; i < 7; i++) {
+      const k = i / 7
+      line(c, [-6 + k * 6, k * 6, -7.1 + k * 6, k * 6 + 1.1], 0.55, '#2e4a9a', false)
+      line(c, [k * 6, 6 - k * 6, k * 6 + 1.1, 7.1 - k * 6], 0.55, '#2e4a9a', false)
+    }
+    poly(c, [0, -6, 6, 0, 0, 6, -6, 0], '#f4ead8', '#d8c8a8')
+    if (!halo) {
+      c.save()
+      c.beginPath()
+      c.moveTo(0, -6)
+      c.lineTo(6, 0)
+      c.lineTo(0, 6)
+      c.lineTo(-6, 0)
+      c.closePath()
+      c.clip()
+      // çivit kenar şeridi
+      c.strokeStyle = '#2e4a9a'
+      c.lineWidth = 1.1
+      c.beginPath()
+      c.moveTo(0, -4.9)
+      c.lineTo(4.9, 0)
+      c.lineTo(0, 4.9)
+      c.lineTo(-4.9, 0)
+      c.closePath()
+      c.stroke()
+      // kalıp baskısı: ortada iri çiçek, köşelerde küçükleri
+      for (let a = 0; a < 5; a++) {
+        const an = (a / 5) * TAU - Math.PI / 2
+        dab(c, Math.cos(an) * 1.3, Math.sin(an) * 1.3, 0.95, 0.95, '#b8302a')
+      }
+      dab(c, 0, 0, 0.7, 0.7, '#e8b84a')
+      for (const [x, y] of [[0, -3.3], [3.3, 0], [0, 3.3], [-3.3, 0]] as const) {
+        dab(c, x, y, 0.65, 0.65, '#b8302a')
+        dab(c, x, y, 0.25, 0.25, '#2e4a9a')
+      }
+      for (const [x, y] of [[-1.7, -1.7], [1.7, -1.7], [1.7, 1.7], [-1.7, 1.7]] as const) dab(c, x, y, 0.55, 0.3, '#3e7a3a', Math.atan2(y, x))
+      c.restore()
+    }
+  },
+  // Havlu: Denizli pamuğundan üst üste katlı iki havlu; çizgili kenar, ucundan sarkan saçak
+  denizli: (c) => {
+    const towel = (y: number, h: number, fill: string, sh: string, band: string) => {
+      for (let i = 0; i < 6; i++) line(c, [4.6, y - h / 2 + 0.6 + i * (h - 1.2) / 5, 6.2, y - h / 2 + 0.9 + i * (h - 1.2) / 5], 0.35, '#e8e0d0', false)
+      shape(c, () => c.roundRect(-5.4, y - h / 2, 10, h, [h / 2, 0.6, 0.6, h / 2]), fill, sh)
+      if (!halo) {
+        c.fillStyle = band
+        c.fillRect(1.4, y - h / 2 + 0.4, 0.8, h - 0.8)
+        c.fillRect(2.9, y - h / 2 + 0.4, 0.5, h - 0.8)
+        c.fillRect(-3.4, y - h / 2 + 0.4, 0.5, h - 0.8)
+        c.strokeStyle = sh
+        c.lineWidth = 0.3
+        c.beginPath()
+        c.moveTo(-3, y)
+        c.lineTo(4.2, y)
+        c.stroke()
+      }
+    }
+    towel(3, 5, '#9ad0e8', '#5e9ec0', '#2e6aa0')
+    towel(-2.2, 5, '#fbfaf4', '#d4d0c4', '#d0402a')
+    dab(c, -3.6, -3.6, 1.2, 0.5, '#ffffff', -0.2)
+  },
   // Çay: ince belli bardakta tavşan kanı çay, beyaz tabak, kenarda şeker
   rize: (c) => {
     ell(c, 0, 4.4, 5.4, 1.3, '#f8f6f0', '#c8ccd4')

@@ -17,7 +17,7 @@ describe('özel harita kodu', () => {
   })
 
   it('her şehir ve her simge, uzun koşular dahil gidiş-dönüş', () => {
-    const syms = SYMBOLS.filter((s) => !'PEC$!KDp[]?n'.includes(s))
+    const syms = SYMBOLS.filter((s) => !'PEC$!KDp[]?nQG'.includes(s))
     let seed = 7
     const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648)
     for (const city of CITY_CODES) {
@@ -54,7 +54,7 @@ describe('özel harita kodu', () => {
     expect(validateMap(blank(39))).not.toBeNull()
     expect(validateMap(blank(MAX_W + 1))).not.toBeNull()
     expect(validateMap(blank(MAX_W))).toBeNull()
-    expect(validateMap(SAMPLE_MAP.map((r, y) => (y === 0 ? 'Q' + r.slice(1) : r)))).not.toBeNull()
+    expect(validateMap(SAMPLE_MAP.map((r, y) => (y === 0 ? '@' + r.slice(1) : r)))).not.toBeNull()
     expect(validateMap(SAMPLE_MAP.map((r) => r.replace('P', ' ')))).toBe('Başlangıç (P) eksik.')
     expect(validateMap(SAMPLE_MAP.map((r) => r.replace('E', ' ')))).toBe('Çıkış (E) eksik.')
     expect(validateMap(SAMPLE_MAP.map((r, y) => (y === 5 ? 'PP' + r.slice(2) : r)))).not.toBeNull()
@@ -183,5 +183,18 @@ describe('özel harita metinleri (sürüm 3)', () => {
     const lv = customLevel(base, 'istanbul')
     expect(lv.hints).toEqual(['…'])
     expect(lv.npcs[0].name).toBe('Yolcu')
+  })
+})
+
+describe('özel haritada boss', () => {
+  it('seçilen boss kodla gider gelir ve bölüme yazılır', () => {
+    const map = SAMPLE_MAP.map((r, y) => (y === 19 ? r.slice(0, 30) + 'Q' + r.slice(31) : r))
+    const r = decodeMap(encodeMap(map, 'istanbul', { signs: [], npcs: [], boss: 'denizli' }))
+    expect('error' in r).toBe(false)
+    if ('error' in r) return
+    expect(r.texts.boss).toBe('denizli')
+    const lv = customLevel(r.map, r.city, r.texts)
+    expect(lv.bossOf).toBe('denizli')
+    expect(new World(lv).boss?.def.name).toBe('Denizli Horozu')
   })
 })

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AuthForm from '@/components/AuthForm'
 import { CITY, type CityStyle } from '@/game/art'
+import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
 import type { CityKey } from '@/game/types'
 import { TITLE_MAX, titleProblem } from '@/lib/communityMaps'
@@ -67,6 +68,8 @@ const TILES: TileDef[] = [
   { sym: 'N', name: 'Raylı Platform ↕', desc: 'Yukarı aşağı gider; iki nokta (:) ya da zemin durdurur.', key: 'Z', cat: 'hareketli' },
   { sym: ':', name: 'Dikey Ray Sonu', desc: 'Dikey platformun ve balonun durduğu yer; oyunda görünmez.', key: ':', cat: 'hareketli' },
   { sym: 'B', name: 'Balon', desc: 'Üstüne binince yükselir, inince yavaşça alçalır.', cat: 'hareketli' },
+  { sym: '{', name: 'Ritim Bloğu (Önce)', desc: 'Saatle belirip kaybolur: 1,6 saniye var, 1,6 saniye yok. Kaybolmadan önce yanıp söner.', cat: 'hareketli' },
+  { sym: '}', name: 'Ritim Bloğu (Sonra)', desc: 'Öbür takım: önce olan kaybolunca belirir. İkisini sırayla dizersen ritimle geçilen bir yol olur.', cat: 'hareketli' },
   { sym: 'O', name: 'Sema Halkası', desc: 'Merkezinin çevresinde dönen tepsi; yan yana iki halka ters yöne döner.', cat: 'hareketli' },
   { sym: 'L', name: 'Halat', desc: 'Havadayken değince tutunulur; yukarı aşağı tırmanılır.', key: 'Y', cat: 'hareketli' },
   { sym: 'R', name: 'Teleferik Halatı', desc: 'Altından zıplayınca asılınır, elle ilerlenir. Bittiği yerin altı zemin olsun.', key: 'J', cat: 'hareketli' },
@@ -77,6 +80,8 @@ const TILES: TileDef[] = [
   { sym: 'u', name: 'Yarasa', desc: 'Dalga çizerek süzülür.', cat: 'dusman' },
   { sym: 'x', name: 'Dikenli Düşman', desc: 'Yavaş yürür; üstüne basılmaz, dash da işlemez.', cat: 'dusman' },
   { sym: 'j', name: 'Saksağan', desc: 'Tünekte bekler, altından geçene dalar.', cat: 'dusman' },
+  { sym: 'Q', name: 'Boss', desc: 'Satırında ray sonuna (|), duvara ya da boss kapısına dek dolaşır; hangi şehrin boss’u olduğunu Metinler kutusunda seç.', cat: 'dusman' },
+  { sym: 'G', name: 'Boss Kapısı', desc: 'Boss yenilene dek kapalı demir parmaklık.', cat: 'dusman' },
   { sym: 't', name: 'Ağaç (Süs)', desc: 'Yalnız görünüş; oyunu etkilemez.', key: 'T', cat: 'sus' },
   { sym: 'l', name: 'Fener (Süs)', desc: 'Yalnız görünüş; oyunu etkilemez.', key: 'L', cat: 'sus' },
   { sym: 'w', name: 'Pencere (Süs)', desc: 'Yalnız görünüş; oyunu etkilemez.', key: 'W', cat: 'sus' },
@@ -378,6 +383,18 @@ function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: number,
       c.fillRect(x + 4.5 * u, y + 8 * u, 7 * u, 8 * u)
       disc(c, x + 13.5 * u, y + 2.5 * u, 1.6 * u, look.cream)
       break
+    case '{':
+    case '}': {
+      // ritim bloğu: kiremit (önce) / turkuaz (sonra), ortada vuruş karesi
+      const col = ch === '{' ? '#ff9a7a' : '#5ad6c6'
+      c.fillStyle = ch === '{' ? '#b8503a' : '#2a8a7e'
+      c.fillRect(x, y, s, s)
+      c.fillStyle = col
+      c.fillRect(x + u, y + u, s - 2 * u, s - 2 * u)
+      c.fillStyle = 'rgba(255,255,255,0.55)'
+      c.fillRect(x + 6 * u, y + 6 * u, 4 * u, 4 * u)
+      break
+    }
     case 'O':
       // sema halkası: merkez ve dönen tepsi
       c.strokeStyle = '#7ad8cc'
@@ -390,6 +407,19 @@ function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: number,
       disc(c, x + 8 * u, y + 8 * u, 1.8 * u, '#f2c14e')
       c.fillStyle = '#2f9a94'
       c.fillRect(x + 11 * u, y + 2 * u, 5 * u, 2 * u)
+      break
+    case 'Q':
+      // boss: iri, öfkeli kaşlı gövde ve taç
+      disc(c, x + 8 * u, y + 9 * u, 6.5 * u, '#d6403a')
+      c.fillStyle = '#f2c14e'
+      c.fillRect(x + 4 * u, y + 0.5 * u, 8 * u, 3 * u)
+      disc(c, x + 5.5 * u, y + 8 * u, 1.6 * u, look.cream)
+      disc(c, x + 10.5 * u, y + 8 * u, 1.6 * u, look.cream)
+      break
+    case 'G':
+      c.fillStyle = '#4a4654'
+      for (let i = 1; i < 16; i += 5) c.fillRect(x + i * u, y, 3 * u, s)
+      c.fillRect(x, y + 6 * u, s, 2 * u)
       break
     case 'K':
       c.strokeStyle = look.gold
@@ -723,9 +753,10 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   // tabela ve şehir insanı metinleri haritadaki sayıya göre: fazlası saklanır (silinip geri konursa metin kaybolmaz)
   const signCount = useMemo(() => map.join('').split('?').length - 1, [map])
   const npcCount = useMemo(() => map.join('').split('n').length - 1, [map])
+  const hasBoss = useMemo(() => map.some((r) => r.includes('Q')), [map])
   const usedTexts: CustomTexts = useMemo(
-    () => ({ signs: Array.from({ length: signCount }, (_, k) => texts.signs[k] ?? ''), npcs: Array.from({ length: npcCount }, (_, k) => texts.npcs[k] ?? { name: '', text: '', look: NPC_LOOKS[k % NPC_LOOKS.length] }) }),
-    [texts, signCount, npcCount],
+    () => ({ signs: Array.from({ length: signCount }, (_, k) => texts.signs[k] ?? ''), npcs: Array.from({ length: npcCount }, (_, k) => texts.npcs[k] ?? { name: '', text: '', look: NPC_LOOKS[k % NPC_LOOKS.length] }), ...(hasBoss && texts.boss ? { boss: texts.boss } : {}) }),
+    [texts, signCount, npcCount, hasBoss],
   )
   const problem = validateMap(map) ?? textProblem(usedTexts)
   const code = useMemo(() => (problem ? null : encodeMap(map, city, usedTexts)), [map, city, problem, usedTexts])
@@ -1704,10 +1735,23 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
             </section>
 
             {/* metinler: haritadaki tabela ve şehir insanlarının sözleri, soldan sağa sırayla */}
-            {(signCount > 0 || npcCount > 0) && (
+            {(signCount > 0 || npcCount > 0 || hasBoss) && (
               <section className="pixel-panel grid gap-3 p-4" aria-label={t('Metinler')}>
                 <h2 className="font-display text-xl text-cream">{t('Metinler')}</h2>
                 <p className="text-[13px] text-muted">{t('Tabelalar ve şehir insanları haritada soldan sağa sıralanır. Yazdığın söz oyunda başlarının üstünde baloncukta görünür.')}</p>
+                {hasBoss && (
+                  <label className="grid gap-1 text-[13px] text-cream">
+                    <span>{t('Boss')}</span>
+                    <select value={texts.boss ?? city} onChange={(e) => setTexts((old) => ({ ...old, boss: e.target.value as CityKey }))} className="border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream" aria-label={t('Boss')}>
+                      {LEVELS.map((l) => (
+                        <option key={l.city} value={l.city}>
+                          {lang === 'en' ? BOSSES[l.city].nameEn : BOSSES[l.city].name} · {l.name} · {t(l.difficulty)}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[12px] text-muted">{t(lang === 'en' ? BOSSES[texts.boss ?? city].tauntEn : BOSSES[texts.boss ?? city].taunt)}</span>
+                  </label>
+                )}
                 {usedTexts.signs.map((sgn, k) => (
                   <label key={`s${k}`} className="grid gap-1 text-[13px] text-cream">
                     <span>{t('Tabela {n}', { n: k + 1 })}</span>

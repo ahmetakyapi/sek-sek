@@ -25,6 +25,9 @@ export const ROPE = 15
 export const CABLE = 16
 /** derin su (W): yüzülür; zıplama kulaç atar, yüzeyde atılan kulaç sudan çıkarır. Öldüren ~ suyundan ayrıdır */
 export const SWIM = 17
+/** ritim blokları: saate bağlı, iki takım sırayla belirip kaybolur (`{` önce, `}` sonra) */
+export const RHYTHM_A = 18
+export const RHYTHM_B = 19
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
@@ -34,6 +37,17 @@ export const CRYSTAL_RECHARGE = 2.5
  * İsteğe bağlı kestirmedir: hiçbir yol nitrosuz geçilemez hâle getirilmez. Tüp birkaç saniyede yeniden dolar.
  */
 export const NITRO = { time: 3, speed: 1.55, recharge: 4 }
+/** Ay Yerçekimi (zor mod): oyuncunun yerçekimi ve en büyük düşüş hızı bu oranlarla çarpılır */
+export const MOON = { gravity: 0.55, fall: 0.6 }
+/** Fırtına (zor mod): rüzgâr sin(süre × freq) ile yön değiştirir (~4,5 sn'de bir döner) */
+export const STORM = { freq: 0.7 }
+/**
+ * Ritim blokları: her `half` saniyede bir takım değişir; kaybolmadan `warn` saniye önce yanıp söner (render).
+ * Belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır: kimse taşın içinde sıkışmaz.
+ */
+export const RHYTHM = { half: 1.6, warn: 0.45 }
+/** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
+export const PERFECT_SPRING = 1.22
 
 export const PHYS = {
   gravity: 980,
@@ -316,6 +330,11 @@ export class World {
   }
   readonly start: { x: number; y: number }
   readonly crumbles = new Map<number, CrumbleState>()
+  /** haritada ritim bloğu var mı (yoksa her adımda aranmaz) */
+  hasRhythm = false
+  /** belirdiği an oyuncunun içinde kalan ritim blokları: oyuncu çıkana dek boş */
+  readonly rhythmHold = new Set<number>()
+  private rhythmLast = -1
   /** zehirli su karoları (y * cols + x): fizikte öldüren su, çizimde yeşil */
   readonly poison = new Set<number>()
 
@@ -378,6 +397,14 @@ export class World {
             break
           case 'i':
             this.set(tx, ty, WET)
+            break
+          case '{':
+            this.set(tx, ty, RHYTHM_A)
+            this.hasRhythm = true
+            break
+          case '}':
+            this.set(tx, ty, RHYTHM_B)
+            this.hasRhythm = true
             break
           case 'p':
             this.crates.push({ x: px, y: py, w: T, h: T, vy: 0, ox: px, oy: py, sunk: 0 })
@@ -477,7 +504,7 @@ export class World {
             break
           case 'Q': {
             // arena sınırları: boss’un satırında | ya da duvara kadar
-            const def = BOSSES[level.city]
+            const def = BOSSES[level.bossOf ?? level.city]
             const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
             let l = tx - 1
             while (l >= 0 && !stop(row[l])) l--
@@ -713,6 +740,7 @@ export class World {
     if (t === DOOR) return !this.hasKey
     if (t === BLOCK_A) return !this.switchOn
     if (t === BLOCK_B) return this.switchOn
+    if (t === RHYTHM_A || t === RHYTHM_B) return this.rhythmOn(t) && !this.rhythmHold.has(ty * this.cols + tx)
     if (t === BOSS_GATE) return this.boss !== null && this.boss.state !== 'down'
     return false
   }
@@ -735,6 +763,7 @@ export class World {
 
     this.updatePlatforms(dt)
     this.updateCrumbles(dt)
+    this.updateRhythm()
     if (this.crates.length) this.updateCrates(dt)
 
     if (p.dead) {
@@ -808,6 +837,32 @@ export class World {
         p.y = pl.y - p.h
       }
     }
+  }
+
+  /** ritim takımı şu an katı mı (saatten; aynalı haritada da aynı ritim) */
+  rhythmOn(t: number): boolean {
+    const phase = Math.floor(this.clock / RHYTHM.half) % 2
+    return t === RHYTHM_A ? phase === 0 : phase === 1
+  }
+
+  /** ritim değişiminde oyuncunun (ve eşin) içindeki bloklar beklemeye alınır; çıkılan bloklar beklemeden düşer */
+  private updateRhythm() {
+    if (!this.hasRhythm) return
+    const phase = Math.floor(this.clock / RHYTHM.half) % 2
+    const bodies = [this.player, ...(this.partner ? [this.partner] : [])].filter((b) => !b.dead)
+    const covered = new Set<number>()
+    for (const b of bodies)
+      for (let ty = Math.floor(b.y / T); ty <= Math.floor((b.y + b.h - 0.001) / T); ty++)
+        for (let tx = Math.floor(b.x / T); tx <= Math.floor((b.x + b.w - 0.001) / T); tx++) {
+          const t = this.tile(tx, ty)
+          if (t === RHYTHM_A || t === RHYTHM_B) covered.add(ty * this.cols + tx)
+        }
+    if (phase !== this.rhythmLast) {
+      if (this.rhythmLast >= 0) this.events.push({ type: 'beat' })
+      this.rhythmLast = phase
+      for (const k of covered) this.rhythmHold.add(k)
+    }
+    for (const k of [...this.rhythmHold]) if (!covered.has(k)) this.rhythmHold.delete(k)
   }
 
   private updateCrumbles(dt: number) {
@@ -888,7 +943,7 @@ export class World {
       this.events.push({ type: 'dash' })
     }
 
-    const wind = this.level.wind ? this.level.wind * (0.55 + 0.45 * Math.sin(this.time * 1.1)) : 0
+    const wind = !this.level.wind ? 0 : this.level.storm ? this.level.wind * Math.sin(this.time * STORM.freq) : this.level.wind * (0.55 + 0.45 * Math.sin(this.time * 1.1))
     this.windNow = wind
 
     if (p.dashTime > 0) {
@@ -920,7 +975,9 @@ export class World {
       // yerçekimi (suda yavaş batar; dash suda da yenilenir)
       let g = p.swim ? PHYS.swimGravity : PHYS.gravity
       if (p.vy < 0 && !input.jump && !p.swim) g *= PHYS.lowJumpMul
-      p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax, p.vy + g * dt)
+      const moon = this.level.lowGravity && !p.swim
+      if (moon) g *= MOON.gravity
+      p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1), p.vy + g * dt)
       if (p.swim) {
         p.canDash = true
         // kulaç: her zıplama basışı; başı yüzeye yakınsa sudan sıçrayarak çıkar
@@ -1591,7 +1648,13 @@ export class World {
     for (const s of this.springs) {
       s.squash = Math.max(0, s.squash - 1 / 60)
       if (p.vy >= 0 && overlap(p, s) && p.y + p.h - p.vy / 60 <= s.y + 4) {
-        p.vy = -PHYS.springV
+        // tam zamanında: inerken zıplama basılıysa (tampon) daha güçlü seker
+        const perfect = p.buffer > 0
+        p.vy = -PHYS.springV * (perfect ? PERFECT_SPRING : 1)
+        if (perfect) {
+          p.buffer = 0
+          this.events.push({ type: 'perfect' })
+        }
         p.y = s.y - p.h
         p.canDash = true
         p.dashTime = 0

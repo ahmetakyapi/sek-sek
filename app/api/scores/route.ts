@@ -1,6 +1,6 @@
 import { sql, type SQL } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
-import { CHALLENGES } from '@/game/challenges'
+import { ALL_CHALLENGES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { minScoreMs } from '@/lib/antiCheat'
 import { db } from '@/lib/db'
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 const LEVEL_IDS = new Set(LEVELS.map((l) => l.id))
 /** mücadele haritaları: `mucadele-<id>` → tabloda `mucadele:<id>` */
-const CHALLENGE_IDS = new Set(CHALLENGES.map((c) => `mucadele-${c.id}`))
+const CHALLENGE_IDS = new Set(ALL_CHALLENGES.map((c) => `mucadele-${c.id}`))
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status })
 /**

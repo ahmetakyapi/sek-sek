@@ -127,7 +127,7 @@ export const completes = (ch: Challenge, level: LevelDef, run: RunStats) => !run
  */
 export type DailyRule = 'ceza' | 'hiz' | 'hatira' | 'tekcan' | 'bayraksiz' | 'zaman' | 'dashsiz' | RageRule
 /** Sinir bozucu (zor) modlar: Kurallı Koşu altyapısında, günlüğe çıkmaz */
-export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos'
+export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos' | 'ay' | 'firtina' | 'gorunmez' | 'hayalet' | 'dar' | 'korkabus'
 
 export interface DailyRuleDef {
   name: string
@@ -152,8 +152,12 @@ export interface DailyRuleDef {
   crumbleAll?: boolean
   /** Ters Tuşlar: sağ ve sol belli aralıklarla yer değiştirir (swapPhase), değişmeden önce uyarılır */
   swapKeys?: boolean
+  /** Ay Yerçekimi: oyuncu süzülür (LevelDef.lowGravity) */
+  lowGravity?: boolean
+  /** Fırtına: güçlü rüzgâr yön değiştirir (LevelDef.storm + wind) */
+  storm?: boolean
   /** yalnız görüntüyü değiştirir (fizik aynı, her şehirde bitirilebilir): karanlık, baş aşağı, ayna */
-  view?: { dark?: boolean; flipX?: boolean; flipY?: boolean }
+  view?: { dark?: boolean; flipX?: boolean; flipY?: boolean; hiddenSpikes?: boolean; ghostGround?: boolean; zoom?: number }
 }
 
 /** Kural metni (TR); İngilizcesi lib/ui.en.ts'te aynı anahtarla durur. */
@@ -176,11 +180,17 @@ export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
   aynaekran: { name: 'Ayna Ekran', text: 'Görüntü aynada: sağa basınca ekranda sola gidersin. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { flipX: true } },
   turbo: { name: 'Turbo', text: 'Dünya %40 hızlı akar: düşmanlar, platformlar, sen. Her düşüş 3 saniye.', speed: 1.4, perDeath: 3, perMissing: 0 },
   geceyarisi: { name: 'Gece Yarısı', text: 'Karanlıkta tek can: düşersen şehrin en başından.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true, view: { dark: true } },
+  ay: { name: 'Ay Yerçekimi', text: 'Yerçekimi yarı yarıya: yüksek zıplar, yavaş düşersin, inişi tutturmak zor. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, lowGravity: true },
+  firtina: { name: 'Fırtına', text: 'Sert rüzgâr birkaç saniyede bir yön değiştirir: bir arkandan iter, bir karşıdan tutar. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, storm: true },
+  gorunmez: { name: 'Görünmez Dikenler', text: 'Dikenler görünmez: nerede olduklarını ilk düşüşte öğrenirsin. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { hiddenSpikes: true } },
+  hayalet: { name: 'Hayalet Zemin', text: 'Zemin yalnız yakınındayken görünür; uzaktaki taşlar sise karışır. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { ghostGround: true } },
+  dar: { name: 'Dar Kadraj', text: 'Kamera iyice yaklaşır: önünü az görürsün, atlayışı tahminle yaparsın. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { zoom: 1.7 } },
+  korkabus: { name: 'Kör Kâbus', text: 'Görünmez dikenler, karanlık ve tek can. Dayanabilen yok gibi.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true, view: { hiddenSpikes: true, dark: true } },
   kaos: { name: 'Kaos', text: 'Baş aşağı ekran, ters tuşlar ve kaygan zemin bir arada. Her düşüş 5 saniye.', speed: 1, perDeath: 5, perMissing: 0, slippery: true, swapKeys: true, view: { flipY: true } },
 }
 
 /** Sinir bozucu modların sırası (Modlar → Sinir Bozucu). Günlük Meydan Okuma bunları seçmez (RULES'ta yoklar). */
-export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos']
+export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos', 'ay', 'firtina', 'gorunmez', 'hayalet', 'dar', 'korkabus']
 
 /** Ters Tuşlar: her 9 sn'lik turun son 4 sn'si ters; dönmeden 1,5 sn önce uyarılır. Saat dünyanın süresidir (her Hz'de aynı). */
 export const SWAP = { cycle: 9, flipped: 4, warn: 1.5 }
@@ -193,7 +203,8 @@ export function swapPhase(time: number): { flipped: boolean; warn: boolean } {
 /** Zor modun bölüme yazdığı fizik değişiklikleri (harita aynı; zemin kayar ya da çöker) */
 export function ruleLevel(rule: DailyRule, level: LevelDef): LevelDef {
   const r = DAILY_RULES[rule]
-  return r.slippery || r.crumbleAll ? { ...level, slippery: r.slippery || undefined, crumbleAll: r.crumbleAll || undefined } : level
+  if (!r.slippery && !r.crumbleAll && !r.lowGravity && !r.storm) return level
+  return { ...level, slippery: r.slippery || undefined, crumbleAll: r.crumbleAll || undefined, lowGravity: r.lowGravity || undefined, storm: r.storm || undefined, wind: r.storm ? STORM_WIND : level.wind }
 }
 
 /**
@@ -208,12 +219,19 @@ export const NO_DASH_OK = ['edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale
  * (`npx tsx scripts/verify-rage.ts <kaygan|coken> --hepsi`). Kâbus kaygan, Son Nefes çöken listesine bağlıdır.
  * Bu şehirlerden birinin haritası değişirse betiği yeniden koş.
  */
-/** 35 şehrin hepsi (16 Kasım 2026); yeni şehir eklenince betikle kanıtlayıp buraya yaz */
+/** kaygan, çöken, ay ve fırtına fiziğiyle kanıtlanmış şehirler (16 Kasım 2026); yeni şehri betikle kanıtlayıp buraya yaz */
 export const RAGE_PROVEN = [
   'istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri',
+  'giresun', 'tokat', 'denizli',
 ]
+/** Fırtına'nın rüzgâr ivmesi (px/s²): Bayburt'un karşı rüzgârından güçlü, yön değiştirir */
+export const STORM_WIND = 230
 export const SLIPPERY_OK: string[] = RAGE_PROVEN
 export const CRUMBLE_OK: string[] = RAGE_PROVEN
+/** Ay Yerçekimi ve Fırtına'yla çıkışa varılabildiği kanıtlanmış şehirler (`verify-rage.ts <ay|firtina> --hepsi`) */
+/** Ordu'da Ay Yerçekimi'yle çıkışa varılamıyor (çözücü, 16 Kasım 2026): orada açılmaz */
+export const MOON_OK: string[] = RAGE_PROVEN.filter((id) => id !== 'ordu')
+export const STORM_OK: string[] = RAGE_PROVEN
 
 /** Kural bu şehirde oynanabilir mi: Dash’siz, kaygan ve çöken fizik yalnız kanıtlanmış şehirlerde */
 export const ruleFits = (rule: DailyRule, level: LevelDef) => {
@@ -221,6 +239,8 @@ export const ruleFits = (rule: DailyRule, level: LevelDef) => {
   if (r.noDash && !NO_DASH_OK.includes(level.id)) return false
   if (r.slippery && !SLIPPERY_OK.includes(level.id)) return false
   if (r.crumbleAll && !CRUMBLE_OK.includes(level.id)) return false
+  if (r.lowGravity && !MOON_OK.includes(level.id)) return false
+  if (r.storm && !STORM_OK.includes(level.id)) return false
   return true
 }
 

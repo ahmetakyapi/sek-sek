@@ -34,7 +34,7 @@ export const SINGLES = ['P', 'E', '$', '!', 'K'] as const
 export const SYMBOLS = [
   ' ', '#', '=', '^', 'v', 'I', 'i', 'X', '~', 'S', 'F', 'C', 'e', 'f', '>', '<', 'P', 'E', 't', 'l', 'w', 'b', 'L', 'R', 'W',
   '$', '!', 'K', 'D', '%', '*', 'p', '_', '[', ']', 'M', 'N', '|', ':', 'B', 'Y', 'h', 'c', 'u', 'x', 'j',
-  'T', '?', 'n', 'O',
+  'T', '?', 'n', 'O', '{', '}', 'Q', 'G',
 ] as const
 export type Sym = (typeof SYMBOLS)[number]
 
@@ -42,6 +42,8 @@ export type Sym = (typeof SYMBOLS)[number]
 export interface CustomTexts {
   signs: string[]
   npcs: { name: string; text: string; look: Npc['look'] }[]
+  /** haritadaki boss'un (Q) hangi şehrin boss'u olduğu; yoksa seçilen şehrinki */
+  boss?: CityKey
 }
 export const MAX_SIGNS = 8
 export const MAX_NPCS = 4
@@ -61,14 +63,14 @@ export function textProblem(t: CustomTexts): string | null {
   return null
 }
 
-const hasTexts = (t?: CustomTexts) => !!t && (t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
+const hasTexts = (t?: CustomTexts) => !!t && (!!t.boss || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
 
 /** Kodda şehrin sırası; kalıcı (yeni şehir sona). */
 export const CITY_CODES = [
   'istanbul', 'edirne', 'kocaeli', 'bursa', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir',
   'adana', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon',
   'sivas', 'van', 'erzurum', 'kayseri', 'hatay', 'eskisehir', 'ardahan', 'amasya', 'mugla', 'bayburt',
-  'rize', 'artvin', 'kars', 'bitlis', 'agri',
+  'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli',
 ] as const satisfies readonly CityKey[]
 
 const V1_SYMBOLS = 25
@@ -99,6 +101,8 @@ export function validateMap(map: string[]): string | null {
   if ((count('[') || count(']')) && !count('_')) return 'Renkli bloklar var ama onları değiştirecek plaka yok.'
   if (count('?') > MAX_SIGNS) return 'En çok sekiz tabela konabilir.'
   if (count('n') > MAX_NPCS) return 'En çok dört şehir insanı konabilir.'
+  if (count('Q') > 1) return 'Haritada yalnız bir boss olabilir.'
+  if (count('G') && !count('Q')) return 'Boss kapısı var ama boss yok.'
   return null
 }
 
@@ -152,7 +156,7 @@ export function encodeMap(map: string[], city: CityKey, texts?: CustomTexts): st
     i = j
   }
   if (withText) {
-    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]) })
+    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...(texts!.boss ? { b: texts!.boss } : {}) })
     body.push(...new TextEncoder().encode(json))
   }
   return toB64url([v1 ? 1 : withText ? 3 : 2, ci, w >> 8, w & 0xff, checksum(body), ...body])
@@ -202,11 +206,12 @@ export function decodeMap(code: string): { map: string[]; city: CityKey; texts: 
   let texts = emptyTexts()
   if (ver === 3) {
     try {
-      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown }
+      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown; b?: unknown }
       const str = (v: unknown) => (typeof v === 'string' ? v : '')
       texts = {
         signs: Array.isArray(j.s) ? j.s.map(str) : [],
         npcs: Array.isArray(j.n) ? j.n.map((x) => (Array.isArray(x) ? { name: str(x[0]), text: str(x[1]), look: NPC_LOOKS.includes(x[2]) ? x[2] : 'amca' } : { name: '', text: '', look: 'amca' as const })) : [],
+        ...((CITY_CODES as readonly string[]).includes(str(j.b)) ? { boss: str(j.b) as CityKey } : {}),
       }
     } catch {
       return { error: 'Harita kodu bozuk.' }
@@ -243,6 +248,7 @@ export function customLevel(map: string[], city: CityKey, texts: CustomTexts = e
       return { name: n?.name.trim() || 'Yolcu', look: n?.look ?? 'amca', text: n?.text.trim() || '…' }
     }),
     medals: customMedals(map[0]?.length ?? MIN_W),
+    bossOf: map.some((r) => r.includes('Q')) ? texts.boss : undefined,
     quips: base.quips,
     wind: undefined,
     finaleAt: undefined,

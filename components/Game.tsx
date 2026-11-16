@@ -5,7 +5,7 @@ import TouchControls from '@/components/TouchControls'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { BossFigure } from '@/components/Figures'
-import CityBanner, { Choice, Level, Toggle } from '@/components/CityBanner'
+import CityBanner, { Choice, CompactToggles, Level, Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
 import TitleMenu from '@/components/TitleMenu'
@@ -37,7 +37,7 @@ import Coop, { CoopEnd, CoopSetup, type CoopResult } from '@/components/Coop'
 import { useInstallPrompt } from '@/lib/useInstallPrompt'
 import { USTA_TEXT, ustaDone, ustaTask } from '@/lib/ustalar'
 import { BOSSES } from '@/game/boss'
-import { CHALLENGES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
+import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
 import { LEVELS, bossLevel, FIRST_BOOK } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
@@ -81,7 +81,7 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
+type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
@@ -530,7 +530,8 @@ export default function Game() {
               }
               bossDeathsRef.current = -1
               haptic([40, 50, 40, 50, 90])
-              if (modeRef.current) break
+              // modda, mücadelede ve özel haritada yenilen boss şehrin defterine yazılmaz
+              if (modeRef.current || customRef.current || challengeRef.current) break
               setSave((prev) => {
                 if (prev.bosses[w.level.id]) return prev
                 const next = { ...prev, bosses: { ...prev.bosses, [w.level.id]: true } }
@@ -605,7 +606,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else if (sc === 'photo') {
@@ -833,7 +834,17 @@ export default function Game() {
       splitRef.current = { rec: [], pb: plain && pbSplit?.v === cityVersion(LEVELS[idx].id) ? pbSplit.t : null, on: plain && saveRef.current?.splits !== false }
       // zor modun görüntü değişikliği (karanlık, baş aşağı, ayna): her bölüm yüklenişinde yeniden kurulur, modsuz koşuda sıfırlanır
       const view = md?.kind === 'daily' ? DAILY_RULES[md.run.rule].view : undefined
-      if (rendererRef.current) rendererRef.current.dark = !!view?.dark
+      const r0 = rendererRef.current
+      if (r0) {
+        r0.dark = !!view?.dark
+        r0.hiddenSpikes = !!view?.hiddenSpikes
+        r0.ghostGround = !!view?.ghostGround
+        // kadraj değişince tuval yeniden ölçülür (Dar Kadraj)
+        if (r0.zoom !== (view?.zoom ?? 1)) {
+          r0.zoom = view?.zoom ?? 1
+          window.dispatchEvent(new Event('resize'))
+        }
+      }
       if (canvasRef.current) canvasRef.current.style.transform = view?.flipX || view?.flipY ? `scale(${view.flipX ? -1 : 1}, ${view.flipY ? -1 : 1})` : ''
       if (rendererRef.current) {
         rendererRef.current.setLevel(w)
@@ -1058,7 +1069,16 @@ export default function Game() {
   // zor modun görüntüsü (karanlık, ters ekran) yalnız oyunda: menülere ve bitiş ekranına taşınmasın
   useEffect(() => {
     if (screen === 'play' || screen === 'pause' || screen === 'photo') return
-    if (rendererRef.current) rendererRef.current.dark = false
+    const r0 = rendererRef.current
+    if (r0) {
+      r0.dark = false
+      r0.hiddenSpikes = false
+      r0.ghostGround = false
+      if (r0.zoom !== 1) {
+        r0.zoom = 1
+        window.dispatchEvent(new Event('resize'))
+      }
+    }
     if (canvasRef.current) canvasRef.current.style.transform = ''
   }, [screen])
 
@@ -1176,7 +1196,7 @@ export default function Game() {
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
     // menü ekranlarının hepsi: yarım kalan mod bir sonraki normal koşuya taşınmasın
-    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'challenges', 'tournament', 'invite', 'shop', 'mirror'].includes(screen)) return
+    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'invite', 'shop', 'mirror'].includes(screen)) return
     flushStats()
     rushRef.current = null
     rivalRef.current = null
@@ -1595,8 +1615,9 @@ export default function Game() {
 
   // ayarlar tek yerde: Mola ve Ayarlar ekranı aynı listeyi gösterir; her seçeneğin altında ne işe yaradığı yazar
   const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const settingsList = (
-    <div className="mt-1 grid divide-y-2 divide-line/60 short:grid-cols-2 short:gap-x-4 short:divide-y-0">
+  // ayarlar üç grupta: molada sekmeli (sağ sütun kısa kalır), Ayarlar ekranında hepsi bir arada
+  const soundSet = (
+    <>
       <div>
         <Toggle label={t('Ses Efektleri')} hint={t('Zıplama, toplama ve vuruş sesleri')} on={save.sfx} onChange={() => toggle('sfx')} />
         {save.sfx && <Level label={t('Düzey')} value={save.sfxVol ?? 1} onChange={(v) => persist({ ...save, sfxVol: v })} />}
@@ -1605,10 +1626,18 @@ export default function Game() {
         <Toggle label={t('Müzik')} hint={t('Her şehrin kendi makamında ezgisi')} on={save.music} onChange={() => toggle('music')} />
         {save.music && <Level label={t('Düzey')} value={save.musicVol ?? 1} onChange={(v) => persist({ ...save, musicVol: v })} />}
       </div>
+    </>
+  )
+  const controlSet = (
+    <>
       <Toggle label={t('Dokunmatik Kontroller')} hint={t('Ekranda joystick ve tuşlar. Kapatırsan klavye ya da oyun koluyla oynarsın.')} on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
       {/* ikisi de hep listede: dokunmatik açılıp kapanınca liste zıplamasın */}
       <Toggle label={t('Tuş İpuçları')} hint={t('Klavyeyle oynarken ekranın altında tuş rehberi')} on={save.keyHints} onChange={() => persist({ ...save, keyHints: !save.keyHints })} />
       <Toggle label={t('Büyük Tuşlar')} hint={t('Dokunmatik kontrollerde daha geniş dokunma alanı')} on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
+    </>
+  )
+  const gameSet = (
+    <>
       <Toggle label={t('Hayalet Koşu')} hint={t('Bir şehri bitirdikten sonra, oradaki en iyi koşunun soluk hayaleti yanında koşar.')} on={save.ghost} onChange={() => persist({ ...save, ghost: !save.ghost })} />
       <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekor koşuna göre kaç saniye önde ya da geride olduğun')} on={save.splits !== false} onChange={() => persist({ ...save, splits: save.splits === false })} />
       <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır. Kapalıyken görüntü hep sabit kalır.')} on={save.shake ?? !reduceMotion} onChange={() => persist({ ...save, shake: !(save.shake ?? !reduceMotion) })} />
@@ -1616,8 +1645,35 @@ export default function Game() {
         <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.')} on={save.relaxed} onChange={() => persist({ ...save, relaxed: !save.relaxed })} />
         {save.relaxed && <Choice label={t('Oyun Hızı')} value={save.relaxedSpeed ?? 0.8} options={[0.6, 0.7, 0.8, 0.9].map((v) => ({ v, label: `%${Math.round(v * 100)}` }))} onChange={(v) => persist({ ...save, relaxedSpeed: v })} />}
       </div>
+    </>
+  )
+  const settingsList = (
+    <div className="mt-1 grid divide-y-2 divide-line/60 short:grid-cols-2 short:gap-x-4 short:divide-y-0">
+      {soundSet}
+      {controlSet}
+      {gameSet}
     </div>
   )
+  // molada: üstte ses (düzey çubuklarıyla), altında öbür ayarlar iki sütunlu sıkı kutucuklar (iki sütun dengeli, kaydırma yok)
+  const settingsPause = (
+    <>
+      <div className="mt-1 grid divide-y-2 divide-line/60">{soundSet}</div>
+      <CompactToggles.Provider value>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {controlSet}
+          {gameSet}
+          {canFull && (
+            <button type="button" className="flex w-full items-center justify-between gap-2 border-2 border-line bg-ink/30 px-2.5 py-2 text-left text-[13px] font-semibold text-cream hover:bg-panel-2/60 short:py-1.5" onClick={fullscreen}>
+              {t('Tam Ekran')}
+              <span aria-hidden>⛶</span>
+            </button>
+          )}
+        </div>
+      </CompactToggles.Provider>
+    </>
+  )
+
+
 
   // Mola'daki şehir özeti: bu şehirde neler bulundu, rekor ve sıradaki madalya hedefi
   const cityBest = save.best[level.id]
@@ -2303,12 +2359,7 @@ export default function Game() {
                 <p className="flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
                   {t("AYARLAR")} <span className="kilim h-[6px] flex-1 opacity-50" />
                 </p>
-                {settingsList}
-                {canFull && (
-                  <button className="mt-2 text-[13px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={fullscreen}>
-                    {t("⛶ Tam Ekrana Geç")}
-                  </button>
-                )}
+                {settingsPause}
               </div>
             </div>
           </div>
@@ -2469,6 +2520,8 @@ export default function Game() {
           onMarathon={startMarathon}
           onRules={() => (ui(), setScreen('ruleSetup'))}
           onRage={() => (ui(), setScreen('rageSetup'))}
+          onRageCourses={() => (ui(), setScreen('rageCourses'))}
+          rageCoursesDone={RAGE_COURSES.filter((c) => save.challenges?.[c.id]).length}
           ruleCount={Object.keys(save.rules ?? {}).filter((k) => !RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
           rageCount={Object.keys(save.rules ?? {}).filter((k) => RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
           rulesOpen={Object.keys(save.best).length > 0}
@@ -2486,6 +2539,7 @@ export default function Game() {
         />
       )}
       {screen === 'challenges' && <ChallengeList best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
+      {screen === 'rageCourses' && <ChallengeList rage best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
       {screen === 'tournament' && <TournamentHub mark={save.turnuva} player={save.player?.name ?? ''} friends={save.friends ?? []} onStart={(c) => startChallenge(c, tournamentWeek(today))} onBack={() => setScreen('modes')} />}
       {screen === 'invite' && invite && (
         <Overlay dim>
@@ -2520,8 +2574,8 @@ export default function Game() {
           status={challengeSend.status}
           rank={challengeSend.rank}
           weekRank={weekRank}
-          onRetry={() => startChallenge(CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null)}
-          onList={() => setScreen(challengeResult.week ? 'tournament' : 'challenges')}
+          onRetry={() => startChallenge(ALL_CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null)}
+          onList={() => setScreen(challengeResult.week ? 'tournament' : RAGE_COURSES.some((c) => c.id === challengeResult.id) ? 'rageCourses' : 'challenges')}
           onLogin={() => ((returnRef.current = 'challengeEnd'), setScreen('name'))}
         />
       )}

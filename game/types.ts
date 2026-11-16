@@ -1,6 +1,6 @@
 export const T = 16
 
-export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'bitlis'
+export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis'
 
 export interface Fact {
   title: string
@@ -46,6 +46,12 @@ export interface LevelDef {
   slippery?: boolean
   /** Çöken Dünya (zor mod): basılan her yüzey çatlak taş gibi çöker ve bir süre sonra geri gelir */
   crumbleAll?: boolean
+  /** Ay Yerçekimi (zor mod): oyuncunun yerçekimi ve düşüş hızı azalır, atlayış yükselir ve süzülür */
+  lowGravity?: boolean
+  /** boss başka bir şehrin boss'u (Bölüm Düzenleyici: istenen boss seçilir); yoksa bölümün şehrininki */
+  bossOf?: CityKey
+  /** Fırtına (zor mod): rüzgâr (wind) birkaç saniyede bir yön değiştirir: önce arkadan, sonra karşıdan eser */
+  storm?: boolean
   /** Ayna Yolu: harita sağdan sola çevrilmiş (game/mirror.ts); hareketli platformlar da ayna fazında başlar */
   mirror?: boolean
   /** final eklenince hesaplanır: finalin ipuçları ve kişileri listelerde nereden başlıyor */
@@ -91,6 +97,8 @@ export type GameEvent =
   | { type: 'complete' }
   | { type: 'crystal' }
   | { type: 'nitro' }
+  | { type: 'beat' }
+  | { type: 'perfect' }
   | { type: 'key' }
   | { type: 'stamp' }
   /** saklı nazar boncuğu bulundu */

@@ -145,7 +145,7 @@ export default function Ending({
               {ALL.length > FIRST_BOOK && (
                 <div className="mt-5 max-w-md border-2 border-gold/60 bg-gold/5 px-4 py-3">
                   <p className="text-[12px] font-bold tracking-[0.16em] text-gold">{t('İKİNCİ DEFTER')}</p>
-                  <p className="mt-1 text-[14px] leading-relaxed text-cream/90">{t('Sahaf defteri kapatırken arasından ikinci bir defter düştü: Rize’nin çay bahçelerinden Ağrı Dağı’nın zirvesine {n} şehir daha. Halatlar, teleferikler ve yüzülecek sular seni bekliyor.', { n: ALL.length - FIRST_BOOK })}</p>
+                  <p className="mt-1 text-[14px] leading-relaxed text-cream/90">{t('Sahaf defteri kapatırken arasından ikinci bir defter düştü: Rize’nin çay bahçelerinden Ağrı Dağı’nın zirvesine, oradan Pamukkale’nin beyaz basamaklarına {n} şehir daha. Halatlar, teleferikler, nitro ve yüzülecek sular seni bekliyor.', { n: ALL.length - FIRST_BOOK })}</p>
                 </div>
               )}
             </div>

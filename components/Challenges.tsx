@@ -5,7 +5,7 @@ import { ItemIcon } from '@/components/HudBits'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, displayName } from '@/components/ui'
-import { CHALLENGES, challengeLevel, type Challenge } from '@/game/challenges'
+import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel, type Challenge } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
@@ -14,27 +14,28 @@ import { formatTime } from '@/lib/storage'
  * Mücadele haritaları: zor şehirlerin en sıkı kesitleri. Liste solda, seçilenin sıralaması sağda (telefonda altta).
  * Bir mücadele, kesildiği şehir bir kez bitirilince açılır.
  */
-export function ChallengeList({ best, finished, player, onStart, onBack }: { best: Record<string, number>; finished: Set<string>; player: string; onStart: (c: Challenge) => void; onBack: () => void }) {
+export function ChallengeList({ rage, best, finished, player, onStart, onBack }: { /** Öfke Parkurları (RAGE_COURSES) */ rage?: boolean; best: Record<string, number>; finished: Set<string>; player: string; onStart: (c: Challenge) => void; onBack: () => void }) {
   const t = useT()
   const lng = useLang()
-  const [pick, setPick] = useState(() => CHALLENGES.find((c) => finished.has(c.level)) ?? CHALLENGES[0])
-  const done = CHALLENGES.filter((c) => best[c.id]).length
+  const list = rage ? RAGE_COURSES : CHALLENGES
+  const [pick, setPick] = useState(() => list.find((c) => finished.has(c.level)) ?? list[0])
+  const done = list.filter((c) => best[c.id]).length
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(960px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('{n}/{m} BİTTİ', { n: done, m: CHALLENGES.length })}</p>
-            <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Mücadeleler')}</h2>
+            <p className={`text-[12px] font-bold tracking-[0.18em] ${rage ? 'text-coral' : 'text-accent'}`}>{t('{n}/{m} BİTTİ', { n: done, m: list.length })}</p>
+            <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{rage ? t('Öfke Parkurları') : t('Mücadeleler')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {t('← Geri')}
           </button>
         </div>
-        <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Zor şehirlerin en sıkı yerleri, bayraksız ve hatırasız. Tek iş: baştan sona en hızlı var. Şehri bitirince açılır.')}</p>
+        <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{rage ? t('Elle çizilmiş uzun ve acımasız parkurlar: dikenli bacalar, ritim, kör köşeler. Görünüşünü veren şehri bitirince açılır.') : t('Zor şehirlerin en sıkı yerleri, bayraksız ve hatırasız. Tek iş: baştan sona en hızlı var. Şehri bitirince açılır.')}</p>
         <div className="mt-3 grid min-h-0 flex-1 gap-3 max-sm:grid-rows-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] short:mt-2 short:grid-cols-2">
           <ol className="overlay-scroll min-h-[120px] overflow-y-auto overscroll-contain pr-1">
-            {CHALLENGES.map((c) => {
+            {list.map((c) => {
               const lv = localize(LEVELS.find((l) => l.id === c.level)!, lng)
               const open = finished.has(c.level)
               const ms = best[c.id]
@@ -130,7 +131,7 @@ export function ChallengeEnd({
   onLogin: () => void
 }) {
   const t = useT()
-  const c = CHALLENGES.find((x) => x.id === result.id)!
+  const c = ALL_CHALLENGES.find((x) => x.id === result.id)!
   const level = challengeLevel(c)
   const medal = medalFor(level, result.timeMs)
   return (

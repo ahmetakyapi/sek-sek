@@ -1,3 +1,4 @@
+import { SOLVER_TIME } from '../game/medals'
 import { describe, expect, it } from 'vitest'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { record } from '../game/ghost'
@@ -14,14 +15,7 @@ import { holdPlates, runMacro, solve } from '../scripts/solver'
  * ondan hızlı olabilir, bu yüzden sınır fiziğe dayanır (dash hızıyla kesintisiz koşu × 0,6) ve burada payı ölçülür.
  */
 /** çözücünün çıkışa vardığı süre (sn): `npx tsx` ile solve(level, { exitOnly: true, trace: true }) yolunu oynatarak */
-const SOLVER: Record<string, number> = {
-  kocaeli: 51.3, istanbul: 60.3, eskisehir: 52.6, edirne: 53.0, antalya: 52.7, izmir: 56.1,
-  bursa: 53.6, canakkale: 52.6, ankara: 73.6, adana: 52.6, hatay: 56.1, konya: 74.7,
-  sanliurfa: 48.6, diyarbakir: 52.5, mardin: 57.2, malatya: 53.1, corum: 58.2, sinop: 56.4,
-  ordu: 71.3, trabzon: 58.8, nevsehir: 95.2, sivas: 65.0, gaziantep: 71.6, van: 58.3,
-  erzurum: 72.2, ardahan: 60.7, bayburt: 81.3, amasya: 93.7, mugla: 66.5, kayseri: 53.1,
-  rize: 56.7, artvin: 68.5, kars: 60.1, bitlis: 58.0, agri: 72.0,
-}
+const SOLVER = SOLVER_TIME
 
 describe('hile önleme: alt süre sınırı', () => {
   it('her şehrin çözücü süresi alt sınırın en az iki katı', () => {

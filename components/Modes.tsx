@@ -7,7 +7,7 @@ import { ItemIcon } from '@/components/HudBits'
 import { Board } from '@/components/ScoreBoard'
 import { Overlay, displayName } from '@/components/ui'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
-import { CHALLENGES } from '@/game/challenges'
+import { CHALLENGES, RAGE_COURSES } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
 import { LEVELS } from '@/game/levels'
 import { DAILY_RULES, RAGE_RULES, RULES, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
@@ -43,6 +43,8 @@ export function ModesHub({
   ruleCount,
   onRage,
   rageCount,
+  onRageCourses,
+  rageCoursesDone,
   rulesOpen,
   onChallenges,
   challengeDone,
@@ -76,6 +78,9 @@ export function ModesHub({
   onRage: () => void
   /** Sinir Bozucu modlarda yazılmış rekor sayısı */
   rageCount: number
+  onRageCourses: () => void
+  /** bitirilen Öfke Parkuru sayısı */
+  rageCoursesDone: number
   /** en az bir şehir bitirildi mi (Kurallı Koşu bitirilen şehirlerde açılır) */
   rulesOpen: boolean
   onChallenges: () => void
@@ -165,9 +170,14 @@ export function ModesHub({
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Kaygan zemin, ters tuşlar, çöken taşlar, karanlık, baş aşağı ekran. Sabır taşını çatlatan on iki mod, her şehirde ayrı rekor.')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : rageCount ? t('{n} öfke rekoru. Sıradakine dayanabilir misin?', { n: rageCount }) : t('Henüz kimse sinirlenmedi. İlk sen dene.')}</p>
-              <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRage}>
-                {t('Öfkeni Seç')}
-              </button>
+              <div className="mt-auto grid grid-cols-2 gap-2">
+                <button className="pixel-btn tone shrink-0 justify-center px-2" disabled={!rulesOpen} onClick={onRage}>
+                  {t('Öfkeni Seç')}
+                </button>
+                <button className="pixel-btn tone shrink-0 justify-center px-2" disabled={!rulesOpen || !RAGE_COURSES.length} onClick={onRageCourses}>
+                  {t('Parkurlar')} {RAGE_COURSES.length ? <span className="text-[12px] tabular-nums opacity-80">{rageCoursesDone}/{RAGE_COURSES.length}</span> : null}
+                </button>
+              </div>
             </section>
 
             {/* Haftalık Turnuva */}

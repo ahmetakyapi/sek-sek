@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
-import { NITRO, PHYS, World, restore, snapshot } from '../game/sim'
+import { NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -224,5 +224,40 @@ describe('zor mod fiziği', () => {
     expect(w.tile(1, 3)).toBe(1)
     expect(w.tile(12, 3)).toBe(5)
     expect(w.tile(12, 4)).toBe(1)
+  })
+})
+
+describe('zamanlama mekanikleri', () => {
+  it('ritim blokları saatle sırayla katılaşır; içindeyken belirecek blok oyuncu çıkana dek boş kalır', () => {
+    const map = ['            ', '            ', ' P   {}     ', '############']
+    const w = mk(map)
+    expect(w.isSolid(5, 2)).toBe(true)
+    expect(w.isSolid(6, 2)).toBe(false)
+    w.clock = RHYTHM.half + 0.01
+    expect(w.isSolid(5, 2)).toBe(false)
+    expect(w.isSolid(6, 2)).toBe(true)
+    // oyuncu `}` karosunun içindeyken takım değişir: sıkışmaz
+    const v = mk(map)
+    step(v, 0.2)
+    v.player.x = 6 * T + 1
+    v.player.y = 2 * T + 1
+    v.clock = RHYTHM.half - 0.005
+    step(v, 0.02)
+    expect(v.rhythmHold.size).toBeGreaterThan(0)
+    expect(v.isSolid(6, 2)).toBe(false)
+  })
+  it('yaya inerken zıplama basılıysa daha yükseğe seker', () => {
+    const map = ['          ', '          ', '          ', '          ', ' P        ', '          ', '          ', ' S        ', '##########']
+    const peak = (perfect: boolean) => {
+      const w = mk(map)
+      let top = Infinity
+      for (let i = 0; i < 240; i++) {
+        const nearSpring = w.player.vy > 0 && w.player.y > 6 * T - 4
+        w.step(1 / 120, { ...emptyInput(), jump: perfect && nearSpring, jumpPressed: perfect && nearSpring })
+        top = Math.min(top, w.player.y)
+      }
+      return top
+    }
+    expect(peak(false) - peak(true)).toBeGreaterThan(T)
   })
 })

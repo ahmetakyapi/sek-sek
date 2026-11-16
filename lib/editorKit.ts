@@ -122,6 +122,30 @@ export const STAMPS: Stamp[] = [
     ax: 0,
     ay: 5,
   },
+  {
+    id: 'arena',
+    name: 'Boss Arenası',
+    desc: 'Sol ucu ray sonuyla (|) kapalı düz arena, ortada boss; sağdaki boss kapısı boss yenilince açılır. Boss’u Metinler kutusundan seç.',
+    rows: ['                                 #', '                                 #', '                                 #', '                                 #', '                                 G', '|               Q                G', '##################################'],
+    ax: 0,
+    ay: 6,
+  },
+  {
+    id: 'rhythm',
+    name: 'Ritim Köprüsü',
+    desc: 'Diken tarlasının üstünde sırayla belirip kaybolan iki takım taş: ritmi tut, taştan taşa geç.',
+    rows: ['#                  #', '#  {{  }}  {{  }}  #', '#                  #', '#^^^^^^^^^^^^^^^^^^#', '####################'],
+    ax: 0,
+    ay: 4,
+  },
+  {
+    id: 'hammers',
+    name: 'Tokmak Koridoru',
+    desc: 'Dört tokmaklı alçak koridor; tokmak kalkınca geç, inerken altında durma.',
+    rows: ['######################', '#   Y    Y    Y    Y  ', '#                     ', '#                     ', '######################'],
+    ax: 0,
+    ay: 4,
+  },
 ]
 
 /** Desen haritaya basılır: KEEP hücreleri dokunulmaz, harita dışı kesilir. Tekil simge (P, E, pul…) önce eskisini kaldırır. */
@@ -324,7 +348,7 @@ export function thumbColors(p: CityStyle): Record<string, string> {
     '#': p.tile, X: p.tileDark, '>': p.tileDark, '<': p.tileDark, i: p.tileLight, '=': p.plank, '~': p.water[0], I: p.water[2],
     '^': p.spike[0], v: p.spike[0], S: p.accent, C: gold, F: red, E: gold, P: '#f3f1ff', e: enemy, f: enemy, h: enemy, c: enemy,
     u: enemy, x: enemy, j: enemy, W: '#3fa9b8', L: '#c49a5a', R: '#8f96a3', $: gold, '!': '#4aa8ff', K: gold, D: p.plank,
-    '%': p.tileLight, '*': '#9fd8ff', T: '#ff9a3c', p: p.plank, _: p.accent, '[': '#4a7bd8', ']': '#e0b030', M: p.plank, N: p.plank, B: red,
+    '%': p.tileLight, '*': '#9fd8ff', T: '#ff9a3c', '{': '#ff9a7a', '}': '#5ad6c6', p: p.plank, _: p.accent, '[': '#4a7bd8', ']': '#e0b030', M: p.plank, N: p.plank, B: red,
     Y: p.tileDark,
   }
 }

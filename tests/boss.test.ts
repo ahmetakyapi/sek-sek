@@ -97,14 +97,14 @@ function duel(def: BossDef, opts: { secs?: number; still?: number; see?: (b: Bos
 const solo = (move: BossDef['moves'][number], tier: 1 | 2 | 3): BossDef => ({ ...BOSSES.bayburt, hp: 3, moves: [move], speed: 1.1, tier })
 
 describe('boss kademeleri', () => {
-  it('kademe şehrin zorluğuna uyar: Kolay ve Orta 1, Zor 2, Çok Zor 3', () => {
-    const want: Record<string, number> = { Kolay: 1, Orta: 1, Zor: 2, 'Çok Zor': 3 }
+  it('kademe şehrin zorluğuna uyar: Kolay 1, Orta 2, Zor ve Çok Zor 3', () => {
+    const want: Record<string, number> = { Kolay: 1, Orta: 2, Zor: 3, 'Çok Zor': 3 }
     for (const l of LEVELS) expect(BOSSES[l.city].tier, l.name).toBe(want[l.difficulty])
   })
 
-  it('kademe 1 boss’ların davranışı değişmedi: senaryolu dövüşün izi kademelerden önceki kodla aynı', () => {
-    // sayılar kademeler eklenmeden önceki game/boss.ts ile aynı senaryoda üretildi (beş hareketin hepsi geçer)
-    const golden: Partial<Record<CityKey, number>> = { istanbul: 3689980124, kocaeli: 1766769506, ankara: 46508536, adana: 2948322251, izmir: 2448761843, diyarbakir: 1998513001, sanliurfa: 879600497, mardin: 3287625213 }
+  it('kademe 1 boss’ların davranışı sabit: senaryolu dövüşün izi değişmez (değişirse bilerek güncelle)', () => {
+    // sayılar kademeler eklenmeden önceki game/boss.ts ile aynı senaryoda üretildi (yorgunluk kısalınca da senaryo aynı kalır)
+    const golden: Partial<Record<CityKey, number>> = { istanbul: 3689980124, kocaeli: 1766769506, izmir: 2448761843 }
     for (const [city, hash] of Object.entries(golden)) {
       expect(BOSSES[city as CityKey].tier).toBe(1)
       expect(duel(BOSSES[city as CityKey]).hash, city).toBe(hash)

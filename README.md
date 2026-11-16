@@ -2,7 +2,7 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Gezgin’in yarım kalmış defterini tamamla. Otuz beş şehir, yüz beş hatıra, iki defter, tek yolculuk.**
+**Gezgin’in yarım kalmış defterini tamamla. Otuz sekiz şehir, yüz on dört hatıra, iki defter, tek yolculuk.**
 
 İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
@@ -19,9 +19,9 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
 
-- **35 Şehir, İki Defter.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+- **38 Şehir, İki Defter.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
   Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr. İkinci defterde
-  Rize’de derede yüzme, Artvin’de köy teleferikleri, Kars’ta kale halatları, Ağrı Dağı’nın zirvesi.
+  Rize’de derede yüzme, Artvin’de köy teleferikleri, Kars’ta kale halatları, Ağrı Dağı’nın zirvesi; dönüş yolunda Giresun’un kayıkları, Tokat’ın yazma kalıpları ve Pamukkale’nin kaygan travertenleri.
 - **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
   **gizli pul** deftere gizli bir sayfa ekler.
 - **Konuşan Şehir.** Simitçiden vapur kaptanına, mırracıdan kangal sahibine 30’u aşkın şehir insanı.
@@ -33,6 +33,13 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 - **Modlar.** Günlük Meydan Okuma (herkese aynı şehir ve kural, günlük sıralama, gün serisi), iki kişilik Düello
   (yan yana bölünmüş ekranda ya da sırayla, rakibin hayaletiyle), Boss Rush, Maraton (rastgele üç şehir arka arkaya)
   ve Co-op (iki kişi aynı ekranda, aynı şehirde).
+- **Sinir Bozucu.** On sekiz zor mod (Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Karanlık Yol, Baş Aşağı, Ay Yerçekimi,
+  Fırtına, Görünmez Dikenler, Kaos…), her biri bitirdiğin her şehirde ayrı rekor; ayrıca elle çizilmiş dokuz Öfke Parkuru
+  (dikenli bacalar, ritim köprüleri, tokmak koridorları). Hikâyeye ve ilerlemeye dokunmaz.
+- **Zamanlama.** Saatle belirip kaybolan ritim blokları, inerken zıplayınca yüksek seken "tam zamanında" yaylar, nitro tüpleri.
+- **Bölüm Düzenleyici.** 600 sütuna dek harita, fırça, dikdörtgen, kova, seçim ve kopyala-yapıştır, hazır parçalar
+  (boss arenası, ritim köprüsü, tokmak koridoru…), şablonlar; kendi tabela ve şehir insanı sözlerin, 38 boss'tan istediğin.
+  Çözücüyle sına, bağlantıyla paylaş, topluluğa yayınla.
 - **Şehir Ustaları.** Her şehrin esnafı küçük bir görev verir (düşmeden bitir, altın madalya, gizli köşeler…); usta mührü
   Kılık Dükkânı’nda para sayılır.
 - **Güncelleme hiçbir şeyi silmez.** Bir şehrin haritası yenilense de rekorun, hatıraların ve sıralaman durur; hangi
@@ -84,6 +91,9 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 33 | Kars · Ani’den Sarıkamış’a | 36 | Zor | Taş bina saçakları, kale halatları, buzlu Sarıkamış yamacı, Ani harabeleri | Gravyer |
 | 34 | Bitlis · Vadideki Kale, Kraterdeki Göl | 13 | Zor | Kale halatları, Ahlat mezar taşları, Nemrut krater gölünde yüzme | Büryan |
 | 35 | Ağrı · Sarayın Kapısından Dağın Zirvesine | 04 | Çok Zor | İshak Paşa Sarayı halatları, Meteor Çukuru teleferiği, buzlu yamaç, karşı rüzgâr | Kilim |
+| 36 | Giresun · Kirazın Adını Verdiği Şehir | 28 | Orta | Zeytinlik damları, kale burçları, fındık bahçesinde nitro, sahilde kayıklar | Kiraz |
+| 37 | Tokat · Kalıptan Çıkan Desenler | 60 | Zor | Taşhan, kale halatları, yazma kalıplarının tokmakları, Zile surları | Yazma |
+| 38 | Denizli · Pamuk Kale’nin Beyaz Basamakları | 20 | Çok Zor | Horozlu meydan, Laodikeia sütunları, kaygan travertenler, Hierapolis tiyatrosu | Havlu |
 
 ## Yolcular ve Şehir İnsanları
 

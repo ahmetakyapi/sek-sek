@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
-import { SCALES, cityTheme, titleTheme, type Song } from '../game/music'
-
+import { SCALES, cityTheme, titleTheme, voiceLead, type Song } from '../game/music'
 
 const sane = (s: Song) => {
   expect(s.length).toBeGreaterThan(0)
@@ -43,6 +42,42 @@ describe('müzik', () => {
     expect(a.pulse).toEqual([4, 4, 4, 4])
     // tel çalgılar (bağlama, kanun) ve ney birlikte: düzenleme katmanlı
     expect(a.events.some((e) => e.inst === 'kanun')).toBe(true)
+    // form: giriş bir kez, döngü ölçü başından döner; tempo rahat aralıkta (70-84 BPM)
+    expect(a.loop).toBeGreaterThan(0)
+    expect(a.loop % 16).toBe(0)
+    expect(a.loop).toBeLessThan(a.length / 4)
+    const bpm = 60 / a.step / 4
+    expect(bpm).toBeGreaterThanOrEqual(70)
+    expect(bpm).toBeLessThanOrEqual(84)
+    // A' cümlesi durakta biter (giriş 4 + A 8 + A' 8 ölçü): neyin son notası makamın kökü
+    const neyA2 = a.events.filter((e) => e.inst === 'ney' && e.at < 20 * 16).sort((x, y) => x.at - y.at)
+    expect(neyA2.at(-1)!.midi[0] % 12).toBe(m.root % 12)
+    // süsleme: ney kayarak/çarparak girer, kanun tremolo yapar
+    expect(a.events.some((e) => e.inst === 'ney' && e.from !== undefined)).toBe(true)
+    expect(a.events.some((e) => e.inst === 'kanun' && e.trem)).toBe(true)
+    // ses yürütme: piyano akorları bir sonrakine az yürür (ortalama ses başına en çok 3 yarım ses)
+    const chords = a.events.filter((e) => e.inst === 'keys' && e.midi.length === 4 && e.at % 16 === 0).sort((x, y) => x.at - y.at)
+    let move = 0
+    for (let i = 1; i < chords.length; i++) move += chords[i].midi.reduce((s, n, k) => s + Math.abs(n - chords[i - 1].midi[k]), 0) / 4
+    expect(move / (chords.length - 1)).toBeLessThanOrEqual(3)
+    // ses düğümü bütçesi: ölçü başına en çok 30 olay (uzun oyunda WebAudio şişmesin)
+    expect(a.events.length / (a.length / 16)).toBeLessThanOrEqual(30)
+  })
+
+  it('jenerik: giriş bir kez çalar, tema A-B-A-B döner, en yakın çevrimle akar', () => {
+    const s = titleTheme()
+    expect(s.loop).toBe(4 * 8)
+    expect(s.length).toBe(36 * 8)
+    expect(s.events.filter((e) => e.inst === 'kanun' && e.trem).length).toBeGreaterThan(0)
+    expect(s.events.length / (s.length / 8)).toBeLessThanOrEqual(30)
+  })
+
+  it('ses yürütme: akor tonları önceki akora en yakın çevrimle dizilir', () => {
+    // Do maj7 → Fa maj7: ortak tonlar (Do, Mi) yerinde kalır, öteki sesler bir adım yürür
+    const c = voiceLead(null, [60, 64, 67, 71])
+    const f = voiceLead(c, [65, 69, 72, 76])
+    expect(f.reduce((s, n, i) => s + Math.abs(n - c[i]), 0)).toBeLessThanOrEqual(4)
+    expect(f.map((n) => n % 12).sort((x, y) => x - y)).toEqual([0, 4, 5, 9])
   })
 })
 

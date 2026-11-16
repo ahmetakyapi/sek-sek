@@ -130,6 +130,9 @@ const COORDS: Record<string, [number, number]> = {
   kars: [43.1, 40.6],
   bitlis: [42.11, 38.4],
   agri: [43.05, 39.72],
+  giresun: [38.39, 40.91],
+  tokat: [36.55, 40.31],
+  denizli: [29.09, 37.78],
 }
 
 const W = 640
@@ -187,8 +190,8 @@ function makeGeo(stretch: number, lon0: number, kx: number) {
 type Geo = ReturnType<typeof makeGeo>
 
 const SEAS = {
-  tr: { black: 'Karadeniz', aegean: 'Ege', med: 'Akdeniz', marmara: 'Marmara', locked: 'Kilitli', done: 'Tamamlandı', route: 'Yolculuk Rotası' },
-  en: { black: 'Black Sea', aegean: 'Aegean', med: 'Mediterranean', marmara: 'Marmara', locked: 'Locked', done: 'Completed', route: 'Journey Route' },
+  tr: { black: 'Karadeniz', aegean: 'Ege', med: 'Akdeniz', marmara: 'Marmara', locked: 'Kilitli', done: 'Tamamlandı', route: 'Yolculuk Rotası', next: 'Sıradaki', finished: 'Bitti' },
+  en: { black: 'Black Sea', aegean: 'Aegean', med: 'Mediterranean', marmara: 'Marmara', locked: 'Locked', done: 'Completed', route: 'Journey Route', next: 'Next', finished: 'Done' },
 }
 
 const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))
@@ -572,7 +575,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
 
         {/* etiketler düğümlerin altında kalır: rozet her zaman okunur */}
         <g aria-hidden="true" style={{ fontFamily: 'var(--font-title)' }}>
-          {labels.map((p, i) => p.leader && <path key={i} d={p.leader} fill="none" stroke="var(--tm-ink)" strokeWidth={ink} opacity={i > unlocked ? 0.7 : 0.9} />)}
+          {labels.map((p, i) => p.leader && <path key={i} d={p.leader} fill="none" stroke="var(--tm-ink)" strokeWidth={ink} opacity={i > unlocked ? 0.8 : 0.9} />)}
           {LEVELS.map((l, i) => (
             <text
               key={l.id}
@@ -580,9 +583,9 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
               y={labels[i].y}
               textAnchor="middle"
               fontSize={fs}
-              fontWeight={i === selected ? 700 : 500}
+              fontWeight={i === selected || (!!onSelect && i === unlocked) ? 700 : 500}
               fill="var(--tm-ink)"
-              opacity={i > unlocked ? 0.66 : 1}
+              opacity={i > unlocked ? 0.85 : 1}
               stroke="var(--tm-paper)"
               strokeWidth={fs * 0.28}
               strokeLinejoin="round"
@@ -598,7 +601,9 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
           const locked = i > unlocked
           const on = i === selected
           const done = !!onSelect && i < unlocked
-          const rr = on ? r * 1.14 : r
+          // sıradaki (açık ama bitmemiş en ileri şehir): seçili olmasa da nabız gibi atan altın halkayla öne çıkar
+          const next = !!onSelect && i === unlocked
+          const rr = on ? r * 1.14 : next ? r * 1.08 : r
           const label = `${l.name}${locked ? ` (${words.locked})` : done ? ` (${words.done})` : ''}`
           const badge = (
             <>
@@ -609,18 +614,24 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
                   <circle cx={x} cy={y} r={rr + 3.4 * u} fill="none" stroke="var(--tm-ink)" strokeWidth={ink * 0.8} strokeDasharray={`${2.2 * ink} ${2.2 * ink}`} />
                 </>
               )}
+              {next && !on && (
+                <>
+                  <circle className="tm-pulse" cx={x} cy={y} r={rr + 2.6 * u} fill="none" stroke="var(--tm-gold)" strokeWidth={ink * 2} />
+                  <circle cx={x} cy={y} r={rr + 2.2 * u} fill="var(--tm-gold)" opacity="0.4" />
+                </>
+              )}
               {!locked && <circle cx={x + 0.9 * u} cy={y + 1.5 * u} r={rr} fill="var(--tm-ink)" opacity="0.4" />}
               <circle
                 cx={x}
                 cy={y}
                 r={rr}
-                fill={locked ? 'var(--tm-land-far)' : done ? 'var(--tm-route)' : 'var(--tm-gold)'}
+                fill={locked ? 'var(--tm-paper)' : done ? 'var(--tm-route)' : 'var(--tm-gold)'}
                 stroke="var(--tm-ink)"
-                strokeWidth={ink * 1.2}
-                strokeDasharray={locked ? `${1.6 * ink} ${1.6 * ink}` : undefined}
+                strokeWidth={ink * (locked ? 1.4 : 1.2)}
+                strokeDasharray={locked ? `${2 * ink} ${1.4 * ink}` : undefined}
               />
               {locked ? (
-                <g transform={`translate(${x} ${y}) scale(${rr / 10})`} opacity="0.7">
+                <g transform={`translate(${x} ${y}) scale(${rr / 10})`} opacity="0.95">
                   <path d="M-2.8 -1v-2.2a2.8 2.8 0 0 1 5.6 0V-1" fill="none" stroke="var(--tm-ink)" strokeWidth="1.5" />
                   <rect x="-4.2" y="-1" width="8.4" height="6.2" rx="1" fill="var(--tm-ink)" />
                 </g>
@@ -672,6 +683,26 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
             </g>
           )
         })}
+        {/* lejant: bitti · sıradaki · kilitli (yalnız seçilebilir haritada) */}
+        {onSelect && (
+          <g transform={`translate(${12 * u + r * 1.1} ${H - 12 * u})`} fontSize={r * 1.05} style={{ fontFamily: 'var(--font-mono)' }}>
+            <rect x={-r * 1.1} y={-r * 1.9} width={r * 19.5} height={r * 2.9} rx={2 * u} fill="var(--tm-paper)" stroke="var(--tm-ink)" strokeWidth={ink * 0.7} opacity="0.92" />
+            {(
+              [
+                [words.finished, 'var(--tm-route)', false],
+                [words.next, 'var(--tm-gold)', false],
+                [words.locked, 'var(--tm-paper)', true],
+              ] as const
+            ).map(([w, fill, dash], k) => (
+              <g key={w} transform={`translate(${k * r * 6.3} ${-r * 0.45})`}>
+                <circle r={r * 0.55} fill={fill} stroke="var(--tm-ink)" strokeWidth={ink} strokeDasharray={dash ? `${1.6 * ink} ${1.2 * ink}` : undefined} />
+                <text x={r * 0.95} y={r * 0.38} fill="var(--tm-ink)" fontWeight="600">
+                  {w}
+                </text>
+              </g>
+            ))}
+          </g>
+        )}
       </svg>
     </div>
   )

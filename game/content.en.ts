@@ -1183,7 +1183,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
   agri: {
     subtitle: 'From the Palace Gate to the Summit',
     item: 'Kilim',
-    intro: 'From the streets of Doğubayazıt to the courtyards of İshak Pasha Palace, from the Meteor Crater to the snowy slopes of Mount Ağrı. The last stop of the second notebook: the roof of Türkiye.',
+    intro: 'From the streets of Doğubayazıt to the courtyards of İshak Pasha Palace, from the Meteor Crater to the snowy slopes of Mount Ağrı. The summit of the second notebook, the roof of Türkiye. From here the road runs west, down to the sea and the white steps.',
     note: 'The last page of the notebook was written in the mountain’s shadow. Pass through the gate of İshak Pasha Palace in Doğubayazıt, lean over the Meteor Crater, then climb Mount Ağrı. At the summit the wind is fierce and the view endless.',
     facts: [
       { title: 'Mount Ağrı', text: 'At 5,137 metres, Mount Ağrı is the highest mountain in Türkiye. Its summit is covered in snow and glacier all year round.' },
@@ -1203,6 +1203,78 @@ export const LEVELS_EN: Record<string, LevelEn> = {
       { name: 'Rojda the Mountaineer', text: 'I have climbed to the summit ten times and seen a different face of the mountain each time. On the far side of the crater, below where the wire ends, there is a stone hollow; most climbers never notice it.' },
     ],
     quips: ['The mountain turned you back.', 'The wind won this time.', 'The summit is not going anywhere.', 'The corner of the kilim slipped.'],
+  },
+  giresun: {
+    subtitle: 'The City That Named the Cherry',
+    item: 'Cherry',
+    intro: 'From the narrow lanes of Zeytinlik to Giresun Castle, down the slopes of the hazel groves to the Black Sea shore. Across the water a lone island; boats come and go.',
+    note: 'Coming down from the mountain, the road turned back to the sea. In Giresun, climb to the castle between the old houses of Zeytinlik, come down through the hazel groves, look out at the island from the shore. Cherries smell different here.',
+    facts: [
+      { title: 'Kerasus', text: 'Giresun’s ancient name is Kerasus. Legend has it that the cherry spread to Europe from here, with saplings taken by the Roman general Lucullus.' },
+      { title: 'Giresun Island', text: 'Giresun Island is known as the only island of the eastern Black Sea. Cormorants and gulls nest on its rocks.' },
+      { title: 'The Aksu Festival', text: 'At the Aksu Festival, held every May, boats sail around the island and people throw stones into the water with a wish.' },
+    ],
+    secret: { title: 'The Round Hazelnut', text: 'The Giresun round hazelnut carries a geographical indication; its name, tombul, comes from its round, plump kernel.' },
+    hints: [
+      'Welcome to Giresun! Climb from the rooftops of Zeytinlik toward the castle.',
+      'Giresun Castle: the towers are far apart. Run and jump; dash at the long ones.',
+      'The hazel groves: the slope is steep, wall-jump from wall to wall. Grab the red canister: nitro speeds you up.',
+      'The shore: the boats come and go. Jump when one comes alongside and cross on its back.',
+    ],
+    npcs: [
+      { name: 'Nesrin the Cherry Seller', text: 'You eat cherries straight from the branch; once they go in the basket the taste changes! The wind scattered three of my plates: one landed on the castle tower, one at the top of the grove, one on the boatmen’s jetty.' },
+      { name: 'Uncle Mustafa the Hazel Farmer', text: 'When we pick hazelnuts we cling from wall to wall on the slope; it is steep. Part of the stone wall at the very top of the grove is false: whoever walks into it finds a hidden corner.' },
+      { name: 'Hızır the Boatman', text: 'At Aksu the boats circle the island and everyone whispers a wish to a stone and throws it in the water. The boats come and go; don’t get caught by the waves, board when one comes alongside.' },
+    ],
+    quips: ['The cherry stayed on the branch.', 'A Black Sea wave took you.', 'You rolled like a hazelnut.', 'You missed the boat.'],
+  },
+  tokat: {
+    subtitle: 'Patterns From the Block',
+    item: 'Printed Scarf',
+    intro: 'From the inns of Sulusokak to Tokat Castle, from the print workshops to Zile Castle. The wooden blocks come down on the cloth and lift again; whoever gets the timing right gets through.',
+    note: 'In Tokat everything is neat as if pressed from a block: the stone inns of Sulusokak, the printer’s wooden blocks, the castle’s steep stairs. When I reached Zile I remembered a Roman general’s three words.',
+    facts: [
+      { title: 'Zile Castle', text: 'In 47 BC Julius Caesar reported his victory at Zile (Zela) to Rome with the words “Veni, vidi, vici” (I came, I saw, I conquered).' },
+      { title: 'Tokat Prints', text: 'Tokat printed scarves are pressed by hand with carved wooden blocks; a separate block is used for every colour in the pattern.' },
+      { title: 'Ballıca Cave', text: 'Ballıca Cave in the Pazar district is known for its stalactites and stalagmites, formed drop by drop over millions of years.' },
+    ],
+    secret: { title: 'Taşhan', text: 'Taşhan (the Voyvoda Inn) in Sulusokak was built in the 17th century; handicrafts are sold today in the two-storey rooms around its courtyard.' },
+    hints: [
+      'Welcome to Tokat! Walk to the castle between the inns of Sulusokak.',
+      'Tokat Castle: the rock is steep. Grab the rope, climb; at the top, wall-jump from wall to wall.',
+      'The print workshop: the wooden blocks come down and lift again. Go when they lift, never stand under one coming down.',
+      'Zile Castle: the gaps between the walls are long and spiked. Jump, dash, cling to the wall.',
+    ],
+    npcs: [
+      { name: 'Hacer the Printer', text: 'Press the block in the dye, strike the cloth: the pattern sets once and never fades. I forgot three of my scarves; one on the inn’s roof, one at the top of the castle, one in the workshop’s loft.' },
+      { name: 'Rıfat the Innkeeper', text: 'Caravans used to rest in the courtyard of Taşhan; now tea is brewing there. In the workshop, past the last block, jump at the ceiling: somewhere the gap between the beams is open, and it leads up to a hidden room.' },
+      { name: 'Uncle Ali the Watchman', text: 'They say Caesar came here, saw and conquered. You have come to the castle too; to conquer it, mind the spikes on the walls first and jump early.' },
+    ],
+    quips: ['The block got you.', 'The pattern slipped.', 'You came, you saw, you fell.', 'The scarf got creased.'],
+  },
+  denizli: {
+    subtitle: 'The White Steps of Pamukkale',
+    item: 'Towel',
+    intro: 'From the rooster square of the bazaar to the columns of Laodicea, from the wet travertines of Pamukkale to the theatre of Hierapolis. The last stop of the second notebook.',
+    note: 'The last page of the notebook is white. In Denizli the roosters crow at dawn, the columns of Laodicea warm in the sun, warm water trickles down the steps of Pamukkale. The road ends here, on a snow-white slope.',
+    facts: [
+      { title: 'Pamukkale', text: 'The white travertines of Pamukkale are made of the deposits that calcium-rich hot water has left over thousands of years. Together with Hierapolis they were added to the UNESCO World Heritage List in 1988.' },
+      { title: 'Hierapolis', text: 'The ancient city of Hierapolis has a theatre, a necropolis and the Antique Pool; people swim among fallen columns in the pool’s warm water.' },
+      { title: 'The Denizli Rooster', text: 'The Denizli rooster is famous for its long, loud crow; it is the symbol of the city and its statues stand in the squares.' },
+    ],
+    secret: { title: 'Laodicea', text: 'Laodicea is the ancient city that was home to one of the seven churches named in the Bible; excavations have brought its colonnaded streets back to light.' },
+    hints: [
+      'Welcome to Denizli! Walk from the rooster square to the columns. The red canister is nitro: grab it and run.',
+      'Laodicea: the tops of the columns are narrow. Jump, dash if you need to; the gaps between fallen columns are empty.',
+      'The travertines of Pamukkale: the stone is wet and slippery. Stop early, jump from pool to pool; swim in the deep pool.',
+      'The theatre of Hierapolis: the steps are tall. Wall-jump from wall to wall and dash to the top row.',
+    ],
+    npcs: [
+      { name: 'Gülten the Towel Seller', text: 'Denizli towels are cotton, soft as anything! The wind snatched three from my drying line: one landed on the rooster’s head, one on top of a column, one by the edge of a travertine pool.' },
+      { name: 'Uncle Cemal the Rooster Keeper', text: 'My rooster crows longer than any other and always wins the contests! Look at the foot of the columns in Laodicea: there is a cracked stone, and when it breaks the hidden room beneath shows.' },
+      { name: 'Defne the Guide', text: 'You walk the travertine barefoot; the stone is wet and slippery, so stop early. The pools are shallow, but you can swim in the big pool below.' },
+    ],
+    quips: ['You slipped on the travertine.', 'The rooster laughed at you.', 'The towel got wet.', 'The column fell, and so did you.'],
   },
 }
 

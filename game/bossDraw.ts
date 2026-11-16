@@ -375,6 +375,262 @@ function flame(c: Ctx, x: number, y: number, w: number, h: number, t: number) {
 type Painter = (c: Ctx, b: Boss, mood: Mood, t: number) => void
 
 const PAINT: Record<CityKey, Painter> = {
+  // Adanın Karabatağı: dik duran siyah-yeşil parlak tüylü karabatak, uzun kancalı gaga, sarı gırtlak;
+  // yorulunca ıslak kanatlarını iki yana açıp kurutur, tüylerinden su damlar
+  giresun: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const FEATHER = '#1e2a28'
+    const SH = '#0e1614'
+    const WING = '#2a3c36'
+    const flap = air ? Math.sin(t * 14) * 6 : mood === 'warn' ? Math.sin(t * 24) * 2 : 0
+    const lunge = b.state === 'attack' ? 3 : 0
+    const hx = 6 + lunge
+    const hy = out ? -17 : -19.5 + lunge * 0.6
+    // perdeli kara ayaklar
+    if (!air) {
+      for (const k of [-1, 1]) {
+        stroke(c, [k * 2.6 - 1, -6, k * 3 - 1, -1.6], 1.2, '#2a2a28')
+        fine(() => poly(c, [k * 3 - 3.4, -0.2, k * 3 - 1, -2.2, k * 3 + 1.6, -0.2], '#2a2a28'))
+      }
+    }
+    // açık kanatlar: ıslak, iki yana gerili; uçlarından damla
+    if (out) {
+      for (const k of [-1, 1]) {
+        blob(
+          c,
+          () => {
+            c.moveTo(k * 2, -15)
+            c.quadraticCurveTo(k * 10, -22, k * 17, -19)
+            c.lineTo(k * 15.4, -15.6)
+            c.lineTo(k * 16.6, -13)
+            c.lineTo(k * 14, -10.6)
+            c.lineTo(k * 14.6, -8)
+            c.quadraticCurveTo(k * 8, -9, k * 2, -10)
+            c.closePath()
+          },
+          WING,
+          shade(SH),
+        )
+        for (const j of [0, 1, 2]) stroke(c, [k * (6 + j * 3), -18.6 + j * 0.4, k * (5 + j * 3.4), -11 + j * 0.6], 0.5, '#4e7466', false)
+        const d = frac(t * 1.4 + (k > 0 ? 0.5 : 0))
+        c.save()
+        c.globalAlpha *= 1 - d
+        fine(() => ell(c, k * 15, -7 + d * 7, 0.9, 1.3, '#9adcf8'))
+        c.restore()
+      }
+    }
+    // sert, kama biçimli kuyruk
+    poly(c, [-6, -6, -14, -1.4, -13, 0.4, -4, -3], FEATHER, SH)
+    // gövde: dik duran iri damla
+    blob(
+      c,
+      () => {
+        c.moveTo(3.6, -15.6)
+        c.bezierCurveTo(8.4, -10, 6, -2, -0.6, -2)
+        c.bezierCurveTo(-7.6, -2, -8.6, -9, -5, -13.6)
+        c.quadraticCurveTo(-1, -18, 3.6, -15.6)
+      },
+      FEATHER,
+      shade(SH),
+    )
+    // pullu tüy deseni ve yeşil parıltı
+    for (const [x, y] of [[-3, -10], [0, -8], [-4.6, -6.6], [-1.4, -5], [2.4, -6]] as const) stroke(c, [x - 1, y, x, y + 0.8, x + 1, y], 0.4, '#3e5e52', false)
+    dab(c, -3.4, -12.4, 1.6, 0.7, '#3e7a64')
+    // kapalı kanat (havada çırpar)
+    if (!out)
+      blob(
+        c,
+        () => {
+          c.moveTo(3, -13)
+          c.quadraticCurveTo(-3, -16 - flap, -11, -11 - flap * 1.3)
+          c.quadraticCurveTo(-6, -4.6, 1.6, -5.6)
+          c.closePath()
+        },
+        WING,
+        shade(SH),
+      )
+    if (!out) for (const j of [0, 1, 2]) stroke(c, [-8 + j * 3, -10.6 - flap * (1 - j * 0.3) + j * 0.6, -6 + j * 3, -7 + j * 0.4], 0.45, '#4e7466', false)
+    // uzun boyun
+    stroke(c, [2.6, -13.6, hx - 2.6, hy + 5, hx - 0.6, hy + 1], 4, FEATHER)
+    // baş: hafif tepeli
+    ell(c, hx, hy, 3.6, 3.3, FEATHER, SH)
+    fine(() => poly(c, [hx - 3, hy - 1.6, hx - 5.4, hy - 3.6, hx - 2, hy - 2.8], FEATHER))
+    dab(c, hx - 1, hy - 2.2, 1.4, 0.6, '#3e7a64')
+    // sarı gırtlak ve uzun, ucu kancalı gaga; saldırıda ve yorgunken açık
+    const open = mad(mood) || mood === 'dizzy' ? 1.6 : 0
+    fine(() => {
+      ell(c, hx + 2, hy + 1.8, 1.8, 1.4, '#f0b040')
+      poly(c, [hx + 2.4, hy + 0.6, hx + 10.6, hy + 1 + open, hx + 2.6, hy + 2 + open * 0.6], '#6e6a5e')
+      if (mood === 'dizzy') stroke(c, [hx + 4, hy + 1.4, hx + 5.4, hy + 4.6 + Math.sin(t * 11) * 0.5], 1.2, TONGUE)
+      blob(
+        c,
+        () => {
+          c.moveTo(hx + 2.4, hy - 1)
+          c.lineTo(hx + 11.4, hy - 0.4)
+          c.quadraticCurveTo(hx + 13, hy + 0.4, hx + 11.6, hy + 1.8)
+          c.lineTo(hx + 11, hy + 0.6)
+          c.lineTo(hx + 2.4, hy + 0.8)
+        },
+        '#8a8676',
+      )
+    })
+    stroke(c, [hx + 3.4, hy - 0.4, hx + 9.6, hy - 0.2], 0.3, '#b4b0a0', false)
+    eye(c, hx + 0.6, hy - 0.4, 1.8, mood, t, '#d8f0e6')
+    aura(c, mood, t, hx - 5, hy - 4, hx + 12, hy - 1)
+  },
+  // Kızgın Baskı Kalıbı: ceviz tahtasından oyma yazma kalıbı; tepesinde tutamak, alt yüzü kök boya ve çivitle boyalı;
+  // saldırırken boyası damlar, yorulunca boyası kuruyup solar
+  tokat: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const WOOD = '#b98a58'
+    const WOOD_SH = '#80582e'
+    const RED = out ? '#d8988a' : '#b8302a'
+    const BLUE = out ? '#98a8cc' : '#2e4a9a'
+    const tilt = air ? Math.sin(t * 8) * 0.06 : 0
+    c.save()
+    c.rotate(tilt)
+    // tutamak: boyun ve topuz
+    poly(c, [-2.6, -17, 2.6, -17, 2, -20.4, -2, -20.4], '#9a6a3e', '#6e4622')
+    ell(c, 0, -22.6, 3.6, 2.8, '#a8763e', '#6e4622')
+    dab(c, -1.2, -23.6, 1.2, 0.6, '#d0a068')
+    // gövde: kalın tahta blok, damarları görünür
+    blob(c, () => c.roundRect(-11.4, -17.6, 22.8, 14.4, 1.6), WOOD, shade(WOOD_SH))
+    for (const [y, k] of [[-15.4, 1], [-5.6, -1]] as const) stroke(c, [-10, y, -4, y + k * 0.6, 3, y - k * 0.4, 9.6, y + k * 0.3], 0.4, '#946a40', false)
+    stroke(c, [-11, -16.8, 10.6, -16.8], 0.5, '#d8b07a', false)
+    // alt yüz: oyulmuş desen boyaya batmış; kabartmalar aşağı taşar
+    blob(c, () => c.roundRect(-11.4, -3.6, 22.8, 3.4, 0.8), BLUE)
+    fine(() => {
+      for (const x of [-8, -2.6, 2.8, 8.2]) {
+        ell(c, x, -1.9, 1.6, 1.2, RED)
+        dab(c, x, -1.9, 0.5, 0.4, '#f2c14e')
+      }
+    })
+    // boya damlası: saldırıda ve işarette kenardan sızar
+    if (mad(mood))
+      for (const [x, ph] of [[-6, 0], [5, 0.45]] as const) {
+        const d = frac(t * 1.8 + ph)
+        fine(() => {
+          blob(c, () => c.ellipse(x, -0.2 + d * 3, 0.8, 1 + d * 0.6, 0, 0, Math.PI * 2), ph ? BLUE : RED)
+        })
+      }
+    // yüz: tahtaya oyulmuş, sağa bakar
+    eye(c, -2.4, -11.2, 2.4, mood, t)
+    eye(c, 5, -11.2, 2.4, mood, t)
+    dab(c, -6.2, -7.8, 1.5, 0.9, BLUSH)
+    dab(c, 8.8, -7.8, 1.3, 0.9, BLUSH)
+    mouth(c, 1.4, -6.8, 2, mood, t)
+    if (mood === 'calm') fine(() => poly(c, [0.6, -6.2, 2.2, -6.2, 2, -4.8, 0.8, -4.8], '#fffaf0'))
+    // yorulunca kuruyan boya çatlar
+    if (out) for (const x of [-6, 4]) stroke(c, [x, -3.4, x + 0.8, -2.2, x + 0.2, -1], 0.35, INK, false)
+    c.restore()
+    aura(c, mood, t, -8.6, -15.6, 11.6, -10)
+  },
+  // Denizli Horozu: uzun bacaklı, uzun boylu; iri kırmızı ibik, sarkık gerdan, turuncu yele, kara-yeşil orak kuyruk.
+  // işarette boynunu uzatıp uzun uzun öter, yorulunca sesi kısılır, dili dışarı sarkar
+  denizli: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const crow = mood === 'warn'
+    const flap = air ? Math.sin(t * 15) * 5 : crow ? Math.sin(t * 20) * 2.4 : 0
+    const run = b.state === 'attack' && !air ? Math.sin(t * 22) * 1.8 : 0
+    const lunge = b.state === 'attack' && !air ? 3 : 0
+    const hx = (out ? 6 : crow ? 4.6 : 6.4) + lunge
+    const hy = out ? -20.5 : crow ? -27 : -24.6 + lunge * 0.8
+    const LEG = '#d8a240'
+    // uzun bacaklar, mahmuzlu ayaklar
+    const knee = air ? -4 : 0
+    for (const [k, st] of [[-1, run], [1, -run]] as const) {
+      const fx = k * 3 + st
+      stroke(c, [k * 2, -12, k * 2.4 + st * 0.5, -6 + knee, fx, -1.4 + knee * 0.6], 1.3, LEG)
+      fine(() => {
+        stroke(c, [fx, -1.2 + knee * 0.6, fx + 2.8, -0.4 + knee * 0.6], 0.8, LEG)
+        stroke(c, [fx, -1.2 + knee * 0.6, fx - 1.8, -0.4 + knee * 0.6], 0.8, LEG)
+      })
+    }
+    // orak kuyruk: yukarı kalkıp geriye sarkan iki kat kara-yeşil tüy
+    const sw = Math.sin(t * 3) * 0.6
+    const sickle = (k: number, fill: string, sh: string) =>
+      blob(
+        c,
+        () => {
+          c.moveTo(-5, -19)
+          c.bezierCurveTo(-8, -29 * k + sw, -16 * k, -29 * k + sw, -17.4 * k, -20 * k + sw)
+          c.quadraticCurveTo(-18 * k, -14 * k + sw, -15.6 * k, -9 * k + sw)
+          c.quadraticCurveTo(-14 * k, -15 * k + sw, -14.4 * k, -19 * k + sw)
+          c.bezierCurveTo(-14.6 * k, -24 * k + sw, -9, -24 * k, -6, -14)
+          c.closePath()
+        },
+        fill,
+        shade(sh),
+      )
+    sickle(1, '#1e2e2c', '#0e1816')
+    sickle(0.8, '#2a4a42', '#18302a')
+    fine(() => stroke(c, [-8.6, -25.6 + sw, -13, -26.6 + sw, -15.6, -22 + sw, -16, -15 + sw], 0.5, '#4e8a78', false))
+    // gövde: göğsü kabarık, koyu kestane
+    ell(c, -1, -15.4, 8, 5.8, '#4a2a22', '#2a1612', -0.25)
+    dab(c, 3.4, -14, 2.6, 2.6, '#2a1a16')
+    // kanat
+    blob(
+      c,
+      () => {
+        c.moveTo(3, -17.4)
+        c.quadraticCurveTo(-3, -20.6 - flap, -10, -16 - flap * 1.2)
+        c.quadraticCurveTo(-5, -10.4, 2, -11.6)
+        c.closePath()
+      },
+      '#8a3a22',
+      shade('#5a2414'),
+    )
+    for (const j of [0, 1, 2]) stroke(c, [-8 + j * 3, -15.6 - flap * (1 - j * 0.3) + j * 0.6, -5.6 + j * 3, -12.4], 0.5, '#1e2e2c', false)
+    // boyun ve turuncu yele
+    stroke(c, [2.6, -18, hx - 2, hy + 6, hx - 0.6, hy + 1.2], 4.2, '#c8642a')
+    for (const j of [0, 1, 2]) fine(() => poly(c, [hx - 3.4 + j * 0.6, hy + 2 + j * 2.4, hx - 5.6 + j * 0.6, hy + 5.4 + j * 2.4, hx - 1.6 + j * 0.6, hy + 4 + j * 2.4], '#e08a34'))
+    // baş
+    ell(c, hx, hy, 3.2, 3, '#c8642a', '#9a4418')
+    // iri, dişli ibik
+    blob(
+      c,
+      () => {
+        c.moveTo(hx - 2.8, hy - 1.8)
+        c.lineTo(hx - 4, hy - 4.6)
+        c.lineTo(hx - 2, hy - 4.2)
+        c.lineTo(hx - 1.6, hy - 7)
+        c.lineTo(hx + 0.4, hy - 5)
+        c.lineTo(hx + 1.6, hy - 7.4)
+        c.lineTo(hx + 2.6, hy - 4.6)
+        c.lineTo(hx + 4.4, hy - 5.8)
+        c.lineTo(hx + 3.8, hy - 2.6)
+        c.quadraticCurveTo(hx + 0.6, hy - 3.2, hx - 2.8, hy - 1.8)
+      },
+      '#e2262a',
+      shade('#a0141c', 0.9, -0.7),
+    )
+    // gaga: öterken ve yorgunken açık; sarkık gerdan
+    const open = crow || mad(mood) || mood === 'dizzy' ? 1.8 : 0
+    fine(() => {
+      poly(c, [hx + 2.4, hy + 0.4, hx + 6.4, hy + 0.8 + open, hx + 2.4, hy + 1.6 + open * 0.5], '#e0a838')
+      if (mood === 'dizzy') stroke(c, [hx + 3.6, hy + 1.2, hx + 4.8, hy + 4.2 + Math.sin(t * 11) * 0.5], 1.1, TONGUE)
+      poly(c, [hx + 2.2, hy - 1.4, hx + 6.8, hy + 0.2, hx + 2.4, hy + 0.8], '#f2c04a')
+      blob(c, () => c.ellipse(hx + 2.2, hy + 3.2, 1.2, 1.8, 0, 0, Math.PI * 2), '#e2262a')
+    })
+    // öterken ses dalgaları
+    if (crow)
+      for (let i = 0; i < 2; i++) {
+        const k = frac(t * 2.4 + i * 0.5)
+        c.save()
+        c.globalAlpha *= 1 - k
+        c.strokeStyle = INK
+        c.lineWidth = 0.7
+        c.beginPath()
+        c.arc(hx + 6, hy + 1, 2 + k * 5, -0.7, 0.7)
+        c.stroke()
+        c.restore()
+      }
+    eye(c, hx + 0.4, hy - 0.4, 1.7, mood, t)
+    aura(c, mood, t, hx - 5, hy - 4, hx + 7.4, hy - 0.6)
+  },
   // Kaynayan Semaver: bakır gövde, pirinç kulplar ve musluk, tepesinde demlik; buharı kesilince yorulur
   rize: (c, b, mood, t) => {
     const out = beat(mood)
@@ -2028,7 +2284,7 @@ const PAINT: Record<CityKey, Painter> = {
     ell(c, hx - 0.8, hy - 7.6, 1.7, 1.7, '#f8fcff', '#c8ccd2')
     aura(c, mood, t, hx - 6, hy - 5, hx + 8.8, hy - 1)
   },
-  // Ferhat’ın Külüngü: iki uçlu demir baş (pala bıyıklı), kayışlı ahşap sap, boynunda Şirin’in al yazması,
+  // Ferhat’ın Kazması: iki uçlu demir baş (pala bıyıklı), kayışlı ahşap sap, boynunda Şirin’in al yazması,
   // sapa kazınmış kalp; işarette ucu parlar, yorulunca uçları körelir
   amasya: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2

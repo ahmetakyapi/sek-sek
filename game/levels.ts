@@ -19,8 +19,12 @@ import { road as artvinRoad } from './cities/artvin'
 import { road as karsRoad } from './cities/kars'
 import { road as bitlisRoad } from './cities/bitlis'
 import { road as agriRoad } from './cities/agri'
+import { road as giresunRoad } from './cities/giresun'
+import { road as tokatRoad } from './cities/tokat'
+import { road as denizliRoad } from './cities/denizli'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
+import { medalsFor } from './medals'
 import { PRELUDES, buildArena, buildFinale } from './finales'
 import { SIGNATURES } from './signatures'
 import type { LevelDef } from './types'
@@ -1105,6 +1109,9 @@ const DECOR_CYCLE: Record<string, string> = {
   kars: 'zlt',
   bitlis: 'lzt',
   agri: 'ltz',
+  giresun: 'tzl',
+  tokat: 'zlt',
+  denizli: 'lzt',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2170,7 +2177,7 @@ export const LEVELS: LevelDef[] = [
     medals: [100, 150, 220],
     quips: ['Dağ seni geri çevirdi.', 'Rüzgâr kazandı bu sefer.', 'Zirve kaçmıyor.', 'Kilimin ucu kaçtı.'],
     item: 'Kilim',
-    intro: 'Doğubayazıt’ın sokaklarından İshak Paşa Sarayı’nın avlularına, Meteor Çukuru’ndan Ağrı Dağı’nın karlı yamaçlarına. İkinci defterin son durağı, Türkiye’nin çatısı.',
+    intro: 'Doğubayazıt’ın sokaklarından İshak Paşa Sarayı’nın avlularına, Meteor Çukuru’ndan Ağrı Dağı’nın karlı yamaçlarına. İkinci defterin zirvesi, Türkiye’nin çatısı. Buradan yol batıya, denize ve beyaz basamaklara iner.',
     facts: [
       { title: 'Ağrı Dağı', text: 'Ağrı Dağı 5137 metreyle Türkiye’nin en yüksek dağıdır. Zirvesi yıl boyu karla ve buzulla örtülüdür.' },
       { title: 'İshak Paşa Sarayı', text: 'Doğubayazıt’taki İshak Paşa Sarayı’nın 1784’te tamamlandığı kabul edilir. Osmanlı, Selçuklu ve İran mimarisini bir araya getirir.' },
@@ -2185,6 +2192,99 @@ export const LEVELS: LevelDef[] = [
     ],
     wind: -110,
     map: roadMap(agriRoad),
+  },
+  {
+    id: 'giresun',
+    city: 'giresun',
+    name: 'Giresun',
+    plate: 28,
+    subtitle: 'Kirazın Adını Verdiği Şehir',
+    difficulty: 'Orta',
+    note: 'Dağdan inince yol yeniden denize döndü. Giresun’da Zeytinlik’in eski evleri arasından kaleye çık, fındık bahçelerinin yamacından in, sahilden adaya bak. Kiraz burada başka kokar.',
+    npcs: [
+      { name: 'Kirazcı Nesrin Abla', look: 'teyze', text: 'Kirazı dalından yiyeceksin, sepete girince tadı değişir! Üç tabağımı rüzgâr dağıttı; biri kalenin burcuna, biri bahçenin tepesine, biri de kayıkçıların iskelesine düştü.' },
+      { name: 'Fındıkçı Mustafa Dayı', look: 'amca', text: 'Fındık toplarken yamaçta duvardan duvara tutunuruz, bayır diktir. Bahçenin en üstündeki taş duvarın bir yeri sahtedir; içine yürüyen, saklı bir köşe bulur.' },
+      { name: 'Kayıkçı Hızır Reis', look: 'usta', text: 'Aksu’da kayıklar adanın çevresini döner, herkes dileğini taşa söyleyip suya atar. Kayıklar gidip gelir; dalgaya kapılma, kayık yanına gelince bin.' },
+    ],
+    medals: [95, 140, 205],
+    quips: ['Kiraz dalda kaldı.', 'Karadeniz dalgası seni aldı.', 'Fındık gibi yuvarlandın.', 'Kayığı kaçırdın.'],
+    item: 'Kiraz',
+    intro: 'Zeytinlik’in dar sokaklarından Giresun Kalesi’ne, fındık bahçelerinin yamacından Karadeniz kıyısına. Karşıda tek başına bir ada; kayıklar gelip gider.',
+    facts: [
+      { title: 'Kerasus', text: 'Giresun’un eski adı Kerasus’tur. Rivayete göre kiraz Avrupa’ya buradan, Romalı komutan Lucullus’un götürdüğü fidanlarla yayıldı.' },
+      { title: 'Giresun Adası', text: 'Giresun Adası, Doğu Karadeniz’in tek adası olarak bilinir. Kayalıklarında karabataklar ve martılar yuva yapar.' },
+      { title: 'Aksu Şenliği', text: 'Her yıl mayısta kutlanan Aksu Şenliği’nde kayıklarla adanın çevresi dolaşılır, dileklerle suya taş atılır.' },
+    ],
+    secret: { title: 'Tombul Fındık', text: 'Giresun Tombul Fındığı coğrafi işaretlidir; adını yuvarlak, iri tanesinden alır.' },
+    hints: [
+      'Giresun’a hoş geldin! Zeytinlik’in damlarından kaleye doğru çık.',
+      'Giresun Kalesi: burçlar arası geniş. Koşup zıpla; uzak olanında dash at.',
+      'Fındık bahçeleri: yamaç dik, duvardan duvara sek. Kırmızı tüpü kap: nitro seni hızlandırır.',
+      'Sahil: kayıklar gidip gelir. Kayık yanına gelince atla, sırtında karşıya geç.',
+    ],
+    map: roadMap(giresunRoad),
+  },
+  {
+    id: 'tokat',
+    city: 'tokat',
+    name: 'Tokat',
+    plate: 60,
+    subtitle: 'Kalıptan Çıkan Desenler',
+    difficulty: 'Zor',
+    note: 'Tokat’ta her şey bir kalıba basılmış gibi düzgün: Sulusokak’ın taş hanları, yazmacının tahta kalıpları, kalenin dik merdivenleri. Zile’ye vardığımda bir Roma komutanının üç kelimesini hatırladım.',
+    npcs: [
+      { name: 'Yazmacı Hacer Hanım', look: 'teyze', text: 'Kalıbı boyaya bas, kumaşa vur: desen bir kere oturur, bir daha silinmez. Üç yazmamı unuttum; biri hanın damında, biri kalenin tepesinde, biri atölyenin tavan arasında.' },
+      { name: 'Hancı Rıfat Efendi', look: 'amca', text: 'Taşhan’ın avlusunda kervanlar konaklardı, şimdi çay demleniyor. Atölyede son tokmağın ardında tavana zıpla: kirişlerin arası bir yerde boştur, oradan saklı bir odaya çıkılır.' },
+      { name: 'Bekçi Ali Dayı', look: 'coban', text: 'Sezar buraya geldi, gördü, yendi derler. Sen de kaleye geldin; yenmek için önce surların dikenlerine dikkat et, atlayışını erken yap.' },
+    ],
+    medals: [110, 165, 240],
+    quips: ['Kalıbın altında kaldın.', 'Desen kaydı.', 'Geldin, gördün, düştün.', 'Yazma buruştu.'],
+    item: 'Yazma',
+    intro: 'Sulusokak’ın hanlarından Tokat Kalesi’ne, yazma atölyelerinden Zile Kalesi’ne. Tahta kalıplar kumaşa iner, kalkar; zamanlamayı tutturan geçer.',
+    facts: [
+      { title: 'Zile Kalesi', text: 'Julius Sezar MÖ 47’de Zile’de (Zela) kazandığı zaferi “Veni, vidi, vici” (Geldim, gördüm, yendim) sözleriyle Roma’ya bildirdi.' },
+      { title: 'Tokat Yazması', text: 'Tokat yazmaları oyma tahta kalıplarla elde basılır; desendeki her renk için ayrı bir kalıp kullanılır.' },
+      { title: 'Ballıca Mağarası', text: 'Pazar ilçesindeki Ballıca Mağarası, milyonlarca yılda damla damla oluşmuş sarkıt ve dikitleriyle bilinir.' },
+    ],
+    secret: { title: 'Taşhan', text: 'Sulusokak’taki Taşhan (Voyvoda Hanı) 17. yüzyılda yapıldı; avluyu saran iki katlı odalarında bugün el sanatları satılır.' },
+    hints: [
+      'Tokat’a hoş geldin! Sulusokak’ın hanları arasından kaleye yürü.',
+      'Tokat Kalesi: kayalık dik. Halata tutun, tırman; tepede duvardan duvara sek.',
+      'Yazma atölyesi: tahta kalıplar iner, kalkar. Kalkınca geç, inerken altında durma.',
+      'Zile Kalesi: surlar arası uzun ve dikenli. Zıpla, dash at, duvara tutun.',
+    ],
+    map: roadMap(tokatRoad),
+  },
+  {
+    id: 'denizli',
+    city: 'denizli',
+    name: 'Denizli',
+    plate: 20,
+    subtitle: 'Pamuk Kale’nin Beyaz Basamakları',
+    difficulty: 'Çok Zor',
+    note: 'Defterin son sayfası beyaz. Denizli’de horozlar şafakta öter, Laodikeia’nın sütunları güneşte ısınır, Pamukkale’nin basamaklarından ılık su süzülür. Yol burada, bembeyaz bir yamaçta bitiyor.',
+    npcs: [
+      { name: 'Havlucu Gülten Hanım', look: 'teyze', text: 'Denizli’nin havlusu pamuktan, yumuşacık! Üçünü kuruttuğum ipten rüzgâr kaptı: biri horozun başına, biri bir sütunun tepesine, biri de traverten havuzunun kenarına düştü.' },
+      { name: 'Horozcu Cemal Amca', look: 'amca', text: 'Benim horozum hepsinden uzun öter, yarışmalarda hep birincidir! Laodikeia’nın sütunlarının dibine bak: çatlak bir taş vardır, kırılınca altındaki saklı oda görünür.' },
+      { name: 'Rehber Defne', look: 'genc', text: 'Travertende çıplak ayakla yürünür; taş ıslak ve kaygandır, erken dur. Havuzlar sığdır ama aşağıdaki büyük havuzda yüzebilirsin.' },
+    ],
+    medals: [125, 185, 270],
+    quips: ['Travertende kaydın.', 'Horoz sana güldü.', 'Havlu ıslandı.', 'Sütun devrildi, sen de.'],
+    item: 'Havlu',
+    intro: 'Çarşının horozlu meydanından Laodikeia’nın sütunlarına, Pamukkale’nin ıslak travertenlerinden Hierapolis tiyatrosuna. İkinci defterin son durağı.',
+    facts: [
+      { title: 'Pamukkale', text: 'Pamukkale’nin beyaz travertenleri, kalsiyumlu sıcak suyun binlerce yılda bıraktığı tortudan oluşur. Hierapolis ile birlikte 1988’de UNESCO Dünya Mirası Listesi’ne girdi.' },
+      { title: 'Hierapolis', text: 'Hierapolis antik kentinin tiyatrosu, nekropolü ve Antik Havuz’u vardır; havuzun ılık suyunda devrilmiş sütunlar arasında yüzülür.' },
+      { title: 'Denizli Horozu', text: 'Denizli horozu uzun ve gür ötüşüyle ünlüdür; şehrin simgesidir, meydanlarında heykelleri durur.' },
+    ],
+    secret: { title: 'Laodikeia', text: 'Laodikeia, İncil’de adı geçen yedi kiliseden birinin bulunduğu antik kenttir; kazılarda sütunlu caddeleri gün yüzüne çıktı.' },
+    hints: [
+      'Denizli’ye hoş geldin! Horozlu meydandan sütunlara yürü. Kırmızı tüp nitro: kap ve koş.',
+      'Laodikeia: sütunların tepesi dar. Zıpla, gerekirse dash at; devrik sütunların arası boşluk.',
+      'Pamukkale travertenleri: taş ıslak, kayar. Erken dur, havuzdan havuza atla; derin havuzda yüz.',
+      'Hierapolis tiyatrosu: basamaklar yüksek. Duvardan duvara sek, dash ile en üst sıraya çık.',
+    ],
+    map: roadMap(denizliRoad),
   },
 ]
 
@@ -2250,7 +2350,8 @@ for (const l of LEVELS) {
   addSignature(l)
   l.map = applyAssists(l.id, enrich(l.map, l.city))
   addFinale(l)
+  l.medals = medalsFor(l.id, l.medals)
 }
 
-/** İlk defterin şehir sayısı: final sahnesi ve Ayna Yolu buna bağlı. İkinci defter (Rize'den Ağrı'ya) bunun ardından gelir. */
+/** İlk defterin şehir sayısı: final sahnesi ve Ayna Yolu buna bağlı. İkinci defter (Rize'den Denizli'ye) bunun ardından gelir. */
 export const FIRST_BOOK = LEVELS.findIndex((l) => l.id === 'rize')

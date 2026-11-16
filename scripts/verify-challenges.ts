@@ -2,12 +2,12 @@
  * Mücadele haritalarını çözücüyle dener: başlangıçtan çıkışa varılıyor mu (game/challenges.ts).
  * Kullanım: npx tsx scripts/verify-challenges.ts [mücadele-id]
  */
-import { CHALLENGES, challengeLevel } from '../game/challenges'
+import { ALL_CHALLENGES, challengeLevel } from '../game/challenges'
 import { T } from '../game/types'
 import { solve } from './solver'
 
 let failed = false
-for (const c of CHALLENGES.filter((c) => !process.argv[2] || c.id === process.argv[2])) {
+for (const c of ALL_CHALLENGES.filter((c) => !process.argv[2] || c.id === process.argv[2])) {
   const level = challengeLevel(c)
   const { world: w, won, expanded, ms, far } = solve(level, { exitOnly: true, budget: Number(process.env.BUDGET ?? 15000) })
   if (!won) failed = true
