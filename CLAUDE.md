@@ -234,6 +234,8 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
   düz aşağı bırakılır), `W` derin su (yüzülür: zıplama kulaç, yüzeyde kulaç sudan çıkarır; boğulma yok). Öldüren `~` ile
   karışmasın diye `W` açık turkuaz çizilir. Çözücü asılı ve yüzen durumları da dal sayar (`tests/mechanics.test.ts`).
   Teleferiğin bittiği yer güvenli zeminin üstünde olsun: bırakınca düz aşağı inilir.
+- `T` nitro tüpü (`sim.ts` NITRO): alınınca 3 sn hızlı koşu (×1,55; atlayış hızla uzar), 4 sn'de yeniden dolar. Yalnız isteğe bağlı
+  kestirme olarak kullan: zorunlu yolu nitroya bağlama (zayıf oyuncu kaçırabilir). Çözücü nitroyu durum sayar.
 - Yeni lejant: `i` ıslak taş (kaygan), `p` itilen sandık (çözücü sandık konumunu da durum sayar: az ve yerel kullan).
   Plaka ve renkli bloklar şehre göre başka görünebilir (`render.ts` SWITCH_SKIN: Bursa gölge, Van gece/gündüz); kural değişmez.
 - Sandıklı bölümde gizli hedef (pul, nazar) ileri yolun üstünde dursun: geride kalan hedef çözücünün bütçesini yakar. Şehir başına en çok iki

@@ -125,7 +125,9 @@ function key(s: Snapshot, w: World) {
   const crates = s.crates.map(([x, y]) => `${Math.round(x / 8)}.${Math.round(y / 16)}`).join(',')
   // halatta/teleferikte asılı ya da suda olmak ayrı durum: aynı yerde serbest düşen oyuncuyla birleşmesin
   const held = p.hang ? `h${p.hang}` : p.swim ? `s${Math.round(p.vy / 60)}` : ''
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, held].join('|')
+  // nitroyla koşan oyuncu aynı yerde yürüyenle birleşmesin (yarım saniyelik dilimler)
+  const boost = p.nitro > 0 ? `n${Math.ceil(p.nitro * 2)}` : ''
+  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, held, boost].join('|')
 }
 
 export interface SolveResult {

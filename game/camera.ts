@@ -5,7 +5,7 @@
  * saniyede aynı yere varır; sarsıntı her karede rastgele sayı çekmez (yüksek Hz'de titreme olur), zamanla
  * dalgalanır. Yeni kamera davranışı eklerken bu dosyaya ekle ve testi genişlet.
  */
-import { ONEWAY, PHYS, SWIM, WATER, type World } from './sim'
+import { NITRO, ONEWAY, PHYS, SWIM, WATER, type World } from './sim'
 import { T } from './types'
 
 export const CAM = {
@@ -183,7 +183,9 @@ export function clampCam(w: World, x: number, y: number, vw: number, vh: number)
 export function stepCamera(w: World, cam: CamState, dt: number, vw: number, vh: number) {
   const boss = bossFrame(w, vw, vh)
   const [tx, ty] = boss ?? followTarget(w, vw, vh, cam, dt)
-  const x = approach(cam.x, tx, dt, boss ? CAM.boss : w.player.dashTime > 0 ? CAM.dashFollow : CAM.follow)
+  // nitroda takip hızla orantılı hızlanır: gecikme aynı kalır, karakter ekranda kaymaz (dash'teki gibi)
+  const keep = w.player.dashTime > 0 ? CAM.dashFollow : w.player.nitro > 0 ? CAM.follow ** NITRO.speed : CAM.follow
+  const x = approach(cam.x, tx, dt, boss ? CAM.boss : keep)
   const y = approach(cam.y, ty, dt, boss ? CAM.bossY : CAM.followY)
   ;[cam.x, cam.y] = clampCam(w, x, y, vw, vh)
 }

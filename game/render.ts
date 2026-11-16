@@ -10,7 +10,7 @@ import { TerrainHD } from './terrainDraw'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
-import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
+import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, NITRO, PHYS, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -76,6 +76,8 @@ export class Renderer {
   private ghosts: Ghost[] = []
   /** son hız çizgisinin bırakıldığı yer (dash sürerken) ve sıra sayacı */
   private streakAt: [number, number] | null = null
+  /** son nitro alev kıvılcımının çıktığı yer */
+  private nitroAt: [number, number] | null = null
   private streakN = 0
   private ambient: Ambient[] = []
   private shake = 0
@@ -365,6 +367,13 @@ export class Renderer {
         this.wallChain = 0
         break
       case 'crumble':
+        break
+      case 'nitro':
+        // nitro tüpü alındı: turuncu kıvılcım, yazı; alev izi koşu boyunca drawParticles öncesinde eklenir
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 16, '#ff9a3c', 100, 1)
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 8, '#ffe27a', 70, 1)
+        this.pop(p.x + p.w / 2, p.y - 6, 'Nitro!', '#ff9a3c')
+        this.kick = { t: this.t, dx: p.facing, dy: 0 }
         break
       case 'crystal':
         // dash halkasından geçildi: halkanın renginde kıvılcım, dash'in yenilendiği yazıyla da okunur
@@ -2694,6 +2703,7 @@ export class Renderer {
     const ready = !w.player.canDash
     for (const k of w.crystals)
       if (seen(k.x)) drawThing(c, 'crystal', X(k.x + 5), Y(k.y + 5 + Math.sin(t * 3 + k.x) * 1.5), sc, t, { active: k.active, ready, charge: 1 - k.timer / CRYSTAL_RECHARGE })
+    for (const n of w.nitros) if (seen(n.x)) drawThing(c, 'nitro', X(n.x + 5), Y(n.y + 8), sc, t, { active: n.active, charge: 1 - n.timer / NITRO.recharge })
     if (w.keyBox && !w.hasKey) drawThing(c, 'key', X(w.keyBox.x + 5), Y(w.keyBox.y + 5 + Math.sin(t * 3) * 2), sc, t)
     if (w.stampBox && !w.stampTaken) drawThing(c, 'stamp', X(w.stampBox.x + 6), Y(w.stampBox.y + 6 + Math.sin(t * 2) * 1.5), sc, t, { accent })
     if (w.charmBox && !w.charmTaken) drawThing(c, 'charm', X(w.charmBox.x + 5), Y(w.charmBox.y + 5), sc, t)
@@ -3033,6 +3043,16 @@ export class Renderer {
       if (!p.dead && p.grounded) for (let i = 0; i < 3; i++) this.particles.push({ x: p.x + p.w / 2 + p.facing * 4, y: p.y + p.h - 1, vx: p.facing * (18 + i * 10), vy: -14 - i * 6, life: 0.26, max: 0.26, color: 'rgba(230,220,200,0.7)', size: 1, grav: 80 })
       this.streakAt = null
     }
+    // nitro alev izi: koştukça ayakların arkasından turuncu kıvılcım (mesafeye göre, kare hızından bağımsız)
+    if (p.nitro > 0 && !p.dead && Math.abs(p.vx) > 20) {
+      const at = this.nitroAt
+      if (!at || Math.hypot(p.x - at[0], p.y - at[1]) >= 5) {
+        const n = (this.streakN = (this.streakN + 1) % 6)
+        const back = -Math.sign(p.vx)
+        this.particles.push({ x: p.x + p.w / 2 + back * 5, y: p.y + p.h - 4 - (n % 3) * 3, vx: back * 40, vy: -18 - (n % 2) * 14, life: 0.3, max: 0.3, color: n % 3 === 0 ? '#ffe27a' : '#ff9a3c', size: n % 2 ? 1 : 2, grav: -40 })
+        this.nitroAt = [p.x, p.y]
+      }
+    } else this.nitroAt = null
     if (p.dead) return
 
     // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir

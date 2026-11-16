@@ -86,6 +86,7 @@ export type GameEvent =
   | { type: 'shoot' }
   | { type: 'complete' }
   | { type: 'crystal' }
+  | { type: 'nitro' }
   | { type: 'key' }
   | { type: 'stamp' }
   /** saklı nazar boncuğu bulundu */

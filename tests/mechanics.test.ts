@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
-import { PHYS, World, restore, snapshot } from '../game/sim'
+import { NITRO, PHYS, World, restore, snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -175,5 +175,33 @@ describe('zehirli su', () => {
     step(w, 0.3)
     step(w, 0.6, { right: true })
     expect(w.deaths).toBeGreaterThan(0)
+  })
+})
+
+describe('nitro tüpü', () => {
+  const map = ['                              ', '                              ', ' P  T                         ', '##############################']
+  it('alınınca koşu hızlanır, süresi bitince normale döner, tüp yeniden dolar', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    step(w, 0.6, { right: true })
+    expect(w.player.nitro).toBeGreaterThan(0)
+    expect(w.nitros[0].active).toBe(false)
+    step(w, 0.5, { right: true })
+    expect(w.player.vx).toBeGreaterThan(PHYS.run * 1.3)
+    step(w, NITRO.time, { right: true })
+    expect(w.player.nitro).toBe(0)
+    expect(Math.abs(w.player.vx)).toBeLessThanOrEqual(PHYS.run + 1)
+    step(w, NITRO.recharge)
+    expect(w.nitros[0].active).toBe(true)
+  })
+  it('anlık görüntü nitroyu ve tüpü taşır (çözücü geri sarar)', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    const s0 = snapshot(w)
+    step(w, 0.6, { right: true })
+    expect(w.player.nitro).toBeGreaterThan(0)
+    restore(w, s0)
+    expect(w.player.nitro).toBe(0)
+    expect(w.nitros[0].active).toBe(true)
   })
 })

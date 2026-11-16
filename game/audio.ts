@@ -324,6 +324,10 @@ export class Sound {
         return this.chime(this.scaleNote(7, 1), 0.04, now + 0.07, 0.35)
       case 'crystal':
         return this.chime(this.scaleNote(7, 1), 0.05, now, 0.4)
+      case 'nitro':
+        // nitro: hızla yükselen üç nota
+        ;[0, 4, 7].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.05, now + i * 0.045, 0.3))
+        return
       case 'key':
         ;[0, 4, 7].forEach((d, i) => this.chime(this.scaleNote(d, 1), 0.055, now + i * 0.08, 0.5))
         return

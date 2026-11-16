@@ -1610,7 +1610,7 @@ export function drawKeepsake(c: CanvasRenderingContext2D, city: CityKey, x: numb
  */
 export function drawThing(
   c: CanvasRenderingContext2D,
-  kind: 'key' | 'stamp' | 'crystal' | 'charm' | 'spring',
+  kind: 'key' | 'stamp' | 'crystal' | 'charm' | 'spring' | 'nitro',
   x: number,
   y: number,
   sc: number,
@@ -1707,6 +1707,39 @@ export function drawThing(
         line(c, [-2.5 + dx, -2, -0.9 + dx, 0, -2.5 + dx, 2], 0.95, ch, false)
         line(c, [-0.1 + dx, -2, 1.5 + dx, 0, -0.1 + dx, 2], 0.95, ch, false)
         dab(c, -2.6, -3.2, 1.1, 0.5, 'rgba(255,255,255,0.35)', -0.6)
+        break
+      }
+      case 'nitro': {
+        // Nitro tüpü: kırmızı gövdeli çelik tüp, ağzında turuncu alev; oyunun dash kırmızısından ayrı (sıcak turuncu)
+        if (opt?.active === false) {
+          // harcandı: soluk dış hat ve saat gibi dolan yay
+          const k = Math.max(0, Math.min(1, opt?.charge ?? 0))
+          c.globalAlpha = 0.4
+          c.setLineDash([1.2, 1])
+          c.strokeStyle = '#ff9a3c'
+          c.lineWidth = 0.6
+          c.strokeRect(-3, -5, 6, 10)
+          c.setLineDash([])
+          c.globalAlpha = 0.85
+          c.beginPath()
+          c.arc(0, 0, 6.2, -Math.PI / 2, -Math.PI / 2 + k * TAU)
+          c.lineWidth = 0.9
+          c.stroke()
+          c.globalAlpha = 1
+          break
+        }
+        c.translate(0, Math.sin(t * 3) * 0.6)
+        glow(c, 8.5 + Math.sin(t * 5) * 0.5, 'rgba(255,150,60,0.2)')
+        // alev: üç dilli, saatle titrer
+        const f = Math.sin(t * 18) * 0.6
+        poly(c, [-2.2, -5.6, -1.2, -9.4 - f, 0, -7.2, 1.2, -10 + f, 2.2, -5.6], '#ff9a3c', '#d8641e')
+        dab(c, 0, -6.6, 0.9, 1.5, '#ffe27a')
+        // gövde, bant, kapak
+        poly(c, [-3.2, -4.6, 3.2, -4.6, 3.2, 5, -3.2, 5], '#d6403a', '#9a2a26')
+        poly(c, [-3.2, -1, 3.2, -1, 3.2, 1.4, -3.2, 1.4], '#f2f0f4')
+        line(c, [-1.6, 0.2, 1.6, 0.2], 0.55, '#d6403a', false)
+        poly(c, [-2, -6, 2, -6, 2, -4.6, -2, -4.6], '#8f96a3', '#5a5f6a')
+        dab(c, -1.9, -2.8, 0.55, 1.4, 'rgba(255,255,255,0.55)')
         break
       }
       case 'charm': {

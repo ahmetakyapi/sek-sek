@@ -29,6 +29,11 @@ export const SWIM = 17
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
 export const CRYSTAL_RECHARGE = 2.5
+/**
+ * Nitro tüpü (T): alınınca kısa süre hızlı koşu. Hız yürüyüşün ~1,55 katı; atlayış da hızla uzar (zıplama gücü aynı).
+ * İsteğe bağlı kestirmedir: hiçbir yol nitrosuz geçilemez hâle getirilmez. Tüp birkaç saniyede yeniden dolar.
+ */
+export const NITRO = { time: 3, speed: 1.55, recharge: 4 }
 
 export const PHYS = {
   gravity: 980,
@@ -121,6 +126,8 @@ export interface Player extends Box {
   /** suyun içinde (gövdenin ortası W karosunda) */
   swim: boolean
   strokeCool: number
+  /** nitronun kalan süresi (sn); 0 ise normal koşu */
+  nitro: number
 }
 
 export interface Platform extends Box {
@@ -276,6 +283,8 @@ export class World {
   readonly signs: Sign[] = []
   readonly npcs: Sign[] = []
   readonly crystals: Crystal[] = []
+  /** nitro tüpleri: dash halkası gibi alınır ve yeniden dolar */
+  readonly nitros: Crystal[] = []
   readonly plates: Plate[] = []
   /** itilebilen sandıklar: yandan itilir, üstüne çıkılır, boşluğa düşer; ölünce yerine döner */
   readonly crates: Crate[] = []
@@ -432,6 +441,9 @@ export class World {
             break
           case '*':
             this.crystals.push({ x: px + 3, y: py + 3, w: 10, h: 10, active: true, timer: 0 })
+            break
+          case 'T':
+            this.nitros.push({ x: px + 3, y: py + 2, w: 10, h: 14, active: true, timer: 0 })
             break
           case 'K':
             this.keyBox = { x: px + 3, y: py + 3, w: 10, h: 10 }
@@ -658,6 +670,7 @@ export class World {
       regrab: 0,
       swim: false,
       strokeCool: 0,
+      nitro: 0,
     }
   }
 
@@ -864,14 +877,16 @@ export class World {
       p.vx = p.dashDir[0] * PHYS.dashSpeed
       p.vy = p.dashDir[1] * PHYS.dashSpeed
       if (p.dashTime <= 0) {
-        p.vx = Math.sign(p.vx) * Math.min(Math.abs(p.vx), PHYS.run * 1.15)
+        p.vx = Math.sign(p.vx) * Math.min(Math.abs(p.vx), PHYS.run * (p.nitro > 0 ? NITRO.speed : 1.15))
         if (p.vy < 0) p.vy *= 0.45
       }
     } else {
       // yatay kontrol. Rüzgâr hedef hızı kaydırır (hıza eklenen ivme, hedefe kırpılınca siliniyordu): havada her zaman,
       // yerde yalnız yürürken; dururken itmez ki dar taşta kaydırmasın. Esinti güçlüyken atlayış belirgin uzar ya da kısalır
       p.swim = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === SWIM
-      const target = p.swim ? ix * PHYS.swimRun : ix * PHYS.run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
+      if (p.nitro > 0) p.nitro = Math.max(0, p.nitro - dt)
+      const run = p.nitro > 0 ? PHYS.run * NITRO.speed : PHYS.run
+      const target = p.swim ? ix * PHYS.swimRun : ix * run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
       let accel: number
       if (p.grounded) {
         if (p.onIce) accel = ix !== 0 ? PHYS.accelIce : PHYS.decelIce
@@ -1454,6 +1469,17 @@ export class World {
         this.events.push({ type: 'crystal' })
       }
     }
+    for (const n of this.nitros) {
+      if (!n.active) {
+        n.timer -= dt
+        if (n.timer <= 0) n.active = true
+      } else if (!p.dead && overlap(reach(p), n)) {
+        n.active = false
+        n.timer = NITRO.recharge
+        p.nitro = NITRO.time
+        this.events.push({ type: 'nitro' })
+      }
+    }
     if (this.keyBox && !this.hasKey && !p.dead && overlap(reach(p), this.keyBox)) {
       this.hasKey = true
       this.events.push({ type: 'key' })
@@ -1706,7 +1732,7 @@ export class World {
       e.state = 'idle'
       e.timer = 1
     }
-    for (const c of this.crystals) {
+    for (const c of [...this.crystals, ...this.nitros]) {
       c.active = true
       c.timer = 0
     }
@@ -1766,6 +1792,7 @@ export interface Snapshot {
   stampTaken: boolean
   charmTaken: boolean
   crystals: Array<[boolean, number]>
+  nitros: Array<[boolean, number]>
   clock: number
   cpSwitch: boolean
   crates: Array<[number, number, number, number]>
@@ -1791,6 +1818,7 @@ export function snapshot(w: World): Snapshot {
     stampTaken: w.stampTaken,
     charmTaken: w.charmTaken,
     crystals: w.crystals.map((c) => [c.active, c.timer]),
+    nitros: w.nitros.map((c) => [c.active, c.timer]),
     clock: w.clock,
     cpSwitch: w.checkpointSwitch,
     crates: w.crates.map((c) => [c.x, c.y, c.vy, c.sunk]),
@@ -1817,6 +1845,7 @@ export function restore(w: World, s: Snapshot) {
   w.stampTaken = s.stampTaken
   w.charmTaken = s.charmTaken
   s.crystals.forEach(([a, t], i) => Object.assign(w.crystals[i], { active: a, timer: t }))
+  s.nitros.forEach(([a, t], i) => Object.assign(w.nitros[i], { active: a, timer: t }))
   w.clock = s.clock
   w.plates.forEach((pl) => (pl.pressed = false))
   w.checkpointSwitch = s.cpSwitch
