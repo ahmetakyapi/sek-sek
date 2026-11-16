@@ -1,6 +1,6 @@
 /**
  * Sesi dinlemeden kanıtla: oyunun ses motoru tarayıcıda çevrimdışı ses bağlamıyla (OfflineAudioContext, sahte saat)
- * çalınır; jenerik, iki şehir, boss dövüşü, molada boğukluk ve bütün efektler WAV olarak yazılır. Her parça için tepe,
+ * çalınır; jenerik, iki şehrin başı, bir şehrin bütün döngüsü, boss dövüşü (kabarıp sönen), molada boğukluk ve bütün efektler WAV olarak yazılır. Her parça için tepe,
  * RMS ve NaN ölçülür: sessiz kalan, NaN üreten ya da patlayan (tepe ≥ 0,98) parça FAIL. TEL=1 yalnız tel akordu için
  * tek notalar üretir. Kullanım: sunucu açıkken  PORT=3000 node scripts/audio-render.cjs [klasör]
  */
@@ -19,7 +19,10 @@ const CLIPS = process.env.TEL ? [
   ['jenerik', 24, `s.playTheme()`],
   ['istanbul', 50, `s.setMusic('istanbul')`],
   ['trabzon', 18, `s.setMusic('trabzon')`],
-  ['erzurum-boss', 16, `s.setMusic('erzurum'); s.setIntense(true)`],
+  // bütün döngü: giriş, A, A', B, A'', nefes ve A'ya dönüş (tremolo, yankı, geciktirmeler)
+  ['van-dongu', 136, `s.setMusic('van')`],
+  // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
+  ['erzurum-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
   ['efektler', 16, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete']; names.forEach((n,i)=>setAt(0.5+i*0.9,()=>s.sfx(n)))`],
 ]

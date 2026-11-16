@@ -5,7 +5,7 @@
  * saniyede aynı yere varır; sarsıntı her karede rastgele sayı çekmez (yüksek Hz'de titreme olur), zamanla
  * dalgalanır. Yeni kamera davranışı eklerken bu dosyaya ekle ve testi genişlet.
  */
-import { ONEWAY, PHYS, SWIM, WATER, type World } from './sim'
+import { NITRO, ONEWAY, PHYS, SPIKE_UP, SWIM, WATER, type World } from './sim'
 import { T } from './types'
 
 export const CAM = {
@@ -28,6 +28,21 @@ export const CAM = {
   lookKeep: 0.08,
   /** ölü bölge: karakter kadrajın ortasındaki bu genişlikte (ekran oranı) kaldıkça kamera kımıldamaz */
   window: 0.035,
+  /**
+   * Dash sırasında yatay takip üç kat hızlı. Kameranın gecikmesi hızla orantılıdır (hız / takip oranı): dash hızı
+   * yürüyüşün ~3 katı olduğundan gecikme aynı kalır, karakter ekranda yerinde durur. Eskiden dash'te ~15 px öne
+   * kayıyor, kamera yetişince geri çekiliyordu (ekran gidip geliyor gibiydi). Oran geçişte kamera hızı da sürekli kalır.
+   */
+  dashFollow: 0.0015 ** 3,
+  /** dash itmesi: kadraj dash yönünün tersine bu kadar (dünya pikseli) yaslanıp yumuşakça döner; rastgele titreme yok */
+  kick: 1.6,
+  kickTime: 0.22,
+  /** önünde engel (çukur, diken, su) varken bakış payı bu oranla büyür: atlanacak yer kadrajda */
+  hazardLead: 0.6,
+  /** engel aranan uzaklık (karo, baktığı yönde) */
+  hazardScan: 7,
+  /** tırmanırken (halat, duvar, yükseliş) kadraj ekranın bu oranı kadar yukarı açılır */
+  climbUp: 0.17,
 } as const
 
 /** Kameranın kare arası durumu: konum ve yumuşatılmış takip payları */
@@ -49,12 +64,27 @@ export function approach(cur: number, target: number, dt: number, keep: number) 
   return cur + (target - cur) * (1 - Math.pow(keep, dt))
 }
 
-/** Sarsıntı ötelemesi: zamana bağlı yumuşak dalga (dünya pikseli). Kare hızı değişse de aynı görünür. */
+/**
+ * Sarsıntı ötelemesi: zamana bağlı yumuşak dalga (dünya pikseli). Kare hızı değişse de aynı görünür.
+ * Dalga 7-13 Hz'de (eskiden 13-24 Hz: göz yoran vızıltı). Küçük sarsıntılar karesiyle küçülür (2'nin altı belli belirsiz),
+ * büyükler (ölüm, boss) aynı güçte kalır: her düğmede, her inişte ekran titremez.
+ */
 export function shakeOffset(t: number, amp: number): [number, number] {
   if (amp <= 0) return [0, 0]
-  const x = Math.sin(t * 83) * 0.6 + Math.sin(t * 131 + 1.7) * 0.4
-  const y = Math.sin(t * 97 + 0.6) * 0.6 + Math.sin(t * 149 + 2.9) * 0.4
-  return [x * amp * 0.5, y * amp * 0.5]
+  const a = amp * Math.min(1, amp / 3) * 0.5
+  const x = Math.sin(t * 47) * 0.6 + Math.sin(t * 73 + 1.7) * 0.4
+  const y = Math.sin(t * 53 + 0.6) * 0.6 + Math.sin(t * 79 + 2.9) * 0.4
+  return [x * a, y * a]
+}
+
+/**
+ * Dash itmesi: kalkıştan bu yana geçen süreye (sn) göre kadrajın dash yönünün tersine yaslanma oranı (0..1).
+ * Hızlı yükselir, yavaşça (ease-out) sıfıra döner; tek bir yumuşak tümsek, salınım yok.
+ */
+export function kickOffset(age: number): number {
+  if (age < 0 || age >= CAM.kickTime) return 0
+  const u = age / CAM.kickTime
+  return Math.min(1, u * 6) * (1 - u) * (1 - u)
 }
 
 /**
@@ -80,6 +110,30 @@ export function lookDown(w: World, vh: number): number {
 }
 
 /**
+ * Önündeki engel (0..1): baktığı yönde birkaç karo içinde ayak hizasında çukur, diken ya da öldüren su varsa 1'e yaklaşır
+ * (yakın olan daha ağır basar). Kadraj atlanacak yeri önceden gösterir; saf hesap, yalnız haritaya ve konuma bağlı.
+ */
+export function hazardAhead(w: World): number {
+  const p = w.player
+  const feet = Math.floor((p.y + p.h + 1) / T)
+  const cx = Math.floor((p.x + p.w / 2) / T)
+  for (let d = 2; d <= CAM.hazardScan; d++) {
+    const tx = cx + p.facing * d
+    const t = w.tile(tx, feet)
+    const hole = !w.isSolid(tx, feet) && t !== ONEWAY && !w.isSolid(tx, feet + 1) && !w.isSolid(tx, feet + 2)
+    if (t === SPIKE_UP || t === WATER || w.tile(tx, feet - 1) === SPIKE_UP || hole) return 1 - (d - 2) / (CAM.hazardScan - 1)
+  }
+  return 0
+}
+
+/** Tırmanıyor mu: halatta asılı, duvara tutunmuş ya da hızla yükseliyor (yukarıdaki yol görünsün) */
+export function climbing(w: World): boolean {
+  const p = w.player
+  // duvarda aşağı kayarken yukarı bakmaz: yalnız tutunup dururken ya da yükselirken
+  return !p.dead && (p.hang === 1 || (p.wallDir !== 0 && p.vy < 40) || (!p.grounded && p.vy < -PHYS.jumpV * 0.6 && p.hang === 0 && !p.swim))
+}
+
+/**
  * Normal takip: karakter ekranın ortasında, koşu yönünde biraz önde; önünde düşüş varsa biraz aşağıda.
  * Dikeyde kamera her zıplamada sallanmaz: yerde ya da duvarda iken basılan yüksekliğe (feet) bakar, havadayken
  * o yükseklikte kalır. Karakter ekranın üst ya da alt bandına yaklaşırsa yine izler (yüksek tırmanış, uzun düşüş).
@@ -90,9 +144,11 @@ export function followTarget(w: World, vw: number, vh: number, cam?: CamState, d
   const vx = Math.max(-cap, Math.min(cap, p.vx))
   // bakış payı ekrana orantılı (telefonda küçük) ve dönüşte yumuşakça kayar
   const lead = Math.min(CAM.lead, vw * CAM.leadMax)
-  const wantLead = p.facing * lead + vx * CAM.leadVel * (lead / CAM.lead)
+  // önünde engel varsa bakış payı büyür (yumuşakça, leadKeep ile): atlanacak yer kadraja girer
+  const wantLead = (p.facing * lead + vx * CAM.leadVel * (lead / CAM.lead)) * (1 + CAM.hazardLead * hazardAhead(w))
   if (cam) cam.lead = cam.lead === undefined ? wantLead : approach(cam.lead, wantLead, dt, CAM.leadKeep)
-  const look = lookDown(w, vh)
+  // aşağı bakış (düşüş, uçurum kenarı) ile yukarı bakış (tırmanış) tek bir yumuşak payda
+  const look = lookDown(w, vh) - (climbing(w) ? vh * CAM.climbUp : 0)
   if (cam) cam.look = cam.look === undefined ? look : approach(cam.look, look, dt, CAM.lookKeep)
   const feet = p.y + p.h
   const onGround = p.grounded || p.wallDir !== 0 || p.dead
@@ -159,7 +215,9 @@ export function clampCam(w: World, x: number, y: number, vw: number, vh: number)
 export function stepCamera(w: World, cam: CamState, dt: number, vw: number, vh: number) {
   const boss = bossFrame(w, vw, vh)
   const [tx, ty] = boss ?? followTarget(w, vw, vh, cam, dt)
-  const x = approach(cam.x, tx, dt, boss ? CAM.boss : CAM.follow)
+  // nitroda takip hızla orantılı hızlanır: gecikme aynı kalır, karakter ekranda kaymaz (dash'teki gibi)
+  const keep = w.player.dashTime > 0 ? CAM.dashFollow : w.player.nitro > 0 ? CAM.follow ** NITRO.speed : CAM.follow
+  const x = approach(cam.x, tx, dt, boss ? CAM.boss : keep)
   const y = approach(cam.y, ty, dt, boss ? CAM.bossY : CAM.followY)
   ;[cam.x, cam.y] = clampCam(w, x, y, vw, vh)
 }

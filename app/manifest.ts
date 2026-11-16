@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Sek-Sek · Şehir Şehir Anadolu',
     short_name: 'Sek-Sek',
-    description: 'İstanbul’dan Ağrı Dağı’na 35 şehirlik platform oyunu.',
+    description: 'İstanbul’dan Pamukkale’ye 38 şehirlik platform oyunu.',
     start_url: '/',
     display: 'fullscreen',
     orientation: 'any',

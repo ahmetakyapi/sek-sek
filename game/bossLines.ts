@@ -39,6 +39,9 @@ export const BOSS_LINES: Record<CityKey, { wake: [string, string]; tired: [strin
   artvin: { wake: ['Meydan benim!', 'The ring is mine!'], tired: ['Boynuzum saplandı…', 'My horns are stuck…'], ouch: ['Öff, sırtım!', 'Ouch, my back!'] },
   kars: { wake: ['Kıyh! Kıyh!', 'Honk! Honk!'], tired: ['Tüylerim karıştı…', 'My feathers are a mess…'], ouch: ['Gagam!', 'My beak!'] },
   bitlis: { wake: ['Nemrut uyandı!', 'Nemrut is awake!'], tired: ['Soğuyorum…', 'I am cooling down…'], ouch: ['Çatladım!', 'I cracked!'] },
+  giresun: { wake: ['Adama kimse gelemez!', 'No one comes to my island!'], tired: ['Kanatlarım ıslandı…', 'My wings are soaked…'], ouch: ['Gagam!', 'My beak!'] },
+  tokat: { wake: ['Desenini basarım!', 'I will print you a pattern!'], tired: ['Boyam kurudu…', 'My dye has dried…'], ouch: ['Kalıbım çatladı!', 'My block cracked!'] },
+  denizli: { wake: ['Ü-ürü-üüüü!', 'Cock-a-doodle-doooo!'], tired: ['Sesim kısıldı…', 'I have lost my voice…'], ouch: ['İbiğim!', 'My comb!'] },
   agri: { wake: ['Çığ geliyor!', 'Avalanche!'], tired: ['Eriyorum…', 'I am melting…'], ouch: ['Buzum çatladı!', 'My ice cracked!'] },
   bayburt: { wake: ['Gözüm üstünde!', 'I have my eye on you!'], tired: ['Gözüm döndü…', 'My eye is spinning…'], ouch: ['Gözüme basma!', 'Not the eye!'] },
 }

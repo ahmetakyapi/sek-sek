@@ -7,8 +7,8 @@ import { hasSession, mapViewer } from './who'
 
 export const dynamic = 'force-dynamic'
 
-/** en uzun harita (320 sütun, hiç tekrarsız) bile bunun altında kalır */
-const MAX_CODE = 12_000
+/** en uzun harita (600 sütun, hiç tekrarsız: ~19 200 karakter) bile bunun altında kalır */
+const MAX_CODE = 24_000
 const MAX_PAGE = 50
 const bad = (error: string, status = 400, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...extra }, { status })
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   const problem = titleProblem(b.title)
   if (problem) return bad(problem)
   const title = cleanTitle(b.title)
-  const code = encodeMap(decoded.map, decoded.city)
+  const code = encodeMap(decoded.map, decoded.city, decoded.texts)
   try {
     const me = await mapViewer(req)
     if (!me) return bad('Yayınlamak için giriş yap.', 401)

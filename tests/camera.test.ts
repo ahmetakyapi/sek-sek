@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { CAM, approach, shakeOffset, stepCamera } from '../game/camera'
+import { CAM, approach, followTarget, hazardAhead, kickOffset, shakeOffset, stepCamera } from '../game/camera'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput } from '../game/types'
@@ -130,6 +130,41 @@ describe('kamera kare hızından bağımsız', () => {
     expect(low - hc.y).toBeGreaterThan(50)
   })
 
+  it('düz yolda dash atınca karakter ekranda öne kayıp geri gelmez (kamera dash hızında izler)', () => {
+    const map = Array.from({ length: 24 }, (_, y) => (y === 20 ? '#'.repeat(300) : y === 19 ? ' '.repeat(60) + 'P' + ' '.repeat(239) : ' '.repeat(300)))
+    for (const hz of [60, 144, 240]) {
+      const w = new World({ ...LEVELS[0], map, wind: 0 })
+      const cam = { x: w.player.x - 213, y: w.player.y - 120 }
+      let acc = 0
+      let steps = 0
+      const screen: number[] = []
+      for (let t = 0; t < 5; t += 1 / hz) {
+        acc += 1 / hz
+        while (acc >= STEP) {
+          w.step(STEP, { ...emptyInput(), right: true, dashPressed: steps === 400 })
+          w.events.length = 0
+          steps++
+          acc -= STEP
+        }
+        stepCamera(w, cam, 1 / hz, 427, 240)
+        if (steps > 390) screen.push(w.player.x - cam.x)
+      }
+      // eskiden ~15 px öne kayıp geri çekiliyordu
+      expect(Math.max(...screen) - Math.min(...screen), `${hz} Hz`).toBeLessThan(4)
+    }
+  })
+
+  it('küçük sarsıntı belli belirsiz, büyük sarsıntı korunur; dash itmesi tek yumuşak tümsek', () => {
+    const peak = (amp: number) => Math.max(...Array.from({ length: 400 }, (_, i) => Math.abs(shakeOffset(i / 400, amp)[0])))
+    expect(peak(1.5)).toBeLessThan(0.45)
+    expect(peak(6)).toBeGreaterThan(2)
+    const k = Array.from({ length: 60 }, (_, i) => kickOffset(i / 240))
+    const top = k.indexOf(Math.max(...k))
+    // tepeye çıkar, sonra hiç geri dönmeden (salınımsız) sıfıra iner
+    for (let i = top + 1; i < k.length; i++) expect(k[i]).toBeLessThanOrEqual(k[i - 1])
+    expect(kickOffset(CAM.kickTime)).toBe(0)
+  })
+
   it('sarsıntı rastgele değil, zamana bağlı ve yumuşak', () => {
     // 240 Hz'de ardışık iki kare arası sarsıntı farkı küçük kalmalı (her karede rastgele sıçrama yok)
     let prev = shakeOffset(0, 1.5)
@@ -146,5 +181,29 @@ describe('kamera kare hızından bağımsız', () => {
     expect(src.match(/Math\.random\(\) < 0?\.\d+\)/g) ?? []).toEqual([])
     // kamera ya da taş titremesi Math.random ile yapılmaz: shakeOffset / zamana bağlı sinüs
     expect(src).not.toMatch(/\(Math\.random\(\) - 0\.5\) \* (this\.shake|\(1 \+ k)/)
+  })
+})
+
+describe('bölüme göre kadraj', () => {
+  const flat = (row19: string) => Array.from({ length: 24 }, (_, y) => (y === 20 ? '#'.repeat(80).split('').map((c, x) => (row19[x] === 'O' ? ' ' : c)).join('') : y === 21 ? '#'.repeat(80).split('').map((c, x) => (row19[x] === 'O' ? ' ' : c)).join('') : y === 19 ? row19.replace(/O/g, ' ').padEnd(80) : y > 21 ? '#'.repeat(80) : ' '.repeat(80)))
+  it('önündeki çukur ve diken bakış payını büyütür, yakın olan daha çok', () => {
+    const none = new World({ ...LEVELS[0], map: flat(' P'.padEnd(80)), wind: 0 })
+    expect(hazardAhead(none)).toBe(0)
+    const near = new World({ ...LEVELS[0], map: flat(' P   ^^'.padEnd(80)), wind: 0 })
+    const far = new World({ ...LEVELS[0], map: flat(' P      ^^'.padEnd(80)), wind: 0 })
+    for (const w of [near, far]) for (let i = 0; i < 60; i++) w.step(1 / 120, emptyInput())
+    expect(hazardAhead(near)).toBeGreaterThan(hazardAhead(far))
+    expect(hazardAhead(far)).toBeGreaterThan(0)
+  })
+  it('tırmanırken kadraj yukarı açılır, yerde normale döner', () => {
+    const map = Array.from({ length: 24 }, (_, y) => (y >= 20 ? '#'.repeat(40) : y === 19 ? ' P'.padEnd(40) : ' '.repeat(40)))
+    const w = new World({ ...LEVELS[0], map, wind: 0 })
+    for (let i = 0; i < 60; i++) w.step(1 / 120, emptyInput())
+    const cam = { x: 0, y: 0 }
+    const [, y0] = followTarget(w, 427, 240, cam, 1 / 60)
+    w.player.hang = 1
+    let y1 = y0
+    for (let i = 0; i < 240; i++) y1 = followTarget(w, 427, 240, cam, 1 / 60)[1]
+    expect(y0 - y1).toBeGreaterThan(240 * CAM.climbUp * 0.8)
   })
 })

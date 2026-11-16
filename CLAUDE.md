@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 35 şehrini (iki defter: 30 + 5) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 38 şehrini (iki defter: 30 + 8) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -24,8 +24,8 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
   sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
-  levels.ts      35 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
-  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla); yeni şehir buraya eklenir
+  levels.ts      38 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
+  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla, Rize, Artvin, Kars, Bitlis, Ağrı, Giresun, Tokat, Denizli); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
   finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q boss, G kapı) → çıkış; arenayı index.ts kurar
@@ -44,17 +44,17 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
   portraitDraw.ts vesikalık portreler (vektör, heroDraw fırçalarıyla; sekiz kılık, atkı rengi parametreli). Sunucu kartı için public/portreler/<kılık>.png: `node scripts/art/portraits.cjs` (çizim ya da LOOKS değişince yeniden üret)
   audio.ts       WebAudio: rahatlatıcı arka plan müziği çalgıları (Rhodes benzeri piyano `keys`, alt bas `sub`, yumuşak davul `kick`/`rim`/`hat`, ney, kanun Karplus-Strong, dem), swing, çalgı başına stereo ve yankı, ana sınırlayıcı; boss'ta sıklaşan ama sakin ritim (`setIntense`), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında, kısık
-  music.ts       besteler veri olarak: jenerik (aynı ezgi ve akorlar, lo-fi düzenleme, ~76 BPM) ve şehir müzikleri (4/4, ~78 BPM, şehrin makamından yedili akorlar, seyrek ezgi; A piyano · B davul+bas · C ney · D kanun; şehirden tohumlanan sabit beste)
+  music.ts       besteler veri olarak: jenerik (Hicaz ezgisi, köksüz dokuzlu akorlar, giriş + A-B-A-B) ve şehir müzikleri (4/4, 70-84 BPM şehrin tempo değerinden; form giriş (bir kez) → A piyano → A′ ney + davul → B karşıtlık (güçlüde pedal bas) → A″ soru-cevap → nefes, 36 ölçülük döngü; ses yürütmeli yedili akorlar `voiceLead`, makama göre kadans, ney süslemeleri, kanun tremolosu; şehirden tohumlanan sabit beste)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts, sunucusu app/api/ghosts (skor tablosundan "◌ Yarış")
   challenges.ts  mücadele haritaları: Zor şehirlerin bayrak aralığından her açılışta kesilen kısa parkurlar (madalya `par`dan)
   mirror.ts      Ayna Yolu (Yeni Oyun+): şehir haritası sağdan sola; `LevelDef.mirror` ile platformlar ve zamanlama fazları da aynalanır
   accessories.ts Kılık Dükkânı aksesuarları (ad, fiyat) ve cüzdan; çizimi heroDraw/portraitDraw, oyunda `renderer.accessory`
 components/      React arayüzü: Coop (iki kişi aynı ekranda: CoopSetup, Coop, CoopEnd; tuşlar Race KEYS), TitleMenu (ana menü: sıradaki şehrin kartpostalı, 30 duraklık yol çizgisi, simgeli kutucuklar; piksel simgeler dosyanın içinde), PhotoMode (Fotoğraf Kipi: moladan; kadraj ok tuşu ya da sürükleyerek, kartpostal çerçeveli PNG), KeyRemap (klavye tuş atama; `game/input.ts` KeyBindings, `save.keys`), MapGallery (/haritalar topluluk galerisi), Tournament (Haftalık Turnuva), Challenges (mücadele listesi, bitiş), Ending (final: harita, son söz, jenerik, Ayna Yolu), Mirror (Ayna Yolu listesi), Shop (Kılık Dükkânı), Album (Defter'de şehir albümü), Editor (Bölüm Düzenleyici, /duzenle; çözücü solve.worker.ts'te), Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, unvan, yol istatistikleri; Müzik Kutusu sekmesi MusicBox: biten şehrin bestesi, boss'u yenilmişse boss teması), Modes (Modlar: Günlük Meydan Okuma, Düello, Boss Rush, Maraton; bitiş ekranları), Race (Yan Yana Yarış: bölünmüş ekran, iki dünya ve iki çizici), ScoreBoard (Skor Tablosu: Genel, Şehirler, Günlük, Koleksiyon), About (artbook), Bestiary, HUD, dokunmatik
-lib/             customLevel (düzenleyicinin harita kodu: doğrulama, RLE + base64url, `customLevel()`), achievements (başarımlar: çoğu kayıttan hesaplanır, anlık olanlar `save.feats`), storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db, antiCheat (skorun fiziksel alt süresi `minScoreMs` ve hayalet makullüğü `ghostProblem`), rateLimit (`seksek_rate` tablosunda sabit pencere; tablo yoksa geçer), communityMaps (topluluk haritası kuralları: başlık, süzgeç, günlük sınır)
-app/             / oyun (`?yaris=<şehir>~<ad>` yarış daveti, `?ozel=<kod>` özel harita) · /duzenle bölüm düzenleyici · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /sehir/[id] şehir tanıtımı (30 sayfa statik; app/sitemap.ts, app/robots.ts) · /haritalar topluluk galerisi · /skor paylaşım · /skor/kart kartpostal · /api/*
+lib/             customLevel (düzenleyicinin harita kodu: doğrulama, RLE + base64url, sürüm 1/2, `customLevel()`), editorKit (düzenleyicinin şablonları, hazır parçaları, dolgu, dikdörtgen, ayna), achievements (başarımlar: çoğu kayıttan hesaplanır, anlık olanlar `save.feats`), storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db, antiCheat (skorun fiziksel alt süresi `minScoreMs` ve hayalet makullüğü `ghostProblem`), rateLimit (`seksek_rate` tablosunda sabit pencere; tablo yoksa geçer), communityMaps (topluluk haritası kuralları: başlık, süzgeç, günlük sınır)
+app/             / oyun (`?yaris=<şehir>~<ad>` yarış daveti, `?ozel=<kod>` özel harita) · /duzenle bölüm düzenleyici · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /sehir/[id] şehir tanıtımı (şehir başına bir sayfa, statik; app/sitemap.ts, app/robots.ts) · /haritalar topluluk galerisi · /skor paylaşım · /skor/kart kartpostal · /api/*
 scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-frames (tarayıcıda 3x çözünürlükte dash hızında kayarken zemin hücresi hazır mı; kasma kanıtı), verify-perf (üretim derlemesinde gerçek oynanışta kare kaçırma; performans kanıtı), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), audit-menus (her menü dört ekran boyutunda tek bakışta sığıyor mu), audit-clearance (1 karo yüksekliğinde yürünen alçak koridor var mı), verify-rules (Dash’siz kuralının çıktığı şehirler dash atmadan bitiyor mu), verify-challenges (mücadele haritaları çözücüyle bitiyor mu; madalya için en hızlı süreyi yazdırır), audio-render (sesi dinlemeden kanıtla: jenerik, şehirler, boss, mola ve efektler WAV; sessiz, NaN ya da patlayan parça FAIL), verify-mirror (Ayna Yolu: aynalı harita çözücüyle bitiyor mu; `AYNA=1 npx tsx scripts/bossbot.ts` aynalı arenada boss), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, zemin föyü ve hücre çizim süresi terrain.cjs (`--olc`), şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
-tests/           scores.test.ts (skor API'si bellekte gerçek Postgres ile: göçler, ölçüt başına güncelleme, filtreler, günlük tablo), cloud.test.ts (bulut birleşmesi, şehir başına sürüm, güncelleme notu), sim.test.ts (fizik, mekanik, final), camera.test.ts (60-240 Hz'de aynı kamera, titremesiz dash), perf.test.ts (tuval piksel bütçesi), bubble.test.ts (baloncuk karakterin üstüne binmez), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları), music.test.ts (besteler), input.test.ts (tuş atama), antiCheat.test.ts (her şehrin çözücü süresi alt sınırın en az 2 katı; sahte hayaletler reddedilir), maps.test.ts (topluluk haritaları API'si)
+tests/           scores.test.ts (skor API'si bellekte gerçek Postgres ile: göçler, ölçüt başına güncelleme, filtreler, günlük tablo), cloud.test.ts (bulut birleşmesi, şehir başına sürüm, güncelleme notu), sim.test.ts (fizik, mekanik, final), camera.test.ts (60-240 Hz'de aynı kamera, titremesiz dash), perf.test.ts (tuval piksel bütçesi), bubble.test.ts (baloncuk karakterin üstüne binmez), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları), music.test.ts (besteler), input.test.ts (tuş atama), antiCheat.test.ts (her şehrin çözücü süresi alt sınırın en az 2 katı; sahte hayaletler reddedilir), maps.test.ts (topluluk haritaları API'si), customLevel.test.ts + editorKit.test.ts (harita kodu, şablonlar, hazır parçalar)
 ```
 
 ## Ajanla çalışma
@@ -134,6 +134,25 @@ değiştirmez; yeni kural eklerken her şehirde bitirilebildiğini kanıtla. Eti
 bitmiyor, bu yüzden Dash’siz yalnız NO_DASH_OK listesinde çıkar (`npx tsx scripts/verify-rules.ts`; o şehirlerin haritası
 değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açılır; rekoru şehir + kural başınadır.
 
+**Sinir Bozucu modlar.** `lib/extras.ts` RAGE_RULES (on iki: Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Kâbus, Son Nefes, Karanlık Yol, Baş Aşağı, Ayna Ekran, Turbo, Gece Yarısı, Kaos; görüntü modları `view`: karanlık `renderer.dark`, ters ekran tuvalin CSS dönüşümü, menüde sıfırlanır):
+Kurallı Koşu altyapısında (`save.rules`, rekor şehir + mod başına), günlüğe çıkmaz (RULES'ta yoklar). Fizik `ruleLevel()` ile
+bölüme yazılır: `LevelDef.slippery` (her zemin buz), `crumbleAll` (üstü boş her katı yüzey çatlak taş; başlangıç, bayrak, çıkış
+ve boss arenası sağlam); Ters Tuşlar girdide (`swapPhase`, 9 sn'lik turun son 4 sn'si, öncesinde uyarı). Kaygan ve çöken
+fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya da harita değişikliğinde
+`npx tsx scripts/verify-rage.ts <kaygan|coken> <şehir>` koş ve listeye yaz. Renk ailesi kiremit (`--color-coral`).
+
+**Modlar ekranının renk aileleri.** `mode-card` + `[--tone:…]`: rekabet altın (Günlük, Turnuva), birlikte turkuaz
+(`--color-teal`: Co-op, Düello), meydan okuma kiremit (`--color-coral`: Sinir Bozucu, Boss Rush, Maraton), yol çivit (Kurallı,
+Mücadeleler, Ayna). Ekranda tek dolu düğme (Günlük); kartların düğmesi `pixel-btn tone`.
+
+**Öfke Parkurları.** `game/rageCourses.ts` RAGE_COURSES: elle çizilmiş uzun, çok zor parkurlar (mücadele altyapısı: `Challenge.map`,
+madalya `par`dan, skor `mucadele:<id>`, ALL_CHALLENGES ile aranır; turnuvaya girmez). Modlar → Sinir Bozucu → Parkurlar.
+`level` görünüşü veren şehirdir, parkur o şehir bitince açılır. Kanıt `npx tsx scripts/verify-challenges.ts`.
+
+**Madalyalar.** Elle yazılmaz: `game/medals.ts` (çözücü süresi × 1,4 + insan paylı boss botu × 1,1; gümüş × 1,3, bronz × 1,75;
+eskisinden uzun olmaz). Haritası ya da boss'u değişen şehirde `npx tsx scripts/solver-time.ts <şehir>` ve `bossbot` ile ölç,
+SOLVER_TIME / BOSS_TIME'a yaz (hile önleme testi de SOLVER_TIME'ı okur).
+
 **Mücadele haritaları.** `game/challenges.ts` CHALLENGES: şehir + bayrak aralığı (`from`, `to`) + `par` (çözücünün süresi).
 Harita şehirden kesildiği için şehir haritası değişince kesit de değişir: Zor şehre dokununca `npx tsx scripts/verify-challenges.ts`
 koş, süre çok oynadıysa `par`ı güncelle. Skoru `mucadele:<id>` anahtarıyla aynı tabloda (genel sıralamaya girmez), en iyisi `save.challenges`.
@@ -145,7 +164,7 @@ sıralar. Kapanmış haftaların ilk üçü oyuncu sayfasında kalıcı rozet. C
 **Arkadaşlar.** `save.friends` (yolcu adları, buluta da gider). Skor tablosunda ☆ ile ya da adla eklenir; her tabloya
 `names=a,b` süzgeci verilir (adlar zaten herkese açık, yanıt önbelleklenebilir). "⚔ Beni Geç Bağlantısı" `/?yaris=<şehir>~<ad>`.
 
-**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı (`FIRST_BOOK` = Rize'nin sırası). Bayburt ilk kez bitince final
+**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı ve dönüş yolu Giresun, Tokat, Denizli (`FIRST_BOOK` = Rize'nin sırası; defter Pamukkale'de biter). Bayburt ilk kez bitince final
 sahnesi (`Ending`) açılır, sonundaki "İkinci Defteri Aç" Rize'yi yükler. Final, Ayna Yolu ve Tam Tur ilk defterin 30
 şehriyle kalır (ikinci defterin aynası doğrulanmadı). Biten en ileri şehrin ardındaki her zaman açıktır (`normalizeSave`):
 yol uzayınca son şehri bitirmiş oyuncu yeni şehre geçer. Yeni defter eklenirse aynı kalıp.
@@ -189,7 +208,12 @@ süreleri `splitTimes`, harita sürümüyle), Rahat Mod hızı (`relaxedSpeed` %
 Oyun kolu titreşimi `haptic()` içinde (`vibrationActuator`). Tuş ipuçları ve rehber atanan tuşu gösterir.
 
 **Bölüm Düzenleyici.** `/duzenle`: harita kodu `lib/customLevel.ts` (simge ve şehir sırası kodun parçası: yalnız sona ekle).
-Oyunda `?ozel=<kod>` ilerlemeye ve rekorlara dokunmaz.
+Sürüm 3 kod metin bölümü taşır: tabela (`?`) ve şehir insanı (`n`) sözleri ve boss seçimi (`Q`, hangi şehrin boss'u: `LevelDef.bossOf`);
+metinler kaba söz süzgecinden geçer. Hazır parçalar ve şablonlar `lib/editorKit.ts` (her biri düz zeminde çözücüyle biter, test bekler).
+Sürüm 1 (5 bit simge, ilk 25 simge, 320 sütun) eski bağlantılar için kalır ve ona sığan harita bugün de sürüm 1 kodlanır
+(yayındaki yinelenen harita yakalanır); yeni simgeli ya da 600 sütuna dek geniş harita sürüm 2 (6 bit simge). Şablon ve
+hazır parça `lib/editorKit.ts`; her biri `tests/editorKit.test.ts`te çözücüyle bitmeli. Oyunda `?ozel=<kod>` ilerlemeye,
+rekorlara ve deftere (pul, nazar) dokunmaz.
 
 **Hayalete karşı yarış.** Rekor koşunun hayaleti sunucuya da yüklenir (`seksek_ghosts`, oyuncu + şehir başına tek satır; yalnız
 skor tablosundaki süreyle eşleşen ve haritanın bugünkü sürümünde koşulmuş olan). Skor tablosunun Şehirler sekmesinde açılmış şehirde
@@ -216,8 +240,8 @@ yetim satır bırakma.
 
 **Boss değiştirmek.** `game/boss.ts` (BOSSES: can, hareket sırası, hız; BOSS: süreler) → `npx tsx scripts/bossbot.ts <id>`
 (bot ve zayıf oyuncu botu yenmeli). Çizimi `game/bossDraw.ts`. Kural her şehirde aynı kalsın: işaret → saldırı → yorgunluk → üstüne bas.
-Zorluk kademeyle gelir (`BossDef.tier`; ayrıntı `.claude/rules/boss.md`): Kolay ve Orta şehirlerin boss'u kademe 1'dir
-ve davranışı değişmez; Zor (2) ve Çok Zor (3) boss'lar öngörülü nişan alır, dört kez sıçrar/atar, inişte şok dalgası
+Zorluk kademeyle gelir (`BossDef.tier`; ayrıntı `.claude/rules/boss.md`): Kolay şehirlerin boss'u kademe 1, Orta 2, Zor ve
+Çok Zor 3 (16 Kasım 2026: boss'lar zorlaştı, yorgunluk kısaldı); kademe 2-3 boss'lar öngörülü nişan alır, dört kez sıçrar/atar, inişte şok dalgası
 yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır. Can artırmak zorluk değildir.
 
 ## Tasarım tuzakları (öğrenilmiş)
@@ -234,6 +258,11 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
   düz aşağı bırakılır), `W` derin su (yüzülür: zıplama kulaç, yüzeyde kulaç sudan çıkarır; boğulma yok). Öldüren `~` ile
   karışmasın diye `W` açık turkuaz çizilir. Çözücü asılı ve yüzen durumları da dal sayar (`tests/mechanics.test.ts`).
   Teleferiğin bittiği yer güvenli zeminin üstünde olsun: bırakınca düz aşağı inilir.
+- `{` `}` ritim blokları (`sim.ts` RHYTHM): saate bağlı iki takım, 1,6 sn'de bir yer değiştirir, kaybolmadan 0,45 sn önce yanıp söner;
+  belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır (`rhythmHold`). Çözücü yakındaki ritim evresini durum sayar.
+  Tam zamanında yay: yaya inerken zıplama basılıysa (tampon) sekiş ×1,22 (`PERFECT_SPRING`); yalnız isteğe bağlı kestirme.
+- `T` nitro tüpü (`sim.ts` NITRO): alınınca 3 sn hızlı koşu (×1,55; atlayış hızla uzar), 4 sn'de yeniden dolar. Yalnız isteğe bağlı
+  kestirme olarak kullan: zorunlu yolu nitroya bağlama (zayıf oyuncu kaçırabilir). Çözücü nitroyu durum sayar.
 - Yeni lejant: `i` ıslak taş (kaygan), `p` itilen sandık (çözücü sandık konumunu da durum sayar: az ve yerel kullan).
   Plaka ve renkli bloklar şehre göre başka görünebilir (`render.ts` SWITCH_SKIN: Bursa gölge, Van gece/gündüz); kural değişmez.
 - Sandıklı bölümde gizli hedef (pul, nazar) ileri yolun üstünde dursun: geride kalan hedef çözücünün bütçesini yakar. Şehir başına en çok iki
@@ -315,7 +344,7 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
   önbellekten, sayfalar önce ağdan (çevrimdışında önbellekteki `/`), `/api/*` hiç önbelleğe girmez. Önbelleğe giren yolların
   davranışını değiştirirsen `VERSION`ı artır. "Ana Ekrana Ekle" `lib/useInstallPrompt.ts` → Ayarlar.
 - Vercel Analytics + Speed Insights `components/Telemetry.tsx`: adresin sorgu kısmı silinerek gönderilir (`?yaris=` ad, `?ozel=` harita taşır).
-- CI (`.github/workflows/ci.yml`): typecheck, test, build; 30 şehrin her biri için verify-levels → verify-respawn → bossbot.
+- CI (`.github/workflows/ci.yml`): typecheck, test, build; 38 şehrin her biri için verify-levels → verify-respawn → bossbot.
   Yeni şehir eklenince matrise yaz.
 
 ## Yayın

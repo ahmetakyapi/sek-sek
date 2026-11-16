@@ -34,5 +34,8 @@ export const FEATURES: Record<string, { tr: string; en: string }> = {
   artvin: { tr: 'Köy teleferikleri, sarkan halatlar, Çoruh vadisi, Kafkasör Yaylası', en: 'Village cable lines, hanging ropes, the Çoruh valley, the Kafkasör pasture' },
   kars: { tr: 'Taş bina saçakları, kale halatları, buzlu Sarıkamış yamacı, Ani harabeleri', en: 'Stone-building eaves, castle ropes, the icy Sarıkamış slope, the ruins of Ani' },
   bitlis: { tr: 'Dere kenarı taş evler, kale halatları, Ahlat mezar taşları, Nemrut krater gölünde yüzme', en: 'Stone houses by the stream, castle ropes, the Ahlat gravestones, swimming in Nemrut’s crater lake' },
+  giresun: { tr: 'Zeytinlik damları, kale burçları, fındık bahçesinde nitro, sahilde kayıklar', en: 'Zeytinlik rooftops, the castle towers, nitro in the hazel groves, boats on the shore' },
+  tokat: { tr: 'Taşhan, kale halatları, yazma kalıplarının tokmakları, Zile surları', en: 'Taşhan, the castle ropes, the hammering print blocks, the walls of Zile' },
+  denizli: { tr: 'Horozlu meydan, Laodikeia sütunları, kaygan travertenler, Hierapolis tiyatrosu', en: 'The rooster square, the columns of Laodikeia, slippery travertine, the theatre of Hierapolis' },
   agri: { tr: 'Halatlı saray avluları, Meteor Çukuru üstünde teleferik, buzlu yamaç, karşı rüzgâr', en: 'Palace courtyards with ropes, a cable line over the Meteor Crater, an icy slope, a headwind' },
 }

@@ -206,6 +206,24 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Ahlat taşında bir dantel deseni.', 'A lace pattern on Ahlat stone.'],
     ['Krater gölünde buhar tütüyor.', 'Steam rises from the crater lake.'],
   ],
+  giresun: [
+    ['Zeytinlik’te bir pencere açıldı.', 'A window opens in Zeytinlik.'],
+    ['Kalenin burcundan ada görünüyor.', 'The island shows from the castle tower.'],
+    ['Fındık dalları rüzgârda.', 'Hazel branches sway in the wind.'],
+    ['Kayıkçılar dümen kırıyor.', 'The boatmen turn their rudders.'],
+  ],
+  tokat: [
+    ['Taşhan’ın avlusunda çay demleniyor.', 'Tea brews in the Taşhan courtyard.'],
+    ['Kalıp kumaşa indi: tak!', 'The block hits the cloth: thud!'],
+    ['Kalenin taşları serin.', 'The castle stones are cool.'],
+    ['Zile’den geldim, gördüm…', 'I came to Zile, I saw…'],
+  ],
+  denizli: [
+    ['Bir horoz uzun uzun ötüyor.', 'A rooster crows long and loud.'],
+    ['Sütunlar güneşte ısınmış.', 'The columns are warm from the sun.'],
+    ['Travertenden ılık su süzülüyor.', 'Warm water trickles down the travertine.'],
+    ['Tiyatroda bir alkış yankılanıyor.', 'A round of applause echoes in the theatre.'],
+  ],
   agri: [
     ['Sarayın kapısında taş işlemeler.', 'Carved stone at the palace gate.'],
     ['Kaval sesi yamaçtan geliyor.', 'A kaval sounds from the slope.'],

@@ -7,6 +7,7 @@ import { LEVELS } from '@/game/levels'
 import type { CityKey } from '@/game/types'
 import type { CommunityMap, MapSort } from '@/lib/communityMaps'
 import { decodeMap } from '@/lib/customLevel'
+import { thumbColors } from '@/lib/editorKit'
 import { LangProvider, useLang, useT, type Lang } from '@/lib/i18n'
 
 /**
@@ -25,7 +26,7 @@ const THUMB_MIN_W = 100
 
 const cityName = (c: string) => LEVELS.find((l) => l.city === c)?.name ?? c
 
-/** Haritanın kuşbakışı: karo başına bir piksel, şehrin paletiyle (zemin, su, diken, hatıra, bayrak, çıkış) */
+/** Haritanın kuşbakışı: karo başına bir piksel, şehrin paletiyle (lib/editorKit.ts thumbColors) */
 function Thumb({ code, city }: { code: string; city: string }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -42,10 +43,7 @@ function Thumb({ code, city }: { code: string; city: string }) {
     p.sky.forEach((col, i) => sky.addColorStop(i / (p.sky.length - 1), col))
     c.fillStyle = sky
     c.fillRect(0, 0, cv.width, cv.height)
-    const color: Record<string, string> = {
-      '#': p.tile, X: p.tileDark, '>': p.tileDark, '<': p.tileDark, i: p.tileLight, '=': p.plank, '~': p.water[0], I: p.water[2],
-      '^': p.spike[0], v: p.spike[0], S: p.accent, C: '#ffcc66', F: '#e30a17', E: '#ffcc66', P: '#f3f1ff', e: p.enemyGround, f: p.enemyFly,
-    }
+    const color = thumbColors(p)
     r.map.forEach((row, y) => {
       for (let x = 0; x < w; x++) {
         const ch = row[x]

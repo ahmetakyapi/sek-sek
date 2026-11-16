@@ -1,7 +1,7 @@
 import { medalFor } from '@/components/medal'
-import { CHALLENGES } from '@/game/challenges'
+import { CHALLENGES, RAGE_COURSES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
-import { emptyStats } from './extras'
+import { RAGE_RULES, emptyStats, type RageRule } from './extras'
 import type { Save } from './storage'
 
 /**
@@ -32,6 +32,11 @@ const feat = (f: Feat) => (s: Save): [number, number] => [s.feats?.[f] ? 1 : 0, 
 const stat = (k: keyof ReturnType<typeof emptyStats>, goal: number) => (s: Save): [number, number] => [Math.min(goal, (s.stats ?? emptyStats())[k]), goal]
 const chals = (s: Save) => CHALLENGES.filter((c) => s.challenges?.[c.id]).length
 const hard = (d: string) => d === 'Zor' || d === 'Çok Zor'
+/** Sinir Bozucu rekorları (save.rules anahtarı `şehir:mod`) */
+const rageKeys = (s: Save) => Object.keys(s.rules ?? {}).filter((k) => RAGE_RULES.includes(k.split(':')[1] as RageRule))
+/** bir şehirde bitirilen en çok Sinir Bozucu mod */
+const rageBestCity = (s: Save) => Math.max(0, ...Object.values(rageKeys(s).reduce<Record<string, number>>((m, k) => ({ ...m, [k.split(':')[0]]: (m[k.split(':')[0]] ?? 0) + 1 }), {})))
+const courses = (s: Save) => RAGE_COURSES.filter((c) => s.challenges?.[c.id]).length
 const N = LEVELS.length
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -70,6 +75,12 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ghost', name: 'Hayalet Avcısı', text: 'Skor tablosundan bir yolcunun hayaletini geç.', icon: '◌', progress: feat('ghostBeaten') },
   { id: 'challenge3', name: 'Mücadeleci', text: 'Üç mücadele haritasını bitir.', icon: '▲', progress: (s) => [Math.min(3, chals(s)), 3] },
   { id: 'challengeAll', name: 'Hepsi Bitti', text: 'Bütün mücadele haritalarını bitir.', icon: '▲', progress: (s) => [chals(s), CHALLENGES.length] },
+  // Sinir Bozucu: modlar ve Öfke Parkurları
+  { id: 'rage1', name: 'Sabrın Sınavı', text: 'Bir Sinir Bozucu modu bitir.', icon: '✸', progress: (s) => [Math.min(1, rageKeys(s).length), 1] },
+  { id: 'rage25', name: 'Öfke Kontrolü', text: 'Yirmi beş Sinir Bozucu rekoru yaz.', icon: '✸', progress: (s) => [Math.min(25, rageKeys(s).length), 25] },
+  { id: 'rageCity', name: 'Taş Gibi Sabır', text: 'Bir şehirde on sekiz Sinir Bozucu modun hepsini bitir.', icon: '✸', progress: (s) => [Math.min(RAGE_RULES.length, rageBestCity(s)), RAGE_RULES.length] },
+  { id: 'course3', name: 'Parkur Avcısı', text: 'Üç Öfke Parkuru bitir.', icon: '⚑', progress: (s) => [Math.min(3, courses(s)), 3] },
+  { id: 'courseAll', name: 'Öfkenin Efendisi', text: 'Bütün Öfke Parkurlarını bitir.', icon: '⚑', progress: (s) => [courses(s), RAGE_COURSES.length] },
   // sayaçlar
   { id: 'jumps', name: 'Sek Sek', text: 'Bin kez zıpla.', icon: '⤒', progress: stat('jumps', 1000) },
   { id: 'dashes', name: 'Rüzgâr Gibi', text: 'Beş yüz dash at.', icon: '➤', progress: stat('dashes', 500) },

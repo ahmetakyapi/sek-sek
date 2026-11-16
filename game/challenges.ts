@@ -1,4 +1,5 @@
 import { LEVELS } from './levels'
+import { RAGE_COURSES } from './rageCourses'
 import type { LevelDef } from './types'
 
 /**
@@ -16,6 +17,8 @@ export interface Challenge {
   to: number
   /** çözücünün en hızlı süresi (sn, verify-challenges yazdırır): madalyalar buna göre */
   par: number
+  /** elle çizilmiş harita (Öfke Parkurları, game/rageCourses.ts): varsa şehirden kesilmez, `level` yalnız görünüşü verir */
+  map?: string[]
 }
 
 export const CHALLENGES: Challenge[] = [
@@ -35,8 +38,16 @@ export const CHALLENGES: Challenge[] = [
 /** Kesitte yalnız yol kalır: toplananlar, konuşanlar, öteki bayraklar ve final işaretleri boşalır */
 const STRIP = /[PEFC$!n?@&QGK]/g
 
+/** Bütün mücadeleler: şehirden kesilenler ve Öfke Parkurları (kimlikle arama, skor ve hile önleme bunu kullanır) */
+export const ALL_CHALLENGES: Challenge[] = [...CHALLENGES, ...RAGE_COURSES]
+export { RAGE_COURSES }
+
 export function challengeLevel(c: Challenge): LevelDef {
   const l = LEVELS.find((x) => x.id === c.level)!
+  if (c.map) {
+    const medals: [number, number, number] = [Math.ceil(c.par * 1.5 + 3), Math.ceil(c.par * 2.2 + 6), Math.ceil(c.par * 3.2 + 10)]
+    return { ...l, id: `mucadele-${c.id}`, name: c.name, map: [...c.map], medals, hints: [], npcs: [], finaleAt: undefined, wind: undefined }
+  }
   const door = Math.min(...l.map.map((r) => (r.includes('@') ? r.indexOf('@') : Infinity)))
   const flags: [number, number][] = []
   for (let x = 0; x < door; x++)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
-import { PHYS, World, restore, snapshot } from '../game/sim'
+import { NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -158,5 +158,106 @@ describe('co-op eşi', () => {
     w.started = true
     two(w, 1.5, {}, { right: true })
     expect(w.complete).toBe(true)
+  })
+})
+
+describe('zehirli su', () => {
+  const map = ['            ', '            ', ' P      ^^  ', '###  #######', '###^^#######', '############']
+  it('yalnız kapalı çukurun dibindeki diken zehirli suya döner; düz yoldaki diken kalır', () => {
+    const w = new World({ ...LEVELS[0], map, wind: 0, poison: true })
+    expect([...w.poison].sort((a, b) => a - b)).toEqual([4 * w.cols + 3, 4 * w.cols + 4])
+    // zeminin üstündeki diken çukur değil (yanları boş): diken kalır
+    expect(w.poison.has(2 * w.cols + 8)).toBe(false)
+    expect(new World({ ...LEVELS[0], map, wind: 0 }).poison.size).toBe(0)
+  })
+  it('zehirli suya düşen ölür', () => {
+    const w = new World({ ...LEVELS[0], map, wind: 0, poison: true })
+    step(w, 0.3)
+    step(w, 0.6, { right: true })
+    expect(w.deaths).toBeGreaterThan(0)
+  })
+})
+
+describe('nitro tüpü', () => {
+  const map = ['                              ', '                              ', ' P  T                         ', '##############################']
+  it('alınınca koşu hızlanır, süresi bitince normale döner, tüp yeniden dolar', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    step(w, 0.6, { right: true })
+    expect(w.player.nitro).toBeGreaterThan(0)
+    expect(w.nitros[0].active).toBe(false)
+    step(w, 0.5, { right: true })
+    expect(w.player.vx).toBeGreaterThan(PHYS.run * 1.3)
+    step(w, NITRO.time, { right: true })
+    expect(w.player.nitro).toBe(0)
+    expect(Math.abs(w.player.vx)).toBeLessThanOrEqual(PHYS.run + 1)
+    step(w, NITRO.recharge)
+    expect(w.nitros[0].active).toBe(true)
+  })
+  it('anlık görüntü nitroyu ve tüpü taşır (çözücü geri sarar)', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    const s0 = snapshot(w)
+    step(w, 0.6, { right: true })
+    expect(w.player.nitro).toBeGreaterThan(0)
+    restore(w, s0)
+    expect(w.player.nitro).toBe(0)
+    expect(w.nitros[0].active).toBe(true)
+  })
+})
+
+describe('zor mod fiziği', () => {
+  const map = ['                    ', '                    ', ' P                  ', '####################', '####################']
+  it('Kaygan Dünya: bırakınca buzdaki gibi uzun kayar', () => {
+    const slide = (slippery: boolean) => {
+      const w = new World({ ...LEVELS[0], map, wind: 0, slippery })
+      step(w, 0.3)
+      step(w, 0.8, { right: true })
+      const x = w.player.x
+      step(w, 1)
+      return w.player.x - x
+    }
+    expect(slide(true)).toBeGreaterThan(slide(false) + 8)
+  })
+  it('Çöken Dünya: yüzeyler çatlak taşa döner, başlangıcın çevresi sağlam kalır', () => {
+    const w = new World({ ...LEVELS[0], map, wind: 0, crumbleAll: true })
+    expect(w.tile(1, 3)).toBe(1)
+    expect(w.tile(12, 3)).toBe(5)
+    expect(w.tile(12, 4)).toBe(1)
+  })
+})
+
+describe('zamanlama mekanikleri', () => {
+  it('ritim blokları saatle sırayla katılaşır; içindeyken belirecek blok oyuncu çıkana dek boş kalır', () => {
+    const map = ['            ', '            ', ' P   {}     ', '############']
+    const w = mk(map)
+    expect(w.isSolid(5, 2)).toBe(true)
+    expect(w.isSolid(6, 2)).toBe(false)
+    w.clock = RHYTHM.half + 0.01
+    expect(w.isSolid(5, 2)).toBe(false)
+    expect(w.isSolid(6, 2)).toBe(true)
+    // oyuncu `}` karosunun içindeyken takım değişir: sıkışmaz
+    const v = mk(map)
+    step(v, 0.2)
+    v.player.x = 6 * T + 1
+    v.player.y = 2 * T + 1
+    v.clock = RHYTHM.half - 0.005
+    step(v, 0.02)
+    expect(v.rhythmHold.size).toBeGreaterThan(0)
+    expect(v.isSolid(6, 2)).toBe(false)
+  })
+  it('yaya inerken zıplama basılıysa daha yükseğe seker', () => {
+    const map = ['          ', '          ', '          ', '          ', ' P        ', '          ', '          ', ' S        ', '##########']
+    const peak = (perfect: boolean) => {
+      const w = mk(map)
+      let top = Infinity
+      for (let i = 0; i < 240; i++) {
+        const nearSpring = w.player.vy > 0 && w.player.y > 6 * T - 4
+        w.step(1 / 120, { ...emptyInput(), jump: perfect && nearSpring, jumpPressed: perfect && nearSpring })
+        top = Math.min(top, w.player.y)
+      }
+      return top
+    }
+    expect(peak(false) - peak(true)).toBeGreaterThan(T)
   })
 })

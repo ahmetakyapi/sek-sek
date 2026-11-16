@@ -64,6 +64,10 @@ const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   kars: { mat: 'ashlar', cap: 'snow' },
   bitlis: { mat: 'ashlar', cap: 'stone' },
   agri: { mat: 'rock', cap: 'snow' },
+  giresun: { mat: 'cyclop', cap: 'grass' },
+  tokat: { mat: 'brick', cap: 'stone' },
+  // Pamukkale: katman katman traverten, üstü bembeyaz kabuk
+  denizli: { mat: 'strata', cap: 'snow' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 
@@ -191,6 +195,8 @@ export class TerrainHD {
     private readonly city: CityKey,
     /** bir dünya pikseli kaç ekran pikseli */
     private readonly scale: number,
+    /** Görünmez Dikenler (zor mod): dikenler önbelleğe çizilmez */
+    private readonly hideSpikes = false,
   ) {
     this.rows = w.rows + BELOW
     const base = (tx: number, ty: number) => {
@@ -590,7 +596,7 @@ export class TerrainHD {
         if (w.tile(tx, ty) !== WET) continue
         const x = tx * T
         const y = ty * T
-        c.fillStyle = 'rgba(90,150,200,0.26)'
+        c.fillStyle = 'rgba(60,150,190,0.34)'
         c.fillRect(x, y, T, T)
         if (!solid(tx, ty - 1)) {
           // damla (üstteki su tabakasını örtü çizer)
@@ -714,7 +720,7 @@ export class TerrainHD {
         const x = tx * T
         const y = ty * T
         if (t === ONEWAY) this.plank(c, x, y, w.tile(tx - 1, ty) !== ONEWAY, w.tile(tx + 1, ty) !== ONEWAY, s.plank, tx)
-        else if (t === SPIKE_UP || t === SPIKE_DOWN) this.spikes(c, x, y, t === SPIKE_UP, s.spike, tx)
+        else if ((t === SPIKE_UP || t === SPIKE_DOWN) && !this.hideSpikes) this.spikes(c, x, y, t === SPIKE_UP, s.spike, tx)
         else if (t === TURRET) {
           c.fillStyle = s.tileDark
           c.strokeStyle = INK
@@ -1126,8 +1132,11 @@ export class TerrainHD {
     c.stroke()
     if (kind === WET) {
       // ıslak taş: örtünün üstünde su tabakası ve parıltılar (kaygan olduğu okunmalı)
-      c.fillStyle = 'rgba(150,210,250,0.62)'
-      c.fillRect(x0, y + 0.5, x1 - x0, 2.1)
+      // koyu turkuaz su tabakası, altında ince koyu kenar: beyaz travertende (Denizli) ve açık taşta da seçilsin
+      c.fillStyle = 'rgba(40,150,190,0.78)'
+      c.fillRect(x0, y + 0.5, x1 - x0, 2.4)
+      c.fillStyle = 'rgba(20,80,110,0.45)'
+      c.fillRect(x0, y + 2.9, x1 - x0, 0.6)
       c.strokeStyle = 'rgba(255,255,255,0.85)'
       c.lineWidth = 0.7
       c.beginPath()

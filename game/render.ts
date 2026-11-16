@@ -7,10 +7,10 @@ import { drawBoss } from './bossDraw'
 import { INK, LOOKS, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
-import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
+import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
-import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
+import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, NITRO, PHYS, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -28,6 +28,8 @@ interface Particle {
 /** dash izi: kopyalar arası dünya pikseli, ömür (sn), en çok kopya */
 /** yüzülen su: açık turkuaz (yüzey, derin, dalga) — öldüren suyla karışmasın */
 const SWIM_COLORS = ['#5cc4cf', '#3fa9b8', '#a8eef2']
+/** zehirli su (kükürtlü çukur): asit yeşili, koyu dip, açık köpük; öldüren mavi su ve yüzülen turkuazla karışmasın */
+const POISON_COLORS = ['#a6e04a', '#4c8a2e', '#eaff9e']
 
 const GHOST_GAP = 9
 const GHOST_LIFE = 0.22
@@ -74,10 +76,14 @@ export class Renderer {
   private ghosts: Ghost[] = []
   /** son hız çizgisinin bırakıldığı yer (dash sürerken) ve sıra sayacı */
   private streakAt: [number, number] | null = null
+  /** son nitro alev kıvılcımının çıktığı yer */
+  private nitroAt: [number, number] | null = null
   private streakN = 0
   private ambient: Ambient[] = []
   private shake = 0
   private flash = 0
+  /** son dash itmesi: başladığı an ve yönü (kickOffset) */
+  private kick = { t: -1, dx: 0, dy: 0 }
   scale = 4
   viewW = 320
   viewH = 180
@@ -94,7 +100,20 @@ export class Renderer {
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
+  /** boss'u çizilen şehir (özel haritada başka şehrin boss'u olabilir) */
+  bossCity: CityKey = 'istanbul'
   shakeScale = 1
+  /** Karanlık Yol (zor mod): karakterin çevresindeki küçük ışığın ötesi karanlık */
+  dark = false
+  /** Görünmez Dikenler (zor mod): dikenler zemin önbelleğine çizilmez */
+  hiddenSpikes = false
+  /** Görünmez Dikenler: düşülen yerler (dünya pikseli) */
+  private deathMarks: { x: number; y: number }[] = []
+  private marksFor = ''
+  /** Hayalet Zemin (zor mod): oyuncunun çevresi dışı sisle örtülür */
+  ghostGround = false
+  /** Dar Kadraj (zor mod): çizim ölçeği bu katla büyür (kamera yaklaşır) */
+  zoom = 1
   /** fotoğraf kipi: kamera oyuncuyu bırakır, oyuncunun kaydırdığı yere bakar (dünya pikseli) */
   photo: { x: number; y: number } | null = null
   /** sahnedeki yazıların dili */
@@ -138,7 +157,7 @@ export class Renderer {
     // dikeyde ~13 tile genişlik, yatayda ~15 tile yükseklik
     const target = portrait ? Math.min(devW / (13 * T), devH / (20 * T)) : Math.min(devW / (20 * T), devH / (13 * T))
     // yatayda en yakın tam sayı: karakter masaüstünde de okunur kalsın
-    this.scale = Math.max(1, portrait ? Math.floor(target) : Math.round(target))
+    this.scale = Math.max(1, portrait ? Math.floor(target * this.zoom) : Math.round(target * this.zoom))
     // bir piksel fazla: kamera kesirli kayarken kenarda boşluk kalmasın
     this.viewW = Math.ceil(devW / this.scale) + 1
     this.viewH = Math.ceil(devH / this.scale) + 1
@@ -192,6 +211,10 @@ export class Renderer {
 
   setLevel(world: World) {
     this.city = world.level.city
+    // düşüş işaretleri aynı bölümde kalır (Tek Can'da baştan başlansa da öğrenilen yer unutulmaz)
+    if (this.marksFor !== world.level.id) this.deathMarks = []
+    this.marksFor = world.level.id
+    this.bossCity = world.level.bossOf ?? world.level.city
     this.layers = buildLayers(this.city)
     this.world = world
     this.terrain = null
@@ -268,8 +291,9 @@ export class Renderer {
         break
       }
       case 'dash': {
-        this.flash = 0.06
-        this.shake = Math.max(this.shake, 1.5)
+        // kalkış: kadraj dash yönünün tersine yumuşakça yaslanır (titreme yok), soluk bir parıltı
+        this.flash = Math.max(this.flash, 0.04)
+        this.kick = { t: this.t, dx: p.dashDir[0], dy: p.dashDir[1] }
         // kalkış: atkının renginde kıvılcım halkası geriye doğru açılır; yerdeyse ayak altından toz kalkar
         const cx = p.x + p.w / 2
         const cy = p.y + p.h / 2
@@ -286,6 +310,8 @@ export class Renderer {
         break
       }
       case 'death':
+        // Görünmez Dikenler: düşülen yer kırmızı çarpıyla işaretlenir (bölüm boyunca)
+        if (this.hiddenSpikes && this.deathMarks.length < 60) this.deathMarks.push({ x: e.x, y: e.y })
         this.shake = 6
         this.burst(e.x, e.y, 22, '#d6403a', 120, 2)
         this.burst(e.x, e.y, 12, s.accent, 90, 2)
@@ -360,6 +386,18 @@ export class Renderer {
         this.wallChain = 0
         break
       case 'crumble':
+        break
+      case 'perfect':
+        // tam zamanında yay: altın kıvılcım ve yazı
+        this.burst(p.x + p.w / 2, p.y + p.h, 14, '#ffd36a', 110, 1)
+        this.pop(p.x + p.w / 2, p.y - 6, this.lang === 'en' ? 'Perfect!' : 'Tam Zamanında!', '#ffd36a')
+        break
+      case 'nitro':
+        // nitro tüpü alındı: turuncu kıvılcım, yazı; alev izi koşu boyunca drawParticles öncesinde eklenir
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 16, '#ff9a3c', 100, 1)
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, 8, '#ffe27a', 70, 1)
+        this.pop(p.x + p.w / 2, p.y - 6, 'Nitro!', '#ff9a3c')
+        this.kick = { t: this.t, dx: p.facing, dy: 0 }
         break
       case 'crystal':
         // dash halkasından geçildi: halkanın renginde kıvılcım, dash'in yenilendiği yazıyla da okunur
@@ -485,7 +523,11 @@ export class Renderer {
     }
     this.shake = Math.max(0, this.shake - dt * 18)
     // küçük ekranda büyütme oranı yüksek: aynı sarsıntı ekranda daha büyük görünür, orana göre küçülür
-    const [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * Math.min(1, this.viewW / 420))
+    const small = Math.min(1, this.viewW / 420)
+    let [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * small)
+    const kk = kickOffset(this.t - this.kick.t) * CAM.kick * this.shakeScale * small
+    sx -= this.kick.dx * kk
+    sy -= this.kick.dy * kk
     // kamera kesirli kayar: düşük çözünürlüklü katmanlar tam piksele çizilir, ekrana basılırken kesir kadar ötelenir
     const cx = Math.floor(this.camX + sx)
     const cy = Math.floor(this.camY + sy)
@@ -579,10 +621,11 @@ export class Renderer {
     // zemin ve duvarlar: ekran çözünürlüğünde, elle çizilmiş
     if (!this.terrain || this.world !== w) {
       this.world = w
-      this.terrain = new TerrainHD(w, this.city, this.scale)
+      this.terrain = new TerrainHD(w, this.city, this.scale, this.hiddenSpikes)
       this.terrain.prime(hdX, hdY, this.canvas.width, this.canvas.height)
     }
     this.terrain.draw(c, hdX, hdY, this.canvas.width, this.canvas.height)
+    if (this.ghostGround) this.drawFog(w, hdX, hdY)
 
     // dünya, ön: su, hareketli nesneler, canlılar, parçacıklar
     f.clearRect(0, 0, this.viewW, this.viewH)
@@ -597,14 +640,23 @@ export class Renderer {
     this.drawPlayer(w, dt)
     this.drawPartner(w)
     this.drawParticles(f, dt)
+    for (const m of this.deathMarks) {
+      const x = Math.round(m.x)
+      const y = Math.round(m.y)
+      for (let k = -3; k <= 3; k++) {
+        rect(f, x + k, y + k, 1, 1, '#e5484d')
+        rect(f, x + k, y - k, 1, 1, '#e5484d')
+      }
+    }
     f.restore()
 
     // fırtına / rüzgâr çizgileri önde
     if (this.city === 'bayburt' || w.level.wind) this.drawWind(f, w)
 
     if (this.flash > 0) {
+      // parıltı birden sönmez, kısa sürede solar (art arda dash'te göz kırpması gibi yanıp sönmesin)
+      f.fillStyle = `rgba(255,255,255,${Math.min(0.12, this.flash * 1.2).toFixed(3)})`
       this.flash -= dt
-      f.fillStyle = 'rgba(255,255,255,0.12)'
       f.fillRect(0, 0, this.viewW, this.viewH)
     }
 
@@ -629,6 +681,7 @@ export class Renderer {
     this.drawBossHD(w, hdX, hdY)
     this.drawHeroes(hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
+    if (this.dark) this.drawDarkness(w, hdX, hdY)
     this.drawLabels(w, hdX, hdY)
     unblend()
   }
@@ -1118,6 +1171,78 @@ export class Renderer {
         rect(b, x + 15, bot - 12, 10, 3, '#e8b86a')
         rect(b, x + 16, bot - 14, 7, 2, '#a8542a')
         rect(b, x + 17, bot - 14, 2, 1, '#d88a54')
+        break
+      }
+      case 'giresun': {
+        // kiraz tezgâhı: sepet sepet parlak kiraz, kefede yaprak; yeşil beyaz çizgili tente
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4a32')
+        rect(b, x - 4, bot - 8, 26, 1, '#8e6a4a')
+        for (const dx of [-3, 6, 15]) {
+          rect(b, x + dx, bot - 13, 8, 5, '#b8884e')
+          rect(b, x + dx, bot - 11, 8, 1, '#8a6034')
+          for (let i = 0; i < 4; i++) rect(b, x + dx + i * 2, bot - 15 + (i % 2), 2, 2, i % 2 ? '#a81e30' : '#d8283c')
+          rect(b, x + dx + 1, bot - 15, 1, 1, '#ff9aa4')
+          rect(b, x + dx + 5, bot - 16, 2, 1, '#5a9a3a')
+        }
+        rect(b, x - 6, bot - 28, 1, 20, '#5a3c26')
+        rect(b, x + 25, bot - 28, 1, 20, '#5a3c26')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 31, 4, 3, i % 2 ? '#f4f0e6' : '#3e8a4a')
+        for (let i = 0; i < 8; i++) rect(b, x - 6 + i * 4, bot - 28, 2, 1, i % 2 ? '#f4f0e6' : '#3e8a4a')
+        break
+      }
+      case 'tokat': {
+        // yazma tezgâhı: ipte köşesinden asılı yazmalar sallanır, tezgâhta katlı yığın ve tahta kalıp
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4a32')
+        for (const [dy, col] of [[0, '#f4ead8'], [-2, '#2e4a9a'], [-4, '#b8302a']] as const) rect(b, x - 2, bot - 10 + dy, 14, 2, col)
+        rect(b, x + 1, bot - 14, 2, 1, '#b8302a')
+        rect(b, x + 7, bot - 12, 2, 1, '#f4ead8')
+        rect(b, x + 14, bot - 12, 7, 4, '#a8763e')
+        rect(b, x + 14, bot - 9, 7, 1, '#2e4a9a')
+        rect(b, x + 16, bot - 14, 3, 2, '#8a5a2e')
+        rect(b, x - 6, bot - 31, 1, 31, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 31, '#5a3c26')
+        rect(b, x - 6, bot - 31, 32, 1, '#5a3c26')
+        for (let i = 0; i < 3; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.5 + i * 1.3) * 0.8)
+          const cx = x + 1 + i * 9 + sw
+          const ground = i === 1 ? '#2e4a9a' : '#f4ead8'
+          const print = i === 1 ? '#f4ead8' : '#b8302a'
+          // köşesinden asılı kare yemeni: baklava
+          for (let k = 0; k < 4; k++) rect(b, cx - k, bot - 30 + k, k * 2 + 1, 1, ground)
+          for (let k = 0; k < 4; k++) rect(b, cx - 3 + k, bot - 26 + k, 7 - k * 2, 1, ground)
+          rect(b, cx, bot - 27, 1, 1, print)
+          rect(b, cx - 2, bot - 26, 1, 1, print)
+          rect(b, cx + 2, bot - 26, 1, 1, print)
+          rect(b, cx, bot - 25, 1, 1, print)
+          rect(b, cx, bot - 22, 1, 2, '#e8d8b0')
+          rect(b, cx - 2, bot - 23, 1, 2, '#e8d8b0')
+          rect(b, cx + 2, bot - 23, 1, 2, '#e8d8b0')
+        }
+        break
+      }
+      case 'denizli': {
+        // havlu tezgâhı: üst üste katlı çizgili havlular, askıda sallanan saçaklı peştamallar
+        rect(b, x - 4, bot - 8, 26, 8, '#7a5a3e')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a7a5a')
+        for (const [dy, col, band] of [[0, '#9ad0e8', '#2e6aa0'], [-3, '#fbfaf4', '#d0402a'], [-6, '#f2d27a', '#c8742a']] as const) {
+          rect(b, x - 2, bot - 11 + dy, 13, 3, col)
+          rect(b, x + 1, bot - 11 + dy, 1, 3, band)
+          rect(b, x + 8, bot - 11 + dy, 1, 3, band)
+        }
+        rect(b, x + 13, bot - 11, 8, 3, '#fbfaf4')
+        rect(b, x + 13, bot - 10, 8, 1, '#3a8ac8')
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x - 6, bot - 31, 32, 1, '#5a3c26')
+        for (let i = 0; i < 3; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.3 + i * 1.6) * 0.7)
+          const tx = x - 3 + i * 10 + sw
+          const col = ['#fbfaf4', '#5cc8d4', '#e86a5a'][i]
+          rect(b, tx, bot - 30, 7, 11, col)
+          rect(b, tx, bot - 30, 7, 1, 'rgba(255,255,255,0.6)')
+          for (const dy of [-27, -24]) rect(b, tx, bot + dy, 7, 1, i === 0 ? '#3a8ac8' : '#f4f0e6')
+          for (let k = 0; k < 4; k++) rect(b, tx + k * 2, bot - 19, 1, 2, '#e8e0d0')
+        }
         break
       }
       case 'agri': {
@@ -1736,6 +1861,62 @@ export class Renderer {
         for (const [dx, h] of [[3, 2], [4, 3], [12, 2]] as const) rect(b, x + dx, bot - 2 - h, 1, h, '#6a7a3a')
         break
       }
+      case 'giresun': {
+        // karaya çekilmiş Karadeniz kayığı: kalkık burun, boyalı tekne, takozların üstünde; yanında kürek
+        rect(b, x + 2, bot - 3, 3, 3, '#5a3c26')
+        rect(b, x + 13, bot - 3, 3, 3, '#5a3c26')
+        rect(b, x - 2, bot - 13, 2, 4, '#c8402e')
+        rect(b, x + 18, bot - 12, 2, 3, '#c8402e')
+        for (let i = 0; i < 7; i++) {
+          const ins = Math.round(i * 0.4 + (i > 4 ? i - 4 : 0))
+          rect(b, x - 1 + ins, bot - 10 + i, 21 - ins * 2, 1, i === 0 ? '#f4efe2' : i === 2 ? '#f4efe2' : i === 6 ? '#2e2620' : '#2e6aa0')
+        }
+        rect(b, x + 1, bot - 9, 17, 1, '#4a3a2e')
+        rect(b, x + 3, bot - 7, 1, 1, '#f2c14e')
+        rect(b, x + 22, bot - 16, 1, 16, '#8a6a46')
+        rect(b, x + 21, bot - 4, 3, 4, '#a8885a')
+        break
+      }
+      case 'tokat': {
+        // Saat Kulesi: kesme taş gövde, dört yüzlü saat, kurşun külah; ibreleri saate bağlı döner
+        rect(b, x + 3, bot - 2, 10, 2, '#7a6a5a')
+        rect(b, x + 4, bot - 22, 8, 20, '#c8b49a')
+        rect(b, x + 4, bot - 22, 2, 20, '#e0d0b8')
+        rect(b, x + 10, bot - 22, 2, 20, '#9a8670')
+        for (const dy of [-8, -15]) rect(b, x + 4, bot + dy, 8, 1, '#a8927a')
+        rect(b, x + 7, bot - 6, 2, 4, '#4a3a3e')
+        rect(b, x + 3, bot - 23, 10, 1, '#8a7660')
+        for (let i = 0; i < 6; i++) rect(b, x + 4 + i * 0.6, bot - 24 - i, 8 - i * 1.2, 1, '#5a6070')
+        rect(b, x + 7, bot - 31, 2, 2, '#f2c14e')
+        disc(b, x + 8, bot - 19, 2, '#f4ead8')
+        const a = this.t * 0.6
+        rect(b, x + 8 + Math.round(Math.cos(a) * 1.4), bot - 19 + Math.round(Math.sin(a) * 1.4), 1, 1, '#2a2420')
+        rect(b, x + 8, bot - 19, 1, 1, '#2a2420')
+        break
+      }
+      case 'denizli': {
+        // Denizli horozu heykeli: uzun bacaklı, iri ibikli, orak kuyruklu; taş kaidede
+        rect(b, x + 1, bot - 5, 14, 5, '#d8d0bc')
+        rect(b, x + 1, bot - 5, 14, 1, '#f4eee0')
+        rect(b, x + 1, bot - 1, 14, 1, '#a89e88')
+        rect(b, x + 7, bot - 10, 1, 5, '#d8a240')
+        rect(b, x + 10, bot - 10, 1, 5, '#d8a240')
+        rect(b, x + 5, bot - 16, 8, 6, '#6a2e22')
+        rect(b, x + 6, bot - 15, 5, 2, '#8a3a22')
+        rect(b, x + 1, bot - 22, 2, 8, '#1e2e2c')
+        rect(b, x + 3, bot - 24, 3, 2, '#1e2e2c')
+        rect(b, x + 2, bot - 23, 1, 6, '#2a4a42')
+        rect(b, x + 3, bot - 17, 2, 3, '#1e2e2c')
+        rect(b, x + 11, bot - 21, 3, 6, '#c8642a')
+        rect(b, x + 11, bot - 24, 4, 3, '#c8642a')
+        rect(b, x + 11, bot - 26, 1, 2, '#e2262a')
+        rect(b, x + 13, bot - 27, 1, 3, '#e2262a')
+        rect(b, x + 12, bot - 25, 3, 1, '#e2262a')
+        rect(b, x + 15, bot - 23, 2, 1, '#f2c04a')
+        rect(b, x + 14, bot - 21, 1, 2, '#e2262a')
+        rect(b, x + 13, bot - 23, 1, 1, '#1a1410')
+        break
+      }
       case 'agri': {
         // dokuma tezgâhı: iki direk arasında yarısı dokunmuş kilim, gergin çözgü ipleri
         rect(b, x + 1, bot - 26, 2, 26, '#6a4a32')
@@ -2115,6 +2296,35 @@ export class Renderer {
           rect(b, x, y + 6, T, 2, '#2e2a38')
           rect(b, x, y + 6, T, 1, '#6a6674')
         }
+        if (t === RHYTHM_A || t === RHYTHM_B) {
+          // ritim bloğu: kiremit (önce) ve turkuaz (sonra) takımlar; kaybolmadan önce yanıp söner, belirmeden önce
+          // kesik çerçevesi dolmaya başlar (dörtte bir vuruş). Hepsi saatten: her Hz'de aynı
+          const on = w.rhythmOn(t)
+          const left = RHYTHM.half - (w.clock % RHYTHM.half)
+          const col = t === RHYTHM_A ? '#ff9a7a' : '#5ad6c6'
+          const deep = t === RHYTHM_A ? '#b8503a' : '#2a8a7e'
+          if (on) {
+            const blink = left < RHYTHM.warn && Math.floor(left * 12) % 2 === 0
+            b.globalAlpha = blink ? 0.45 : 1
+            rect(b, x, y, T, T, deep)
+            rect(b, x + 1, y + 1, T - 2, T - 2, col)
+            rect(b, x + 1, y + 1, T - 2, 1, 'rgba(255,255,255,0.5)')
+            rect(b, x + 5, y + 5, 6, 6, deep)
+            // vuruş göstergesi: ortadaki kare kalan süreyle küçülür
+            const k = Math.max(0, Math.round((left / RHYTHM.half) * 4))
+            rect(b, x + 8 - k, y + 8 - k, k * 2, k * 2, 'rgba(255,255,255,0.55)')
+            b.globalAlpha = 1
+          } else {
+            const soon = left < RHYTHM.warn
+            for (let i = 0; i < T; i += 4) {
+              rect(b, x + i, y, 2, 1, col)
+              rect(b, x + i, y + T - 1, 2, 1, col)
+              rect(b, x, y + i, 1, 2, col)
+              rect(b, x + T - 1, y + i, 1, 2, col)
+            }
+            if (soon) rect(b, x + 2, y + 2, T - 4, T - 4, t === RHYTHM_A ? 'rgba(255,154,122,0.35)' : 'rgba(90,214,198,0.35)')
+          }
+        }
         if (t === BLOCK_A || t === BLOCK_B) {
           const solid = t === BLOCK_A ? !w.switchOn : w.switchOn
           const skin = SWITCH_SKIN[this.city]
@@ -2202,6 +2412,11 @@ export class Renderer {
         const surface = depth === 0
         const x = tx * T
         const y = ty * T
+        if (w.poison.has(ty * w.cols + tx)) {
+          this.drawPoison(b, x, y, tx, surface)
+          depth++
+          continue
+        }
         rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), pal[ty % 2 ? 1 : 0])
         // derinlik: aşağı indikçe koyulaşır
         const dk = Math.min(0.42, depth * 0.11)
@@ -2235,6 +2450,46 @@ export class Renderer {
       }
     }
     void cy
+  }
+
+  /**
+   * Zehirli su karosu: koyu, bulanık yeşil gövde; parlayan köpüklü yüzey; dipten yükselip yüzeyde patlayan kabarcıklar;
+   * üstte soluk buhar. Çimenle karışmasın diye gövde koyu ve mor gölgeli, yüzey kıvrak. Her şey saate bağlı.
+   */
+  private drawPoison(b: Ctx, x: number, y: number, tx: number, surface: boolean) {
+    const top = surface ? 5 : 0
+    rect(b, x, y + top, T, T - top, POISON_COLORS[1])
+    rect(b, x, y + top + 5, T, T - top - 5, 'rgba(40,20,50,0.45)')
+    rect(b, x, y + T - 3, T, 3, 'rgba(30,12,40,0.4)')
+    if (!surface) return
+    for (let i = 0; i < 16; i++) {
+      const h = Math.round(Math.sin(this.t * 2.4 + (x + i) * 0.45) * 1.2)
+      rect(b, x + i, y + 5 + h, 1, 2, POISON_COLORS[0])
+      if (h < 0) rect(b, x + i, y + 5 + h, 1, 1, POISON_COLORS[2])
+    }
+    // kabarcıklar: dipten yükselir, yüzeye varınca patlar (karoya göre ayrı faz)
+    for (let k = 0; k < 3; k++) {
+      const ph = (this.t * (0.6 + k * 0.22) + tx * 0.37 + k * 0.33) % 1
+      const bx = x + 2 + ((tx * 5 + k * 5) % 11)
+      if (ph < 0.82) {
+        const by = Math.round(y + 14 - (ph / 0.82) * 8)
+        const r = k === 0 ? 3 : 2
+        rect(b, bx, by, r, r, POISON_COLORS[0])
+        rect(b, bx, by, 1, 1, POISON_COLORS[2])
+      } else {
+        // yüzeyde patlama: sıçrayan damlalar
+        const up = Math.round((ph - 0.82) * 30)
+        rect(b, bx - 1, y + 4 - up, 1, 1, POISON_COLORS[2])
+        rect(b, bx + 2, y + 4 - up, 1, 1, POISON_COLORS[2])
+        rect(b, bx, y + 5, 2, 1, POISON_COLORS[2])
+      }
+    }
+    // zehir buharı: yükselip solar
+    for (let k = 0; k < 2; k++) {
+      const vap = (this.t * 0.45 + tx * 0.29 + k * 0.5) % 1
+      const vx = x + ((tx * 3 + k * 7) % 12) + Math.round(Math.sin(this.t + tx + k) * 1.5)
+      rect(b, vx, Math.round(y + 3 - vap * 14), 3, 2, `rgba(170,230,90,${(0.4 * (1 - vap)).toFixed(2)})`)
+    }
   }
 
   private drawEntities(b: Ctx, w: World) {
@@ -2335,9 +2590,17 @@ export class Renderer {
         rect(b, px - 2, py - 2, 2, 1, 'rgba(255,255,255,0.7)')
         continue
       }
-      rect(b, pr.x, pr.y + 1, 6, 1, '#d8c8a0')
-      rect(b, pr.vx > 0 ? pr.x + 5 : pr.x, pr.y, 1, 3, '#9aa3b5')
-      rect(b, pr.vx > 0 ? pr.x : pr.x + 5, pr.y, 1, 3, '#c8553d')
+      // ok: koyu mürekkep hat, açık gövde, kırmızı uç ve arkasında kısa iz; açık gökte (Muğla, Denizli) de seçilsin
+      const x = Math.round(pr.x)
+      const y = Math.round(pr.y)
+      const f = pr.vx > 0 ? 1 : -1
+      const tail = f > 0 ? x - 6 : x + 6
+      rect(b, Math.min(tail, x), y + 1, 6, 1, 'rgba(255,255,255,0.35)')
+      rect(b, x - 1, y, 8, 3, '#1a1220')
+      rect(b, x, y + 1, 6, 1, '#f4e6c0')
+      rect(b, f > 0 ? x + 5 : x - 1, y - 1, 2, 5, '#1a1220')
+      rect(b, f > 0 ? x + 6 : x - 1, y, 1, 3, '#e5484d')
+      rect(b, f > 0 ? x : x + 5, y, 1, 3, '#c8553d')
     }
   }
 
@@ -2474,10 +2737,13 @@ export class Renderer {
     c.lineCap = 'round'
     for (let tx = x0; tx <= x1; tx++) {
       for (let ty = y0; ty <= y1; ty++) {
-        if (w.tile(tx, ty) !== ROPE || w.tile(tx, ty - 1) === ROPE) continue
+        // koşunun başı görüş alanının üstünde kalsa da halat çizilir: ilk görünen hücreden tepeye yürü
+        if (w.tile(tx, ty) !== ROPE || (ty > y0 && w.tile(tx, ty - 1) === ROPE)) continue
+        let start = ty
+        while (start > 0 && w.tile(tx, start - 1) === ROPE) start--
         let end = ty
         while (w.tile(tx, end + 1) === ROPE) end++
-        const top = ty * T
+        const top = start * T
         const bot = (end + 1) * T - 2
         const mx = tx * T + T / 2
         const sway = Math.sin(this.t * 1.6 + tx) * 1.6
@@ -2521,11 +2787,14 @@ export class Renderer {
       }
       // teleferik: yataydaki halat koşuları soldan sağa bir kez çizilir
       for (let ty = y0; ty <= y1; ty++) {
-        if (w.tile(tx, ty) !== CABLE || w.tile(tx - 1, ty) === CABLE) continue
+        // başı ekranın solunda kalan tel de çizilir (eskiden kamera kayınca tel yok olup geri geliyordu)
+        if (w.tile(tx, ty) !== CABLE || (tx > x0 && w.tile(tx - 1, ty) === CABLE)) continue
+        let start = tx
+        while (start > 0 && w.tile(start - 1, ty) === CABLE) start--
         let end = tx
         while (w.tile(end + 1, ty) === CABLE) end++
         const yy = ty * T + 8
-        const a = tx * T
+        const a = start * T
         const b = (end + 1) * T
         const sag = Math.min(4, (b - a) / 40)
         const line = () => {
@@ -2533,14 +2802,22 @@ export class Renderer {
           c.moveTo(X(a), Y(yy))
           c.quadraticCurveTo(X((a + b) / 2), Y(yy + sag * 2), X(b), Y(yy))
         }
+        // kalın çelik tel: mürekkep hat, gövde, üstte ince parıltı (açık gökte de seçilsin)
         line()
         c.strokeStyle = INK
-        c.lineWidth = sc * 2.6
+        c.lineWidth = sc * 3.6
         c.stroke()
         line()
-        c.strokeStyle = '#8f96a3'
-        c.lineWidth = sc * 1.3
+        c.strokeStyle = '#7d8592'
+        c.lineWidth = sc * 2
         c.stroke()
+        c.save()
+        c.translate(0, -sc * 0.5)
+        line()
+        c.strokeStyle = 'rgba(232,240,248,0.75)'
+        c.lineWidth = sc * 0.6
+        c.stroke()
+        c.restore()
         // uçlarda makara
         c.fillStyle = '#5a5f6a'
         c.strokeStyle = INK
@@ -2554,6 +2831,41 @@ export class Renderer {
       }
     }
     c.restore()
+  }
+
+  /** Hayalet Zemin: zeminin üstüne sis; oyuncunun çevresi (~6 karo) açık, kenara doğru yumuşakça kapanır */
+  private drawFog(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const p = w.player
+    const x = (p.x + p.w / 2 - cx) * sc
+    const y = (p.y + p.h / 2 - cy) * sc
+    const r = 100 * sc
+    const sky = CITY[this.city].sky[1]
+    const g = c.createRadialGradient(x, y, r * 0.45, x, y, r)
+    g.addColorStop(0, hexA(sky, 0))
+    g.addColorStop(1, hexA(sky, 0.96))
+    c.fillStyle = g
+    c.fillRect(0, 0, this.viewW * sc, this.viewH * sc)
+  }
+
+  /**
+   * Karanlık Yol: ekran karanlık, karakterin çevresinde yumuşak kenarlı bir ışık (yarıçap ~5 karo; nefes alır gibi hafifçe
+   * büyüyüp küçülür, saate bağlı). Tek bir radyal dolgu: kare başına ek katman yok.
+   */
+  private drawDarkness(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const p = w.player
+    const x = (p.x + p.w / 2 - cx) * sc
+    const y = (p.y + p.h / 2 - cy) * sc
+    const r = (78 + Math.sin(this.t * 1.7) * 3) * sc
+    const g = c.createRadialGradient(x, y, r * 0.35, x, y, r)
+    g.addColorStop(0, 'rgba(6,5,16,0)')
+    g.addColorStop(0.7, 'rgba(6,5,16,0.75)')
+    g.addColorStop(1, 'rgba(6,5,16,0.97)')
+    c.fillStyle = g
+    c.fillRect(0, 0, this.viewW * sc, this.viewH * sc)
   }
 
   /** Yüzülen suyun yüzü ve içi karakterin önünde yarı saydam: yüzen yolcu suyun içinde görünür. */
@@ -2625,6 +2937,7 @@ export class Renderer {
     const ready = !w.player.canDash
     for (const k of w.crystals)
       if (seen(k.x)) drawThing(c, 'crystal', X(k.x + 5), Y(k.y + 5 + Math.sin(t * 3 + k.x) * 1.5), sc, t, { active: k.active, ready, charge: 1 - k.timer / CRYSTAL_RECHARGE })
+    for (const n of w.nitros) if (seen(n.x)) drawThing(c, 'nitro', X(n.x + 5), Y(n.y + 8), sc, t, { active: n.active, charge: 1 - n.timer / NITRO.recharge })
     if (w.keyBox && !w.hasKey) drawThing(c, 'key', X(w.keyBox.x + 5), Y(w.keyBox.y + 5 + Math.sin(t * 3) * 2), sc, t)
     if (w.stampBox && !w.stampTaken) drawThing(c, 'stamp', X(w.stampBox.x + 6), Y(w.stampBox.y + 6 + Math.sin(t * 2) * 1.5), sc, t, { accent })
     if (w.charmBox && !w.charmTaken) drawThing(c, 'charm', X(w.charmBox.x + 5), Y(w.charmBox.y + 5), sc, t)
@@ -2670,7 +2983,7 @@ export class Renderer {
 
   /** Boss ve canları: zeminin üstünde, oyuncunun arkasında. Uyanınca adı kısa süre başının üstünde yazar. */
   private say(kind: 'wake' | 'tired' | 'ouch', hold: number) {
-    this.bossSay = { text: BOSS_LINES[this.city][kind][this.lang === 'en' ? 1 : 0], at: this.t, hold }
+    this.bossSay = { text: BOSS_LINES[this.bossCity][kind][this.lang === 'en' ? 1 : 0], at: this.t, hold }
   }
 
   /** Konuşma balonu: beyaz kâğıt, mürekkep hat, alt ucunda kuyruk; (x, y) kuyruğun ucu. */
@@ -2717,7 +3030,7 @@ export class Renderer {
     const x = (b.x + b.w / 2 - cx) * sc
     const y = (b.y + b.h - cy) * sc
     if (x < -200 * sc || x > this.canvas.width + 200 * sc) return
-    drawBoss(c, this.city, b, x, y, sc, this.t)
+    drawBoss(c, this.bossCity, b, x, y, sc, this.t)
     if (b.state === 'sleep' || b.state === 'down') return
     // canlar: dolu kalp kırmızı, giden kalp boş
     const top = b.hidden ? (b.floor - 16 - cy) * sc : (b.y - 12 - cy) * sc
@@ -2741,7 +3054,7 @@ export class Renderer {
       c.restore()
     }
     if (this.t - this.bossWoke < 3) {
-      const def = BOSSES[this.city]
+      const def = BOSSES[this.bossCity]
       const a = Math.min(1, (3 - (this.t - this.bossWoke)) / 0.5)
       c.globalAlpha = a
       c.font = `700 ${Math.round(sc * 6.5)}px ${this.popFont()}`
@@ -2964,6 +3277,16 @@ export class Renderer {
       if (!p.dead && p.grounded) for (let i = 0; i < 3; i++) this.particles.push({ x: p.x + p.w / 2 + p.facing * 4, y: p.y + p.h - 1, vx: p.facing * (18 + i * 10), vy: -14 - i * 6, life: 0.26, max: 0.26, color: 'rgba(230,220,200,0.7)', size: 1, grav: 80 })
       this.streakAt = null
     }
+    // nitro alev izi: koştukça ayakların arkasından turuncu kıvılcım (mesafeye göre, kare hızından bağımsız)
+    if (p.nitro > 0 && !p.dead && Math.abs(p.vx) > 20) {
+      const at = this.nitroAt
+      if (!at || Math.hypot(p.x - at[0], p.y - at[1]) >= 5) {
+        const n = (this.streakN = (this.streakN + 1) % 6)
+        const back = -Math.sign(p.vx)
+        this.particles.push({ x: p.x + p.w / 2 + back * 5, y: p.y + p.h - 4 - (n % 3) * 3, vx: back * 40, vy: -18 - (n % 2) * 14, life: 0.3, max: 0.3, color: n % 3 === 0 ? '#ffe27a' : '#ff9a3c', size: n % 2 ? 1 : 2, grav: -40 })
+        this.nitroAt = [p.x, p.y]
+      }
+    } else this.nitroAt = null
     if (p.dead) return
 
     // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir
@@ -3345,7 +3668,10 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   artvin: 'KARS',
   kars: 'BİTLİS',
   bitlis: 'AĞRI',
-  agri: null,
+  agri: 'GİRESUN',
+  giresun: 'TOKAT',
+  tokat: 'DENİZLİ',
+  denizli: null,
 }
 
 function hexA(hex: string, a: number) {

@@ -25,10 +25,29 @@ export const ROPE = 15
 export const CABLE = 16
 /** derin su (W): yüzülür; zıplama kulaç atar, yüzeyde atılan kulaç sudan çıkarır. Öldüren ~ suyundan ayrıdır */
 export const SWIM = 17
+/** ritim blokları: saate bağlı, iki takım sırayla belirip kaybolur (`{` önce, `}` sonra) */
+export const RHYTHM_A = 18
+export const RHYTHM_B = 19
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
 export const CRYSTAL_RECHARGE = 2.5
+/**
+ * Nitro tüpü (T): alınınca kısa süre hızlı koşu. Hız yürüyüşün ~1,55 katı; atlayış da hızla uzar (zıplama gücü aynı).
+ * İsteğe bağlı kestirmedir: hiçbir yol nitrosuz geçilemez hâle getirilmez. Tüp birkaç saniyede yeniden dolar.
+ */
+export const NITRO = { time: 3, speed: 1.55, recharge: 4 }
+/** Ay Yerçekimi (zor mod): oyuncunun yerçekimi ve en büyük düşüş hızı bu oranlarla çarpılır */
+export const MOON = { gravity: 0.55, fall: 0.6 }
+/** Fırtına (zor mod): rüzgâr sin(süre × freq) ile yön değiştirir (~4,5 sn'de bir döner) */
+export const STORM = { freq: 0.7 }
+/**
+ * Ritim blokları: her `half` saniyede bir takım değişir; kaybolmadan `warn` saniye önce yanıp söner (render).
+ * Belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır: kimse taşın içinde sıkışmaz.
+ */
+export const RHYTHM = { half: 1.6, warn: 0.45 }
+/** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
+export const PERFECT_SPRING = 1.22
 
 export const PHYS = {
   gravity: 980,
@@ -121,6 +140,8 @@ export interface Player extends Box {
   /** suyun içinde (gövdenin ortası W karosunda) */
   swim: boolean
   strokeCool: number
+  /** nitronun kalan süresi (sn); 0 ise normal koşu */
+  nitro: number
 }
 
 export interface Platform extends Box {
@@ -276,6 +297,8 @@ export class World {
   readonly signs: Sign[] = []
   readonly npcs: Sign[] = []
   readonly crystals: Crystal[] = []
+  /** nitro tüpleri: dash halkası gibi alınır ve yeniden dolar */
+  readonly nitros: Crystal[] = []
   readonly plates: Plate[] = []
   /** itilebilen sandıklar: yandan itilir, üstüne çıkılır, boşluğa düşer; ölünce yerine döner */
   readonly crates: Crate[] = []
@@ -307,6 +330,13 @@ export class World {
   }
   readonly start: { x: number; y: number }
   readonly crumbles = new Map<number, CrumbleState>()
+  /** haritada ritim bloğu var mı (yoksa her adımda aranmaz) */
+  hasRhythm = false
+  /** belirdiği an oyuncunun içinde kalan ritim blokları: oyuncu çıkana dek boş */
+  readonly rhythmHold = new Set<number>()
+  private rhythmLast = -1
+  /** zehirli su karoları (y * cols + x): fizikte öldüren su, çizimde yeşil */
+  readonly poison = new Set<number>()
 
   spawn: { x: number; y: number }
   checkpointIndex = -1
@@ -367,6 +397,14 @@ export class World {
             break
           case 'i':
             this.set(tx, ty, WET)
+            break
+          case '{':
+            this.set(tx, ty, RHYTHM_A)
+            this.hasRhythm = true
+            break
+          case '}':
+            this.set(tx, ty, RHYTHM_B)
+            this.hasRhythm = true
             break
           case 'p':
             this.crates.push({ x: px, y: py, w: T, h: T, vy: 0, ox: px, oy: py, sunk: 0 })
@@ -431,6 +469,9 @@ export class World {
           case '*':
             this.crystals.push({ x: px + 3, y: py + 3, w: 10, h: 10, active: true, timer: 0 })
             break
+          case 'T':
+            this.nitros.push({ x: px + 3, y: py + 2, w: 10, h: 14, active: true, timer: 0 })
+            break
           case 'K':
             this.keyBox = { x: px + 3, y: py + 3, w: 10, h: 10 }
             break
@@ -463,7 +504,7 @@ export class World {
             break
           case 'Q': {
             // arena sınırları: boss’un satırında | ya da duvara kadar
-            const def = BOSSES[level.city]
+            const def = BOSSES[level.bossOf ?? level.city]
             const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
             let l = tx - 1
             while (l >= 0 && !stop(row[l])) l--
@@ -549,7 +590,52 @@ export class World {
       const wet = [this.tile(tx - 1, ty), this.tile(tx + 1, ty), this.tile(tx, ty - 1), this.tile(tx, ty + 1)].filter((t) => t === SWIM).length
       if (wet >= 2) this.set(tx, ty, SWIM)
     }
+    if (level.poison) this.poisonPits()
+    if (level.crumbleAll) this.crumbleSurfaces()
     this.player = this.freshPlayer(start.x, start.y)
+  }
+
+  /**
+   * Zehirli şehirlerde iki yanı ve altı katı duvarla kapalı, üstü boş diken sırası zehirli suya döner. Yalnız çukurun
+   * dibindeki dikenler değişir: düz yoldaki ya da tavandaki diken aynı kalır, haritanın ölçüleri değişmez.
+   */
+  private poisonPits() {
+    const wall = (tx: number, ty: number) => {
+      const t = this.tile(tx, ty)
+      return t === SOLID || t === ICE || t === WET
+    }
+    for (let ty = 1; ty < this.rows - 1; ty++) {
+      for (let tx = 1; tx < this.cols; tx++) {
+        if (this.tile(tx, ty) !== SPIKE_UP || this.tile(tx - 1, ty) === SPIKE_UP) continue
+        let end = tx
+        while (this.tile(end + 1, ty) === SPIKE_UP) end++
+        let closed = wall(tx - 1, ty) && wall(end + 1, ty)
+        for (let x = tx; x <= end && closed; x++) closed = wall(x, ty + 1) && this.tile(x, ty - 1) === EMPTY
+        if (!closed) continue
+        for (let x = tx; x <= end; x++) {
+          this.set(x, ty, WATER)
+          this.poison.add(ty * this.cols + x)
+        }
+      }
+    }
+  }
+
+  /**
+   * Çöken Dünya: üstü boş her katı yüzey karosu çatlak taşa döner. Başlangıcın, bayrakların, çıkışın, meydan kapısının
+   * ve varış yerinin iki karo çevresi ile boss arenası sağlam kalır: oyuncu doğduğu yerde düşmez, boss'u bekleyerek yener.
+   */
+  private crumbleSurfaces() {
+    const safe: Array<{ x: number; y: number }> = [this.start, this.exit, ...this.checkpoints]
+    if (this.warp) safe.push(this.warp)
+    if (this.arrival) safe.push(this.arrival)
+    const near = (tx: number, ty: number) => safe.some((b) => Math.abs(Math.floor(b.x / T) - tx) <= 2 && Math.abs(Math.floor(b.y / T) - ty) <= 3)
+    const arena = (tx: number) => this.boss !== null && tx * T >= this.boss.min - 2 * T && tx * T <= this.boss.max + this.boss.w + 2 * T
+    for (let ty = 1; ty < this.rows; ty++)
+      for (let tx = 0; tx < this.cols; tx++) {
+        if (this.tile(tx, ty) !== SOLID || this.tile(tx, ty - 1) !== EMPTY) continue
+        if (near(tx, ty) || arena(tx)) continue
+        this.set(tx, ty, CRUMBLE)
+      }
   }
 
   private makePlatform(map: string[], tx: number, ty: number, n: number, axis: Platform['axis']): Platform {
@@ -630,6 +716,7 @@ export class World {
       regrab: 0,
       swim: false,
       strokeCool: 0,
+      nitro: 0,
     }
   }
 
@@ -653,6 +740,7 @@ export class World {
     if (t === DOOR) return !this.hasKey
     if (t === BLOCK_A) return !this.switchOn
     if (t === BLOCK_B) return this.switchOn
+    if (t === RHYTHM_A || t === RHYTHM_B) return this.rhythmOn(t) && !this.rhythmHold.has(ty * this.cols + tx)
     if (t === BOSS_GATE) return this.boss !== null && this.boss.state !== 'down'
     return false
   }
@@ -675,6 +763,7 @@ export class World {
 
     this.updatePlatforms(dt)
     this.updateCrumbles(dt)
+    this.updateRhythm()
     if (this.crates.length) this.updateCrates(dt)
 
     if (p.dead) {
@@ -748,6 +837,32 @@ export class World {
         p.y = pl.y - p.h
       }
     }
+  }
+
+  /** ritim takımı şu an katı mı (saatten; aynalı haritada da aynı ritim) */
+  rhythmOn(t: number): boolean {
+    const phase = Math.floor(this.clock / RHYTHM.half) % 2
+    return t === RHYTHM_A ? phase === 0 : phase === 1
+  }
+
+  /** ritim değişiminde oyuncunun (ve eşin) içindeki bloklar beklemeye alınır; çıkılan bloklar beklemeden düşer */
+  private updateRhythm() {
+    if (!this.hasRhythm) return
+    const phase = Math.floor(this.clock / RHYTHM.half) % 2
+    const bodies = [this.player, ...(this.partner ? [this.partner] : [])].filter((b) => !b.dead)
+    const covered = new Set<number>()
+    for (const b of bodies)
+      for (let ty = Math.floor(b.y / T); ty <= Math.floor((b.y + b.h - 0.001) / T); ty++)
+        for (let tx = Math.floor(b.x / T); tx <= Math.floor((b.x + b.w - 0.001) / T); tx++) {
+          const t = this.tile(tx, ty)
+          if (t === RHYTHM_A || t === RHYTHM_B) covered.add(ty * this.cols + tx)
+        }
+    if (phase !== this.rhythmLast) {
+      if (this.rhythmLast >= 0) this.events.push({ type: 'beat' })
+      this.rhythmLast = phase
+      for (const k of covered) this.rhythmHold.add(k)
+    }
+    for (const k of [...this.rhythmHold]) if (!covered.has(k)) this.rhythmHold.delete(k)
   }
 
   private updateCrumbles(dt: number) {
@@ -828,7 +943,7 @@ export class World {
       this.events.push({ type: 'dash' })
     }
 
-    const wind = this.level.wind ? this.level.wind * (0.55 + 0.45 * Math.sin(this.time * 1.1)) : 0
+    const wind = !this.level.wind ? 0 : this.level.storm ? this.level.wind * Math.sin(this.time * STORM.freq) : this.level.wind * (0.55 + 0.45 * Math.sin(this.time * 1.1))
     this.windNow = wind
 
     if (p.dashTime > 0) {
@@ -836,14 +951,16 @@ export class World {
       p.vx = p.dashDir[0] * PHYS.dashSpeed
       p.vy = p.dashDir[1] * PHYS.dashSpeed
       if (p.dashTime <= 0) {
-        p.vx = Math.sign(p.vx) * Math.min(Math.abs(p.vx), PHYS.run * 1.15)
+        p.vx = Math.sign(p.vx) * Math.min(Math.abs(p.vx), PHYS.run * (p.nitro > 0 ? NITRO.speed : 1.15))
         if (p.vy < 0) p.vy *= 0.45
       }
     } else {
       // yatay kontrol. Rüzgâr hedef hızı kaydırır (hıza eklenen ivme, hedefe kırpılınca siliniyordu): havada her zaman,
       // yerde yalnız yürürken; dururken itmez ki dar taşta kaydırmasın. Esinti güçlüyken atlayış belirgin uzar ya da kısalır
       p.swim = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === SWIM
-      const target = p.swim ? ix * PHYS.swimRun : ix * PHYS.run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
+      if (p.nitro > 0) p.nitro = Math.max(0, p.nitro - dt)
+      const run = p.nitro > 0 ? PHYS.run * NITRO.speed : PHYS.run
+      const target = p.swim ? ix * PHYS.swimRun : ix * run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
       let accel: number
       if (p.grounded) {
         if (p.onIce) accel = ix !== 0 ? PHYS.accelIce : PHYS.decelIce
@@ -858,7 +975,9 @@ export class World {
       // yerçekimi (suda yavaş batar; dash suda da yenilenir)
       let g = p.swim ? PHYS.swimGravity : PHYS.gravity
       if (p.vy < 0 && !input.jump && !p.swim) g *= PHYS.lowJumpMul
-      p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax, p.vy + g * dt)
+      const moon = this.level.lowGravity && !p.swim
+      if (moon) g *= MOON.gravity
+      p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1), p.vy + g * dt)
       if (p.swim) {
         p.canDash = true
         // kulaç: her zıplama basışı; başı yüzeye yakınsa sudan sıçrayarak çıkar
@@ -1232,7 +1351,7 @@ export class World {
       if (!hit.plat) {
         const ty = Math.floor((p.y + p.h + 1) / T)
         const cx = Math.floor((p.x + p.w / 2) / T)
-        p.onIce = this.tile(cx, ty) === ICE
+        p.onIce = this.tile(cx, ty) === ICE || !!this.level.slippery
         p.onWet = this.tile(cx, ty) === WET
       }
     } else {
@@ -1426,6 +1545,17 @@ export class World {
         this.events.push({ type: 'crystal' })
       }
     }
+    for (const n of this.nitros) {
+      if (!n.active) {
+        n.timer -= dt
+        if (n.timer <= 0) n.active = true
+      } else if (!p.dead && overlap(reach(p), n)) {
+        n.active = false
+        n.timer = NITRO.recharge
+        p.nitro = NITRO.time
+        this.events.push({ type: 'nitro' })
+      }
+    }
     if (this.keyBox && !this.hasKey && !p.dead && overlap(reach(p), this.keyBox)) {
       this.hasKey = true
       this.events.push({ type: 'key' })
@@ -1518,7 +1648,13 @@ export class World {
     for (const s of this.springs) {
       s.squash = Math.max(0, s.squash - 1 / 60)
       if (p.vy >= 0 && overlap(p, s) && p.y + p.h - p.vy / 60 <= s.y + 4) {
-        p.vy = -PHYS.springV
+        // tam zamanında: inerken zıplama basılıysa (tampon) daha güçlü seker
+        const perfect = p.buffer > 0
+        p.vy = -PHYS.springV * (perfect ? PERFECT_SPRING : 1)
+        if (perfect) {
+          p.buffer = 0
+          this.events.push({ type: 'perfect' })
+        }
         p.y = s.y - p.h
         p.canDash = true
         p.dashTime = 0
@@ -1678,7 +1814,7 @@ export class World {
       e.state = 'idle'
       e.timer = 1
     }
-    for (const c of this.crystals) {
+    for (const c of [...this.crystals, ...this.nitros]) {
       c.active = true
       c.timer = 0
     }
@@ -1738,6 +1874,7 @@ export interface Snapshot {
   stampTaken: boolean
   charmTaken: boolean
   crystals: Array<[boolean, number]>
+  nitros: Array<[boolean, number]>
   clock: number
   cpSwitch: boolean
   crates: Array<[number, number, number, number]>
@@ -1763,6 +1900,7 @@ export function snapshot(w: World): Snapshot {
     stampTaken: w.stampTaken,
     charmTaken: w.charmTaken,
     crystals: w.crystals.map((c) => [c.active, c.timer]),
+    nitros: w.nitros.map((c) => [c.active, c.timer]),
     clock: w.clock,
     cpSwitch: w.checkpointSwitch,
     crates: w.crates.map((c) => [c.x, c.y, c.vy, c.sunk]),
@@ -1789,6 +1927,7 @@ export function restore(w: World, s: Snapshot) {
   w.stampTaken = s.stampTaken
   w.charmTaken = s.charmTaken
   s.crystals.forEach(([a, t], i) => Object.assign(w.crystals[i], { active: a, timer: t }))
+  s.nitros.forEach(([a, t], i) => Object.assign(w.nitros[i], { active: a, timer: t }))
   w.clock = s.clock
   w.plates.forEach((pl) => (pl.pressed = false))
   w.checkpointSwitch = s.cpSwitch
