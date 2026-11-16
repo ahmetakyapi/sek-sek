@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds } from '../lib/extras'
+import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
 import { ACCESSORIES, accessoryFor, walletOf } from '../game/accessories'
@@ -274,5 +274,32 @@ describe('şehir ustaları', () => {
   })
   it('her şehrin bir ustası (ilk şehir insanı) var', () => {
     for (const l of LEVELS) expect(l.npcs.length).toBeGreaterThan(0)
+  })
+})
+
+describe('sinir bozucu modlar', () => {
+  it('Ters Tuşlar: turun sonunda ters, dönmeden ve düzelmeden önce uyarı', () => {
+    expect(swapPhase(0).flipped).toBe(false)
+    expect(swapPhase(SWAP.cycle - SWAP.flipped - 0.5)).toEqual({ flipped: false, warn: true })
+    expect(swapPhase(SWAP.cycle - SWAP.flipped + 0.5)).toEqual({ flipped: true, warn: false })
+    expect(swapPhase(SWAP.cycle - 0.5)).toEqual({ flipped: true, warn: true })
+    expect(swapPhase(SWAP.cycle + 0.1).flipped).toBe(false)
+  })
+  it('günlük meydan okuma zor mod seçmez; zor modlar fiziği yalnız bölüme yazar', () => {
+    for (let d = 0; d < 200; d++) expect(RAGE_RULES).not.toContain(dailyRun(shiftDay('2026-11-16', d), LEVELS).rule)
+    const lv = LEVELS[0]
+    expect(ruleLevel('kaygan', lv).slippery).toBe(true)
+    expect(ruleLevel('sonnefes', lv).crumbleAll).toBe(true)
+    expect(ruleLevel('ters', lv)).toBe(lv)
+    expect(ruleLevel('kaygan', lv).map).toBe(lv.map)
+  })
+  it('kaygan ve çöken modlar yalnız kanıtlanmış şehirlerde açılır', () => {
+    for (const lv of LEVELS) {
+      expect(ruleFits('kaygan', lv)).toBe(SLIPPERY_OK.includes(lv.id))
+      expect(ruleFits('kabus', lv)).toBe(SLIPPERY_OK.includes(lv.id))
+      expect(ruleFits('coken', lv)).toBe(CRUMBLE_OK.includes(lv.id))
+      expect(ruleFits('cehennem', lv)).toBe(true)
+      expect(ruleFits('ters', lv)).toBe(true)
+    }
   })
 })

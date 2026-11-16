@@ -29,6 +29,7 @@ const ICONS = {
   story: 'M2 1h8v2h-1v6h1v2H2V9h1V3H2zM4 4v1h4V4zM4 6v1h3V6z',
   gear: 'M4 0h4v2h1V1h2v2h-1v1h2v4h-2v1h1v2H9v-1H8v2H4v-2H3v1H1V9h1V8H0V4h2V3H1V1h2v1h1zM5 4v1H4v2h1v1h2V7h1V5H7V4z',
   music: 'M6 1h5v2H8v6H7v1H6v1H3v-1H2V8h1V7h3z',
+  pencil: 'M8 1h2v1h1v2h-1v1H9v1H8v1H7v1H6v1H5v1H4v1H1V8h1V7h1V6h1V5h1V4h1V3h1V2h1zM2 9v1h1V9z',
 } as const
 type IconName = keyof typeof ICONS
 
@@ -225,11 +226,45 @@ export default function TitleMenu(props: {
           <div className="grid grid-cols-2 gap-2.5 short:gap-2">
             <Tile icon="map" label={t('Şehirler')} sub={t('{n}/{m} Bitti', { n: done, m: total })} onClick={() => props.onScreen('map')} />
             <Tile icon="book" label={t('Defter')} sub={t('{n} Hatıra', { n: props.found })} onClick={() => props.onScreen('notebook')} />
-            <Tile icon="modes" label={t('Modlar')} sub={props.dailyPending ? t('Günlük Bekliyor') : t('Turnuva · Boss Rush')} dot={props.dailyPending} dotLabel={t('Bugünün meydan okuması seni bekliyor')} onClick={() => props.onScreen('modes')} />
-            <Tile icon="trophy" label={t('Skorlar')} sub={t('Genel · Günlük')} onClick={() => props.onScreen('scores')} />
+            {/* Modlar öne çıkar: tam satır, altın çerçeve, içindeki modlar adıyla görünür (eskiden dört kutudan biriydi, gözden kaçıyordu) */}
+            <button className="menu-tile modes-tile group relative col-span-2 flex min-h-[58px] items-center gap-3 px-3 py-2.5 text-left tight:min-h-[52px] tight:py-2 short:min-h-[46px] short:py-1.5" onClick={() => props.onScreen('modes')}>
+              <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center short:h-7 short:w-7">
+                <PxIcon name="modes" className="h-5 w-5 short:h-4 short:w-4" />
+              </span>
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="flex items-baseline gap-2">
+                  <span className="font-display text-[17px] text-cream short:text-[15px]">{t('Modlar')}</span>
+                  {props.dailyPending && <span className="text-[12px] font-semibold text-accent-2">{t('Günlük Bekliyor')}</span>}
+                </span>
+                <span className="mt-1 flex flex-wrap gap-1 overflow-hidden max-sm:hidden short:hidden" style={{ maxHeight: 22 }}>
+                  {/* Modlar ekranındaki aile renkleri: rekabet altın, birlikte turkuaz, meydan okuma kiremit */}
+                  {(
+                    [
+                      [t('Günlük'), 'border-gold/45 text-gold'],
+                      [t('Sinir Bozucu'), 'border-coral/45 text-coral'],
+                      [t('Co-op'), 'border-teal/45 text-teal'],
+                      [t('Turnuva'), 'border-gold/45 text-gold'],
+                      [t('Düello'), 'border-teal/45 text-teal'],
+                      [t('Boss Rush'), 'border-coral/45 text-coral'],
+                    ] as const
+                  ).map(([m, tone]) => (
+                    <span key={m} className={`border bg-ink/50 px-1.5 text-[12px] font-semibold leading-[18px] ${tone}`}>
+                      {m}
+                    </span>
+                  ))}
+                </span>
+                <span className="hidden truncate text-[12px] text-muted max-sm:block short:block">{t('Günlük · Co-op · Sinir Bozucu')}</span>
+              </span>
+              <span className="shrink-0 font-display text-lg text-gold" aria-hidden>
+                ▶
+              </span>
+              {props.dailyPending && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={t('Bugünün meydan okuması seni bekliyor')} />}
+            </button>
           </div>
 
-          <div className="mt-2.5 grid grid-cols-4 gap-2 short:mt-2">
+          <div className="mt-2.5 grid grid-cols-6 gap-2 short:mt-2">
+            <Mini icon="trophy" label={t('Skorlar')} onClick={() => props.onScreen('scores')} />
+            <Mini icon="pencil" label={t('Düzenle')} aria={t('Bölüm Düzenleyici')} onClick={() => (window.location.href = '/duzenle')} />
             <Mini icon="hero" label={t('Karakter')} onClick={() => props.onScreen('character')} />
             <Mini icon="story" label={t('Hikâye')} onClick={() => props.onScreen('story')} />
             <Mini icon="gear" label={t('Ayarlar')} onClick={() => props.onScreen('controls')} />
@@ -282,7 +317,7 @@ export default function TitleMenu(props: {
   )
 }
 
-function Tile({ icon, label, sub, onClick, dot, dotLabel }: { icon: IconName; label: string; sub: string; onClick: () => void; dot?: boolean; dotLabel?: string }) {
+function Tile({ icon, label, sub, onClick }: { icon: IconName; label: string; sub: string; onClick: () => void }) {
   return (
     <button className="menu-tile group relative flex min-h-[58px] items-center gap-3 px-3 py-2.5 text-left tight:min-h-[52px] tight:py-2 short:min-h-[46px] short:py-1.5" onClick={onClick}>
       <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center short:h-7 short:w-7">
@@ -292,7 +327,6 @@ function Tile({ icon, label, sub, onClick, dot, dotLabel }: { icon: IconName; la
         <span className="block font-display text-[17px] text-cream short:text-[15px]">{label}</span>
         <span className="block truncate text-[12px] text-muted">{sub}</span>
       </span>
-      {dot && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={dotLabel} />}
     </button>
   )
 }

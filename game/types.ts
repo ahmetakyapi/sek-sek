@@ -42,6 +42,10 @@ export interface LevelDef {
   wind?: number
   /** kapalı dikenli çukurlar zehirli suya döner (öldüren suyla aynı kural, yeşil ve köpüren çizilir) */
   poison?: boolean
+  /** Kaygan Dünya (zor mod): bütün zeminler buz gibi kayar */
+  slippery?: boolean
+  /** Çöken Dünya (zor mod): basılan her yüzey çatlak taş gibi çöker ve bir süre sonra geri gelir */
+  crumbleAll?: boolean
   /** Ayna Yolu: harita sağdan sola çevrilmiş (game/mirror.ts); hareketli platformlar da ayna fazında başlar */
   mirror?: boolean
   /** final eklenince hesaplanır: finalin ipuçları ve kişileri listelerde nereden başlıyor */

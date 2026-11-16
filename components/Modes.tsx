@@ -10,7 +10,7 @@ import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { CHALLENGES } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
 import { LEVELS } from '@/game/levels'
-import { DAILY_RULES, RULES, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
+import { DAILY_RULES, RAGE_RULES, RULES, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark, duelResult, duelWins, liveStreak, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
@@ -41,6 +41,8 @@ export function ModesHub({
   onMarathon,
   onRules,
   ruleCount,
+  onRage,
+  rageCount,
   rulesOpen,
   onChallenges,
   challengeDone,
@@ -71,6 +73,9 @@ export function ModesHub({
   onRules: () => void
   /** Kurallı Koşu'da yazılmış rekor sayısı */
   ruleCount: number
+  onRage: () => void
+  /** Sinir Bozucu modlarda yazılmış rekor sayısı */
+  rageCount: number
   /** en az bir şehir bitirildi mi (Kurallı Koşu bitirilen şehirlerde açılır) */
   rulesOpen: boolean
   onChallenges: () => void
@@ -102,7 +107,7 @@ export function ModesHub({
   const rushOpen = bossesBeaten >= rushNeeds
   return (
     <Overlay>
-      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(960px,100%)]">
+      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1240px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('YOLUN DIŞINDA')}</p>
@@ -113,9 +118,9 @@ export function ModesHub({
           </button>
         </div>
         <div className="overlay-scroll -mx-1 mt-4 min-h-0 flex-1 overflow-y-auto px-1 short:mt-2">
-          <div className="grid gap-3 sm:grid-cols-2 short:grid-cols-2 short:gap-2.5">
+          <div className="grid gap-3 sm:grid-cols-2 short:grid-cols-2 short:gap-2.5 wide:grid-cols-3">
             {/* Günlük Meydan Okuma */}
-            <section className="flex flex-col border-2 border-gold bg-gold/5 p-3.5 short:p-2.5">
+            <section className="mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-gold)]">
               <Eyebrow>{t('GÜNLÜK MEYDAN OKUMA')}</Eyebrow>
               <div className="mt-2.5 flex items-center gap-3">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441] short:h-9 short:w-9">
@@ -148,8 +153,25 @@ export function ModesHub({
               </div>
             </section>
 
+            {/* Sinir Bozucu: zor modlar; her biri bitirilen her şehirde ayrı rekor (hikâyeye ve ilerlemeye dokunmaz) */}
+            <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-coral)] ${rulesOpen ? '' : 'locked'}`}>
+              <Eyebrow tone="text-coral">{t('SİNİR BOZUCU')}</Eyebrow>
+              <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                {RAGE_RULES.map((r) => (
+                  <span key={r} className="border-2 border-coral/40 bg-ink/50 px-1.5 py-0.5 text-[12px] font-bold text-coral">
+                    {t(DAILY_RULES[r].name)}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Kaygan zemin, ters tuşlar, çöken taşlar, tek can. Sabır taşını çatlatan altı mod, her şehirde ayrı rekor.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : rageCount ? t('{n} öfke rekoru. Sıradakine dayanabilir misin?', { n: rageCount }) : t('Henüz kimse sinirlenmedi. İlk sen dene.')}</p>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRage}>
+                {t('Öfkeni Seç')}
+              </button>
+            </section>
+
             {/* Haftalık Turnuva */}
-            <section className="flex flex-col border-2 border-gold/70 bg-gold/5 p-3.5 short:p-2.5">
+            <section className="mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-gold)]">
               <Eyebrow>{t('HAFTALIK TURNUVA')}</Eyebrow>
               <div className="mt-2.5 flex items-center justify-center gap-2">
                 {tIds.map((id, i) => {
@@ -168,45 +190,29 @@ export function ModesHub({
                 {tTotal ? t('Toplamın {time}', { time: formatTime(tTotal) }) : t('{n}/3 bitti', { n: tDone })}
                 {winner ? ` · ${t('Geçen hafta: {name}', { name: winner.name })}` : ''}
               </p>
-              <button className="pixel-btn primary mt-auto shrink-0 justify-center" onClick={onTournament}>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" onClick={onTournament}>
                 {t('Turnuvaya Gir')}
               </button>
             </section>
 
-            {/* Kurallı Koşu */}
-            <section className="flex flex-col border-2 border-accent/70 bg-accent/5 p-3.5 short:p-2.5">
-              <Eyebrow tone="text-accent">{t('KURALLI KOŞU')}</Eyebrow>
-              <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
-                {RULES.map((r) => (
-                  <span key={r} className="border-2 border-line bg-ink/50 px-1.5 py-0.5 text-[12px] font-bold text-cream/90">
-                    {t(DAILY_RULES[r].name)}
-                  </span>
-                ))}
+            {/* Co-op: aynı ekranda iki kişi; gridde kart (eskiden en altta ince bir satırdı, gözden kaçıyordu) */}
+            <section className="mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-teal)]">
+              <Eyebrow tone="text-teal">{t('CO-OP · 2 KİŞİ')}</Eyebrow>
+              <div className="mt-2.5 flex items-end justify-center gap-1" aria-hidden>
+                <Portrait id="uktun" className="w-[64px] rotate-[-4deg] short:w-[44px]" />
+                <span className="mb-3 font-display text-2xl text-teal">+</span>
+                <Portrait id="memo" className="w-[64px] rotate-[4deg] short:w-[44px]" />
               </div>
-              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Şehri ve kuralı sen seç: aynı şehir her kuralla başka bir oyun. Her şehir ve kural için ayrı rekor.')}</p>
-              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : ruleCount ? t('{n} rekor yazdın. Sıradaki kuralı dene.', { n: ruleCount }) : t('Yedi kural, bitirdiğin bütün şehirler.')}</p>
-              <button className="pixel-btn primary mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRules}>
-                {rulesOpen ? t('Kural Seç') : t('Kilitli')}
-              </button>
-            </section>
-
-            {/* Mücadeleler */}
-            <section className="flex flex-col border-2 border-accent-2/70 bg-accent-2/5 p-3.5 short:p-2.5">
-              <Eyebrow tone="text-accent-2">{t('MÜCADELELER')}</Eyebrow>
-              <p className="mt-2.5 text-center font-display text-4xl leading-none text-cream short:text-3xl">
-                ▲ {challengeDone}
-                <span className="text-[16px] text-muted">/{CHALLENGES.length}</span>
-              </p>
-              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Zor şehirlerin en sıkı yerleri, kısa ve bayraksız. Her birinin kendi madalyası ve sıralaması var.')}</p>
-              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{rulesOpen ? t('Bir mücadele, kesildiği şehir bitince açılır.') : t('Zor bir şehri bitirince açılır.')}</p>
-              <button className="pixel-btn primary mt-auto shrink-0 justify-center" onClick={onChallenges}>
-                {t('Mücadele Seç')}
+              <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('İki kişi aynı ekranda, aynı şehirde: hatıralar, düğmeler ve boss ortak.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Klavyede WASD ve ok tuşları ya da iki oyun kolu. İlerlemene ve rekorlarına dokunmaz.')}</p>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" onClick={onCoop}>
+                {t('Birlikte Oyna')}
               </button>
             </section>
 
             {/* Düello */}
-            <section className="flex flex-col border-2 border-line bg-ink/40 p-3.5 short:p-2.5">
-              <Eyebrow tone="text-accent-2">{t('DÜELLO · 2 KİŞİ')}</Eyebrow>
+            <section className="mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-teal)]">
+              <Eyebrow tone="text-teal">{t('DÜELLO · 2 KİŞİ')}</Eyebrow>
               <div className="mt-2.5 flex items-end justify-center gap-1">
                 <Portrait id="uktun" className="w-[64px] rotate-[-5deg] short:w-[44px]" />
                 <span className="mb-3 font-display text-2xl text-accent-2">vs</span>
@@ -214,14 +220,14 @@ export function ModesHub({
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85 short:mb-2 short:text-[13px]">{t('Yan yana aynı anda yarışın ya da cihazı elden ele verip rakibin hayaletiyle koşun.')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Yan yana: bölünmüş ekran, klavye ya da iki oyun kolu. Sırayla: telefonda da olur. Tek tur ya da üç turda iki alan kazanır.')}</p>
-              <button className="pixel-btn primary mt-auto shrink-0 justify-center" onClick={onDuel}>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" onClick={onDuel}>
                 {t('Düello Kur')}
               </button>
             </section>
 
             {/* Boss Rush */}
-            <section className={`flex flex-col border-2 p-3.5 short:p-2.5 ${rushOpen ? 'border-line bg-ink/40' : 'border-dashed border-line/70'}`}>
-              <Eyebrow tone="text-accent">{t('BOSS RUSH')}</Eyebrow>
+            <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-coral)] ${rushOpen ? '' : 'locked'}`}>
+              <Eyebrow tone="text-coral">{t('BOSS RUSH')}</Eyebrow>
               <div className="mt-2.5 flex justify-center">
                 <BossFigure city="istanbul" className={`h-[64px] w-[76px] short:h-[44px] short:w-[52px] ${rushOpen ? '' : 'opacity-40 grayscale'}`} />
               </div>
@@ -233,28 +239,14 @@ export function ModesHub({
                     : t('{n} boss hazır. İlk rekoru sen yaz.', { n: bossesBeaten })
                   : t('Açılması için {n} boss yen ({k}/{n}).', { n: rushNeeds, k: bossesBeaten })}
               </p>
-              <button className="pixel-btn mt-auto shrink-0 justify-center" disabled={!rushOpen} onClick={onRush}>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rushOpen} onClick={onRush}>
                 {rushOpen ? t('▶ Koş') : t('Kilitli')}
               </button>
             </section>
 
-            {/* Ayna Yolu */}
-            <section className={`flex flex-col border-2 p-3.5 short:p-2.5 ${mirrorOpen ? 'border-accent-2/70 bg-accent-2/5' : 'border-dashed border-line/70'}`}>
-              <Eyebrow tone="text-accent-2">{t('AYNA YOLU · YENİ OYUN+')}</Eyebrow>
-              <div className="mt-2.5 flex items-end justify-center gap-0.5" aria-hidden>
-                <Portrait id="uktun" className={`w-[52px] short:w-[38px] ${mirrorOpen ? '' : 'opacity-40 grayscale'}`} />
-                <Portrait id="uktun" className={`w-[52px] -scale-x-100 opacity-60 short:w-[38px] ${mirrorOpen ? '' : 'grayscale'}`} />
-              </div>
-              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Otuz şehir aynada: sağdan sola, ters rüzgârla. Yalnız yol ve süre.')}</p>
-              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık. İlk ayna rekorunu yaz.')) : t('Otuz şehrin hepsini bitirince açılır.')}</p>
-              <button className="pixel-btn mt-auto shrink-0 justify-center" disabled={!mirrorOpen} onClick={onMirror}>
-                {mirrorOpen ? t('◐ Aynaya Geç') : t('Kilitli')}
-              </button>
-            </section>
-
             {/* Maraton */}
-            <section className={`flex flex-col border-2 p-3.5 short:p-2.5 ${marathonOpen ? 'border-line bg-ink/40' : 'border-dashed border-line/70'}`}>
-              <Eyebrow tone="text-[#7ad88a]">{t('MARATON')}</Eyebrow>
+            <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-coral)] ${marathonOpen ? '' : 'locked'}`}>
+              <Eyebrow tone="text-coral">{t('MARATON')}</Eyebrow>
               <div className="mt-2.5 flex items-center justify-center gap-2">
                 {(['istanbul', 'konya', 'trabzon'] as const).map((c, i) => (
                   <span key={c} className={`flex h-10 w-10 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#37337a] short:h-8 short:w-8 ${marathonOpen ? '' : 'opacity-40 grayscale'} ${i === 1 ? '-translate-y-1.5' : ''}`}>
@@ -264,20 +256,59 @@ export function ModesHub({
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Açtığın şehirlerden rastgele üçü, baştan sona arka arkaya. Tek nefeste ne kadar hızlısın?')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{marathonOpen ? (marathonBest ? t('Maraton rekorun: {time}', { time: formatTime(marathonBest.timeMs) }) : t('Her koşuda başka üç şehir. İlk rekoru sen yaz.')) : t('Açılması için üç şehir aç.')}</p>
-              <button className="pixel-btn mt-auto shrink-0 justify-center" disabled={!marathonOpen} onClick={onMarathon}>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!marathonOpen} onClick={onMarathon}>
                 {marathonOpen ? t('▶ Koş') : t('Kilitli')}
               </button>
             </section>
+
+            {/* Kurallı Koşu */}
+            <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-accent)] ${rulesOpen ? '' : 'locked'}`}>
+              <Eyebrow tone="text-accent">{t('KURALLI KOŞU')}</Eyebrow>
+              <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                {RULES.map((r) => (
+                  <span key={r} className="border-2 border-line bg-ink/50 px-1.5 py-0.5 text-[12px] font-bold text-cream/90">
+                    {t(DAILY_RULES[r].name)}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Şehri ve kuralı sen seç: aynı şehir her kuralla başka bir oyun. Her şehir ve kural için ayrı rekor.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : ruleCount ? t('{n} rekor yazdın. Sıradaki kuralı dene.', { n: ruleCount }) : t('Yedi kural, bitirdiğin bütün şehirler.')}</p>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRules}>
+                {rulesOpen ? t('Kural Seç') : t('Kilitli')}
+              </button>
+            </section>
+
+            {/* Mücadeleler */}
+            <section className="mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-accent)]">
+              <Eyebrow tone="text-accent">{t('MÜCADELELER')}</Eyebrow>
+              <p className="mt-2.5 text-center font-display text-4xl leading-none text-cream short:text-3xl">
+                ▲ {challengeDone}
+                <span className="text-[16px] text-muted">/{CHALLENGES.length}</span>
+              </p>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Zor şehirlerin en sıkı yerleri, kısa ve bayraksız. Her birinin kendi madalyası ve sıralaması var.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{rulesOpen ? t('Bir mücadele, kesildiği şehir bitince açılır.') : t('Zor bir şehri bitirince açılır.')}</p>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" onClick={onChallenges}>
+                {t('Mücadele Seç')}
+              </button>
+            </section>
+
+            {/* Ayna Yolu */}
+            <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-accent-2)] ${mirrorOpen ? '' : 'locked'}`}>
+              <Eyebrow tone="text-accent-2">{t('AYNA YOLU · YENİ OYUN+')}</Eyebrow>
+              <div className="mt-2.5 flex items-end justify-center gap-0.5" aria-hidden>
+                <Portrait id="uktun" className={`w-[52px] short:w-[38px] ${mirrorOpen ? '' : 'opacity-40 grayscale'}`} />
+                <Portrait id="uktun" className={`w-[52px] -scale-x-100 opacity-60 short:w-[38px] ${mirrorOpen ? '' : 'grayscale'}`} />
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Otuz şehir aynada: sağdan sola, ters rüzgârla. Yalnız yol ve süre.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık. İlk ayna rekorunu yaz.')) : t('Otuz şehrin hepsini bitirince açılır.')}</p>
+              <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!mirrorOpen} onClick={onMirror}>
+                {mirrorOpen ? t('◐ Aynaya Geç') : t('Kilitli')}
+              </button>
+            </section>
           </div>
-          {/* co-op: aynı ekranda iki kişi, ortak kamera */}
-          <button className="mt-3 flex shrink-0 items-center justify-between gap-3 border-2 border-accent/60 bg-accent/5 px-3.5 py-2 text-left text-[13px] text-cream hover:bg-accent/10 short:mt-2 short:py-1.5" onClick={onCoop}>
-            <span className="min-w-0 truncate">
-              <strong className="font-display text-accent-2">{t('Co-op')}</strong> <span className="text-muted">· {t('İki kişi aynı ekranda, aynı şehirde: hatıralar ve düğmeler ortak')}</span>
-            </span>
-            <span className="shrink-0 text-accent-2">▶</span>
-          </button>
           {/* speedrun tam turları: ilk defterin otuz şehri arka arkaya (düz ve aynalı) */}
-          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] short:mt-2 short:py-1.5">
+          <div className="mt-3 grid shrink-0 gap-3 short:mt-2 short:gap-2 wide:grid-cols-2">
+          <div className="flex flex-wrap items-center gap-2 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] short:py-1.5">
             <strong className="font-display text-gold">{t('Speedrun')}</strong>
             <span className="min-w-0 flex-1 truncate text-muted">{mirrorOpen ? t('Otuz şehir arka arkaya, tek süre') : t('İlk defterin otuz şehrini bitirince açılır.')}</span>
             <button className="pixel-btn px-2.5 py-1 text-[13px]" disabled={!mirrorOpen} onClick={() => onTour('tur')}>
@@ -287,13 +318,21 @@ export function ModesHub({
               ◐ {t('Ayna Tam Tur')} {aynaTourBest ? `· ${formatTime(aynaTourBest.timeMs)}` : '▶'}
             </button>
           </div>
+          {/* Bölüm Düzenleyici: kendi haritanı çiz (eskiden yalnız topluluk galerisinden açılıyordu) */}
+          <a href="/duzenle" className="flex items-center justify-between gap-3 border-2 border-accent/60 bg-accent/5 px-3.5 py-2 text-[13px] text-cream hover:border-gold/60 short:py-1.5 wide:col-span-2">
+            <span className="min-w-0 truncate">
+              <strong className="font-display text-accent-2">{t('Bölüm Düzenleyici')}</strong> <span className="text-muted">· {t('Kendi bölümünü çiz, çözücüyle sına, arkadaşına gönder ya da topluluğa yayınla')}</span>
+            </span>
+            <span className="shrink-0 text-accent-2">✎</span>
+          </a>
           {/* topluluk haritaları: yolcuların düzenleyicide çizip yayınladığı yollar (ayrı sayfa) */}
-          <a href="/haritalar" className="mt-3 flex shrink-0 items-center justify-between gap-3 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] text-cream hover:border-gold/60 short:mt-2 short:py-1.5">
+          <a href="/haritalar" className="flex items-center justify-between gap-3 border-2 border-line bg-ink/40 px-3.5 py-2 text-[13px] text-cream hover:border-gold/60 short:py-1.5">
             <span className="min-w-0 truncate">
               <strong className="font-display text-gold">{t('Topluluk Haritaları')}</strong> <span className="text-muted">· {t('Yolcuların çizdiği yolları oyna, kendininkini yayınla')}</span>
             </span>
             <span className="shrink-0 text-accent-2">→</span>
           </a>
+          </div>
         </div>
       </div>
     </Overlay>
@@ -395,21 +434,22 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
 }
 
 /** Kurallı Koşu kurulumu: şehir + kural; her kuralın o şehirdeki rekoru kartında yazar */
-export function RuleSetup({ startLevel, finished, records, onStart, onBack }: { startLevel: number; /** bitirilmiş şehirlerin dizinleri: kural yalnız bir kez geçilmiş şehirde açılır */ finished: number[]; records: Record<string, number>; onStart: (level: number, rule: DailyRule) => void; onBack: () => void }) {
+export function RuleSetup({ rage, startLevel, finished, records, onStart, onBack }: { /** Sinir Bozucu modlar (yalnız RAGE_RULES) */ rage?: boolean; startLevel: number; /** bitirilmiş şehirlerin dizinleri: kural yalnız bir kez geçilmiş şehirde açılır */ finished: number[]; records: Record<string, number>; onStart: (level: number, rule: DailyRule) => void; onBack: () => void }) {
   const t = useT()
   const lng = useLang()
   const [level, setLevel] = useState(finished.includes(startLevel) ? startLevel : (finished[0] ?? 0))
-  const [rule, setRule] = useState<DailyRule>('ceza')
+  const list: DailyRule[] = rage ? RAGE_RULES : RULES
+  const [rule, setRule] = useState<DailyRule>(list[0])
   const lv = localize(LEVELS[level], lng)
   const fits = ruleFits(rule, LEVELS[level])
-  const done = RULES.filter((r) => records[ruleKey(lv.id, r)] !== undefined).length
+  const done = list.filter((r) => records[ruleKey(lv.id, r)] !== undefined).length
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:max-w-[min(900px,100%)] short:py-3 wide:max-w-[min(960px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[12px] font-bold tracking-[0.18em] text-accent max-sm:hidden short:hidden">{t('AYNI ŞEHİR, BAŞKA OYUN')}</p>
-            <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Kurallı Koşu')}</h2>
+            <p className={`text-[12px] font-bold tracking-[0.18em] max-sm:hidden short:hidden ${rage ? 'text-coral' : 'text-accent'}`}>{rage ? t('SABRINI SINA') : t('AYNI ŞEHİR, BAŞKA OYUN')}</p>
+            <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{rage ? t('Sinir Bozucu') : t('Kurallı Koşu')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {t('← Geri')}
@@ -423,10 +463,10 @@ export function RuleSetup({ startLevel, finished, records, onStart, onBack }: { 
               </option>
             ))}
           </select>
-          <span className="shrink-0 border-2 border-line bg-ink/40 px-2 py-2 text-[13px] tabular-nums text-muted">{t('{n}/{total} kural', { n: done, total: RULES.length })}</span>
+          <span className="shrink-0 border-2 border-line bg-ink/40 px-2 py-2 text-[13px] tabular-nums text-muted">{t('{n}/{total} kural', { n: done, total: list.length })}</span>
         </div>
         <div className="overlay-scroll -mx-1 mt-3 grid min-h-0 flex-1 grid-cols-1 content-start gap-2 overflow-y-auto px-1 sm:grid-cols-2 short:mt-2 short:grid-cols-2 wide:grid-cols-3">
-          {RULES.map((r) => {
+          {list.map((r) => {
             const def = DAILY_RULES[r]
             const ok = ruleFits(r, LEVELS[level])
             const best = records[ruleKey(lv.id, r)]

@@ -134,6 +134,17 @@ değiştirmez; yeni kural eklerken her şehirde bitirilebildiğini kanıtla. Eti
 bitmiyor, bu yüzden Dash’siz yalnız NO_DASH_OK listesinde çıkar (`npx tsx scripts/verify-rules.ts`; o şehirlerin haritası
 değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açılır; rekoru şehir + kural başınadır.
 
+**Sinir Bozucu modlar.** `lib/extras.ts` RAGE_RULES (Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Kâbus, Son Nefes):
+Kurallı Koşu altyapısında (`save.rules`, rekor şehir + mod başına), günlüğe çıkmaz (RULES'ta yoklar). Fizik `ruleLevel()` ile
+bölüme yazılır: `LevelDef.slippery` (her zemin buz), `crumbleAll` (üstü boş her katı yüzey çatlak taş; başlangıç, bayrak, çıkış
+ve boss arenası sağlam); Ters Tuşlar girdide (`swapPhase`, 9 sn'lik turun son 4 sn'si, öncesinde uyarı). Kaygan ve çöken
+fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya da harita değişikliğinde
+`npx tsx scripts/verify-rage.ts <kaygan|coken> <şehir>` koş ve listeye yaz. Renk ailesi kiremit (`--color-coral`).
+
+**Modlar ekranının renk aileleri.** `mode-card` + `[--tone:…]`: rekabet altın (Günlük, Turnuva), birlikte turkuaz
+(`--color-teal`: Co-op, Düello), meydan okuma kiremit (`--color-coral`: Sinir Bozucu, Boss Rush, Maraton), yol çivit (Kurallı,
+Mücadeleler, Ayna). Ekranda tek dolu düğme (Günlük); kartların düğmesi `pixel-btn tone`.
+
 **Mücadele haritaları.** `game/challenges.ts` CHALLENGES: şehir + bayrak aralığı (`from`, `to`) + `par` (çözücünün süresi).
 Harita şehirden kesildiği için şehir haritası değişince kesit de değişir: Zor şehre dokununca `npx tsx scripts/verify-challenges.ts`
 koş, süre çok oynadıysa `par`ı güncelle. Skoru `mucadele:<id>` anahtarıyla aynı tabloda (genel sıralamaya girmez), en iyisi `save.challenges`.

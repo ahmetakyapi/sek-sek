@@ -205,3 +205,24 @@ describe('nitro tüpü', () => {
     expect(w.nitros[0].active).toBe(true)
   })
 })
+
+describe('zor mod fiziği', () => {
+  const map = ['                    ', '                    ', ' P                  ', '####################', '####################']
+  it('Kaygan Dünya: bırakınca buzdaki gibi uzun kayar', () => {
+    const slide = (slippery: boolean) => {
+      const w = new World({ ...LEVELS[0], map, wind: 0, slippery })
+      step(w, 0.3)
+      step(w, 0.8, { right: true })
+      const x = w.player.x
+      step(w, 1)
+      return w.player.x - x
+    }
+    expect(slide(true)).toBeGreaterThan(slide(false) + 8)
+  })
+  it('Çöken Dünya: yüzeyler çatlak taşa döner, başlangıcın çevresi sağlam kalır', () => {
+    const w = new World({ ...LEVELS[0], map, wind: 0, crumbleAll: true })
+    expect(w.tile(1, 3)).toBe(1)
+    expect(w.tile(12, 3)).toBe(5)
+    expect(w.tile(12, 4)).toBe(1)
+  })
+})

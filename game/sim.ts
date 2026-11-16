@@ -564,6 +564,7 @@ export class World {
       if (wet >= 2) this.set(tx, ty, SWIM)
     }
     if (level.poison) this.poisonPits()
+    if (level.crumbleAll) this.crumbleSurfaces()
     this.player = this.freshPlayer(start.x, start.y)
   }
 
@@ -590,6 +591,24 @@ export class World {
         }
       }
     }
+  }
+
+  /**
+   * Çöken Dünya: üstü boş her katı yüzey karosu çatlak taşa döner. Başlangıcın, bayrakların, çıkışın, meydan kapısının
+   * ve varış yerinin iki karo çevresi ile boss arenası sağlam kalır: oyuncu doğduğu yerde düşmez, boss'u bekleyerek yener.
+   */
+  private crumbleSurfaces() {
+    const safe: Array<{ x: number; y: number }> = [this.start, this.exit, ...this.checkpoints]
+    if (this.warp) safe.push(this.warp)
+    if (this.arrival) safe.push(this.arrival)
+    const near = (tx: number, ty: number) => safe.some((b) => Math.abs(Math.floor(b.x / T) - tx) <= 2 && Math.abs(Math.floor(b.y / T) - ty) <= 3)
+    const arena = (tx: number) => this.boss !== null && tx * T >= this.boss.min - 2 * T && tx * T <= this.boss.max + this.boss.w + 2 * T
+    for (let ty = 1; ty < this.rows; ty++)
+      for (let tx = 0; tx < this.cols; tx++) {
+        if (this.tile(tx, ty) !== SOLID || this.tile(tx, ty - 1) !== EMPTY) continue
+        if (near(tx, ty) || arena(tx)) continue
+        this.set(tx, ty, CRUMBLE)
+      }
   }
 
   private makePlatform(map: string[], tx: number, ty: number, n: number, axis: Platform['axis']): Platform {
@@ -1275,7 +1294,7 @@ export class World {
       if (!hit.plat) {
         const ty = Math.floor((p.y + p.h + 1) / T)
         const cx = Math.floor((p.x + p.w / 2) / T)
-        p.onIce = this.tile(cx, ty) === ICE
+        p.onIce = this.tile(cx, ty) === ICE || !!this.level.slippery
         p.onWet = this.tile(cx, ty) === WET
       }
     } else {
