@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '@/game/levels'
 import { World } from '@/game/sim'
-import { CITY_CODES, MAX_W, ROWS, SAMPLE_MAP, SYMBOLS, customLevel, customMedals, decodeMap, encodeMap, validateMap } from '@/lib/customLevel'
+import { CITY_CODES, MAX_W, ROWS, SAMPLE_MAP, SYMBOLS, customLevel, customMedals, decodeMap, encodeMap, validateMap, textProblem } from '@/lib/customLevel'
 import { solve } from '../scripts/solver'
 
 const blank = (w: number) => {
@@ -13,11 +13,11 @@ describe('özel harita kodu', () => {
   it('örnek harita gidiş-dönüş', () => {
     const code = encodeMap(SAMPLE_MAP, 'kayseri')
     expect(code).toMatch(/^[A-Za-z0-9_-]+$/)
-    expect(decodeMap(code)).toEqual({ map: SAMPLE_MAP, city: 'kayseri' })
+    expect(decodeMap(code)).toMatchObject({ map: SAMPLE_MAP, city: 'kayseri' })
   })
 
   it('her şehir ve her simge, uzun koşular dahil gidiş-dönüş', () => {
-    const syms = SYMBOLS.filter((s) => !'PEC$!KDp[]'.includes(s))
+    const syms = SYMBOLS.filter((s) => !'PEC$!KDp[]?n'.includes(s))
     let seed = 7
     const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648)
     for (const city of CITY_CODES) {
@@ -26,12 +26,12 @@ describe('özel harita kodu', () => {
         y < 19 ? Array.from(r, () => (rnd() < 0.6 ? ' ' : syms[Math.floor(rnd() * syms.length)])).join('') : r,
       )
       const out = decodeMap(encodeMap(map, city))
-      expect(out).toEqual({ map, city })
+      expect(out).toMatchObject({ map, city })
     }
     const wide = blank(MAX_W)
     const code = encodeMap(wide, 'bayburt')
     expect(code.length).toBeLessThan(60)
-    expect(decodeMap(code)).toEqual({ map: wide, city: 'bayburt' })
+    expect(decodeMap(code)).toMatchObject({ map: wide, city: 'bayburt' })
   })
 
   it('şehir sırası bütün bölümleri kapsar', () => {
@@ -72,9 +72,9 @@ describe('kod sürümleri', () => {
   )
 
   it('sürüm 1 kodları aynen açılır ve aynı haritaya yine aynı kod üretilir', () => {
-    expect(decodeMap(OLD_SAMPLE)).toEqual({ map: SAMPLE_MAP, city: 'kayseri' })
+    expect(decodeMap(OLD_SAMPLE)).toMatchObject({ map: SAMPLE_MAP, city: 'kayseri' })
     expect(encodeMap(SAMPLE_MAP, 'kayseri')).toBe(OLD_SAMPLE)
-    expect(decodeMap(OLD_WIDE)).toEqual({ map: wide320, city: 'agri' })
+    expect(decodeMap(OLD_WIDE)).toMatchObject({ map: wide320, city: 'agri' })
     expect(encodeMap(wide320, 'agri')).toBe(OLD_WIDE)
   })
 
@@ -82,7 +82,7 @@ describe('kod sürümleri', () => {
     const withStamp = SAMPLE_MAP.map((r, y) => (y === 15 ? r.slice(0, 10) + '$' + r.slice(11) : r))
     const c2 = encodeMap(withStamp, 'van')
     expect(fromCode(c2)[0]).toBe(2)
-    expect(decodeMap(c2)).toEqual({ map: withStamp, city: 'van' })
+    expect(decodeMap(c2)).toMatchObject({ map: withStamp, city: 'van' })
     const wider = blank(321)
     expect(fromCode(encodeMap(wider, 'van'))[0]).toBe(2)
     expect(fromCode(encodeMap(blank(320), 'van'))[0]).toBe(1)
@@ -93,7 +93,7 @@ describe('kod sürümleri', () => {
     const body = [(16 << 3) | 0, (25 << 3) | 0, (17 << 3) | 0, (0 << 3) | 7, 0x80 + 0x7f, 0x07]
     expect(decodeMap(toCode([1, 0, 0, 40, sum(body), ...body]))).toEqual({ error: 'Haritada izin verilmeyen bir karo var.' })
     expect(decodeMap(toCode([1, 0, 1, 0x41, sum([0]), 0]))).toHaveProperty('error')
-    expect(decodeMap(toCode([3, 0, 0, 40, sum([0]), 0]))).toEqual({ error: 'Harita kodu bu sürümde açılamıyor.' })
+    expect(decodeMap(toCode([4, 0, 0, 40, sum([0]), 0]))).toEqual({ error: 'Harita kodu bu sürümde açılamıyor.' })
   })
 })
 
@@ -130,7 +130,7 @@ describe('yeni simgelerin kuralları', () => {
     expect(w.platforms).toHaveLength(3)
     expect(w.hammers).toHaveLength(1)
     expect(w.enemies).toHaveLength(5)
-    expect(decodeMap(encodeMap(m, 'ordu'))).toEqual({ map: m, city: 'ordu' })
+    expect(decodeMap(encodeMap(m, 'ordu'))).toMatchObject({ map: m, city: 'ordu' })
   })
 })
 
@@ -155,5 +155,33 @@ describe('customLevel', () => {
     expect(w.pickups.length).toBe(1)
     expect(w.checkpoints.length).toBe(1)
     expect(solve(l, { exitOnly: true, budget: 4000 }).won).toBe(true)
+  })
+})
+
+describe('özel harita metinleri (sürüm 3)', () => {
+  const base = SAMPLE_MAP.map((r, y) => (y === 19 ? r.slice(0, 10) + '?' + r.slice(11, 14) + 'n' + r.slice(15) : r))
+  it('tabela ve kişi metinleri kodla gidip gelir; metinsiz harita eski sürümde kalır', () => {
+    const texts = { signs: ['Duvara tutun, yukarı sek.'], npcs: [{ name: 'Simitçi Hasan', text: 'Çay da var, simit de! Şşş… duvarın ardına bak.', look: 'usta' as const }] }
+    const code = encodeMap(base, 'istanbul', texts)
+    const r = decodeMap(code)
+    expect('error' in r).toBe(false)
+    if ('error' in r) return
+    expect(r.map).toEqual(base)
+    expect(r.texts).toEqual(texts)
+    const lv = customLevel(r.map, r.city, r.texts)
+    expect(lv.hints).toEqual(['Duvara tutun, yukarı sek.'])
+    expect(lv.npcs[0]).toEqual({ name: 'Simitçi Hasan', look: 'usta', text: 'Çay da var, simit de! Şşş… duvarın ardına bak.' })
+    // metin yoksa sürüm 3 değil: aynı harita aynı kod (yinelenen yayın yakalanır)
+    expect(encodeMap(base, 'istanbul', { signs: [''], npcs: [] })).toBe(encodeMap(base, 'istanbul'))
+  })
+  it('metin sınırları ve kaba söz süzgeci', () => {
+    expect(() => encodeMap(base, 'istanbul', { signs: ['x'.repeat(141)], npcs: [] })).toThrow()
+    expect(textProblem({ signs: Array(9).fill('a'), npcs: [] })).not.toBeNull()
+    expect(textProblem({ signs: ['Merhaba yolcu'], npcs: [] })).toBeNull()
+  })
+  it('yazılmamış tabela ve kişi oyunda boş kalmaz', () => {
+    const lv = customLevel(base, 'istanbul')
+    expect(lv.hints).toEqual(['…'])
+    expect(lv.npcs[0].name).toBe('Yolcu')
   })
 })

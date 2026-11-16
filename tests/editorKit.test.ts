@@ -15,7 +15,7 @@ describe('başlangıç şablonları', () => {
     it(`${tpl.name}: geçerli, kodlanır ve çözücüyle biter`, () => {
       const map = tpl.make()
       expect(validateMap(map)).toBeNull()
-      expect(decodeMap(encodeMap(map, 'istanbul'))).toEqual({ map, city: 'istanbul' })
+      expect(decodeMap(encodeMap(map, 'istanbul'))).toMatchObject({ map, city: 'istanbul' })
       expect(solve(customLevel(map, 'istanbul'), { exitOnly: true, budget: 20000 }).won).toBe(true)
     })
 })

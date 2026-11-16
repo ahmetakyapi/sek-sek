@@ -332,7 +332,7 @@ export default function Game() {
     const oz = qs.get('ozel')
     if (oz) {
       const d = decodeMap(oz)
-      setCustom('error' in d ? { error: d.error } : { code: oz, level: customLevel(d.map, d.city) })
+      setCustom('error' in d ? { error: d.error } : { code: oz, level: customLevel(d.map, d.city, d.texts) })
       screenRef.current = 'custom'
       setScreenState('custom')
     }

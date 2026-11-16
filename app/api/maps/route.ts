@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   const problem = titleProblem(b.title)
   if (problem) return bad(problem)
   const title = cleanTitle(b.title)
-  const code = encodeMap(decoded.map, decoded.city)
+  const code = encodeMap(decoded.map, decoded.city, decoded.texts)
   try {
     const me = await mapViewer(req)
     if (!me) return bad('Yayınlamak için giriş yap.', 401)

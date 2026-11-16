@@ -8,10 +8,13 @@
  *            Yalnız ilk 25 simge ve en çok 320 sütun; böyle bir harita bugün de sürüm 1 ile kodlanır (eski bağlantılar ve
  *            yayındaki topluluk haritaları aynı kodu korur, yinelenen yayın yakalanır).
  *   Sürüm 2: her koşu üst 6 bit simge sırası (64 simgeye yer), alt 2 bit (uzunluk - 1); 3 ise ardından (uzunluk - 4) varint.
+ *   Sürüm 3: sürüm 2 + haritanın ardından metin bölümü: tabela (?) ve şehir insanı (n) metinleri, UTF-8 JSON
+ *            `{ s: string[], n: [ad, söz, kılık][] }` (soldan sağa haritadaki sırayla). Metinsiz harita sürüm 1/2 kalır.
  * Simge ve şehir sıraları kalıcıdır: yeni simge ya da şehir yalnız listenin SONUNA eklenir, yoksa eski kodlar bozulur.
  */
 import { LEVELS } from '@/game/levels'
-import type { CityKey, LevelDef } from '@/game/types'
+import type { CityKey, LevelDef, Npc } from '@/game/types'
+import { isRude } from './communityMaps'
 
 export const ROWS = 24
 export const MIN_W = 40
@@ -31,9 +34,34 @@ export const SINGLES = ['P', 'E', '$', '!', 'K'] as const
 export const SYMBOLS = [
   ' ', '#', '=', '^', 'v', 'I', 'i', 'X', '~', 'S', 'F', 'C', 'e', 'f', '>', '<', 'P', 'E', 't', 'l', 'w', 'b', 'L', 'R', 'W',
   '$', '!', 'K', 'D', '%', '*', 'p', '_', '[', ']', 'M', 'N', '|', ':', 'B', 'Y', 'h', 'c', 'u', 'x', 'j',
-  'T',
+  'T', '?', 'n', 'O',
 ] as const
 export type Sym = (typeof SYMBOLS)[number]
+
+/** Özel haritanın yazılı metinleri: tabelalar ve şehir insanları, haritadaki soldan sağa sırayla */
+export interface CustomTexts {
+  signs: string[]
+  npcs: { name: string; text: string; look: Npc['look'] }[]
+}
+export const MAX_SIGNS = 8
+export const MAX_NPCS = 4
+export const SIGN_MAX = 140
+export const NPC_NAME_MAX = 24
+export const NPC_TEXT_MAX = 160
+export const NPC_LOOKS: Npc['look'][] = ['amca', 'teyze', 'usta', 'genc', 'coban', 'ozan']
+export const emptyTexts = (): CustomTexts => ({ signs: [], npcs: [] })
+
+/** Metinlerdeki ilk sorun (uzunluk, kaba söz); yoksa null */
+export function textProblem(t: CustomTexts): string | null {
+  if (t.signs.length > MAX_SIGNS) return 'En çok sekiz tabela konabilir.'
+  if (t.npcs.length > MAX_NPCS) return 'En çok dört şehir insanı konabilir.'
+  if (t.signs.some((s) => s.length > SIGN_MAX)) return 'Tabela yazısı en çok 140 karakter olabilir.'
+  if (t.npcs.some((n) => n.name.length > NPC_NAME_MAX || n.text.length > NPC_TEXT_MAX)) return 'Kişinin adı en çok 24, sözü en çok 160 karakter olabilir.'
+  if ([...t.signs, ...t.npcs.flatMap((n) => [n.name, n.text])].some((s) => isRude(s))) return 'Metinlerden biri yayınlanamaz; başka bir söz dene.'
+  return null
+}
+
+const hasTexts = (t?: CustomTexts) => !!t && (t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
 
 /** Kodda şehrin sırası; kalıcı (yeni şehir sona). */
 export const CITY_CODES = [
@@ -69,6 +97,8 @@ export function validateMap(map: string[]): string | null {
   if (count('D') && !count('K')) return 'Kilitli kapı var ama anahtar yok.'
   if (count('p') > MAX_CRATES) return 'En çok iki sandık konabilir.'
   if ((count('[') || count(']')) && !count('_')) return 'Renkli bloklar var ama onları değiştirecek plaka yok.'
+  if (count('?') > MAX_SIGNS) return 'En çok sekiz tabela konabilir.'
+  if (count('n') > MAX_NPCS) return 'En çok dört şehir insanı konabilir.'
   return null
 }
 
@@ -91,15 +121,16 @@ function fromB64url(code: string): number[] | null {
 const checksum = (bytes: number[]) => bytes.reduce((a, b) => (a * 31 + b) % 251, 7)
 
 /** Haritayı kısa, URL'de güvenli koda çevirir. Geçersiz haritada hata atar (önce validateMap). */
-export function encodeMap(map: string[], city: CityKey): string {
-  const problem = validateMap(map)
+export function encodeMap(map: string[], city: CityKey, texts?: CustomTexts): string {
+  const problem = validateMap(map) ?? (texts ? textProblem(texts) : null)
   if (problem) throw new Error(problem)
+  const withText = hasTexts(texts)
   const ci = CITY_CODES.indexOf(city as (typeof CITY_CODES)[number])
   if (ci < 0) throw new Error(`bilinmeyen şehir: ${city}`)
   const flat = map.join('')
   const w = map[0].length
   // sürüm 1'e sığan harita sürüm 1 kalır: aynı harita her zaman aynı kod (yayında yinelenen harita yakalanır)
-  const v1 = w <= V1_MAX_W && Array.from(flat).every((ch) => SYM_INDEX.get(ch)! < V1_SYMBOLS)
+  const v1 = !withText && w <= V1_MAX_W && Array.from(flat).every((ch) => SYM_INDEX.get(ch)! < V1_SYMBOLS)
   const lenBits = v1 ? 3 : 2
   const short = (1 << lenBits) - 1
   const body: number[] = []
@@ -120,15 +151,19 @@ export function encodeMap(map: string[], city: CityKey): string {
     }
     i = j
   }
-  return toB64url([v1 ? 1 : 2, ci, w >> 8, w & 0xff, checksum(body), ...body])
+  if (withText) {
+    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]) })
+    body.push(...new TextEncoder().encode(json))
+  }
+  return toB64url([v1 ? 1 : withText ? 3 : 2, ci, w >> 8, w & 0xff, checksum(body), ...body])
 }
 
 /** Kodu haritaya çevirir; bozuk kod, boyut, yasak karakter ve P/E sayısı denetlenir. */
-export function decodeMap(code: string): { map: string[]; city: CityKey } | { error: string } {
+export function decodeMap(code: string): { map: string[]; city: CityKey; texts: CustomTexts } | { error: string } {
   const bytes = fromB64url(code.trim())
   if (!bytes || bytes.length < 6) return { error: 'Harita kodu bozuk.' }
   const [ver, ci, wh, wl, sum] = bytes
-  if (ver !== 1 && ver !== 2) return { error: 'Harita kodu bu sürümde açılamıyor.' }
+  if (ver !== 1 && ver !== 2 && ver !== 3) return { error: 'Harita kodu bu sürümde açılamıyor.' }
   const city = CITY_CODES[ci]
   if (!city) return { error: 'Harita kodu bozuk.' }
   const w = (wh << 8) | wl
@@ -140,7 +175,8 @@ export function decodeMap(code: string): { map: string[]; city: CityKey } | { er
   if (checksum(body) !== sum) return { error: 'Harita kodu bozuk.' }
   const total = w * ROWS
   let flat = ''
-  for (let i = 0; i < body.length; ) {
+  let i = 0
+  while (i < body.length && flat.length < total) {
     const b = body[i++]
     const si = b >> lenBits
     if (si >= symCount) return { error: 'Haritada izin verilmeyen bir karo var.' }
@@ -162,16 +198,30 @@ export function decodeMap(code: string): { map: string[]; city: CityKey } | { er
     flat += sym.repeat(run)
   }
   if (flat.length !== total) return { error: 'Harita kodu bozuk.' }
+  // sürüm 1 ve 2'de haritadan sonra bayt kalmaz; sürüm 3'te kalan baytlar metin bölümüdür
+  let texts = emptyTexts()
+  if (ver === 3) {
+    try {
+      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown }
+      const str = (v: unknown) => (typeof v === 'string' ? v : '')
+      texts = {
+        signs: Array.isArray(j.s) ? j.s.map(str) : [],
+        npcs: Array.isArray(j.n) ? j.n.map((x) => (Array.isArray(x) ? { name: str(x[0]), text: str(x[1]), look: NPC_LOOKS.includes(x[2]) ? x[2] : 'amca' } : { name: '', text: '', look: 'amca' as const })) : [],
+      }
+    } catch {
+      return { error: 'Harita kodu bozuk.' }
+    }
+  } else if (i !== body.length) return { error: 'Harita kodu bozuk.' }
   const map = Array.from({ length: ROWS }, (_, r) => flat.slice(r * w, (r + 1) * w))
-  const problem = validateMap(map)
-  return problem ? { error: problem } : { map, city }
+  const problem = validateMap(map) ?? textProblem(texts)
+  return problem ? { error: problem } : { map, city, texts }
 }
 
 /** Madalya süreleri genişlikten: altın 0,12 · gümüş 0,18 · bronz 0,26 sn/sütun. */
 export const customMedals = (w: number): [number, number, number] => [Math.round(w * 0.12), Math.round(w * 0.18), Math.round(w * 0.26)]
 
 /** Özel haritayı oyunun okuyacağı bölüme çevirir: görünüm ve şehir metinleri seçilen şehirden, harita ve ad özel. */
-export function customLevel(map: string[], city: CityKey): LevelDef {
+export function customLevel(map: string[], city: CityKey, texts: CustomTexts = emptyTexts()): LevelDef {
   const base = LEVELS.find((l) => l.city === city) ?? LEVELS[0]
   return {
     id: 'ozel',
@@ -184,10 +234,14 @@ export function customLevel(map: string[], city: CityKey): LevelDef {
     intro: base.intro,
     facts: base.facts,
     secret: base.secret,
-    hints: [],
+    // yazar metin girmediyse tabela boş kalmasın: kısa bir yönerge
+    hints: Array.from({ length: map.join('').split('?').length - 1 }, (_, k) => texts.signs[k]?.trim() || '…'),
     nickname: base.nickname,
     note: base.note,
-    npcs: [],
+    npcs: Array.from({ length: map.join('').split('n').length - 1 }, (_, k) => {
+      const n = texts.npcs[k]
+      return { name: n?.name.trim() || 'Yolcu', look: n?.look ?? 'amca', text: n?.text.trim() || '…' }
+    }),
     medals: customMedals(map[0]?.length ?? MIN_W),
     quips: base.quips,
     wind: undefined,

@@ -7,7 +7,7 @@ import { CITY, type CityStyle } from '@/game/art'
 import { LEVELS } from '@/game/levels'
 import type { CityKey } from '@/game/types'
 import { TITLE_MAX, titleProblem } from '@/lib/communityMaps'
-import { MAX_W, MIN_W, ROWS, SAMPLE_MAP, SINGLES, customLevel, decodeMap, encodeMap, validateMap, type Sym } from '@/lib/customLevel'
+import { MAX_W, MIN_W, NPC_LOOKS, NPC_NAME_MAX, NPC_TEXT_MAX, ROWS, SAMPLE_MAP, SIGN_MAX, SINGLES, customLevel, decodeMap, emptyTexts, encodeMap, textProblem, validateMap, type CustomTexts, type Sym } from '@/lib/customLevel'
 import { KEEP, STAMPS, TEMPLATES, cut, fillRect, floodFill, mirrorRect, mirrorRows, norm, placePattern, thumbColors, type Pattern, type Rect } from '@/lib/editorKit'
 import { LangProvider, useLang, useT, type Lang } from '@/lib/i18n'
 import type { SolveReply, SolveRequest } from './solve.worker'
@@ -59,12 +59,15 @@ const TILES: TileDef[] = [
   { sym: 'S', name: 'Yay', desc: 'Üstüne basanı yedi karo kadar yukarı fırlatır.', key: '9', cat: 'nesne' },
   { sym: '*', name: 'Dash Halkası', desc: 'Değince dash’i yeniler: havada ikinci dash için.', key: '*', cat: 'nesne' },
   { sym: 'T', name: 'Nitro Tüpü', desc: 'Alınınca 3 saniye hızlı koşu, atlayış uzar; birkaç saniyede yeniden dolar.', key: 'S', cat: 'nesne' },
+  { sym: '?', name: 'Tabela', desc: 'Önünde durana senin yazdığın sözü gösterir (en çok 8; yazısı Metinler kutusunda).', key: '?', cat: 'nesne' },
+  { sym: 'n', name: 'Şehir İnsanı', desc: 'Yanına gelene senin yazdığın sözü söyler (en çok 4; adı, sözü ve kılığı Metinler kutusunda).', cat: 'nesne' },
   { sym: 'p', name: 'Sandık', desc: 'İtilir, üstüne çıkılır; en çok iki, küçük kapalı alanda.', key: 'X', cat: 'nesne' },
   { sym: 'M', name: 'Raylı Platform ↔', desc: 'Yan yana koyduğun kadar geniş; ray sonuna (|) ya da duvara dek gidip gelir.', key: 'V', cat: 'hareketli' },
   { sym: '|', name: 'Ray Sonu', desc: 'Yatay raylı platformun döndüğü yer; oyunda görünmez.', key: '|', cat: 'hareketli' },
   { sym: 'N', name: 'Raylı Platform ↕', desc: 'Yukarı aşağı gider; iki nokta (:) ya da zemin durdurur.', key: 'Z', cat: 'hareketli' },
   { sym: ':', name: 'Dikey Ray Sonu', desc: 'Dikey platformun ve balonun durduğu yer; oyunda görünmez.', key: ':', cat: 'hareketli' },
   { sym: 'B', name: 'Balon', desc: 'Üstüne binince yükselir, inince yavaşça alçalır.', cat: 'hareketli' },
+  { sym: 'O', name: 'Sema Halkası', desc: 'Merkezinin çevresinde dönen tepsi; yan yana iki halka ters yöne döner.', cat: 'hareketli' },
   { sym: 'L', name: 'Halat', desc: 'Havadayken değince tutunulur; yukarı aşağı tırmanılır.', key: 'Y', cat: 'hareketli' },
   { sym: 'R', name: 'Teleferik Halatı', desc: 'Altından zıplayınca asılınır, elle ilerlenir. Bittiği yerin altı zemin olsun.', key: 'J', cat: 'hareketli' },
   { sym: 'e', name: 'Yürüyen Düşman', desc: 'Kenara ya da duvara varınca döner; üstüne basılır.', key: 'D', cat: 'dusman' },
@@ -114,6 +117,7 @@ interface Draft {
   map: string[]
   city: CityKey
   at: number
+  texts?: CustomTexts
 }
 
 /** Topluluğa yayın: giriş yapan oyuncu (çerezden ya da yerel kayıttan), başlık ve sonuç */
@@ -353,6 +357,39 @@ function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: number,
       disc(c, x + 8 * u, y + 8 * u, 4 * u, look.cream)
       disc(c, x + 8 * u, y + 8 * u, 2.6 * u, '#62b6ff')
       disc(c, x + 8 * u, y + 8 * u, 1.3 * u, look.ink)
+      break
+    case '?': {
+      // tabela: direk ve tahta, üstünde soru işareti
+      c.fillStyle = p.plank
+      c.fillRect(x + 7 * u, y + 8 * u, 2 * u, 8 * u)
+      c.fillRect(x + 2 * u, y + 2 * u, 12 * u, 7 * u)
+      c.fillStyle = look.cream
+      c.font = `700 ${Math.round(7 * u)}px system-ui, sans-serif`
+      c.textAlign = 'center'
+      c.textBaseline = 'middle'
+      c.fillText('?', x + 8 * u, y + 5.8 * u)
+      c.textAlign = 'start'
+      break
+    }
+    case 'n':
+      // şehir insanı: baş, gövde, konuşma noktası
+      disc(c, x + 8 * u, y + 4.5 * u, 3 * u, '#e8b48a')
+      c.fillStyle = p.accent
+      c.fillRect(x + 4.5 * u, y + 8 * u, 7 * u, 8 * u)
+      disc(c, x + 13.5 * u, y + 2.5 * u, 1.6 * u, look.cream)
+      break
+    case 'O':
+      // sema halkası: merkez ve dönen tepsi
+      c.strokeStyle = '#7ad8cc'
+      c.lineWidth = 1.2 * u
+      c.setLineDash([2 * u, 1.5 * u])
+      c.beginPath()
+      c.arc(x + 8 * u, y + 8 * u, 6.5 * u, 0, Math.PI * 2)
+      c.stroke()
+      c.setLineDash([])
+      disc(c, x + 8 * u, y + 8 * u, 1.8 * u, '#f2c14e')
+      c.fillStyle = '#2f9a94'
+      c.fillRect(x + 11 * u, y + 2 * u, 5 * u, 2 * u)
       break
     case 'K':
       c.strokeStyle = look.gold
@@ -645,6 +682,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   const lang = useLang()
   const [map, setMap] = useState<string[]>(SAMPLE_MAP)
   const [city, setCity] = useState<CityKey>('istanbul')
+  const [texts, setTexts] = useState<CustomTexts>(emptyTexts)
   const [tile, setTile] = useState<Sym>('#')
   const [tool, setTool] = useState<ToolId>('brush')
   const [cat, setCat] = useState<Cat>('zemin')
@@ -682,8 +720,15 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
 
   const cols = map[0].length
   const viewW = Math.min(boxW || cols * cell, cols * cell)
-  const problem = validateMap(map)
-  const code = useMemo(() => (problem ? null : encodeMap(map, city)), [map, city, problem])
+  // tabela ve şehir insanı metinleri haritadaki sayıya göre: fazlası saklanır (silinip geri konursa metin kaybolmaz)
+  const signCount = useMemo(() => map.join('').split('?').length - 1, [map])
+  const npcCount = useMemo(() => map.join('').split('n').length - 1, [map])
+  const usedTexts: CustomTexts = useMemo(
+    () => ({ signs: Array.from({ length: signCount }, (_, k) => texts.signs[k] ?? ''), npcs: Array.from({ length: npcCount }, (_, k) => texts.npcs[k] ?? { name: '', text: '', look: NPC_LOOKS[k % NPC_LOOKS.length] }) }),
+    [texts, signCount, npcCount],
+  )
+  const problem = validateMap(map) ?? textProblem(usedTexts)
+  const code = useMemo(() => (problem ? null : encodeMap(map, city, usedTexts)), [map, city, problem, usedTexts])
 
   const setDragBoth = (d: Drag | null) => {
     dragRef.current = d
@@ -703,13 +748,15 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
       else {
         setMap(r.map)
         setCity(r.city)
+        setTexts(r.texts)
         return
       }
     }
-    const work = readStore<{ map: string[]; city: CityKey }>(WORK_KEY)
+    const work = readStore<{ map: string[]; city: CityKey; texts?: CustomTexts }>(WORK_KEY)
     if (work && Array.isArray(work.map) && work.map.length === ROWS && CITY[work.city]) {
       setMap(work.map)
       setCity(work.city)
+      if (work.texts && Array.isArray(work.texts.signs) && Array.isArray(work.texts.npcs)) setTexts(work.texts)
     }
   }, [setLang])
 
@@ -735,7 +782,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   }, [])
 
   // çalışmayı her değişiklikte sakla: sayfa yenilense de kaybolmasın
-  useEffect(() => writeStore(WORK_KEY, { map, city }), [map, city])
+  useEffect(() => writeStore(WORK_KEY, { map, city, texts }), [map, city, texts])
 
   // ızgara kutusunun genişliği (yalnız görünen sütunlar çizilir)
   useEffect(() => {
@@ -1126,6 +1173,11 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
         setTool('brush')
         return
       }
+      // dokunmatikte üzerinde gezinme yok: ilk dokunuş parçanın hayaletini gösterir, aynı yere ikinci dokunuş yerleştirir
+      if (e.pointerType !== 'mouse' && (!hover || hover.x !== at.x || hover.y !== at.y)) {
+        setHover(at)
+        return
+      }
       commit(placePattern(map, float, at.x, at.y), map)
       return
     }
@@ -1224,7 +1276,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
       w.terminate()
       if (worker.current === w) setSolve({ s: 'error' })
     }
-    const req: SolveRequest = { level: customLevel(map, city), budget }
+    const req: SolveRequest = { level: customLevel(map, city, usedTexts), budget }
     w.postMessage(req)
   }
 
@@ -1266,7 +1318,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
 
   const saveDraft = () => {
     const name = draftName.trim() || t('Adsız Harita')
-    const d: Draft = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, code, map, city, at: Date.now() }
+    const d: Draft = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, code, map, city, at: Date.now(), texts: usedTexts }
     const next = [d, ...drafts].slice(0, 40)
     setDrafts(next)
     writeStore(DRAFTS_KEY, next)
@@ -1280,6 +1332,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     setSel(null)
     commit(m, map)
     setCity(r && !('error' in r) ? r.city : d.city)
+    setTexts(r && !('error' in r) ? r.texts : (d.texts ?? emptyTexts()))
   }
 
   const deleteDraft = (id: string) => {
@@ -1467,6 +1520,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                 {paints && tileDef && <span className="text-gold"> · {t(tileDef.name)}</span>}
               </p>
               <p className="text-[13px] leading-snug text-muted">{t(help.text)}</p>
+              {tool === 'stamp' && float && <p className="text-[12px] leading-snug text-muted lg:hidden">{t('Dokunmatikte: bir kez dokun, parçanın yeri görünsün; aynı yere yine dokun, yerleşsin.')}</p>}
               {paints && tileDef && <p className="text-[13px] leading-snug text-cream">{t(tileDef.desc)}</p>}
               {paints && LIMITED.has(tile) && tool !== 'brush' && <p className="text-[12px] text-muted">{t('Bu karo sayılı: dolgu ve dikdörtgen tek hücre koyar.')}</p>}
             </div>
@@ -1648,6 +1702,46 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                 </div>
               )}
             </section>
+
+            {/* metinler: haritadaki tabela ve şehir insanlarının sözleri, soldan sağa sırayla */}
+            {(signCount > 0 || npcCount > 0) && (
+              <section className="pixel-panel grid gap-3 p-4" aria-label={t('Metinler')}>
+                <h2 className="font-display text-xl text-cream">{t('Metinler')}</h2>
+                <p className="text-[13px] text-muted">{t('Tabelalar ve şehir insanları haritada soldan sağa sıralanır. Yazdığın söz oyunda başlarının üstünde baloncukta görünür.')}</p>
+                {usedTexts.signs.map((sgn, k) => (
+                  <label key={`s${k}`} className="grid gap-1 text-[13px] text-cream">
+                    <span>{t('Tabela {n}', { n: k + 1 })}</span>
+                    <input
+                      value={sgn}
+                      maxLength={SIGN_MAX}
+                      placeholder={t('Ne yapılacağını kısaca yaz: “Duvara tutun, yukarı sek.”')}
+                      onChange={(e) => setTexts((old) => ({ ...old, signs: Array.from({ length: Math.max(old.signs.length, k + 1) }, (_, i) => (i === k ? e.target.value : (old.signs[i] ?? ''))) }))}
+                      className="w-full border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream"
+                    />
+                  </label>
+                ))}
+                {usedTexts.npcs.map((npc, k) => {
+                  const put = (patch: Partial<CustomTexts['npcs'][number]>) =>
+                    setTexts((old) => ({ ...old, npcs: Array.from({ length: Math.max(old.npcs.length, k + 1) }, (_, i) => (i === k ? { ...usedTexts.npcs[k], ...patch } : (old.npcs[i] ?? usedTexts.npcs[i] ?? { name: '', text: '', look: 'amca' }))) }))
+                  return (
+                    <fieldset key={`n${k}`} className="grid gap-1.5 border-2 border-line p-2">
+                      <legend className="px-1 text-[13px] text-cream">{t('Şehir İnsanı {n}', { n: k + 1 })}</legend>
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                        <input value={npc.name} maxLength={NPC_NAME_MAX} placeholder={t('Adı: “Simitçi Hasan Amca”')} onChange={(e) => put({ name: e.target.value })} className="min-w-0 border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream" aria-label={t('Adı')} />
+                        <select value={npc.look} onChange={(e) => put({ look: e.target.value as CustomTexts['npcs'][number]['look'] })} className="border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream" aria-label={t('Kılığı')}>
+                          {NPC_LOOKS.map((l) => (
+                            <option key={l} value={l}>
+                              {t({ amca: 'Amca', teyze: 'Teyze', usta: 'Usta', genc: 'Genç', coban: 'Çoban', ozan: 'Ozan' }[l])}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <textarea value={npc.text} maxLength={NPC_TEXT_MAX} rows={2} placeholder={t('Sözü: şehri anlat, saklı köşeyi üstü kapalı fısılda.')} onChange={(e) => put({ text: e.target.value })} className="w-full resize-y border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream" aria-label={t('Sözü')} />
+                    </fieldset>
+                  )
+                })}
+              </section>
+            )}
 
             {/* taslaklar */}
             <section className="pixel-panel grid gap-3 p-4">
