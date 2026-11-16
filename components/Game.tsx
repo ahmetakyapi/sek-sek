@@ -230,7 +230,7 @@ export default function Game() {
   const [dailyResult, setDailyResult] = useState<DailyResult | null>(null)
   /** paylaşılan özel harita: ?ozel=<kod> */
   const [custom, setCustom] = useState<{ code: string; level: LevelDef } | { error: string } | null>(null)
-  const [customResult, setCustomResult] = useState<{ timeMs: number; deaths: number; found: number } | null>(null)
+  const [customResult, setCustomResult] = useState<{ timeMs: number; deaths: number; found: number; stamp: boolean | null; charm: boolean | null } | null>(null)
   const [mirrorResult, setMirrorResult] = useState<{ idx: number; timeMs: number; deaths: number; best: boolean; prev?: number; relaxed: boolean } | null>(null)
   const [weekRank, setWeekRank] = useState<{ total: number; rank: number } | null>(null)
   /** paylaşılan bağlantıdan gelen yarış daveti: ?yaris=<şehir>~<ad> */
@@ -486,8 +486,8 @@ export default function Game() {
               haptic([30, 40, 30, 40, 60])
               const lv = localize(w.level, langRef.current)
               setToast({ ...lv.secret, item: makeT(langRef.current)('Gizli Pul'), key: Date.now() })
-              // modlarda bulunan şey deftere yazılmaz (kart "ilerlemen değişmez" diyor; kilitli şehir de gelebilir)
-              if (modeRef.current) break
+              // modlarda ve özel haritada bulunan şey deftere yazılmaz (kart "ilerlemen değişmez" diyor; kilitli şehir de gelebilir)
+              if (modeRef.current || customRef.current) break
               setSave((prev) => {
                 const next = { ...prev, stamps: { ...prev.stamps, [lv.id]: true } }
                 writeSave(next)
@@ -499,7 +499,7 @@ export default function Game() {
               haptic([20, 30, 20, 30, 50])
               const tr = makeT(langRef.current)
               setToast({ title: tr('Nazar Boncuğu'), text: tr('Gezgin’in çantasından düşmüş. Her şehirde bir tane saklı; bulana nazar değmez.'), item: tr('Gizli Bulgu'), key: Date.now() })
-              if (modeRef.current) break
+              if (modeRef.current || customRef.current) break
               setSave((prev) => {
                 const next = { ...prev, charms: { ...prev.charms, [w.level.id]: true } }
                 writeSave(next)
@@ -1265,7 +1265,7 @@ export default function Game() {
     const timeMs = Math.round(w.time * 1000)
     flushStats(1)
     if (customRef.current) {
-      setCustomResult({ timeMs, deaths: w.deaths, found: w.pickups.filter((p) => p.taken).length })
+      setCustomResult({ timeMs, deaths: w.deaths, found: w.pickups.filter((p) => p.taken).length, stamp: w.stampBox ? w.stampTaken : null, charm: w.charmBox ? w.charmTaken : null })
       setScreen('customEnd')
       return
     }
@@ -2648,6 +2648,8 @@ export default function Game() {
             <p className="mt-2 text-[13px] text-muted">
               {t('{deaths} düşüş', { deaths: customResult.deaths })}
               {custom.level.map.join('').includes('C') ? ` · ${t('{n} hatıra', { n: customResult.found })}` : ''}
+              {customResult.stamp !== null ? ` · ${t(customResult.stamp ? 'Pul ✓' : 'Pul ✗')}` : ''}
+              {customResult.charm !== null ? ` · ${t(customResult.charm ? 'Nazar ✓' : 'Nazar ✗')}` : ''}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn primary justify-center" onClick={startCustom} autoFocus>
