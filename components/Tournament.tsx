@@ -94,7 +94,7 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
                     {ms ? t('↺ Yeniden') : t('▶ Koş')}
                   </button>
                   </div>
-                  <CourseScene map={challengeLevel(c).map} city={lv.city} className="mt-1.5 min-h-[40px] flex-1 max-sm:hidden short:hidden" />
+                  <CourseScene map={challengeLevel(c).map} city={lv.city} className="mt-1.5 h-[clamp(56px,14vh,140px)] max-sm:hidden short:hidden" />
                 </section>
               )
             })}
