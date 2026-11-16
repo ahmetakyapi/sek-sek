@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
-import MapThumb from '@/components/MapThumb'
+import { CourseScene } from '@/components/MapThumb'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, displayName } from '@/components/ui'
@@ -105,9 +105,7 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
     <section className="border-2 border-line bg-ink/40 p-3 short:p-2">
       <p className="font-display text-xl leading-tight text-cream">{t(c.name)}</p>
       <p className="text-[13px] text-muted">{displayName(lv)}</p>
-      <div className="mt-2 h-14 overflow-hidden border-2 border-line bg-ink short:h-10">
-        <MapThumb map={level.map} city={lv.city} className="block h-full w-full" />
-      </div>
+      <CourseScene map={level.map} city={lv.city} className="mt-2 h-24 short:h-12" />
       <div className="mt-2 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 short:hidden">
         {facts.map(([k, v]) => (
           <div key={k} className="border-2 border-line bg-ink/30 px-1 py-1">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
-import MapThumb from '@/components/MapThumb'
+import { CourseScene } from '@/components/MapThumb'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, displayName } from '@/components/ui'
@@ -94,9 +94,7 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
                     {ms ? t('↺ Yeniden') : t('▶ Koş')}
                   </button>
                   </div>
-                  <div className="mt-1.5 min-h-[24px] flex-1 overflow-hidden border-2 border-line bg-ink max-sm:hidden short:hidden">
-                    <MapThumb map={challengeLevel(c).map} city={lv.city} className="block h-full w-full" />
-                  </div>
+                  <CourseScene map={challengeLevel(c).map} city={lv.city} className="mt-1.5 min-h-[40px] flex-1 max-sm:hidden short:hidden" />
                 </section>
               )
             })}
