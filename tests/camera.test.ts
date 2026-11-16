@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { CAM, approach, shakeOffset, stepCamera } from '../game/camera'
+import { CAM, approach, kickOffset, shakeOffset, stepCamera } from '../game/camera'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput } from '../game/types'
@@ -128,6 +128,41 @@ describe('kamera kare hızından bağımsız', () => {
     }
     expect(h.player.grounded).toBe(true)
     expect(low - hc.y).toBeGreaterThan(50)
+  })
+
+  it('düz yolda dash atınca karakter ekranda öne kayıp geri gelmez (kamera dash hızında izler)', () => {
+    const map = Array.from({ length: 24 }, (_, y) => (y === 20 ? '#'.repeat(300) : y === 19 ? ' '.repeat(60) + 'P' + ' '.repeat(239) : ' '.repeat(300)))
+    for (const hz of [60, 144, 240]) {
+      const w = new World({ ...LEVELS[0], map, wind: 0 })
+      const cam = { x: w.player.x - 213, y: w.player.y - 120 }
+      let acc = 0
+      let steps = 0
+      const screen: number[] = []
+      for (let t = 0; t < 5; t += 1 / hz) {
+        acc += 1 / hz
+        while (acc >= STEP) {
+          w.step(STEP, { ...emptyInput(), right: true, dashPressed: steps === 400 })
+          w.events.length = 0
+          steps++
+          acc -= STEP
+        }
+        stepCamera(w, cam, 1 / hz, 427, 240)
+        if (steps > 390) screen.push(w.player.x - cam.x)
+      }
+      // eskiden ~15 px öne kayıp geri çekiliyordu
+      expect(Math.max(...screen) - Math.min(...screen), `${hz} Hz`).toBeLessThan(4)
+    }
+  })
+
+  it('küçük sarsıntı belli belirsiz, büyük sarsıntı korunur; dash itmesi tek yumuşak tümsek', () => {
+    const peak = (amp: number) => Math.max(...Array.from({ length: 400 }, (_, i) => Math.abs(shakeOffset(i / 400, amp)[0])))
+    expect(peak(1.5)).toBeLessThan(0.45)
+    expect(peak(6)).toBeGreaterThan(2)
+    const k = Array.from({ length: 60 }, (_, i) => kickOffset(i / 240))
+    const top = k.indexOf(Math.max(...k))
+    // tepeye çıkar, sonra hiç geri dönmeden (salınımsız) sıfıra iner
+    for (let i = top + 1; i < k.length; i++) expect(k[i]).toBeLessThanOrEqual(k[i - 1])
+    expect(kickOffset(CAM.kickTime)).toBe(0)
   })
 
   it('sarsıntı rastgele değil, zamana bağlı ve yumuşak', () => {

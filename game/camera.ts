@@ -28,6 +28,15 @@ export const CAM = {
   lookKeep: 0.08,
   /** ölü bölge: karakter kadrajın ortasındaki bu genişlikte (ekran oranı) kaldıkça kamera kımıldamaz */
   window: 0.035,
+  /**
+   * Dash sırasında yatay takip üç kat hızlı. Kameranın gecikmesi hızla orantılıdır (hız / takip oranı): dash hızı
+   * yürüyüşün ~3 katı olduğundan gecikme aynı kalır, karakter ekranda yerinde durur. Eskiden dash'te ~15 px öne
+   * kayıyor, kamera yetişince geri çekiliyordu (ekran gidip geliyor gibiydi). Oran geçişte kamera hızı da sürekli kalır.
+   */
+  dashFollow: 0.0015 ** 3,
+  /** dash itmesi: kadraj dash yönünün tersine bu kadar (dünya pikseli) yaslanıp yumuşakça döner; rastgele titreme yok */
+  kick: 1.6,
+  kickTime: 0.22,
 } as const
 
 /** Kameranın kare arası durumu: konum ve yumuşatılmış takip payları */
@@ -49,12 +58,27 @@ export function approach(cur: number, target: number, dt: number, keep: number) 
   return cur + (target - cur) * (1 - Math.pow(keep, dt))
 }
 
-/** Sarsıntı ötelemesi: zamana bağlı yumuşak dalga (dünya pikseli). Kare hızı değişse de aynı görünür. */
+/**
+ * Sarsıntı ötelemesi: zamana bağlı yumuşak dalga (dünya pikseli). Kare hızı değişse de aynı görünür.
+ * Dalga 7-13 Hz'de (eskiden 13-24 Hz: göz yoran vızıltı). Küçük sarsıntılar karesiyle küçülür (2'nin altı belli belirsiz),
+ * büyükler (ölüm, boss) aynı güçte kalır: her düğmede, her inişte ekran titremez.
+ */
 export function shakeOffset(t: number, amp: number): [number, number] {
   if (amp <= 0) return [0, 0]
-  const x = Math.sin(t * 83) * 0.6 + Math.sin(t * 131 + 1.7) * 0.4
-  const y = Math.sin(t * 97 + 0.6) * 0.6 + Math.sin(t * 149 + 2.9) * 0.4
-  return [x * amp * 0.5, y * amp * 0.5]
+  const a = amp * Math.min(1, amp / 3) * 0.5
+  const x = Math.sin(t * 47) * 0.6 + Math.sin(t * 73 + 1.7) * 0.4
+  const y = Math.sin(t * 53 + 0.6) * 0.6 + Math.sin(t * 79 + 2.9) * 0.4
+  return [x * a, y * a]
+}
+
+/**
+ * Dash itmesi: kalkıştan bu yana geçen süreye (sn) göre kadrajın dash yönünün tersine yaslanma oranı (0..1).
+ * Hızlı yükselir, yavaşça (ease-out) sıfıra döner; tek bir yumuşak tümsek, salınım yok.
+ */
+export function kickOffset(age: number): number {
+  if (age < 0 || age >= CAM.kickTime) return 0
+  const u = age / CAM.kickTime
+  return Math.min(1, u * 6) * (1 - u) * (1 - u)
 }
 
 /**
@@ -159,7 +183,7 @@ export function clampCam(w: World, x: number, y: number, vw: number, vh: number)
 export function stepCamera(w: World, cam: CamState, dt: number, vw: number, vh: number) {
   const boss = bossFrame(w, vw, vh)
   const [tx, ty] = boss ?? followTarget(w, vw, vh, cam, dt)
-  const x = approach(cam.x, tx, dt, boss ? CAM.boss : CAM.follow)
+  const x = approach(cam.x, tx, dt, boss ? CAM.boss : w.player.dashTime > 0 ? CAM.dashFollow : CAM.follow)
   const y = approach(cam.y, ty, dt, boss ? CAM.bossY : CAM.followY)
   ;[cam.x, cam.y] = clampCam(w, x, y, vw, vh)
 }

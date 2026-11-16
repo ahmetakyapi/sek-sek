@@ -7,7 +7,7 @@ import { drawBoss } from './bossDraw'
 import { INK, LOOKS, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
-import { camYRange, clampCam, shakeOffset, stepCamera, type CamState } from './camera'
+import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
 import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, PHYS, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
@@ -80,6 +80,8 @@ export class Renderer {
   private ambient: Ambient[] = []
   private shake = 0
   private flash = 0
+  /** son dash itmesi: başladığı an ve yönü (kickOffset) */
+  private kick = { t: -1, dx: 0, dy: 0 }
   scale = 4
   viewW = 320
   viewH = 180
@@ -270,8 +272,9 @@ export class Renderer {
         break
       }
       case 'dash': {
-        this.flash = 0.06
-        this.shake = Math.max(this.shake, 1.5)
+        // kalkış: kadraj dash yönünün tersine yumuşakça yaslanır (titreme yok), soluk bir parıltı
+        this.flash = Math.max(this.flash, 0.04)
+        this.kick = { t: this.t, dx: p.dashDir[0], dy: p.dashDir[1] }
         // kalkış: atkının renginde kıvılcım halkası geriye doğru açılır; yerdeyse ayak altından toz kalkar
         const cx = p.x + p.w / 2
         const cy = p.y + p.h / 2
@@ -487,7 +490,11 @@ export class Renderer {
     }
     this.shake = Math.max(0, this.shake - dt * 18)
     // küçük ekranda büyütme oranı yüksek: aynı sarsıntı ekranda daha büyük görünür, orana göre küçülür
-    const [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * Math.min(1, this.viewW / 420))
+    const small = Math.min(1, this.viewW / 420)
+    let [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * small)
+    const kk = kickOffset(this.t - this.kick.t) * CAM.kick * this.shakeScale * small
+    sx -= this.kick.dx * kk
+    sy -= this.kick.dy * kk
     // kamera kesirli kayar: düşük çözünürlüklü katmanlar tam piksele çizilir, ekrana basılırken kesir kadar ötelenir
     const cx = Math.floor(this.camX + sx)
     const cy = Math.floor(this.camY + sy)
@@ -605,8 +612,9 @@ export class Renderer {
     if (this.city === 'bayburt' || w.level.wind) this.drawWind(f, w)
 
     if (this.flash > 0) {
+      // parıltı birden sönmez, kısa sürede solar (art arda dash'te göz kırpması gibi yanıp sönmesin)
+      f.fillStyle = `rgba(255,255,255,${Math.min(0.12, this.flash * 1.2).toFixed(3)})`
       this.flash -= dt
-      f.fillStyle = 'rgba(255,255,255,0.12)'
       f.fillRect(0, 0, this.viewW, this.viewH)
     }
 
