@@ -101,6 +101,8 @@ export class Renderer {
   ghostRun: GhostRun | null = null
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
   shakeScale = 1
+  /** Karanlık Yol (zor mod): karakterin çevresindeki küçük ışığın ötesi karanlık */
+  dark = false
   /** fotoğraf kipi: kamera oyuncuyu bırakır, oyuncunun kaydırdığı yere bakar (dünya pikseli) */
   photo: { x: number; y: number } | null = null
   /** sahnedeki yazıların dili */
@@ -648,6 +650,7 @@ export class Renderer {
     this.drawBossHD(w, hdX, hdY)
     this.drawHeroes(hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
+    if (this.dark) this.drawDarkness(w, hdX, hdY)
     this.drawLabels(w, hdX, hdY)
     unblend()
   }
@@ -2632,6 +2635,25 @@ export class Renderer {
       }
     }
     c.restore()
+  }
+
+  /**
+   * Karanlık Yol: ekran karanlık, karakterin çevresinde yumuşak kenarlı bir ışık (yarıçap ~5 karo; nefes alır gibi hafifçe
+   * büyüyüp küçülür, saate bağlı). Tek bir radyal dolgu: kare başına ek katman yok.
+   */
+  private drawDarkness(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    const p = w.player
+    const x = (p.x + p.w / 2 - cx) * sc
+    const y = (p.y + p.h / 2 - cy) * sc
+    const r = (78 + Math.sin(this.t * 1.7) * 3) * sc
+    const g = c.createRadialGradient(x, y, r * 0.35, x, y, r)
+    g.addColorStop(0, 'rgba(6,5,16,0)')
+    g.addColorStop(0.7, 'rgba(6,5,16,0.75)')
+    g.addColorStop(1, 'rgba(6,5,16,0.97)')
+    c.fillStyle = g
+    c.fillRect(0, 0, this.viewW * sc, this.viewH * sc)
   }
 
   /** Yüzülen suyun yüzü ve içi karakterin önünde yarı saydam: yüzen yolcu suyun içinde görünür. */

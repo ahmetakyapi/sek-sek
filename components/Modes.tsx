@@ -163,7 +163,7 @@ export function ModesHub({
                   </span>
                 ))}
               </div>
-              <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Kaygan zemin, ters tuşlar, çöken taşlar, tek can. Sabır taşını çatlatan altı mod, her şehirde ayrı rekor.')}</p>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Kaygan zemin, ters tuşlar, çöken taşlar, karanlık, baş aşağı ekran. Sabır taşını çatlatan on iki mod, her şehirde ayrı rekor.')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : rageCount ? t('{n} öfke rekoru. Sıradakine dayanabilir misin?', { n: rageCount }) : t('Henüz kimse sinirlenmedi. İlk sen dene.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRage}>
                 {t('Öfkeni Seç')}

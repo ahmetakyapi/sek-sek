@@ -134,7 +134,7 @@ değiştirmez; yeni kural eklerken her şehirde bitirilebildiğini kanıtla. Eti
 bitmiyor, bu yüzden Dash’siz yalnız NO_DASH_OK listesinde çıkar (`npx tsx scripts/verify-rules.ts`; o şehirlerin haritası
 değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açılır; rekoru şehir + kural başınadır.
 
-**Sinir Bozucu modlar.** `lib/extras.ts` RAGE_RULES (Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Kâbus, Son Nefes):
+**Sinir Bozucu modlar.** `lib/extras.ts` RAGE_RULES (on iki: Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Kâbus, Son Nefes, Karanlık Yol, Baş Aşağı, Ayna Ekran, Turbo, Gece Yarısı, Kaos; görüntü modları `view`: karanlık `renderer.dark`, ters ekran tuvalin CSS dönüşümü, menüde sıfırlanır):
 Kurallı Koşu altyapısında (`save.rules`, rekor şehir + mod başına), günlüğe çıkmaz (RULES'ta yoklar). Fizik `ruleLevel()` ile
 bölüme yazılır: `LevelDef.slippery` (her zemin buz), `crumbleAll` (üstü boş her katı yüzey çatlak taş; başlangıç, bayrak, çıkış
 ve boss arenası sağlam); Ters Tuşlar girdide (`swapPhase`, 9 sn'lik turun son 4 sn'si, öncesinde uyarı). Kaygan ve çöken

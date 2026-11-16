@@ -127,7 +127,7 @@ export const completes = (ch: Challenge, level: LevelDef, run: RunStats) => !run
  */
 export type DailyRule = 'ceza' | 'hiz' | 'hatira' | 'tekcan' | 'bayraksiz' | 'zaman' | 'dashsiz' | RageRule
 /** Sinir bozucu (zor) modlar: Kurallı Koşu altyapısında, günlüğe çıkmaz */
-export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes'
+export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos'
 
 export interface DailyRuleDef {
   name: string
@@ -152,6 +152,8 @@ export interface DailyRuleDef {
   crumbleAll?: boolean
   /** Ters Tuşlar: sağ ve sol belli aralıklarla yer değiştirir (swapPhase), değişmeden önce uyarılır */
   swapKeys?: boolean
+  /** yalnız görüntüyü değiştirir (fizik aynı, her şehirde bitirilebilir): karanlık, baş aşağı, ayna */
+  view?: { dark?: boolean; flipX?: boolean; flipY?: boolean }
 }
 
 /** Kural metni (TR); İngilizcesi lib/ui.en.ts'te aynı anahtarla durur. */
@@ -169,10 +171,16 @@ export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
   coken: { name: 'Çöken Dünya', text: 'Bastığın her taş çöker ve sonra geri gelir: durma, koş. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, crumbleAll: true },
   kabus: { name: 'Kâbus', text: 'Kaygan zemin, ters tuşlar ve bayrak yok: düşersen şehrin başına dönersin.', speed: 1, perDeath: 0, perMissing: 0, slippery: true, swapKeys: true, noFlags: true },
   sonnefes: { name: 'Son Nefes', text: 'Çöken dünyada tek can: bir düşüş, baştan.', speed: 1, perDeath: 0, perMissing: 0, crumbleAll: true, oneLife: true },
+  karanlik: { name: 'Karanlık Yol', text: 'Etrafını yalnız küçük bir ışık aydınlatır; ötesi zifiri karanlık. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { dark: true } },
+  basasagi: { name: 'Baş Aşağı', text: 'Ekran ters döner: gök aşağıda, yol yukarıda. Tuşlar aynı. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { flipY: true } },
+  aynaekran: { name: 'Ayna Ekran', text: 'Görüntü aynada: sağa basınca ekranda sola gidersin. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { flipX: true } },
+  turbo: { name: 'Turbo', text: 'Dünya %40 hızlı akar: düşmanlar, platformlar, sen. Her düşüş 3 saniye.', speed: 1.4, perDeath: 3, perMissing: 0 },
+  geceyarisi: { name: 'Gece Yarısı', text: 'Karanlıkta tek can: düşersen şehrin en başından.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true, view: { dark: true } },
+  kaos: { name: 'Kaos', text: 'Baş aşağı ekran, ters tuşlar ve kaygan zemin bir arada. Her düşüş 5 saniye.', speed: 1, perDeath: 5, perMissing: 0, slippery: true, swapKeys: true, view: { flipY: true } },
 }
 
 /** Sinir bozucu modların sırası (Modlar → Sinir Bozucu). Günlük Meydan Okuma bunları seçmez (RULES'ta yoklar). */
-export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes']
+export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos']
 
 /** Ters Tuşlar: her 9 sn'lik turun son 4 sn'si ters; dönmeden 1,5 sn önce uyarılır. Saat dünyanın süresidir (her Hz'de aynı). */
 export const SWAP = { cycle: 9, flipped: 4, warn: 1.5 }

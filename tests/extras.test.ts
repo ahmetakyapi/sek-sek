@@ -300,6 +300,9 @@ describe('sinir bozucu modlar', () => {
       expect(ruleFits('coken', lv)).toBe(CRUMBLE_OK.includes(lv.id))
       expect(ruleFits('cehennem', lv)).toBe(true)
       expect(ruleFits('ters', lv)).toBe(true)
+      // yalnız görüntüyü değiştiren modlar her şehirde açık; kaos kaygan fiziğe bağlı
+      for (const r of ['karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi'] as const) expect(ruleFits(r, lv)).toBe(true)
+      expect(ruleFits('kaos', lv)).toBe(SLIPPERY_OK.includes(lv.id))
     }
   })
 })

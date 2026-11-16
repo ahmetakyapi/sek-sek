@@ -831,6 +831,10 @@ export default function Game() {
       const plain = !rush && !ch && !ay && !cu && !modeRef.current
       const pbSplit = saveRef.current?.splitTimes?.[LEVELS[idx].id]
       splitRef.current = { rec: [], pb: plain && pbSplit?.v === cityVersion(LEVELS[idx].id) ? pbSplit.t : null, on: plain && saveRef.current?.splits !== false }
+      // zor modun görüntü değişikliği (karanlık, baş aşağı, ayna): her bölüm yüklenişinde yeniden kurulur, modsuz koşuda sıfırlanır
+      const view = md?.kind === 'daily' ? DAILY_RULES[md.run.rule].view : undefined
+      if (rendererRef.current) rendererRef.current.dark = !!view?.dark
+      if (canvasRef.current) canvasRef.current.style.transform = view?.flipX || view?.flipY ? `scale(${view.flipX ? -1 : 1}, ${view.flipY ? -1 : 1})` : ''
       if (rendererRef.current) {
         rendererRef.current.setLevel(w)
         const mode = modeRef.current
@@ -1050,6 +1054,13 @@ export default function Game() {
     beginPlay()
     setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[rule].name)}: ${t(DAILY_RULES[rule].text)}` })
   }
+
+  // zor modun görüntüsü (karanlık, ters ekran) yalnız oyunda: menülere ve bitiş ekranına taşınmasın
+  useEffect(() => {
+    if (screen === 'play' || screen === 'pause' || screen === 'photo') return
+    if (rendererRef.current) rendererRef.current.dark = false
+    if (canvasRef.current) canvasRef.current.style.transform = ''
+  }, [screen])
 
   // başarım bildirimi: kazanılıp henüz gösterilmemiş olanlar (ilk açılışta birikmiş olanlar tek bildirimde)
   useEffect(() => {
