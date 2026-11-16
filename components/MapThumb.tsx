@@ -84,17 +84,21 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
       const cols = map[0].length
       let top = map.findIndex((r) => r.trim() !== '')
       top = Math.max(0, Math.min(rows - 8, (top < 0 ? rows - 8 : top) - 2))
-      const vis = rows - top
+      // dikeyde oynanan bant (en çok 13 satır, dibe oturur); yatayda yolcunun başladığı yerden kart enince
+      const vis = Math.min(13, rows - top)
       const tile = Math.max(H / vis, W / cols)
       const oy = H - rows * tile
+      const start = map.findIndex((r) => r.includes('P'))
+      const sx = start < 0 ? 0 : map[start].indexOf('P')
+      const ox = -Math.max(0, Math.min(cols * tile - W, (sx - 3) * tile))
       // parallax katmanları: tabanları zemin çizgisine (yaklaşık 20. satır) oturur, kartın eni boyunca yinelenir
       const L = layersOf(city)
-      const ground = oy + 20 * tile
-      const k = Math.max(0.35, (ground / LAYER_H) * 1.15)
+      const ground = oy + (start < 0 ? 20 : start + 1) * tile
+      const k = Math.max(0.35, (ground / LAYER_H) * 2.4)
       for (const [cvL, f] of [[L.far, 0.55], [L.mid, 0.8], [L.near, 1]] as const) {
         const lw = LAYER_W * k * f
         const lh = LAYER_H * k * f
-        for (let x = -((cols * tile * (1 - f)) % lw); x < W; x += lw) c.drawImage(cvL, x, ground - lh + 6 * k, lw, lh)
+        for (let x = -((-ox * (1 - f)) % lw); x < W; x += lw) c.drawImage(cvL, x, ground - lh + 6 * k, lw, lh)
       }
       c.fillStyle = 'rgba(14,13,34,0.12)'
       c.fillRect(0, 0, W, H)
@@ -107,9 +111,9 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
       for (let y = 0; y < rows; y++)
         for (let x = 0; x < cols; x++) {
           const ch = map[y][x]
-          const px = x * tile
+          const px = ox + x * tile
           const py = oy + y * tile
-          if (py > H || px > W) continue
+          if (py > H || px > W || px < -tile * 2) continue
           if (solid(ch)) {
             const topEdge = !solid(map[y - 1]?.[x])
             rect(px, py, tile, tile, ch === 'I' ? p.water[2] : ch === 'X' ? p.tileDark : p.tile)
@@ -157,9 +161,9 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
           else if (ch === '>' || ch === '<') rect(px, py + tile * 0.3, tile, tile * 0.4, p.tileDark)
         }
       // haritanın sağında kalan alan: son sütunun zemini sürer
-      if (cols * tile < W)
+      if (ox + cols * tile < W)
         for (let y = 0; y < rows; y++)
-          if (solid(map[y][cols - 1])) rect(cols * tile, oy + y * tile, W - cols * tile, tile, !solid(map[y - 1]?.[cols - 1]) ? p.tileTop : p.tile)
+          if (solid(map[y][cols - 1])) rect(ox + cols * tile, oy + y * tile, W - ox - cols * tile, tile, !solid(map[y - 1]?.[cols - 1]) ? p.tileTop : p.tile)
       // alt kenarda hafif koyuluk: kart yazısı ve çerçeveyle karışmasın
       const fade = c.createLinearGradient(0, H * 0.6, 0, H)
       fade.addColorStop(0, 'rgba(14,13,34,0)')
