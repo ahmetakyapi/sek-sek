@@ -5,7 +5,7 @@
  * saniyede aynı yere varır; sarsıntı her karede rastgele sayı çekmez (yüksek Hz'de titreme olur), zamanla
  * dalgalanır. Yeni kamera davranışı eklerken bu dosyaya ekle ve testi genişlet.
  */
-import { NITRO, ONEWAY, PHYS, SWIM, WATER, type World } from './sim'
+import { NITRO, ONEWAY, PHYS, SPIKE_UP, SWIM, WATER, type World } from './sim'
 import { T } from './types'
 
 export const CAM = {
@@ -37,6 +37,12 @@ export const CAM = {
   /** dash itmesi: kadraj dash yönünün tersine bu kadar (dünya pikseli) yaslanıp yumuşakça döner; rastgele titreme yok */
   kick: 1.6,
   kickTime: 0.22,
+  /** önünde engel (çukur, diken, su) varken bakış payı bu oranla büyür: atlanacak yer kadrajda */
+  hazardLead: 0.6,
+  /** engel aranan uzaklık (karo, baktığı yönde) */
+  hazardScan: 7,
+  /** tırmanırken (halat, duvar, yükseliş) kadraj ekranın bu oranı kadar yukarı açılır */
+  climbUp: 0.17,
 } as const
 
 /** Kameranın kare arası durumu: konum ve yumuşatılmış takip payları */
@@ -104,6 +110,30 @@ export function lookDown(w: World, vh: number): number {
 }
 
 /**
+ * Önündeki engel (0..1): baktığı yönde birkaç karo içinde ayak hizasında çukur, diken ya da öldüren su varsa 1'e yaklaşır
+ * (yakın olan daha ağır basar). Kadraj atlanacak yeri önceden gösterir; saf hesap, yalnız haritaya ve konuma bağlı.
+ */
+export function hazardAhead(w: World): number {
+  const p = w.player
+  const feet = Math.floor((p.y + p.h + 1) / T)
+  const cx = Math.floor((p.x + p.w / 2) / T)
+  for (let d = 2; d <= CAM.hazardScan; d++) {
+    const tx = cx + p.facing * d
+    const t = w.tile(tx, feet)
+    const hole = !w.isSolid(tx, feet) && t !== ONEWAY && !w.isSolid(tx, feet + 1) && !w.isSolid(tx, feet + 2)
+    if (t === SPIKE_UP || t === WATER || w.tile(tx, feet - 1) === SPIKE_UP || hole) return 1 - (d - 2) / (CAM.hazardScan - 1)
+  }
+  return 0
+}
+
+/** Tırmanıyor mu: halatta asılı, duvara tutunmuş ya da hızla yükseliyor (yukarıdaki yol görünsün) */
+export function climbing(w: World): boolean {
+  const p = w.player
+  // duvarda aşağı kayarken yukarı bakmaz: yalnız tutunup dururken ya da yükselirken
+  return !p.dead && (p.hang === 1 || (p.wallDir !== 0 && p.vy < 40) || (!p.grounded && p.vy < -PHYS.jumpV * 0.6 && p.hang === 0 && !p.swim))
+}
+
+/**
  * Normal takip: karakter ekranın ortasında, koşu yönünde biraz önde; önünde düşüş varsa biraz aşağıda.
  * Dikeyde kamera her zıplamada sallanmaz: yerde ya da duvarda iken basılan yüksekliğe (feet) bakar, havadayken
  * o yükseklikte kalır. Karakter ekranın üst ya da alt bandına yaklaşırsa yine izler (yüksek tırmanış, uzun düşüş).
@@ -114,9 +144,11 @@ export function followTarget(w: World, vw: number, vh: number, cam?: CamState, d
   const vx = Math.max(-cap, Math.min(cap, p.vx))
   // bakış payı ekrana orantılı (telefonda küçük) ve dönüşte yumuşakça kayar
   const lead = Math.min(CAM.lead, vw * CAM.leadMax)
-  const wantLead = p.facing * lead + vx * CAM.leadVel * (lead / CAM.lead)
+  // önünde engel varsa bakış payı büyür (yumuşakça, leadKeep ile): atlanacak yer kadraja girer
+  const wantLead = (p.facing * lead + vx * CAM.leadVel * (lead / CAM.lead)) * (1 + CAM.hazardLead * hazardAhead(w))
   if (cam) cam.lead = cam.lead === undefined ? wantLead : approach(cam.lead, wantLead, dt, CAM.leadKeep)
-  const look = lookDown(w, vh)
+  // aşağı bakış (düşüş, uçurum kenarı) ile yukarı bakış (tırmanış) tek bir yumuşak payda
+  const look = lookDown(w, vh) - (climbing(w) ? vh * CAM.climbUp : 0)
   if (cam) cam.look = cam.look === undefined ? look : approach(cam.look, look, dt, CAM.lookKeep)
   const feet = p.y + p.h
   const onGround = p.grounded || p.wallDir !== 0 || p.dead

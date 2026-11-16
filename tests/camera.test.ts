@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { CAM, approach, kickOffset, shakeOffset, stepCamera } from '../game/camera'
+import { CAM, approach, followTarget, hazardAhead, kickOffset, shakeOffset, stepCamera } from '../game/camera'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput } from '../game/types'
@@ -181,5 +181,29 @@ describe('kamera kare hızından bağımsız', () => {
     expect(src.match(/Math\.random\(\) < 0?\.\d+\)/g) ?? []).toEqual([])
     // kamera ya da taş titremesi Math.random ile yapılmaz: shakeOffset / zamana bağlı sinüs
     expect(src).not.toMatch(/\(Math\.random\(\) - 0\.5\) \* (this\.shake|\(1 \+ k)/)
+  })
+})
+
+describe('bölüme göre kadraj', () => {
+  const flat = (row19: string) => Array.from({ length: 24 }, (_, y) => (y === 20 ? '#'.repeat(80).split('').map((c, x) => (row19[x] === 'O' ? ' ' : c)).join('') : y === 21 ? '#'.repeat(80).split('').map((c, x) => (row19[x] === 'O' ? ' ' : c)).join('') : y === 19 ? row19.replace(/O/g, ' ').padEnd(80) : y > 21 ? '#'.repeat(80) : ' '.repeat(80)))
+  it('önündeki çukur ve diken bakış payını büyütür, yakın olan daha çok', () => {
+    const none = new World({ ...LEVELS[0], map: flat(' P'.padEnd(80)), wind: 0 })
+    expect(hazardAhead(none)).toBe(0)
+    const near = new World({ ...LEVELS[0], map: flat(' P   ^^'.padEnd(80)), wind: 0 })
+    const far = new World({ ...LEVELS[0], map: flat(' P      ^^'.padEnd(80)), wind: 0 })
+    for (const w of [near, far]) for (let i = 0; i < 60; i++) w.step(1 / 120, emptyInput())
+    expect(hazardAhead(near)).toBeGreaterThan(hazardAhead(far))
+    expect(hazardAhead(far)).toBeGreaterThan(0)
+  })
+  it('tırmanırken kadraj yukarı açılır, yerde normale döner', () => {
+    const map = Array.from({ length: 24 }, (_, y) => (y >= 20 ? '#'.repeat(40) : y === 19 ? ' P'.padEnd(40) : ' '.repeat(40)))
+    const w = new World({ ...LEVELS[0], map, wind: 0 })
+    for (let i = 0; i < 60; i++) w.step(1 / 120, emptyInput())
+    const cam = { x: 0, y: 0 }
+    const [, y0] = followTarget(w, 427, 240, cam, 1 / 60)
+    w.player.hang = 1
+    let y1 = y0
+    for (let i = 0; i < 240; i++) y1 = followTarget(w, 427, 240, cam, 1 / 60)[1]
+    expect(y0 - y1).toBeGreaterThan(240 * CAM.climbUp * 0.8)
   })
 })
