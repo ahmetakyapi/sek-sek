@@ -160,3 +160,20 @@ describe('co-op eşi', () => {
     expect(w.complete).toBe(true)
   })
 })
+
+describe('zehirli su', () => {
+  const map = ['            ', '            ', ' P      ^^  ', '###  #######', '###^^#######', '############']
+  it('yalnız kapalı çukurun dibindeki diken zehirli suya döner; düz yoldaki diken kalır', () => {
+    const w = new World({ ...LEVELS[0], map, wind: 0, poison: true })
+    expect([...w.poison].sort((a, b) => a - b)).toEqual([4 * w.cols + 3, 4 * w.cols + 4])
+    // zeminin üstündeki diken çukur değil (yanları boş): diken kalır
+    expect(w.poison.has(2 * w.cols + 8)).toBe(false)
+    expect(new World({ ...LEVELS[0], map, wind: 0 }).poison.size).toBe(0)
+  })
+  it('zehirli suya düşen ölür', () => {
+    const w = new World({ ...LEVELS[0], map, wind: 0, poison: true })
+    step(w, 0.3)
+    step(w, 0.6, { right: true })
+    expect(w.deaths).toBeGreaterThan(0)
+  })
+})

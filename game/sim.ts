@@ -307,6 +307,8 @@ export class World {
   }
   readonly start: { x: number; y: number }
   readonly crumbles = new Map<number, CrumbleState>()
+  /** zehirli su karoları (y * cols + x): fizikte öldüren su, çizimde yeşil */
+  readonly poison = new Set<number>()
 
   spawn: { x: number; y: number }
   checkpointIndex = -1
@@ -549,7 +551,33 @@ export class World {
       const wet = [this.tile(tx - 1, ty), this.tile(tx + 1, ty), this.tile(tx, ty - 1), this.tile(tx, ty + 1)].filter((t) => t === SWIM).length
       if (wet >= 2) this.set(tx, ty, SWIM)
     }
+    if (level.poison) this.poisonPits()
     this.player = this.freshPlayer(start.x, start.y)
+  }
+
+  /**
+   * Zehirli şehirlerde iki yanı ve altı katı duvarla kapalı, üstü boş diken sırası zehirli suya döner. Yalnız çukurun
+   * dibindeki dikenler değişir: düz yoldaki ya da tavandaki diken aynı kalır, haritanın ölçüleri değişmez.
+   */
+  private poisonPits() {
+    const wall = (tx: number, ty: number) => {
+      const t = this.tile(tx, ty)
+      return t === SOLID || t === ICE || t === WET
+    }
+    for (let ty = 1; ty < this.rows - 1; ty++) {
+      for (let tx = 1; tx < this.cols; tx++) {
+        if (this.tile(tx, ty) !== SPIKE_UP || this.tile(tx - 1, ty) === SPIKE_UP) continue
+        let end = tx
+        while (this.tile(end + 1, ty) === SPIKE_UP) end++
+        let closed = wall(tx - 1, ty) && wall(end + 1, ty)
+        for (let x = tx; x <= end && closed; x++) closed = wall(x, ty + 1) && this.tile(x, ty - 1) === EMPTY
+        if (!closed) continue
+        for (let x = tx; x <= end; x++) {
+          this.set(x, ty, WATER)
+          this.poison.add(ty * this.cols + x)
+        }
+      }
+    }
   }
 
   private makePlatform(map: string[], tx: number, ty: number, n: number, axis: Platform['axis']): Platform {

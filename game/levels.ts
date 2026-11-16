@@ -1437,6 +1437,8 @@ export const LEVELS: LevelDef[] = [
     plate: 50,
     subtitle: 'Kapadokya',
     difficulty: 'Orta',
+    // volkanik şehir: çukurlarda kükürtlü zehirli su
+    poison: true,
     note: 'Sabah erken kalk: gökyüzü balonla dolar. Ben peri bacalarına “şapkalı taşlar” derim. Toprağın altı da bir şehirdir, unutma.',
     npcs: [
       { name: 'Balon Pilotu Deniz', look: 'genc', text: 'Sepete bin, balon yükselir; inersen yavaşça geri çöker. Ne kadar yüksekte kalacağın senin elinde.' },
@@ -1467,6 +1469,8 @@ export const LEVELS: LevelDef[] = [
     plate: 38,
     subtitle: 'Erciyes’in Eteği',
     difficulty: 'Orta',
+    // volkanik şehir: çukurlarda kükürtlü zehirli su
+    poison: true,
     note: 'Kayseri’de mantı küçük, pastırma ince, laf az ve özdür. Erciyes’in karı yazın bile eksik olmaz; Kapalı Çarşı’da pazarlık bir sanattır.',
     npcs: [
       { name: 'Pastırmacı Zekeriya Usta', look: 'usta', text: 'Pastırmayı çemenle sarar, rüzgârda kurutur, bıçakla ince keseriz. Üç mantı bohçam tezgâhtan kaçtı; gördüysen haber et.' },
@@ -2122,6 +2126,8 @@ export const LEVELS: LevelDef[] = [
     plate: 13,
     subtitle: 'Vadideki Kale, Kraterdeki Göl',
     difficulty: 'Zor',
+    // volkanik şehir: çukurlarda kükürtlü zehirli su
+    poison: true,
     note: 'Bitlis dar bir vadiye kurulmuş; evler taştan, sokaklar dereyle yan yana. Kale şehrin ortasında bir kayanın üstünde durur. Ahlat’ta mezar taşlarının işlemelerine bak, Tatvan’da Nemrut’un kraterindeki göle in.',
     npcs: [
       { name: 'Büryancı Ferit Usta', look: 'usta', text: 'Büryanı kuyuda pişiririz evlat: kuzu saatlerce ağır ateşte döner, eti kemikten kendiliğinden ayrılır. Üç tabak hazırlamıştım, rüzgâr biri kalenin ta tepesine savurdu!' },
@@ -2153,6 +2159,8 @@ export const LEVELS: LevelDef[] = [
     plate: 4,
     subtitle: 'Sarayın Kapısından Dağın Zirvesine',
     difficulty: 'Çok Zor',
+    // volkanik şehir: çukurlarda kükürtlü zehirli su
+    poison: true,
     note: 'Defterin son sayfası dağın gölgesinde yazıldı. Doğubayazıt’ta İshak Paşa Sarayı’nın kapısından geç, Meteor Çukuru’na eğilip bak, sonra Ağrı Dağı’na tırman. Zirvede rüzgâr sert, manzara sonsuz.',
     npcs: [
       { name: 'Halıcı Zozan Teyze', look: 'teyze', text: 'Kilimi tezgâhta ilmek ilmek dokuruz yavrum; her desen bir dua, her renk bir yayla çiçeği. Üç kilimimi rüzgâr aldı götürdü, biri sarayın damına konmuş!' },

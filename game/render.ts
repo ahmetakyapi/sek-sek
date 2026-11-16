@@ -28,6 +28,8 @@ interface Particle {
 /** dash izi: kopyalar arası dünya pikseli, ömür (sn), en çok kopya */
 /** yüzülen su: açık turkuaz (yüzey, derin, dalga) — öldüren suyla karışmasın */
 const SWIM_COLORS = ['#5cc4cf', '#3fa9b8', '#a8eef2']
+/** zehirli su (kükürtlü çukur): asit yeşili, koyu dip, açık köpük; öldüren mavi su ve yüzülen turkuazla karışmasın */
+const POISON_COLORS = ['#a6e04a', '#4c8a2e', '#eaff9e']
 
 const GHOST_GAP = 9
 const GHOST_LIFE = 0.22
@@ -2202,6 +2204,11 @@ export class Renderer {
         const surface = depth === 0
         const x = tx * T
         const y = ty * T
+        if (w.poison.has(ty * w.cols + tx)) {
+          this.drawPoison(b, x, y, tx, surface)
+          depth++
+          continue
+        }
         rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), pal[ty % 2 ? 1 : 0])
         // derinlik: aşağı indikçe koyulaşır
         const dk = Math.min(0.42, depth * 0.11)
@@ -2235,6 +2242,46 @@ export class Renderer {
       }
     }
     void cy
+  }
+
+  /**
+   * Zehirli su karosu: koyu, bulanık yeşil gövde; parlayan köpüklü yüzey; dipten yükselip yüzeyde patlayan kabarcıklar;
+   * üstte soluk buhar. Çimenle karışmasın diye gövde koyu ve mor gölgeli, yüzey kıvrak. Her şey saate bağlı.
+   */
+  private drawPoison(b: Ctx, x: number, y: number, tx: number, surface: boolean) {
+    const top = surface ? 5 : 0
+    rect(b, x, y + top, T, T - top, POISON_COLORS[1])
+    rect(b, x, y + top + 5, T, T - top - 5, 'rgba(40,20,50,0.45)')
+    rect(b, x, y + T - 3, T, 3, 'rgba(30,12,40,0.4)')
+    if (!surface) return
+    for (let i = 0; i < 16; i++) {
+      const h = Math.round(Math.sin(this.t * 2.4 + (x + i) * 0.45) * 1.2)
+      rect(b, x + i, y + 5 + h, 1, 2, POISON_COLORS[0])
+      if (h < 0) rect(b, x + i, y + 5 + h, 1, 1, POISON_COLORS[2])
+    }
+    // kabarcıklar: dipten yükselir, yüzeye varınca patlar (karoya göre ayrı faz)
+    for (let k = 0; k < 3; k++) {
+      const ph = (this.t * (0.6 + k * 0.22) + tx * 0.37 + k * 0.33) % 1
+      const bx = x + 2 + ((tx * 5 + k * 5) % 11)
+      if (ph < 0.82) {
+        const by = Math.round(y + 14 - (ph / 0.82) * 8)
+        const r = k === 0 ? 3 : 2
+        rect(b, bx, by, r, r, POISON_COLORS[0])
+        rect(b, bx, by, 1, 1, POISON_COLORS[2])
+      } else {
+        // yüzeyde patlama: sıçrayan damlalar
+        const up = Math.round((ph - 0.82) * 30)
+        rect(b, bx - 1, y + 4 - up, 1, 1, POISON_COLORS[2])
+        rect(b, bx + 2, y + 4 - up, 1, 1, POISON_COLORS[2])
+        rect(b, bx, y + 5, 2, 1, POISON_COLORS[2])
+      }
+    }
+    // zehir buharı: yükselip solar
+    for (let k = 0; k < 2; k++) {
+      const vap = (this.t * 0.45 + tx * 0.29 + k * 0.5) % 1
+      const vx = x + ((tx * 3 + k * 7) % 12) + Math.round(Math.sin(this.t + tx + k) * 1.5)
+      rect(b, vx, Math.round(y + 3 - vap * 14), 3, 2, `rgba(170,230,90,${(0.4 * (1 - vap)).toFixed(2)})`)
+    }
   }
 
   private drawEntities(b: Ctx, w: World) {
