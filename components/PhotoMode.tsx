@@ -1,4 +1,5 @@
 'use client'
+import { ic } from '@/components/ui'
 
 import { useEffect, useRef, useState } from 'react'
 import type { Renderer } from '@/game/render'
@@ -73,13 +74,13 @@ export default function PhotoMode({ canvas, renderer, level, onClose }: { canvas
       <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+14px)] flex justify-center px-3" onPointerDown={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 bg-ink/80 p-2 backdrop-blur-[2px] [box-shadow:inset_0_0_0_2px_#37337a]">
           <button className="pixel-btn px-3 py-2 text-[13px]" onClick={onClose}>
-            {t('← Mola')}
+            {ic(t('← Mola'))}
           </button>
           <button className="pixel-btn px-3 py-2 text-[13px]" aria-pressed={frame} onClick={() => setFrame((f) => !f)}>
             {t('Kartpostal Çerçevesi')}: {frame ? t('Açık') : t('Kapalı')}
           </button>
           <button className="pixel-btn primary px-4 py-2 text-[13px]" onClick={save} disabled={busy} autoFocus>
-            {t('◉ Fotoğrafı Kaydet')}
+            {ic(t('◉ Fotoğrafı Kaydet'))}
           </button>
         </div>
       </div>

@@ -5,7 +5,7 @@ import Album from '@/components/Album'
 import MusicBox from '@/components/MusicBox'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
-import { MedalBadge, Overlay, displayName, medalFor } from '@/components/ui'
+import { MedalBadge, Overlay, displayName, medalFor, ic } from '@/components/ui'
 import type { Sound } from '@/game/audio'
 import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
@@ -58,7 +58,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
             </h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onClose}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
 
@@ -82,16 +82,18 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
           </div>
           <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" onClick={onModes}>
             <span className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('GÜNLÜK MEYDAN OKUMA')}</span>
-            <span className="text-[13px]">{streak ? t('🔥 {n} günlük seri', { n: streak }) : t('▶ Bugün Oyna, Seriyi Başlat')}</span>
+            <span className="text-[13px]">{ic(streak ? t('🔥 {n} günlük seri', { n: streak }) : t('▶ Bugün Oyna, Seriyi Başlat'))}</span>
           </button>
           <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" onClick={onModes}>
             <span className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('BOSS RUSH')}</span>
             <span className="text-[13px]">
-              {bosses < RUSH_NEEDS
-                ? t('Önce {n} Boss Yen', { n: RUSH_NEEDS })
-                : save.rush
-                  ? t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })
-                  : t('▶ Yendiğin Boss’larla Arka Arkaya')}
+              {ic(
+                bosses < RUSH_NEEDS
+                  ? t('Önce {n} Boss Yen', { n: RUSH_NEEDS })
+                  : save.rush
+                    ? t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })
+                    : t('▶ Yendiğin Boss’larla Arka Arkaya'),
+              )}
             </span>
           </button>
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ic } from '@/components/ui'
 import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { sprite } from '@/game/art'
@@ -78,7 +79,7 @@ export default function About({ onClose, onPlay, heroName }: { onClose: () => vo
         <div className="absolute inset-0 bg-gradient-to-b from-[#171538]/0 via-[#171538]/55 to-[#171538]" />
         <div className="kilim absolute inset-x-0 top-0" />
         <button className="pixel-btn absolute right-4 top-6 z-10 py-1.5 text-sm" onClick={onClose}>
-          {t('← Geri')}
+          {ic(t('← Geri'))}
         </button>
         <div className="absolute bottom-4 left-4 right-4 bg-[#171538]/80 px-4 py-3 sm:left-6 sm:right-auto sm:max-w-[560px] [box-shadow:0_0_0_2px_#37337a]">
           <p className="text-[12px] font-bold tracking-[0.18em] text-accent-2">{t('SEK-SEK · ARTBOOK')}</p>
@@ -197,10 +198,10 @@ export default function About({ onClose, onPlay, heroName }: { onClose: () => vo
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <button className="pixel-btn primary" onClick={onPlay}>
-              {t('▶ Yolculuğa Dön')}
+              {ic(t('▶ Yolculuğa Dön'))}
             </button>
             <button className="pixel-btn" onClick={onClose}>
-              {t('← Geri')}
+              {ic(t('← Geri'))}
             </button>
           </div>
         </section>

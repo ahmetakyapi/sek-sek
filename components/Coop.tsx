@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ItemIcon, Key } from '@/components/HudBits'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import { KEYS } from '@/components/Race'
-import { Overlay, displayName } from '@/components/ui'
+import { Overlay, displayName, ic } from '@/components/ui'
 import type { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
@@ -41,7 +41,7 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Birlikte Yolculuk')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <p className="mt-2 text-[13px] leading-snug text-muted">{t('Aynı ekranda, aynı şehirde: hatıralar, düğmeler ve bayraklar ortak. Düşen, arkadaşının yanında doğar; geride kalan öne ışınlanır.')}</p>
@@ -85,7 +85,7 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
         </div>
         {!canPlay && <p className="mt-2 text-[13px] text-accent-2">{t('Co-op için klavye ya da iki oyun kolu gerekir.')}</p>}
         <button className="pixel-btn primary mt-3 justify-center py-2.5 text-base" disabled={!canPlay} onClick={() => onStart(lvl, heroes)} autoFocus>
-          {t('▶ Birlikte Başla')}
+          {ic(t('▶ Birlikte Başla'))}
         </button>
       </div>
     </Overlay>
@@ -334,7 +334,7 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
                   setPaused(false)
                 }}
               >
-                {t('▶ Devam Et')}
+                {ic(t('▶ Devam Et'))}
               </button>
               <button className="pixel-btn justify-center" onClick={onQuit}>
                 {t('Yolculuğu Bırak')}
@@ -362,7 +362,7 @@ export function CoopEnd({ level, heroes, result, onAgain, onMenu }: { level: Lev
         <p className="mt-2 text-[13px] text-muted">{t('{city} · {deaths} düşüş · {items}/3 hatıra', { city: level.name, deaths: result.deaths, items: result.items })}</p>
         <div className="mt-5 grid grid-cols-2 gap-2.5">
           <button className="pixel-btn primary justify-center" onClick={onAgain} autoFocus>
-            {t('↺ Yeniden')}
+            {ic(t('↺ Yeniden'))}
           </button>
           <button className="pixel-btn justify-center" onClick={onMenu}>
             {t('Modlar')}

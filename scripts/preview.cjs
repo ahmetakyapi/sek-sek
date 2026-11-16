@@ -31,7 +31,7 @@ const port = val('port', '3100')
   const tap = (l) => (opt.hasTouch ? l.tap() : l.click())
   await tap(pg.getByRole('button', { name: /Devam|Başla|Yolculu|Continue|Start/ }).first())
   await pg.waitForTimeout(700)
-  await tap(pg.getByRole('button', { name: /▶/ }))
+  await tap(pg.getByRole('button', { name: /^(Başla|Start)$/ }))
   await pg.waitForTimeout(1200)
   // ?debug ile window.__mk.world() oyunun dünyasını verir
   await pg.evaluate((where) => {

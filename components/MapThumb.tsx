@@ -85,12 +85,22 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
       let top = map.findIndex((r) => r.trim() !== '')
       top = Math.max(0, Math.min(rows - 8, (top < 0 ? rows - 8 : top) - 2))
       // dikeyde oynanan bant (en çok 13 satır, dibe oturur); yatayda yolcunun başladığı yerden kart enince
-      const vis = Math.min(13, rows - top)
-      const tile = Math.max(H / vis, W / cols)
-      const oy = H - rows * tile
+      // dikey parkurda (baca, kule) pencereye giren en yüksek dolu satıra dek açılır
       const start = map.findIndex((r) => r.includes('P'))
       const sx = start < 0 ? 0 : map[start].indexOf('P')
-      const ox = -Math.max(0, Math.min(cols * tile - W, (sx - 3) * tile))
+      const frame = (v: number) => {
+        const t = Math.max(H / v, W / cols)
+        const x0 = Math.max(0, Math.min(cols - W / t, sx - 3))
+        return { t, x0, x1: Math.min(cols, x0 + Math.ceil(W / t)) }
+      }
+      let vis = Math.min(13, rows - top)
+      const w0 = frame(vis)
+      let topW = rows
+      for (let y = 0; y < rows && topW === rows; y++) if (map[y].slice(Math.floor(w0.x0), w0.x1).trim() !== '') topW = y
+      vis = Math.max(vis, Math.min(rows - top, rows - topW + 2))
+      const { t: tile, x0 } = frame(vis)
+      const oy = H - rows * tile
+      const ox = -x0 * tile
       // parallax katmanları: tabanları zemin çizgisine (yaklaşık 20. satır) oturur, kartın eni boyunca yinelenir
       const L = layersOf(city)
       const ground = oy + (start < 0 ? 20 : start + 1) * tile

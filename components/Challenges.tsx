@@ -5,7 +5,7 @@ import { ItemIcon } from '@/components/HudBits'
 import { CourseScene } from '@/components/MapThumb'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
-import { MedalBadge, Overlay, displayName } from '@/components/ui'
+import { MedalBadge, Overlay, displayName, ic } from '@/components/ui'
 import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel, type Challenge } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { localize, useLang, useT } from '@/lib/i18n'
@@ -30,11 +30,11 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{rage ? t('Öfke Parkurları') : t('Mücadeleler')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{rage ? t('Elle çizilmiş uzun ve acımasız parkurlar: dikenli bacalar, ritim, kör köşeler. Görünüşünü veren şehri bitirince açılır.') : t('Zor şehirlerin en sıkı yerleri, bayraksız ve hatırasız. Tek iş: baştan sona en hızlı var. Şehri bitirince açılır.')}</p>
-        <div className="mt-3 grid min-h-0 flex-1 gap-3 max-sm:grid-rows-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] short:mt-2 short:grid-cols-2">
+        <div className="mt-3 grid min-h-0 flex-1 gap-3 max-sm:grid-rows-[minmax(120px,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] short:mt-2 short:grid-cols-2">
           <ol className="overlay-scroll min-h-[120px] overflow-y-auto overscroll-contain pr-1">
             {list.map((c) => {
               const lv = localize(LEVELS.find((l) => l.id === c.level)!, lng)
@@ -105,8 +105,8 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
     <section className="border-2 border-line bg-ink/40 p-3 short:p-2">
       <p className="font-display text-xl leading-tight text-cream">{t(c.name)}</p>
       <p className="text-[13px] text-muted">{displayName(lv)}</p>
-      <CourseScene map={level.map} city={lv.city} className="mt-2 h-24 short:h-12" />
-      <div className="mt-2 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 short:hidden">
+      <CourseScene map={level.map} city={lv.city} className="mt-2 h-[clamp(72px,20vh,180px)] max-sm:h-20 short:h-14" />
+      <div className="mt-2 grid grid-cols-6 gap-1.5 text-center max-sm:hidden short:hidden">
         {facts.map(([k, v]) => (
           <div key={k} className="border-2 border-line bg-ink/30 px-1 py-1">
             <p className="font-display text-[15px] leading-none tabular-nums text-cream">{v}</p>
@@ -129,7 +129,7 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
       </div>
       <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-2">
         <button className="pixel-btn primary justify-center" disabled={!open} onClick={onStart} autoFocus>
-          {open ? (best ? t('▶ Yeniden Koş') : t('▶ Koş')) : t('{city} bitince açılır', { city: lv.name })}
+          {ic(open ? (best ? t('▶ Yeniden Oyna') : t('▶ Oyna')) : t('{city} bitince açılır', { city: lv.name }))}
         </button>
         {best ? <span className="font-display text-lg tabular-nums text-cream">{formatTime(best)}</span> : null}
       </div>
@@ -210,7 +210,7 @@ export function ChallengeEnd({
           </p>
           <div className="mt-4 grid grid-cols-2 gap-2.5 short:mt-2">
             <button className="pixel-btn primary justify-center whitespace-nowrap short:py-2" onClick={onRetry} autoFocus>
-              {t('↺ Yeniden Dene')}
+              {ic(t('↺ Yeniden Dene'))}
             </button>
             <button className="pixel-btn justify-center" onClick={onList}>
               {result.week ? t('Turnuva') : t('Mücadeleler')}

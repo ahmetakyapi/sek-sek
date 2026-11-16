@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
-import { MedalBadge, displayName, medalFor } from '@/components/ui'
+import { MedalBadge, displayName, medalFor, ic } from '@/components/ui'
 import { BOSSES } from '@/game/boss'
 import { FEATURES } from '@/game/features'
 import { LEVELS } from '@/game/levels'
@@ -120,7 +120,7 @@ export default function Album({ save }: { save: Save }) {
       <article aria-label={displayName(l)} className={`min-w-0 flex-1 flex-col border-2 border-line bg-ink/40 ${open ? 'flex' : 'hidden side:flex'}`}>
         <div className="flex items-center gap-1.5 border-b-2 border-line p-1.5">
           <button className={`pixel-btn px-2 py-1 text-[13px] ${open ? '' : 'hidden'} side:hidden`} onClick={() => setOpen(false)} aria-label={t('Albüme Dön')}>
-            {t('← Albüm')}
+            {ic(t('← Albüm'))}
           </button>
           <p className="hidden min-w-0 truncate pl-1.5 text-[12px] font-bold tracking-[0.14em] text-gold side:block">{t('ŞEHİR ALBÜMÜ')}</p>
           <button className="pixel-btn ml-auto px-2 py-1 text-[13px]" onClick={() => go(sel - 1)} aria-label={t('Önceki Şehir: {city}', { city: prev.name })} title={t('Önceki Şehir: {city}', { city: prev.name })}>

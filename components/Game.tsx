@@ -27,7 +27,7 @@ import { LOOKS } from '@/game/heroDraw'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
 import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
-import { MedalBadge, Overlay, displayName, haptic, medalFor } from '@/components/ui'
+import { MedalBadge, Overlay, displayName, haptic, ic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager, normalizeKeys } from '@/game/input'
@@ -1274,7 +1274,7 @@ export default function Game() {
     <div className={`${cls} items-center justify-between gap-3 border-t-2 border-line pt-3`}>
       {save.seenStory ? (
         <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
-          {t('← Geri')}
+          {ic(t('← Geri'))}
         </button>
       ) : (
         <span />
@@ -1936,7 +1936,7 @@ export default function Game() {
               </div>
               {save.character && (
                 <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
-                  {t("← Geri")}
+                  {ic(t("← Geri"))}
                 </button>
               )}
             </div>
@@ -2063,7 +2063,7 @@ export default function Game() {
                     </div>
                     <div className="flex items-center justify-between gap-3 border-t-2 border-line pt-3">
                       <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => (setConfirmOut(false), setScreen('title'))}>
-                        {t('← Geri')}
+                        {ic(t('← Geri'))}
                       </button>
                       {confirmOut ? (
                         // çıkışta onay: yanlışlıkla basılmasın
@@ -2130,7 +2130,7 @@ export default function Game() {
                   }
                 }}
               >
-                {storyPage + 1 < STORY.length ? t('▶ Devam') : t('▶ Yola Çık')}
+                {ic(storyPage + 1 < STORY.length ? t('▶ Devam') : t('▶ Yola Çık'))}
               </button>
               <button
                 className="pixel-btn"
@@ -2152,7 +2152,7 @@ export default function Game() {
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Şehirler")}</h2>
               <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
-                {t("← Geri")}
+                {ic(t("← Geri"))}
               </button>
             </div>
             {/* geniş ekranda: solda görevler ve ekran boyunun izin verdiği en büyük harita; sağdaki liste haritanın boyunda, kendi içinde kayar */}
@@ -2283,7 +2283,7 @@ export default function Game() {
             </details>
             <div className="sticky bottom-0 z-10 -mx-6 mt-4 grid grid-cols-[1fr_auto] wide:-mx-8 wide:mt-6 wide:flex wide:justify-end wide:px-8 [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:py-2 gap-3 border-t-2 border-line bg-[#171538]/95 px-6 py-3 [padding-bottom:max(12px,env(safe-area-inset-bottom))]">
               <button className="pixel-btn primary justify-center py-3 text-lg wide:min-w-[360px]" onClick={beginPlay} autoFocus>
-                {t("▶ Başla")}
+                {ic(t("▶ Başla"))}
               </button>
               <button className="pixel-btn" onClick={() => setScreen('map')}>
                 {t("Şehirler")}
@@ -2316,7 +2316,7 @@ export default function Game() {
                   ))}
                 </div>
                 <button className="pixel-btn primary mt-4 w-full justify-center py-3 text-lg short:mt-2.5 short:py-2" onClick={() => setScreen('play')} autoFocus>
-                  {t("▶ Devam Et")}
+                  {ic(t("▶ Devam Et"))}
                 </button>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 short:mt-2.5 short:grid-cols-4 short:gap-2">
                   <button
@@ -2345,16 +2345,16 @@ export default function Game() {
                 {cityCard}
                 <div className="mt-3 flex gap-2 short:mt-2">
                   <button className="pixel-btn flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
-                    {t('◉ Fotoğraf Kipi')}
+                    {ic(t('◉ Fotoğraf Kipi'))}
                   </button>
                   <button className="pixel-btn flex-1 justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
-                    {t('⚙ Ayarlar')}
+                    {ic(t('⚙ Ayarlar'))}
                   </button>
                 </div>
               </div>
               <div className={`min-w-0 side:mt-0 side:block ${pauseSet ? '' : 'hidden'}`}>
                 <button className="pixel-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
-                  {t('← Mola')}
+                  {ic(t('← Mola'))}
                 </button>
                 <p className="flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
                   {t("AYARLAR")} <span className="kilim h-[6px] flex-1 opacity-50" />
@@ -2400,7 +2400,7 @@ export default function Game() {
             <div className="flex items-center justify-between">
               <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Skor Tablosu")}</h2>
               <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
-                {t("← Geri")}
+                {ic(t("← Geri"))}
               </button>
             </div>
             <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} onDaily={startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} friends={save.friends ?? []} onFriend={toggleFriend} />
@@ -2417,7 +2417,7 @@ export default function Game() {
                 <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Ayarlar')}</h2>
               </div>
               <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
-                {t("← Geri")}
+                {ic(t("← Geri"))}
               </button>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 wide:hidden" role="tablist">
@@ -2449,12 +2449,12 @@ export default function Game() {
                 <span className="flex flex-wrap gap-2">
                   {installer.canInstall && (
                     <button className="pixel-btn primary px-3 py-1.5 text-[13px]" onClick={() => void installer.install()}>
-                      {t('⤓ Ana Ekrana Ekle')}
+                      {ic(t('⤓ Ana Ekrana Ekle'))}
                     </button>
                   )}
                   {canFull && (
                     <button className="pixel-btn px-3 py-1.5 text-[13px] wide:hidden" onClick={fullscreen}>
-                      {t('⛶ Tam Ekrana Geç')}
+                      {ic(t('⛶ Tam Ekrana Geç'))}
                     </button>
                   )}
                 </span>
@@ -2560,7 +2560,7 @@ export default function Game() {
                   else history.replaceState(null, '', location.pathname)
                 }}
               >
-                {t('◌ Yarış')}
+                {ic(t('◌ Yarış'))}
               </button>
               <button className="pixel-btn justify-center" onClick={() => (history.replaceState(null, '', location.pathname), setScreen('title'))}>
                 {t('Ana Menü')}
@@ -2669,7 +2669,7 @@ export default function Game() {
             {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'maraton' && save.maraton && <p className="mt-2 text-[13px] text-muted">{t('Maraton rekorun: {time}', { time: formatTime(save.maraton.timeMs) })}</p>}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn primary justify-center" onClick={rushResult.kind === 'boss' ? startRush : rushResult.kind === 'tur' || rushResult.kind === 'aynaTur' ? () => startTour(rushResult.kind as 'tur' | 'aynaTur') : startMarathon} autoFocus>
-                {t("↺ Yeniden Koş")}
+                {ic(t("↺ Yeniden Oyna"))}
               </button>
               <button className="pixel-btn justify-center" onClick={() => setScreen('modes')}>
                 {t('Modlar')}
@@ -2707,7 +2707,7 @@ export default function Game() {
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               {'error' in custom ? null : (
                 <button className="pixel-btn primary justify-center" onClick={startCustom} autoFocus>
-                  {t('▶ Oyna')}
+                  {ic(t('▶ Oyna'))}
                 </button>
               )}
               <a className="pixel-btn justify-center" href={'error' in custom ? '/duzenle' : `/duzenle?kod=${custom.code}`}>
@@ -2736,7 +2736,7 @@ export default function Game() {
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn primary justify-center" onClick={startCustom} autoFocus>
-                {t('↺ Yeniden Koş')}
+                {ic(t('↺ Yeniden Oyna'))}
               </button>
               <a className="pixel-btn justify-center" href={`/duzenle?kod=${custom.code}`}>
                 {t('Düzenleyicide Aç')}
@@ -2762,7 +2762,7 @@ export default function Game() {
             {mirrorResult.relaxed && <p className="mt-2 text-[13px] text-muted">{t('Rahat Mod’da koştun: rekor yazılmadı.')}</p>}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn primary justify-center" onClick={() => startMirror(mirrorResult.idx)} autoFocus>
-                {t('↺ Yeniden Koş')}
+                {ic(t('↺ Yeniden Oyna'))}
               </button>
               <button className="pixel-btn justify-center" onClick={() => setScreen('mirror')}>
                 {t('Ayna Yolu')}
@@ -3098,7 +3098,7 @@ function Complete({
             />
             <div className="mt-4 grid grid-cols-2 gap-2.5">
               <button className="pixel-btn justify-center py-2.5 text-sm" onClick={share}>
-                {t('↗ Paylaş')}
+                {ic(t('↗ Paylaş'))}
               </button>
               <a className="pixel-btn justify-center py-2.5 text-sm" href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} onClick={(e) => { e.preventDefault(); window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl()}`)}`, '_blank', 'noopener') }}>
                 WhatsApp
@@ -3111,7 +3111,7 @@ function Complete({
               </a>
               {player && (
                 <button className="pixel-btn col-span-2 justify-center py-2.5 text-sm" onClick={copyDare}>
-                  {dared ? t('Kopyalandı: arkadaşına gönder') : t('⚔ Beni Geç Bağlantısı')}
+                  {ic(dared ? t('Kopyalandı: arkadaşına gönder') : t('⚔ Beni Geç Bağlantısı'))}
                 </button>
               )}
             </div>
@@ -3129,7 +3129,7 @@ function Complete({
                       {level.medals[k]}
                       <span className="text-[12px] text-muted">{t('sn')}</span>
                     </p>
-                    <p className={`mt-1 text-[12px] ${got ? 'text-gold' : 'text-muted'}`}>{got ? t('✓ Alındı') : t('{s} sn kaldı', { s: Math.ceil((result.timeMs - level.medals[k] * 1000) / 1000) })}</p>
+                    <p className={`mt-1 text-[12px] ${got ? 'text-gold' : 'text-muted'}`}>{ic(got ? t('✓ Alındı') : t('{s} sn kaldı', { s: Math.ceil((result.timeMs - level.medals[k] * 1000) / 1000) }))}</p>
                   </div>
                 )
               })}
@@ -3186,10 +3186,10 @@ function Complete({
         {/* ── sabit eylem şeridi: telefonda da hep görünür */}
         <div className="z-10 -mx-6 mt-3 grid shrink-0 grid-cols-2 gap-2.5 sm:grid-cols-[1fr_auto_auto] border-t-2 border-line bg-[#171538]/95 px-6 py-3 wide:mt-4 [padding-bottom:max(12px,env(safe-area-inset-bottom))] short:col-start-1 short:row-start-3 short:mx-0 short:mt-2 short:grid-cols-2 short:gap-2 short:self-start short:border-0 short:bg-transparent short:p-0">
           <button className="pixel-btn primary col-span-2 min-w-0 justify-center sm:col-span-1 short:col-span-2" onClick={onNext} autoFocus>
-            <span className="truncate">{nextIdx !== null ? t('▶ Sıradaki: {city}', { city: displayName(LEVELS[nextIdx]) }) : t('▶ Defteri Kapat')}</span>
+            <span className="truncate">{ic(nextIdx !== null ? t('▶ Sıradaki: {city}', { city: displayName(LEVELS[nextIdx]) }) : t('▶ Defteri Kapat'))}</span>
           </button>
           <button className="pixel-btn" onClick={onRetry} aria-label={t('↺ Tekrar')}>
-            {t('↺ Tekrar')}
+            {ic(t('↺ Tekrar'))}
           </button>
           <button className="pixel-btn" onClick={onMap}>
             {t('Şehirler')}

@@ -5,7 +5,7 @@ import { ItemIcon } from '@/components/HudBits'
 import { CourseScene } from '@/components/MapThumb'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
-import { MedalBadge, Overlay, displayName } from '@/components/ui'
+import { MedalBadge, Overlay, displayName, ic } from '@/components/ui'
 import { CHALLENGES, challengeLevel, type Challenge } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { istanbulDay, shiftDay, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark } from '@/lib/extras'
@@ -59,7 +59,7 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Haftalık Turnuva')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">
@@ -85,13 +85,13 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
                       <ItemIcon city={lv.city} taken size={18} />
                       {t(c.name)}
                     </span>
-                    <span className="flex items-center gap-1.5 text-[13px] text-muted">
-                      {displayName(lv)} · {ms ? formatTime(ms) : t('henüz koşulmadı')}
+                    <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted">
+                      <span className="truncate">{displayName(lv)} · {ms ? formatTime(ms) : t('henüz koşulmadı')}</span>
                       {medal && <MedalBadge medal={medal} />}
                     </span>
                   </span>
                   <button className={`pixel-btn justify-center px-3 py-1.5 text-[13px] ${ms ? '' : 'primary'}`} onClick={() => onStart(c)} autoFocus={i === ids.findIndex((x) => !best[x])}>
-                    {ms ? t('↺ Yeniden') : t('▶ Koş')}
+                    {ic(ms ? t('↺ Yeniden') : t('▶ Oyna'))}
                   </button>
                   </div>
                   <CourseScene map={challengeLevel(c).map} city={lv.city} className="mt-1.5 h-[clamp(56px,14vh,140px)] max-sm:hidden short:hidden" />
@@ -103,16 +103,19 @@ export function TournamentHub({ mark, player, friends, onStart, onBack }: { mark
               <span className="font-display text-2xl leading-none tabular-nums text-cream">{total ? formatTime(total) : `${Object.keys(best).filter((k) => ids.includes(k)).length}/3`}</span>
             </p>
           </div>
-          <div className="flex min-h-0 flex-col">
+          {/* sıralama çerçeveli kutuda, sağ sütunun boyunca (boşken de yerini tutar, iki sütun dengeli) */}
+          <div className="flex min-h-0 flex-col border-2 border-line bg-ink/30 p-2.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[12px] font-bold tracking-[0.14em] text-gold">{t('BU HAFTANIN SIRALAMASI')}</p>
+              <p className="flex flex-1 items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
+                {t('BU HAFTANIN SIRALAMASI')} <span className="kilim h-[6px] flex-1 opacity-50" />
+              </p>
               {friends.length > 0 && (
                 <button aria-pressed={onlyFriends} className={`pixel-btn px-2 py-1 text-[13px] ${onlyFriends ? 'primary' : ''}`} onClick={() => setOnlyFriends((v) => !v)}>
                   ★ {t('Arkadaşlar')}
                 </button>
               )}
             </div>
-            <div className="overlay-scroll min-h-[100px] flex-1 overflow-y-auto pr-1">
+            <div className="overlay-scroll mt-1.5 min-h-[100px] flex-1 overflow-y-auto pr-1">
               <Board kind="turnuva" week={week} me={player} compact names={onlyFriends ? friends : undefined} />
             </div>
           </div>

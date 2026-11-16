@@ -21,6 +21,21 @@ export function Overlay({ children, dim = false }: { children: React.ReactNode; 
   )
 }
 
+/** düğme yazısının başındaki simgeyi ayrı tutar: simgeyle yazı arasında boşluk kalır (düğmede flex aralığı, başka yerde .ico payı) */
+const ICON = /^([^\p{L}\p{N}\s"“'(%+~:?\[-]+)\s+(.+)$/su
+export function ic(s: string): React.ReactNode {
+  const m = ICON.exec(s)
+  if (!m) return s
+  return (
+    <>
+      <span aria-hidden="true" className="ico">
+        {m[1]}
+      </span>
+      <span>{m[2]}</span>
+    </>
+  )
+}
+
 export const displayName = (l: LevelDef) => (l.nickname ? `${l.name} (${l.nickname})` : l.name)
 
 export { medalFor, type Medal } from '@/components/medal'

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
-import { MedalBadge, displayName, medalFor } from '@/components/ui'
+import { MedalBadge, displayName, medalFor, ic } from '@/components/ui'
 import { LEVELS } from '@/game/levels'
 import { DAILY_RULES, dailyRun, istanbulDay, shiftDay } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
@@ -97,10 +97,11 @@ export function Board({
 
   if (failed)
     return (
-      <p className="mt-3 flex flex-wrap items-center gap-3 text-[13px] text-muted">
-        {t('Skor tablosuna şu an ulaşılamıyor.')}
-        <button className="pixel-btn px-3 py-1.5 text-[13px]" onClick={() => setRetry((x) => x + 1)}>
-          {t('Tekrar Dene')}
+      // bağlantı ya da sunucu sorunu oyuncuya hata gibi değil, boş tablo gibi görünür; yenilemek bir dokunuş
+      <p className="mt-3 border-2 border-dashed border-line/70 px-3 py-4 text-center text-[13px] text-muted">
+        {t('Şu an gösterilecek skor yok.')}{' '}
+        <button className="text-accent underline underline-offset-4 hover:text-cream" onClick={() => setRetry((x) => x + 1)}>
+          {t('Yenile')}
         </button>
       </p>
     )
@@ -403,7 +404,7 @@ export default function ScoreBoard({
           <div className="flex shrink-0 flex-col gap-1.5">
             {day === today ? (
               <button className="pixel-btn primary px-3 py-1.5 text-[13px]" onClick={onDaily}>
-                {t('▶ Oyna')}
+                {ic(t('▶ Oyna'))}
               </button>
             ) : null}
             <button className="pixel-btn px-2 py-1 text-[13px]" onClick={() => setDay(day === today ? shiftDay(today, -1) : today)}>
@@ -487,7 +488,7 @@ function AddFriend({ friends, me, onAdd }: { friends: string[]; me: string; onAd
         aria-label={t('Arkadaş Adı')}
       />
       <button className="pixel-btn px-2.5 py-1.5 text-[13px]" type="submit">
-        {t('＋ Ekle')}
+        {ic(t('＋ Ekle'))}
       </button>
       <span className="w-full text-[13px] text-muted">{msg || t('Satırlardaki ☆ ile de ekleyebilirsin.')}</span>
     </form>

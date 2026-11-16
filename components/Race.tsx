@@ -1,4 +1,5 @@
 'use client'
+import { ic } from '@/components/ui'
 
 import { useEffect, useRef, useState } from 'react'
 import { DNF } from '@/components/Modes'
@@ -331,7 +332,7 @@ export default function Race({
                   setPaused(false)
                 }}
               >
-                {t('▶ Devam Et')}
+                {ic(t('▶ Devam Et'))}
               </button>
               <button className="pixel-btn justify-center" onClick={onQuit}>
                 {t('Yarışı Bırak')}

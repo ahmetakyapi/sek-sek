@@ -5,7 +5,7 @@ import Portrait from '@/components/Portrait'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon } from '@/components/HudBits'
 import TurkeyMap from '@/components/TurkeyMap'
-import { Overlay, displayName } from '@/components/ui'
+import { Overlay, displayName, ic } from '@/components/ui'
 import type { AccessoryId } from '@/game/accessories'
 import { BOSSES } from '@/game/boss'
 import type { CharacterId } from '@/game/characters'
@@ -169,7 +169,7 @@ export default function Ending({
                 </button>
               )}
               <button className={`pixel-btn ${ALL.length > FIRST_BOOK ? '' : 'primary'}`} onClick={onMirror} autoFocus={ALL.length <= FIRST_BOOK}>
-                {t('◐ Ayna Yolu')}
+                {ic(t('◐ Ayna Yolu'))}
               </button>
               <button className="pixel-btn" onClick={onCities}>
                 {t('Şehirler')}

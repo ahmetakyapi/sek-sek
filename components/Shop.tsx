@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Portrait from '@/components/Portrait'
-import { Overlay } from '@/components/ui'
+import { Overlay, ic } from '@/components/ui'
 import { ACCESSORIES, type AccessoryId } from '@/game/accessories'
 import type { CharacterId } from '@/game/characters'
 import type { Scarf } from '@/lib/extras'
@@ -30,7 +30,7 @@ export default function Shop({ hero, scarf, owned, seals, wearing, wallet, onBuy
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Kılık Dükkânı')}</h2>
           </div>
           <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {t('← Geri')}
+            {ic(t('← Geri'))}
           </button>
         </div>
         <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Yolda bulduğun her hatıra, gizli pul ve nazar boncuğu bir parça sayılır. Aldığın aksesuar senindir; istediğin zaman tak, çıkar.')}</p>
