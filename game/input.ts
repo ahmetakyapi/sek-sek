@@ -14,16 +14,19 @@ export const DEFAULT_KEYS: KeyBindings = {
 }
 /**
  * İki kişilik tuşlar (Co-op ve Yan Yana Yarış), oyuncu atayabilir (`save.duoKeys`, Ayarlar → Kontroller ve molada).
- * Varsayılan: solda WASD + Sol Shift (X de dash), sağda ok tuşları + Enter (Sağ Shift de dash). Boşluk varsayılanda
+ * Varsayılan: solda WASD + Sol Shift, sağda ok tuşları + Enter; her oyuncunun tek dash tuşu var. Boşluk ve Shift'ler
+ * karışmasın diye Sağ Shift kimsede yok (bazı klavyelerde iki Shift aynı kodu verir). Boşluk varsayılanda
  * kimsede yok: tek kişilikte dash Boşluk, iki kişide alışkanlıkla basılınca öbürünü atıyordu. Bir tuş yalnız bir
  * oyuncunun bir eylemidir (`bindDuo`). Zıpla tuşu yukarıdır da (halat, kapı). Oyun kolu: 1. kol sola, 2. kol sağa.
  */
 export type DuoBindings = Record<KeyAction, string[]>
 export type DuoKeys = [DuoBindings, DuoBindings]
 export const DEFAULT_DUO: DuoKeys = [
-  { left: ['KeyA'], right: ['KeyD'], jump: ['KeyW'], down: ['KeyS'], dash: ['ShiftLeft', 'KeyX'] },
-  { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['ArrowUp'], down: ['ArrowDown'], dash: ['Enter', 'ShiftRight', 'NumpadEnter', 'Numpad0'] },
+  { left: ['KeyA'], right: ['KeyD'], jump: ['KeyW'], down: ['KeyS'], dash: ['ShiftLeft'] },
+  { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['ArrowUp'], down: ['ArrowDown'], dash: ['Enter', 'NumpadEnter'] },
 ]
+/** eski varsayılan dash tuşları (Sağ Shift 2. oyuncudaydı, Shift'ler karışıyordu): kayıtta bunlar duruyorsa yenisine geçilir */
+const OLD_DUO_DASH = ['ShiftLeft,KeyX', 'Enter,ShiftRight,NumpadEnter,Numpad0']
 /** iki kişilikte atanamayan tuşlar: mola ve tarayıcı tuşları (Shift burada serbest: istenen dash tuşu) */
 export const DUO_RESERVED = ['Escape', 'KeyP', 'Tab', 'MetaLeft', 'MetaRight', 'F5', 'F11', 'F12']
 
@@ -34,6 +37,7 @@ export function normalizeDuo(k?: Partial<Record<KeyAction, string[]>>[] | null):
     for (const a of KEY_ACTIONS) {
       const v = k?.[i]?.[a]
       if (Array.isArray(v) && v.length) out[a] = v.filter((c) => typeof c === 'string' && !DUO_RESERVED.includes(c))
+      if (a === 'dash' && OLD_DUO_DASH[i] === out.dash.join()) out.dash = DEFAULT_DUO[i].dash
       if (!out[a].length) out[a] = DEFAULT_DUO[i][a]
     }
     return out

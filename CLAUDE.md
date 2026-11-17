@@ -197,10 +197,10 @@ ilk kişisi esnaf olsun (usta o).
 
 **Co-op.** `World.enableCoop()` eşi (`partner`) kurar; `stepPartner` eşi aynı adımda, oyuncu kaydını geçici olarak eşe
 çevirerek yürütür: çarpışma, toplama, tehlike, bayrak, boss'a basma ve çıkış ortak koddan geçer. Kural iki oyuncuya aynı
-(17 Kasım 2026): düşen, ayaktaki eşinin yanında doğar (`rejoin`, dünya sıfırlanmaz); ikisi birden düşerse bölüm bayraktan
-kurulur ve ikisi birlikte doğar. Tuşlar oyuncunun ataması (`save.duoKeys`, `normalizeDuo` / `bindDuo`; Ayarlar → Kontroller "İki Kişilik" ve Co-op /
-Yarış molasında `DuoRemap`), varsayılan `DEFAULT_DUO`: solda WASD + Sol Shift (X de dash), sağda ok tuşları + Enter (Sağ
-Shift de dash). Boşluk varsayılanda kimsede yok (tek kişilikte dash Boşluk, alışkanlıkla basılınca öbürünü atıyordu); bir
+(kullanıcı kararı, 17 Kasım 2026): biri düşerse bölüm son bayraktan kurulur ve ikisi birden orada doğar (eş düşerse
+`stepPartner` `respawn` + `bringPartner`, oyuncu düşerse Coop.tsx `respawn` olayında `bringPartner`). Tuşlar oyuncunun ataması (`save.duoKeys`, `normalizeDuo` / `bindDuo`; Ayarlar → Kontroller "İki Kişilik" ve Co-op /
+Yarış molasında `DuoRemap`), varsayılan `DEFAULT_DUO`: solda WASD + Sol Shift, sağda ok tuşları + Enter; her oyuncunun tek dash
+tuşu (Sağ Shift kimsede yok: bazı klavyelerde iki Shift karışıyor, biri ötekini dash attırıyordu). Boşluk varsayılanda kimsede yok (tek kişilikte dash Boşluk, alışkanlıkla basılınca öbürünü atıyordu); bir
 tuş tek oyuncunun tek eylemi, atanan tuş öbüründen alınır (takas) (`tests/input.test.ts`). Molada değişen tuş hemen uyar (`keysRef`).
 Boss Kapışması (`CoopSetup` kipi): seçilen boss'un arenası (`coopLevel`), isteğe bağlı ikinci boss `LevelDef.bossOf2`
 (`World.boss2`: kapı ikisi de düşünce açılır) ve zorluk `bossBoost` (kademe + hız; Normal, Öfkeli, Kâbus). Kamera ikisinin ortasına
