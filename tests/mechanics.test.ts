@@ -134,42 +134,47 @@ describe('co-op eşi', () => {
     expect(w.pickups[0].taken).toBe(true)
   })
 
-  it('düşen eş partnerinin yanında doğar; dünya sıfırlanmaz', () => {
+  // co-op'ta Coop.tsx 'respawn' olayında eşi getirir (world.bringPartner): testte de aynısı
+  const twoLoop = (w: World, secs: number, a: Partial<Input> = {}, b: Partial<Input> = {}) => {
+    for (let i = 0; i < Math.round(secs * 120); i++) {
+      w.step(1 / 120, { ...emptyInput(), ...a })
+      w.stepPartner(1 / 120, { ...emptyInput(), ...b })
+      if (w.events.some((e) => e.type === 'respawn')) w.bringPartner()
+      w.events.length = 0
+    }
+  }
+  it('eş düşerse ikisi birden son bayraktan doğar', () => {
     const w = mk(['             ', ' P   C       ', '#####^^^#####', '#############'])
     w.enableCoop()
     w.started = true
-    two(w, 0.6, { right: true })
+    const sx = w.spawn.x
+    twoLoop(w, 0.6, { right: true })
     expect(w.pickups[0].taken).toBe(true)
-    const px = w.player.x
-    two(w, 1.2, {}, { right: true })
+    twoLoop(w, 1.2, {}, { right: true })
     expect(w.deaths).toBe(1)
-    two(w, 1)
-    const q = w.partner!
-    expect(q.dead).toBe(false)
-    expect(Math.abs(q.x - px)).toBeLessThan(16)
-    // oyuncu düşmediği için bölüm bayraktan kurulmadı: toplanan hatıra yerinde
-    expect(w.pickups[0].taken).toBe(true)
+    twoLoop(w, 1)
+    expect(w.partner!.dead).toBe(false)
     expect(w.player.dead).toBe(false)
+    // ikisi de başlangıç (bayrak) noktasında
+    expect(Math.abs(w.player.x - sx)).toBeLessThan(4)
+    expect(Math.abs(w.partner!.x - w.player.x)).toBeLessThan(16)
   })
 
-  it('düşen oyuncu da eşinin yanında doğar; kural ikisine aynı, dünya sıfırlanmaz', () => {
+  it('oyuncu düşerse de ikisi birden son bayraktan doğar', () => {
     const w = mk(['             ', ' P  C        ', '######^^^####', '#############'])
     w.enableCoop()
     w.started = true
-    const qx = w.partner!.x
-    two(w, 1.6, { right: true })
-    expect(w.pickups[0].taken).toBe(true)
+    const sx = w.spawn.x
+    twoLoop(w, 1.6, { right: true })
     expect(w.deaths).toBe(1)
-    two(w, 1)
+    twoLoop(w, 1)
     expect(w.player.dead).toBe(false)
-    expect(w.partner!.dead).toBe(false)
-    expect(Math.abs(w.player.x - qx)).toBeLessThan(16)
-    // eşi ayaktaydı: bölüm bayraktan kurulmadı, alınan hatıra yerinde
-    expect(w.pickups[0].taken).toBe(true)
+    expect(Math.abs(w.player.x - sx)).toBeLessThan(4)
+    expect(Math.abs(w.partner!.x - w.player.x)).toBeLessThan(16)
   })
 
   it('ikisi birden düşerse bölüm bayraktan kurulur ve ikisi birlikte doğar', () => {
-    const w = mk(['             ', ' P           ', '#^^^^^^^^^^^#', '#############'])
+    const w = mk(['             ', ' P           ', '###^^^^^^^^^#', '#############'])
     w.enableCoop()
     w.started = true
     two(w, 0.8, { right: true }, { right: true })

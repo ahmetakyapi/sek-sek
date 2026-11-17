@@ -135,7 +135,7 @@ export function DuoRemap({ keys, onChange, compact = false }: { keys?: Partial<R
           </div>
         ))}
       </div>
-      {!compact && <p className="mt-1.5 text-[12px] leading-snug text-muted">{t('Windows’ta Shift’e art arda beş kez basınca Yapışkan Tuşlar açılabilir; 1. oyuncuda X de dash atar.')}</p>}
+      {!compact && <p className="mt-1.5 text-[12px] leading-snug text-muted">{t('Her oyuncunun kendi dash tuşu var: biri ötekini dash attırmaz. Windows’ta Shift’e art arda beş kez basınca Yapışkan Tuşlar açılabilir.')}</p>}
     </div>
   )
 }

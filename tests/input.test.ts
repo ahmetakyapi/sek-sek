@@ -48,6 +48,15 @@ describe('iki kişilik tuşlar', () => {
     expect(DEFAULT_DUO[1].dash[0]).toBe('Enter')
     expect(DEFAULT_DUO[1].left).toContain('ArrowLeft')
   })
+  it('her oyuncunun tek dash tuşu var; Sağ Shift kimsede yok (biri ötekini dash attırmasın)', () => {
+    expect(DEFAULT_DUO[0].dash).toEqual(['ShiftLeft'])
+    expect(DEFAULT_DUO[1].dash[0]).toBe('Enter')
+    for (const b of DEFAULT_DUO) expect(Object.values(b).flat()).not.toContain('ShiftRight')
+    // eski varsayılanı kayıtlı oyuncu yenisine geçer
+    const old = normalizeDuo([{ dash: ['ShiftLeft', 'KeyX'] }, { dash: ['Enter', 'ShiftRight', 'NumpadEnter', 'Numpad0'] }])
+    expect(old[0].dash).toEqual(['ShiftLeft'])
+    expect(old[1].dash).not.toContain('ShiftRight')
+  })
   it('atanan tuş öbür oyuncudan ve öbür eylemden alınır; eylem boş kalmaz', () => {
     const k = bindDuo(DEFAULT_DUO, 1, 'dash', 'KeyX')
     expect(k[1].dash[0]).toBe('KeyX')

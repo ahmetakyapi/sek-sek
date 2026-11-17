@@ -797,13 +797,8 @@ export class World {
 
     if (p.dead) {
       p.deadTimer -= dt
-      // co-op: eşi ayaktaysa oyuncu onun yanında doğar, bölüm sıfırlanmaz (eş düşünce de böyle: kural ikisine aynı).
-      // ikisi birden düştüyse bölüm bayraktan kurulur.
-      if (p.deadTimer <= 0) {
-        const q = this.partner
-        if (q && !q.dead) this.rejoin(p, q)
-        else this.respawn()
-      }
+      // co-op dahil: düşünce bölüm son bayraktan kurulur, eş de oraya gelir (kural ikisine aynı)
+      if (p.deadTimer <= 0) this.respawn()
       this.updateEnemies(dt)
       if (this.boss) updateBoss(this.boss, this, dt)
     if (this.boss2) updateBoss(this.boss2, this, dt)
@@ -1854,12 +1849,6 @@ export class World {
   }
 
   /** Eşi oyuncunun yanına taşır (geride kaldıysa, düştüyse ya da meydan kapısından geçildiyse) */
-  /** düşen oyuncu ayaktaki eşinin yanında doğar (dünya olduğu gibi kalır) */
-  private rejoin(p: Player, to: Player) {
-    Object.assign(p, this.freshPlayer(to.x + (this.boxHitsSolid(to.x - 10, to.y, PW, PH) ? 0 : -10), to.y), { dead: false, deadTimer: 0 })
-    this.events.push({ type: 'rejoin' })
-  }
-
   bringPartner(to: Player = this.player) {
     const q = this.partner
     if (!q) return
@@ -1882,8 +1871,12 @@ export class World {
     }
     if (q.dead) {
       q.deadTimer -= dt
-      // oyuncu da düşmüşse eş bekler: bölüm bayraktan kurulunca 'respawn' olayıyla oyuncunun yanına gelir
-      if (q.deadTimer <= 0 && !this.player.dead) this.rejoin(q, this.player)
+      // eş düşünce de ikisi birden son bayraktan doğar: bölüm kurulur, eş oyuncunun yanına gelir.
+      // oyuncu da düşmüşse onun doğuşu ('respawn' olayı) eşi getirir
+      if (q.deadTimer <= 0 && !this.player.dead) {
+        this.respawn()
+        this.bringPartner()
+      }
       return
     }
     const self = this as unknown as { player: Player }

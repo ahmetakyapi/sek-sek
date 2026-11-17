@@ -1020,7 +1020,6 @@ export const UI_EN: Record<string, string> = {
   'Bir şehri her şeyini aynı koşuda alarak bitir (%100).': 'Finish a city collecting everything in a single run (100%).',
   "CO-OP · 2 KİŞİ": "CO-OP · 2 PLAYERS",
   "Birlikte Yolculuk": "Travel Together",
-  "Aynı ekranda, aynı şehirde: hatıralar, düğmeler ve bayraklar ortak. Düşen, arkadaşının yanında doğar; geride kalan öne ışınlanır.": "Same screen, same city: keepsakes, switches and flags are shared. Whoever falls reappears next to their friend; whoever falls behind is pulled ahead.",
   "Co-op için klavye ya da iki oyun kolu gerekir.": "Co-op needs a keyboard or two controllers.",
   "▶ Birlikte Başla": "▶ Start Together",
   "Birlikte Mola": "Paused Together",
@@ -1245,7 +1244,6 @@ export const UI_EN: Record<string, string> = {
   "İki Kişilik": "Two Players",
   "{n}. Oyuncu {action} İçin Tuş Ata": "Bind Key for Player {n} {action}",
   "Bas…": "Press…",
-  "Windows’ta Shift’e art arda beş kez basınca Yapışkan Tuşlar açılabilir; 1. oyuncuda X de dash atar.": "On Windows, pressing Shift five times in a row may open Sticky Keys; X also dashes for player 1.",
   "Solda WASD + Shift, sağda ok tuşları + Enter ya da iki oyun kolu. Tuşlar Ayarlar’dan değişir.": "Left: WASD + Shift, right: arrow keys + Enter, or two gamepads. Change keys in Settings.",
   "Ekran ikiye bölünür, aynı anda koşarsınız. Klavye (WASD + Shift, ok tuşları + Enter) ya da iki oyun kolu gerekir.": "The screen splits in two and you run at the same time. Needs a keyboard (WASD + Shift, arrow keys + Enter) or two gamepads.",
   "Solda {a}: WASD, dash Shift. Sağda {b}: ok tuşları, dash Enter. Çıkışa ilk varan turu alır.": "Left, {a}: WASD, dash Shift. Right, {b}: arrow keys, dash Enter. First to the exit takes the round.",
@@ -1285,4 +1283,5 @@ export const UI_EN: Record<string, string> = {
   "Basınca çöker: durma, koşarak geç": "Crumbles under you: don't stop, run across",
   "Kaygandır: erken dur": "Slippery: stop early",
   "YOLDA NE VAR, NE İŞE YARAR": "ON THE ROAD AND WHAT IT DOES",
+  "Her oyuncunun kendi dash tuşu var: biri ötekini dash attırmaz. Windows’ta Shift’e art arda beş kez basınca Yapışkan Tuşlar açılabilir.": "Each player has their own dash key: one never dashes the other. On Windows, pressing Shift five times in a row may open Sticky Keys.",
 }

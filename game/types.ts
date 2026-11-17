@@ -92,8 +92,6 @@ export type GameEvent =
   | { type: 'land' }
   | { type: 'death'; x: number; y: number }
   | { type: 'respawn' }
-  /** co-op: düşen oyuncu eşinin yanında doğdu */
-  | { type: 'rejoin' }
   /** derin suda nefes bitti */
   | { type: 'drown' }
   | { type: 'checkpoint'; index: number }
