@@ -50,6 +50,10 @@ export interface LevelDef {
   lowGravity?: boolean
   /** boss başka bir şehrin boss'u (Bölüm Düzenleyici: istenen boss seçilir); yoksa bölümün şehrininki */
   bossOf?: CityKey
+  /** Co-op Boss Kapışması: arenaya ikinci boss (bu şehrin boss'u) arenanın öbür ucundan katılır; kapı ikisi de düşünce açılır */
+  bossOf2?: CityKey
+  /** Co-op Boss Kapışması zorluğu: boss'lar bu kademede ve bu hız çarpanıyla dövüşür (kural aynı: işaret, saldırı, yorgunluk, bas) */
+  bossBoost?: { tier: 1 | 2 | 3; speed: number }
   /** Fırtına (zor mod): rüzgâr (wind) birkaç saniyede bir yön değiştirir: önce arkadan, sonra karşıdan eser */
   storm?: boolean
   /** Ayna Yolu: harita sağdan sola çevrilmiş (game/mirror.ts); hareketli platformlar da ayna fazında başlar */
@@ -88,6 +92,8 @@ export type GameEvent =
   | { type: 'land' }
   | { type: 'death'; x: number; y: number }
   | { type: 'respawn' }
+  /** co-op: düşen oyuncu eşinin yanında doğdu */
+  | { type: 'rejoin' }
   | { type: 'checkpoint'; index: number }
   | { type: 'collect'; index: number }
   | { type: 'spring' }

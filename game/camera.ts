@@ -126,6 +126,38 @@ export function hazardAhead(w: World): number {
   return 0
 }
 
+/**
+ * İniş tahmini (dünya pikseli, ayakların ineceği y) : havadayken karakterin yolu (yatay hız sabit, yerçekimi, düşüş
+ * sınırı) adım adım izlenir; ilk değeceği zemin, tahta ya da su bulunur. Altında hiçbir şey yoksa (çukur) bölümün dibi.
+ * Kamera bununla karakterle ineceği yeri birlikte kadraja alır: boşluğa kör atlanmaz.
+ */
+export function landingY(w: World): number | null {
+  const p = w.player
+  if (p.grounded || p.dead || p.hang || p.swim || p.wallDir !== 0) return null
+  let x = p.x + p.w / 2
+  let y = p.y + p.h
+  let vy = p.vy
+  const vx = Math.max(-PHYS.run * 1.6, Math.min(PHYS.run * 1.6, p.vx))
+  const dt = 1 / 30
+  for (let i = 0; i < 75; i++) {
+    vy = Math.min(PHYS.fallMax, vy + PHYS.gravity * dt)
+    const ny = y + vy * dt
+    x += vx * dt
+    if (vy > 0) {
+      // bu adımda geçilen satırlar: ilk dolu yüzey
+      for (let ty = Math.floor(y / T); ty <= Math.floor(ny / T); ty++) {
+        const tx = Math.floor(x / T)
+        if (ty >= w.rows) return w.rows * T
+        const t = w.tile(tx, ty)
+        if (w.isSolid(tx, ty) || t === ONEWAY || t === WATER || t === SWIM) return ty * T
+      }
+    }
+    y = ny
+    if (y >= w.rows * T) return w.rows * T
+  }
+  return null
+}
+
 /** Tırmanıyor mu: halatta asılı, duvara tutunmuş ya da hızla yükseliyor (yukarıdaki yol görünsün) */
 export function climbing(w: World): boolean {
   const p = w.player
@@ -158,6 +190,13 @@ export function followTarget(w: World, vw: number, vh: number, cam?: CamState, d
   // karakter ekranın %22'si ile %72'si arasında kalsın
   const pc = p.y + p.h / 2
   ty = Math.max(pc - vh * 0.72, Math.min(pc - vh * 0.22, ty))
+  // düşüşte ineceği yer kadrajda: iniş ekranın alt %18'inin üstünde kalır (karakter en çok %20'ye dek yukarı itilir).
+  // Basılan yükseklikten aşağıdaysa (aşağı iniş) hedef inişe göre kurulur; yukarıdaki platforma atlayış etkilenmez
+  const land = p.vy > 0 ? landingY(w) : null
+  if (land !== null && land > anchor + T) {
+    const want = land + T * 0.5 - vh * 0.82
+    ty = Math.max(ty, Math.min(pc - vh * 0.2, want))
+  }
   // ölü bölge hedefe uygulanır, kameraya değil: çapa karakter ortası pencereden çıkınca onu izler (ufak ileri geri
   // adımlar kadrajı oynatmaz). Çapa yalnız karakterin yoluna bağlıdır: her Hz'de aynı sonuç
   const pcx = p.x + p.w / 2
@@ -176,8 +215,10 @@ export function followTarget(w: World, vw: number, vh: number, cam?: CamState, d
  * doğru yaslanır. Yerin altındaki boss'un yerine çıkacağı yer, havadaki boss'la zemin birlikte kadrajda durur.
  */
 export function bossFrame(w: World, vw: number, vh: number): [number, number] | null {
-  const b = w.boss
-  if (!b || b.state === 'sleep' || b.state === 'down' || w.player.dead) return null
+  // iki boss varsa (Co-op Boss Kapışması) oyuncuya en yakın ayaktaki
+  const live = [w.boss, w.boss2].filter((x): x is NonNullable<typeof x> => !!x && x.state !== 'sleep' && x.state !== 'down')
+  const b = live.sort((a, c) => Math.abs(a.x - w.player.x) - Math.abs(c.x - w.player.x))[0]
+  if (!b || w.player.dead) return null
   const p = w.player
   const pcx = p.x + p.w / 2
   const bcx = b.hidden ? b.tx : b.x + b.w / 2
@@ -218,6 +259,8 @@ export function stepCamera(w: World, cam: CamState, dt: number, vw: number, vh: 
   // nitroda takip hızla orantılı hızlanır: gecikme aynı kalır, karakter ekranda kaymaz (dash'teki gibi)
   const keep = w.player.dashTime > 0 ? CAM.dashFollow : w.player.nitro > 0 ? CAM.follow ** NITRO.speed : CAM.follow
   const x = approach(cam.x, tx, dt, boss ? CAM.boss : keep)
-  const y = approach(cam.y, ty, dt, boss ? CAM.bossY : CAM.followY)
+  // düşerken dikey takip yatay kadar çevik: kadraj inişin gerisinde kalmaz
+  const falling = !w.player.grounded && w.player.vy > PHYS.fallMax * 0.5
+  const y = approach(cam.y, ty, dt, boss ? CAM.bossY : falling ? CAM.follow : CAM.followY)
   ;[cam.x, cam.y] = clampCam(w, x, y, vw, vh)
 }

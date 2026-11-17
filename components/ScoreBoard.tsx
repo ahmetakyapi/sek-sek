@@ -172,7 +172,7 @@ export function Board({
           return (
             <li key={`${r.name}-${r.rank}`} className={gap ? 'mt-2 border-t-2 border-dashed border-line/70 pt-2' : ''}>
               <div
-                className={`grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-2 border-l-4 sm:grid-cols-[2.25rem_auto_minmax(0,1fr)_auto] sm:gap-x-2.5 short:grid-cols-[2.25rem_minmax(0,1fr)_auto] px-2.5 ${compact ? 'py-1.5' : 'py-2.5 short:py-1.5'} ${r.me ? 'bg-accent/20 outline outline-2 outline-accent/60' : podium ? 'bg-panel-2/80' : i % 2 ? 'bg-panel-2/25' : 'bg-panel-2/55'}`}
+                className={`grid items-center gap-x-2 border-l-4 px-2.5 ${compact ? 'grid-cols-[2.25rem_minmax(0,1fr)_auto]' : 'grid-cols-[2rem_minmax(0,1fr)_auto] sm:grid-cols-[2.25rem_auto_minmax(0,1fr)_auto] sm:gap-x-2.5 short:grid-cols-[2.25rem_minmax(0,1fr)_auto]'} ${compact ? 'py-1.5' : 'py-2.5 short:py-1.5'} ${r.me ? 'bg-accent/20 outline outline-2 outline-accent/60' : podium ? 'bg-panel-2/80' : i % 2 ? 'bg-panel-2/25' : 'bg-panel-2/55'}`}
                 style={{ borderLeftColor: podium ?? 'transparent' }}
               >
                 <span
@@ -183,7 +183,7 @@ export function Board({
                 </span>
                 <span
                   aria-hidden
-                  className={`flex items-center justify-center rounded-full font-display text-ink max-sm:hidden short:hidden ${compact ? 'h-8 w-8 text-[15px]' : 'h-10 w-10 text-[18px]'}`}
+                  className={`flex items-center justify-center rounded-full font-display text-ink max-sm:hidden short:hidden ${compact ? 'hidden' : 'h-10 w-10 text-[18px]'}`}
                   style={{ background: avatarColor(r.name), boxShadow: '0 0 0 2px rgba(0,0,0,0.35)' }}
                 >
                   {r.name.slice(0, 1).toLocaleUpperCase('tr')}
@@ -277,7 +277,8 @@ export default function ScoreBoard({
   me: string
   startCity?: number
   startTab?: Tab
-  onDaily: () => void
+  /** bugünün hakkı kullanıldıysa verilmez (düğme görünmez) */
+  onDaily?: () => void
   canRace?: (levelIdx: number) => boolean
   onRace?: (levelIdx: number, name: string) => Promise<string | null>
   /** arkadaş listesi (adlar); ☆ ile eklenir, süzgeçte yalnız onlar ve oyuncu görünür */
@@ -402,7 +403,7 @@ export default function ScoreBoard({
             <p className="text-[13px] leading-snug text-muted short:hidden">{t(rule.text)}</p>
           </div>
           <div className="flex shrink-0 flex-col gap-1.5">
-            {day === today ? (
+            {day === today && onDaily ? (
               <button className="pixel-btn primary px-3 py-1.5 text-[13px]" onClick={onDaily}>
                 {ic(t('▶ Oyna'))}
               </button>

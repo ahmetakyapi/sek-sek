@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { CAM, approach, followTarget, hazardAhead, kickOffset, shakeOffset, stepCamera } from '../game/camera'
+import { CAM, approach, followTarget, hazardAhead, kickOffset, landingY, shakeOffset, stepCamera } from '../game/camera'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput } from '../game/types'
@@ -205,5 +205,46 @@ describe('bölüme göre kadraj', () => {
     let y1 = y0
     for (let i = 0; i < 240; i++) y1 = followTarget(w, 427, 240, cam, 1 / 60)[1]
     expect(y0 - y1).toBeGreaterThan(240 * CAM.climbUp * 0.8)
+  })
+})
+
+describe('düşerken iniş yeri kadrajda', () => {
+  // yüksek bir çıkıntıdan derin bir çukura atlayış: karakter düşerken ineceği zemin ekranda görünmeli
+  const map = Array.from({ length: 30 }, (_, y) => {
+    if (y === 6) return 'P'.padEnd(40, ' ')
+    if (y === 7) return '#####'.padEnd(40, ' ')
+    if (y >= 27) return '#'.repeat(40)
+    return ' '.repeat(40)
+  })
+  const lvl = { ...LEVELS[0], map, hints: [], npcs: [], finaleAt: undefined }
+  it('iniş tahmini düşülecek zemini bulur', () => {
+    const w = new World(lvl)
+    w.player.x = 5 * 16 + 2
+    w.player.grounded = false
+    w.player.vy = 50
+    w.player.vx = 100
+    expect(landingY(w)).toBe(27 * 16)
+  })
+  it('düşüş boyunca iniş yeri ekranın içinde (her Hz’de)', () => {
+    for (const hz of [60, 144, 240]) {
+      const w = new World(lvl)
+      const vw = 427
+      const vh = 240
+      const cam = { x: 0, y: 0 }
+      let acc = 0
+      let worst = -Infinity
+      for (let t = 0; t < 3; t += 1 / hz) {
+        acc += 1 / hz
+        while (acc >= STEP) {
+          w.step(STEP, { ...emptyInput(), right: w.player.x < 6 * 16 })
+          acc -= STEP
+          w.events.length = 0
+        }
+        stepCamera(w, cam, 1 / hz, vw, vh)
+        // karakterle zemin arası ekranın yarısına inince zemin (27. satır) ekranın altında kalmamalı
+        if (!w.player.grounded && 27 * 16 - (w.player.y + w.player.h) < vh * 0.5) worst = Math.max(worst, 27 * 16 + 4 - (cam.y + vh))
+      }
+      expect(worst).toBeLessThan(0)
+    }
   })
 })

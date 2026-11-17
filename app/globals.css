@@ -774,3 +774,53 @@ blockquote {
   outline: 3px solid var(--color-gold);
   outline-offset: 2px;
 }
+
+/* Sinir Bozucu önizlemesi: kuralın görünüşü sahnenin üstünde (hareket azaltılınca durur) */
+.rage-streak {
+  --streak: linear-gradient(90deg, transparent 0 55%, rgba(255, 244, 220, 0.65) 85%, transparent);
+  background-image: var(--streak), var(--streak), var(--streak), var(--streak), var(--streak);
+  background-size: 90px 2px, 140px 2px, 70px 2px, 120px 2px, 180px 2px;
+  background-position: 0 18%, 40px 37%, 10px 55%, 80px 72%, 30px 88%;
+  background-repeat: repeat-x;
+  animation: rage-streak 2.5s linear infinite;
+}
+@keyframes rage-streak {
+  to {
+    background-position: -2520px 18%, -2480px 37%, -2510px 55%, -2440px 72%, -2490px 88%;
+  }
+}
+.rage-wind {
+  background: repeating-linear-gradient(170deg, transparent 0 18px, rgba(230, 240, 255, 0.22) 18px 20px, transparent 20px 44px);
+  background-size: 180px 180px;
+  animation: rage-wind 0.9s linear infinite alternate;
+}
+@keyframes rage-wind {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -90px 16px;
+  }
+}
+.rage-stars {
+  background-image: radial-gradient(1.4px 1.4px at 12% 18%, #fff 50%, transparent 52%), radial-gradient(1.2px 1.2px at 34% 9%, #fff 50%, transparent 52%), radial-gradient(1.6px 1.6px at 58% 22%, #fff 50%, transparent 52%), radial-gradient(1.2px 1.2px at 77% 12%, #fff 50%, transparent 52%), radial-gradient(1.4px 1.4px at 90% 30%, #fff 50%, transparent 52%), linear-gradient(180deg, rgba(20, 16, 60, 0.45), transparent 60%);
+}
+.rage-cracks {
+  background: repeating-linear-gradient(115deg, transparent 0 22px, rgba(16, 10, 26, 0.55) 22px 24px, transparent 24px 41px), repeating-linear-gradient(62deg, transparent 0 30px, rgba(16, 10, 26, 0.4) 30px 32px, transparent 32px 57px);
+  mask-image: linear-gradient(180deg, transparent, #000 40%);
+}
+.rage-pulse {
+  animation: rage-pulse 1.4s ease-in-out infinite;
+}
+@keyframes rage-pulse {
+  50% {
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rage-streak,
+  .rage-wind,
+  .rage-pulse {
+    animation: none;
+  }
+}

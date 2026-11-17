@@ -107,6 +107,8 @@ export interface Save {
   weekly: { last: string; count: number }
   /** Günlük Meydan Okuma: son oynanan gün, o günün en iyi skoru, üst üste oynanan gün sayısı */
   meydan?: DailyMark | null
+  /** Günlük Meydan Okuma'ya başlanan son gün: günde tek hak (başlayınca yazılır, yarıda bırakmak da hakkı bitirir) */
+  dailyTry?: string
   /** yolculuğun sayaçları: zıplama, dash, düşüş, oyunda geçen süre */
   stats?: TravelStats
   /** Boss Rush’ın en iyi süresi (ms) ve o koşudaki boss sayısı */
@@ -286,6 +288,8 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     weekly: more(local.weekly, cloud.weekly),
     rush,
     meydan: mergeDaily(local.meydan, cloud.meydan),
+    // günlük hak cihazlar arasında da tek: en son başlanan gün kalır
+    dailyTry: (local.dailyTry ?? '') > (cloud.dailyTry ?? '') ? local.dailyTry : cloud.dailyTry,
     stats: mergeStats(local.stats, cloud.stats),
     feats: { ...cloud.feats, ...local.feats },
     ach: { ...cloud.ach, ...local.ach },

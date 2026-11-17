@@ -12,6 +12,16 @@ export const DEFAULT_KEYS: KeyBindings = {
   jump: ['ArrowUp', 'KeyW', 'KeyZ', 'KeyK', 'KeyC'],
   dash: ['Space', 'KeyX', 'KeyJ', 'KeyL'],
 }
+/**
+ * İki kişilik tuşlar (Co-op ve Yan Yana Yarış): solda WASD + X (dash), sağda ok tuşları + Enter (dash).
+ * Boşluk kimseye verilmez: tek kişilik oyunda dash Boşluk'tur, iki kişide alışkanlıkla basılınca öbürünün
+ * oyuncusunu atıyordu. Bir tuş yalnız bir oyuncuya aittir (tests/input.test.ts "iki kişilik tuşlar").
+ * Oyun kolu varsa 1. kol sola, 2. kol sağa.
+ */
+export const DUO_KEYS = [
+  { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['KeyW'], dash: ['KeyX'] },
+  { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['ArrowUp'], dash: ['Enter', 'NumpadEnter', 'Numpad0', 'Slash', 'Period'] },
+] as const
 /** Oyunun kendi işi olan tuşlar atanamaz: mola, checkpoint, sekme ve tarayıcı tuşları */
 export const RESERVED_KEYS = ['Escape', 'KeyP', 'KeyR', 'Tab', 'MetaLeft', 'MetaRight', 'ShiftLeft', 'ShiftRight', 'F5', 'F11', 'F12']
 

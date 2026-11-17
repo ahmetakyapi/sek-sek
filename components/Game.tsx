@@ -33,7 +33,7 @@ import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager, normalizeKeys } from '@/game/input'
 import PhotoMode from '@/components/PhotoMode'
 import KeyRemap from '@/components/KeyRemap'
-import Coop, { CoopEnd, CoopSetup, type CoopResult } from '@/components/Coop'
+import Coop, { CoopEnd, CoopSetup, coopLevel, type CoopBoss, type CoopResult } from '@/components/Coop'
 import { useInstallPrompt } from '@/lib/useInstallPrompt'
 import { USTA_TEXT, ustaDone, ustaTask } from '@/lib/ustalar'
 import { BOSSES } from '@/game/boss'
@@ -197,6 +197,8 @@ export default function Game() {
   const returnRef = useRef<Screen | null>(null)
   /** kurallı koşuda kaçıncı deneme (Tek Can, Zamana Karşı) */
   const triesRef = useRef(0)
+  /** günlük koşuda süre sınırı aşıldı uyarısı bir kez */
+  const limitHitRef = useRef(false)
   /** boss uyandığında düşüş sayısı: hiç düşmeden yenilirse başarım */
   const bossDeathsRef = useRef(-1)
   /** bu koşuda boss hiç düşmeden yenildi (usta görevi) */
@@ -250,7 +252,7 @@ export default function Game() {
   const [tourSent, setTourSent] = useState<string | null>(null)
   const [coarse, setCoarse] = useState(false)
   /** co-op: şehir, iki kılık, bitiş sonucu; key her başlatışta artar (bileşen yeniden kurulur) */
-  const [coop, setCoop] = useState<{ level: number; heroes: [CharacterId, CharacterId]; result: CoopResult | null; key: number } | null>(null)
+  const [coop, setCoop] = useState<{ level: number; heroes: [CharacterId, CharacterId]; boss: CoopBoss | null; result: CoopResult | null; key: number } | null>(null)
   const [ready, setReady] = useState(false)
   const [storyPage, setStoryPage] = useState(0)
   const [canFull, setCanFull] = useState(false)
@@ -563,11 +565,18 @@ export default function Game() {
         w.events.length = 0
         // Tek Can / Bayraksız: düşüp yeniden doğunca koşu şehrin başına döner; Zamana Karşı: süre dolunca
         const rule = mode?.kind === 'daily' ? DAILY_RULES[mode.run.rule] : null
+        // günlük (sıralamalı) koşuda tek hak: baştan dönülür ama süre ve düşüş sürer; süre sınırı bir kez uyarır
+        const ranked = mode?.kind === 'daily' && !mode.free
         const lim = mode?.kind === 'daily' ? ruleLimit(mode.run.rule, w.level) : null
-        const timeUp = lim !== null && w.time > lim && !w.complete
+        const over = lim !== null && w.time > lim && !w.complete
+        if (ranked && over && !limitHitRef.current) {
+          limitHitRef.current = true
+          setCpToast({ at: Date.now(), text: makeT(langRef.current)('Süre doldu: bronz süreyi geçtin, koşu sürüyor') })
+        }
+        const timeUp = over && !ranked
         if (rule && !w.complete && ((respawned && (rule.oneLife || rule.noFlags)) || timeUp)) {
           const w2 = new World(w.level)
-          if (rule.noFlags && !timeUp) {
+          if ((rule.noFlags || ranked) && !timeUp) {
             w2.time = w.time
             w2.deaths = w.deaths
             w2.started = true
@@ -577,7 +586,7 @@ export default function Game() {
           renderer.setLevel(w2)
           goalRef.current = 'square'
           setCoach(false)
-          setCpToast({ at: Date.now(), text: makeT(langRef.current)(timeUp ? 'Süre doldu: baştan' : rule.oneLife ? 'Düştün: baştan · {n}. deneme' : 'Bayrak yok: şehrin başından', { n: triesRef.current + 1 }) })
+          setCpToast({ at: Date.now(), text: makeT(langRef.current)(timeUp ? 'Süre doldu: baştan' : ranked ? 'Şehrin başından: süre sürüyor' : rule.oneLife ? 'Düştün: baştan · {n}. deneme' : 'Bayrak yok: şehrin başından', { n: triesRef.current + 1 }) })
         }
         respawned = false
         // Ters Tuşlar: dönmeden ve düzelmeden önce bir kez uyarı
@@ -828,6 +837,7 @@ export default function Game() {
       worldRef.current = w
       ghostRecRef.current = []
       dashRef.current = 0
+      limitHitRef.current = false
       bossCleanRef.current = false
       const plain = !rush && !ch && !ay && !cu && !modeRef.current
       const pbSplit = saveRef.current?.splitTimes?.[LEVELS[idx].id]
@@ -946,8 +956,16 @@ export default function Game() {
   const daily = dailyRun(today, LEVELS)
   const dailyLevel = LEVELS.find((l) => l.id === daily.levelId)!
 
-  /** Günlük Meydan Okuma: herkes için aynı şehir ve kural; ilerlemeye dokunmaz */
+  /** bugünün hakkı kullanıldı mı: başlandıysa (yarıda bırakılsa da) ya da bitirildiyse */
+  const dailyUsed = save.dailyTry === today || save.meydan?.day === today
+
+  /** Günlük Meydan Okuma: herkes için aynı şehir ve kural; günde tek hak, ilerlemeye dokunmaz */
   const startDaily = () => {
+    if (dailyUsed) {
+      setCpToast({ at: Date.now() + 1, text: t('Bugünkü hakkını kullandın. Yarın yeni bir şehir.') })
+      return
+    }
+    persist({ ...save, dailyTry: today })
     soundRef.current?.unlock()
     ui()
     rushRef.current = null
@@ -957,6 +975,21 @@ export default function Game() {
     loadLevel(LEVELS.findIndex((l) => l.id === daily.levelId), 'play')
     beginPlay()
     setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[daily.rule].name)}: ${t(DAILY_RULES[daily.rule].text)}` })
+  }
+
+  /** sıralamalı günlük koşu sürüyor mu (mola menüsü buna göre) */
+  const rankedDaily = modeRef.current?.kind === 'daily' && !modeRef.current.free
+  /** günlükte "Baştan Başla": şehrin başına döner, süre ve düşüş sürer (tek hak) */
+  const restartKeep = () => {
+    const w = worldRef.current
+    if (!w) return
+    const w2 = new World(w.level)
+    w2.time = w.time
+    w2.deaths = w.deaths
+    w2.started = true
+    worldRef.current = w2
+    rendererRef.current?.setLevel(w2)
+    setScreen('play')
   }
 
   // Günlük skor tabloya: bitiş ekranı açıkken ve oyuncu girişliyken bir kez (misafir bitirip sonra giriş yaparsa da)
@@ -1888,8 +1921,8 @@ export default function Game() {
             found={totalFound}
             stamps={Object.values(save.stamps ?? {}).filter(Boolean).length}
             charms={Object.values(save.charms ?? {}).filter(Boolean).length}
-            daily={isFresh(save) ? null : { level: dailyLevel, rule: t(DAILY_RULES[daily.rule].name), doneMs: save.meydan?.day === today ? formatTime(save.meydan.bestMs) : null, streak: liveStreak(save.meydan, today) }}
-            dailyPending={!isFresh(save) && save.meydan?.day !== today}
+            daily={isFresh(save) ? null : { level: dailyLevel, rule: t(DAILY_RULES[daily.rule].name), doneMs: save.meydan?.day === today ? formatTime(save.meydan.bestMs) : null, used: dailyUsed, streak: liveStreak(save.meydan, today) }}
+            dailyPending={!isFresh(save) && !dailyUsed}
             music={save.music}
             player={save.player ? { name: save.player.name, title: t(travelerTitle(titleFacts(save, today))) } : null}
             hasProgress={save.unlocked > 0 || Object.keys(save.best).length > 0}
@@ -2329,7 +2362,7 @@ export default function Game() {
                     <span className="text-lg leading-none">⚑</span>
                     {t("Checkpoint’e Dön")}
                   </button>
-                  <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => loadLevel(levelIdx, 'play')}>
+                  <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => (rankedDaily ? restartKeep() : loadLevel(levelIdx, 'play'))}>
                     <span className="text-lg leading-none">↺</span>
                     {t("Baştan Başla")}
                   </button>
@@ -2342,6 +2375,7 @@ export default function Game() {
                     {t('Ana Menü')}
                   </button>
                 </div>
+                {rankedDaily && <p className="mt-2.5 border-2 border-gold/50 bg-gold/10 px-2.5 py-1.5 text-[13px] leading-snug text-cream">{t('Günlük Meydan Okuma’nın tek hakkı var: baştan başlasan da süre ve düşüş sürer, çıkarsan bugünkü koşun biter.')}</p>}
                 {cityCard}
                 <div className="mt-3 flex gap-2 short:mt-2">
                   <button className="pixel-btn flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
@@ -2403,7 +2437,7 @@ export default function Game() {
                 {ic(t("← Geri"))}
               </button>
             </div>
-            <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} onDaily={startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} friends={save.friends ?? []} onFriend={toggleFriend} />
+            <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} onDaily={dailyUsed ? undefined : startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} friends={save.friends ?? []} onFriend={toggleFriend} />
           </div>
         </Overlay>
       )}
@@ -2525,7 +2559,9 @@ export default function Game() {
           onRageCourses={() => (ui(), setScreen('rageCourses'))}
           rageCoursesDone={RAGE_COURSES.filter((c) => save.challenges?.[c.id]).length}
           ruleCount={Object.keys(save.rules ?? {}).filter((k) => !RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
+          dailyUsed={dailyUsed}
           rageCount={Object.keys(save.rules ?? {}).filter((k) => RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
+          tried={Object.keys(save.rules ?? {}).map((k) => k.split(':')[1])}
           rulesOpen={Object.keys(save.best).length > 0}
           onChallenges={() => (ui(), setScreen('challenges'))}
           onTournament={() => (ui(), setScreen('tournament'))}
@@ -2586,7 +2622,7 @@ export default function Game() {
       {screen === 'rageSetup' && <RuleSetup rage startLevel={levelIdx} finished={LEVELS.map((l, i) => (save.best[l.id] ? i : -1)).filter((i) => i >= 0)} records={save.rules ?? {}} onStart={startRule} onBack={() => setScreen('modes')} />}
 
       {screen === 'dailyEnd' && dailyResult && (
-        <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={dailyResult.free ? () => startRule(LEVELS.findIndex((l) => l.id === dailyResult.run.levelId), dailyResult.run.rule) : startDaily} onModes={() => setScreen('modes')} onLogin={() => ((returnRef.current = 'dailyEnd'), setScreen('name'))} />
+        <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={dailyResult.free ? () => startRule(LEVELS.findIndex((l) => l.id === dailyResult.run.levelId), dailyResult.run.rule) : undefined} onModes={() => setScreen('modes')} onLogin={() => ((returnRef.current = 'dailyEnd'), setScreen('name'))} />
       )}
 
       {screen === 'duelSetup' && (
@@ -2619,10 +2655,10 @@ export default function Game() {
           unlocked={save.unlocked}
           hero={hero.id}
           canPlay={!coarse || (typeof navigator !== 'undefined' && !!navigator.getGamepads && [...navigator.getGamepads()].filter(Boolean).length >= 2)}
-          onStart={(level, heroes) => {
+          onStart={(level, heroes, boss) => {
             soundRef.current?.unlock()
             ui()
-            setCoop((c) => ({ level, heroes, result: null, key: (c?.key ?? 0) + 1 }))
+            setCoop((c) => ({ level, heroes, boss, result: null, key: (c?.key ?? 0) + 1 }))
             setScreen('coop')
           }}
           onBack={() => setScreen('modes')}
@@ -2631,7 +2667,7 @@ export default function Game() {
       {screen === 'coop' && coop && (
         <Coop
           key={coop.key}
-          level={LEVELS[coop.level]}
+          level={coopLevel(coop.level, coop.boss)}
           heroes={coop.heroes}
           sound={soundRef.current}
           onDone={(r) => {
@@ -2644,6 +2680,7 @@ export default function Game() {
       {screen === 'coopEnd' && coop?.result && (
         <CoopEnd
           level={LEVELS[coop.level]}
+          boss={coop.boss}
           heroes={coop.heroes}
           result={coop.result}
           onAgain={() => {
@@ -2977,7 +3014,7 @@ function Complete({
         <div className="flex min-h-0 flex-1 flex-col short:contents wide:grid wide:grid-cols-[1.15fr_1fr_0.9fr] wide:grid-rows-[auto_minmax(0,1fr)] wide:gap-x-6">
         {/* ── sonuç (hep görünür) */}
         <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 short:col-start-1 short:row-start-2 wide:col-start-1 wide:row-start-1">
-          <div className="flex min-w-0 flex-1 items-center gap-4 short:gap-3">
+          <div className="flex min-w-0 flex-1 basis-full items-center gap-4 short:gap-3">
               <figure className="polaroid relative w-[72px] shrink-0 rotate-[-4deg] max-sm:hidden sm:w-[88px] short:hidden">
                 <span className="tape" />
                 <Portrait id={heroId} scarf={scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)} className="w-full" />
