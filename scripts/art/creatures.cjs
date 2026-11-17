@@ -24,8 +24,8 @@ const out = process.argv[2] || '/tmp/seksek-yaratiklar.png'
   fs.writeFileSync(
     path.join(dir, 'index.html'),
     `<!doctype html><body style="margin:0;background:#4a3550"><canvas id="c"></canvas><script src="s.js"></script><script>
-const KIND = { frog: 'hopper', hare: 'hopper', ram: 'charger', bat: 'bat', hedgehog: 'spiky', magpie: 'magpie', gull: 'fly', pigeon: 'fly', raven: 'fly', wasp: 'fly', bee: 'fly', mosquito: 'fly' }
-const BOX = { charger: [14, 12], fly: [12, 8], bat: [12, 8], spiky: [12, 9], magpie: [12, 9] }
+const KIND = { frog: 'hopper', hare: 'hopper', ram: 'charger', bat: 'bat', hedgehog: 'spiky', magpie: 'magpie', gull: 'fly', pigeon: 'fly', raven: 'fly', wasp: 'fly', bee: 'fly', mosquito: 'fly', shark: 'shark', piranha: 'piranha' }
+const BOX = { charger: [14, 12], fly: [12, 8], bat: [12, 8], spiky: [12, 9], magpie: [12, 9], shark: [28, 12], piranha: [10, 8] }
 const friendSet = new Set(Object.values(S.CITY).map((s) => s.animal))
 const species = Object.keys(S.CREATURE_NAMES).filter((k) => !friendSet.has(k)).concat(['???'])
 const friends = [...new Set(Object.values(S.CITY).map((s) => s.animal))].concat(['???'])
@@ -50,9 +50,9 @@ species.forEach((sp, i) => {
   c.fillStyle = BG[i % 3]; c.fillRect(x0 + 2, yy + 2, cw - 4, eh - 4)
   const kind = KIND[sp] || 'ground'
   const [w, h] = BOX[kind] || [12, 10]
-  const states = kind === 'charger' || kind === 'magpie' ? ['idle', 'windup', 'charge', 'stun'] : kind === 'hopper' ? ['idle', 'windup', 'air'] : ['idle', 'idle2']
+  const states = kind === 'charger' || kind === 'magpie' || kind === 'shark' ? ['idle', 'windup', 'charge', 'stun'] : kind === 'hopper' ? ['idle', 'windup', 'air'] : ['idle', 'idle2']
   const n = states.length, step = (cw - 20) / n
-  const big = n > 3 ? 6 : n > 2 ? 8 : BIG
+  const big = Math.min(n > 3 ? 6 : n > 2 ? 8 : BIG, (step - 10) / w)
   states.forEach((st, k) => {
     const x = x0 + 10 + step * (k + 0.5), y = yy + 150
     floor(x, y, step - 8)
@@ -62,8 +62,10 @@ species.forEach((sp, i) => {
     S.drawEnemy(c, sp, e, x, y, big, 1, st === 'idle2' ? 0.52 : 0.3)
     label(st === 'idle2' ? 'idle (2)' : st, x, yy + 172, i % 3 === 1 ? '#ddd' : '#2a2030', 11)
     // oyundaki boy
+    // geniş gövde (Esoli) hücreye sığsın: yalnız telefon boyu
     const sx = x - 22, sy = yy + 232
-    S.drawEnemy(c, sp, e, sx, sy, 3, -1, 0.3); S.drawEnemy(c, sp, e, sx + 44, sy, 4, 1, 0.3)
+    if (w > 16) S.drawEnemy(c, sp, e, x, sy, 3, 1, 0.3)
+    else { S.drawEnemy(c, sp, e, sx, sy, 3, -1, 0.3); S.drawEnemy(c, sp, e, sx + 44, sy, 4, 1, 0.3) }
   })
   label((S.CREATURE_NAMES[sp] || 'bilinmeyen') + '  (' + sp + ' · ' + kind + ')', x0 + cw / 2, yy + 20, i % 3 === 1 ? '#fff' : '#1e1626', 14)
 })

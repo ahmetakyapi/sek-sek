@@ -50,13 +50,24 @@ export async function pullMerge(local: Save): Promise<Save | null> {
   }
 }
 
-export async function pushSave(s: Save) {
-  if (!s.player) return
+/**
+ * Hesaba yazar; başarısızsa (ağ, sunucu) 3, 10, 30 sn sonra yeniden dener. Sunucu birleştirdiği için yeniden
+ * göndermek güvenlidir. Başarıyı döner. keepalive yalnız küçük gövdede (tarayıcı sınırı 64 KB).
+ */
+export async function pushSave(s: Save, tries = 0): Promise<boolean> {
+  if (!s.player) return false
+  const body = JSON.stringify({ data: cloudPart(s) })
   try {
-    await fetch('/api/players/save', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...auth(s.player) }, body: JSON.stringify({ data: cloudPart(s) }), keepalive: true })
+    const r = await fetch('/api/players/save', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...auth(s.player) }, body, keepalive: body.length < 60_000 })
+    if (r.ok) return true
+    // oturum kapanmış ya da kayıt geçersiz: yeniden denemek düzeltmez
+    if (r.status === 401 || r.status === 400 || r.status === 413) return false
   } catch {
-    /* bir sonraki değişiklikte yeniden denenir */
+    /* ağ yok: yeniden denenir */
   }
+  if (tries >= 3 || typeof window === 'undefined') return false
+  await new Promise((res) => setTimeout(res, [3000, 10000, 30000][tries]))
+  return pushSave(s, tries + 1)
 }
 
 /**
@@ -85,7 +96,7 @@ export async function syncBests(s: Save) {
       // cihazdaki rekor hayaletleri de (rekorla birlikte kaydedilmişti): skor tablosundan onlarla yarışılabilsin
       for (const b of batch) {
         const g = loadGhost(b.level)
-        if (g) await uploadGhost(s.player, b.level, b.timeMs, g)
+        if (g && (g.step ?? 1) === 1) await uploadGhost(s.player, b.level, b.timeMs, g)
       }
     }
   } catch {

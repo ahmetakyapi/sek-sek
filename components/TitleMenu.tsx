@@ -88,6 +88,8 @@ export default function TitleMenu(props: {
   const level = LEVELS[shown]
   const done = LEVELS.filter((l) => props.best[l.id]).length
   const started = !props.fresh && (props.hasProgress || props.resume > 0)
+  // bütün şehirler bitti: sıradaki yok, oyuncu istediği şehirden oynar (yol çizgisinden ya da Şehirler'den seçer)
+  const allDone = LEVELS.every((l) => props.best[l.id])
   const up = (s: string) => s.toLocaleUpperCase(lang === 'en' ? 'en' : 'tr')
   const plate = String(level.plate).padStart(2, '0')
 
@@ -135,7 +137,7 @@ export default function TitleMenu(props: {
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(14_13_34/0.55)_0%,transparent_32%,transparent_48%,rgb(14_13_34/0.92)_100%)]" />
             <p className="absolute left-3 top-3 flex items-center gap-1.5 bg-ink/75 px-2 py-1 text-[12px] font-bold tracking-[0.16em] text-gold backdrop-blur-[2px]">
               <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" />
-              {up(pick !== null ? (props.best[level.id] ? t('Geçilen Durak') : t('Açık Durak')) : started ? t('Sıradaki Durak') : t('İlk Durak'))}
+              {up(allDone ? t('Serbest Gezi') : pick !== null ? (props.best[level.id] ? t('Geçilen Durak') : t('Açık Durak')) : started ? t('Sıradaki Durak') : t('İlk Durak'))}
             </p>
             <div className="stamp absolute right-3 top-3 rotate-[4deg] text-center text-[#12112c] short:scale-[0.8] short:origin-top-right">
               <div className="border-2 border-dashed border-[#12112c]/40 px-2 py-0.5">
@@ -154,9 +156,9 @@ export default function TitleMenu(props: {
           {/* yol çizgisi: bitenler altın, sıradaki turuncu; açık bir durağa dokununca kartpostal o şehri gösterir */}
           <div className="mt-3 short:mt-2">
             <div className="mb-1.5 flex items-baseline justify-between text-[12px] font-bold tracking-[0.14em] text-muted">
-              <span>{up(t('Yolculuk'))}</span>
+              <span>{allDone ? up(t('Hepsi Bitti: Bir Şehir Seç')) : up(t('Yolculuk'))}</span>
               <span className="flex items-baseline gap-2 tabular-nums tracking-normal text-cream">
-                {pick !== null && (
+                {pick !== null && !allDone && (
                   <button className="text-[12px] font-semibold text-accent-2 underline-offset-2 hover:underline" onClick={() => setPick(null)}>
                     {ic(t('↺ Sıradaki'))}
                   </button>
@@ -171,7 +173,7 @@ export default function TitleMenu(props: {
               {LEVELS.map((l, i) => {
                 const open = !props.fresh && i <= props.unlocked
                 const on = i === shown
-                const color = i === props.resume ? 'route-now bg-accent' : props.best[l.id] ? 'bg-gold' : 'bg-line'
+                const color = i === props.resume && !allDone ? 'route-now bg-accent' : props.best[l.id] ? 'bg-gold' : 'bg-line'
                 return (
                   <button
                     key={l.id}
@@ -180,7 +182,7 @@ export default function TitleMenu(props: {
                     title={open ? l.name : `${l.name} · ${t('Kilitli')}`}
                     aria-label={open ? l.name : `${l.name} (${t('Kilitli')})`}
                     aria-pressed={on}
-                    onClick={() => setPick(i === props.resume ? null : i)}
+                    onClick={() => setPick(i === props.resume && !allDone ? null : i)}
                     className="group relative flex h-5 flex-1 items-center disabled:cursor-not-allowed"
                   >
                     <span className={`block w-full transition-[height] ${color} ${on ? 'h-3.5 shadow-[0_0_0_2px_#f3f1ff]' : 'h-2 group-hover:h-3 group-enabled:group-hover:brightness-125'}`} />
@@ -192,7 +194,7 @@ export default function TitleMenu(props: {
 
           <button className="pixel-btn primary cta mt-3 w-full justify-center py-3.5 text-[17px] tight:mt-2.5 tight:py-3 short:mt-2 short:py-2.5 short:text-base" onClick={() => (pick !== null ? props.onCity(pick) : props.onStart())} autoFocus>
             <span aria-hidden>▶</span>
-            {pick !== null ? t('{city} Şehrine Git', { city: level.name }) : started ? t('Devam Et: {city}', { city: level.name }) : t('Yolculuğa Başla')}
+            {allDone ? t('{city} Şehrinde Oyna', { city: level.name }) : pick !== null ? t('{city} Şehrine Git', { city: level.name }) : started ? t('Devam Et: {city}', { city: level.name }) : t('Yolculuğa Başla')}
           </button>
         </section>
 

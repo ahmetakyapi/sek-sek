@@ -22,6 +22,7 @@ import { road as agriRoad } from './cities/agri'
 import { road as giresunRoad } from './cities/giresun'
 import { road as tokatRoad } from './cities/tokat'
 import { road as denizliRoad } from './cities/denizli'
+import { road as zonguldakRoad } from './cities/zonguldak'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { medalsFor } from './medals'
@@ -2285,6 +2286,38 @@ export const LEVELS: LevelDef[] = [
       'Hierapolis tiyatrosu: basamaklar yüksek. Duvardan duvara sek, dash ile en üst sıraya çık.',
     ],
     map: roadMap(denizliRoad),
+  },
+  {
+    id: 'zonguldak',
+    city: 'zonguldak',
+    name: 'Zonguldak',
+    nickname: 'Kara Elmas',
+    plate: 67,
+    subtitle: 'Denizin Dibi, Ocağın Derini',
+    difficulty: 'Zor',
+    note: 'Defterin bu sayfası kömür karası. Zonguldak’ta deniz kıyıya vurur, ocaktan vardiya düdüğü gelir, mağaranın gölünde damlalar şıpırdar. Yol bu kez yerin altından ve denizin dibinden geçiyor.',
+    npcs: [
+      { name: 'Lambacı Fikret Usta', look: 'usta', text: 'Ocağa inen her madenci lambasını benden alır! Üç lamba kaybettim: biri Kapuz’da denizin dibine, biri galerideki vagonun yoluna, biri de Gökgöl’ün yer altı gölüne düştü.' },
+      { name: 'Dalgıç Tülin', look: 'genc', text: 'Kapuz açıklarında Esoli diye bir köpekbalığı dolaşır; titrediğini görünce yolundan çekil, ezilmez. Başının üstündeki kabarcıklar nefesin: bitmeden yüzeye çık.' },
+      { name: 'Madenci Torunu Ekin', look: 'genc', text: 'Dedem ocağa kafeste bir kanarya taşırdı; kuş susarsa herkes yukarı çıkardı. Galerinin sonundaki çatlak kömürü kır: altında eski kafes duruyor.' },
+    ],
+    medals: [130, 190, 275],
+    quips: ['Kömür tozuna bulandın.', 'Esoli sana göz kırptı.', 'Nefesin yetmedi.', 'Vagon gitti, sen kaldın.'],
+    item: 'Madenci Lambası',
+    intro: 'Kapuz Kıyısı’ndan denizin dibine, Uzun Mehmet’in açtığı ocaktan Gökgöl Mağarası’nın yer altı gölüne, oradan Ereğli’de Cehennemağzı’na. Bu yol yerin altından geçiyor.',
+    facts: [
+      { title: 'Uzun Mehmet', text: '1829’da Uzun Mehmet, Ereğli yakınlarında taşkömürünü buldu. Zonguldak, bu kara taşın üstüne kurulan bir maden şehridir; kömürüne “kara elmas” denir.' },
+      { title: 'Gökgöl Mağarası', text: 'Şehrin hemen dışındaki Gökgöl Mağarası’nda sarkıt ve dikitler damla damla büyür; içinden bir yer altı deresi akar.' },
+      { title: 'Cehennemağzı', text: 'Ereğli’deki Cehennemağzı Mağaraları’nı efsane, Herakles’in yeraltı dünyasına indiği kapı sayar.' },
+    ],
+    secret: { title: 'Kanarya', text: 'Madenciler eskiden ocağa kafeste kanarya götürürdü: tehlikeli gaz (grizu) birikince kuş susar, herkes yukarı çıkardı.' },
+    hints: [
+      'Zonguldak’a hoş geldin! Kapuz’dan denize dal. Başının üstündeki kabarcıklar nefesin: bitmeden yüzeye çık. Piranaların arasını kolla.',
+      'Uzun Mehmet’in ocağı: vagonlar rayda gider gelir, üstlerine bin. Çatlak kömür basınca çöker, oyalanma.',
+      'Gökgöl Mağarası: tavandan sarkıtlar iner. Yer altı gölünde Esoli dolaşır: titreyince yolundan çekil, ezilmez.',
+      'Cehennemağzı: Herakles’in indiği kapı. Duvardan duvara sek, dash ile yukarı çık.',
+    ],
+    map: roadMap(zonguldakRoad),
   },
 ]
 

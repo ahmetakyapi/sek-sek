@@ -24,10 +24,16 @@ export function loadGhost(level: string): GhostRun | null {
   }
 }
 
+/** hayalet en çok bu kadar sayı (≈ 3 dk tam çözünürlük); uzun koşu seyreltilir, depo dolmasın */
+const MAX_GHOST = 8100
+
 export function saveGhost(level: string, g: GhostRun) {
+  let data = g.data
+  // uzun koşu: örneklerin yarısını at (x, y, poz üçlüsü korunur), sığana dek
+  while (data.length > MAX_GHOST) data = data.filter((_, i) => Math.floor(i / 3) % 2 === 0)
   try {
-    localStorage.setItem(key(level), JSON.stringify({ ...g, v: cityVersion(level) }))
+    localStorage.setItem(key(level), JSON.stringify({ ...g, data, v: cityVersion(level), step: g.data.length / data.length }))
   } catch {
-    /* yer yok ya da gizli sekme: hayalet bu oturumla sınırlı */
+    /* yer yok ya da gizli sekme: hayalet bu oturumla sınırlı (kayıt hayaletten önce gelir) */
   }
 }

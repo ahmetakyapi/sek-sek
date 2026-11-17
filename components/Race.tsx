@@ -16,13 +16,13 @@ import { formatTime } from '@/lib/storage'
 
 const STEP = 1 / 120
 
-import { DUO_KEYS as KEYS } from '@/game/input'
-export { KEYS }
-/** ekranda gösterilen tuşlar: sol, sağ, zıpla, dash */
-export const KEY_HINTS = [
-  [['A', 'D'], ['W'], ['X']],
-  [['←', '→'], ['↑'], ['Enter']],
-] as const
+import { keyLabel, type DuoKeys } from '@/game/input'
+import { DuoRemap } from '@/components/KeyRemap'
+/** ekranda gösterilen tuşlar (oyuncunun atamasından): sol + sağ, zıpla, dash */
+export function duoHints(k: DuoKeys, lang: 'tr' | 'en'): string[][][] {
+  const l = (c: string) => keyLabel(c, lang)
+  return k.map((b) => [[l(b.left[0]), l(b.right[0])], [l(b.jump[0])], [l(b.dash[0])]])
+}
 
 interface Side {
   world: World
@@ -53,6 +53,8 @@ export default function Race({
   heroes,
   roundLabel,
   sound,
+  keys,
+  onKeys,
   onDone,
   onQuit,
 }: {
@@ -61,12 +63,17 @@ export default function Race({
   heroes: [CharacterId, CharacterId]
   roundLabel: string
   sound: Sound | null
+  /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */
+  keys: DuoKeys
+  onKeys: (k: DuoKeys) => void
   onDone: (runs: [DuelRun, DuelRun]) => void
   onQuit: () => void
 }) {
   const t = useT()
   const lang = useLang()
   const canvases = [useRef<HTMLCanvasElement>(null), useRef<HTMLCanvasElement>(null)]
+  const keysRef = useRef(keys)
+  keysRef.current = keys
   const sides = useRef<Side[]>([])
   const phase = useRef<'count' | 'run' | 'pause' | 'over'>('count')
   const [count, setCount] = useState(3)
@@ -125,8 +132,8 @@ export default function Race({
         }
       }
       sides.current.forEach((s, i) => {
-        if ((KEYS[i].jump as readonly string[]).includes(k)) s.jumpLatch = true
-        if ((KEYS[i].dash as readonly string[]).includes(k)) s.dashLatch = true
+        if (keysRef.current[i].jump.includes(k)) s.jumpLatch = true
+        if (keysRef.current[i].dash.includes(k)) s.dashLatch = true
       })
     }
     const up = (e: KeyboardEvent) => {
@@ -142,12 +149,12 @@ export default function Race({
 
     const sample = (i: number): Input => {
       const s = sides.current[i]
-      const m = KEYS[i]
+      const m = keysRef.current[i]
       const has = (list: readonly string[]) => list.some((c) => keys.has(c))
       const inp = emptyInput()
       inp.left = has(m.left)
       inp.right = has(m.right)
-      inp.up = has(m.up)
+      inp.up = has(m.jump)
       inp.down = has(m.down)
       inp.jump = has(m.jump)
       const p = (typeof navigator !== 'undefined' && navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [])[i]
@@ -246,7 +253,7 @@ export default function Race({
   }, [])
 
   const someoneDone = huds.some((h) => h.done !== null)
-  const hints = KEY_HINTS
+  const hints = duoHints(keys, lang === 'en' ? 'en' : 'tr')
   return (
     <div className="absolute inset-0 z-30 grid grid-cols-2 bg-ink portrait:grid-cols-1 portrait:grid-rows-2">
       {[0, 1].map((k) => (
@@ -321,7 +328,7 @@ export default function Race({
 
       {paused && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/70 p-4">
-          <div className="pixel-panel w-full max-w-xs p-5 text-center">
+          <div className="pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto p-5 text-center short:p-3">
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('MOLA')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream">{t('Yarış Durdu')}</h2>
             <div className="mt-4 grid gap-2.5">
@@ -338,6 +345,10 @@ export default function Race({
               <button className="pixel-btn justify-center" onClick={onQuit}>
                 {t('Yarışı Bırak')}
               </button>
+            </div>
+            {/* oyunu bırakmadan tuşlar değişir: girdi hemen uyar */}
+            <div className="mt-4 text-left short:mt-2">
+              <DuoRemap keys={keys} onChange={onKeys} compact />
             </div>
           </div>
         </div>

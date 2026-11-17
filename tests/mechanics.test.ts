@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
+import { AIR, NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -323,5 +323,37 @@ describe('Co-op Boss Kapışması: iki boss', () => {
     expect(w.isSolid(gx, gy)).toBe(true)
     w.boss2!.state = 'down'
     expect(w.isSolid(gx, gy)).toBe(false)
+  })
+})
+
+describe('derin suda nefes', () => {
+  // 6 karo derin havuz: dipte durulursa nefes biter, yüzeye çıkınca dolar
+  const pool = ['           ', ' P         ', '##WWWWWWW##', '##WWWWWWW##', '##WWWWWWW##', '##WWWWWWW##', '##WWWWWWW##', '###########']
+  it('başı su altında kalan nefes bitince boğulur', () => {
+    const w = mk(pool)
+    w.started = true
+    w.player.x = 5 * 16
+    w.player.y = 5 * 16
+    let drown = false
+    for (let i = 0; i < 120 * (AIR.max + 1); i++) {
+      w.step(1 / 120, emptyInput())
+      if (w.events.some((e) => e.type === 'drown')) drown = true
+      w.events.length = 0
+      if (w.player.dead) break
+    }
+    expect(drown).toBe(true)
+    expect(w.deaths).toBe(1)
+  })
+  it('yüzeye çıkan nefesini doldurur', () => {
+    const w = mk(pool)
+    w.started = true
+    w.player.x = 5 * 16
+    w.player.y = 5 * 16
+    for (let i = 0; i < 120 * 3; i++) w.step(1 / 120, emptyInput())
+    expect(w.player.air).toBeLessThan(AIR.max)
+    // kulaç kulaç yüzeye
+    for (let i = 0; i < 120 * 3; i++) w.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i % 20 === 0 })
+    expect(w.player.dead).toBe(false)
+    expect(w.player.air).toBe(AIR.max)
   })
 })

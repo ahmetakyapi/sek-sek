@@ -23,7 +23,7 @@ export default function MirrorList({ best, open, onStart, onBack }: { best: Reco
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('YENİ OYUN+ · {n}/{m}', { n: done, m: LEVELS.length })}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Ayna Yolu')}</h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
+          <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {ic(t('← Geri'))}
           </button>
         </div>

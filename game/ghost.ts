@@ -13,6 +13,8 @@ export interface GhostRun {
   data: number[]
   /** koşulduğu şehir haritası: harita değişince eski hayalet gösterilmez */
   v?: string
+  /** seyreltme: bir örnek kaç kayıt adımı (uzun koşu depoya sığsın diye; yoksa 1) */
+  step?: number
 }
 
 export function poseOf(w: World) {

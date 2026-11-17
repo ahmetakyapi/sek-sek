@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 38 şehrini (iki defter: 30 + 8) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 39 şehrini (iki defter: 30 + 9) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -24,8 +24,8 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
   sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon
-  levels.ts      38 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
-  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla, Rize, Artvin, Kars, Bitlis, Ağrı, Giresun, Tokat, Denizli); yeni şehir buraya eklenir
+  levels.ts      39 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
+  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla, Rize, Artvin, Kars, Bitlis, Ağrı, Giresun, Tokat, Denizli, Zonguldak); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
   finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q boss, G kapı) → çıkış; arenayı index.ts kurar
@@ -116,6 +116,14 @@ simge nesne `z`, NEXT_CITY) → `music.ts` SCALES → `levels.ts` LEVELS + DECOR
 malzemesi) → `public/sehirler/<id>.webp` ve `assets/cities/<id>.png` (`node scripts/art/banners.cjs <id>`) → `lib/storage.ts` ORDERS (eski sıra) → `tests/sim.test.ts`
 plaka listesi. "Bölüm ölçütleri"ndeki sekiz maddenin hepsi sağlanmadan şehir eklenmiş sayılmaz. Şehir sırası değişince (yeni şehir) `lib/storage.ts` MAP_VERSION artır ve eski sırayı ORDERS'a yaz; haritanın kendisi değişince hiçbir sayı artırılmaz (aşağıda "Harita sürümü").
 
+**Kayıt asla kaybolmaz (17 Kasım 2026).** Kayıt her zaman en güncel hâlinden türetilir: `persist(s => …)` ya da `patch({…})`;
+render anındaki `save` kopyasıyla `persist({ ...save, … })` yazılmaz (async giriş, bölüm sonu arasında yazılan rekoru ezer).
+`writeSave` depo doluysa önce en büyük hayalet koşuyu siler (hayalet en çok ~8100 sayı, uzun koşu seyreltilir, `step`).
+İki sekme `storage` olayıyla birleşir (sıfırlama `timesReset` ile kazanır). Bulut gönderimi başarısızsa yeniden dener
+(`pushSave`), bulut sınırı 256 KB. Skor gönderimi 429 / 5xx / ağ hatasında bekleyip yeniden dener; skor hız sınırı oyuncu
+başına (saatte 120) + geniş IP tabanı (600): aynı evdeki yolcular birbirinin hakkını yemez. Bütün şehirler bitince ana
+menü "Serbest Gezi": yol çizgisinden seçilen şehirde oynanır. Kısayollar: R checkpoint, Shift + R baştan başla.
+
 **Harita sürümü (kalıcı kural).** Güncelleme oyuncunun hiçbir şeyini silmez: harita yenilense de rekor, hatıralar, pul,
 nazar, boss ve **sıralama** yerinde kalır (kullanıcı kararı, 14 Kasım 2026). Her şehrin sürümü haritasının özetidir
 (`lib/mapVersion.ts` `cityVersion`); yalnız bilgi vermek için kullanılır: rekoru eski haritada koşulmuş şehir açılışta
@@ -172,7 +180,7 @@ sıralar. Kapanmış haftaların ilk üçü oyuncu sayfasında kalıcı rozet. C
 **Arkadaşlar.** `save.friends` (yolcu adları, buluta da gider). Skor tablosunda ☆ ile ya da adla eklenir; her tabloya
 `names=a,b` süzgeci verilir (adlar zaten herkese açık, yanıt önbelleklenebilir). "⚔ Beni Geç Bağlantısı" `/?yaris=<şehir>~<ad>`.
 
-**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı ve dönüş yolu Giresun, Tokat, Denizli (`FIRST_BOOK` = Rize'nin sırası; defter Pamukkale'de biter). Bayburt ilk kez bitince final
+**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı ve dönüş yolu Giresun, Tokat, Denizli, Zonguldak (`FIRST_BOOK` = Rize'nin sırası; defter Zonguldak'ın denizinde ve madeninde biter). Bayburt ilk kez bitince final
 sahnesi (`Ending`) açılır, sonundaki "İkinci Defteri Aç" Rize'yi yükler. Final, Ayna Yolu ve Tam Tur ilk defterin 30
 şehriyle kalır (ikinci defterin aynası doğrulanmadı). Biten en ileri şehrin ardındaki her zaman açıktır (`normalizeSave`):
 yol uzayınca son şehri bitirmiş oyuncu yeni şehre geçer. Yeni defter eklenirse aynı kalıp.
@@ -190,8 +198,10 @@ ilk kişisi esnaf olsun (usta o).
 **Co-op.** `World.enableCoop()` eşi (`partner`) kurar; `stepPartner` eşi aynı adımda, oyuncu kaydını geçici olarak eşe
 çevirerek yürütür: çarpışma, toplama, tehlike, bayrak, boss'a basma ve çıkış ortak koddan geçer. Kural iki oyuncuya aynı
 (17 Kasım 2026): düşen, ayaktaki eşinin yanında doğar (`rejoin`, dünya sıfırlanmaz); ikisi birden düşerse bölüm bayraktan
-kurulur ve ikisi birlikte doğar. Tuşlar `game/input.ts` DUO_KEYS: solda WASD + X, sağda ok tuşları + Enter; Boşluk kimsede
-yok (tek kişilikte dash Boşluk, alışkanlıkla basılınca öbürünü atıyordu), bir tuş tek oyuncuya ait (`tests/input.test.ts`).
+kurulur ve ikisi birlikte doğar. Tuşlar oyuncunun ataması (`save.duoKeys`, `normalizeDuo` / `bindDuo`; Ayarlar → Kontroller "İki Kişilik" ve Co-op /
+Yarış molasında `DuoRemap`), varsayılan `DEFAULT_DUO`: solda WASD + Sol Shift (X de dash), sağda ok tuşları + Enter (Sağ
+Shift de dash). Boşluk varsayılanda kimsede yok (tek kişilikte dash Boşluk, alışkanlıkla basılınca öbürünü atıyordu); bir
+tuş tek oyuncunun tek eylemi, atanan tuş öbüründen alınır (takas) (`tests/input.test.ts`). Molada değişen tuş hemen uyar (`keysRef`).
 Boss Kapışması (`CoopSetup` kipi): seçilen boss'un arenası (`coopLevel`), isteğe bağlı ikinci boss `LevelDef.bossOf2`
 (`World.boss2`: kapı ikisi de düşünce açılır) ve zorluk `bossBoost` (kademe + hız; Normal, Öfkeli, Kâbus). Kamera ikisinin ortasına
 bakar; uzaklık görünür alanın %80'ini aşınca geride kalan öne ışınlanır. Düşmanlar ve boss'un nişanı yalnız oyuncuyu izler.
@@ -273,6 +283,12 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 - `{` `}` ritim blokları (`sim.ts` RHYTHM): saate bağlı iki takım, 1,6 sn'de bir yer değiştirir, kaybolmadan 0,45 sn önce yanıp söner;
   belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır (`rhythmHold`). Çözücü yakındaki ritim evresini durum sayar.
   Tam zamanında yay: yaya inerken zıplama basılıysa (tampon) sekiş ×1,22 (`PERFECT_SPRING`); yalnız isteğe bağlı kestirme.
+- Derin suda nefes (`sim.ts` AIR, 6 sn): başı `W` içindeyken azalır, sudan çıkınca dolar, biterse boğulur (`drown` olayı;
+  başın üstünde kabarcık göstergesi). Havasız su tüneli zayıf oyuncu için ~2,5 sn'yi geçmesin; suya dokunan haritada
+  verify-levels / respawn / items koş.
+- Suda yüzen düşmanlar (karesi derin su sayılır): `y` Esoli (köpekbalığı: devriye → yüzeni görünce titreyip uyarır → hamle →
+  soluklanır; ezilmez, kaçılır), `U` pirana (±2,5 karo gidip gelir; basılır, dash'le vurulur).
+- Van'ın öldüren sularında gölün canavarı yüzer (`render.ts` drawLakeMonster): süs, zararsız; su katmanı alt yarısını örter.
 - `T` nitro tüpü (`sim.ts` NITRO): alınınca 3 sn hızlı koşu (×1,55; atlayış hızla uzar), 4 sn'de yeniden dolar. Yalnız isteğe bağlı
   kestirme olarak kullan: zorunlu yolu nitroya bağlama (zayıf oyuncu kaçırabilir). Çözücü nitroyu durum sayar.
 - Yeni lejant: `i` ıslak taş (kaygan), `p` itilen sandık (çözücü sandık konumunu da durum sayar: az ve yerel kullan).
@@ -296,6 +312,9 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 - Ölçüm ve görsel betikleri `?debug` ile açar: güncelleme notu o zaman çıkmaz (ekranı kapatıp tıklamaları yutmasın).
 - Satır kırma: başlık ve düğmeler `text-wrap: balance`, paragraflar `pretty` (globals.css); bölünmemesi gereken kısa
   parçaya `.nowrap`.
+- **Geri düğmesi** `pixel-btn back-btn` + `data-back`: turkuaz, en az 44 px, klavyeli cihazda "Esc" ipucu; menülerde Esc
+  ekrandaki son görünen `data-back` düğmesine basar (Game.tsx; oyun, mola, fotoğraf, Co-op, yarışta Esc moladır).
+  Yeni ekranın Geri düğmesine ikisini de ver. Alt gezinme (← Ayarlar, ← Mola) yalnız `back-btn`.
 - **Menülerde sayfa kaymaz.** Her ekran masaüstünde (1280×720, 1512×860) ve telefonda (dikey 390×664, yatay 750×342) tek bakışta
   sığar. Uzun liste (şehirler, defter, skor, bölüm sonu) panelin içinde kendi alanında kayar; panel ekran boyunu geçmez.
   Kanıtı `node scripts/audit-menus.cjs` (sunucu açıkken, `PORT=`): her menü dört boyutta açılır, taşan hücre FAIL verir;
@@ -337,6 +356,8 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
 - **Hareketli her şey ara değerlenir** (`capture()` / `blend()`), yoksa yüksek Hz'de titrer.
 - **Düşüşte iniş görünür.** Havadayken `landingY` yolu (yatay hız, yerçekimi) izleyip ineceği yeri bulur; kadraj karakterle
   inişi birlikte tutar, düşerken dikey takip çevikleşir (`tests/camera.test.ts` "düşerken iniş yeri kadrajda").
+- **Yüzerken ve halatta kamera inip çıkar** (çapa yalnız zeminde değil, suda ve halatta da güncellenir); uzaktan
+  yeniden doğuşta kamera bölümü taramaz, yeni yere sıçrar (`render.ts` `respawn`).
 - **Kamera telefonda sakin.** Bakış payı ekrana orantılı (`CAM.leadMax`), dönüşte yumuşakça kayar (`leadKeep`); ölü bölge
   kameraya değil hedefe uygulanır (`anchor`): ufak adımlar ve eşikte titreyen joystick kadrajı oynatmaz. Joystick'in yön eşiği
   pay ile çalışır (basmak 0,28, bırakmak 0,18). Sarsıntı küçük ekranda orana göre küçülür.
@@ -358,7 +379,7 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
   önbellekten, sayfalar önce ağdan (çevrimdışında önbellekteki `/`), `/api/*` hiç önbelleğe girmez. Önbelleğe giren yolların
   davranışını değiştirirsen `VERSION`ı artır. "Ana Ekrana Ekle" `lib/useInstallPrompt.ts` → Ayarlar.
 - Vercel Analytics + Speed Insights `components/Telemetry.tsx`: adresin sorgu kısmı silinerek gönderilir (`?yaris=` ad, `?ozel=` harita taşır).
-- CI (`.github/workflows/ci.yml`): typecheck, test, build; 38 şehrin her biri için verify-levels → verify-respawn → bossbot.
+- CI (`.github/workflows/ci.yml`): typecheck, test, build; 39 şehrin her biri için verify-levels → verify-respawn → bossbot.
   Yeni şehir eklenince matrise yaz.
 
 ## Yayın

@@ -47,6 +47,7 @@ const SCREENS = {
   hesap: [SAVE, ['Giriş Yap']],
   'sehir-karti': [SAVE, ['Devam Et']],
   mola: [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape']],
+  'mola-tuslar': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'opt:⚙ Ayarlar', 'Tuşları Değiştir']],
   'bolum-sonu': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:900']],
   'gunluk-sonu': [SAVE, ['Modlar', '▶ Oyna', 'wait:600', FINISH, 'wait:900']],
   mucadeleler: [SAVE, ['Modlar', 'Mücadele Seç']],
@@ -58,7 +59,7 @@ const SCREENS = {
   dukkan: [SAVE, ['Karakter', 'Kılık Dükkânı']],
   'ayna-yolu': [ALL, ['Modlar', '◐ Aynaya Geç']],
   // final ilk kez: Bayburt'u bitiren, finali henüz görmemiş yolcu (görmüş olan Bayburt'tan sonra Rize'ye geçer)
-  final: [{ ...ALL, sawEnding: false }, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1200', '▶ Defteri Kapat', 'wait:600'], '?sehir=bayburt'],
+  final: [{ ...ALL, sawEnding: false }, ['Şehrinde Oyna', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1200', '▶ Defteri Kapat', 'wait:600'], '?sehir=bayburt'],
   'yaris-daveti': [SAVE, [], '?yaris=konya~ahmet'],
 }
 

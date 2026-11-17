@@ -224,6 +224,12 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Travertenden ılık su süzülüyor.', 'Warm water trickles down the travertine.'],
     ['Tiyatroda bir alkış yankılanıyor.', 'A round of applause echoes in the theatre.'],
   ],
+  zonguldak: [
+    ['Ocaktan vardiya düdüğü geliyor.', 'A shift whistle sounds from the mine.'],
+    ['Madenci lambası tünelde titriyor.', 'A miner’s lamp flickers in the tunnel.'],
+    ['Karadeniz’in dalgası serin.', 'The Black Sea wave is cool.'],
+    ['Kanarya hâlâ ötüyor: hava temiz.', 'The canary still sings: the air is clean.'],
+  ],
   agri: [
     ['Sarayın kapısında taş işlemeler.', 'Carved stone at the palace gate.'],
     ['Kaval sesi yamaçtan geliyor.', 'A kaval sounds from the slope.'],

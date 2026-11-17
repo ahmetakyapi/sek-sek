@@ -57,7 +57,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
               </span>
             </h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onClose}>
+          <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onClose}>
             {ic(t('← Geri'))}
           </button>
         </div>

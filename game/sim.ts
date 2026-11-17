@@ -37,6 +37,12 @@ export const CRYSTAL_RECHARGE = 2.5
  * İsteğe bağlı kestirmedir: hiçbir yol nitrosuz geçilemez hâle getirilmez. Tüp birkaç saniyede yeniden dolar.
  */
 export const NITRO = { time: 3, speed: 1.55, recharge: 4 }
+/**
+ * Nefes (derin su `W`): başı su altındayken nefes azalır, başı sudan çıkınca hemen dolar; biterse boğulur.
+ * 6 sn: haritalardaki en uzun havasız su tüneli (Rize) 1,7 sn'de geçilir, havuz dibine inip çıkmak da sığar.
+ * Son `warn` saniyede kabarcık göstergesi kızarır.
+ */
+export const AIR = { max: 6, warn: 2.5 }
 /** Ay Yerçekimi (zor mod): oyuncunun yerçekimi ve en büyük düşüş hızı bu oranlarla çarpılır */
 export const MOON = { gravity: 0.55, fall: 0.6 }
 /** Fırtına (zor mod): rüzgâr sin(süre × freq) ile yön değiştirir (~4,5 sn'de bir döner) */
@@ -142,6 +148,8 @@ export interface Player extends Box {
   strokeCool: number
   /** nitronun kalan süresi (sn); 0 ise normal koşu */
   nitro: number
+  /** kalan nefes (sn): derin suda başı su altındayken azalır */
+  air: number
 }
 
 export interface Platform extends Box {
@@ -162,7 +170,7 @@ export interface Platform extends Box {
   dy: number
 }
 
-export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie'
+export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie' | 'shark' | 'piranha'
 
 export interface Enemy extends Box {
   kind: EnemyKind
@@ -424,6 +432,9 @@ export class World {
             this.set(tx, ty, CABLE)
             break
           case 'W':
+          case 'y':
+          case 'U':
+            // suda yüzen düşmanların karesi de derin sudur
             this.set(tx, ty, SWIM)
             break
           case '>':
@@ -463,6 +474,14 @@ export class World {
             break
           case 'x':
             this.enemies.push(enemy('spiky', px + 2, py + 7, 12, 9))
+            break
+          case 'y':
+            // Esoli (köpekbalığı): suda devriye, yüzeni görünce titreyip uyarır, sonra hamle yapar; ezilmez, kaçılır
+            this.enemies.push({ ...enemy('shark', px - 6, py + 2, 28, 12), timer: 1 })
+            break
+          case 'U':
+            // pirana: kısa mesafede çevik gidip gelir; basılır ya da dash'le vurulur
+            this.enemies.push({ ...enemy('piranha', px + 3, py + 4, 10, 8), phase: ox * 1.3 })
             break
           case 'j':
             // Ordu saksağanı: dalda bekler, altından geçene dalar
@@ -726,6 +745,7 @@ export class World {
       swim: false,
       strokeCool: 0,
       nitro: 0,
+      air: AIR.max,
     }
   }
 
@@ -915,6 +935,15 @@ export class World {
     p.wallLock = Math.max(0, p.wallLock - dt)
     p.dropTimer = Math.max(0, p.dropTimer - dt)
     p.landTimer = Math.max(0, p.landTimer - dt)
+    // nefes: baş derin suyun içindeyse azalır, dışındaysa hemen dolar
+    if (this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + 2) / T)) === SWIM) {
+      p.air -= dt
+      if (p.air <= 0) {
+        p.air = 0
+        this.events.push({ type: 'drown' })
+        return this.kill()
+      }
+    } else p.air = AIR.max
 
     const ix = (input.right ? 1 : 0) - (input.left ? 1 : 0)
     const iy = (input.down ? 1 : 0) - (input.up ? 1 : 0)
@@ -1425,6 +1454,54 @@ export class World {
           e.y = e.oy + Math.sin(e.phase * 3) * 5
           break
         }
+        case 'shark': {
+          // Esoli: devriye (suyun içinde kalır) → yüzen oyuncu önünde ve aynı derinlikteyse uyarı (titreme) → hamle → soluklanma
+          const inWater = (x: number) => this.tile(Math.floor(x / T), Math.floor((e.y + e.h / 2) / T)) === SWIM
+          const dx = p.x + p.w / 2 - (e.x + e.w / 2)
+          const dy = p.y + p.h / 2 - (e.y + e.h / 2)
+          if (e.state === 'idle') {
+            const nx = e.x + e.dir * 34 * dt
+            if (!inWater(e.dir > 0 ? nx + e.w : nx)) e.dir = e.dir > 0 ? -1 : 1
+            else e.x = nx
+            e.y = e.oy + Math.sin(e.phase * 1.6) * 2
+            e.timer -= dt
+            if (!p.dead && p.swim && e.timer <= 0 && Math.abs(dx) < T * 6 && Math.abs(dy) < T * 1.5) {
+              e.state = 'windup'
+              e.timer = 0.7
+              e.dir = dx > 0 ? 1 : -1
+            }
+          } else if (e.state === 'windup') {
+            e.timer -= dt
+            if (e.timer <= 0) {
+              e.state = 'charge'
+              e.timer = 1
+            }
+          } else if (e.state === 'charge') {
+            const nx = e.x + e.dir * 120 * dt
+            e.timer -= dt
+            if (!inWater(e.dir > 0 ? nx + e.w : nx) || e.timer <= 0) {
+              e.state = 'stun'
+              e.timer = 1.2
+            } else e.x = nx
+          } else {
+            e.timer -= dt
+            if (e.timer <= 0) {
+              e.state = 'idle'
+              e.timer = 1.2
+            }
+          }
+          break
+        }
+        case 'piranha': {
+          // kısa mesafede çevik gidip gelir (2,5 karo), hafif dalgalanır; suyun dışına çıkmaz
+          const nx = e.ox + Math.sin(e.phase * 2.4) * T * 2.5
+          if (this.tile(Math.floor((nx + e.w / 2) / T), Math.floor((e.y + e.h / 2) / T)) === SWIM) {
+            e.dir = nx > e.x ? 1 : -1
+            e.x = nx
+          }
+          e.y = e.oy + Math.sin(e.phase * 5) * 2
+          break
+        }
         case 'bat': {
           // dikey dalga + yavaş yatay sürüklenme
           e.y = e.oy + Math.sin(e.phase * 2.2) * T * 1.6
@@ -1690,7 +1767,8 @@ export class World {
       // inip kalkarken ya da zıplamanın tepesinde (hız ~0) de geçerli; alttan zıplayıp çarpan ölür
       const fromAbove = this.prevFeet <= (e.py ?? e.y) + 4 && p.vy > -150
       const stomp = fromAbove || (p.vy > 0 && p.y + p.h - e.y < 10)
-      if (e.kind !== 'spiky' && (stomp || p.dashTime > 0)) {
+      // Esoli ezilmez (kaçılır); diken sırtlı da öyle
+      if (e.kind !== 'spiky' && e.kind !== 'shark' && (stomp || p.dashTime > 0)) {
         e.alive = false
         p.vy = -PHYS.stompV
         p.canDash = true

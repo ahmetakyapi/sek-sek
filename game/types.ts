@@ -1,6 +1,6 @@
 export const T = 16
 
-export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis'
+export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis' | 'zonguldak'
 
 export interface Fact {
   title: string
@@ -94,6 +94,8 @@ export type GameEvent =
   | { type: 'respawn' }
   /** co-op: düşen oyuncu eşinin yanında doğdu */
   | { type: 'rejoin' }
+  /** derin suda nefes bitti */
+  | { type: 'drown' }
   | { type: 'checkpoint'; index: number }
   | { type: 'collect'; index: number }
   | { type: 'spring' }

@@ -231,11 +231,13 @@ async function upsert(playerId: string, name: string, r: Run, played: number) {
  *   tazelendiğini ve süre sıralamasını söyler.
  * POST {playerId, token, batch: [{level, timeMs, deaths, items}]} → cihazdaki rekorlar tabloya aktarılır (girişte bir
  *   kez; tabloda olmayan ya da daha iyi olanlar yazılır, oynama sayısı artmaz).
- * Haritanın fiziksel en kısa süresinden hızlı koşu 422 (lib/antiCheat.ts); IP başına saatte 60 istek, aşınca 429.
+ * Haritanın fiziksel en kısa süresinden hızlı koşu 422 (lib/antiCheat.ts); oyuncu başına saatte 120, IP başına 600 istek; aşınca 429.
  */
 export async function POST(req: NextRequest) {
   const b = ((await req.json().catch(() => null)) ?? {}) as Record<string, unknown>
-  const wait = await hit(LIMITS.score, ipKey(req))
+  // sınır oyuncu başına (aynı evdeki yolcular ortak IP'yi paylaşır, birinin koşuları ötekinin skorunu düşürmesin)
+  const who = typeof b.playerId === 'number' || typeof b.playerId === 'string' ? `p:${b.playerId}` : ipKey(req)
+  const wait = (await hit(LIMITS.score, who)) || (await hit(LIMITS.scoreIp, ipKey(req)))
   if (wait) return tooMany(wait, 'Çok sık skor gönderildi, biraz sonra tekrar dene')
   try {
     if (Array.isArray(b.batch)) {

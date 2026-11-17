@@ -29,7 +29,7 @@ export default function Shop({ hero, scarf, owned, seals, wearing, wallet, onBuy
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('CÜZDAN: {n} PARÇA', { n: wallet })}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Kılık Dükkânı')}</h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
+          <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {ic(t('← Geri'))}
           </button>
         </div>

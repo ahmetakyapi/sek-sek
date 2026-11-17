@@ -13,15 +13,52 @@ export const DEFAULT_KEYS: KeyBindings = {
   dash: ['Space', 'KeyX', 'KeyJ', 'KeyL'],
 }
 /**
- * İki kişilik tuşlar (Co-op ve Yan Yana Yarış): solda WASD + X (dash), sağda ok tuşları + Enter (dash).
- * Boşluk kimseye verilmez: tek kişilik oyunda dash Boşluk'tur, iki kişide alışkanlıkla basılınca öbürünün
- * oyuncusunu atıyordu. Bir tuş yalnız bir oyuncuya aittir (tests/input.test.ts "iki kişilik tuşlar").
- * Oyun kolu varsa 1. kol sola, 2. kol sağa.
+ * İki kişilik tuşlar (Co-op ve Yan Yana Yarış), oyuncu atayabilir (`save.duoKeys`, Ayarlar → Kontroller ve molada).
+ * Varsayılan: solda WASD + Sol Shift (X de dash), sağda ok tuşları + Enter (Sağ Shift de dash). Boşluk varsayılanda
+ * kimsede yok: tek kişilikte dash Boşluk, iki kişide alışkanlıkla basılınca öbürünü atıyordu. Bir tuş yalnız bir
+ * oyuncunun bir eylemidir (`bindDuo`). Zıpla tuşu yukarıdır da (halat, kapı). Oyun kolu: 1. kol sola, 2. kol sağa.
  */
-export const DUO_KEYS = [
-  { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['KeyW'], dash: ['KeyX'] },
-  { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['ArrowUp'], dash: ['Enter', 'NumpadEnter', 'Numpad0', 'Slash', 'Period'] },
-] as const
+export type DuoBindings = Record<KeyAction, string[]>
+export type DuoKeys = [DuoBindings, DuoBindings]
+export const DEFAULT_DUO: DuoKeys = [
+  { left: ['KeyA'], right: ['KeyD'], jump: ['KeyW'], down: ['KeyS'], dash: ['ShiftLeft', 'KeyX'] },
+  { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['ArrowUp'], down: ['ArrowDown'], dash: ['Enter', 'ShiftRight', 'NumpadEnter', 'Numpad0'] },
+]
+/** iki kişilikte atanamayan tuşlar: mola ve tarayıcı tuşları (Shift burada serbest: istenen dash tuşu) */
+export const DUO_RESERVED = ['Escape', 'KeyP', 'Tab', 'MetaLeft', 'MetaRight', 'F5', 'F11', 'F12']
+
+/** Kayıttaki iki kişilik atamayı sağlamlaştırır: eksik ya da boş eylem varsayılandan */
+export function normalizeDuo(k?: Partial<Record<KeyAction, string[]>>[] | null): DuoKeys {
+  return [0, 1].map((i) => {
+    const out = { ...DEFAULT_DUO[i] }
+    for (const a of KEY_ACTIONS) {
+      const v = k?.[i]?.[a]
+      if (Array.isArray(v) && v.length) out[a] = v.filter((c) => typeof c === 'string' && !DUO_RESERVED.includes(c))
+      if (!out[a].length) out[a] = DEFAULT_DUO[i][a]
+    }
+    return out
+  }) as DuoKeys
+}
+
+/** İki kişilikte bir tuşu bir oyuncunun eylemine bağlar: iki oyuncunun bütün eylemlerinden alınır (tuş tek işe yarar) */
+export function bindDuo(k: DuoKeys, player: 0 | 1, action: KeyAction, code: string): DuoKeys {
+  if (DUO_RESERVED.includes(code)) return k
+  const out = k.map((b) => Object.fromEntries(KEY_ACTIONS.map((a) => [a, b[a].filter((c) => c !== code)]))) as DuoKeys
+  out[player][action] = [code, ...out[player][action]].slice(0, 4)
+  // tuşu elinden alınan eylem boş kalmasın: önce takas (yeni eylemin eski tuşu), yoksa varsayılanından boşta olan ilk tuş
+  const used = () => out.flatMap((b) => Object.values(b).flat())
+  const swap = k[player][action].find((c) => c !== code)
+  for (const i of [0, 1] as const)
+    for (const a of KEY_ACTIONS) {
+      if (out[i][a].length) continue
+      if (swap && out[player][action].includes(swap)) {
+        out[player][action] = out[player][action].filter((c) => c !== swap)
+        out[i][a] = [swap]
+      } else out[i][a] = DEFAULT_DUO[i][a].filter((c) => !used().includes(c)).slice(0, 1)
+    }
+  return out
+}
+
 /** Oyunun kendi işi olan tuşlar atanamaz: mola, checkpoint, sekme ve tarayıcı tuşları */
 export const RESERVED_KEYS = ['Escape', 'KeyP', 'KeyR', 'Tab', 'MetaLeft', 'MetaRight', 'ShiftLeft', 'ShiftRight', 'F5', 'F11', 'F12']
 
@@ -56,6 +93,8 @@ export function keyLabel(code: string, lang: 'tr' | 'en' = 'tr'): string {
   if (code.startsWith('Key')) return code.slice(3)
   if (code.startsWith('Digit')) return code.slice(5)
   if (code.startsWith('Numpad')) return 'Num ' + code.slice(6)
+  if (code === 'ShiftLeft') return lang === 'en' ? 'L Shift' : 'Sol Shift'
+  if (code === 'ShiftRight') return lang === 'en' ? 'R Shift' : 'Sağ Shift'
   if (code === 'ControlLeft' || code === 'ControlRight') return 'Ctrl'
   if (code === 'AltLeft' || code === 'AltRight') return 'Alt'
   return code.replace(/(Left|Right)$/, '')
@@ -77,6 +116,8 @@ export class InputManager {
   private bind: KeyBindings = DEFAULT_KEYS
   onPause: (() => void) | null = null
   onRetry: (() => void) | null = null
+  /** Shift + R: şehrin başından (R tek başına checkpoint) */
+  onRestart: (() => void) | null = null
 
   private down = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement) return
@@ -88,7 +129,7 @@ export class InputManager {
     if (this.bind.jump.includes(k)) this.jumpLatch = true
     if (this.bind.dash.includes(k)) this.dashLatch = true
     if (k === 'Escape' || k === 'KeyP') this.onPause?.()
-    if (k === 'KeyR') this.onRetry?.()
+    if (k === 'KeyR') (e.shiftKey ? this.onRestart : this.onRetry)?.()
   }
   private up = (e: KeyboardEvent) => {
     // boşluk odaktaki bir düğmeyi tetiklemesin

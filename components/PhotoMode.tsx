@@ -73,7 +73,7 @@ export default function PhotoMode({ canvas, renderer, level, onClose }: { canvas
       {note && <p className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+40px)] text-center font-display text-[15px] text-gold [text-shadow:0_2px_0_#0e0d22]">{note}</p>}
       <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+14px)] flex justify-center px-3" onPointerDown={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 bg-ink/80 p-2 backdrop-blur-[2px] [box-shadow:inset_0_0_0_2px_#37337a]">
-          <button className="pixel-btn px-3 py-2 text-[13px]" onClick={onClose}>
+          <button className="pixel-btn back-btn px-3 py-2 text-[13px]" onClick={onClose}>
             {ic(t('← Mola'))}
           </button>
           <button className="pixel-btn px-3 py-2 text-[13px]" aria-pressed={frame} onClick={() => setFrame((f) => !f)}>

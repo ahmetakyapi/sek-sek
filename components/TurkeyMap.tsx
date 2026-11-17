@@ -133,6 +133,7 @@ const COORDS: Record<string, [number, number]> = {
   giresun: [38.39, 40.91],
   tokat: [36.55, 40.31],
   denizli: [29.09, 37.78],
+  zonguldak: [31.79, 41.45],
 }
 
 const W = 640

@@ -30,9 +30,9 @@ import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } 
 import { MedalBadge, Overlay, displayName, haptic, ic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
-import { InputManager, normalizeKeys } from '@/game/input'
+import { InputManager, normalizeDuo, normalizeKeys } from '@/game/input'
 import PhotoMode from '@/components/PhotoMode'
-import KeyRemap from '@/components/KeyRemap'
+import KeyRemap, { DuoRemap } from '@/components/KeyRemap'
 import Coop, { CoopEnd, CoopSetup, coopLevel, type CoopBoss, type CoopResult } from '@/components/Coop'
 import { useInstallPrompt } from '@/lib/useInstallPrompt'
 import { USTA_TEXT, ustaDone, ustaTask } from '@/lib/ustalar'
@@ -51,7 +51,7 @@ import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
 import { cityVersion } from '@/lib/mapVersion'
 import { freshAchievements, type Feat } from '@/lib/achievements'
-import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, type Player, type Save } from '@/lib/storage'
+import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, parseSaveText, SAVE_KEY, type Player, type Save } from '@/lib/storage'
 
 /** zorluk rozeti: yeşilden kırmızıya */
 const DIFF_TONE: Record<string, string> = {
@@ -197,6 +197,8 @@ export default function Game() {
   const returnRef = useRef<Screen | null>(null)
   /** kurallı koşuda kaçıncı deneme (Tek Can, Zamana Karşı) */
   const triesRef = useRef(0)
+  /** molada tuş atama görünümü (moladan çıkınca kapanır) */
+  const [pauseKeys, setPauseKeys] = useState(false)
   /** günlük koşuda süre sınırı aşıldı uyarısı bir kez */
   const limitHitRef = useRef(false)
   /** boss uyandığında düşüş sayısı: hiç düşmeden yenilirse başarım */
@@ -671,7 +673,31 @@ export default function Game() {
     input.onRetry = () => {
       if (screenRef.current === 'play') worldRef.current?.retryFromCheckpoint()
     }
+    // Shift + R: baştan başla (oyunda ya da molada); günlükte tek hak: süre ve düşüş sürer
+    input.onRestart = () => {
+      if (screenRef.current !== 'play' && screenRef.current !== 'pause') return
+      restartRef.current()
+    }
   }, [setScreen, ready])
+
+  // menülerde Esc geri götürür: ekrandaki Geri düğmesine (data-back) basar. Oyun, mola, fotoğraf, Co-op ve yarışta
+  // Esc'in kendi işi var (mola); yazı alanındayken de dokunmaz
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (['play', 'pause', 'photo', 'coop', 'race', 'intro'].includes(screenRef.current)) return
+      const el = document.activeElement
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return
+      const backs = [...document.querySelectorAll<HTMLButtonElement>('[data-back]')].filter((b) => b.offsetParent !== null && !b.disabled)
+      const b = backs[backs.length - 1]
+      if (b) {
+        e.preventDefault()
+        b.click()
+      }
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -695,10 +721,18 @@ export default function Game() {
     })
   }, [])
 
-  const persist = useCallback((next: Save) => {
-    setSave(next)
-    writeSave(next)
+  /**
+   * Kaydı yazar. İşlev verilirse en güncel kayıttan türetilir: ekranın elindeki eski kopya (bölüm sonu, giriş, ayar)
+   * yeni yazılmış bir rekoru ya da hatırayı ezemez. Kısmi değişiklikler için `patch`.
+   */
+  const persist = useCallback((next: Save | ((s: Save) => Save)) => {
+    setSave((prev) => {
+      const n = typeof next === 'function' ? next(prev) : next
+      writeSave(n)
+      return n
+    })
   }, [])
+  const patch = useCallback((part: Partial<Save>) => persist((s) => ({ ...s, ...part })), [persist])
 
   // Hesap: yerel depo silinmişse (Safari 7 gün kullanılmayan sitenin deposunu siler) giriş oturum çerezinden geri gelir
   useEffect(() => {
@@ -763,6 +797,24 @@ export default function Game() {
       if (retry) clearTimeout(retry)
     }
   }, [playerId, pullTry])
+
+  // iki sekme açıksa: öbür sekmenin yazdığı kayıt buradakiyle birleşir (ilerleme en iyisi, ayarlar buradaki); yoksa bu
+  // sekmenin bir sonraki yazışı öbüründe bitirilen şehri ezerdi. Öbür sekmede ilerleme sıfırlandıysa o kabul edilir.
+  useEffect(() => {
+    const on = (e: StorageEvent) => {
+      if (e.key !== SAVE_KEY) return
+      const other = parseSaveText(e.newValue)
+      if (!other) return
+      setSave((cur) => {
+        const reset = (other.timesReset ?? 0) > (cur.timesReset ?? 0)
+        const next = reset ? { ...other } : { ...mergeSaves(cur, other), player: cur.player ?? other.player }
+        writeSave(next)
+        return next
+      })
+    }
+    window.addEventListener('storage', on)
+    return () => window.removeEventListener('storage', on)
+  }, [])
 
   // her ilerlemede hesaba yaz: yeni şehir, süre, pul, nazar ya da rozet hemen; ayar gibi küçük değişiklikler toplanıp
   // 1,5 sn sonra. Sekme kapanırken ya da arka plana geçerken bekleyen kayıt gönderilir (bölüm biter bitmez kapatan kaybetmez)
@@ -956,6 +1008,10 @@ export default function Game() {
   const daily = dailyRun(today, LEVELS)
   const dailyLevel = LEVELS.find((l) => l.id === daily.levelId)!
 
+  if (pauseKeys && screen !== 'pause') setPauseKeys(false)
+  /** iki kişilik tuşlar: oyuncunun ataması ya da varsayılan (WASD + Shift, oklar + Enter) */
+  const duoKeys = normalizeDuo(save.duoKeys)
+
   /** bugünün hakkı kullanıldı mı: başlandıysa (yarıda bırakılsa da) ya da bitirildiyse */
   const dailyUsed = save.dailyTry === today || save.meydan?.day === today
 
@@ -965,7 +1021,7 @@ export default function Game() {
       setCpToast({ at: Date.now() + 1, text: t('Bugünkü hakkını kullandın. Yarın yeni bir şehir.') })
       return
     }
-    persist({ ...save, dailyTry: today })
+    patch({ dailyTry: today })
     soundRef.current?.unlock()
     ui()
     rushRef.current = null
@@ -990,6 +1046,15 @@ export default function Game() {
     worldRef.current = w2
     rendererRef.current?.setLevel(w2)
     setScreen('play')
+  }
+
+  const restartRef = useRef<() => void>(() => {})
+  restartRef.current = () => {
+    if (rankedDaily) restartKeep()
+    else {
+      loadLevel(levelRef.current, 'play')
+      setCpToast({ at: Date.now() + 1, text: t('Baştan başladın') })
+    }
   }
 
   // Günlük skor tabloya: bitiş ekranı açıkken ve oyuncu girişliyken bir kez (misafir bitirip sonra giriş yaparsa da)
@@ -1057,7 +1122,7 @@ export default function Game() {
     const item = ACCESSORIES.find((a) => a.id === id)
     if (!item || walletOf(foundTotal + ustaCount, save.owned) < item.price) return
     ui()
-    persist({ ...save, owned: { ...(save.owned ?? {}), [id]: true }, accessory: id })
+    patch({ owned: { ...(save.owned ?? {}), [id]: true }, accessory: id })
   }
 
   /** Arkadaş listesine ekler ya da çıkarır (skor tablosundaki ☆) */
@@ -1281,7 +1346,7 @@ export default function Game() {
   const pickCharacter = (id: CharacterId) => {
     ui()
     const next = { ...save, character: id }
-    persist(next)
+    patch({ character: id })
     if (pickThenPlayRef.current && isFresh(next)) {
       pickThenPlayRef.current = false
       return firstPlay()
@@ -1296,7 +1361,7 @@ export default function Game() {
   const signOut = async () => {
     const p = save.player
     // ilerleme hesapta (veritabanında) kalır; tarayıcıdan silinir ki bu cihazı kullanan bir sonraki kişiye geçmesin
-    persist({ ...clearProgress(save), player: null, skippedName: true })
+    persist((s) => ({ ...clearProgress(s), player: null, skippedName: true }))
     setResumeIdx(0)
     setScreen('title')
     if (p) await fetch('/api/players', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, token: p.token }) }).catch(() => {})
@@ -1306,14 +1371,14 @@ export default function Game() {
   const guestFooter = (cls: string) => (
     <div className={`${cls} items-center justify-between gap-3 border-t-2 border-line pt-3`}>
       {save.seenStory ? (
-        <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+        <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
           {ic(t('← Geri'))}
         </button>
       ) : (
         <span />
       )}
       <span className="text-right text-[13px] leading-snug text-muted">
-        <button className="text-cream underline-offset-4 hover:underline" onClick={() => afterName({ ...save, skippedName: true })}>
+        <button className="text-cream underline-offset-4 hover:underline" onClick={() => afterName({ skippedName: true })}>
           {t('Şimdilik Geç')}
         </button>
         <span className="block">{t('Misafir ilerlemesi bu tarayıcıda kalır.')}</span>
@@ -1321,8 +1386,10 @@ export default function Game() {
     </div>
   )
 
-  const afterName = (next: Save) => {
-    persist(next)
+  const afterName = (part: Partial<Save>) => {
+    // giriş async biter: eski kopyayı değil yalnız değişen alanı yaz (arada yazılan rekor korunur)
+    patch(part)
+    const next = { ...save, ...part }
     // günlük bitiş ekranından giriş yapmaya gelen oraya döner: skoru şimdi tabloya yazılır
     if (returnRef.current) {
       const to = returnRef.current
@@ -1611,12 +1678,14 @@ export default function Game() {
         <figcaption className="text-[12px] font-bold tracking-[0.14em] text-[#8a3a24]">{t("GEZGİN’İN DEFTERİNDEN")}</figcaption>
         <blockquote className="mt-1 text-[14px] italic leading-relaxed">“{level.note}”</blockquote>
       </figure>
-      <p className="mt-4 text-[14px] leading-relaxed text-cream/85">{level.intro}</p>
+      {/* geniş ekranda yer yetenek listesinin: yolun özeti deftere yazılı notta zaten var */}
+      <p className="mt-3 text-[14px] leading-snug text-cream/85 wide:hidden">{level.intro}</p>
+      <Bestiary level={level} only="help" />
     </>
   )
   const introFacts = (
     <>
-      <Bestiary level={level} />
+      <Bestiary level={level} only="creatures" />
       <div className="mt-4 flex items-center gap-3 border-2 border-line bg-ink/40 px-3 py-2">
         <BossFigure city={level.city} className="h-[64px] w-[72px] shrink-0" />
         <div className="min-w-0">
@@ -1653,30 +1722,30 @@ export default function Game() {
     <>
       <div>
         <Toggle label={t('Ses Efektleri')} hint={t('Zıplama, toplama ve vuruş sesleri')} on={save.sfx} onChange={() => toggle('sfx')} />
-        {save.sfx && <Level label={t('Düzey')} value={save.sfxVol ?? 1} onChange={(v) => persist({ ...save, sfxVol: v })} />}
+        {save.sfx && <Level label={t('Düzey')} value={save.sfxVol ?? 1} onChange={(v) => patch({ sfxVol: v })} />}
       </div>
       <div>
         <Toggle label={t('Müzik')} hint={t('Her şehrin kendi makamında ezgisi')} on={save.music} onChange={() => toggle('music')} />
-        {save.music && <Level label={t('Düzey')} value={save.musicVol ?? 1} onChange={(v) => persist({ ...save, musicVol: v })} />}
+        {save.music && <Level label={t('Düzey')} value={save.musicVol ?? 1} onChange={(v) => patch({ musicVol: v })} />}
       </div>
     </>
   )
   const controlSet = (
     <>
-      <Toggle label={t('Dokunmatik Kontroller')} hint={t('Ekranda joystick ve tuşlar. Kapatırsan klavye ya da oyun koluyla oynarsın.')} on={showTouch} onChange={() => persist({ ...save, touch: showTouch ? 'off' : 'on' })} />
+      <Toggle label={t('Dokunmatik Kontroller')} hint={t('Ekranda joystick ve tuşlar. Kapatırsan klavye ya da oyun koluyla oynarsın.')} on={showTouch} onChange={() => patch({ touch: showTouch ? 'off' : 'on' })} />
       {/* ikisi de hep listede: dokunmatik açılıp kapanınca liste zıplamasın */}
-      <Toggle label={t('Tuş İpuçları')} hint={t('Klavyeyle oynarken ekranın altında tuş rehberi')} on={save.keyHints} onChange={() => persist({ ...save, keyHints: !save.keyHints })} />
-      <Toggle label={t('Büyük Tuşlar')} hint={t('Dokunmatik kontrollerde daha geniş dokunma alanı')} on={save.controlSize === 'buyuk'} onChange={() => persist({ ...save, controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
+      <Toggle label={t('Tuş İpuçları')} hint={t('Klavyeyle oynarken ekranın altında tuş rehberi')} on={save.keyHints} onChange={() => patch({ keyHints: !save.keyHints })} />
+      <Toggle label={t('Büyük Tuşlar')} hint={t('Dokunmatik kontrollerde daha geniş dokunma alanı')} on={save.controlSize === 'buyuk'} onChange={() => patch({ controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
     </>
   )
   const gameSet = (
     <>
-      <Toggle label={t('Hayalet Koşu')} hint={t('Bir şehri bitirdikten sonra, oradaki en iyi koşunun soluk hayaleti yanında koşar.')} on={save.ghost} onChange={() => persist({ ...save, ghost: !save.ghost })} />
-      <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekor koşuna göre kaç saniye önde ya da geride olduğun')} on={save.splits !== false} onChange={() => persist({ ...save, splits: save.splits === false })} />
-      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır. Kapalıyken görüntü hep sabit kalır.')} on={save.shake ?? !reduceMotion} onChange={() => persist({ ...save, shake: !(save.shake ?? !reduceMotion) })} />
+      <Toggle label={t('Hayalet Koşu')} hint={t('Bir şehri bitirdikten sonra, oradaki en iyi koşunun soluk hayaleti yanında koşar.')} on={save.ghost} onChange={() => patch({ ghost: !save.ghost })} />
+      <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekor koşuna göre kaç saniye önde ya da geride olduğun')} on={save.splits !== false} onChange={() => patch({ splits: save.splits === false })} />
+      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır. Kapalıyken görüntü hep sabit kalır.')} on={save.shake ?? !reduceMotion} onChange={() => patch({ shake: !(save.shake ?? !reduceMotion) })} />
       <div>
-        <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.')} on={save.relaxed} onChange={() => persist({ ...save, relaxed: !save.relaxed })} />
-        {save.relaxed && <Choice label={t('Oyun Hızı')} value={save.relaxedSpeed ?? 0.8} options={[0.6, 0.7, 0.8, 0.9].map((v) => ({ v, label: `%${Math.round(v * 100)}` }))} onChange={(v) => persist({ ...save, relaxedSpeed: v })} />}
+        <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.')} on={save.relaxed} onChange={() => patch({ relaxed: !save.relaxed })} />
+        {save.relaxed && <Choice label={t('Oyun Hızı')} value={save.relaxedSpeed ?? 0.8} options={[0.6, 0.7, 0.8, 0.9].map((v) => ({ v, label: `%${Math.round(v * 100)}` }))} onChange={(v) => patch({ relaxedSpeed: v })} />}
       </div>
     </>
   )
@@ -1688,13 +1757,27 @@ export default function Game() {
     </div>
   )
   // molada: üstte ses (düzey çubuklarıyla), altında öbür ayarlar iki sütunlu sıkı kutucuklar (iki sütun dengeli, kaydırma yok)
-  const settingsPause = (
+  const settingsPause = pauseKeys ? (
+    <>
+      {/* molada tuş atama: oyuna dönmeden tuşları değiştir */}
+      <button className="pixel-btn back-btn mt-1 w-full justify-center py-1.5 text-[13px]" onClick={() => setPauseKeys(false)}>
+        {ic(t('← Ayarlar'))}
+      </button>
+      <KeyRemap keys={save.keys} onChange={(k) => patch({ keys: k })} />
+    </>
+  ) : (
     <>
       <div className="mt-1 grid divide-y-2 divide-line/60">{soundSet}</div>
       <CompactToggles.Provider value>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {controlSet}
           {gameSet}
+          {screen === 'pause' && (
+            <button type="button" className="flex w-full items-center justify-between gap-2 border-2 border-line bg-ink/30 px-2.5 py-2 text-left text-[13px] font-semibold text-cream hover:bg-panel-2/60 short:py-1.5" onClick={() => setPauseKeys(true)}>
+              {t('Tuşları Değiştir')}
+              <span aria-hidden>⌨</span>
+            </button>
+          )}
           {canFull && (
             <button type="button" className="flex w-full items-center justify-between gap-2 border-2 border-line bg-ink/30 px-2.5 py-2 text-left text-[13px] font-semibold text-cream hover:bg-panel-2/60 short:py-1.5" onClick={fullscreen}>
               {t('Tam Ekran')}
@@ -1886,7 +1969,7 @@ export default function Game() {
                             className={`group relative flex items-center gap-2 border-2 bg-ink/50 px-2.5 py-2 text-left disabled:opacity-50 ${tone} hover:bg-panel-2`}
                             onClick={() => {
                               ui()
-                              persist(ackMapNews(save))
+                              persist(ackMapNews)
                               loadLevel(i)
                             }}
                           >
@@ -1901,7 +1984,7 @@ export default function Game() {
                 ) : null,
               )}
             </div>
-            <button className="pixel-btn primary mt-3 justify-center text-base" autoFocus onClick={() => (ui(), persist(ackMapNews(save)))}>
+            <button className="pixel-btn primary mt-3 justify-center text-base" autoFocus onClick={() => (ui(), persist(ackMapNews))}>
               {t('Tamam, Menüye Dön')}
             </button>
           </div>
@@ -1948,7 +2031,7 @@ export default function Game() {
                     key={l}
                     aria-pressed={lang === l}
                     className={`min-h-[30px] min-w-[38px] px-2 py-1 text-[13px] font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`}
-                    onClick={() => (ui(), persist({ ...save, lang: l }))}
+                    onClick={() => (ui(), patch({ lang: l }))}
                   >
                     {l.toUpperCase()}
                   </button>
@@ -1968,7 +2051,7 @@ export default function Game() {
                 <h2 className="mt-1 font-display text-2xl text-cream sm:text-4xl short:text-2xl">{t("Karakterini Seç")}</h2>
               </div>
               {save.character && (
-                <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+                <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                   {ic(t("← Geri"))}
                 </button>
               )}
@@ -2016,7 +2099,7 @@ export default function Game() {
                     key={sc.id}
                     disabled={!open}
                     aria-pressed={on}
-                    onClick={() => (ui(), persist({ ...save, scarf: sc.id }))}
+                    onClick={() => (ui(), patch({ scarf: sc.id }))}
                     title={open ? (lang === 'en' ? sc.nameEn : sc.name) : t('{n} nazar boncuğu bulunca açılır', { n: sc.need })}
                     aria-label={lang === 'en' ? sc.nameEn : sc.name}
                     className={`flex items-center gap-2 border-2 bg-panel-2 px-1.5 py-1.5 text-[12px] sm:px-2.5 sm:text-[13px] short:px-1.5 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold text-cream' : 'border-line text-muted hover:border-accent-2'} ${open ? '' : 'opacity-45'}`}
@@ -2090,12 +2173,12 @@ export default function Game() {
                         player={save.player}
                         onDone={(p: Player) => {
                           ui()
-                          persist({ ...save, player: p })
+                          patch({ player: p })
                         }}
                       />
                     </div>
                     <div className="flex items-center justify-between gap-3 border-t-2 border-line pt-3">
-                      <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => (setConfirmOut(false), setScreen('title'))}>
+                      <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => (setConfirmOut(false), setScreen('title'))}>
                         {ic(t('← Geri'))}
                       </button>
                       {confirmOut ? (
@@ -2120,7 +2203,7 @@ export default function Game() {
                       onMode={setAuthMode}
                       onDone={(p: Player) => {
                         ui()
-                        afterName({ ...save, player: p, skippedName: false })
+                        afterName({ player: p, skippedName: false })
                       }}
                     />
                     {guestFooter('mt-4 flex short:hidden')}
@@ -2158,7 +2241,7 @@ export default function Game() {
                   ui()
                   if (storyPage + 1 < STORY.length) setStoryPage(storyPage + 1)
                   else {
-                    persist({ ...save, seenStory: true })
+                    patch({ seenStory: true })
                     loadLevel(resumeIdx)
                   }
                 }}
@@ -2168,7 +2251,7 @@ export default function Game() {
               <button
                 className="pixel-btn"
                 onClick={() => {
-                  persist({ ...save, seenStory: true })
+                  patch({ seenStory: true })
                   loadLevel(resumeIdx)
                 }}
               >
@@ -2184,7 +2267,7 @@ export default function Game() {
           <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:py-3 side:max-w-[min(1440px,100%)]">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Şehirler")}</h2>
-              <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+              <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                 {ic(t("← Geri"))}
               </button>
             </div>
@@ -2231,6 +2314,15 @@ export default function Game() {
                             <span className="plate absolute bottom-1 left-1 text-[12px]">
                               <span>{String(l.plate).padStart(2, '0')}</span>
                             </span>
+                            {/* geçildi: yeşil onay; sıradaki: altın şerit (hangi şehrin bittiği bir bakışta) */}
+                            {best && !locked && (
+                              <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#2f7a3a] text-[12px] font-bold text-white shadow-[0_0_0_2px_#0e0d22]" aria-label={t('Geçildi')}>
+                                ✓
+                              </span>
+                            )}
+                            {!best && i === save.unlocked && (
+                              <span className="absolute inset-x-0 top-0 bg-gold px-1 py-px text-center text-[11px] font-bold tracking-[0.06em] text-ink">{t('SIRADAKİ')}</span>
+                            )}
                             {/* haritası yenilenen şehir: rekor sıfırlandı, yeniden oynanınca rozet kalkar */}
                             {!locked && isRenewed(best, l.id) && (
                               <span className="absolute left-0 top-1 bg-gold px-1.5 py-px text-[12px] font-bold tracking-[0.06em] text-ink shadow-[0_2px_0_rgba(0,0,0,0.35)]">{t('YENİLENDİ')}</span>
@@ -2245,7 +2337,7 @@ export default function Game() {
                               </span>
                             </span>
                             <span className="flex shrink-0 flex-col items-end gap-1 text-[12px] text-muted">
-                              {locked ? t('Kilitli') : best && !best.stale ? formatTime(best.timeMs) : best ? t('Yeni Yol') : t('Yeni')}
+                              {locked ? <span className="flex items-center gap-1">🔒 {t('Kilitli')}</span> : best && !best.stale ? <span className="font-semibold text-cream">{formatTime(best.timeMs)}</span> : best ? t('Yeni Yol') : <span className="font-bold text-accent-2">{t('Oynanmadı')}</span>}
                               {best && (
                                 <span className="flex items-center gap-1.5">
                                   {!best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}
@@ -2273,6 +2365,32 @@ export default function Game() {
             <div className="wide:grid wide:grid-cols-[1.1fr_1fr] wide:gap-8">
               <div className="min-w-0">
                 <p className="-mt-1 text-[15px] font-semibold text-cream/80 [@media(max-height:500px)]:hidden">{level.subtitle}</p>
+                {/* bu şehrin durumu bir bakışta: geçildi mi, rekor, madalya, hatıra, pul, nazar, boss */}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] font-bold tabular-nums [@media(max-height:500px)]:mt-0">
+                  {introBest ? (
+                    <span className="rounded-sm bg-[#2f7a3a] px-2 py-0.5 tracking-[0.06em] text-white">{t('✓ GEÇİLDİ')}</span>
+                  ) : (
+                    <span className="rounded-sm border border-dashed border-line px-2 py-0.5 tracking-[0.06em] text-muted">{t('HENÜZ GEÇİLMEDİ')}</span>
+                  )}
+                  {introBest && (
+                    <span className="flex items-center gap-1 rounded-sm bg-ink/60 px-2 py-0.5 text-cream">
+                      <MedalBadge medal={medalFor(level, introBest.timeMs)} />
+                      {formatTime(introBest.timeMs)}
+                    </span>
+                  )}
+                  {(
+                    [
+                      [t('Hatıra'), `${introBest ? introBest.items.filter(Boolean).length : 0}/3`, !!introBest && introBest.items.every(Boolean)],
+                      [t('Pul'), save.stamps?.[level.id] ? '✓' : '—', !!save.stamps?.[level.id]],
+                      [t('Nazar'), save.charms?.[level.id] ? '✓' : '—', !!save.charms?.[level.id]],
+                      [t('Boss'), save.bosses[level.id] ? '✓' : '—', !!save.bosses[level.id]],
+                    ] as const
+                  ).map(([k, v, on]) => (
+                    <span key={k} className={`rounded-sm px-2 py-0.5 [@media(max-height:500px)]:hidden ${on ? 'bg-gold/15 text-gold' : 'bg-ink/60 text-muted'}`}>
+                      {k} {v}
+                    </span>
+                  ))}
+                </div>
                 <p className="mt-3 flex [@media(max-height:500px)]:mt-0 items-center gap-2.5 text-[15px] leading-snug text-cream">
                   <ItemIcon city={level.city} taken size={28} />
                   <span>{t('Üç {item} topla, meydandaki boss’u yen.', { item: level.item })}</span>
@@ -2282,7 +2400,7 @@ export default function Game() {
                   if (!usta) return null
                   const done = !!save.ustalar?.[level.id]
                   return (
-                    <p className="mt-2 flex items-start gap-2 text-[13px] leading-snug text-muted">
+                    <p className="mt-2 flex items-start gap-2 text-[13px] leading-snug text-muted [@media(max-height:500px)]:hidden">
                       <span className={`mt-px shrink-0 font-bold ${done ? 'text-[#7ad88a]' : 'text-gold'}`} aria-hidden>
                         {done ? '✓' : '✦'}
                       </span>
@@ -2293,14 +2411,7 @@ export default function Game() {
                     </p>
                   )
                 })()}
-                {introBest && (
-                  <p className="mt-2 flex items-center gap-2 text-[13px] text-muted tabular-nums">
-                    {t('En İyi Süre')} <strong className="text-cream">{formatTime(introBest.timeMs)}</strong>
-                    <MedalBadge medal={medalFor(level, introBest.timeMs)} />
-                    <span>· {introBest.items.filter(Boolean).length}/3</span>
-                  </p>
-                )}
-                <div className="mt-5 hidden wide:block">{introAbout}</div>
+                <div className="mt-4 hidden wide:block">{introAbout}</div>
               </div>
               <div className="hidden min-w-0 wide:block [&>*:first-child]:mt-0">{introFacts}</div>
             </div>
@@ -2365,6 +2476,7 @@ export default function Game() {
                   <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => (rankedDaily ? restartKeep() : loadLevel(levelIdx, 'play'))}>
                     <span className="text-lg leading-none">↺</span>
                     {t("Baştan Başla")}
+                    <span className="text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">Shift + R</span>
                   </button>
                   <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => setScreen('map')}>
                     <span className="text-lg leading-none">⌖</span>
@@ -2387,7 +2499,7 @@ export default function Game() {
                 </div>
               </div>
               <div className={`min-w-0 side:mt-0 side:block ${pauseSet ? '' : 'hidden'}`}>
-                <button className="pixel-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
+                <button className="pixel-btn back-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
                   {ic(t('← Mola'))}
                 </button>
                 <p className="flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
@@ -2407,7 +2519,7 @@ export default function Game() {
           save={save}
           heroName={hero.short}
           heroId={hero.id}
-          onPlayer={(p) => persist({ ...save, player: p, skippedName: !p })}
+          onPlayer={(p) => patch({ player: p, skippedName: !p })}
           // ilk defterin son şehri ilk kez bitince sıradaki şehir yerine final sahnesi ("Defteri Kapat")
           nextIdx={levelIdx === FIRST_BOOK - 1 && !save.sawEnding ? null : levelIdx + 1 < LEVELS.length ? levelIdx + 1 : nextUnplayed(save, levelIdx)}
           onNext={() => {
@@ -2433,7 +2545,7 @@ export default function Game() {
           <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:p-7 short:max-w-[min(760px,100%)] short:py-3 wide:max-w-[min(900px,100%)]">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Skor Tablosu")}</h2>
-              <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+              <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                 {ic(t("← Geri"))}
               </button>
             </div>
@@ -2450,7 +2562,7 @@ export default function Game() {
                 <p className="text-[12px] font-bold tracking-[0.18em] text-accent max-sm:hidden short:hidden">{t('OYUNU KENDİNE GÖRE KUR')}</p>
                 <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Ayarlar')}</h2>
               </div>
-              <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+              <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                 {ic(t("← Geri"))}
               </button>
             </div>
@@ -2474,7 +2586,7 @@ export default function Game() {
                   {t('Dil')}
                   <span className="flex items-center gap-1" role="group" aria-label={t('Dil')}>
                     {(['tr', 'en'] as const).map((l) => (
-                      <button key={l} aria-pressed={lang === l} className={`min-h-[32px] min-w-[40px] px-2.5 py-1.5 text-[13px] font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`} onClick={() => (ui(), persist({ ...save, lang: l }))}>
+                      <button key={l} aria-pressed={lang === l} className={`min-h-[32px] min-w-[40px] px-2.5 py-1.5 text-[13px] font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`} onClick={() => (ui(), patch({ lang: l }))}>
                         {l.toUpperCase()}
                       </button>
                     ))}
@@ -2494,7 +2606,7 @@ export default function Game() {
                 </span>
               </div>
               {installer.iosHint && <p className="mt-2 text-[13px] text-muted">{t('Uygulama gibi açmak için Safari’de Paylaş → Ana Ekrana Ekle.')}</p>}
-              <button className="mt-2 text-[13px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), persist({ ...save, tutorial: true }))} disabled={save.tutorial}>
+              <button className="mt-2 text-[13px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), patch({ tutorial: true }))} disabled={save.tutorial}>
                 {save.tutorial ? t('Rehber açık: sıradaki oyunda adım adım gösterilecek.') : t('Oyun içi rehberi yeniden göster')}
               </button>
             </div>
@@ -2502,7 +2614,8 @@ export default function Game() {
               <p className="hidden items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold wide:flex">
                 {t('KONTROLLER')} <span className="kilim h-[6px] flex-1 opacity-50" />
               </p>
-            <KeyRemap keys={save.keys} onChange={(k) => persist({ ...save, keys: k })} />
+            <KeyRemap keys={save.keys} onChange={(k) => patch({ keys: k })} />
+            <DuoRemap keys={save.duoKeys} onChange={(k) => patch({ duoKeys: k })} />
             <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2 short:mt-2 short:gap-5 short:text-[13px]">
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 short:gap-y-1">
                 <dt className="font-display text-gold">{t("Dokunmatik")}</dt>
@@ -2536,7 +2649,7 @@ export default function Game() {
         </Overlay>
       )}
 
-      {screen === 'notebook' && <Defter save={save} today={today} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => persist({ ...save, music: true })} />}
+      {screen === 'notebook' && <Defter save={save} today={today} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => patch({ music: true })} />}
 
       {screen === 'modes' && (
         <ModesHub
@@ -2645,6 +2758,8 @@ export default function Game() {
           heroes={duel.setup.heroes}
           roundLabel={duel.setup.bestOf === 1 ? t('TEK TUR') : t('{n}. TUR', { n: duel.round + 1 })}
           sound={soundRef.current}
+          keys={duoKeys}
+          onKeys={(k) => patch({ duoKeys: k })}
           onDone={raceDone}
           onQuit={() => setScreen('modes')}
         />
@@ -2652,6 +2767,7 @@ export default function Game() {
 
       {screen === 'coopSetup' && (
         <CoopSetup
+          keys={duoKeys}
           unlocked={save.unlocked}
           hero={hero.id}
           canPlay={!coarse || (typeof navigator !== 'undefined' && !!navigator.getGamepads && [...navigator.getGamepads()].filter(Boolean).length >= 2)}
@@ -2668,6 +2784,8 @@ export default function Game() {
         <Coop
           key={coop.key}
           level={coopLevel(coop.level, coop.boss)}
+          keys={duoKeys}
+          onKeys={(k) => patch({ duoKeys: k })}
           heroes={coop.heroes}
           sound={soundRef.current}
           onDone={(r) => {
@@ -2731,7 +2849,7 @@ export default function Game() {
           onSecondBook={() => loadLevel(FIRST_BOOK)}
         />
       )}
-      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} seals={ustaCount} wearing={heroAcc} wallet={walletOf(foundTotal + ustaCount, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), persist({ ...save, accessory: id }))} onBack={() => setScreen('character')} />}
+      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} seals={ustaCount} wearing={heroAcc} wallet={walletOf(foundTotal + ustaCount, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), patch({ accessory: id }))} onBack={() => setScreen('character')} />}
       {screen === 'mirror' && <MirrorList best={save.ayna ?? {}} open={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])} onStart={startMirror} onBack={() => setScreen('modes')} />}
       {screen === 'custom' && custom && (
         <Overlay dim>
@@ -2969,11 +3087,21 @@ function Complete({
   const submit = async (p: Player) => {
     setStatus('sending')
     try {
-      const res = await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ level: level.id, playerId: p.id, token: p.token, timeMs: result.timeMs, deaths: result.deaths, items: found }),
-      })
+      // ağ hatası, sunucu (5xx) ya da hız sınırı (429): bekleyip yeniden dener; skor kaybolmasın
+      const send = () =>
+        fetch('/api/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ level: level.id, playerId: p.id, token: p.token, timeMs: result.timeMs, deaths: result.deaths, items: found }),
+        })
+      let res: Response | null = null
+      for (let k = 0; k < 4; k++) {
+        res = await send().catch(() => null)
+        if (res && res.status !== 429 && res.status < 500) break
+        const after = Number(res?.headers.get('Retry-After') ?? 0)
+        await new Promise((r) => setTimeout(r, Math.min(30, Math.max(after, [2, 5, 12, 25][k])) * 1000))
+      }
+      if (!res) throw new Error(t('Bağlantı yok: skor gönderilemedi. Tekrar Dene’ye bas.'))
       const j = (await res.json()) as { error?: string; rank?: number; total?: number; first?: boolean; bestMs?: number; better?: { time: boolean; deaths: boolean; items: boolean } }
       if (res.status === 401) {
         // oturum artık geçerli değil (hesap silinmiş ya da çıkış yapılmış): yeniden giriş istenir
@@ -3063,60 +3191,56 @@ function Complete({
         <div className="mt-3 min-h-0 flex-1 short:col-start-2 short:row-span-3 short:row-start-3 short:mt-2 wide:contents">
           <div className={`overlay-scroll -mx-2 h-full min-w-0 overflow-y-auto px-2 pt-2 ${tab === 'defter' ? '' : 'hidden'} wide:col-start-1 wide:row-start-2 wide:mt-2 wide:block wide:h-auto wide:min-h-0`}>
             <p className="flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
-              {t('HATIRALAR')} <span className="kilim h-[6px] flex-1 opacity-50" />
+              {t('DEFTER')} <span className="kilim h-[6px] flex-1 opacity-50" />
+              <span className="font-display text-[13px] tracking-normal text-cream">{[0, 1, 2].filter((i) => result.items[i] || best?.items[i]).length}/3</span>
             </p>
-            <div className="mt-2 grid grid-cols-3 gap-3">
+            {/* hatıralar tek listede: simge, yer, okunur durum rozeti ve deftere yazılan bilgi (eskiden kart + ayrı liste,
+                damgalar taşıyıp kesiliyordu) */}
+            <div className="mt-2 grid gap-2">
               {level.facts.map((f, i) => {
                 const now = result.items[i]
                 const have = now || best?.items[i]
                 return (
-                  <div key={i} className={`relative flex flex-col items-center px-2 pb-2.5 pt-3 text-center ${have ? 'notebook' : 'border-2 border-dashed border-line/70'}`} style={have ? { transform: `rotate(${[-1.2, 0.8, -0.5][i]}deg)` } : undefined}>
-                    <div className={`relative flex h-[68px] w-[68px] items-center justify-center rounded-full ${have ? 'bg-[#221f4a] shadow-[0_0_0_3px_#d9a441,0_4px_0_3px_rgba(0,0,0,0.25)]' : 'bg-ink/50'}`}>
-                      <ItemIcon city={level.city} taken={!!have} size={48} />
-                      {!have && <span className="absolute inset-0 flex items-center justify-center font-display text-2xl text-muted">?</span>}
-                    </div>
-                    <p className={`mt-1.5 font-display text-[15px] leading-tight ${have ? '' : 'text-muted'}`}>{level.item}</p>
-                    <p className={`text-[12px] font-bold tracking-[0.12em] ${have ? 'text-[#8a3a24]' : 'text-muted'}`}>{have ? f.title.toLocaleUpperCase(lng) : t('SAKLI')}</p>
-                    {now && <span className="absolute -right-2 -top-2 rotate-[12deg] border-2 border-[#c8302a] bg-[#f3f1ff] px-1 text-[12px] font-bold tracking-[0.08em] text-[#c8302a]">{t('BULUNDU')}</span>}
-                  </div>
-                )
-              })}
-            </div>
-
-            <p className="mt-5 flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
-              {t('DEFTERE YAZILANLAR')} <span className="kilim h-[6px] flex-1 opacity-50" />
-            </p>
-            <div className="mt-2 grid gap-2.5">
-              {level.facts.map((f, i) => {
-                const have = result.items[i] || best?.items[i]
-                if (!have) return null
-                return (
-                  <div key={i} className="notebook flex gap-3 px-3 py-2.5" style={{ transform: `rotate(${[-0.5, 0.4, -0.3][i]}deg)` }}>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441]">
-                      <ItemIcon city={level.city} taken size={26} />
+                  <div key={i} className={`flex gap-3 px-3 py-2.5 ${have ? 'notebook' : 'border-2 border-dashed border-line/70 bg-ink/30'}`}>
+                    <span className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${have ? 'bg-[#221f4a] shadow-[0_0_0_2px_#d9a441]' : 'bg-ink/60 shadow-[0_0_0_2px_#37337a]'}`}>
+                      <ItemIcon city={level.city} taken={!!have} size={30} />
+                      {!have && <span className="absolute inset-0 flex items-center justify-center font-display text-xl text-muted">?</span>}
                     </span>
-                    <div className="min-w-0">
-                      <p className="font-display text-[15px] leading-tight">{f.title}</p>
-                      <p className="mt-0.5 text-[13px] leading-snug opacity-80">{f.text}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className={`font-display text-[15px] leading-tight ${have ? '' : 'text-muted'}`}>{have ? f.title : t('Saklı {item}', { item: level.item })}</span>
+                        <span className={`rounded-sm px-1.5 py-px text-[11px] font-bold tracking-[0.06em] ${now ? 'bg-[#2f7a3a] text-white' : have ? 'bg-[#221f4a] text-gold' : 'bg-ink/60 text-muted'}`}>
+                          {now ? t('BU KOŞUDA BULUNDU') : have ? t('DEFTERDE') : t('SAKLI')}
+                        </span>
+                      </p>
+                      <p className={`mt-0.5 text-[13px] leading-snug ${have ? 'opacity-80' : 'text-muted'}`}>{have ? f.text : t('Tabelalara ve şehir insanlarına kulak ver: yeri anlatırlar.')}</p>
                     </div>
                   </div>
                 )
               })}
-              {save.stamps?.[level.id] ? (
-                <div className="relative border-2 border-[#d9a441] bg-[#221f4a] px-3 py-2.5" style={{ transform: 'rotate(0.4deg)' }}>
-                  <span className="absolute -right-2 -top-3 rotate-[8deg] bg-[#f3f1ff] px-1.5 py-0.5 font-display text-[12px] text-[#c8302a] [box-shadow:0_0_0_2px_#c8302a]">{t('GİZLİ SAYFA')}</span>
-                  <p className="font-display text-[15px] leading-tight text-gold">{level.secret.title}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-cream/85">{level.secret.text}</p>
+              {/* gizli pul ve nazar: aynı satır dili, okunur rozet */}
+              <div className={`flex gap-3 px-3 py-2.5 ${save.stamps?.[level.id] ? 'border-2 border-[#d9a441] bg-[#221f4a]' : 'border-2 border-dashed border-line/70 bg-ink/30'}`}>
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-xl ${save.stamps?.[level.id] ? 'bg-gold/20 text-gold shadow-[0_0_0_2px_#d9a441]' : 'bg-ink/60 text-muted shadow-[0_0_0_2px_#37337a]'}`}>✦</span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className={`font-display text-[15px] leading-tight ${save.stamps?.[level.id] ? 'text-gold' : 'text-muted'}`}>{save.stamps?.[level.id] ? level.secret.title : t('Gizli Pul')}</span>
+                    <span className={`rounded-sm px-1.5 py-px text-[11px] font-bold tracking-[0.06em] ${save.stamps?.[level.id] ? 'bg-gold text-ink' : 'bg-ink/60 text-muted'}`}>{save.stamps?.[level.id] ? t('GİZLİ SAYFA') : t('SAKLI')}</span>
+                  </p>
+                  <p className={`mt-0.5 text-[13px] leading-snug ${save.stamps?.[level.id] ? 'text-cream/85' : 'text-muted'}`}>{save.stamps?.[level.id] ? level.secret.text : t('Kayadaki karanlık ağızlara, çatlak zeminlere ve zor ulaşılan köşelere bak.')}</p>
                 </div>
-              ) : (
-                <p className="border-2 border-dashed border-line/70 px-3 py-2 text-[13px] text-muted">{t('Bu şehirde bir gizli pul var. Kayadaki karanlık ağızlara, çatlak zeminlere ve zor ulaşılan köşelere bak.')}</p>
-              )}
-              <p className={`border-2 px-3 py-2 text-[13px] ${save.charms?.[level.id] ? 'border-[#4ab0e8] bg-[#221f4a] text-cream/90' : 'border-dashed border-line/70 text-muted'}`}>
-                {save.charms?.[level.id] ? t('Nazar boncuğu bulundu: meydan yolunda saklıydı.') : t('Meydan yolunda bir nazar boncuğu saklı. Kapıdan geçtikten sonra etrafına iyi bak.')}
-              </p>
-              {found === 0 && !best?.items.some(Boolean) && (
-                <p className="border-2 border-dashed border-line/70 px-3 py-3 text-[13px] text-muted">{t('Bu şehirde üç {item} saklı. Bul, defterine yazılsın.', { item: level.item })}</p>
-              )}
+              </div>
+              <div className={`flex items-center gap-3 px-3 py-2 ${save.charms?.[level.id] ? 'border-2 border-[#4ab0e8] bg-[#221f4a]' : 'border-2 border-dashed border-line/70 bg-ink/30'}`}>
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${save.charms?.[level.id] ? 'bg-[#1d3f73] shadow-[0_0_0_2px_#4ab0e8]' : 'bg-ink/60 shadow-[0_0_0_2px_#37337a]'}`} aria-hidden>
+                  <span className={`block h-6 w-6 rounded-full ${save.charms?.[level.id] ? 'bg-[radial-gradient(circle,#0b1a3a_0_18%,#f3f1ff_19%_38%,#4ab0e8_39%_70%,#1d5fae_71%)]' : 'bg-line'}`} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className={`font-display text-[15px] leading-tight ${save.charms?.[level.id] ? 'text-cream' : 'text-muted'}`}>{t('Nazar Boncuğu')}</span>
+                    <span className={`rounded-sm px-1.5 py-px text-[11px] font-bold tracking-[0.06em] ${save.charms?.[level.id] ? 'bg-[#4ab0e8] text-ink' : 'bg-ink/60 text-muted'}`}>{save.charms?.[level.id] ? t('BULUNDU') : t('SAKLI')}</span>
+                  </p>
+                  <p className="mt-0.5 text-[13px] leading-snug text-muted">{save.charms?.[level.id] ? t('Meydan yolunda saklıydı.') : t('Meydan yolunda saklı: kapıdan geçince etrafına iyi bak.')}</p>
+                </div>
+              </div>
             </div>
           </div>
 

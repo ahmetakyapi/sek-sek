@@ -248,3 +248,29 @@ describe('düşerken iniş yeri kadrajda', () => {
     }
   })
 })
+
+describe('yüzerken kadraj karakterle iner', () => {
+  it('derin havuzun dibine dalan karakter ekranın ortasına yakın kalır', () => {
+    const map = Array.from({ length: 30 }, (_, y) => {
+      if (y === 6) return 'P'.padEnd(40, ' ')
+      if (y === 7) return '###'.padEnd(40, ' ')
+      if (y >= 8 && y < 26) return '###' + 'W'.repeat(30) + '#######'
+      if (y >= 26) return '#'.repeat(40)
+      return ' '.repeat(40)
+    })
+    const w = new World({ ...LEVELS[0], map, hints: [], npcs: [], finaleAt: undefined })
+    const vw = 427
+    const vh = 240
+    const cam = { x: 0, y: 0 }
+    // havuza yürü ve batmaya bırak (su altında 6 sn'den az kal: nefes)
+    for (let t = 0; t < 4.5; t += STEP) {
+      w.step(STEP, { ...emptyInput(), right: w.player.x < 6 * 16 })
+      w.events.length = 0
+      stepCamera(w, cam, STEP, vw, vh)
+    }
+    expect(w.player.swim).toBe(true)
+    const rel = (w.player.y + w.player.h / 2 - cam.y) / vh
+    expect(rel).toBeGreaterThan(0.3)
+    expect(rel).toBeLessThan(0.7)
+  })
+})

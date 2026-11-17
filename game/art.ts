@@ -256,6 +256,26 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'wasp',
     animal: 'turtle',
   },
+  zonguldak: {
+    // Zonguldak: yağmurlu Karadeniz griliği, kömür karası, koyu yeşil yamaçlar, madenci lambasının turuncusu
+    sky: ['#4a5664', '#8a96a0', '#c6cac4'],
+    sun: { x: 0.26, y: 0.3, r: 11, color: '#e6e2d2', glow: 'rgba(230,226,210,0.14)' },
+    far: '#6e7e84',
+    mid: '#3e5446',
+    near: '#26282c',
+    tileTop: '#4f7c3e',
+    tile: '#5c5852',
+    tileDark: '#2e2c2a',
+    tileLight: '#7c776e',
+    plank: '#6a4a30',
+    accent: '#f2a12e',
+    water: ['#3e6878', '#22465a', '#c4d8dc'],
+    spike: ['#d8d4cc', '#8a8680'],
+    weather: 'rain',
+    enemyGround: 'rat',
+    enemyFly: 'gull',
+    animal: 'cat',
+  },
   kayseri: {
     // Erciyes’in karlı silueti, bazalt taş, Selçuklu kırmızısı
     sky: ['#4a5a86', '#a4b0d0', '#f2e8da'],
@@ -1122,6 +1142,8 @@ export function buildLayers(city: CityKey): Layers {
           }
         }),
       }
+    case 'zonguldak':
+      return zonguldakLayers(s, B)
     case 'denizli':
       return {
         far: layer((c) => {
@@ -3144,12 +3166,198 @@ export function buildLayers(city: CityKey): Layers {
   }
 }
 
+/** piksel doğru (arka plan çizgisi): uçtan uca adım adım */
+function seg(c: Ctx, x0: number, y0: number, x1: number, y1: number, color: string, w = 1) {
+  const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))))
+  for (let i = 0; i <= n; i++) rect(c, x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, w, w, color)
+}
+
+/** Zonguldak: yağmurlu Karadeniz, yamaçta evler, maden kuyusu kuleleri, kömür yığınları; önde liman vinci ve vagonlar */
+function zonguldakLayers(s: CityStyle, B: number): Layers {
+  // maden kuyusu kulesi: iki ayaklı kafes çerçeve, tepede iki çark, arkada eğik payanda; altında kuyu binası
+  const headframe = (c: Ctx, x: number, base: number, h: number, col: string, lit: string, t: number) => {
+    const top = base - h
+    const w = Math.round(h * 0.34)
+    // eğik payanda (vinç dairesine doğru)
+    seg(c, x + w / 2, top + 6, x + w / 2 + h * 0.55, base - 4, col, 2)
+    seg(c, x + w / 2 - 3, top + 10, x + w / 2 + h * 0.45, base - 4, col, 1)
+    // iki ayak: aşağı açılır
+    for (const k of [0, 1]) seg(c, x + k * w, top + 4, x - 6 + k * (w + 12), base, col, 2)
+    // kafes: yatay kirişler ve çaprazlar
+    for (let y = top + 10, i = 0; y < base - 4; y += 12, i++) {
+      const spread = ((y - top) / h) * 6
+      const xl = x - spread
+      const xr = x + w + spread
+      rect(c, xl, y, xr - xl + 1, 1, col)
+      const ny = Math.min(base - 4, y + 12)
+      const nspread = ((ny - top) / h) * 6
+      if (i % 2) seg(c, xl, y, x + w + nspread, ny, col)
+      else seg(c, xr, y, x - nspread, ny, col)
+    }
+    // tepe platformu ve iki çark
+    rect(c, x - 3, top + 3, w + 7, 2, col)
+    for (const [cx, r] of [[x + 3, Math.round(h * 0.09)], [x + w - 3, Math.round(h * 0.09)]] as const) {
+      for (let a = 0; a < 40; a++) {
+        const an = (a / 40) * Math.PI * 2
+        rect(c, cx + Math.cos(an) * r, top + Math.sin(an) * r, 1, 1, col)
+      }
+      for (let k = 0; k < 4; k++) {
+        const an = (k / 4) * Math.PI + t
+        seg(c, cx - Math.cos(an) * r, top - Math.sin(an) * r, cx + Math.cos(an) * r, top + Math.sin(an) * r, col)
+      }
+      rect(c, cx - 1, top - 1, 2, 2, col)
+    }
+    // halat: çarktan payandanın dibine
+    seg(c, x + 3 + h * 0.09, top, x + w / 2 + h * 0.55 - 2, base - 12, 'rgba(30,30,34,0.7)')
+    // kuyu binası, ışıklı pencereler
+    rect(c, x - 10, base - 14, w + 20, 14, col)
+    for (let wx = x - 6; wx < x + w + 8; wx += 6) rect(c, wx, base - 10, 3, 4, lit)
+  }
+  return {
+    far: layer((c) => {
+      // puslu Karadeniz: arkada yağmura gömülü sırtlar, önde gri-yeşil deniz; ufukta kömür gemisi
+      const sea = B - 92
+      hills(c, '#8e9ca2', B - 158, 22, 2, 3901)
+      hills(c, s.far, B - 128, 28, 3, 3902)
+      for (let i = 0; i < 26; i++) rect(c, (i * 97) % LAYER_W, B - 190 + ((i * 29) % 70), 1, 9 + (i % 3) * 4, 'rgba(220,228,232,0.22)')
+      rect(c, 0, sea, LAYER_W, B - sea, '#4e6c78')
+      rect(c, 0, sea, LAYER_W, 1, '#b6c6ca')
+      rect(c, 0, sea + 1, LAYER_W, 5, '#5e7c86')
+      for (let i = 0; i < 44; i++) rect(c, (i * 67) % LAYER_W, sea + 5 + ((i * 13) % 50), 5 + (i % 4) * 4, 1, i % 3 ? 'rgba(200,218,222,0.4)' : 'rgba(240,246,246,0.55)')
+      // kömür gemisi: koyu gövde, kıç köşkü, iki vinç
+      const gx = 400
+      rect(c, gx, sea - 5, 60, 5, '#2e3438')
+      rect(c, gx + 2, sea - 1, 56, 1, '#8a3a2a')
+      rect(c, gx + 48, sea - 13, 9, 8, '#d8d6cc')
+      rect(c, gx + 50, sea - 11, 5, 1, '#3e4a52')
+      rect(c, gx + 52, sea - 17, 2, 4, '#2e3438')
+      for (const dx of [14, 30]) {
+        rect(c, gx + dx, sea - 16, 1, 11, '#2e3438')
+        seg(c, gx + dx, sea - 16, gx + dx + 7, sea - 8, '#2e3438')
+      }
+      // pus şeritleri
+      for (let i = 0; i < 16; i++) rect(c, (i * 83) % LAYER_W, B - 172 + ((i * 31) % 70), 42 + (i % 3) * 24, 2, 'rgba(214,222,222,0.3)')
+    }),
+    mid: layer((c) => {
+      const r = rng(3903)
+      const base = B - 58
+      // koyu yeşil yamaç: soldan yükselen sırt, yamaca tutunmuş evler
+      const top = (x: number) => base - Math.max(0, 74 - Math.abs(x - 110) * 0.42) - 6 * Math.sin(x / 31) - 8
+      for (let x = 0; x < LAYER_W; x++) {
+        const y = Math.round(Math.min(base - 4, top(x)))
+        rect(c, x, y, 1, B - y, s.mid)
+        rect(c, x, y, 1, 1, '#5e7a5c')
+        if (x % 9 < 4) rect(c, x, y + 1, 1, 2, '#4a6650')
+      }
+      // yamaçta ağaç kümeleri
+      for (let i = 0; i < 26; i++) {
+        const x = 6 + ((i * 53) % 290)
+        const y = Math.round(top(x)) + 6 + ((i * 7) % 10)
+        disc(c, x, y, 4, '#2e4436')
+        rect(c, x - 2, y - 3, 2, 1, '#557a54')
+      }
+      // yamaç evleri: basamak basamak, beyaz ve pastel cephe, kiremit çatı, sarı ışıklı pencere
+      const FACE = ['#e8e4da', '#d8c8a8', '#c8d4d0', '#e0c8b8']
+      for (let x = 16; x < 300; x += 18 + Math.floor(r() * 8)) {
+        const w = 12 + Math.floor(r() * 6)
+        const h = 10 + Math.floor(r() * 8)
+        const y = Math.round(top(x + w / 2)) + 10 + Math.floor(r() * 10)
+        rect(c, x, y - h, w, h + 6, FACE[Math.floor(r() * FACE.length)])
+        rect(c, x + w - 2, y - h, 2, h + 6, 'rgba(40,40,50,0.25)')
+        for (let i = 0; i < 4; i++) rect(c, x - 1 + i, y - h - 1 - i, w + 2 - i * 2, 1, i % 2 ? '#9a4232' : '#8a3a2c')
+        for (let wx = x + 2; wx < x + w - 2; wx += 4) rect(c, wx, y - h + 3, 2, 3, r() > 0.45 ? '#f2c860' : '#3e4a58')
+      }
+      // Çatalağzı bacası: kırmızı-beyaz kuşaklı, tepesinden duman
+      const cx = 620
+      for (let y = base - 120; y < base; y++) {
+        const hw = 3 + Math.round((y - (base - 120)) / 40)
+        rect(c, cx - hw, y, hw * 2, 1, Math.floor((y - (base - 120)) / 10) % 2 ? '#e8e4dc' : '#b83a2e')
+      }
+      for (let i = 0; i < 7; i++) disc(c, cx - 8 - i * 9, base - 128 - i * 3, 5 + i, `rgba(196,200,204,${0.55 - i * 0.06})`)
+      // kömür yığınları: kara tepeler, üstünde parlak kırıntı
+      for (const [hx, hw, hh] of [[300, 46, 22], [452, 34, 16], [560, 52, 26]] as const) {
+        for (let x = -hw; x <= hw; x++) {
+          const yy = Math.round(hh * (1 - (x * x) / (hw * hw)) + Math.sin(x * 0.7) * 1.2)
+          rect(c, hx + x, base - yy, 1, yy + 4, '#1c1c20')
+          if (x < 0 && (x * 7) % 5 === 0) rect(c, hx + x, base - yy + 1, 1, 1, '#6a6a72')
+        }
+        for (let i = 0; i < 6; i++) rect(c, hx - hw / 2 + ((i * 11) % hw), base - hh * 0.5 + ((i * 5) % 8), 1, 1, '#9a9aa4')
+      }
+      // maden kuyusu kuleleri (Kozlu, Üzülmez): koyu demir kafes, pencerelerde lamba ışığı
+      headframe(c, 370, base, 108, '#2a2e32', '#f2b04a', 0.4)
+      headframe(c, 505, base, 76, '#363a3e', '#f2b04a', 1.1)
+      // bant konveyör: kuleden yığına eğik
+      seg(c, 352, base - 30, 300, base - 22, '#2a2e32', 2)
+      for (let x = 304; x < 350; x += 8) rect(c, x, base - 24 - (x - 304) * 0.15, 1, 24 + (x - 304) * 0.15, '#2a2e32')
+      rect(c, 0, base, LAYER_W, B - base, s.mid)
+      rect(c, 0, base, LAYER_W, 1, '#5a6e5a')
+    }),
+    near: layer((c) => {
+      const r = rng(3904)
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      rect(c, 0, base, LAYER_W, 1, '#4a4c52')
+      // dekovil: iki ray, traversler
+      for (let x = 0; x < LAYER_W; x += 6) rect(c, x, base - 2, 4, 2, '#4a3a2e')
+      rect(c, 0, base - 3, LAYER_W, 1, '#8a8e96')
+      // liman vinci: kafes kule, makine dairesi, öne uzanan bom, sarkan kanca
+      const vx = 470
+      const VC = '#3a3e44'
+      for (const k of [0, 1]) seg(c, vx + k * 22, base - 3, vx + 6 + k * 10, base - 70, VC, 2)
+      for (let y = base - 66; y < base - 6; y += 10) {
+        const f = (base - y) / 70
+        seg(c, vx + f * 6, y, vx + 22 - f * 12, y + 10, VC)
+        rect(c, vx + f * 6, y, 22 - f * 18, 1, VC)
+      }
+      rect(c, vx + 2, base - 84, 24, 14, '#d89a2a')
+      rect(c, vx + 2, base - 84, 24, 2, '#f2c050')
+      rect(c, vx + 18, base - 80, 5, 4, '#3e4a58')
+      seg(c, vx + 14, base - 84, vx + 14, base - 100, VC, 2)
+      seg(c, vx + 4, base - 80, vx - 70, base - 104, VC, 2)
+      seg(c, vx + 14, base - 100, vx - 70, base - 104, VC)
+      seg(c, vx + 14, base - 100, vx + 34, base - 82, VC)
+      rect(c, vx + 32, base - 84, 6, 6, VC)
+      rect(c, vx - 70, base - 104, 1, 46, '#2a2c30')
+      rect(c, vx - 72, base - 58, 5, 2, '#2a2c30')
+      rect(c, vx - 72, base - 56, 1, 3, '#2a2c30')
+      // vagonetler: kömürle dolu, ray üstünde
+      for (const x of [40, 72, 104, 250, 282]) {
+        rect(c, x + 2, base - 4, 3, 2, '#1a1a1e')
+        rect(c, x + 17, base - 4, 3, 2, '#1a1a1e')
+        rect(c, x, base - 14, 22, 10, '#5a3e2e')
+        rect(c, x, base - 14, 22, 1, '#7a5a42')
+        rect(c, x + 1, base - 11, 20, 1, '#3e2a1e')
+        for (let i = 0; i < 6; i++) disc(c, x + 3 + i * 3.2, base - 15, 2, '#1c1c20')
+        rect(c, x + 5, base - 17, 1, 1, '#8a8a94')
+        rect(c, x + 22, base - 9, 4, 1, '#2a2a2e')
+      }
+      // maden lambalı direkler: turuncu ışık
+      for (const x of [170, 360, 600]) {
+        rect(c, x, base - 34, 2, 34, '#2a2c30')
+        rect(c, x - 3, base - 36, 8, 2, '#2a2c30')
+        rect(c, x - 2, base - 34, 6, 3, '#f2a12e')
+        disc(c, x + 1, base - 31, 6, 'rgba(242,170,60,0.18)')
+      }
+      // kıyı kayaları ve yabani otlar
+      for (let x = 130; x < LAYER_W; x += 30 + Math.floor(r() * 20)) {
+        if (x > 230 && x < 320) continue
+        if (x > 440 && x < 500) continue
+        disc(c, x, base - 1, 4 + Math.floor(r() * 3), '#34363c', true)
+        rect(c, x - 2, base - 5, 3, 1, '#565a60')
+        for (let i = 0; i < 3; i++) rect(c, x + 5 + i * 2, base - 3 - (i % 2) * 2, 1, 3 + (i % 2) * 2, '#3e5a36')
+      }
+    }),
+  }
+}
+
 /* ── Düşmanlar: tür adları (çizimleri enemyDraw.ts) ───────────── */
 const SNOWY: CityKey[] = ['sivas', 'ardahan', 'bayburt', 'erzurum']
 
 /** Haritadaki düşman türünün o şehirdeki hayvanı (enemyDraw ve rehber aynı adı kullanır). */
-export function enemySpecies(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie', city: CityKey): string {
+export function enemySpecies(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie' | 'shark' | 'piranha', city: CityKey): string {
   if (kind === 'magpie') return 'magpie'
+  if (kind === 'shark') return 'shark'
+  if (kind === 'piranha') return 'piranha'
   if (kind === 'hopper') return SNOWY.includes(city) ? 'hare' : 'frog'
   if (kind === 'charger') return 'ram'
   if (kind === 'bat') return 'bat'
@@ -3159,7 +3367,7 @@ export function enemySpecies(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'ba
 
 export const CREATURE_NAMES: Record<string, string> = {
   gull: 'Gökçekuş', bee: 'Arı', raven: 'Kuzgun', mosquito: 'Sivrisinek', frog: 'Kurbağa', hare: 'Tavşan', ram: 'Koç', bat: 'Yarasa',
-  hedgehog: 'Kirpi', boar: 'Yaban Domuzu', crab: 'Yengeç', pigeon: 'Güvercin', goat: 'Keçi', scorpion: 'Akrep', wolf: 'Kurt',
-  snake: 'Yılan', lizard: 'Kertenkele', rat: 'Fare', wasp: 'Eşek Arısı', magpie: 'Saksağan',
+  hedgehog: 'Kirpi', boar: 'Yaban Domuzu', crab: 'Yengeç', pigeon: 'Güvercin', goat: 'Keçi', scorpion: 'Akrep', wolf: 'Gökçekurt',
+  snake: 'Yılan', lizard: 'Kertenkele', rat: 'Fare', wasp: 'Eşek Arısı', magpie: 'Saksağan', shark: 'Esoli', piranha: 'Pirana',
   cat: 'Sokak Kedisi', flamingo: 'Flamingo', angora: 'Ankara Keçisi', vanCat: 'Van Kedisi', lion: 'Hitit Aslanı', cow: 'İnek', kangal: 'Kangal', horse: 'At', partridge: 'Keklik', turtle: 'Caretta Caretta',
 }
