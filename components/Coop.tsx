@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { ItemIcon, Key } from '@/components/HudBits'
 import Portrait, { PortraitFace } from '@/components/Portrait'
-import { KEYS, KEY_HINTS } from '@/components/Race'
+import { duoHints } from '@/components/Race'
+import type { DuoKeys } from '@/game/input'
+import { DuoRemap } from '@/components/KeyRemap'
 import { Overlay, displayName, ic } from '@/components/ui'
 import type { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
@@ -48,8 +50,8 @@ export function coopLevel(level: number, boss: CoopBoss | null): LevelDef {
   return { ...bossLevel(A), bossOf: A.city, bossOf2: boss.b !== null ? LEVELS[boss.b].city : undefined, bossBoost: COOP_DIFF[boss.diff].boost }
 }
 
-/** Co-op kurulumu: Şehir Yolu ya da Boss Kapışması, iki kılık. Klavyede solda WASD + X, sağda ok tuşları + Enter; ya da iki oyun kolu. */
-export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlocked: number; hero: CharacterId; canPlay: boolean; onStart: (level: number, heroes: [CharacterId, CharacterId], boss: CoopBoss | null) => void; onBack: () => void }) {
+/** Co-op kurulumu: Şehir Yolu ya da Boss Kapışması, iki kılık. Tuşlar oyuncunun ataması (varsayılan: solda WASD + Shift, sağda ok tuşları + Enter); ya da iki oyun kolu. */
+export function CoopSetup({ unlocked, hero, canPlay, keys, onStart, onBack }: { unlocked: number; hero: CharacterId; canPlay: boolean; keys: DuoKeys; onStart: (level: number, heroes: [CharacterId, CharacterId], boss: CoopBoss | null) => void; onBack: () => void }) {
   const t = useT()
   const lng = useLang()
   const open = LEVELS.slice(0, Math.min(unlocked, LEVELS.length - 1) + 1)
@@ -74,7 +76,7 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
             <p className="text-[12px] font-bold tracking-[0.18em] text-teal">{t('CO-OP · 2 KİŞİ')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{mode === 'yol' ? t('Birlikte Yolculuk') : t('Boss Kapışması')}</h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
+          <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {ic(t('← Geri'))}
           </button>
         </div>
@@ -108,7 +110,7 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
                     <span className="block text-[12px] font-bold tracking-[0.15em]">{t('{n}. OYUNCU', { n: k + 1 })}</span>
                     <span className="block font-display text-[15px] text-cream">{CHARACTERS[heroes[k]].short}</span>
                     <span className="mt-1 flex flex-nowrap gap-0.5">
-                      {KEY_HINTS[k].flat().map((c) => (
+                      {duoHints(keys, lng === 'en' ? 'en' : 'tr')[k].flat().map((c) => (
                         <Key key={c}>{c}</Key>
                       ))}
                     </span>
@@ -187,7 +189,9 @@ export function CoopSetup({ unlocked, hero, canPlay, onStart, onBack }: { unlock
  * ile aynı adımda yürür. Kamera ikisinin ortasına bakar; aradaki uzaklık görünür alanı aşınca geride kalan öne ışınlanır.
  * İlerlemeye ve rekorlara dokunmaz.
  */
-export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: LevelDef; heroes: [CharacterId, CharacterId]; sound: Sound | null; onDone: (r: CoopResult) => void; onQuit: () => void }) {
+export default function Coop({ level, heroes, sound, keys, onKeys, onDone, onQuit }: { level: LevelDef; heroes: [CharacterId, CharacterId]; sound: Sound | null; /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */ keys: DuoKeys; onKeys: (k: DuoKeys) => void; onDone: (r: CoopResult) => void; onQuit: () => void }) {
+  const keysRef = useRef(keys)
+  keysRef.current = keys
   const t = useT()
   const lang = useLang()
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -234,8 +238,8 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
       if (e.repeat) return
       if (k === 'Escape' || k === 'KeyP') togglePause()
       latch.forEach((s, i) => {
-        if ((KEYS[i].jump as readonly string[]).includes(k)) s.jump = true
-        if ((KEYS[i].dash as readonly string[]).includes(k)) s.dash = true
+        if (keysRef.current[i].jump.includes(k)) s.jump = true
+        if (keysRef.current[i].dash.includes(k)) s.dash = true
       })
     }
     const up = (e: KeyboardEvent) => {
@@ -252,12 +256,12 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
 
     const sample = (i: number): Input => {
       const s = latch[i]
-      const m = KEYS[i]
+      const m = keysRef.current[i]
       const has = (list: readonly string[]) => list.some((code) => keys.has(code))
       const inp = emptyInput()
       inp.left = has(m.left)
       inp.right = has(m.right)
-      inp.up = has(m.up)
+      inp.up = has(m.jump)
       inp.down = has(m.down)
       inp.jump = has(m.jump)
       const p = (typeof navigator !== 'undefined' && navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [])[i]
@@ -386,7 +390,7 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
             </p>
           </div>
           <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center gap-6 text-[13px] text-cream">
-            {KEY_HINTS.map((g) => g.flat()).map((ks, k) => (
+            {duoHints(keys, lang === 'en' ? 'en' : 'tr').map((g) => g.flat()).map((ks, k) => (
               <span key={k} className="flex items-center gap-1 bg-ink/80 px-2 py-1">
                 <span className="mr-1 font-bold text-muted">{k + 1}.</span>
                 {ks.map((c) => (
@@ -412,7 +416,7 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
       )}
       {paused && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/70 p-4">
-          <div className="pixel-panel w-full max-w-xs p-5 text-center">
+          <div className="pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto p-5 text-center short:p-3">
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('MOLA')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream">{t('Birlikte Mola')}</h2>
             <div className="mt-4 grid gap-2.5">
@@ -429,6 +433,10 @@ export default function Coop({ level, heroes, sound, onDone, onQuit }: { level: 
               <button className="pixel-btn justify-center" onClick={onQuit}>
                 {t('Yolculuğu Bırak')}
               </button>
+            </div>
+            {/* oyunu bırakmadan tuşlar değişir: girdi hemen uyar */}
+            <div className="mt-4 text-left short:mt-2">
+              <DuoRemap keys={keys} onChange={onKeys} compact />
             </div>
           </div>
         </div>

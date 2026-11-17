@@ -7,7 +7,7 @@ import { cityVersion, legacyVersion } from './mapVersion'
  * taşınsın. Haritanın kendisi değişince artırılmaz: o iş şehir başına sürümün (lib/mapVersion.ts), yalnız değişen
  * şehrin rekoru yenilenir.
  */
-export const MAP_VERSION = 11
+export const MAP_VERSION = 12
 /** bu sürümden önceki süreler geçersiz: bölümlere final eklendi */
 const TIMES_SINCE = 4
 
@@ -23,6 +23,8 @@ const TWENTY_EIGHT = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'ca
 const THIRTY = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt']
 /** Giresun, Tokat ve Denizli’den önceki 35 şehir (harita sürümü 10) */
 const THIRTY_FIVE = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri']
+/** Zonguldak’tan önceki 38 şehir (harita sürümü 11) */
+const THIRTY_EIGHT = [...THIRTY_FIVE, 'giresun', 'tokat', 'denizli']
 const NINETEEN = ['istanbul', 'kocaeli', 'canakkale', 'izmir', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'ardahan', 'bayburt']
 
 /** Eski sürümlerin şehir sırası: açılan şehir dizinini kimliğiyle yeni sıraya taşımak için */
@@ -37,6 +39,7 @@ const ORDERS: Record<number, string[]> = {
   8: TWENTY_EIGHT,
   9: THIRTY,
   10: THIRTY_FIVE,
+  11: THIRTY_EIGHT,
 }
 
 export interface Best {
@@ -90,6 +93,8 @@ export interface Save {
   splitTimes?: Record<string, { v: string; t: number[] }>
   /** yeniden atanmış klavye tuşları (game/input.ts KeyBindings) */
   keys?: Partial<Record<'left' | 'right' | 'down' | 'jump' | 'dash', string[]>>
+  /** iki kişilik tuşlar (Co-op, Yan Yana Yarış): oyuncu başına atama; yoksa DEFAULT_DUO */
+  duoKeys?: Partial<Record<'left' | 'right' | 'down' | 'jump' | 'dash', string[]>>[]
   /** en iyi koşunun hayaleti görünsün mü */
   ghost: boolean
   player: Player | null
@@ -369,13 +374,51 @@ export function adoptable(local: Save, playerId: string): Save {
   return owner === null || owner === playerId ? local : clearProgress(local)
 }
 
-export function writeSave(s: Save) {
+/**
+ * Kaydı cihaza yazar; kayıt her şeyden önce gelir. Depo doluysa (hayalet koşular yer kaplar) önce eski haritaların ve
+ * en büyük hayaletler silinip yeniden denenir: ilerleme hayalet yüzünden asla yazılmadan kalmaz. Başarıyı döner.
+ */
+export function writeSave(s: Save): boolean {
+  const text = JSON.stringify(s)
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      localStorage.setItem(KEY, text)
+      return true
+    } catch {
+      if (!freeGhostSpace()) return false
+    }
+  }
+  return false
+}
+
+/** Depoda yer açar: en büyük hayalet koşuyu (eski önek dahil) siler. Silecek bir şey yoksa false. */
+export function freeGhostSpace(): boolean {
   try {
-    localStorage.setItem(KEY, JSON.stringify(s))
+    let big: [string, number] | null = null
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k || !/^(seksek|memleket):ghost:/.test(k)) continue
+      const n = localStorage.getItem(k)?.length ?? 0
+      if (!big || n > big[1]) big = [k, n]
+    }
+    if (!big) return false
+    localStorage.removeItem(big[0])
+    return true
   } catch {
-    /* gizli sekme vb. — ilerleme bu oturumla sınırlı kalır */
+    return false
   }
 }
+
+/** Başka sekmenin yazdığı kayıt (storage olayı): okunabilirse normalleştirilmiş hâli */
+export function parseSaveText(text: string | null): Save | null {
+  if (!text) return null
+  try {
+    return normalizeSave(JSON.parse(text) as Partial<Save>)
+  } catch {
+    return null
+  }
+}
+export const SAVE_KEY = KEY
 
 export function formatTime(ms: number) {
   const m = Math.floor(ms / 60000)

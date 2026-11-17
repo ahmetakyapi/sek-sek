@@ -10,7 +10,7 @@ import { TerrainHD } from './terrainDraw'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
-import { BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, NITRO, PHYS, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
+import { AIR, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, NITRO, PHYS, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, WATER, hammerState, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -103,6 +103,8 @@ export class Renderer {
   /** boss'u çizilen şehir (özel haritada başka şehrin boss'u olabilir) */
   bossCity: CityKey = 'istanbul'
   bossCity2: CityKey = 'istanbul'
+  /** Van gölünün canavarının dolaştığı su yüzeyleri (dünya pikseli) */
+  private lakeRuns: { x0: number; x1: number; y: number }[] = []
   shakeScale = 1
   /** Karanlık Yol (zor mod): karakterin çevresindeki küçük ışığın ötesi karanlık */
   dark = false
@@ -219,6 +221,20 @@ export class Renderer {
     this.marksFor = world.level.id
     this.bossCity = world.level.bossOf ?? world.level.city
     this.bossCity2 = world.level.bossOf2 ?? this.bossCity
+    // Van: gölün canavarı geniş su yüzeylerinde (en az 6 karo) dolaşır; yüzeyler bir kez bulunur
+    this.lakeRuns = []
+    if (this.city === 'van')
+      for (let ty = 1; ty < world.rows; ty++) {
+        let s0 = -1
+        for (let tx = 0; tx <= world.cols; tx++) {
+          const top = world.tile(tx, ty) === WATER && world.tile(tx, ty - 1) !== WATER && world.tile(tx, ty - 1) !== SWIM
+          if (top && s0 < 0) s0 = tx
+          if (!top && s0 >= 0) {
+            if (tx - s0 >= 6) this.lakeRuns.push({ x0: s0 * T, x1: tx * T, y: ty * T + 6 })
+            s0 = -1
+          }
+        }
+      }
     this.layers = buildLayers(this.city)
     this.world = world
     this.terrain = null
@@ -385,10 +401,29 @@ export class Renderer {
         this.pop(p.x + p.w / 2, p.y - 8, this.lang === 'en' ? 'Evil eye, begone!' : 'Nazar değmesin!', '#7ad8ff', true)
         this.flash = 0.08
         break
-      case 'respawn':
+      case 'swim': {
+        // kulaç: yüzeye yakınsa su sıçrar, derindeyse kabarcık bulutu
+        const head = this.world?.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y - 4) / T))
+        if (head !== SWIM) this.burst(p.x + p.w / 2, p.y + 2, 8, '#e8fbff', 70, 1)
+        else this.burst(p.x + p.w / 2, p.y + 4, 5, 'rgba(235,252,255,0.8)', 30, 1)
+        break
+      }
+      case 'drown':
+        this.burst(p.x + p.w / 2, p.y, 10, '#bfefff', 60, 1)
+        this.pop(p.x + p.w / 2, p.y - 10, this.lang === 'en' ? 'Out of breath!' : 'Nefes bitti!', '#bfefff', true)
+        break
+      case 'respawn': {
+        // uzaktan doğuşta kamera bölümü boydan boya taramaz: yeni yere sıçrar (yakınsa yumuşakça kayar)
+        const tx = p.x - this.viewW / 2
+        const ty = p.y - this.viewH * 0.55
+        if (Math.abs(tx - this.camX) > this.viewW * 0.6 || Math.abs(ty - this.camY) > this.viewH * 0.6) {
+          ;[this.camX, this.camY] = clampCam(w, tx, ty, this.viewW, this.viewH)
+          this.cam = { x: this.camX, y: this.camY }
+        }
         this.stompChain = 0
         this.wallChain = 0
         break
+      }
       case 'crumble':
         break
       case 'perfect':
@@ -400,7 +435,7 @@ export class Renderer {
         // nitro tüpü alındı: turuncu kıvılcım, yazı; alev izi koşu boyunca drawParticles öncesinde eklenir
         this.burst(p.x + p.w / 2, p.y + p.h / 2, 16, '#ff9a3c', 100, 1)
         this.burst(p.x + p.w / 2, p.y + p.h / 2, 8, '#ffe27a', 70, 1)
-        this.pop(p.x + p.w / 2, p.y - 6, 'Nitro!', '#ff9a3c')
+        this.pop(p.x + p.w / 2, p.y - 6, this.lang === 'en' ? 'Nitro! Run fast' : 'Nitro! Hızlı koş', '#ff9a3c')
         this.kick = { t: this.t, dx: p.facing, dy: 0 }
         break
       case 'crystal':
@@ -677,6 +712,8 @@ export class Renderer {
     f.fillRect(-vw / 2, -vw / 2, vw, vw)
     f.restore()
 
+    // Van gölünün canavarı ön tampondan (su) önce: su gövdesinin altını örter, hörgüçler sudan çıkar
+    if (this.lakeRuns.length) this.drawLakeMonster(hdX, hdY)
     c.drawImage(this.fbuf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
 
     this.drawRopesHD(w, hdX, hdY)
@@ -684,6 +721,7 @@ export class Renderer {
     this.drawCratesHD(w, hdX, hdY)
     this.drawBossHD(w, hdX, hdY)
     this.drawHeroes(hdX, hdY)
+    this.drawBreath(w, hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
     if (this.dark) this.drawDarkness(w, hdX, hdY)
     this.drawLabels(w, hdX, hdY)
@@ -1221,6 +1259,34 @@ export class Renderer {
           rect(b, cx, bot - 22, 1, 2, '#e8d8b0')
           rect(b, cx - 2, bot - 23, 1, 2, '#e8d8b0')
           rect(b, cx + 2, bot - 23, 1, 2, '#e8d8b0')
+        }
+        break
+      }
+      case 'zonguldak': {
+        // madenci tezgâhı: tezgâhta lambalı baretler ve kömür sepeti, tentede sallanan madenci lambaları
+        rect(b, x - 4, bot - 8, 26, 8, '#5a3e2a')
+        rect(b, x - 4, bot - 8, 26, 1, '#7a5a40')
+        for (const [dx, col] of [[-3, '#f2c232'], [4, '#f4f2ea']] as const) {
+          rect(b, x + dx, bot - 12, 6, 4, col)
+          rect(b, x + dx + 1, bot - 13, 4, 1, col)
+          rect(b, x + dx - 1, bot - 9, 8, 1, col)
+          rect(b, x + dx + 4, bot - 12, 2, 2, '#ffe28a')
+        }
+        rect(b, x + 12, bot - 13, 9, 5, '#6a4a30')
+        rect(b, x + 12, bot - 11, 9, 1, '#4a3220')
+        for (let i = 0; i < 4; i++) rect(b, x + 12 + i * 2, bot - 15 + (i % 2), 2, 2, '#1c1c22')
+        rect(b, x + 15, bot - 15, 1, 1, '#9aa4c0')
+        rect(b, x - 6, bot - 31, 1, 23, '#3a2a1e')
+        rect(b, x + 25, bot - 31, 1, 23, '#3a2a1e')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#2a2a30' : '#f2a12e')
+        for (let i = 0; i < 3; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.6 + i * 1.4) * 0.8)
+          const lx = x + 1 + i * 8 + sw
+          rect(b, lx + 1, bot - 29, 1, 4, '#3a2a1e')
+          rect(b, lx, bot - 25, 3, 1, '#c8963a')
+          rect(b, lx, bot - 24, 3, 3, '#ffd04a')
+          rect(b, lx + 1, bot - 23, 1, 1, '#fff6c0')
+          rect(b, lx, bot - 21, 3, 1, '#c8963a')
         }
         break
       }
@@ -1898,6 +1964,27 @@ export class Renderer {
         rect(b, x + 8, bot - 19, 1, 1, '#2a2420')
         break
       }
+      case 'zonguldak': {
+        // Uzun Mehmet anıtı: taş kaidede tunç madenci, elinde havaya kaldırdığı kara elmas, omzunda kazma
+        rect(b, x + 2, bot - 7, 12, 7, '#8a8a84')
+        rect(b, x + 2, bot - 7, 12, 1, '#b0b0a8')
+        rect(b, x + 1, bot - 1, 14, 1, '#5e5e58')
+        rect(b, x + 5, bot - 5, 6, 1, '#d8a548')
+        rect(b, x + 6, bot - 12, 2, 5, '#4a3e30')
+        rect(b, x + 9, bot - 12, 2, 5, '#4a3e30')
+        rect(b, x + 5, bot - 20, 7, 8, '#5a4a38')
+        rect(b, x + 5, bot - 20, 1, 8, '#7a6a52')
+        rect(b, x + 6, bot - 24, 4, 4, '#5a4a38')
+        rect(b, x + 6, bot - 25, 4, 1, '#3e3428')
+        rect(b, x + 12, bot - 24, 1, 5, '#5a4a38')
+        rect(b, x + 12, bot - 27, 2, 3, '#1c1c22')
+        rect(b, x + 13, bot - 27, 1, 1, '#9aa4c0')
+        rect(b, x + 3, bot - 22, 1, 10, '#6a4a30')
+        rect(b, x + 1, bot - 23, 5, 1, '#8e939c')
+        rect(b, x + 1, bot - 22, 1, 1, '#8e939c')
+        if (Math.sin(this.t * 2.2) > 0.6) rect(b, x + 14, bot - 28, 1, 1, '#ffffff')
+        break
+      }
       case 'denizli': {
         // Denizli horozu heykeli: uzun bacaklı, iri ibikli, orak kuyruklu; taş kaidede
         rect(b, x + 1, bot - 5, 14, 5, '#d8d0bc')
@@ -2426,15 +2513,26 @@ export class Renderer {
         const dk = Math.min(0.42, depth * 0.11)
         if (dk > 0) rect(b, x, y, T, T, `rgba(8,14,36,${dk.toFixed(2)})`)
         else rect(b, x, y + 12, T, 4, 'rgba(8,14,36,0.06)')
-        if (surface) {
+        // öldüren su yüzülen sudan ayrı okunsun: daha koyu ve bulanık, yüzeyinde sivri köpük dişleri (girilmez)
+        if (kind === WATER) rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), `rgba(10,8,28,${Math.min(0.55, 0.28 + depth * 0.1).toFixed(2)})`)
+        if (surface && kind === WATER) {
+          const off = Math.floor(this.t * 5)
+          for (let i = 0; i < 16; i++) {
+            const k = (i + off + tx * 3) % 4
+            // sivri diş: tepe beyaz, etek mavimsi; sırayla kayar (yüzülen suyun yuvarlak dalgasından belirgin farklı)
+            const h = k === 0 ? 4 : k === 1 || k === 3 ? 2 : 1
+            rect(b, x + i, y + 7 - h, 1, h, k === 0 ? 'rgba(248,250,255,1)' : 'rgba(200,214,236,0.85)')
+          }
+          rect(b, x, y + 7, T, 1, 'rgba(10,8,28,0.6)')
+        } else if (surface) {
           for (let i = 0; i < 16; i++) {
             const h = Math.round(Math.sin(this.t * 3 + (x + i) * 0.35) * 1.2)
             rect(b, x + i, y + 6 + h, 1, 2, pal[2])
             // dalga tepesinde köpük
             if (h < 0) rect(b, x + i, y + 6 + h, 1, 1, 'rgba(240,250,255,0.75)')
           }
-          // kayan pırıltılar
-          for (let g = 0; g < 2; g++) {
+          // kayan pırıltılar (yalnız yüzülen suda: berrak)
+          for (let g = 0; g < (kind === SWIM ? 2 : 0); g++) {
             const gx = Math.floor((this.t * (14 + g * 6) + tx * 37 + g * 9) % 16)
             if ((Math.floor(this.t * 2 + tx + g) & 3) !== 0) rect(b, x + gx, y + 9 + g * 3, 2, 1, 'rgba(255,255,255,0.55)')
           }
@@ -2590,7 +2688,9 @@ export class Renderer {
         const py = Math.round(pr.y + pr.h / 2)
         disc(b, px - Math.sign(pr.vx) * 3, py - (pr.vy ? Math.sign(pr.vy) * 2 : 0), 2, 'rgba(255,255,255,0.3)')
         disc(b, px, py, 4, '#120f1a')
-        disc(b, px, py, 3, s.accent)
+        // Kara Elmas Golemi kömür savurur: kara topak, kor gibi kenar
+        disc(b, px, py, 3, this.bossCity === 'zonguldak' ? '#2a2630' : s.accent)
+        if (this.bossCity === 'zonguldak') rect(b, px - 1, py + 1, 3, 1, '#f2a12e')
         rect(b, px - 2, py - 2, 2, 1, 'rgba(255,255,255,0.7)')
         continue
       }
@@ -2702,12 +2802,13 @@ export class Renderer {
     const g = this.ghostRun
     if (!g || !w.started) return
     const n = g.data.length / 3
-    const f = w.time * GHOST_HZ
+    // uzun koşunun hayaleti seyreltilmiş olabilir (step: örnek başına kaç kayıt adımı)
+    const f = (w.time * GHOST_HZ) / (g.step ?? 1)
     const i = Math.floor(f)
     if (i >= n - 1) return
     const k = f - i
     // kapıdan geçiş anı: iki örnek arası ışınlanma, çizme
-    if (Math.abs(g.data[i * 3 + 3] - g.data[i * 3]) > 48) return
+    if (Math.abs(g.data[i * 3 + 3] - g.data[i * 3]) > 48 * (g.step ?? 1)) return
     const x = g.data[i * 3] + (g.data[i * 3 + 3] - g.data[i * 3]) * k
     const y = g.data[i * 3 + 1] + (g.data[i * 3 + 4] - g.data[i * 3 + 1]) * k
     // oyuncuyla üst üste binince silikleşir, göz yormasın
@@ -2905,6 +3006,51 @@ export class Renderer {
           }
           c.stroke()
         }
+      }
+    }
+    // berrak su: dipten yükselen ışık huzmeleri ve kendi kendine çıkan kabarcıklar (saate bağlı, sütuna göre sabit)
+    for (let tx = x0; tx <= x1; tx++) {
+      for (let ty = y0; ty <= y1; ty++) {
+        if (w.tile(tx, ty) !== SWIM) continue
+        const lx = (tx * T - cx) * sc
+        const ly = (ty * T - cy) * sc
+        const band = Math.sin(this.t * 0.8 + tx * 0.9 + ty * 0.35)
+        if (band > 0.55) {
+          c.fillStyle = `rgba(220,252,255,${((band - 0.55) * 0.16).toFixed(3)})`
+          c.beginPath()
+          c.moveTo(lx + 3 * sc, ly)
+          c.lineTo(lx + 9 * sc, ly)
+          c.lineTo(lx + 6 * sc, ly + T * sc)
+          c.lineTo(lx, ly + T * sc)
+          c.closePath()
+          c.fill()
+        }
+        if ((tx * 13 + ty * 7) % 6 === 0) {
+          const ph = (this.t * 0.35 + ((tx * 31 + ty * 17) % 10) / 10) % 1
+          const bx = tx * T + 4 + ((tx * 5) % 8) + Math.sin(this.t * 2 + tx) * 1.5
+          const by = ty * T + T - ph * T
+          if (w.tile(Math.floor(bx / T), Math.floor(by / T)) === SWIM) {
+            c.strokeStyle = 'rgba(235,252,255,0.55)'
+            c.lineWidth = sc * 0.6
+            c.beginPath()
+            c.arc((bx - cx) * sc, (by - cy) * sc, sc * 0.9, 0, Math.PI * 2)
+            c.stroke()
+          }
+        }
+      }
+    }
+    // yüzenlerin ayak izi: ilerlerken arkada çırpınma kabarcıkları
+    for (const q of [w.player, w.partner]) {
+      if (!q || q.dead || !q.swim || Math.abs(q.vx) < 22) continue
+      c.fillStyle = 'rgba(240,253,255,0.7)'
+      for (let i = 0; i < 4; i++) {
+        const age = (this.t * 2.2 + i / 4) % 1
+        const bx = q.x + q.w / 2 - Math.sign(q.vx) * (8 + age * 14)
+        const by = q.y + q.h * 0.6 - age * 4 + Math.sin(this.t * 9 + i) * 1.5
+        if (w.tile(Math.floor(bx / T), Math.floor(by / T)) !== SWIM) continue
+        c.beginPath()
+        c.arc((bx - cx) * sc, (by - cy) * sc, sc * (1.1 - age * 0.6), 0, Math.PI * 2)
+        c.fill()
       }
     }
     // yüzen oyuncunun kabarcıkları (saatle yükselir, rastgele değil)
@@ -3137,6 +3283,123 @@ export class Renderer {
     }
   }
 
+  /**
+   * Van Gölü'nün canavarı (süs, zararsız): her geniş su yüzeyinde ~11 sn'lik turla ortaya çıkar, üç hörgüç ve başıyla
+   * yüzeyde süzülür, göz kırpar, sonra batar. Vektör, mürekkep hatlı; suyun altındaki yarısını su katmanı örter.
+   */
+  private drawLakeMonster(cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    // canavarın boyu: karakterden iri, gölün sahibi
+    const zs = sc * 1.6
+    for (const [i, r] of this.lakeRuns.entries()) {
+      const span = r.x1 - r.x0
+      if ((r.x1 - cx) * sc < -40 * sc || (r.x0 - cx) * sc > this.canvas.width + 40 * sc) continue
+      const period = 11
+      const u = ((this.t + i * 3.7) % period) / period
+      // yükselip batma: turun ortasında tam yüzeyde, uçlarda su altında
+      const rise = Math.max(0, Math.sin(u * Math.PI)) ** 0.6
+      if (rise < 0.04) continue
+      const dir = Math.floor((this.t + i * 3.7) / period) % 2 ? -1 : 1
+      const len = Math.min(96, span * 0.8)
+      const lead = r.x0 + 8 + (span - 16 - len) * (dir > 0 ? u : 1 - u) + (dir > 0 ? len : 0)
+      const y = (r.y - cy) * sc
+      const body = '#2f7a6a'
+      const dark = '#1f5a4e'
+      c.save()
+      c.lineJoin = 'round'
+      c.lineWidth = Math.max(1.5, sc * 0.9)
+      c.strokeStyle = '#120f1a'
+      // üç hörgüç: baştan kuyruğa küçülür, dalga gibi sırayla iner kalkar
+      for (let k = 0; k < 3; k++) {
+        const hx = (lead - dir * (24 + k * 22) - cx) * sc
+        const h = (7 - k * 1.4) * zs * rise * (0.75 + 0.25 * Math.sin(this.t * 3 + k * 1.3))
+        const rw = (6 - k) * zs
+        c.beginPath()
+        c.ellipse(hx, y + zs, rw, h, 0, Math.PI, 0)
+        c.fillStyle = k % 2 ? dark : body
+        c.fill()
+        c.stroke()
+        // sırt dikeni
+        c.beginPath()
+        c.moveTo(hx - rw * 0.3, y + zs - h * 0.9)
+        c.lineTo(hx, y + zs - h - zs * 2 * rise)
+        c.lineTo(hx + rw * 0.3, y + zs - h * 0.9)
+        c.fillStyle = '#e0b84a'
+        c.fill()
+        c.stroke()
+      }
+      // baş: boyun yayı + yuvarlak kafa, göz ve burun deliği
+      const nx = (lead - cx) * sc
+      const nh = 11 * zs * rise
+      c.beginPath()
+      c.moveTo(nx - dir * 5 * zs, y + zs)
+      c.quadraticCurveTo(nx - dir * 4 * zs, y - nh, nx + dir * 2 * zs, y - nh)
+      c.lineTo(nx + dir * 2 * zs, y - nh + 4 * zs)
+      c.quadraticCurveTo(nx, y - nh * 0.4, nx + dir * zs, y + zs)
+      c.closePath()
+      c.fillStyle = body
+      c.fill()
+      c.stroke()
+      c.beginPath()
+      c.ellipse(nx + dir * 4 * zs, y - nh + zs, 5 * zs, 3.6 * zs, 0, 0, Math.PI * 2)
+      c.fillStyle = body
+      c.fill()
+      c.stroke()
+      // göz: arada bir kırpar
+      const blink = (this.t * 0.9 + i) % 3 < 0.12
+      c.beginPath()
+      c.ellipse(nx + dir * 4.5 * zs, y - nh, 1.7 * zs, blink ? 0.3 * zs : 1.7 * zs, 0, 0, Math.PI * 2)
+      c.fillStyle = '#fff6d8'
+      c.fill()
+      c.stroke()
+      if (!blink) {
+        c.beginPath()
+        c.arc(nx + dir * 5.1 * zs, y - nh, 0.8 * zs, 0, Math.PI * 2)
+        c.fillStyle = '#120f1a'
+        c.fill()
+      }
+      c.fillStyle = dark
+      c.beginPath()
+      c.arc(nx + dir * 8 * zs, y - nh + 1.6 * zs, 0.5 * zs, 0, Math.PI * 2)
+      c.fill()
+      c.restore()
+    }
+  }
+
+  /** Nefes göstergesi: derin suda başın üstünde altı kabarcık; azaldıkça söner, son saniyelerde kızarır ve titrer */
+  private drawBreath(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    for (const p of [w.player, w.partner]) {
+      if (!p || p.dead || p.air >= AIR.max) continue
+      const n = 6
+      const left = Math.ceil((p.air / AIR.max) * n)
+      const warn = p.air < AIR.warn
+      const shake = warn ? Math.sin(this.t * 30) * sc * 0.6 : 0
+      const x0 = (p.x + p.w / 2 - cx) * sc - ((n - 1) * 5 * sc) / 2 + shake
+      const y = (p.y - 14 - cy) * sc
+      c.save()
+      c.lineWidth = Math.max(1.5, sc * 0.7)
+      c.strokeStyle = '#120f1a'
+      for (let i = 0; i < n; i++) {
+        const on = i < left
+        c.beginPath()
+        c.arc(x0 + i * 5 * sc, y, sc * (on ? 2 : 1.3), 0, Math.PI * 2)
+        c.fillStyle = on ? (warn ? '#ff7a6a' : '#bfefff') : 'rgba(191,239,255,0.25)'
+        c.fill()
+        if (on) c.stroke()
+        if (on && !warn) {
+          c.fillStyle = 'rgba(255,255,255,0.85)'
+          c.beginPath()
+          c.arc(x0 + i * 5 * sc - sc * 0.6, y - sc * 0.6, sc * 0.55, 0, Math.PI * 2)
+          c.fill()
+        }
+      }
+      c.restore()
+    }
+  }
+
   /** Karakterler büyütülmüş ana tuvalde, ekran çözünürlüğünde: oyun dünyası piksel, karakter elle çizilmiş */
   private drawHeroes(cx: number, cy: number) {
     const c = this.ctx
@@ -3220,7 +3483,7 @@ export class Renderer {
       // serbest stil: kollar karşıt evrede tam tur döner, bacaklar hızlı çırpar; gövde neredeyse yatay
       const a = (ph * 180) / Math.PI
       const pose: Pose = { arms: [[a % 360, (a % 360) - 25], [(a + 180) % 360, ((a + 180) % 360) - 25]], legs: [[-6 + Math.sin(ph * 2.2) * 16, 10], [6 - Math.sin(ph * 2.2) * 16, 10]], hair: 1.1, lift: 0.3 }
-      return { pose, rot: 1.3, pivot: size * 0.29, dy: -2, moving: true }
+      return { pose, rot: 1.3 + Math.sin(ph) * 0.06, pivot: size * 0.29, dy: -2 + Math.sin(ph * 2) * 0.8, moving: true }
     }
     // suda durma: dik, kollar yanlarda suyu iter, bacaklar bisiklet çevirir; kulaçta (yükselirken) kollar aşağı iter
     const up = p.vy < -60
@@ -3228,7 +3491,8 @@ export class Renderer {
     const pose: Pose = up
       ? { arms: [[-30, -10], [30, 10]], legs: [[-10, 8], [10, 8]], hair: 0.4, lift: -0.6 }
       : { arms: [[95 + k * 25, 70 + k * 25], [-95 - k * 25, -70 - k * 25]], legs: [[-18 + k * 22, 40], [18 - k * 22, 40]], hair: 0.7, lift: 0.4 }
-    return { pose, rot: 0, pivot: 0, dy: 2, moving: true }
+    // su üstünde hafifçe iner kalkar (yüzüyormuş gibi)
+    return { pose, rot: 0, pivot: 0, dy: 2 + Math.sin(this.t * 2.6 + p.x * 0.05) * 1.3, moving: true }
   }
 
   /** co-op eşinin karakteri (öbür kılık) */
@@ -3682,7 +3946,8 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   agri: 'GİRESUN',
   giresun: 'TOKAT',
   tokat: 'DENİZLİ',
-  denizli: null,
+  denizli: 'ZONGULDAK',
+  zonguldak: null,
 }
 
 function hexA(hex: string, a: number) {

@@ -55,7 +55,7 @@ const WAIT = MACROS.find((m) => m.wait === 0.5)!
 /** çıkışa kadar yeniden aranan yoldan harfiyen oynanan en çok makro (ize kavuşan kısa yol baştan sona oynanır) */
 const EXACT = 8
 
-const KIND: Record<Enemy['kind'], string> = { ground: 'yürüyen', fly: 'uçan', hopper: 'zıplayan', charger: 'koşan', bat: 'yarasa', spiky: 'dikenli', magpie: 'saksağan' }
+const KIND: Record<Enemy['kind'], string> = { ground: 'yürüyen', fly: 'uçan', hopper: 'zıplayan', charger: 'koşan', bat: 'yarasa', spiky: 'dikenli', magpie: 'saksağan', shark: 'Esoli', piranha: 'pirana' }
 
 function rng(seed: number) {
   let s = seed >>> 0

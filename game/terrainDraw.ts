@@ -26,7 +26,7 @@ const VAHEAD = 2
 /** haritanın altına sürdürülen satır: dikey ekranda kamera haritanın altını da gösterir, zemin orada düz bir banda dönmesin */
 const BELOW = 16
 
-type Material = 'brick' | 'ashlar' | 'cyclop' | 'strata' | 'earth' | 'rock'
+type Material = 'brick' | 'ashlar' | 'cyclop' | 'strata' | 'earth' | 'rock' | 'coal'
 type Cap = 'stone' | 'grass' | 'snow'
 
 const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
@@ -68,6 +68,8 @@ const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   tokat: { mat: 'brick', cap: 'stone' },
   // Pamukkale: katman katman traverten, üstü bembeyaz kabuk
   denizli: { mat: 'strata', cap: 'snow' },
+  // Kara Elmas: koyu şeyl tabakaları arasında parıltılı kömür damarları, üstü Karadeniz yamacının çimeni
+  zonguldak: { mat: 'coal', cap: 'grass' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 
@@ -509,7 +511,7 @@ export class TerrainHD {
       const mx1 = tx1 * T + MARGIN + 1
       const my0 = ty0 * T - MARGIN - 1
       const my1 = (ty1 + 1) * T + MARGIN + 1
-      if (look.mat === 'strata' || look.mat === 'earth') this.strata(c, look.mat, mx0, mx1, my0, my1)
+      if (look.mat === 'strata' || look.mat === 'earth' || look.mat === 'coal') this.strata(c, look.mat, mx0, mx1, my0, my1)
       else this.masonry(c, look.mat, mx0, mx1, my0, my1)
 
       // yüzeyin yaşanmışlığı: örtünün altından sarkan yosun, kök, akıntı izi, liken, çatlağa dolmuş kar
@@ -808,7 +810,7 @@ export class TerrainHD {
    * sıra çizgisi hafif dalgalanır, bazı taşlar ikiye bölünür, bazılarının köşesi kırıktır. Taş tonu konumdan seçilir
    * (yedi ton: açık, koyu, bir sıcak, bir soğuk). Aynı tondaki taşlar tek yolda toplanıp tek seferde boyanır.
    */
-  private masonry(c: Ctx, mat: Exclude<Material, 'strata' | 'earth'>, x0: number, x1: number, y0: number, y1: number) {
+  private masonry(c: Ctx, mat: Exclude<Material, 'strata' | 'earth' | 'coal'>, x0: number, x1: number, y0: number, y1: number) {
     const P = MASON[mat]
     const fills = this.tones.map(() => new Path2D())
     const lit = new Path2D()
@@ -939,11 +941,12 @@ export class TerrainHD {
 
   /**
    * Katmanlı zemin (tüf, traverten, toprak): kalınlığı ve tonu sıradan sıraya değişen dalgalı tabakalar; aralarında koyu
-   * dikiş ve altında ince ışık çizgisi. Tüfte tabaka boyunca uzanan oyuklar, toprakta gömülü çakıllar.
+   * dikiş ve altında ince ışık çizgisi. Tüfte tabaka boyunca uzanan oyuklar, toprakta gömülü çakıllar; kömürde şeyl
+   * tabakalarının arasında kapkara damarlar ve damarın içinde ışığı yakalayan küçük elmas yüzleri.
    */
-  private strata(c: Ctx, mat: 'strata' | 'earth', x0: number, x1: number, y0: number, y1: number) {
+  private strata(c: Ctx, mat: 'strata' | 'earth' | 'coal', x0: number, x1: number, y0: number, y1: number) {
     const s = CITY[this.city]
-    const band = mat === 'strata' ? 10 : 13
+    const band = mat === 'earth' ? 13 : mat === 'coal' ? 9 : 10
     const STEP = 6
     const xa = Math.floor(x0 / STEP) * STEP
     const xb = Math.ceil(x1 / STEP) * STEP
@@ -953,8 +956,11 @@ export class TerrainHD {
     const seam = new Path2D()
     const glow = new Path2D()
     const bed = new Path2D()
+    const seams: number[] = []
     for (let k = Math.floor(y0 / band) - 2; (k - 1) * band < y1; k++) {
-      c.fillStyle = tones[Math.floor(hash(k, 5, 27) * tones.length)]
+      const seamBand = mat === 'coal' && hash(k, 5, 31) < 0.34
+      if (seamBand) seams.push(k)
+      c.fillStyle = seamBand ? mix(s.tileDark, '#0e0e12', 0.55) : tones[Math.floor(hash(k, 5, 27) * tones.length)]
       c.beginPath()
       c.moveTo(xa, y1 + 8)
       for (let x = xa; x <= xb; x += STEP) {
@@ -988,6 +994,37 @@ export class TerrainHD {
     c.strokeStyle = 'rgba(30,16,36,0.14)'
     c.stroke(bed)
 
+    // kömür damarı: kırık yüzler (açık kurşuni eşkenar dörtgen) ve tek tük beyaz parıltı
+    if (seams.length) {
+      const facet = new Path2D()
+      const glint = new Path2D()
+      for (const k of seams)
+        for (let gx = Math.floor(xa / 9); gx * 9 < xb; gx++) {
+          if (hash(gx, k, 32) > 0.42) continue
+          const px = gx * 9 + hash(gx, k, 33) * 6
+          const top = lineY(k, px)
+          const py = top + (lineY(k + 1, px) - top) * (0.3 + hash(gx, k, 34) * 0.4)
+          const r = 0.9 + hash(gx, k, 35) * 1.1
+          facet.moveTo(px, py - r)
+          facet.lineTo(px + r * 0.9, py)
+          facet.lineTo(px, py + r * 0.7)
+          facet.lineTo(px - r * 0.9, py)
+          facet.closePath()
+          if (hash(gx, k, 36) < 0.35) {
+            glint.moveTo(px - r * 0.4, py - r * 0.2)
+            glint.lineTo(px + r * 0.1, py - r * 0.55)
+          }
+        }
+      c.fillStyle = mix(s.tileLight, '#9aa4c0', 0.45)
+      c.fill(facet)
+      c.strokeStyle = 'rgba(14,12,18,0.55)'
+      c.lineWidth = 0.4
+      c.stroke(facet)
+      c.strokeStyle = 'rgba(255,255,255,0.85)'
+      c.lineWidth = 0.55
+      c.stroke(glint)
+    }
+
     // tüfte oyuklar (üstü gölgeli, alt dudağı ışıklı), toprakta çakıllar (üstü ışıklı, mürekkep hatlı)
     const body = new Path2D()
     const rim = new Path2D()
@@ -995,11 +1032,11 @@ export class TerrainHD {
     for (let gx = Math.floor(x0 / 14) - 1; gx * 14 < x1; gx++)
       for (let gy = Math.floor(y0 / 14) - 1; gy * 14 < y1; gy++) {
         const r = hash(gx, gy, 21)
-        if (r > (mat === 'strata' ? 0.2 : 0.26)) continue
+        if (r > (mat === 'earth' ? 0.26 : mat === 'coal' ? 0.1 : 0.2)) continue
         const px = gx * 14 + hash(gx, gy, 22) * 11
         const py = gy * 14 + hash(gx, gy, 23) * 11
         const big = hash(gx, gy, 24)
-        if (mat === 'strata') {
+        if (mat !== 'earth') {
           const rx = 1.5 + big * 2.6
           const ry = 0.7 + big * 0.9
           body.moveTo(px + rx, py)
@@ -1015,7 +1052,7 @@ export class TerrainHD {
           spark.lineTo(px + rx * 0.1, py - ry * 0.5)
         }
       }
-    if (mat === 'strata') {
+    if (mat !== 'earth') {
       c.fillStyle = 'rgba(40,22,40,0.36)'
       c.fill(body)
       c.strokeStyle = 'rgba(255,240,212,0.3)'

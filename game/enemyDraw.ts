@@ -237,6 +237,10 @@ interface Anim {
   fold: boolean
   /** havada (sıçrayan) */
   air: boolean
+  /** durum (yüzen avcı kılık değiştirir) */
+  st: Enemy['state']
+  /** ağız açıklığı 0..1 (yüzen avcılar: işarette açılıp kapanır, hamlede ardına dek açık) */
+  open: number
 }
 
 type EnemyPainter = (c: Ctx, a: Anim) => void
@@ -295,7 +299,225 @@ function bird(c: Ctx, a: Anim, o: BirdLook) {
   eye(c, 4.7, -6.9, 1.15, a.mood, a.t)
 }
 
+/** balık kuyruğu: (x, y) sapın ucu, f -1..1 vuruş, s boy; sola açılan iki loblu yüzgeç */
+function tailFin(c: Ctx, x: number, y: number, f: number, s: number, fill: string, sh?: string) {
+  poly(c, [x + s * 0.4, y, x - s * 1.1, y - s * (1.15 - f * 0.35), x - s * 0.55, y + f * s * 0.15, x - s * 1.05, y + s * (1.05 + f * 0.35)], fill, sh)
+}
+
+/** iri dişli ağız: (x0, y) ağız köşesi, x1 burun ucu; open 0..1 */
+function jaws(c: Ctx, x0: number, x1: number, y: number, open: number, gape: number) {
+  if (halo) return
+  const g = open * gape
+  if (g > 0.15) {
+    c.beginPath()
+    c.moveTo(x0, y)
+    c.lineTo(x1, y - g * 0.45)
+    c.lineTo(x1 - 0.4, y + g * 0.55)
+    c.closePath()
+    c.fillStyle = '#5a1420'
+    c.fill()
+    c.strokeStyle = INK
+    c.lineWidth = 0.45
+    c.stroke()
+  }
+  // dişler: üst ve alt çene boyunca beyaz üçgenler
+  c.fillStyle = '#fffaf0'
+  c.strokeStyle = INK
+  c.lineWidth = 0.25
+  const n = Math.max(2, Math.round((x1 - x0) / 1.1))
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n
+    const x = x0 + (x1 - x0) * k
+    const yu = y - g * 0.45 * k
+    const yd = y + g * 0.55 * k
+    for (const [yy, d] of [[yu, 1], [yd, -1]] as const) {
+      if (g <= 0.15 && d < 0) continue
+      c.beginPath()
+      c.moveTo(x - 0.45, yy)
+      c.lineTo(x + 0.45, yy)
+      c.lineTo(x, yy + d * 0.95)
+      c.closePath()
+      c.fill()
+      c.stroke()
+    }
+  }
+  if (g <= 0.15) {
+    c.beginPath()
+    c.moveTo(x0, y)
+    c.lineTo(x1, y - 0.2)
+    c.strokeStyle = INK
+    c.lineWidth = 0.4
+    c.stroke()
+  }
+}
+
 const ENEMIES: Record<string, EnemyPainter> = {
+  // Esoli (mahmuzlu camgöz): devriyede tombul, iri gözlü, gülümseyen pembe yanaklı bir maskot; işarette gözleri daralıp
+  // kızarır, kaşları çatılır, ağzı sıra sıra dişle açılır; hamlede çenesi ardına dek açık, gövdesi gerilir, ardında hız çizgileri.
+  // Sersemken yine sevimli ama gözleri sarmal. Birimler 10 = gövde boyu; burun sağda. Ezilmez: kalın hale.
+  shark: (c, a) => {
+    const f = a.flap
+    const beast = a.st === 'windup' || a.st === 'charge'
+    const charge = a.st === 'charge'
+    const BACK = beast ? '#4c6276' : '#7a9cb8'
+    const BACK_SH = beast ? '#2a3a4c' : '#4e6e8c'
+    const BELLY = beast ? '#e4e2dc' : '#f6f6f0'
+    // hız çizgileri: hamlede kuyruğun ardında
+    if (charge && !halo)
+      for (const [y, l, ph] of [[-7.4, 5, 0], [-5, 7, 0.4], [-2.8, 4.4, 0.7]] as const) {
+        const k = (a.t * 6 + ph) % 1
+        const x0 = -11.6 - k * 2.4
+        line(c, [x0, y, x0 - l, y], 1.1, 'rgba(30,20,40,0.35)', false)
+        line(c, [x0, y, x0 - l, y], 0.6, 'rgba(255,255,255,0.95)', false)
+      }
+    // kuyruk: sevimlide yuvarlak küçük yelpaze, canavarda keskin hilal
+    if (beast) tailFin(c, -9.4, -5.2 + f * 0.5, f, 3.2, BACK, BACK_SH)
+    else
+      shape(
+        c,
+        () => {
+          c.moveTo(-8.4, -5.2)
+          c.quadraticCurveTo(-11.6, -9.4 + f, -12.4, -8 + f)
+          c.quadraticCurveTo(-11.4, -5.2, -12.4, -2.4 + f * 0.6)
+          c.quadraticCurveTo(-11.4, -1.4 + f * 0.6, -8.4, -4.4)
+        },
+        BACK,
+        BACK_SH,
+      )
+    // gövde: sevimlide tombul fasulye, canavarda gerilmiş torpido
+    shape(
+      c,
+      beast
+        ? () => {
+            c.moveTo(-9.6, -5.2 + f * 0.5)
+            c.bezierCurveTo(-6, -9.6, 4, -9.8, 8.8, -7.6)
+            c.quadraticCurveTo(12, -6.2, 11.8, -4.4)
+            c.quadraticCurveTo(9, -1.2, 2, -1.2)
+            c.bezierCurveTo(-3, -1.2, -7, -3, -9.6, -5.2 + f * 0.5)
+          }
+        : () => {
+            c.moveTo(-9, -5)
+            c.bezierCurveTo(-8, -9.6, 5, -10.4, 9, -7.2)
+            c.bezierCurveTo(11.4, -5.2, 10.4, -1.4, 5, -1)
+            c.bezierCurveTo(0, -0.6, -7.6, -1.8, -9, -5)
+          },
+      BACK,
+      BACK_SH,
+    )
+    // karın
+    if (!halo) {
+      c.beginPath()
+      if (beast) {
+        c.moveTo(-7, -3.4)
+        c.quadraticCurveTo(0, -1.4, 7, -2.2)
+        c.quadraticCurveTo(10.4, -3, 11.4, -4.2)
+        c.quadraticCurveTo(4, -3.8, -7, -3.4)
+      } else {
+        c.moveTo(-6.6, -2.6)
+        c.quadraticCurveTo(0, -0.9, 6, -1.4)
+        c.quadraticCurveTo(9.6, -2.2, 10.2, -3.8)
+        c.quadraticCurveTo(3, -3.6, -6.6, -2.6)
+      }
+      c.fillStyle = BELLY
+      c.fill()
+    }
+    // sırt yüzgeci: sevimlide yuvarlak tümsek, canavarda bıçak gibi
+    if (beast) poly(c, [-3, -8.6, 0, -13.2, 2.2, -9], BACK, BACK_SH)
+    else
+      shape(
+        c,
+        () => {
+          c.moveTo(-3.2, -8.6)
+          c.quadraticCurveTo(-1.6, -12.2, 0.8, -11.6)
+          c.quadraticCurveTo(0.4, -10, 1.6, -9)
+        },
+        BACK,
+        BACK_SH,
+      )
+    // göğüs yüzgeci: sevimlide küçük el sallar
+    if (beast) poly(c, [3, -2.8, 1.4, 0.6, 5.6, -2.4], BACK, BACK_SH)
+    else ell(c, 2.4, -1.8, 1.9, 1, BACK, BACK_SH, 0.5 + f * 0.25)
+    for (const [x, y] of [[-5, -6.6], [-2.6, -7.6], [-1, -6], [1.8, -8], [-6.6, -5.4]] as const) dab(c, x, y, 0.42, 0.42, beast ? '#c8d4dc' : '#eaf2f8')
+    if (beast) {
+      for (let i = 0; i < 4; i++) line(c, [4.4 + i * 0.75, -6.6, 4 + i * 0.75, -4.2], 0.35, BACK_SH, false)
+      // çene: iki sıra sivri diş; işarette açılıp kapanır, hamlede ardına dek açık
+      jaws(c, 6, 11.4, -3.8, a.open, 4.2)
+      if (!halo && a.open > 0.3) {
+        // ikinci diş sırası, ağzın içinde
+        c.fillStyle = '#fffaf0'
+        c.strokeStyle = INK
+        c.lineWidth = 0.22
+        for (let i = 0; i < 3; i++) {
+          const x = 7.4 + i * 1.2
+          const yu = -3.8 - a.open * 4.2 * 0.45 * ((x - 6) / 5.4) + 0.9
+          c.beginPath()
+          c.moveTo(x - 0.35, yu)
+          c.lineTo(x + 0.35, yu)
+          c.lineTo(x, yu + 0.7)
+          c.closePath()
+          c.fill()
+          c.stroke()
+        }
+      }
+      // daralmış kızıl göz, çatık kalın kaş
+      if (!halo) {
+        c.beginPath()
+        c.ellipse(8, -6.6, 1.3, 0.75, -0.2, 0, TAU)
+        c.fillStyle = '#ffe8a0'
+        c.fill()
+        c.strokeStyle = INK
+        c.lineWidth = 0.45
+        c.stroke()
+        c.beginPath()
+        c.arc(8.3, -6.6, 0.5, 0, TAU)
+        c.fillStyle = '#e02a2a'
+        c.fill()
+        c.strokeStyle = INK
+        c.lineWidth = 0.9
+        c.beginPath()
+        c.moveTo(6.2, -8.6)
+        c.lineTo(9.6, -7.2)
+        c.stroke()
+      }
+    } else {
+      // sevimli yüz: iri parlak göz (sersemken sarmal), pembe yanak, kapalı gülümseme
+      if (a.mood === 'dizzy') eye(c, 6, -6.4, 1.7, a.mood, a.t)
+      else if (!halo) softEye(c, 6, -6.4, 1.75, false)
+      dab(c, 7.4, -4, 1.1, 0.65, 'rgba(255,128,160,0.6)')
+      if (!halo) {
+        c.strokeStyle = INK
+        c.lineWidth = 0.45
+        c.lineCap = 'round'
+        c.beginPath()
+        if (a.mood === 'dizzy') {
+          c.moveTo(8.2, -3.2)
+          c.quadraticCurveTo(8.9, -2.6, 9.6, -3.2)
+          c.quadraticCurveTo(10.1, -3.6, 10.4, -3.1)
+        } else {
+          c.moveTo(8.4, -3.6)
+          c.quadraticCurveTo(9.4, -2.5, 10.4, -3.6)
+        }
+        c.stroke()
+      }
+    }
+  },
+  // Pirana: tombul gümüş gövde, kırmızı karın, öne fırlamış alt çene ve iri dişler; kuyruğu hızlı çırpar
+  piranha: (c, a) => {
+    const f = a.flap
+    tailFin(c, -4.4, -4.8, f, 2.6, '#5e6c78', '#3a4652')
+    ell(c, 0, -4.6, 5.4, 3.6, '#8a98a4', '#55626e')
+    // kırmızı karın, üstünde ışık şeridi
+    dab(c, 0.2, -2.5, 4.3, 1.45, '#d8402e')
+    dab(c, -0.2, -3.3, 3.4, 0.4, '#ee7a5a')
+    // sırt ve karın yüzgeci
+    poly(c, [-1.6, -8.4, 0.4, -10.4 + f * 0.4, 1.6, -8.5], '#5e6c78')
+    poly(c, [-1.4, -1.2, -0.4, 0.4 - f * 0.4, 0.8, -1.1], '#c8302a')
+    for (const [x, y] of [[-2.4, -6.6], [-0.6, -7.4], [-1.8, -5.4]] as const) dab(c, x, y, 0.4, 0.4, '#c8d4dc')
+    line(c, [2.4, -7, 2.6, -3.4], 0.35, '#55626e', false)
+    // iri dişli ağız: sürekli çene oynatır
+    jaws(c, 2.2, 5.8, -3.4, a.open, 2.8)
+    eye(c, 2.4, -6, 1.2, a.mood, a.t)
+  },
   // Yengeç: yassı kırmızı kabuk, havada iki kıskaç, saplı gözler
   crab: (c, a) => {
     for (let i = 0; i < 3; i++) {
@@ -316,8 +538,64 @@ const ENEMIES: Record<string, EnemyPainter> = {
     eye(c, 1.9, -8.8, 1.25, a.mood, a.t)
     line(c, [-1.4, -3, 0, -2.5, 1.4, -3], 0.45, INK, false)
   },
-  // Martı: beyaz gövde, uzun gri kanat, sarı gaga
-  gull: (c, a) => bird(c, a, { body: '#f6f4ee', bodySh: '#c8ccd4', wing: '#a8b2c0', wingSh: '#6e7888', beak: '#f2b23a', beakLen: 3, tail: [-4, -5.2, -7.6, -6.2, -7.2, -3.6, -4, -3.2], tailCol: '#8e98a8', rx: 4.9, ry: 3 }),
+  // Gökçekuş (martı): zarif beyaz gövde, gümüş gri kanat, siyah beyaz benekli uç tüyleri, kırmızı benekli sarı gaga;
+  // kanat dirsekten kırılarak çırpar: yukarıda açık V, aşağıda iniş vuruşu
+  gull: (c, a) => {
+    const f = a.flap
+    const WHITE = '#fbfaf6'
+    const WHITE_SH = '#c8d0dc'
+    const GREY = '#b4bfcc'
+    const GREY_SH = '#7a8698'
+    const TIP = '#262430'
+    // kanat: omuz → dirsek → uç; uç tüyleri koyu, üstünde beyaz benek
+    const wingOf = (dx: number, k: number, fill: string, sh: string) => {
+      const ex = -1.6 + dx
+      const ey = -5.6 - k * 3.6
+      const tx = -6.4 + dx + Math.abs(k) * 1.2
+      const ty = -5.2 - k * 6.4
+      shape(
+        c,
+        () => {
+          c.moveTo(2.2 + dx, -5.4)
+          c.quadraticCurveTo(0.4 + dx, -6 - k * 2.4, ex, ey)
+          c.lineTo(tx, ty)
+          c.quadraticCurveTo(ex - 1.4, ey + 2.6 - k * 0.6, -2.4 + dx, -4.4)
+        },
+        fill,
+        sh,
+      )
+      // uç: koyu üçgen
+      const mx = ex + (tx - ex) * 0.55
+      const my = ey + (ty - ey) * 0.55
+      poly(c, [mx, my - 0.4, tx, ty, mx - 0.6 + (tx - ex) * 0.1, my + 1.2], TIP)
+      dab(c, tx + (ex - tx) * 0.22, ty + (ey - ty) * 0.22 + 0.25, 0.32, 0.32, '#ffffff')
+    }
+    // kuyruk: kısa, beyaz, koyu uçlu
+    poly(c, [-3.4, -5.4, -7.6, -5.6, -6.7, -4.6, -7.6, -3.6, -3.4, -3.8], WHITE, WHITE_SH)
+    line(c, [-7.2, -5.4, -6.6, -4.6, -7.2, -3.8], 0.45, TIP, false)
+    // arka kanat (yukarıdayken görünür)
+    if (f > -0.2) wingOf(1.4, f * 0.85, GREY_SH, '#566274')
+    // gövde: ince uzun, göğüs öne dolgun
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.6, -4.8)
+        c.quadraticCurveTo(-1, -7.4, 3.2, -6.2)
+        c.quadraticCurveTo(5.2, -5.2, 4.6, -3.6)
+        c.quadraticCurveTo(1, -1.8, -4.6, -4)
+      },
+      WHITE,
+      WHITE_SH,
+    )
+    // baş
+    ell(c, 4.4, -6.8, 2.2, 2.05, WHITE, WHITE_SH)
+    // gaga: sarı, alt çenede kırmızı benek
+    poly(c, [6.3, -7.3, 9.4, -6.7, 9, -6, 6.3, -5.9], '#f4c232', '#c8901c')
+    dab(c, 8.4, -6.05, 0.42, 0.32, '#e0302a')
+    // ön kanat
+    wingOf(0, f, GREY, GREY_SH)
+    eye(c, 5, -7.3, 1.25, a.mood, a.t)
+  },
   // Güvercin: tombul mavi-gri, boynunda yeşil hare, yelpaze kuyruk
   pigeon: (c, a) => bird(c, a, { body: '#8a90a6', bodySh: '#5c6278', wing: '#c8ccd8', wingSh: '#6a7088', beak: '#e0a040', beakLen: 1.9, tail: [-3.8, -5.4, -7.4, -7, -8, -4.6, -7, -2.6, -3.8, -2.8], tailCol: '#5c6278', rx: 4.9, ry: 3.5, band: '#7ad0a0' }),
   // Kuzgun: simsiyah, kalın gaga, tırtıklı kuyruk
@@ -553,18 +831,59 @@ const ENEMIES: Record<string, EnemyPainter> = {
     line(c, [6.6, -5.6, 8.6, -5.9], 0.4, INK, false)
     eye(c, 2.6, -3.5, 1.05, a.mood, a.t)
   },
-  // Kurt: gri, sivri kulak ve burun, kabarık kuyruk, beyaz çene
+  // Gökçekurt: gri-mavi post, dik sivri kulaklar, kabarık açık uçlu kuyruk, krem çene ve göğüs, keskin bakış;
+  // dört ayak ritimle adımlar (çapraz eşler birlikte), saldırıda dişlerini gösterir
   wolf: (c, a) => {
-    poly(c, [-4.6, -6.6, -8.4, -8, -8.6, -5.4, -5, -4.2], '#5d6170')
-    legs(c, [-3.8, -2, 1.8, 3.4], -3.4, '#5d6170', a.step, 1.1)
-    ell(c, -0.8, -5.2, 5, 2.9, '#8a8f9e', '#5d6170')
-    poly(c, [2.4, -9.2, 2.8, -12, 4.4, -9.8], '#6e7382')
-    poly(c, [4.2, -9.6, 5.4, -12.2, 6.2, -9.2], '#8a8f9e')
-    ell(c, 4.4, -7.6, 2.7, 2.5, '#8a8f9e', '#5d6170')
-    poly(c, [5.4, -8.4, 9, -6.9, 8.6, -5.6, 5.2, -5.4], '#e6e8ee', '#b4b8c4')
-    dab(c, 8.7, -6.8, 0.6, 0.55, '#1d1a22')
-    if (a.mood === 'angry') poly(c, [6.2, -5.5, 6.7, -4.4, 7.2, -5.5], '#ffffff')
-    eye(c, 4.6, -8, 1.1, a.mood, a.t)
+    const FUR = '#7d8ca8'
+    const FUR_SH = '#4e5a76'
+    const DARK = '#3c4660'
+    const CREAM = '#e6eaf2'
+    const s = a.step
+    // kuyruk: yukarı kıvrık, kabarık; ucu açık
+    const wag = Math.sin(a.t * 6) * 0.5
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.2, -6.4)
+        c.quadraticCurveTo(-7.8, -7.4 + wag, -9.2, -9.6 + wag)
+        c.quadraticCurveTo(-8.4, -6.2 + wag, -6.4, -4.6)
+      },
+      FUR,
+      FUR_SH,
+    )
+    dab(c, -8.6, -9 + wag, 0.8, 0.6, CREAM)
+    // bacak: kalça → diz → pati; çapraz eşler aynı yöne
+    const leg = (x: number, ph: number, col: string) => {
+      const sw = s * ph * 1.5
+      const lift = Math.max(0, s * ph) * 0.8
+      line(c, [x, -4.2, x + sw * 0.4, -2.2 - lift, x + sw, -0.6 - lift * 0.5], 1.15, col)
+      ell(c, x + sw + 0.35, -0.55 - lift * 0.5, 0.75, 0.42, DARK)
+    }
+    leg(-3.4, -1, FUR_SH)
+    leg(2.2, 1, FUR_SH)
+    // gövde
+    ell(c, -0.6, -5.4, 5.1, 2.8, FUR, FUR_SH)
+    dab(c, -1.6, -7.2, 3, 0.6, '#9aa8c0')
+    leg(-1.6, 1, FUR)
+    leg(3.8, -1, FUR)
+    // boyun ve yele, göğüs
+    poly(c, [1.8, -7.4, 4.6, -9.6, 5.4, -5.6, 2.6, -3.8], FUR, FUR_SH)
+    dab(c, 3.8, -4.8, 1.4, 1.2, CREAM)
+    // kulaklar: dik, sivri, içi koyu
+    poly(c, [3, -9.4, 3.4, -12.6, 5, -10], FUR_SH)
+    poly(c, [4.4, -9.8, 5.6, -12.8, 6.6, -9.4], FUR, FUR_SH)
+    poly(c, [5, -10.2, 5.6, -11.9, 6, -10], DARK)
+    // baş ve uzun burun
+    ell(c, 5, -8, 2.6, 2.3, FUR, FUR_SH)
+    poly(c, [6, -8.8, 9.4, -7.2, 9.2, -6, 5.6, -5.8], CREAM, '#b8c0d0')
+    dab(c, 6.6, -9.2, 1.3, 0.45, DARK)
+    ell(c, 9.3, -7, 0.6, 0.55, '#1d1a22')
+    line(c, [7.2, -6.2, 8.8, -6.3], 0.3, INK, false)
+    if (a.mood === 'angry') {
+      poly(c, [7.2, -6.2, 7.6, -5, 8, -6.2], '#ffffff')
+      poly(c, [8.2, -6.25, 8.5, -5.3, 8.8, -6.3], '#ffffff')
+    }
+    eye(c, 5.6, -8.4, 1.1, a.mood, a.t)
   },
 }
 
@@ -597,13 +916,18 @@ export function drawEnemy(
   const flying = e.kind === 'fly' || e.kind === 'bat' || e.kind === 'magpie'
   const perched = e.kind === 'magpie' && (st === 'idle' || st === 'stun')
   const walks = e.kind === 'ground' || e.kind === 'spiky' || e.kind === 'charger'
+  const swims = e.kind === 'shark' || e.kind === 'piranha'
   const a: Anim = {
     mood: st === 'stun' ? 'dizzy' : st === 'windup' || st === 'charge' ? 'angry' : 'stern',
     t,
     step: !walks || st === 'windup' || st === 'stun' ? 0 : Math.sin(e.phase * (st === 'charge' ? 34 : 13)),
-    flap: !flying || perched ? 0 : e.kind === 'magpie' ? (st === 'charge' ? 0.55 + Math.sin(t * 30) * 0.25 : Math.sin(t * 34)) : Math.sin(e.phase * (e.kind === 'bat' ? 15 : 19)),
+    flap: swims
+      ? Math.sin(t * (e.kind === 'piranha' ? 26 : st === 'charge' ? 24 : st === 'stun' ? 3 : 8) + e.phase)
+      : !flying || perched ? 0 : e.kind === 'magpie' ? (st === 'charge' ? 0.55 + Math.sin(t * 30) * 0.25 : Math.sin(t * 34)) : Math.sin(e.phase * (e.kind === 'bat' ? 15 : 19)),
     fold: perched,
     air: st === 'air',
+    st,
+    open: e.kind === 'piranha' ? 0.5 + 0.5 * Math.sin(t * 12 + e.phase) : st === 'charge' ? 1 : st === 'windup' ? 0.55 + 0.45 * Math.sin(t * 16) : st === 'stun' ? 0.35 : 0,
   }
   // işaret biterken ünlem söner: saldırının geldiği an okunur
   const top = -e.h * 1.25 - 1.5
@@ -614,10 +938,11 @@ export function drawEnemy(
   c.lineCap = 'round'
   setInkWidth(INKW)
   try {
-    if (!flying && st !== 'air') groundShadow(c, e.w * 0.48)
+    if (!flying && !swims && st !== 'air') groundShadow(c, e.w * 0.48)
     c.save()
     if (st === 'windup') c.translate(Math.sin(t * 46) * 0.5, 0)
-    let kx = e.w / 12
+    // köpekbalığı uzun ve yassı: boyuna göre ölçeklenir (10 birim = gövde boyu)
+    let kx = e.kind === 'shark' ? e.h / 10 : e.w / 12
     let ky = kx
     if (st === 'windup' && e.kind === 'hopper') {
       kx *= 1.12
@@ -629,11 +954,16 @@ export function drawEnemy(
       kx *= 0.94
       ky *= 1.08
     }
+    if (st === 'charge' && swims) kx *= 1.1
     c.scale(kx * dir, ky)
-    if (st === 'charge') c.rotate(e.kind === 'magpie' ? 0.42 : 0.17)
+    if (swims) {
+      // yüzme dalgası: hafifçe süzülür; sersemken yan yatar
+      c.translate(0, Math.sin(t * 3 + e.phase) * 0.4)
+      if (st === 'stun') c.rotate(Math.sin(t * 4) * 0.12 + 0.12)
+    } else if (st === 'charge') c.rotate(e.kind === 'magpie' ? 0.42 : 0.17)
     else if (st === 'windup' && e.kind === 'charger') c.rotate(-0.1)
     // dikenli tür daha kalın ve sabit parlar: üstüne basılmaz
-    haloW = e.kind === 'spiky' ? 0.75 : 0.45 + Math.sin(t * 5 + e.phase) * 0.12
+    haloW = e.kind === 'spiky' || e.kind === 'shark' ? 0.75 : 0.45 + Math.sin(t * 5 + e.phase) * 0.12
     halo = true
     paint(c, a)
     halo = false
@@ -1008,6 +1338,41 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     towel(3, 5, '#9ad0e8', '#5e9ec0', '#2e6aa0')
     towel(-2.2, 5, '#fbfaf4', '#d4d0c4', '#d0402a')
     dab(c, -3.6, -3.6, 1.2, 0.5, '#ffffff', -0.2)
+  },
+  // Madenci lambası: pirinç kapak ve gövde, kafesli cam, içinde sarı alev; tepesinde asma halkası
+  zonguldak: (c) => {
+    const BRASS = '#dcaa4a'
+    const BRASS_SH = '#94661e'
+    dab(c, 0, -0.4, 5, 5.2, 'rgba(255,196,90,0.3)')
+    ring(c, 0, -6.7, 1.15, 0.55, '#c8963a')
+    // cam: soluk turkuaz, içi alevle aydınlık
+    shape(c, () => c.roundRect(-2.5, -3.8, 5, 6.4, 0.7), '#f4e6b8')
+    if (!halo) {
+      c.fillStyle = 'rgba(255,214,120,0.55)'
+      c.beginPath()
+      c.ellipse(0, -0.4, 2.1, 2.8, 0, 0, TAU)
+      c.fill()
+    }
+    // alev: damla biçimi, ortası beyaz-sarı
+    shape(
+      c,
+      () => {
+        c.moveTo(0, -2.9)
+        c.quadraticCurveTo(1.4, -0.6, 1, 0.6)
+        c.quadraticCurveTo(0, 1.6, -1, 0.6)
+        c.quadraticCurveTo(-1.4, -0.6, 0, -2.9)
+      },
+      '#ffa52a',
+    )
+    dab(c, 0, 0, 0.5, 0.9, '#fff6c0')
+    // kafes telleri
+    for (const x of [-1.7, 1.7]) line(c, [x, -3.8, x, 2.6], 0.45, BRASS_SH)
+    // üst kapak ve taban
+    poly(c, [-3, -3.6, 3, -3.6, 2, -5.6, -2, -5.6], BRASS, BRASS_SH)
+    shape(c, () => c.roundRect(-3.2, 2.4, 6.4, 3.6, 0.9), BRASS, BRASS_SH)
+    line(c, [-3, 3.8, 3, 3.8], 0.35, BRASS_SH, false)
+    dab(c, -2.1, 3.4, 0.5, 1.2, '#fff0c0')
+    dab(c, -1.2, -4.6, 0.8, 0.35, '#fff0c0')
   },
   // Çay: ince belli bardakta tavşan kanı çay, beyaz tabak, kenarda şeker
   rize: (c) => {
@@ -1819,12 +2184,22 @@ export function drawThing(
         const f = Math.sin(t * 18) * 0.6
         poly(c, [-2.2, -5.6, -1.2, -9.4 - f, 0, -7.2, 1.2, -10 + f, 2.2, -5.6], '#ff9a3c', '#d8641e')
         dab(c, 0, -6.6, 0.9, 1.5, '#ffe27a')
-        // gövde, bant, kapak
+        // arkasında hız okları: "hızlandırır" diye okunsun (saatle kayar)
+        {
+          const sh = (t * 6) % 2
+          c.globalAlpha = 0.75
+          for (const [dx, a] of [[-7.5, 0.5], [-5.6, 0.9]] as const) {
+            c.globalAlpha = a * 0.8
+            line(c, [dx - sh, -2.4, dx + 1.6 - sh, 0, dx - sh, 2.4], 0.7, '#ffcf5a', false)
+          }
+          c.globalAlpha = 1
+        }
+        // gövde, beyaz bant üstünde şimşek amblemi, kapak
         poly(c, [-3.2, -4.6, 3.2, -4.6, 3.2, 5, -3.2, 5], '#d6403a', '#9a2a26')
-        poly(c, [-3.2, -1, 3.2, -1, 3.2, 1.4, -3.2, 1.4], '#f2f0f4')
-        line(c, [-1.6, 0.2, 1.6, 0.2], 0.55, '#d6403a', false)
+        poly(c, [-3.2, -2.2, 3.2, -2.2, 3.2, 3, -3.2, 3], '#f2f0f4')
+        poly(c, [0.6, -1.9, -1.4, 0.7, -0.1, 0.7, -0.7, 2.7, 1.5, -0.1, 0.2, -0.1, 0.9, -1.9], '#ffb52e', '#c87610')
         poly(c, [-2, -6, 2, -6, 2, -4.6, -2, -4.6], '#8f96a3', '#5a5f6a')
-        dab(c, -1.9, -2.8, 0.55, 1.4, 'rgba(255,255,255,0.55)')
+        dab(c, -2.3, -3.4, 0.5, 0.9, 'rgba(255,255,255,0.55)')
         break
       }
       case 'charm': {

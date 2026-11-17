@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_KEYS, KEY_ACTIONS, bindKey, keyLabel, normalizeKeys, DUO_KEYS } from '../game/input'
+import { DEFAULT_KEYS, KEY_ACTIONS, bindKey, keyLabel, normalizeKeys, DEFAULT_DUO, bindDuo, normalizeDuo } from '../game/input'
 
 describe('tuş atama', () => {
   it('eksik ya da bozuk kayıt varsayılana döner', () => {
@@ -37,15 +37,29 @@ describe('tuş atama', () => {
 })
 
 describe('iki kişilik tuşlar', () => {
-  it('bir tuş yalnız bir oyuncuya ait; Boşluk kimsede yok (tek kişilikte dash, alışkanlıkla basılıyor)', () => {
-    const all = DUO_KEYS.map((k) => new Set(Object.values(k).flat() as string[]))
+  it('varsayılanda bir tuş yalnız bir oyuncuya ait; Boşluk kimsede yok (tek kişilikte dash, alışkanlıkla basılıyor)', () => {
+    const all = DEFAULT_DUO.map((k) => new Set(Object.values(k).flat()))
     for (const c of all[0]) expect(all[1].has(c)).toBe(false)
     for (const s of all) expect(s.has('Space')).toBe(false)
   })
-  it('solda WASD + X, sağda ok tuşları + Enter', () => {
-    expect(DUO_KEYS[0].dash).toContain('KeyX')
-    expect(DUO_KEYS[0].left).toContain('KeyA')
-    expect(DUO_KEYS[1].dash).toContain('Enter')
-    expect(DUO_KEYS[1].left).toContain('ArrowLeft')
+  it('solda WASD + Shift, sağda ok tuşları + Enter', () => {
+    expect(DEFAULT_DUO[0].dash[0]).toBe('ShiftLeft')
+    expect(DEFAULT_DUO[0].left).toContain('KeyA')
+    expect(DEFAULT_DUO[1].dash[0]).toBe('Enter')
+    expect(DEFAULT_DUO[1].left).toContain('ArrowLeft')
+  })
+  it('atanan tuş öbür oyuncudan ve öbür eylemden alınır; eylem boş kalmaz', () => {
+    const k = bindDuo(DEFAULT_DUO, 1, 'dash', 'KeyX')
+    expect(k[1].dash[0]).toBe('KeyX')
+    expect(k[0].dash).not.toContain('KeyX')
+    const j = bindDuo(DEFAULT_DUO, 0, 'jump', 'KeyA')
+    expect(j[0].jump[0]).toBe('KeyA')
+    expect(j[0].left.length).toBeGreaterThan(0)
+    expect(j[0].left).not.toContain('KeyA')
+  })
+  it('bozuk kayıt varsayılana döner, mola tuşu atanamaz', () => {
+    expect(normalizeDuo(null)).toEqual(DEFAULT_DUO)
+    expect(normalizeDuo([{ dash: [] }, { left: ['Escape'] }])[1].left).toEqual(DEFAULT_DUO[1].left)
+    expect(bindDuo(DEFAULT_DUO, 0, 'dash', 'Escape')).toEqual(DEFAULT_DUO)
   })
 })

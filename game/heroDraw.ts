@@ -1441,7 +1441,9 @@ export function gait(phase: number): Pose {
   const cs = Math.cos(ph)
   const leg = (sign: number): [number, number] => {
     const th = 32 * sn * sign
-    const v = -cs * sign
+    // v > 0: bacak öne savruluyor (havada, diz bükülür); v < 0: ayak yerde geriye itiyor (bacak düz). Eskiden işaret
+    // tersti: diz yerdeyken bükülüp havada düzleşiyor, karakter geri geri yürüyor gibi görünüyordu
+    const v = cs * sign
     const bend = v > 0 ? 10 + 70 * Math.pow(v, 1.2) : 6 + 12 * -v
     return [th, bend]
   }

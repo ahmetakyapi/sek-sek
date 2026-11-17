@@ -183,7 +183,8 @@ export function followTarget(w: World, vw: number, vh: number, cam?: CamState, d
   const look = lookDown(w, vh) - (climbing(w) ? vh * CAM.climbUp : 0)
   if (cam) cam.look = cam.look === undefined ? look : approach(cam.look, look, dt, CAM.lookKeep)
   const feet = p.y + p.h
-  const onGround = p.grounded || p.wallDir !== 0 || p.dead
+  // yüzerken ve halatta asılıyken de yüksekliğe bağlı: dalış ve tırmanış boyunca kadraj karakterle iner çıkar
+  const onGround = p.grounded || p.wallDir !== 0 || p.dead || p.swim || !!p.hang
   if (cam && (onGround || cam.feet === undefined)) cam.feet = feet
   const anchor = cam?.feet ?? feet
   let ty = anchor - p.h / 2 - vh * 0.55 + (cam?.look ?? look)

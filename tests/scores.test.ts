@@ -250,8 +250,8 @@ describe('hile önleme ve hız sınırı', () => {
     expect((await run(P[2], 'gunluk', dayFloor - 1, 0, 3, { day: today })).status).toBe(dayFloor - 1 < 5000 ? 400 : 422)
   })
 
-  it('skor: IP başına saatte 60 istek, sonra 429 ve Retry-After', async () => {
-    for (let i = 0; i < 60; i++) expect((await post({ level: 'yok' }, '9.9.9.9')).status).toBe(400)
+  it('skor: girişsiz istek IP başına saatte 120, sonra 429 ve Retry-After', async () => {
+    for (let i = 0; i < 120; i++) expect((await post({ level: 'yok' }, '9.9.9.9')).status).toBe(400)
     const r = await POST(new NextRequest('http://x/api/scores', { method: 'POST', body: '{}', headers: { 'x-forwarded-for': '9.9.9.9, 10.0.0.1' } }))
     expect(r.status).toBe(429)
     expect(Number(r.headers.get('retry-after'))).toBeGreaterThan(0)
@@ -260,6 +260,14 @@ describe('hile önleme ve hız sınırı', () => {
     expect((await post({ level: 'yok' }, '9.9.9.8')).status).toBe(400)
     const keys = (await pg.query<{ key: string }>('select key from seksek_rate')).rows.map((x) => x.key)
     expect(keys.some((k) => k.includes('9.9.9'))).toBe(false)
+  })
+
+  it('skor: aynı evden (aynı IP) oynayan iki yolcu birbirinin hakkını yemez', async () => {
+    // birinci yolcu kendi hakkını bitirir
+    for (let i = 0; i < 120; i++) expect((await post({ level: 'yok', playerId: 9001 }, '5.5.5.5')).status).toBe(400)
+    expect((await post({ level: 'yok', playerId: 9001 }, '5.5.5.5')).status).toBe(429)
+    // aynı IP'deki ikinci yolcu gönderebilir
+    expect((await post({ level: 'yok', playerId: 9002 }, '5.5.5.5')).status).toBe(400)
   })
 
   it('giriş: IP başına ve ad başına 15 dakikada 10 deneme', async () => {

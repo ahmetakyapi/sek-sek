@@ -22,7 +22,9 @@ export const LIMITS = {
   loginIp: { action: 'giris-ip', max: 10, windowSec: 15 * 60 },
   loginName: { action: 'giris-ad', max: 10, windowSec: 15 * 60 },
   signup: { action: 'kayit', max: 5, windowSec: 60 * 60 },
-  score: { action: 'skor', max: 60, windowSec: 60 * 60 },
+  // skor oyuncu başına sayılır (aynı evden oynayanlar birbirinin hakkını yemesin); IP'ye yalnız geniş bir taban
+  score: { action: 'skor', max: 120, windowSec: 60 * 60 },
+  scoreIp: { action: 'skor-ip', max: 600, windowSec: 60 * 60 },
   mapPlay: { action: 'harita-oyna', max: 1, windowSec: 60 * 60 },
 } satisfies Record<string, Limit>
 

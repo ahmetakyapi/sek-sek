@@ -1276,6 +1276,30 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     ],
     quips: ['You slipped on the travertine.', 'The rooster laughed at you.', 'The towel got wet.', 'The column fell, and so did you.'],
   },
+  zonguldak: {
+    subtitle: 'The Bottom of the Sea, the Depth of the Mine',
+    item: 'Miner’s Lamp',
+    intro: 'From Kapuz Shore down to the sea floor, through the mine Uzun Mehmet opened to the underground lake of Gökgöl Cave, and on to Cehennemağzı in Ereğli. This road runs underground.',
+    note: 'This page of the notebook is coal-black. In Zonguldak the sea breaks on the shore, a shift whistle sounds from the mine, drops patter in the cave lake. This time the road runs under the earth and along the bottom of the sea.',
+    facts: [
+      { title: 'Uzun Mehmet', text: 'In 1829 Uzun Mehmet found hard coal near Ereğli. Zonguldak is a mining city built on that black stone; its coal is called “black diamond”.' },
+      { title: 'Gökgöl Cave', text: 'In Gökgöl Cave, just outside the city, stalactites and stalagmites grow drop by drop, and an underground stream runs through it.' },
+      { title: 'Cehennemağzı', text: 'Legend holds the Cehennemağzı Caves in Ereğli to be the gate through which Heracles went down to the underworld.' },
+    ],
+    secret: { title: 'The Canary', text: 'Miners once carried a canary in a cage down the mine: when dangerous gas (firedamp) built up, the bird fell silent and everyone climbed back up.' },
+    hints: [
+      'Welcome to Zonguldak! Dive into the sea from Kapuz. The bubbles above your head are your breath: surface before they run out. Watch the gaps between the piranhas.',
+      'Uzun Mehmet’s mine: carts run back and forth on the rails, ride on them. Cracked coal crumbles when you step on it, so do not linger.',
+      'Gökgöl Cave: stalactites hang from the ceiling. Esoli patrols the underground lake: when it shudders, get out of its way, it cannot be stomped.',
+      'Cehennemağzı: the gate Heracles went through. Wall-jump from wall to wall and dash your way up.',
+    ],
+    npcs: [
+      { name: 'Fikret the Lampmaker', text: 'Every miner going down takes his lamp from me! I lost three: one fell to the sea floor at Kapuz, one onto the cart track in the gallery, one into Gökgöl’s underground lake.' },
+      { name: 'Tülin the Diver', text: 'A shark called Esoli roams off Kapuz; when you see it shudder, get out of its way, it cannot be stomped. The bubbles above your head are your breath: surface before they run out.' },
+      { name: 'Ekin, the Miner’s Grandchild', text: 'My grandfather carried a canary in a cage down the mine; if the bird went quiet, everyone went up. Break the cracked coal at the end of the gallery: the old cage is under it.' },
+    ],
+    quips: ['Covered in coal dust.', 'Esoli winked at you.', 'You ran out of breath.', 'The cart left, you stayed.'],
+  },
 }
 
 export const STORY_EN: { title: string; text: string }[] = [
@@ -1310,8 +1334,9 @@ export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string
 }
 
 export const CREATURE_NAMES_EN: Record<string, string> = {
+  shark: 'Esoli', piranha: 'Piranha',
   gull: 'Gökçekuş', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
-  hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Wolf',
+  hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Gökçekurt',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',
   cat: 'Street Cat', flamingo: 'Flamingo', angora: 'Angora Goat', vanCat: 'Van Cat', lion: 'Hittite Lion', cow: 'Cow', kangal: 'Kangal', horse: 'Horse', partridge: 'Partridge', turtle: 'Loggerhead Turtle',
 }

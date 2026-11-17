@@ -126,7 +126,7 @@ export function ModesHub({
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('YOLUN DIŞINDA')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Modlar')}</h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
+          <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {ic(t('← Geri'))}
           </button>
         </div>
@@ -222,7 +222,7 @@ export function ModesHub({
                 <Portrait id="memo" className="w-[64px] rotate-[4deg] short:w-[44px]" />
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('İki kişi aynı ekranda, aynı şehirde: hatıralar, düğmeler ve boss ortak.')}</p>
-              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Solda WASD + X, sağda ok tuşları + Enter ya da iki oyun kolu. İlerlemene ve rekorlarına dokunmaz.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Solda WASD + Shift, sağda ok tuşları + Enter ya da iki oyun kolu. Tuşlar Ayarlar’dan değişir.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" onClick={onCoop}>
                 {t('Birlikte Oyna')}
               </button>
@@ -544,7 +544,7 @@ export function RuleSetup({ rage, startLevel, finished, records, onStart, onBack
             <span className="border-2 border-line bg-ink/40 px-2 py-1.5 text-[13px] tabular-nums text-muted max-sm:hidden">
               {t('{city}: {n}/{total}', { city: lv.name, n: done, total: list.length })}
             </span>
-            <button className="pixel-btn whitespace-nowrap" onClick={onBack}>
+            <button data-back className="pixel-btn back-btn whitespace-nowrap" onClick={onBack}>
               {ic(t('← Geri'))}
             </button>
           </div>
@@ -676,7 +676,7 @@ export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { ini
             <p className="text-[12px] font-bold tracking-[0.18em] text-accent-2">{t('DÜELLO · 2 KİŞİ')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Düello Kur')}</h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
+          <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {ic(t('← Geri'))}
           </button>
         </div>
@@ -737,7 +737,7 @@ export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { ini
                 ? t('Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Yan yana yarış klavye ya da oyun kolu ister.')
                 : v.style === 'sirayla'
                 ? t('Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Telefonda da oynanır.')
-                : t('Ekran ikiye bölünür, aynı anda koşarsınız. Klavye (WASD + X, ok tuşları + Enter) ya da iki oyun kolu gerekir.')}
+                : t('Ekran ikiye bölünür, aynı anda koşarsınız. Klavye (WASD + Shift, ok tuşları + Enter) ya da iki oyun kolu gerekir.')}
             </p>
             <p className="mt-3 text-[12px] font-bold tracking-[0.14em] text-muted">{t('TUR')}</p>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -785,7 +785,7 @@ export function DuelTurn({ setup, rounds, round, turn, onGo, onQuit }: { setup: 
         <h2 className="mt-3 font-display text-3xl text-cream short:text-2xl">{both ? t('Yan Yana Yarış') : t('Sıra Sende, {name}', { name: setup.names[turn] })}</h2>
         <p className="mt-1.5 text-[14px] text-cream/85">
           {both
-            ? t('Solda {a}: WASD, dash X. Sağda {b}: ok tuşları, dash Enter. Çıkışa ilk varan turu alır.', { a: setup.names[0], b: setup.names[1] })
+            ? t('Solda {a}: WASD, dash Shift. Sağda {b}: ok tuşları, dash Enter. Çıkışa ilk varan turu alır.', { a: setup.names[0], b: setup.names[1] })
             : rival
             ? t('Geçilecek skor: {score} ({time}, ✕{deaths}). Rakibinin hayaleti yanında koşacak.', { score: formatTime(rival.score), time: formatTime(rival.timeMs), deaths: rival.deaths })
             : t('İlk koşu senin. Hızlı ol ama düşme: her düşüş 5 saniye.')}

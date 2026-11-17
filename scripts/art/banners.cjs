@@ -24,7 +24,7 @@ const save = { character: 'uktun', skippedName: true, seenStory: true, mapVersio
       await pg.waitForTimeout(2500)
       await pg.getByRole('button', { name: /Devam|Başla|Yolculu/ }).first().click()
       await pg.waitForTimeout(600)
-      await pg.getByRole('button', { name: /▶ Başla/ }).click()
+      await pg.getByRole('button', { name: /^(▶ )?Başla$/ }).click()
       // oyuncu biraz ilerlesin: kadraja şehrin ilk tezgâhı ve insanı girsin
       await pg.keyboard.down('ArrowRight')
       await pg.waitForTimeout(1500)

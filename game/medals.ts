@@ -11,7 +11,7 @@ export const SOLVER_TIME: Record<string, number> = {
   antalya: 52.7, ankara: 73.6, konya: 74.7, nevsehir: 95.2, kayseri: 53.1, adana: 52.6, hatay: 56.1,
   gaziantep: 71.6, sanliurfa: 48.6, diyarbakir: 52.5, mardin: 57.2, malatya: 53.1, corum: 58.2, sinop: 56.4,
   ordu: 71.3, trabzon: 58.8, sivas: 65.0, van: 58.3, erzurum: 72.2, ardahan: 60.7, amasya: 93.7, mugla: 66.5,
-  bayburt: 81.3, rize: 56.7, artvin: 68.5, kars: 60.1, bitlis: 58.0, agri: 72.0, giresun: 66.2, tokat: 60.7, denizli: 59.8,
+  bayburt: 81.3, rize: 56.7, artvin: 68.5, kars: 60.1, bitlis: 58.0, agri: 72.0, giresun: 66.2, tokat: 60.7, denizli: 59.8, zonguldak: 77.8,
 }
 
 /** insan paylı boss botunun boss'u yendiği süre (sn) */
@@ -22,6 +22,7 @@ export const BOSS_TIME: Record<string, number> = {
   ardahan: 31, amasya: 27, mugla: 29, bayburt: 60, rize: 36, artvin: 37, kars: 74, bitlis: 25, agri: 38,
   giresun: 21, tokat: 67,
   denizli: 54,
+  zonguldak: 33,
 }
 
 const up5 = (s: number) => Math.ceil(s / 5) * 5

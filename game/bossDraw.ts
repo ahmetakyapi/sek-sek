@@ -631,7 +631,134 @@ const PAINT: Record<CityKey, Painter> = {
     eye(c, hx + 0.4, hy - 0.4, 1.7, mood, t)
     aura(c, mood, t, hx - 5, hy - 4, hx + 7.4, hy - 0.6)
   },
-  // Kaynayan Semaver: bakır gövde, pirinç kulplar ve musluk, tepesinde demlik; buharı kesilince yorulur
+  // Kara Elmas Golemi: kömür bloklarından yontulmuş dev; yer yer parlayan elmas yüzleri, göğsünde madenci lambası gibi
+  // tek sarı göz, omzuna saplanmış eğri ray. Öfkelenince damarları kor gibi yanar, lambası öne ışık saçar;
+  // yorulunca lambası titrer, üstünden kömür tozu tüter
+  zonguldak: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const angry = mad(mood)
+    const run = b.state === 'attack' && !air ? Math.sin(t * 20) * 1.6 : 0
+    const lunge = b.state === 'attack' && !air ? 1.6 : 0
+    const COAL = '#2c2c34'
+    const COAL_SH = '#141418'
+    const FACET = '#4a4a5a'
+    const FACET_HI = '#6e6e82'
+    const SEAM = angry ? '#ff8a2a' : '#121216'
+    const BRASS = '#d8a548'
+    const BRASS_SH = '#94661e'
+    c.save()
+    c.translate(lunge, 0)
+    // bacaklar: iki kısa kömür blok
+    for (const [x, st] of [[-6.4, run], [5, -run]] as const) {
+      const lift = Math.max(0, st) + (air ? 1.6 : 0)
+      blob(c, () => c.roundRect(x - 3.6, -8.4 - lift, 7.2, 8.2, 1.4), COAL, shade(COAL_SH))
+      fine(() => poly(c, [x - 2.6, -7.4 - lift, x + 0.6, -7.8 - lift, x - 0.6, -5 - lift], FACET))
+    }
+    // arka kol: omuzdan sarkan kalın blok, yumruğu kömür topak
+    const raise = angry ? 1 : 0
+    const bfx = -12.6 + raise * 1.4
+    const bfy = -11.4 - raise * 8
+    stroke(c, [-8.6, -20.4, -12.4, -16.4 + raise * -3, bfx, bfy + 2], 4.2, '#22222a')
+    poly(c, [bfx - 3, bfy - 2.4, bfx + 2.2, bfy - 3.2, bfx + 3, bfy + 1.8, bfx - 0.6, bfy + 3.6, bfx - 3.4, bfy + 1.4], '#26262e', COAL_SH)
+    // eğri ray: arka omza saplanmış, iki travers çivili
+    fine(() => {
+      for (const [x, y] of [[-12.4, -27.4], [-8, -29.2]] as const) poly(c, [x - 1.4, y - 0.2, x + 1.2, y - 1, x + 1.6, y + 0.8, x - 1, y + 1.6], '#7a5434', '#4e321c')
+    })
+    stroke(c, [-7, -22.4, -9.6, -27.4, -14.6, -29, -17, -27.8], 1.6, '#8e939c')
+    fine(() => stroke(c, [-9.2, -27.9, -14.4, -29.5], 0.45, '#d8dce4', false))
+    // gövde: köşeli kömür kütlesi, tepesi topak topak
+    poly(
+      c,
+      [-10, -7, -12.6, -12.4, -11.8, -19.4, -9, -24.2, -5, -27.8, -0.8, -26, 3.4, -28.8, 8.4, -25.4, 11.8, -20.6, 12.6, -13.2, 10.6, -7, 0, -6.2],
+      COAL,
+      COAL_SH,
+    )
+    // yüzeyin kırık yüzleri: açık gri parçalar, aralarında damar
+    fine(() => {
+      poly(c, [-9, -22.6, -5, -26.4, -2.4, -21.6, -7, -18.4], FACET)
+      poly(c, [3.6, -27.4, 8, -24.6, 5.2, -21.8, 1.4, -23.6], FACET_HI)
+      poly(c, [-11.4, -14.4, -7.4, -16.4, -6.2, -10.8, -9.8, -9.2], '#3c3c4a')
+      poly(c, [8.4, -12.6, 11.6, -14, 10.4, -8.4, 7.4, -8.6], '#3c3c4a')
+    })
+    stroke(c, [-7, -18.4, -4.6, -14.6, -6.2, -10.8], 0.5, SEAM, false)
+    stroke(c, [5.2, -21.8, 8.6, -18.6, 11.6, -18.8], 0.5, SEAM, false)
+    stroke(c, [-2.4, -21.6, 0.4, -23.2, 1.4, -23.6], 0.45, SEAM, false)
+    stroke(c, [7.4, -8.6, 5, -10.2, 1.4, -8.8], 0.45, SEAM, false)
+    // elmas yüzleri: buz mavisi parlak kesik, sırayla ışıldar
+    const gem = (x: number, y: number, r: number, ph: number) => {
+      fine(() => poly(c, [x, y - r, x + r * 0.8, y, x, y + r * 0.9, x - r * 0.8, y], '#bfe4f4', '#6aa8c8'))
+      dab(c, x - r * 0.25, y - r * 0.3, r * 0.22, r * 0.32, '#ffffff')
+      const k = frac(t * 0.7 + ph)
+      if (k < 0.18 && !out) {
+        const g = Math.sin((k / 0.18) * Math.PI) * r * 1.3
+        c.fillStyle = '#ffffff'
+        c.beginPath()
+        c.moveTo(x, y - r - g)
+        c.quadraticCurveTo(x, y - r, x + g * 0.6, y - r)
+        c.quadraticCurveTo(x, y - r, x, y - r + g * 0.6)
+        c.quadraticCurveTo(x, y - r, x - g * 0.6, y - r)
+        c.quadraticCurveTo(x, y - r, x, y - r - g)
+        c.fill()
+      }
+    }
+    gem(-6.4, -21.4, 1.8, 0)
+    gem(9.4, -16.4, 1.4, 0.35)
+    gem(-9, -12.2, 1.2, 0.7)
+    // lamba ışığı: öfkelenince öne huzme
+    const LX = 3.4
+    const LY = -16.4
+    if (angry) {
+      c.fillStyle = mood === 'warn' ? `rgba(255,216,96,${0.24 + 0.1 * Math.sin(t * 30)})` : 'rgba(255,216,96,0.3)'
+      c.beginPath()
+      c.moveTo(LX + 2, LY - 2.4)
+      c.lineTo(LX + 22, LY - 8)
+      c.lineTo(LX + 22, LY + 8)
+      c.lineTo(LX + 2, LY + 2.4)
+      c.closePath()
+      c.fill()
+    } else if (mood !== 'sleep' && !out) dab(c, LX, LY, 6, 6, 'rgba(255,214,110,0.22)')
+    // göz: pirinç çerçeveli madenci lambası; uyurken sönük
+    blob(c, () => c.arc(LX, LY, 4.6, 0, Math.PI * 2), BRASS, shade(BRASS_SH, 0.9, -0.7))
+    fine(() => {
+      for (let i = 0; i < 8; i++) {
+        const an = (i / 8) * Math.PI * 2
+        dab(c, LX + Math.cos(an) * 3.9, LY + Math.sin(an) * 3.9, 0.32, 0.32, BRASS_SH)
+      }
+    })
+    if (mood === 'sleep' || mood === 'hurt' || mood === 'down') {
+      dab(c, LX, LY, 3.4, 3.4, '#5a5240')
+      eye(c, LX, LY, 2.6, mood, t, '#f4e6b8')
+    } else {
+      const flick = mood === 'dizzy' ? 0.55 + 0.45 * Math.abs(Math.sin(t * 9)) : 1
+      c.save()
+      c.globalAlpha *= flick
+      dab(c, LX, LY, 3.5, 3.5, '#ffd04a')
+      c.restore()
+      eye(c, LX, LY, 2.6, mood, t)
+    }
+    // kaş yerine kömür sırtı: sakinken düz ve yukarıda
+    if (!angry && mood !== 'sleep') fine(() => poly(c, [LX - 4.6, LY - 6.4, LX + 4.4, LY - 6.8, LX + 4, LY - 5.6, LX - 4.2, LY - 5.2], '#3c3c4a'))
+    // ağız: göğsün altında yarık
+    mouth(c, LX + 0.6, -9.6, 2.2, mood, t, '#e8e0d0')
+    // ön kol: yumruk; öfkede öne kalkar
+    const ffx = 12.6 + raise * 2.6
+    const ffy = -11 - raise * 7
+    stroke(c, [8.6, -20.6, 12.6, -17 - raise * 2, ffx, ffy + 2], 4.4, '#30303a')
+    poly(c, [ffx - 3.2, ffy - 2.6, ffx + 2.6, ffy - 3.2, ffx + 3.4, ffy + 1.8, ffx - 0.4, ffy + 3.8, ffx - 3.6, ffy + 1.2], COAL, COAL_SH)
+    fine(() => poly(c, [ffx - 2.2, ffy - 1.8, ffx + 1.2, ffy - 2.2, ffx - 0.2, ffy + 0.4], FACET_HI))
+    // yorgunken tepesinden kömür tozu tüter
+    if (mood === 'dizzy')
+      for (let i = 0; i < 3; i++) {
+        const k = frac(t * 0.9 + i / 3)
+        c.save()
+        c.globalAlpha *= (1 - k) * 0.7
+        dab(c, -4 + i * 5 + Math.sin(t * 2 + i) * 1.5, -27 - k * 9, 1.4 + k * 2.4, 1.2 + k * 2, '#6a6a74')
+        c.restore()
+      }
+    c.restore()
+    aura(c, mood, t, -3.4 + lunge, -24, LX + 7 + lunge, -11)
+  },
   rize: (c, b, mood, t) => {
     const out = beat(mood)
     const boil = mad(mood) ? Math.sin(t * 30) * 0.6 : 0
