@@ -2,7 +2,7 @@ import { CITY, LAYER_H, LAYER_W, buildLayers, disc, enemySpecies, rect, type Ctx
 import { BOSS_LINES } from './bossLines'
 import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
-import { BOSSES } from './boss'
+import type { Boss } from './boss'
 import { drawBoss } from './bossDraw'
 import { INK, LOOKS, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
@@ -102,6 +102,7 @@ export class Renderer {
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
   /** boss'u çizilen şehir (özel haritada başka şehrin boss'u olabilir) */
   bossCity: CityKey = 'istanbul'
+  bossCity2: CityKey = 'istanbul'
   shakeScale = 1
   /** Karanlık Yol (zor mod): karakterin çevresindeki küçük ışığın ötesi karanlık */
   dark = false
@@ -182,6 +183,7 @@ export class Renderer {
     for (const o of w.projectiles) keep(o)
     for (const o of w.crates) keep(o)
     if (w.boss) keep(w.boss)
+    if (w.boss2) keep(w.boss2)
   }
 
   /** Konumları iki adım arasına çeker; dönen işlev gerçek konumları geri koyar. Işınlanmada (doğuş, kapı) ara değerleme yok. */
@@ -201,6 +203,7 @@ export class Renderer {
     for (const o of w.projectiles) mix(o)
     for (const o of w.crates) mix(o)
     if (w.boss) mix(w.boss)
+    if (w.boss2) mix(w.boss2)
     return () => {
       for (const [o, x, y] of moved) {
         o.x = x
@@ -215,6 +218,7 @@ export class Renderer {
     if (this.marksFor !== world.level.id) this.deathMarks = []
     this.marksFor = world.level.id
     this.bossCity = world.level.bossOf ?? world.level.city
+    this.bossCity2 = world.level.bossOf2 ?? this.bossCity
     this.layers = buildLayers(this.city)
     this.world = world
     this.terrain = null
@@ -3020,17 +3024,24 @@ export class Renderer {
   }
 
   private drawBossHD(w: World, cx: number, cy: number) {
-    const b = w.boss
+    this.drawOneBoss(w.boss, this.bossCity, cx, cy, true)
+    // Co-op Boss Kapışması: ikinci boss kendi şehrinin çizimiyle (konuşma balonu birincinin)
+    if (w.boss2) this.drawOneBoss(w.boss2, this.bossCity2, cx, cy, false)
+  }
+
+  private drawOneBoss(b: Boss | null, city: CityKey, cx: number, cy: number, main: boolean) {
     if (!b) return
-    if (b.state === 'tired' && this.bossWas !== 'tired') this.say('tired', 1.8)
-    this.bossWas = b.state
+    if (main) {
+      if (b.state === 'tired' && this.bossWas !== 'tired') this.say('tired', 1.8)
+      this.bossWas = b.state
+    }
     if (b.state === 'down' && b.timer > 1.4) return
     const c = this.ctx
     const sc = this.scale
     const x = (b.x + b.w / 2 - cx) * sc
     const y = (b.y + b.h - cy) * sc
     if (x < -200 * sc || x > this.canvas.width + 200 * sc) return
-    drawBoss(c, this.bossCity, b, x, y, sc, this.t)
+    drawBoss(c, city, b, x, y, sc, this.t)
     if (b.state === 'sleep' || b.state === 'down') return
     // canlar: dolu kalp kırmızı, giden kalp boş
     const top = b.hidden ? (b.floor - 16 - cy) * sc : (b.y - 12 - cy) * sc
@@ -3054,7 +3065,7 @@ export class Renderer {
       c.restore()
     }
     if (this.t - this.bossWoke < 3) {
-      const def = BOSSES[this.bossCity]
+      const def = b.def
       const a = Math.min(1, (3 - (this.t - this.bossWoke)) / 0.5)
       c.globalAlpha = a
       c.font = `700 ${Math.round(sc * 6.5)}px ${this.popFont()}`

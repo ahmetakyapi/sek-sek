@@ -1,4 +1,4 @@
-import { BOSSES, makeBoss, resetBoss, touchBoss, updateBoss, type Boss } from './boss'
+import { BOSSES, makeBoss, resetBoss, touchBoss, updateBoss, type Boss, type BossDef } from './boss'
 import { T, type GameEvent, type Input, type LevelDef } from './types'
 
 /* ── Tile kodları ───────────────────────────────────────────── */
@@ -320,6 +320,8 @@ export class World {
   arrival: { x: number; y: number } | null = null
   /** şehrin boss’u (yoksa null; çözücü de null yapar: kapı açık sayılır) */
   boss: Boss | null = null
+  /** Co-op Boss Kapışması'nda ikinci boss (LevelDef.bossOf2) */
+  boss2: Boss | null = null
   /** bayrak alındığındaki düğme durumu: ölünce buna dönülür, bloklar yanlış tarafta kalmaz */
   private cpSwitch = false
   get checkpointSwitch() {
@@ -504,13 +506,20 @@ export class World {
             break
           case 'Q': {
             // arena sınırları: boss’un satırında | ya da duvara kadar
-            const def = BOSSES[level.bossOf ?? level.city]
+            const boost = (d: BossDef): BossDef => (level.bossBoost ? { ...d, tier: Math.max(d.tier, level.bossBoost.tier) as 1 | 2 | 3, speed: d.speed * level.bossBoost.speed } : d)
+            const def = boost(BOSSES[level.bossOf ?? level.city])
             const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
             let l = tx - 1
             while (l >= 0 && !stop(row[l])) l--
             let r = tx + 1
             while (r < this.cols && !stop(row[r])) r++
             this.boss = makeBoss(def, px, (ty + 1) * T, (l + 1) * T, r * T - def.w)
+            if (level.bossOf2) {
+              // ikinci boss arenanın öbür ucundan: birinin aynası
+              const def2 = boost(BOSSES[level.bossOf2])
+              this.boss2 = makeBoss(def2, (l + 1) * T + (r * T - def2.w) - px, (ty + 1) * T, (l + 1) * T, r * T - def2.w)
+              this.boss2.dir = 1
+            }
             break
           }
           case '_':
@@ -741,7 +750,7 @@ export class World {
     if (t === BLOCK_A) return !this.switchOn
     if (t === BLOCK_B) return this.switchOn
     if (t === RHYTHM_A || t === RHYTHM_B) return this.rhythmOn(t) && !this.rhythmHold.has(ty * this.cols + tx)
-    if (t === BOSS_GATE) return this.boss !== null && this.boss.state !== 'down'
+    if (t === BOSS_GATE) return (this.boss !== null && this.boss.state !== 'down') || (this.boss2 !== null && this.boss2.state !== 'down')
     return false
   }
 
@@ -768,9 +777,17 @@ export class World {
 
     if (p.dead) {
       p.deadTimer -= dt
-      if (p.deadTimer <= 0) this.respawn()
+      // co-op: eşi ayaktaysa oyuncu onun yanında doğar, bölüm sıfırlanmaz (eş düşünce de böyle: kural ikisine aynı).
+      // ikisi birden düştüyse bölüm bayraktan kurulur.
+      if (p.deadTimer <= 0) {
+        const q = this.partner
+        if (q && !q.dead) this.rejoin(p, q)
+        else this.respawn()
+      }
       this.updateEnemies(dt)
       if (this.boss) updateBoss(this.boss, this, dt)
+    if (this.boss2) updateBoss(this.boss2, this, dt)
+      if (this.boss2) updateBoss(this.boss2, this, dt)
       this.updateTurrets(dt)
       return
     }
@@ -781,6 +798,7 @@ export class World {
     for (const e of this.enemies) e.py = e.y
     this.updateEnemies(dt)
     if (this.boss) updateBoss(this.boss, this, dt)
+    if (this.boss2) updateBoss(this.boss2, this, dt)
     this.updateTurrets(dt)
     this.interactions()
   }
@@ -1683,15 +1701,18 @@ export class World {
 
     for (const pr of this.projectiles) if (overlap(shrink(p, 2), pr)) return this.kill()
 
-    if (this.boss) {
-      const r = touchBoss(this.boss, this)
+    for (const b of [this.boss, this.boss2]) {
+      if (!b) continue
+      const r = touchBoss(b, this)
       if (r === 'kill') return this.kill()
       if (r === 'hit') {
         p.vy = -PHYS.stompV
         p.canDash = true
         p.dashTime = 0
         p.grounded = false
-        if (this.boss.state === 'down') this.projectiles = []
+        // mermiler yalnız arenada ayakta boss kalmayınca silinir
+        if ((!this.boss || this.boss.state === 'down') && (!this.boss2 || this.boss2.state === 'down')) this.projectiles = []
+        break
       }
     }
 
@@ -1755,6 +1776,12 @@ export class World {
   }
 
   /** Eşi oyuncunun yanına taşır (geride kaldıysa, düştüyse ya da meydan kapısından geçildiyse) */
+  /** düşen oyuncu ayaktaki eşinin yanında doğar (dünya olduğu gibi kalır) */
+  private rejoin(p: Player, to: Player) {
+    Object.assign(p, this.freshPlayer(to.x + (this.boxHitsSolid(to.x - 10, to.y, PW, PH) ? 0 : -10), to.y), { dead: false, deadTimer: 0 })
+    this.events.push({ type: 'rejoin' })
+  }
+
   bringPartner(to: Player = this.player) {
     const q = this.partner
     if (!q) return
@@ -1777,7 +1804,8 @@ export class World {
     }
     if (q.dead) {
       q.deadTimer -= dt
-      if (q.deadTimer <= 0) this.bringPartner(this.player.dead ? { ...this.player, x: this.spawn.x, y: this.spawn.y } : this.player)
+      // oyuncu da düşmüşse eş bekler: bölüm bayraktan kurulunca 'respawn' olayıyla oyuncunun yanına gelir
+      if (q.deadTimer <= 0 && !this.player.dead) this.rejoin(q, this.player)
       return
     }
     const self = this as unknown as { player: Player }
@@ -1804,6 +1832,7 @@ export class World {
     this.switchOn = this.cpSwitch
     for (const pl of this.plates) pl.pressed = false
     if (this.boss && this.boss.state !== 'down') resetBoss(this.boss)
+    if (this.boss2 && this.boss2.state !== 'down') resetBoss(this.boss2)
     for (const e of this.enemies) {
       e.alive = true
       e.x = e.ox
@@ -1879,6 +1908,7 @@ export interface Snapshot {
   cpSwitch: boolean
   crates: Array<[number, number, number, number]>
   boss: Boss | null
+  boss2: Boss | null
   projectiles: Projectile[]
 }
 
@@ -1905,6 +1935,7 @@ export function snapshot(w: World): Snapshot {
     cpSwitch: w.checkpointSwitch,
     crates: w.crates.map((c) => [c.x, c.y, c.vy, c.sunk]),
     boss: w.boss ? { ...w.boss, home: { ...w.boss.home } } : null,
+    boss2: w.boss2 ? { ...w.boss2, home: { ...w.boss2.home } } : null,
     projectiles: w.projectiles.map((q) => ({ ...q })),
   }
 }
@@ -1933,6 +1964,7 @@ export function restore(w: World, s: Snapshot) {
   w.checkpointSwitch = s.cpSwitch
   s.crates.forEach(([x, y, vy, sunk], i) => Object.assign(w.crates[i], { x, y, vy, sunk }))
   if (w.boss && s.boss) Object.assign(w.boss, s.boss, { home: { ...s.boss.home } })
+  if (w.boss2 && s.boss2) Object.assign(w.boss2, s.boss2, { home: { ...s.boss2.home } })
   w.projectiles = s.projectiles.map((q) => ({ ...q }))
   w.events = []
 }

@@ -6,6 +6,8 @@ import { BossFigure } from '@/components/Figures'
 import { ItemIcon } from '@/components/HudBits'
 import { Board } from '@/components/ScoreBoard'
 import { Overlay, displayName, ic } from '@/components/ui'
+import { CourseScene } from '@/components/MapThumb'
+import { FAMILIES, Heat, RULE_ART, RuleIcon, rulePerks, type RuleFamily } from '@/components/RuleArt'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { CHALLENGES, RAGE_COURSES } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
@@ -43,6 +45,8 @@ export function ModesHub({
   ruleCount,
   onRage,
   rageCount,
+  dailyUsed,
+  tried,
   onRageCourses,
   rageCoursesDone,
   rulesOpen,
@@ -78,6 +82,10 @@ export function ModesHub({
   onRage: () => void
   /** Sinir Bozucu modlarda yazılmış rekor sayısı */
   rageCount: number
+  /** bugünün günlük hakkı kullanıldı (başlandı ya da bitti) */
+  dailyUsed: boolean
+  /** en az bir şehirde rekoru olan kurallar (simge panosunda parlar) */
+  tried: string[]
   onRageCourses: () => void
   /** bitirilen Öfke Parkuru sayısı */
   rageCoursesDone: number
@@ -137,11 +145,11 @@ export function ModesHub({
                 </div>
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t(rule.text)}</p>
-              <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Herkes bugün aynı şehirde, aynı kuralla koşar. Kilitli şehir de gelebilir; ilerlemen ve rekorların değişmez.')}</p>
+              <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">{dailyUsed && !playedToday ? t('Bugünkü koşunu yarıda bıraktın. Yarın yeni bir şehir seni bekliyor.') : t('Herkes bugün aynı şehirde, aynı kuralla koşar. Günde tek hak: baştan başlasan da süre işler.')}</p>
               <div className="mt-auto grid grid-cols-2 gap-2 pt-3 text-center short:hidden">
                 <div className="border-2 border-line bg-ink/40 py-1.5">
                   <p className="font-display text-lg leading-none tabular-nums text-cream">{playedToday ? formatTime(mark!.bestMs) : '—'}</p>
-                  <p className="mt-1 text-[12px] text-muted">{t('Bugünkü En İyin')}</p>
+                  <p className="mt-1 text-[12px] text-muted">{t('Bugünkü Skorun')}</p>
                 </div>
                 <div className={`border-2 py-1.5 ${streak >= 3 ? 'border-accent bg-accent/10' : 'border-line bg-ink/40'}`}>
                   <p className="font-display text-lg leading-none tabular-nums text-cream">{streak ? `🔥 ${streak}` : '—'}</p>
@@ -149,8 +157,8 @@ export function ModesHub({
                 </div>
               </div>
               <div className="mt-2.5 grid grid-cols-[1fr_auto] gap-2">
-                <button className="pixel-btn primary justify-center" onClick={onDaily} autoFocus>
-                  {ic(playedToday ? t('▶ Yeniden Dene') : t('▶ Oyna'))}
+                <button className="pixel-btn primary justify-center" onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed}>
+                  {dailyUsed ? t('Yarın Yeni Şehir') : ic(t('▶ Oyna'))}
                 </button>
                 <button className="pixel-btn justify-center px-3" onClick={onDailyBoard}>
                   {t('Günün Sıralaması')}
@@ -161,14 +169,14 @@ export function ModesHub({
             {/* Sinir Bozucu: zor modlar; her biri bitirilen her şehirde ayrı rekor (hikâyeye ve ilerlemeye dokunmaz) */}
             <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-coral)] ${rulesOpen ? '' : 'locked'}`}>
               <Eyebrow tone="text-coral">{t('SİNİR BOZUCU')}</Eyebrow>
-              <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
-                {RAGE_RULES.map((r) => (
-                  <span key={r} className="border-2 border-coral/40 bg-ink/50 px-1.5 py-0.5 text-[12px] font-bold text-coral">
-                    {t(DAILY_RULES[r].name)}
-                  </span>
-                ))}
+              <RuleBoard rules={RAGE_ORDER} tried={tried} className="mt-2.5 grid-cols-9 max-sm:grid-cols-6" />
+              <div className="mt-2 flex items-center gap-2 text-[12px] tabular-nums text-muted">
+                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/60">
+                  <span className="block h-full rounded-full bg-coral" style={{ width: `${(RAGE_RULES.filter((r) => tried.includes(r)).length / RAGE_RULES.length) * 100}%` }} />
+                </span>
+                {t('{n}/{total} mod denendi', { n: RAGE_RULES.filter((r) => tried.includes(r)).length, total: RAGE_RULES.length })}
               </div>
-              <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Kaygan zemin, ters tuşlar, çöken taşlar, karanlık, baş aşağı ekran. Sabır taşını çatlatan on iki mod, her şehirde ayrı rekor.')}</p>
+              <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Beş aile, on sekiz mod: buz zemin, ters ekran, karanlık, tek can. Her şehirde ayrı rekor.')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : rageCount ? t('{n} öfke rekoru. Sıradakine dayanabilir misin?', { n: rageCount }) : t('Henüz kimse sinirlenmedi. İlk sen dene.')}</p>
               <div className="mt-auto grid grid-cols-2 gap-2">
                 <button className="pixel-btn tone shrink-0 justify-center px-2" disabled={!rulesOpen} onClick={onRage}>
@@ -214,7 +222,7 @@ export function ModesHub({
                 <Portrait id="memo" className="w-[64px] rotate-[4deg] short:w-[44px]" />
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('İki kişi aynı ekranda, aynı şehirde: hatıralar, düğmeler ve boss ortak.')}</p>
-              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Klavyede WASD ve ok tuşları ya da iki oyun kolu. İlerlemene ve rekorlarına dokunmaz.')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted short:hidden">{t('Solda WASD + X, sağda ok tuşları + Enter ya da iki oyun kolu. İlerlemene ve rekorlarına dokunmaz.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" onClick={onCoop}>
                 {t('Birlikte Oyna')}
               </button>
@@ -274,13 +282,7 @@ export function ModesHub({
             {/* Kurallı Koşu */}
             <section className={`mode-card flex flex-col p-3.5 short:p-2.5 [--tone:var(--color-accent)] ${rulesOpen ? '' : 'locked'}`}>
               <Eyebrow tone="text-accent">{t('KURALLI KOŞU')}</Eyebrow>
-              <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
-                {RULES.map((r) => (
-                  <span key={r} className="border-2 border-line bg-ink/50 px-1.5 py-0.5 text-[12px] font-bold text-cream/90">
-                    {t(DAILY_RULES[r].name)}
-                  </span>
-                ))}
-              </div>
+              <RuleBoard rules={RULES} tried={tried} className="mt-2.5 grid-cols-7" />
               <p className="mt-2 text-[13px] leading-snug text-cream/85 short:text-[13px]">{t('Şehri ve kuralı sen seç: aynı şehir her kuralla başka bir oyun. Her şehir ve kural için ayrı rekor.')}</p>
               <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{!rulesOpen ? t('Bir şehri bitirince o şehirde açılır.') : ruleCount ? t('{n} rekor yazdın. Sıradaki kuralı dene.', { n: ruleCount }) : t('Yedi kural, bitirdiğin bütün şehirler.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!rulesOpen} onClick={onRules}>
@@ -365,7 +367,7 @@ export interface DailyResult {
 }
 
 /** Günlük bitiş: skorun nasıl hesaplandığı satır satır, günlük sıralama ve yeniden deneme */
-export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLogin }: { result: DailyResult; player: string; status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null; onRetry: () => void; onModes: () => void; onLogin: () => void }) {
+export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLogin }: { result: DailyResult; player: string; status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null; /** yalnız serbest Kurallı Koşu'da: günlükte tek hak */ onRetry?: () => void; onModes: () => void; onLogin: () => void }) {
   const t = useT()
   const lng = useLang()
   const rule = DAILY_RULES[result.run.rule]
@@ -413,10 +415,14 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
             ) : null}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-2.5 short:mt-2">
-            <button className="pixel-btn primary justify-center whitespace-nowrap short:py-2" onClick={onRetry} autoFocus>
-              {ic(t('↺ Yeniden Dene'))}
-            </button>
-            <button className="pixel-btn justify-center" onClick={onModes}>
+            {onRetry ? (
+              <button className="pixel-btn primary justify-center whitespace-nowrap short:py-2" onClick={onRetry} autoFocus>
+                {ic(t('↺ Yeniden Dene'))}
+              </button>
+            ) : (
+              <p className="flex items-center text-[13px] leading-snug text-muted">{t('Bugünkü hakkın bu. Yarın yeni bir şehir.')}</p>
+            )}
+            <button className={`pixel-btn justify-center ${onRetry ? '' : 'primary'}`} onClick={onModes} autoFocus={!onRetry}>
               {t('Modlar')}
             </button>
           </div>
@@ -444,66 +450,196 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
 }
 
 /** Kurallı Koşu kurulumu: şehir + kural; her kuralın o şehirdeki rekoru kartında yazar */
+/** Sinir Bozucu modlarının aile sırası (seçim ekranındaki başlıklarla aynı) */
+const RAGE_ORDER = (['zemin', 'gorus', 'fizik', 'tekcan', 'karisim'] as RuleFamily[]).flatMap((f) => RAGE_RULES.filter((r) => RULE_ART[r].family === f))
+
+/** Modlar kartındaki simge panosu: denenen kural aile renginde parlar, denenmeyen soluk durur */
+function RuleBoard({ rules, tried, className = '' }: { rules: DailyRule[]; tried: string[]; className?: string }) {
+  const t = useT()
+  return (
+    <div className={`grid gap-1 ${className}`}>
+      {rules.map((r) => {
+        const c = FAMILIES[RULE_ART[r].family].color
+        const on = tried.includes(r)
+        return (
+          <span key={r} title={t(DAILY_RULES[r].name)} className="flex aspect-square items-center justify-center rounded-sm" style={{ color: c, background: on ? `${c}30` : `${c}10`, boxShadow: on ? `inset 0 0 0 2px ${c}` : undefined, opacity: on ? 1 : 0.6 }}>
+            <RuleIcon rule={r} size={20} />
+            <span className="sr-only">{t(DAILY_RULES[r].name)}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Seçili kuralın önizlemesi: şehrin sahnesi, üstünde kuralın görünüşü (karanlık, ters ekran, buz, rüzgâr…) */
+function RulePreview({ rule, level, className = '' }: { rule: DailyRule; level: number; className?: string }) {
+  const t = useT()
+  const d = DAILY_RULES[rule]
+  const v = d.view ?? {}
+  const fam = FAMILIES[RULE_ART[rule].family]
+  const tf = [v.zoom ? `scale(${v.zoom})` : '', v.flipY ? 'scaleY(-1)' : '', v.flipX ? 'scaleX(-1)' : ''].filter(Boolean).join(' ')
+  return (
+    <CourseScene
+      map={LEVELS[level].map}
+      city={LEVELS[level].city}
+      className={className}
+      look={{ hiddenSpikes: v.hiddenSpikes, ghost: v.ghostGround, noFlags: d.noFlags }}
+      canvasStyle={tf ? { transform: tf, transformOrigin: v.zoom ? 'var(--px) var(--py)' : 'center' } : undefined}
+    >
+      {d.slippery && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(150,220,255,0.05)_30%,rgba(170,230,255,0.42))] mix-blend-screen" />}
+      {d.crumbleAll && <div className="rage-cracks pointer-events-none absolute inset-x-0 bottom-0 h-[42%]" />}
+      {d.lowGravity && <div className="rage-stars pointer-events-none absolute inset-0" />}
+      {d.speed > 1 && <div className="rage-streak pointer-events-none absolute inset-0" />}
+      {d.storm && <div className="rage-wind pointer-events-none absolute inset-0" />}
+      {v.dark && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_var(--px)_var(--py),transparent_0_9%,rgba(6,5,18,0.95)_24%)]" />}
+      {d.swapKeys && (
+        <span className="rage-pulse pointer-events-none absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink/80 text-[#ffd166] shadow-[0_0_0_2px_#ffd166]">
+          <RuleIcon rule="ters" size={26} />
+        </span>
+      )}
+      <span className="pointer-events-none absolute left-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-sm bg-ink/85" style={{ color: fam.color, boxShadow: `0 0 0 2px ${fam.color}` }}>
+        <RuleIcon rule={rule} size={24} />
+      </span>
+      {d.oneLife && (
+        <span className="pointer-events-none absolute right-1.5 top-1.5 flex items-center gap-1 rounded-sm bg-ink/85 px-1.5 py-0.5 text-[12px] font-bold text-[#ff7a7a]">
+          <RuleIcon rule="tekcan" size={14} /> ×1
+        </span>
+      )}
+      <span className="sr-only">{t(d.name)}</span>
+    </CourseScene>
+  )
+}
+
 export function RuleSetup({ rage, startLevel, finished, records, onStart, onBack }: { /** Sinir Bozucu modlar (yalnız RAGE_RULES) */ rage?: boolean; startLevel: number; /** bitirilmiş şehirlerin dizinleri: kural yalnız bir kez geçilmiş şehirde açılır */ finished: number[]; records: Record<string, number>; onStart: (level: number, rule: DailyRule) => void; onBack: () => void }) {
   const t = useT()
   const lng = useLang()
   const [level, setLevel] = useState(finished.includes(startLevel) ? startLevel : (finished[0] ?? 0))
   const list: DailyRule[] = rage ? RAGE_RULES : RULES
-  const [rule, setRule] = useState<DailyRule>(list[0])
+  const [rule, setRule] = useState<DailyRule>(list.find((r) => ruleFits(r, LEVELS[level])) ?? list[0])
   const lv = localize(LEVELS[level], lng)
   const fits = ruleFits(rule, LEVELS[level])
   const done = list.filter((r) => records[ruleKey(lv.id, r)] !== undefined).length
+  const def = DAILY_RULES[rule]
+  const art = RULE_ART[rule]
+  const fam = FAMILIES[art.family]
+  const best = records[ruleKey(lv.id, rule)]
+  const lim = ruleLimit(rule, LEVELS[level])
+  // aileler: Sinir Bozucu beş başlık altında; Kurallı Koşu tek öbek
+  const groups = (rage ? (['zemin', 'gorus', 'fizik', 'tekcan', 'karisim'] as RuleFamily[]) : (['kural'] as RuleFamily[])).map((f) => ({ f, rules: list.filter((r) => RULE_ART[r].family === f) }))
+  const step = (k: number) => {
+    const i = finished.indexOf(level)
+    setLevel(finished[(i + k + finished.length) % finished.length])
+  }
+  const tone = rage ? 'text-coral' : 'text-accent'
   return (
     <Overlay>
-      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:max-w-[min(900px,100%)] short:py-3 wide:max-w-[min(960px,100%)]">
+      <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:max-w-[min(900px,100%)] short:py-3 wide:max-w-[min(1080px,100%)]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className={`text-[12px] font-bold tracking-[0.18em] max-sm:hidden short:hidden ${rage ? 'text-coral' : 'text-accent'}`}>{rage ? t('SABRINI SINA') : t('AYNI ŞEHİR, BAŞKA OYUN')}</p>
+            <p className={`text-[12px] font-bold tracking-[0.18em] max-sm:hidden short:hidden ${tone}`}>{rage ? t('SABRINI SINA') : t('AYNI ŞEHİR, BAŞKA OYUN')}</p>
             <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{rage ? t('Sinir Bozucu') : t('Kurallı Koşu')}</h2>
           </div>
-          <button className="pixel-btn shrink-0 whitespace-nowrap" onClick={onBack}>
-            {ic(t('← Geri'))}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="border-2 border-line bg-ink/40 px-2 py-1.5 text-[13px] tabular-nums text-muted max-sm:hidden">
+              {t('{city}: {n}/{total}', { city: lv.name, n: done, total: list.length })}
+            </span>
+            <button className="pixel-btn whitespace-nowrap" onClick={onBack}>
+              {ic(t('← Geri'))}
+            </button>
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 short:mt-2">
-          <select value={level} onChange={(e) => setLevel(Number(e.target.value))} className="min-w-0 flex-1 border-2 border-line bg-ink px-2 py-2 text-[15px] text-cream outline-none focus:border-gold" aria-label={t('Şehir')}>
-            {finished.map((i) => (
-              <option key={LEVELS[i].id} value={i}>
-                {String(LEVELS[i].plate).padStart(2, '0')} · {displayName(LEVELS[i])} · {t(LEVELS[i].difficulty)}
-              </option>
+        <div className="mt-3 grid min-h-0 flex-1 gap-3 max-sm:grid-rows-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] short:mt-2 short:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+          {/* sol: modlar ailelerine göre; her kutucukta simge, ad, zorluk ve bu şehirdeki rekor */}
+          <div className="overlay-scroll -mx-1 min-h-0 overflow-y-auto px-1">
+            {groups.map(({ f, rules }) => (
+              <section key={f} className="mb-2.5 last:mb-0">
+                {rage && (
+                  <p className="mb-1 flex items-baseline gap-2 text-[12px] font-bold tracking-[0.14em]" style={{ color: FAMILIES[f].color }}>
+                    {t(FAMILIES[f].name).toLocaleUpperCase(lng === 'tr' ? 'tr' : 'en')}
+                    <span className="truncate text-[12px] font-normal tracking-normal text-muted">{t(FAMILIES[f].tagline)}</span>
+                  </p>
+                )}
+                <div className={`grid gap-1.5 ${rage ? 'grid-cols-4' : 'grid-cols-2 max-sm:grid-cols-3'}`}>
+                  {rules.map((r) => {
+                    const ok = ruleFits(r, LEVELS[level])
+                    const b = records[ruleKey(lv.id, r)]
+                    const sel = rule === r
+                    const c = FAMILIES[RULE_ART[r].family].color
+                    return (
+                      <button
+                        key={r}
+                        aria-pressed={sel}
+                        disabled={!ok}
+                        onClick={() => setRule(r)}
+                        className={`flex min-w-0 border-2 px-1.5 py-1.5 transition-colors disabled:opacity-40 ${rage ? 'items-center gap-1.5 text-left max-sm:flex-col max-sm:gap-1 max-sm:text-center short:flex-col short:gap-0.5 short:py-1 short:text-center' : 'items-center gap-2.5 px-2 py-2 text-left max-sm:flex-col max-sm:gap-1 max-sm:text-center short:py-1'} ${sel ? '' : 'border-line bg-ink/40 hover:bg-panel-2'}`}
+                        style={sel ? { borderColor: c, background: `${c}22` } : undefined}
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm" style={{ color: c, background: `${c}1c` }}>
+                          <RuleIcon rule={r} size={22} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block font-display text-[14px] leading-tight text-cream max-sm:text-[12px] ${rage ? 'line-clamp-2 text-[13px] short:text-[11px]' : 'truncate text-[16px]'}`}>{t(DAILY_RULES[r].name)}</span>
+                          <span className={`mt-0.5 flex items-center gap-1.5 max-sm:justify-center short:justify-center`}>
+                            <Heat n={RULE_ART[r].heat} label={t('Zorluk {n}/5', { n: RULE_ART[r].heat })} />
+                            {b !== undefined ? <span className="text-[11px] tabular-nums text-gold max-sm:hidden short:hidden">★ {formatTime(b)}</span> : !ok ? <span className="text-[11px] text-muted max-sm:hidden short:hidden">{t('Bu Şehirde Yok')}</span> : null}
+                          </span>
+                          {!rage && <span className="mt-1 line-clamp-2 text-[12px] leading-snug text-muted max-sm:hidden short:hidden">{t(DAILY_RULES[r].text)}</span>}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
             ))}
-          </select>
-          <span className="shrink-0 border-2 border-line bg-ink/40 px-2 py-2 text-[13px] tabular-nums text-muted">{t('{n}/{total} kural', { n: done, total: list.length })}</span>
-        </div>
-        <div className="overlay-scroll -mx-1 mt-3 grid min-h-0 flex-1 grid-cols-1 content-start gap-2 overflow-y-auto px-1 sm:grid-cols-2 short:mt-2 short:grid-cols-2 wide:grid-cols-3">
-          {list.map((r) => {
-            const def = DAILY_RULES[r]
-            const ok = ruleFits(r, LEVELS[level])
-            const best = records[ruleKey(lv.id, r)]
-            const lim = ruleLimit(r, LEVELS[level])
-            return (
-              <button
-                key={r}
-                aria-pressed={rule === r}
-                disabled={!ok}
-                className={`flex flex-col border-2 px-3 py-2 text-left disabled:opacity-45 ${rule === r ? 'border-gold bg-gold/10' : 'border-line bg-ink/40 hover:bg-panel-2'}`}
-                onClick={() => setRule(r)}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="font-display text-[17px] text-cream">{t(def.name)}</span>
-                  <span className={`shrink-0 text-[13px] tabular-nums ${best !== undefined ? 'text-gold' : 'text-muted'}`}>{best !== undefined ? `★ ${formatTime(best)}` : ok ? t('Rekor Yok') : t('Bu Şehirde Yok')}</span>
+          </div>
+          {/* sağ: seçilen modun canlı önizlemesi, ne değiştirdiği, şehir ve başla */}
+          <section className="flex min-h-0 flex-col border-2 bg-ink/30 p-2.5" style={{ borderColor: `${fam.color}88` }}>
+            <RulePreview rule={rule} level={level} className="min-h-[84px] flex-1 max-sm:h-24 max-sm:flex-none short:min-h-[60px]" />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="min-w-0 truncate font-display text-xl leading-tight text-cream short:text-lg">{t(def.name)}</p>
+              <Heat n={art.heat} label={t('Zorluk {n}/5', { n: art.heat })} className="shrink-0 scale-125 origin-right" />
+            </div>
+            <p className="mt-1 text-[13px] leading-snug text-muted max-sm:hidden short:hidden">
+              {t(def.text)}
+              {lim ? ` ${t('Sınır: {s} sn.', { s: lim })}` : ''}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {rulePerks(rule).map((p) => (
+                <span key={p.text} className="flex items-center gap-1 border-2 border-line bg-ink/50 px-1.5 py-0.5 text-[12px] font-semibold text-cream/90">
+                  <span style={{ color: FAMILIES[RULE_ART[p.icon].family].color }}>
+                    <RuleIcon rule={p.icon} size={14} />
+                  </span>
+                  {t(p.text, p.vars)}
                 </span>
-                <span className="mt-0.5 text-[13px] leading-snug text-muted">
-                  {t(def.text)}
-                  {lim ? ` ${t('Sınır: {s} sn.', { s: lim })}` : ''}
-                </span>
+              ))}
+            </div>
+            <div className="pt-2">
+              <div className="flex items-center gap-1.5">
+                <button className="pixel-btn shrink-0 px-2.5 py-2" onClick={() => step(-1)} disabled={finished.length < 2} aria-label={t('Önceki Şehir')}>
+                  ‹
+                </button>
+                <select value={level} onChange={(e) => setLevel(Number(e.target.value))} className="min-w-0 flex-1 border-2 border-line bg-ink px-2 py-2 text-[14px] text-cream outline-none focus:border-gold" aria-label={t('Şehir')}>
+                  {finished.map((i) => (
+                    <option key={LEVELS[i].id} value={i}>
+                      {String(LEVELS[i].plate).padStart(2, '0')} · {displayName(LEVELS[i])} · {t(LEVELS[i].difficulty)}
+                    </option>
+                  ))}
+                </select>
+                <button className="pixel-btn shrink-0 px-2.5 py-2" onClick={() => step(1)} disabled={finished.length < 2} aria-label={t('Sonraki Şehir')}>
+                  ›
+                </button>
+              </div>
+              <p className="mt-1.5 flex items-center justify-between text-[13px] text-muted short:hidden">
+                <span>{t('Bu şehirde rekorun')}</span>
+                <span className={`font-display text-[16px] tabular-nums ${best !== undefined ? 'text-gold' : 'text-muted'}`}>{best !== undefined ? formatTime(best) : '—'}</span>
+              </p>
+              <button className="pixel-btn primary mt-1.5 w-full justify-center py-2.5 text-base short:py-2" disabled={!fits} onClick={() => onStart(level, rule)}>
+                {fits ? ic(t('▶ Oyna')) : t('Bu Şehirde Yok')}
               </button>
-            )
-          })}
+            </div>
+          </section>
         </div>
-        <button className="pixel-btn primary mt-3 w-full shrink-0 justify-center py-2.5 text-base short:mt-2 short:py-2" disabled={!fits} onClick={() => onStart(level, rule)}>
-          {ic(t('▶ {city}: {rule}', { city: lv.name, rule: t(DAILY_RULES[rule].name) }))}
-        </button>
       </div>
     </Overlay>
   )
@@ -601,7 +737,7 @@ export function DuelSetup({ initial, unlocked, canSide, onStart, onBack }: { ini
                 ? t('Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Yan yana yarış klavye ya da oyun kolu ister.')
                 : v.style === 'sirayla'
                 ? t('Tek cihaz elden ele: ikinci koşan rakibinin hayaletini görür. Telefonda da oynanır.')
-                : t('Ekran ikiye bölünür, aynı anda koşarsınız. Klavye (WASD + F, ok tuşları + L) ya da iki oyun kolu gerekir.')}
+                : t('Ekran ikiye bölünür, aynı anda koşarsınız. Klavye (WASD + X, ok tuşları + Enter) ya da iki oyun kolu gerekir.')}
             </p>
             <p className="mt-3 text-[12px] font-bold tracking-[0.14em] text-muted">{t('TUR')}</p>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -649,7 +785,7 @@ export function DuelTurn({ setup, rounds, round, turn, onGo, onQuit }: { setup: 
         <h2 className="mt-3 font-display text-3xl text-cream short:text-2xl">{both ? t('Yan Yana Yarış') : t('Sıra Sende, {name}', { name: setup.names[turn] })}</h2>
         <p className="mt-1.5 text-[14px] text-cream/85">
           {both
-            ? t('Solda {a}: WASD ve F. Sağda {b}: ok tuşları ve L. Çıkışa ilk varan turu alır.', { a: setup.names[0], b: setup.names[1] })
+            ? t('Solda {a}: WASD, dash X. Sağda {b}: ok tuşları, dash Enter. Çıkışa ilk varan turu alır.', { a: setup.names[0], b: setup.names[1] })
             : rival
             ? t('Geçilecek skor: {score} ({time}, ✕{deaths}). Rakibinin hayaleti yanında koşacak.', { score: formatTime(rival.score), time: formatTime(rival.timeMs), deaths: rival.deaths })
             : t('İlk koşu senin. Hızlı ol ama düşme: her düşüş 5 saniye.')}

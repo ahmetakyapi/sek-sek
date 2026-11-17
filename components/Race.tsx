@@ -16,10 +16,12 @@ import { formatTime } from '@/lib/storage'
 
 const STEP = 1 / 120
 
-/** Yan yana yarışta tuşlar: solda WASD, sağda ok tuşları; oyun kolu varsa 1. kol sola, 2. kol sağa */
-export const KEYS = [
-  { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], jump: ['KeyW', 'KeyG'], dash: ['KeyF', 'Space'] },
-  { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], jump: ['ArrowUp', 'KeyK'], dash: ['KeyL', 'Enter', 'Slash'] },
+import { DUO_KEYS as KEYS } from '@/game/input'
+export { KEYS }
+/** ekranda gösterilen tuşlar: sol, sağ, zıpla, dash */
+export const KEY_HINTS = [
+  [['A', 'D'], ['W'], ['X']],
+  [['←', '→'], ['↑'], ['Enter']],
 ] as const
 
 interface Side {
@@ -110,7 +112,7 @@ export default function Race({
     const keys = new Set<string>()
     const down = (e: KeyboardEvent) => {
       const k = e.code
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'Enter', 'Slash'].includes(k)) e.preventDefault()
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'Enter', 'NumpadEnter', 'Slash', 'Period'].includes(k)) e.preventDefault()
       keys.add(k)
       if (e.repeat) return
       if (k === 'Escape' || k === 'KeyP') {
@@ -132,6 +134,8 @@ export default function Race({
       if (e.key === 'Meta') keys.clear()
     }
     const blur = () => keys.clear()
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __race: unknown }).__race = () => sides.current.map((x) => x.world)
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
     window.addEventListener('blur', blur)
@@ -242,10 +246,7 @@ export default function Race({
   }, [])
 
   const someoneDone = huds.some((h) => h.done !== null)
-  const hints = [
-    [['A', 'D'], ['W'], ['F']],
-    [['←', '→'], ['↑'], ['L']],
-  ]
+  const hints = KEY_HINTS
   return (
     <div className="absolute inset-0 z-30 grid grid-cols-2 bg-ink portrait:grid-cols-1 portrait:grid-rows-2">
       {[0, 1].map((k) => (

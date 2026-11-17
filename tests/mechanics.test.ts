@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LEVELS } from '../game/levels'
+import { LEVELS, bossLevel } from '../game/levels'
 import { NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
@@ -152,6 +152,44 @@ describe('co-op eşi', () => {
     expect(w.player.dead).toBe(false)
   })
 
+  it('düşen oyuncu da eşinin yanında doğar; kural ikisine aynı, dünya sıfırlanmaz', () => {
+    const w = mk(['             ', ' P  C        ', '######^^^####', '#############'])
+    w.enableCoop()
+    w.started = true
+    const qx = w.partner!.x
+    two(w, 1.6, { right: true })
+    expect(w.pickups[0].taken).toBe(true)
+    expect(w.deaths).toBe(1)
+    two(w, 1)
+    expect(w.player.dead).toBe(false)
+    expect(w.partner!.dead).toBe(false)
+    expect(Math.abs(w.player.x - qx)).toBeLessThan(16)
+    // eşi ayaktaydı: bölüm bayraktan kurulmadı, alınan hatıra yerinde
+    expect(w.pickups[0].taken).toBe(true)
+  })
+
+  it('ikisi birden düşerse bölüm bayraktan kurulur ve ikisi birlikte doğar', () => {
+    const w = mk(['             ', ' P           ', '#^^^^^^^^^^^#', '#############'])
+    w.enableCoop()
+    w.started = true
+    two(w, 0.8, { right: true }, { right: true })
+    expect(w.player.dead || w.partner!.dead).toBe(true)
+    let respawned = false
+    for (let i = 0; i < 240; i++) {
+      w.step(1 / 120, emptyInput())
+      w.stepPartner(1 / 120, emptyInput())
+      if (w.events.some((e) => e.type === 'respawn')) {
+        respawned = true
+        w.bringPartner()
+      }
+      w.events.length = 0
+    }
+    expect(respawned).toBe(true)
+    expect(w.player.dead).toBe(false)
+    expect(w.partner!.dead).toBe(false)
+    expect(Math.abs(w.player.x - w.partner!.x)).toBeLessThan(16)
+  })
+
   it('eş çıkışa varınca bölüm biter', () => {
     const w = mk(['            ', ' P      E   ', '############'])
     w.enableCoop()
@@ -259,5 +297,31 @@ describe('zamanlama mekanikleri', () => {
       return top
     }
     expect(peak(false) - peak(true)).toBeGreaterThan(T)
+  })
+})
+
+describe('Co-op Boss Kapışması: iki boss', () => {
+  const van = LEVELS.find((l) => l.id === 'van')!
+  const lvl = { ...bossLevel(van), bossOf: van.city, bossOf2: 'kocaeli' as const, bossBoost: { tier: 3 as const, speed: 1.3 } }
+  it('ikinci boss kurulur, zorluk kademeyi ve hızı artırır', () => {
+    const w = new World(lvl)
+    expect(w.boss2).not.toBeNull()
+    expect(w.boss2!.def.tier).toBe(3)
+    expect(w.boss!.def.speed).toBeGreaterThan(1.3)
+    expect(w.boss2!.x).not.toBe(w.boss!.x)
+  })
+  it('kapı (G) yalnız iki boss da düşünce açılır', () => {
+    const w = new World(lvl)
+    let gx = -1
+    let gy = -1
+    w.level.map.forEach((row, y) => {
+      const x = row.indexOf('G')
+      if (x >= 0 && gx < 0) [gx, gy] = [x, y]
+    })
+    expect(w.isSolid(gx, gy)).toBe(true)
+    w.boss!.state = 'down'
+    expect(w.isSolid(gx, gy)).toBe(true)
+    w.boss2!.state = 'down'
+    expect(w.isSolid(gx, gy)).toBe(false)
   })
 })

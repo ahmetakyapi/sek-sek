@@ -46,6 +46,8 @@ export interface TitleDaily {
   level: LevelDef
   rule: string
   doneMs: string | null
+  /** bugünün hakkı kullanıldı (başlandı, bitmedi de olabilir) */
+  used: boolean
   streak: number
 }
 
@@ -195,7 +197,7 @@ export default function TitleMenu(props: {
         </section>
 
         {/* ── Sağ: menü ── */}
-        <nav className="mt-4 tight:mt-3 flex min-w-0 flex-col md:mt-0 short:mt-0" aria-label={t('Ana Menü')}>
+        <nav className="mt-4 max-sm:mt-2.5 tight:mt-3 flex min-w-0 flex-col md:mt-0 short:mt-0" aria-label={t('Ana Menü')}>
           <header className="mb-4 hidden items-center gap-3.5 md:flex short:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-emblem.png" width={60} height={60} alt="" className="drop-shadow-[0_3px_0_#0e0d22]" />
@@ -218,58 +220,41 @@ export default function TitleMenu(props: {
                 </span>
               </span>
               <span className="shrink-0 text-right text-[13px] tabular-nums">
-                {props.daily.doneMs ? <span className="text-[#7ad88a]">✓ {props.daily.doneMs}</span> : <span className="font-semibold text-accent-2">{t('Bugün Oyna')} ▶</span>}
+                {props.daily.doneMs ? <span className="text-[#7ad88a]">✓ {props.daily.doneMs}</span> : props.daily.used ? <span className="text-muted">{t('Yarın Yeni Şehir')}</span> : <span className="font-semibold text-accent-2">{t('Bugün Oyna')} ▶</span>}
                 {props.daily.streak > 1 && <span className="block text-muted">🔥 {props.daily.streak}</span>}
               </span>
             </button>
           )}
 
-          <div className="grid grid-cols-2 gap-2.5 short:gap-2">
-            <Tile icon="map" label={t('Şehirler')} sub={t('{n}/{m} Bitti', { n: done, m: total })} onClick={() => props.onScreen('map')} />
-            <Tile icon="book" label={t('Defter')} sub={t('{n} Hatıra', { n: props.found })} onClick={() => props.onScreen('notebook')} />
-            {/* Modlar öne çıkar: tam satır, altın çerçeve, içindeki modlar adıyla görünür (eskiden dört kutudan biriydi, gözden kaçıyordu) */}
-            <button className="menu-tile modes-tile group relative col-span-2 flex min-h-[58px] items-center gap-3 px-3 py-2.5 text-left tight:min-h-[52px] tight:py-2 short:min-h-[46px] short:py-1.5" onClick={() => props.onScreen('modes')}>
-              <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center short:h-7 short:w-7">
-                <PxIcon name="modes" className="h-5 w-5 short:h-4 short:w-4" />
-              </span>
-              <span className="min-w-0 flex-1 leading-tight">
-                <span className="flex items-baseline gap-2">
-                  <span className="font-display text-[17px] text-cream short:text-[15px]">{t('Modlar')}</span>
-                  {props.dailyPending && <span className="text-[12px] font-semibold text-accent-2">{t('Günlük Bekliyor')}</span>}
-                </span>
-                <span className="mt-1 flex flex-wrap gap-1 overflow-hidden max-sm:hidden short:hidden" style={{ maxHeight: 22 }}>
-                  {/* Modlar ekranındaki aile renkleri: rekabet altın, birlikte turkuaz, meydan okuma kiremit */}
-                  {(
-                    [
-                      [t('Günlük'), 'border-gold/45 text-gold'],
-                      [t('Sinir Bozucu'), 'border-coral/45 text-coral'],
-                      [t('Co-op'), 'border-teal/45 text-teal'],
-                      [t('Turnuva'), 'border-gold/45 text-gold'],
-                      [t('Düello'), 'border-teal/45 text-teal'],
-                      [t('Boss Rush'), 'border-coral/45 text-coral'],
-                    ] as const
-                  ).map(([m, tone]) => (
-                    <span key={m} className={`border bg-ink/50 px-1.5 text-[12px] font-semibold leading-[18px] ${tone}`}>
-                      {m}
-                    </span>
-                  ))}
-                </span>
-                <span className="hidden truncate text-[12px] text-muted max-sm:block short:block">{t('Günlük · Co-op · Sinir Bozucu')}</span>
-              </span>
-              <span className="shrink-0 font-display text-lg text-gold" aria-hidden>
-                ▶
-              </span>
-              {props.dailyPending && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={t('Bugünün meydan okuması seni bekliyor')} />}
-            </button>
+          {/* menü üç öbekte: OYNA (yola ve modlara çıkış), SENİN (defter, kılık), altta küçük ayarlar. Her kutucukta ne
+              işe yaradığı tek satırda yazar: simgeyi bilmeyen de bulur */}
+          {/* yatay telefonda iki öbeğin altı kutucuğu tek ızgarada 3×2 (başlıklar gizli): kaydırmadan sığar */}
+          <div className="short:grid short:grid-cols-3 short:gap-1.5">
+            <Group label={t('Oyna')} />
+            <div className="grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
+              <Tile icon="map" label={t('Şehirler')} sub={t('{n}/{m} şehir bitti', { n: done, m: total })} onClick={() => props.onScreen('map')} />
+              <Tile
+                icon="modes"
+                label={t('Modlar')}
+                sub={props.dailyPending ? t('Günlük bekliyor') : t('Co-op, Turnuva, Öfke…')}
+                tone="gold"
+                dot={props.dailyPending ? t('Bugünün meydan okuması seni bekliyor') : undefined}
+                onClick={() => props.onScreen('modes')}
+            />
+              <Tile icon="trophy" label={t('Skorlar')} sub={t('Sıralaman ve rekorlar')} onClick={() => props.onScreen('scores')} />
+              <Tile icon="pencil" label={t('Harita Yap')} sub={t('Kendi bölümünü çiz')} onClick={() => (window.location.href = '/duzenle')} />
+            </div>
+            <Group label={t('Senin')} />
+            <div className="grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
+              <Tile icon="book" label={t('Defter')} sub={t('{n} hatıra', { n: props.found })} onClick={() => props.onScreen('notebook')} />
+              <Tile icon="hero" label={t('Karakter')} sub={t('Kılık, atkı, dükkân')} onClick={() => props.onScreen('character')} />
+            </div>
           </div>
-
-          <div className="mt-2.5 grid grid-cols-6 gap-2 short:mt-2">
-            <Mini icon="trophy" label={t('Skorlar')} onClick={() => props.onScreen('scores')} />
-            <Mini icon="pencil" label={t('Düzenle')} aria={t('Bölüm Düzenleyici')} onClick={() => (window.location.href = '/duzenle')} />
-            <Mini icon="hero" label={t('Karakter')} onClick={() => props.onScreen('character')} />
-            <Mini icon="story" label={t('Hikâye')} onClick={() => props.onScreen('story')} />
-            <Mini icon="gear" label={t('Ayarlar')} onClick={() => props.onScreen('controls')} />
-            <Mini icon="music" label={t('Müzik')} off={!props.music} aria={`${t('Müzik')} ${props.music ? t('Açık') : t('Kapalı')}`} onClick={props.onMusic} />
+          <div className="mt-2 grid grid-cols-4 gap-1.5 max-sm:mt-1.5 short:mt-1.5">
+            <Chip icon="story" label={t('Hikâye')} onClick={() => props.onScreen('story')} />
+            <Chip icon="gear" label={t('Ayarlar')} onClick={() => props.onScreen('controls')} />
+            <Chip icon="music" label={t('Müzik')} aria={props.music ? t('Müzik Açık') : t('Müzik Kapalı')} off={!props.music} onClick={props.onMusic} />
+            <Chip icon="story" label={t('Hakkında')} aria={t('Oyun Hakkında')} onClick={() => props.onScreen('about')} plain />
           </div>
 
           <footer className="mt-auto pt-3 text-[13px] text-muted short:pt-2 tight:pt-2.5">
@@ -303,14 +288,8 @@ export default function TitleMenu(props: {
                 <Count label={t('Gizli Pul')} n={props.stamps} m={total} />
                 <Count label={t('Nazar')} n={props.charms} m={total} />
               </span>
-              <button className="hidden py-1 text-left underline-offset-4 hover:text-cream hover:underline tight:block" onClick={() => props.onScreen('about')}>
-                {t('Oyun Hakkında →')}
-              </button>
               {props.langSwitch}
             </div>
-            <button className="-mb-1 mt-1 py-1 text-left underline-offset-4 hover:text-cream hover:underline short:hidden tight:hidden" onClick={() => props.onScreen('about')}>
-              {t('Oyun Hakkında →')}
-            </button>
           </footer>
         </nav>
       </div>
@@ -318,28 +297,39 @@ export default function TitleMenu(props: {
   )
 }
 
-function Tile({ icon, label, sub, onClick }: { icon: IconName; label: string; sub: string; onClick: () => void }) {
+function Group({ label }: { label: string }) {
   return (
-    <button className="menu-tile group relative flex min-h-[58px] items-center gap-3 px-3 py-2.5 text-left tight:min-h-[52px] tight:py-2 short:min-h-[46px] short:py-1.5" onClick={onClick}>
-      <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center short:h-7 short:w-7">
-        <PxIcon name={icon} className="h-5 w-5 short:h-4 short:w-4" />
+    <p className="mb-1 mt-2.5 flex items-center gap-2 text-[11px] font-bold tracking-[0.16em] text-muted max-sm:hidden short:hidden">
+      {label.toLocaleUpperCase('tr')} <span className="h-px flex-1 bg-line" />
+    </p>
+  )
+}
+
+function Tile({ icon, label, sub, onClick, tone, dot }: { icon: IconName; label: string; sub: string; onClick: () => void; tone?: 'gold'; dot?: string }) {
+  return (
+    <button className={`menu-tile group relative flex min-h-[56px] items-center gap-2.5 px-2.5 py-2 text-left max-sm:min-h-[40px] max-sm:py-1 tight:min-h-[42px] tight:py-1 short:min-h-[40px] short:py-1 ${tone === 'gold' ? 'modes-tile' : ''}`} onClick={onClick}>
+      <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center max-sm:h-7 max-sm:w-7 short:h-7 short:w-7">
+        <PxIcon name={icon} className="h-5 w-5 max-sm:h-4 max-sm:w-4 short:h-4 short:w-4" />
       </span>
-      <span className="min-w-0 leading-tight">
-        <span className="block font-display text-[17px] text-cream short:text-[15px]">{label}</span>
-        <span className="block truncate text-[12px] text-muted">{sub}</span>
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className="block font-display text-[16px] text-cream short:text-[14px]">{label}</span>
+        <span className={`block truncate text-[12px] max-sm:hidden short:hidden ${dot ? 'font-semibold text-accent-2' : 'text-muted'}`}>{sub}</span>
       </span>
+      {dot && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={dot} />}
     </button>
   )
 }
 
-function Mini({ icon, label, onClick, off, aria }: { icon: IconName; label: string; onClick: () => void; off?: boolean; aria?: string }) {
+function Chip({ icon, label, aria, onClick, off, plain }: { icon: IconName; label: string; aria?: string; onClick: () => void; off?: boolean; plain?: boolean }) {
   return (
-    <button className="menu-mini relative flex flex-col items-center justify-center gap-1 px-1 py-2 short:flex-row short:gap-1.5 short:py-1.5 tight:py-1.5" onClick={onClick} aria-label={aria ?? label} aria-pressed={off === undefined ? undefined : !off}>
-      <span className="relative">
-        <PxIcon name={icon} className={`h-4 w-4 ${off ? 'text-muted' : 'text-gold'}`} />
-        {off && <span className="absolute left-[-2px] top-1/2 h-[2px] w-5 -rotate-45 bg-accent" />}
-      </span>
-      <span className="text-[12px] font-semibold text-cream short:hidden" aria-hidden>{label}</span>
+    <button className="menu-mini flex min-w-0 items-center justify-center gap-1.5 px-1.5 py-1.5 text-[12px] font-semibold text-cream" onClick={onClick} aria-label={aria} aria-pressed={off === undefined ? undefined : !off}>
+      {!plain && (
+        <span className="relative">
+          <PxIcon name={icon} className={`h-3.5 w-3.5 ${off ? 'text-muted' : 'text-gold'}`} />
+          {off && <span className="absolute left-[-2px] top-1/2 h-[2px] w-[18px] -rotate-45 bg-accent" />}
+        </span>
+      )}
+      <span className="truncate">{label}</span>
     </button>
   )
 }

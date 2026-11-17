@@ -56,7 +56,14 @@ const layersOf = (city: CityKey) => {
  * (diken, su, düşman, bayrak ve hatıralar renkli). Kadraj yolun geçtiği yüksekliğe oturur; kart ölçüsü değişince
  * yeniden çizilir. Mücadele, Öfke Parkuru ve Haftalık Turnuva kartları kullanır.
  */
-export function CourseScene({ map, city, className = '' }: { map: string[]; city: CityKey; className?: string }) {
+/** Sahnenin zor mod görünüşleri (Sinir Bozucu önizlemesi): dikenler gizli, zemin uzakta sise karışır, bayrak yok */
+export interface SceneLook {
+  hiddenSpikes?: boolean
+  ghost?: boolean
+  noFlags?: boolean
+}
+
+export function CourseScene({ map, city, className = '', look, children, canvasStyle }: { map: string[]; city: CityKey; className?: string; look?: SceneLook; children?: React.ReactNode; /** tuvale CSS dönüşümü (ters ekran, ayna, yakın kamera önizlemesi) */ canvasStyle?: React.CSSProperties }) {
   const box = useRef<HTMLDivElement>(null)
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -124,6 +131,10 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
           const px = ox + x * tile
           const py = oy + y * tile
           if (py > H || px > W || px < -tile * 2) continue
+          // Hayalet Zemin: yolcudan uzaklaştıkça karolar sise karışır
+          c.globalAlpha = look?.ghost ? Math.max(0.06, 1 - Math.abs(x - sx) / 9) : 1
+          if (look?.hiddenSpikes && (ch === '^' || ch === 'v')) continue
+          if (look?.noFlags && ch === 'F') continue
           if (solid(ch)) {
             const topEdge = !solid(map[y - 1]?.[x])
             rect(px, py, tile, tile, ch === 'I' ? p.water[2] : ch === 'X' ? p.tileDark : p.tile)
@@ -170,6 +181,10 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
           else if (ch === 'T' || ch === '*' || ch === 'S') rect(px + tile * 0.25, py + tile * 0.25, tile * 0.5, tile * 0.5, ch === 'T' ? '#ff9a3c' : ch === '*' ? '#9fd8ff' : p.accent)
           else if (ch === '>' || ch === '<') rect(px, py + tile * 0.3, tile, tile * 0.4, p.tileDark)
         }
+      c.globalAlpha = 1
+      // yolcunun ekrandaki yeri: önizleme katmanları (karanlıkta ışık, yakın kamera) buraya bakar
+      el.style.setProperty('--px', `${(((ox + (sx + 0.5) * tile) / W) * 100).toFixed(1)}%`)
+      el.style.setProperty('--py', `${(((oy + ((start < 0 ? 20 : start) - 0.3) * tile) / H) * 100).toFixed(1)}%`)
       // haritanın sağında kalan alan: son sütunun zemini sürer
       if (ox + cols * tile < W)
         for (let y = 0; y < rows; y++)
@@ -185,10 +200,11 @@ export function CourseScene({ map, city, className = '' }: { map: string[]; city
     const ro = new ResizeObserver(draw)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [map, city])
+  }, [map, city, look?.hiddenSpikes, look?.ghost, look?.noFlags])
   return (
     <div ref={box} className={`relative overflow-hidden border-2 border-line bg-ink ${className}`}>
-      <canvas ref={ref} className="absolute inset-0 h-full w-full" aria-hidden />
+      <canvas ref={ref} className="absolute inset-0 h-full w-full transition-transform duration-500" style={canvasStyle} aria-hidden />
+      {children}
     </div>
   )
 }

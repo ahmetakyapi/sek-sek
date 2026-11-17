@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_KEYS, KEY_ACTIONS, bindKey, keyLabel, normalizeKeys } from '../game/input'
+import { DEFAULT_KEYS, KEY_ACTIONS, bindKey, keyLabel, normalizeKeys, DUO_KEYS } from '../game/input'
 
 describe('tuş atama', () => {
   it('eksik ya da bozuk kayıt varsayılana döner', () => {
@@ -33,5 +33,19 @@ describe('tuş atama', () => {
     expect(keyLabel('ArrowLeft')).toBe('←')
     expect(keyLabel('Space')).toBe('Boşluk')
     expect(keyLabel('Space', 'en')).toBe('Space')
+  })
+})
+
+describe('iki kişilik tuşlar', () => {
+  it('bir tuş yalnız bir oyuncuya ait; Boşluk kimsede yok (tek kişilikte dash, alışkanlıkla basılıyor)', () => {
+    const all = DUO_KEYS.map((k) => new Set(Object.values(k).flat() as string[]))
+    for (const c of all[0]) expect(all[1].has(c)).toBe(false)
+    for (const s of all) expect(s.has('Space')).toBe(false)
+  })
+  it('solda WASD + X, sağda ok tuşları + Enter', () => {
+    expect(DUO_KEYS[0].dash).toContain('KeyX')
+    expect(DUO_KEYS[0].left).toContain('KeyA')
+    expect(DUO_KEYS[1].dash).toContain('Enter')
+    expect(DUO_KEYS[1].left).toContain('ArrowLeft')
   })
 })
