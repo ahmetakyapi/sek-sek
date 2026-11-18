@@ -125,13 +125,17 @@ export default async function OyuncuPage({ params }: Props) {
                   <span className="mt-0.5 block text-[12px] leading-snug text-muted">
                     {r ? (
                       <>
-                        ✕{r.deaths} düşüş · {r.items}/3 hatıra · {r.plays} kez · {r.rank}. sırada
-                        {medal && (
-                          <>
-                            {' · '}
-                            <span style={{ color: MEDAL[medal][1] }}>{MEDAL[medal][0]}</span>
-                          </>
-                        )}
+                        ✕{r.deaths} düşüş · {r.items}/3 hatıra · {r.plays} kez ·{' '}
+                        {/* sıra ve madalya birlikte kırılır: satır "·" ile başlamasın */}
+                        <span className="whitespace-nowrap">
+                          {r.rank}. sırada
+                          {medal && (
+                            <>
+                              {' · '}
+                              <span style={{ color: MEDAL[medal][1] }}>{MEDAL[medal][0]}</span>
+                            </>
+                          )}
+                        </span>
                       </>
                     ) : (
                       'Henüz geçilmedi'
