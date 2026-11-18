@@ -40,9 +40,25 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120,
 
 /** Sıkı ayar kutucukları (mola): açıklama kutucuğun ipucunda, ad ve anahtar tek satırda; iki sütunlu ızgaraya dizilir */
 export const CompactToggles = createContext(false)
+/** Ayarlar ekranının kart görünümü: adı ve anahtarı üstte, ne işe yaradığı altta (iki sütunlu ızgarada) */
+export const CardToggles = createContext(false)
 
 export function Toggle({ label, on, onChange, hint, tag }: { label: string; on: boolean; onChange: () => void; hint?: string; /** adın yanında hep görünen kısa uyarı (alçak ekranda açıklama gizlenir, bu kalır) */ tag?: string }) {
   const compact = useContext(CompactToggles)
+  const card = useContext(CardToggles)
+  if (card)
+    return (
+      <button type="button" role="switch" aria-checked={on} onClick={onChange} className={`flex h-full w-full flex-col border-2 px-3 py-2.5 text-left transition-colors ${on ? 'border-gold/45 bg-gold/[0.06]' : 'border-line bg-ink/30 hover:bg-panel-2/60'}`}>
+        <span className="flex w-full items-center justify-between gap-2">
+          <span className="min-w-0 text-[14px] font-semibold leading-tight text-cream">
+            {label}
+            {tag && <span className="ml-1.5 whitespace-nowrap text-[12px] font-bold text-accent-2">{tag}</span>}
+          </span>
+          <span className="px-switch shrink-0" data-on={on} />
+        </span>
+        {hint && <span className="card-hint mt-1 overflow-hidden text-[13px] leading-snug text-muted">{hint}</span>}
+      </button>
+    )
   if (compact)
     return (
       <button type="button" role="switch" aria-checked={on} onClick={onChange} title={hint} className={`flex w-full items-center justify-between gap-2 border-2 px-2.5 py-2 text-left transition-colors short:py-1.5 ${on ? 'border-gold/50 bg-gold/5' : 'border-line bg-ink/30 hover:bg-panel-2/60'}`}>

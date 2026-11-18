@@ -2,9 +2,8 @@
 
 import { useT } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
+import { cleanName, validName } from '@/lib/playerName'
 import type { Player } from '@/lib/storage'
-
-const NAME_RE = /^[\p{L}\p{N} _.-]{2,16}$/u
 
 const field =
   'w-full min-w-0 bg-ink px-3 py-2.5 text-cream outline-none [box-shadow:0_-2px_0_0_#37337a,0_2px_0_0_#37337a,-2px_0_0_0_#37337a,2px_0_0_0_#37337a] focus:[box-shadow:0_-2px_0_0_#ffcc66,0_2px_0_0_#ffcc66,-2px_0_0_0_#ffcc66,2px_0_0_0_#ffcc66]'
@@ -19,13 +18,13 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
   const [avail, setAvail] = useState<'idle' | 'checking' | 'free' | 'taken' | 'invalid'>('idle')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const clean = name.trim().replace(/\s+/g, ' ')
+  const clean = cleanName(name)
 
   // üye olurken ad boşta mı, yazdıkça sor
   useEffect(() => {
     setErr('')
     if (mode !== 'signup' || !clean) return setAvail('idle')
-    if (!NAME_RE.test(clean)) return setAvail('invalid')
+    if (!validName(clean)) return setAvail('invalid')
     setAvail('checking')
     const ctl = new AbortController()
     const id = setTimeout(() => {

@@ -85,3 +85,14 @@ export function haptic(ms: number | number[]) {
     /* desteklenmiyor */
   }
 }
+
+/** Ekran içindeki öbeğin başlığı: renkli eşkenar dörtgen, ad ve kısa not (Modlar, Ayarlar) */
+export function SectionTitle({ title, note, tone = 'var(--color-gold)', className = '' }: { title: string; note?: string; tone?: string; className?: string }) {
+  return (
+    <h3 className={`flex items-baseline gap-2 ${className}`}>
+      <span className="h-2.5 w-2.5 shrink-0 translate-y-[-1px] rotate-45" style={{ background: tone }} aria-hidden />
+      <span className="font-display text-[17px] text-cream">{title}</span>
+      {note && <span className="truncate text-[13px] text-muted">{note}</span>}
+    </h3>
+  )
+}

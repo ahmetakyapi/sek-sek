@@ -6,6 +6,8 @@ import { ghostProblem } from '@/lib/antiCheat'
 import { db } from '@/lib/db'
 import { cityVersion } from '@/lib/mapVersion'
 import { cookieSession, findByName, verifyPlayer } from '@/lib/players'
+import { LIMITS, hit, playerKey, tooMany } from '@/lib/rateLimit'
+import { crossSite, crossSiteError } from '@/lib/sameOrigin'
 import { ghosts } from '@/lib/schema'
 import { scoreKey } from '@/lib/scoreKey'
 
@@ -41,6 +43,8 @@ export async function GET(req: NextRequest) {
  * Fiziğe sığmayan hayalet (lib/antiCheat.ts ghostProblem) 422 ile reddedilir. Hayaletsiz skor yine geçerlidir.
  */
 export async function POST(req: NextRequest) {
+  if (crossSite(req)) return crossSiteError()
+  if (Number(req.headers.get('content-length') ?? 0) > MAX_NUMS * 7) return bad('Hayalet çok büyük', 413)
   const text = await req.text()
   if (text.length > MAX_NUMS * 7) return bad('Hayalet çok büyük', 413)
   let b: Record<string, unknown>
@@ -61,6 +65,8 @@ export async function POST(req: NextRequest) {
     const c = cookieSession(req)
     const me = c ? await verifyPlayer(c.id, c.token) : await verifyPlayer(b.playerId, b.token)
     if (!me) return bad('Oturum doğrulanamadı', 401)
+    const wait = await hit(LIMITS.ghost, playerKey(me.id))
+    if (wait) return tooMany(wait, 'Çok sık hayalet gönderildi, biraz sonra tekrar dene')
     const d = db()
     const best = (await d.execute(sql`select time_ms as "timeMs", deaths from seksek_scores where level = ${scoreKey(level)} and player_id = ${me.id} limit 1`)).rows[0] as { timeMs: number; deaths: number } | undefined
     if (!best || Math.abs(best.timeMs - timeMs) > 50) return bad('Bu süre tabloda yok', 409)

@@ -157,9 +157,12 @@ ve boss arenası sağlam); Ters Tuşlar girdide (`swapPhase`, 9 sn'lik turun son
 fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya da harita değişikliğinde
 `npx tsx scripts/verify-rage.ts <kaygan|coken> <şehir>` koş ve listeye yaz. Renk ailesi kiremit (`--color-coral`).
 
-**Modlar ekranının renk aileleri.** `mode-card` + `[--tone:…]`: rekabet altın (Günlük, Turnuva), birlikte turkuaz
-(`--color-teal`: Co-op, Düello), meydan okuma kiremit (`--color-coral`: Sinir Bozucu, Boss Rush, Maraton), yol çivit (Kurallı,
-Mücadeleler, Ayna). Ekranda tek dolu düğme (Günlük); kartların düğmesi `pixel-btn tone`.
+**Modlar ekranı.** Üstte tam genişlikte "Bugün" şeridi: Günlük Meydan Okuma (ekranın tek dolu düğmesi) ve sağ yarısında Haftalık
+Turnuva. Altında tek ızgara (geniş ekranda 4 sütun): on mod + Bölüm Düzenleyici + Topluluk Haritaları. Öbek başlığı yok; aile rengi
+kutucuğun sol şeridinde (turkuaz birlikte: Co-op, Düello · kiremit `--color-coral` meydan okuma: Kovalamaca, Sinir Bozucu, Boss Rush,
+Maraton · çivit yol: Kurallı, Mücadeleler, Ayna, Speedrun). Her mod bir `ModeTile`: çizim, ad, tek satır açıklama (~30 harf, kesilmesin),
+durum; kutucuğun tamamı modu açar (`href` ile sayfa), öbür yollar başlık satırında küçük `TileChip` (Parkurlar, Kâbus, Çifte, Aynalı).
+Kilitli kutucuk kesik çizgili ve nasıl açılacağını söyler. Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun.
 
 **Öfke Parkurları.** `game/rageCourses.ts` RAGE_COURSES: elle çizilmiş uzun, çok zor parkurlar (mücadele altyapısı: `Challenge.map`,
 madalya `par`dan, skor `mucadele:<id>`, ALL_CHALLENGES ile aranır; turnuvaya girmez). Modlar → Sinir Bozucu → Parkurlar.
@@ -248,6 +251,29 @@ beğeni `seksek_map_likes`, oynanma sayacı bağlantı + harita başına saatte 
 `minScoreMs`: yatay mesafe / dash hızı × 0,6); hayalet koşu yüklenirse hız ve ışınlanma denetlenir. Haritası çok kısalan
 şehirde `tests/antiCheat.test.ts` SOLVER tablosunu yeniden ölç. Giriş, kayıt ve skor gönderimi `lib/rateLimit.ts` ile
 sınırlıdır (429 + Retry-After); göç `0008_seksek_rate`. Yeni sunucu ucu kötüye kullanılabiliyorsa `LIMITS`e ekle.
+
+**Güvenlik (kalıcı kural, 18 Kasım 2026).** Yeni ya da değişen API ucunda şu sırayı koru:
+- **CSRF:** veri değiştiren her uç (POST, PUT, PATCH, DELETE) ilk satırda `if (crossSite(req)) return crossSiteError()`
+  (`lib/sameOrigin.ts`: `Sec-Fetch-Site: cross-site` ya da başka/`null` `Origin` → 403). Çerez SameSite=Lax tek başına
+  login CSRF'ini (saldırganın oturumunu kurbana kurmak) kesmiyordu.
+- **Kimlik:** oturum `verifyPlayer` ile doğrulanır; istemcinin yazdığı `playerId` hiçbir şeye anahtar olmaz (hız sınırı da
+  doğrulanmış kimliğe: `playerKey(me.id)`, oturumsuz istek `ipKey`). Satır her zaman `me.id` ile yazılır/silinir.
+- **Hız sınırı:** kötüye kullanılabilen her uç `lib/rateLimit.ts` LIMITS'te (giriş, kayıt, ad değiştirme, skor, hayalet,
+  bulut kaydı, yayın, beğeni, oynanma). Yeni uç → LIMITS'e ekle, testte sınırı sına.
+- **Girdi:** gövdeyi okumadan `content-length`, sonra metin uzunluğu; sayılar `Number.isInteger` + alt/üst sınır; dizgiler
+  uzunlukla; bulut kaydında `__proto__`/`constructor` anahtarları JSON.parse'ta düşer. Ham `sql```te değer hep parametre
+  (`${…}`); tablo/sütun adı kullanıcıdan gelmez. Hata yanıtı genel Türkçe cümle, ayrıntı (yığın, SQL) dönmez.
+- **Kullanıcı adı:** kuralı `lib/playerName.ts` (sunucu ve formlar aynı): yalnız Latin alfabesi (Türkçe harfler dahil),
+  ASCII rakam, boşluk, `- _ .`; NFC'ye çevrilir, NFKC'de değişen (tam genişlik) ve başka alfabeden benzer harf reddedilir;
+  yeni ad I/ı/İ/i farkıyla da boşta olmalı (`nameTaken`). Giriş eski adlarla çalışmaya devam eder.
+- **Şifre ve oturum:** scrypt + `timingSafeEqual`; olmayan adda da sahte scrypt (`checkPasswordOrDummy`), yanıt aynı.
+  Oturum anahtarının veritabanında yalnız sha256'sı durur; çerez HttpOnly, üretimde Secure, SameSite=Lax.
+- **Kullanıcı içeriği** React metni olarak basılır (dangerouslySetInnerHTML yok); tuvale çizilen metinler (`?ozel=` tabela,
+  kişi) `textProblem` süzgecinden geçer; skor kartı adı (`parseShare`) süzülür ve kaba söz atılır.
+- **Başlıklar** `next.config.ts`: CSP (yalnız kendi kökenimiz; inline betik Next için, `unsafe-eval` yalnız geliştirmede),
+  `frame-ancestors 'self'`, Permissions-Policy, COOP, HSTS, nosniff. Dış kaynak (font, betik, API) eklersen CSP'ye yaz ve
+  `npx next start` ile oyunu, /duzenle ve /haritalar'ı açıp konsolda CSP ihlali olmadığına bak.
+- Kanıt: `tests/scores.test.ts` ve `tests/maps.test.ts` "güvenlik" blokları (403, ad taklidi, hız sınırları, __proto__).
 
 **Ayarlar ve erişilebilirlik.** Efekt ve müzik ses düzeyi (`sfxVol`, `musicVol`), Ekran Sarsıntısı (`shake`; tanımsızsa
 işletim sisteminin "hareketi azalt" tercihi, çizimde `renderer.shakeScale`), Ara Süreler (`splits`; rekor koşunun bayrak

@@ -164,3 +164,45 @@ describe('topluluk haritaları', () => {
     expect((await list('sort=xyz')).maps[0].title).toBe('On Üçüncü Yol')
   })
 })
+
+describe('güvenlik', () => {
+  /** ayrı kodlu çok harita: çıkış sütunu ve şehir birlikte değişir */
+  const many = (n: number) => {
+    const map = SAMPLE_MAP.map((r) => r.replace('E', ' '))
+    const col = 44 + (n % 10)
+    map[19] = map[19].slice(0, col) + 'E' + map[19].slice(col + 1)
+    return encodeMap(map, (['bursa', 'konya', 'sivas', 'mardin', 'kars'] as const)[Math.floor(n / 10) % 5])
+  }
+  const evil = { origin: 'https://kotu.example', 'sec-fetch-site': 'cross-site' }
+
+  it('başka siteden yayın ve beğeni 403', async () => {
+    const pub = await POST(new NextRequest('http://x/api/maps', { method: 'POST', headers: { ...cookie(P[0]), ...evil }, body: JSON.stringify({ code: many(0), title: 'Sahte Yol', solved: true }) }))
+    expect(pub.status).toBe(403)
+    const id = (await list('sort=yeni')).maps[0].id
+    const like = await one.POST(new NextRequest(`http://x/api/maps/${id}`, { method: 'POST', headers: { ...cookie(P[0]), ...evil }, body: JSON.stringify({ action: 'like' }) }), { params: Promise.resolve({ id: String(id) }) })
+    expect(like.status).toBe(403)
+  })
+
+  it('beğeni oyuncu başına saatte 300 ile sınırlı', async () => {
+    const id = (await list('sort=yeni')).maps[0].id
+    let last = 200
+    for (let i = 0; i < 301 && last !== 429; i++) last = (await act(P[1], id, 'like')).status
+    expect(last).toBe(429)
+  })
+
+  it('yayın: IP başına saatte 30 (çok hesapla yağdırma)', async () => {
+    // günlük sınır (oyuncu başına 10) vurmasın diye sayaç sıfırdan: yayınlar dünde kalsın
+    await pg.query(`update seksek_maps set created_at = now() - interval '2 days'`)
+    const statuses: number[] = []
+    let retry: string | null = null
+    for (let i = 0; i < 31; i++) {
+      if (i % 9 === 8) await pg.query(`update seksek_maps set created_at = now() - interval '2 days'`)
+      const r = await POST(new NextRequest('http://x/api/maps', { method: 'POST', headers: { ...cookie(P[i % 3]), 'x-forwarded-for': '10.44.44.44' }, body: JSON.stringify({ code: many(i + 1), title: `Yağmur ${i}`, solved: true }) }))
+      statuses.push(r.status)
+      retry = r.headers.get('retry-after')
+    }
+    expect(statuses.slice(0, 30).every((x) => x === 200)).toBe(true)
+    expect(statuses[30]).toBe(429)
+    expect(Number(retry)).toBeGreaterThan(0)
+  })
+})

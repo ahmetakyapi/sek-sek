@@ -292,19 +292,17 @@ input {
 .tile-chip:disabled {
   opacity: 0.45;
 }
-/* kutucuğun açıklaması iki satır; alçak masaüstü ekranında (720 px) tek satır: bütün modlar kaydırmadan sığsın */
-.mode-desc {
+/* Ayarlar kartının açıklaması: en çok iki satır */
+.card-hint {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
-@media (max-height: 780px) and (min-width: 1024px) {
-  .mode-desc {
-    -webkit-line-clamp: 1;
-  }
-  .mode-tile {
-    padding-block: 0.4rem !important;
-  }
+/* Ayarlar: iki ses yan yana kutularda */
+.sound-pair > div {
+  border: 2px solid var(--color-line);
+  background: rgb(14 13 34 / 0.3);
+  padding-inline: 0.5rem;
 }
 /* Günlük Meydan Okuma: ekranın öne çıkan kartı */
 .mode-card.today {
@@ -312,17 +310,6 @@ input {
     radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--tone) 18%, transparent) 0%, transparent 60%),
     rgb(14 13 34 / 0.5);
 }
-/* düzenleyici ve topluluk bağlantıları */
-.mode-link {
-  border: 2px dashed var(--color-line);
-  background: rgb(14 13 34 / 0.35);
-}
-.mode-link:hover,
-.mode-link:focus-visible {
-  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
-  background: color-mix(in srgb, var(--color-accent) 8%, rgb(14 13 34 / 0.35));
-}
-
 /* Ailesinin renginde ikincil düğme: koyu zemin, renkli çerçeve ve yazı; dolu düğme ekranda tek kalır */
 .pixel-btn.tone {
   color: var(--tone);

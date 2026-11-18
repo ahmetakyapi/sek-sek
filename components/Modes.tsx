@@ -138,248 +138,241 @@ export function ModesHub({
           </button>
         </div>
         <div className="overlay-scroll -mx-1 mt-4 min-h-0 flex-1 overflow-y-auto px-1 short:mt-2">
-          <div className="grid gap-4 wide:grid-cols-[minmax(300px,0.82fr)_2fr] wide:grid-rows-[auto_1fr] short:gap-3">
-            {/* Bugün: herkesin aynı koştuğu iki şey; ekranın tek dolu düğmesi Günlük'te */}
-            <div className="flex flex-col gap-3 wide:col-start-1 wide:row-start-1">
-              <section className="mode-card today flex flex-col p-4 short:p-3 [--tone:var(--color-gold)]">
-                <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="font-display text-[18px] text-gold">{t('Günlük Meydan Okuma')}</h3>
-                  {streak > 0 && <span className="shrink-0 text-[13px] font-bold tabular-nums text-gold">🔥 {t('{n} gün', { n: streak })}</span>}
+          {/* Bugün: tam genişlikte tek şerit. Günlük (ekranın tek dolu düğmesi) ve Haftalık Turnuva */}
+          <section className="mode-card today grid gap-x-6 gap-y-3 p-4 short:p-3 sm:grid-cols-[1.35fr_1fr] [--tone:var(--color-gold)]">
+            <div className="flex min-w-0 flex-col">
+              <div className="flex items-center gap-3">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441,0_0_0_6px_rgba(217,164,65,0.15)] short:h-10 short:w-10">
+                  <ItemIcon city={lv.city} taken size={36} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold text-gold">{t('Günlük Meydan Okuma')}</p>
+                  <p className="truncate font-display text-[26px] leading-tight text-cream short:text-xl">{displayName(lv)}</p>
                 </div>
-                <div className="mt-3 flex items-center gap-3">
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441,0_0_0_6px_rgba(217,164,65,0.15)] short:h-10 short:w-10">
-                    <ItemIcon city={lv.city} taken size={36} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-[26px] leading-tight text-cream short:text-xl">{displayName(lv)}</p>
-                    <p className="flex items-center gap-1.5 text-[14px] font-bold text-accent-2">
-                      <RuleIcon rule={daily.rule} size={16} /> {t(rule.name)}
-                    </p>
+                <div className="hidden shrink-0 gap-4 text-center sm:flex">
+                  <div>
+                    <p className="font-display text-[20px] leading-none tabular-nums text-cream">{playedToday ? formatTime(mark!.bestMs) : '—'}</p>
+                    <p className="mt-1 text-[12px] text-muted">{t('Bugünkü Skorun')}</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-[20px] leading-none tabular-nums text-cream">{streak ? `🔥 ${streak}` : '—'}</p>
+                    <p className="mt-1 text-[12px] text-muted">{t('Gün Serisi')}</p>
                   </div>
                 </div>
-                <p className="mt-3 text-[14px] leading-snug text-cream/85">{t(rule.text)}</p>
-                <p className="mt-1.5 text-[13px] leading-snug text-muted short:hidden">{dailyUsed && !playedToday ? t('Bugünkü koşunu yarıda bıraktın. Yarın yeni bir şehir seni bekliyor.') : t('Herkes aynı şehirde, aynı kuralla. Günde tek hak.')}</p>
-                <dl className="mt-3 grid grid-cols-2 gap-2 text-center short:hidden">
-                  <div className="bg-ink/50 py-2">
-                    <dd className="font-display text-[20px] leading-none tabular-nums text-cream">{playedToday ? formatTime(mark!.bestMs) : '—'}</dd>
-                    <dt className="mt-1 text-[12px] text-muted">{t('Bugünkü Skorun')}</dt>
-                  </div>
-                  <div className="bg-ink/50 py-2">
-                    <dd className="font-display text-[20px] leading-none tabular-nums text-cream">{streak || '—'}</dd>
-                    <dt className="mt-1 text-[12px] text-muted">{t('Gün Serisi')}</dt>
-                  </div>
-                </dl>
-                <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-                  <button className="pixel-btn primary justify-center" onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed}>
-                    {dailyUsed ? t('Yarın Yeni Şehir') : ic(t('▶ Oyna'))}
-                  </button>
-                  <button className="pixel-btn justify-center px-3" onClick={onDailyBoard}>
-                    {t('Sıralama')}
-                  </button>
-                </div>
-              </section>
-              <ModeTile
-                tone="var(--color-gold)"
-                title={t('Haftalık Turnuva')}
-                desc={t('Aynı üç parkur, toplam süre sıralanır.')}
-                status={tTotal ? t('Toplamın {time}', { time: formatTime(tTotal) }) : winner ? t('{n}/3 bitti · geçen hafta {name}', { n: tDone, name: winner.name }) : t('{n}/3 bitti', { n: tDone })}
-                onClick={onTournament}
-                art={
-                  <span className="flex -space-x-2">
-                    {tIds.map((id) => {
-                      const c = CHALLENGES.find((x) => x.id === id)
-                      const lvl = LEVELS.find((l) => l.id === c?.level)
-                      const done = tournament?.week === week && tournament.best[id] !== undefined
-                      return lvl ? (
-                        <span key={id} className={`flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#221f4a] ${done ? 'shadow-[0_0_0_2px_#d9a441]' : 'shadow-[0_0_0_2px_#37337a]'}`}>
-                          <ItemIcon city={lvl.city} taken={done} size={15} />
-                        </span>
-                      ) : null
-                    })}
-                  </span>
-                }
-              />
-            </div>
-
-            <div className="flex min-w-0 flex-col gap-3 wide:col-start-2 wide:row-span-2 wide:row-start-1">
-              <ModeGroup title={t('Birlikte')} note={t('İki kişi, aynı klavye')} tone="var(--color-teal)">
-                <ModeTile
-                  tone="var(--color-teal)"
-                  title={t('Co-op')}
-                  desc={t('Şehir, boss ya da parkur: iki yolcu birlikte.')}
-                  status={t('Omuzdan sek, canları paylaş')}
-                  onClick={onCoop}
-                  art={
-                    <span className="flex items-end">
-                      <Portrait id="uktun" className="w-[34px] rotate-[-5deg]" />
-                      <Portrait id="memo" className="-ml-2 w-[34px] rotate-[5deg]" />
-                    </span>
-                  }
-                />
-                <ModeTile
-                  tone="var(--color-teal)"
-                  title={t('Düello')}
-                  desc={t('Yan yana yarış ya da elden ele, rakibin hayaletiyle.')}
-                  status={t('1, 3 ya da 5 tur; kendi şartların')}
-                  onClick={onDuel}
-                  art={
-                    <span className="relative flex items-end">
-                      <Portrait id="uktun" className="w-[34px] rotate-[-6deg]" />
-                      <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 font-display text-[13px] text-accent-2 [text-shadow:0_2px_0_#0e0d22]">vs</span>
-                      <Portrait id="memo" className="-ml-1 w-[34px] rotate-[6deg]" />
-                    </span>
-                  }
-                />
-              </ModeGroup>
-
-              <ModeGroup title={t('Meydan Okuma')} note={t('Sabır ve el çabukluğu')} tone="var(--color-coral)">
-                <ModeTile
-                  tone="var(--color-coral)"
-                  title={t('Kovalamaca')}
-                  desc={t('Bir Kangal izini sürüyor: durursan yetişir.')}
-                  status={chaseCities ? t('{n} şehirde açık', { n: chaseCities }) : t('Bir şehri bitirince açılır')}
-                  locked={!chaseCities}
-                  onClick={onChase}
-                  art={<DogFigure className={`h-[40px] w-[56px] ${chaseCities ? '' : 'opacity-40 grayscale'}`} />}
-                />
-                <ModeTile
-                  tone="var(--color-coral)"
-                  title={t('Sinir Bozucu')}
-                  desc={t('On dokuz zorlu mod, şehir başına rekor.')}
-                  status={!rulesOpen ? t('Bir şehri bitirince açılır') : t('{n}/{total} mod denendi', { n: rageTried, total: RAGE_RULES.length })}
-                  progress={rulesOpen ? rageTried / RAGE_RULES.length : undefined}
-                  locked={!rulesOpen}
-                  onClick={onRage}
-                  extra={
-                    RAGE_COURSES.length > 0 && (
-                      <TileChip disabled={!rulesOpen} onClick={onRageCourses}>
-                        {t('Parkurlar')} <span className="tabular-nums opacity-75">{rageCoursesDone}/{RAGE_COURSES.length}</span>
-                      </TileChip>
-                    )
-                  }
-                  art={
-                    <span className="grid grid-cols-2 gap-0.5">
-                      {(['kaygan', 'basasagi', 'karanlik', 'cehennem'] as DailyRule[]).map((r) => (
-                        <span key={r} className="flex h-[20px] w-[20px] items-center justify-center rounded-sm" style={{ color: FAMILIES[RULE_ART[r].family].color, background: `${FAMILIES[RULE_ART[r].family].color}1f` }}>
-                          <RuleIcon rule={r} size={15} />
-                        </span>
-                      ))}
-                    </span>
-                  }
-                />
-                <ModeTile
-                  tone="var(--color-coral)"
-                  title={t('Boss Rush')}
-                  desc={t('Yendiğin bütün boss’lar arka arkaya.')}
-                  status={rushOpen ? (rushBest ? t('Rekor: {time} · {n} boss', { time: formatTime(rushBest.timeMs), n: rushBest.bosses }) : t('{n} boss hazır', { n: bossesBeaten })) : t('{k}/{n} boss yen, açılsın', { n: rushNeeds, k: bossesBeaten })}
-                  locked={!rushOpen}
-                  onClick={() => onRush()}
-                  extra={
-                    <>
-                      <TileChip disabled={!rushOpen} onClick={() => onRush('kabus')} title={rushPlus.kabus ? t('Rekor: {time} · {n} boss', { time: formatTime(rushPlus.kabus.timeMs), n: rushPlus.kabus.bosses }) : t('Her boss en yüksek kademede ve %30 hızlı.')}>
-                        {t('Kâbus')}
-                      </TileChip>
-                      <TileChip disabled={!rushOpen} onClick={() => onRush('cifte')} title={rushPlus.cifte ? t('Rekor: {time} · {n} boss', { time: formatTime(rushPlus.cifte.timeMs), n: rushPlus.cifte.bosses }) : t('Her arenada iki boss birden.')}>
-                        {t('Çifte')}
-                      </TileChip>
-                    </>
-                  }
-                  art={<BossFigure city="istanbul" className={`h-[42px] w-[52px] ${rushOpen ? '' : 'opacity-40 grayscale'}`} />}
-                />
-                <ModeTile
-                  tone="var(--color-coral)"
-                  title={t('Maraton')}
-                  desc={t('Açtığın şehirlerden rastgele üçü, tek nefeste.')}
-                  status={marathonOpen ? (marathonBest ? t('Rekor: {time}', { time: formatTime(marathonBest.timeMs) }) : t('Her koşuda başka üç şehir')) : t('Üç şehir açınca açılır')}
-                  locked={!marathonOpen}
-                  onClick={onMarathon}
-                  art={
-                    <span className="flex -space-x-1.5">
-                      {(['istanbul', 'konya', 'trabzon'] as const).map((c) => (
-                        <span key={c} className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#37337a]">
-                          <ItemIcon city={c} taken={marathonOpen} size={15} />
-                        </span>
-                      ))}
-                    </span>
-                  }
-                />
-              </ModeGroup>
-
-              <ModeGroup title={t('Yol ve Rekor')} note={t('Bildiğin şehirler, yeni hâlleriyle')} tone="var(--color-accent)">
-                <ModeTile
-                  tone="var(--color-accent)"
-                  title={t('Kurallı Koşu')}
-                  desc={t('Şehri ve kuralı sen seç; her ikili ayrı rekor.')}
-                  status={!rulesOpen ? t('Bir şehri bitirince açılır') : ruleCount ? t('{n} rekor', { n: ruleCount }) : t('Yedi kural')}
-                  locked={!rulesOpen}
-                  onClick={onRules}
-                  art={
-                    <span className="grid grid-cols-2 gap-0.5 text-accent-2">
-                      {(['tekcan', 'zaman', 'dashsiz', 'hiz'] as DailyRule[]).map((r) => (
-                        <span key={r} className="flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-accent/10">
-                          <RuleIcon rule={r} size={15} />
-                        </span>
-                      ))}
-                    </span>
-                  }
-                />
-                <ModeTile
-                  tone="var(--color-accent)"
-                  title={t('Mücadeleler')}
-                  desc={t('Zor şehirlerin en sıkı yerleri, kısa ve bayraksız.')}
-                  status={t('{n}/{m} bitti', { n: challengeDone, m: CHALLENGES.length })}
-                  progress={challengeDone / CHALLENGES.length}
-                  onClick={onChallenges}
-                  art={<span className="font-display text-[26px] leading-none text-accent-2">▲</span>}
-                />
-                <ModeTile
-                  tone="var(--color-accent-2)"
-                  title={t('Ayna Yolu')}
-                  desc={t('Otuz şehir aynada: sağdan sola, ters rüzgârla.')}
-                  status={mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık')) : t('Otuz şehri bitirince açılır')}
-                  locked={!mirrorOpen}
-                  onClick={onMirror}
-                  art={
-                    <span className={`flex items-end ${mirrorOpen ? '' : 'opacity-40 grayscale'}`}>
-                      <Portrait id="uktun" className="w-[30px]" />
-                      <Portrait id="uktun" className="w-[30px] -scale-x-100 opacity-55" />
-                    </span>
-                  }
-                />
-                <ModeTile
-                  tone="var(--color-gold)"
-                  title={t('Speedrun')}
-                  desc={t('İlk defterin otuz şehri arka arkaya.')}
-                  status={mirrorOpen ? (tourBest ? t('Tam Tur {time}', { time: formatTime(tourBest.timeMs) }) : t('Rekorunu yaz')) : t('Otuz şehri bitirince açılır')}
-                  locked={!mirrorOpen}
-                  onClick={() => onTour('tur')}
-                  extra={
-                    <TileChip disabled={!mirrorOpen} onClick={() => onTour('aynaTur')} title={aynaTourBest ? formatTime(aynaTourBest.timeMs) : undefined}>
-                      ◐ {t('Aynalı')}
-                    </TileChip>
-                  }
-                  art={<RuleIcon rule="zaman" size={30} className="text-gold" />}
-                />
-              </ModeGroup>
-
-            </div>
-              {/* kendi yolun: düzenleyici ve topluluk */}
-              <div className="grid gap-2 self-end sm:grid-cols-2 wide:col-start-1 wide:row-start-2 wide:grid-cols-1">
-                <a href="/duzenle" className="mode-link group flex items-center gap-3 px-3.5 py-2.5">
-                  <span className="text-[20px] text-accent-2">✎</span>
-                  <span className="min-w-0">
-                    <strong className="block font-display text-[16px] text-cream">{t('Bölüm Düzenleyici')}</strong>
-                    <span className="block truncate text-[13px] text-muted">{t('Kendi bölümünü çiz, boss’unu tasarla, paylaş')}</span>
-                  </span>
-                </a>
-                <a href="/haritalar" className="mode-link group flex items-center gap-3 px-3.5 py-2.5">
-                  <span className="text-[20px] text-gold">⌂</span>
-                  <span className="min-w-0">
-                    <strong className="block font-display text-[16px] text-cream">{t('Topluluk Haritaları')}</strong>
-                    <span className="block truncate text-[13px] text-muted">{t('Yolcuların çizdiği yolları oyna')}</span>
-                  </span>
-                </a>
               </div>
+              <p className="mt-2.5 flex items-start gap-1.5 text-[14px] leading-snug text-cream/85">
+                <span className="mt-0.5 shrink-0 text-accent-2">
+                  <RuleIcon rule={daily.rule} size={16} />
+                </span>
+                <span>
+                  <strong className="text-accent-2">{t(rule.name)}:</strong> {t(rule.text)}
+                </span>
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button className="pixel-btn primary justify-center px-6" onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed}>
+                  {dailyUsed ? t('Yarın Yeni Şehir') : ic(t('▶ Oyna'))}
+                </button>
+                <button className="pixel-btn justify-center px-3" onClick={onDailyBoard}>
+                  {t('Sıralama')}
+                </button>
+                <span className="text-[13px] text-muted short:hidden">{dailyUsed && !playedToday ? t('Bugünkü koşunu yarıda bıraktın. Yarın yeni bir şehir seni bekliyor.') : t('Herkes aynı şehirde, aynı kuralla. Günde tek hak.')}</span>
+              </div>
+            </div>
+            {/* Haftalık Turnuva: şeridin sağ yarısı */}
+            <button className="flex min-w-0 flex-col justify-between border-l-0 border-line/70 text-left sm:border-l-2 sm:pl-6" onClick={onTournament}>
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-bold text-gold">{t('Haftalık Turnuva')}</span>
+                <span className="text-[13px] font-bold tabular-nums text-cream/80">{tTotal ? formatTime(tTotal) : t('{n}/3 bitti', { n: tDone })}</span>
+              </span>
+              <span className="mt-2 flex gap-2">
+                {tIds.map((id) => {
+                  const c = CHALLENGES.find((x) => x.id === id)
+                  const lvl = LEVELS.find((l) => l.id === c?.level)
+                  const done = tournament?.week === week && tournament.best[id] !== undefined
+                  return lvl && c ? (
+                    <span key={id} className={`flex min-w-0 flex-1 items-center gap-2 border-2 px-2 py-1.5 ${done ? 'border-gold/60 bg-gold/10' : 'border-line bg-ink/40'}`}>
+                      <ItemIcon city={lvl.city} taken={done} size={18} />
+                      <span className="truncate text-[13px] text-cream/85">{t(c.name)}</span>
+                    </span>
+                  ) : null
+                })}
+              </span>
+              <span className="mt-2 flex items-center justify-between gap-2 text-[13px]">
+                <span className="truncate text-muted">{winner ? t('Geçen hafta: {name}', { name: winner.name }) : t('Aynı üç parkur, toplam süre sıralanır.')}</span>
+                <span className="shrink-0 font-bold text-gold">{t('Turnuvaya Gir')} ›</span>
+              </span>
+            </button>
+          </section>
+
+          {/* bütün modlar tek ızgarada; aile rengi kutucuğun sol şeridinde (turkuaz birlikte, kiremit meydan okuma, çivit yol) */}
+          <div className="mt-4 grid gap-2.5 sm:grid-cols-2 wide:grid-cols-4 short:mt-3">
+            <ModeTile
+              tone="var(--color-teal)"
+              title={t('Co-op')}
+              desc={t('İki yolcu birlikte, tek klavyede.')}
+              status={t('Şehir, boss ya da parkur')}
+              onClick={onCoop}
+              art={
+                <span className="flex items-end">
+                  <Portrait id="uktun" className="w-[30px] rotate-[-5deg]" />
+                  <Portrait id="memo" className="-ml-2 w-[30px] rotate-[5deg]" />
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-teal)"
+              title={t('Düello')}
+              desc={t('Yan yana ya da sırayla yarış.')}
+              status={t('1, 3 ya da 5 tur')}
+              onClick={onDuel}
+              art={
+                <span className="relative flex items-end">
+                  <Portrait id="uktun" className="w-[30px] rotate-[-6deg]" />
+                  <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 font-display text-[12px] text-accent-2 [text-shadow:0_2px_0_#0e0d22]">vs</span>
+                  <Portrait id="memo" className="-ml-1 w-[30px] rotate-[6deg]" />
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-coral)"
+              title={t('Kovalamaca')}
+              desc={t('Bir Kangal izini sürüyor.')}
+              status={chaseCities ? t('{n} şehirde açık', { n: chaseCities }) : t('Bir şehri bitirince açılır')}
+              locked={!chaseCities}
+              onClick={onChase}
+              art={<DogFigure className={`h-[38px] w-[54px] ${chaseCities ? '' : 'opacity-40 grayscale'}`} />}
+            />
+            <ModeTile
+              tone="var(--color-coral)"
+              title={t('Sinir Bozucu')}
+              desc={t('On dokuz zorlu mod.')}
+              status={!rulesOpen ? t('Bir şehri bitirince açılır') : t('{n}/{total} denendi', { n: rageTried, total: RAGE_RULES.length })}
+              progress={rulesOpen ? rageTried / RAGE_RULES.length : undefined}
+              locked={!rulesOpen}
+              onClick={onRage}
+              extra={
+                RAGE_COURSES.length > 0 && (
+                  <TileChip disabled={!rulesOpen} onClick={onRageCourses} title={t('Öfke Parkurları: {n}/{m}', { n: rageCoursesDone, m: RAGE_COURSES.length })}>
+                    {t('Parkurlar')}
+                  </TileChip>
+                )
+              }
+              art={
+                <span className="grid grid-cols-2 gap-0.5">
+                  {(['kaygan', 'basasagi', 'karanlik', 'cehennem'] as DailyRule[]).map((r) => (
+                    <span key={r} className="flex h-[19px] w-[19px] items-center justify-center rounded-sm" style={{ color: FAMILIES[RULE_ART[r].family].color, background: `${FAMILIES[RULE_ART[r].family].color}1f` }}>
+                      <RuleIcon rule={r} size={14} />
+                    </span>
+                  ))}
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-coral)"
+              title={t('Boss Rush')}
+              desc={t('Yendiğin boss’lar arka arkaya.')}
+              status={rushOpen ? (rushBest ? t('Rekor {time}', { time: formatTime(rushBest.timeMs) }) : t('{n} boss hazır', { n: bossesBeaten })) : t('{k}/{n} boss yen, açılsın', { n: rushNeeds, k: bossesBeaten })}
+              locked={!rushOpen}
+              onClick={() => onRush()}
+              extra={
+                <>
+                  <TileChip disabled={!rushOpen} onClick={() => onRush('kabus')} title={rushPlus.kabus ? t('Rekor: {time} · {n} boss', { time: formatTime(rushPlus.kabus.timeMs), n: rushPlus.kabus.bosses }) : t('Her boss en yüksek kademede ve %30 hızlı.')}>
+                    {t('Kâbus')}
+                  </TileChip>
+                  <TileChip disabled={!rushOpen} onClick={() => onRush('cifte')} title={rushPlus.cifte ? t('Rekor: {time} · {n} boss', { time: formatTime(rushPlus.cifte.timeMs), n: rushPlus.cifte.bosses }) : t('Her arenada iki boss birden.')}>
+                    {t('Çifte')}
+                  </TileChip>
+                </>
+              }
+              art={<BossFigure city="istanbul" className={`h-[40px] w-[50px] ${rushOpen ? '' : 'opacity-40 grayscale'}`} />}
+            />
+            <ModeTile
+              tone="var(--color-coral)"
+              title={t('Maraton')}
+              desc={t('Rastgele üç şehir, tek nefeste.')}
+              status={marathonOpen ? (marathonBest ? t('Rekor {time}', { time: formatTime(marathonBest.timeMs) }) : t('Her koşuda başka üç şehir')) : t('Üç şehir açınca açılır')}
+              locked={!marathonOpen}
+              onClick={onMarathon}
+              art={
+                <span className="flex -space-x-1.5">
+                  {(['istanbul', 'konya', 'trabzon'] as const).map((c) => (
+                    <span key={c} className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#37337a]">
+                      <ItemIcon city={c} taken={marathonOpen} size={15} />
+                    </span>
+                  ))}
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-accent)"
+              title={t('Kurallı Koşu')}
+              desc={t('Şehri ve kuralı sen seç.')}
+              status={!rulesOpen ? t('Bir şehri bitirince açılır') : ruleCount ? t('{n} rekor', { n: ruleCount }) : t('Yedi kural')}
+              locked={!rulesOpen}
+              onClick={onRules}
+              art={
+                <span className="grid grid-cols-2 gap-0.5 text-accent-2">
+                  {(['tekcan', 'zaman', 'dashsiz', 'hiz'] as DailyRule[]).map((r) => (
+                    <span key={r} className="flex h-[19px] w-[19px] items-center justify-center rounded-sm bg-accent/10">
+                      <RuleIcon rule={r} size={14} />
+                    </span>
+                  ))}
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-accent)"
+              title={t('Mücadeleler')}
+              desc={t('Zor şehirlerin en sıkı yerleri.')}
+              status={t('{n}/{m} bitti', { n: challengeDone, m: CHALLENGES.length })}
+              progress={challengeDone / CHALLENGES.length}
+              onClick={onChallenges}
+              art={<span className="font-display text-[24px] leading-none text-accent-2">▲</span>}
+            />
+            <ModeTile
+              tone="var(--color-accent-2)"
+              title={t('Ayna Yolu')}
+              desc={t('Otuz şehir sağdan sola.')}
+              status={mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık')) : t('Otuz şehri bitirince açılır')}
+              locked={!mirrorOpen}
+              onClick={onMirror}
+              art={
+                <span className={`flex items-end ${mirrorOpen ? '' : 'opacity-40 grayscale'}`}>
+                  <Portrait id="uktun" className="w-[27px]" />
+                  <Portrait id="uktun" className="w-[27px] -scale-x-100 opacity-55" />
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-gold)"
+              title={t('Speedrun')}
+              desc={t('Otuz şehir arka arkaya, tek süre.')}
+              status={mirrorOpen ? (tourBest ? t('Tam Tur {time}', { time: formatTime(tourBest.timeMs) }) : t('Rekorunu yaz')) : t('Otuz şehri bitirince açılır')}
+              locked={!mirrorOpen}
+              onClick={() => onTour('tur')}
+              extra={
+                <TileChip disabled={!mirrorOpen} onClick={() => onTour('aynaTur')} title={aynaTourBest ? formatTime(aynaTourBest.timeMs) : undefined}>
+                  {t('Aynalı')}
+                </TileChip>
+              }
+              art={<RuleIcon rule="zaman" size={28} className="text-gold" />}
+            />
+            <ModeTile
+              tone="var(--color-accent-2)"
+              title={t('Bölüm Düzenleyici')}
+              desc={t('Kendi bölümünü ve boss’unu çiz.')}
+              status={t('Paylaş ya da yayınla')}
+              href="/duzenle"
+              art={<span className="font-display text-[26px] leading-none text-accent-2">✎</span>}
+            />
+            <ModeTile
+              tone="var(--color-gold)"
+              title={t('Topluluk Haritaları')}
+              desc={t('Yolcuların çizdiği yollar.')}
+              status={t('Oyna ve beğen')}
+              href="/haritalar"
+              art={<span className="font-display text-[26px] leading-none text-gold">⌂</span>}
+            />
           </div>
         </div>
       </div>
@@ -387,33 +380,22 @@ export function ModesHub({
   )
 }
 
-/** Modlar ekranında bir öbek: renkli işaret, ad ve kısa not; altında kutucuklar */
-function ModeGroup({ title, note, tone, children }: { title: string; note: string; tone: string; children: React.ReactNode }) {
-  return (
-    <section style={{ ['--tone' as string]: tone }}>
-      <h3 className="flex items-baseline gap-2">
-        <span className="h-2.5 w-2.5 shrink-0 translate-y-[-1px] rotate-45 bg-[var(--tone)]" aria-hidden />
-        <span className="font-display text-[17px] text-cream">{title}</span>
-        <span className="truncate text-[13px] text-muted">{note}</span>
-      </h3>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">{children}</div>
-    </section>
-  )
-}
-
 /**
  * Modun kutucuğu: soldaki çizim, ad, tek cümle ve durum. Kutucuğun tamamı modu açar (tek tıklama); `extra` aynı modun
  * ikinci yolları (Parkurlar, Kâbus, Çifte, Aynalı) küçük düğmeler olarak kutucuğun içinde durur.
  */
-function ModeTile({ tone, title, desc, status, art, onClick, locked = false, progress, extra }: { tone: string; title: string; desc: string; status: string; art: React.ReactNode; onClick: () => void; locked?: boolean; progress?: number; extra?: React.ReactNode }) {
+function ModeTile({ tone, title, desc, status, art, onClick, href, locked = false, progress, extra }: { tone: string; title: string; desc: string; status: string; art: React.ReactNode; onClick?: () => void; /** sayfa bağlantısı (düzenleyici, topluluk) */ href?: string; locked?: boolean; progress?: number; extra?: React.ReactNode }) {
   return (
-    <div className={`mode-tile relative flex items-center gap-3 px-3 py-2.5 ${locked ? 'locked' : ''}`} style={{ ['--tone' as string]: tone }}>
+    <div className={`mode-tile relative flex min-w-0 items-center gap-2.5 px-2.5 py-2.5 ${locked ? 'locked' : ''}`} style={{ ['--tone' as string]: tone }}>
       {/* bütün kutucuğu kaplayan asıl düğme; ek düğmeler onun üstünde */}
-      <button className="absolute inset-0 z-0" onClick={onClick} disabled={locked} aria-label={`${title}: ${status}`} />
-      <span className="pointer-events-none flex h-12 w-14 shrink-0 items-center justify-center">{art}</span>
+      {href ? <a className="absolute inset-0 z-0" href={href} aria-label={title} /> : <button className="absolute inset-0 z-0" onClick={onClick} disabled={locked} aria-label={`${title}: ${status}`} />}
+      <span className="pointer-events-none flex h-11 w-12 shrink-0 items-center justify-center">{art}</span>
       <span className="pointer-events-none min-w-0 flex-1">
-        <span className="block font-display text-[17px] leading-tight text-cream">{title}</span>
-        <span className="mode-desc mt-0.5 overflow-hidden text-[13px] leading-snug text-cream/75">{desc}</span>
+        <span className="flex items-center justify-between gap-1.5">
+          <span className="truncate font-display text-[16px] leading-tight text-cream">{title}</span>
+          {extra && <span className="pointer-events-auto relative z-10 flex shrink-0 gap-1">{extra}</span>}
+        </span>
+        <span className="mt-0.5 block truncate text-[13px] leading-snug text-cream/75">{desc}</span>
         <span className="mt-1 flex items-center gap-2">
           <span className={`truncate text-[12px] font-bold ${locked ? 'text-muted' : 'text-[var(--tone)]'}`}>{locked ? `🔒 ${status}` : status}</span>
           {progress !== undefined && (
@@ -423,7 +405,6 @@ function ModeTile({ tone, title, desc, status, art, onClick, locked = false, pro
           )}
         </span>
       </span>
-      {extra && <span className="relative z-10 flex shrink-0 flex-col gap-1">{extra}</span>}
     </div>
   )
 }
@@ -431,7 +412,7 @@ function ModeTile({ tone, title, desc, status, art, onClick, locked = false, pro
 /** kutucuğun içindeki ikincil yol (ör. Kâbus, Parkurlar) */
 function TileChip({ children, onClick, disabled, title }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; title?: string }) {
   return (
-    <button className="tile-chip whitespace-nowrap px-2 py-1 text-[12px] font-bold" onClick={onClick} disabled={disabled} title={title}>
+    <button className="tile-chip whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold leading-tight" onClick={onClick} disabled={disabled} title={title}>
       {children}
     </button>
   )

@@ -2,9 +2,8 @@
 
 import { useT } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
+import { cleanName, validName } from '@/lib/playerName'
 import type { Player } from '@/lib/storage'
-
-const NAME_RE = /^[\p{L}\p{N} _.-]{2,16}$/u
 
 /** Kullanıcı adını değiştir: yazdıkça uygunluğu sorar, oturum anahtarıyla kaydeder. */
 export default function NameForm({ player, onDone }: { player: Player; onDone: (p: Player) => void }) {
@@ -12,12 +11,12 @@ export default function NameForm({ player, onDone }: { player: Player; onDone: (
   const [name, setName] = useState(player.name)
   const [state, setState] = useState<'idle' | 'checking' | 'free' | 'taken' | 'invalid' | 'saving' | 'error'>('idle')
   const [err, setErr] = useState('')
-  const clean = name.trim().replace(/\s+/g, ' ')
+  const clean = cleanName(name)
   const same = clean.toLocaleLowerCase('tr') === player.name.toLocaleLowerCase('tr')
 
   useEffect(() => {
     if (!clean) return setState('idle')
-    if (!NAME_RE.test(clean)) return setState('invalid')
+    if (!validName(clean)) return setState('invalid')
     if (same) return setState('free')
     setState('checking')
     const ctl = new AbortController()

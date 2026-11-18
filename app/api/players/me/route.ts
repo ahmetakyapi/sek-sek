@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { cookieSession, setSessionCookie, verifyPlayer } from '@/lib/players'
+import { crossSite, crossSiteError } from '@/lib/sameOrigin'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,8 @@ export async function GET(req: NextRequest) {
  * Anahtar doğrulanmadan çerez konmaz.
  */
 export async function POST(req: NextRequest) {
+  // başka sitenin kurduramayacağı çerez: saldırgan kendi oturumunu kurbanın tarayıcısına yerleştiremesin
+  if (crossSite(req)) return crossSiteError()
   const body = (await req.json().catch(() => null)) as { id?: unknown; token?: unknown } | null
   try {
     const me = await verifyPlayer(body?.id, body?.token)

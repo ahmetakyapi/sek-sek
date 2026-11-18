@@ -18,8 +18,17 @@ type Props = { params: Promise<{ ad: string }> }
 
 const MEDAL = { altin: ['Altın', '#e3a92c'], gumus: ['Gümüş', '#c9d0da'], bronz: ['Bronz', '#c97a44'] } as const
 
+/** Bozuk yüzde kodlaması ("%E0") sayfayı 500'e düşürmesin; ad en çok 32 karakter okunur */
+const adOf = (ad: string) => {
+  try {
+    return decodeURIComponent(ad).slice(0, 32)
+  } catch {
+    return ad.slice(0, 32)
+  }
+}
+
 async function load(ad: string) {
-  const name = decodeURIComponent(ad)
+  const name = adOf(ad)
   const player = await findByName(name).catch(() => null)
   if (!player) return null
   const rows = await db()
@@ -50,7 +59,7 @@ async function load(ad: string) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const name = decodeURIComponent((await params).ad)
+  const name = adOf((await params).ad)
   return { title: `${name} · Sek-Sek Yolcusu`, description: `${name} adlı yolcunun Sek-Sek’te geçtiği şehirler, süreleri ve hatıraları.`, robots: { index: false } }
 }
 

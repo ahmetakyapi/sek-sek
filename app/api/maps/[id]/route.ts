@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { LIMITS, hit, ipKey } from '@/lib/rateLimit'
+import { LIMITS, hit, ipKey, playerKey, tooMany } from '@/lib/rateLimit'
+import { crossSite, crossSiteError } from '@/lib/sameOrigin'
 import { mapViewer } from '../who'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
  * Tablo yoksa 503, harita yoksa 404.
  */
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  if (crossSite(req)) return crossSiteError()
   const id = Number((await ctx.params).id)
   if (!Number.isInteger(id) || id <= 0 || id > 2 ** 31 - 1) return bad('Geçersiz harita')
   const b = ((await req.json().catch(() => null)) ?? {}) as { action?: unknown }
@@ -28,6 +30,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (b.action !== 'like') return bad('Geçersiz istek')
     const me = await mapViewer(req)
     if (!me) return bad('Beğenmek için giriş yap.', 401)
+    const wait = await hit(LIMITS.mapLike, playerKey(me.id))
+    if (wait) return tooMany(wait, 'Çok sık beğeni gönderildi, biraz sonra tekrar dene')
     const row = (
       await db().execute(sql`
         with ins as (

@@ -26,6 +26,13 @@ export const LIMITS = {
   score: { action: 'skor', max: 120, windowSec: 60 * 60 },
   scoreIp: { action: 'skor-ip', max: 600, windowSec: 60 * 60 },
   mapPlay: { action: 'harita-oyna', max: 1, windowSec: 60 * 60 },
+  // oturumlu yazma uçları: oyuncu başına geniş bir tavan (oyunu kısıtlamaz, betikle şişirmeyi ve sunucuyu yormayı keser)
+  rename: { action: 'ad', max: 10, windowSec: 60 * 60 },
+  ghost: { action: 'hayalet', max: 120, windowSec: 60 * 60 },
+  save: { action: 'kayit-yaz', max: 1200, windowSec: 60 * 60 },
+  mapLike: { action: 'begeni', max: 300, windowSec: 60 * 60 },
+  // yayın: oyuncu başına günlük sınırın (DAILY_LIMIT) önünde IP başına bir taban (çok hesapla yağdırma)
+  mapPublishIp: { action: 'harita-yayin-ip', max: 30, windowSec: 60 * 60 },
 } satisfies Record<string, Limit>
 
 const digest = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 32)
@@ -35,6 +42,9 @@ export function ipKey(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')?.trim() || 'yok'
   return digest(`ip:${ip}`)
 }
+
+/** doğrulanmış oyuncu kimliği, özetlenmiş (istemcinin yolladığı kimlik değil: başkasının hakkı tüketilemesin) */
+export const playerKey = (playerId: string) => digest(`oyuncu:${playerId}`)
 
 /** kullanıcı adı (büyük/küçük harf duyarsız), özetlenmiş */
 export const nameRateKey = (nameKey: string) => digest(`ad:${nameKey}`)

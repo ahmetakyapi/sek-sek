@@ -1,18 +1,19 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import type { NextRequest, NextResponse } from 'next/server'
+import { nameFold } from '@/lib/playerName'
 import { players, sessions } from '@/lib/schema'
+
+export { cleanName, validName } from '@/lib/playerName'
 
 const scryptAsync = promisify(scrypt) as (pw: string, salt: Buffer, len: number) => Promise<Buffer>
 
-export const NAME_RE = /^[\p{L}\p{N} _.-]{2,16}$/u
 export const NAME_ERR = 'Kullanıcı adı 2–16 karakter olmalı (harf, rakam, boşluk, - _ .)'
 export const PASS_ERR = 'Şifre en az 6, en çok 64 karakter olmalı'
 export const validPassword = (p: unknown): p is string => typeof p === 'string' && p.length >= 6 && p.length <= 64
 
-export const cleanName = (n: unknown) => (typeof n === 'string' ? n.trim().replace(/\s+/g, ' ') : '')
 /** Büyük/küçük harf ve Türkçe İ/ı farkı gözetmeyen anahtar: "Ahmet" ile "AHMET" aynı ad */
 export const nameKey = (n: string) => n.toLocaleLowerCase('tr')
 
@@ -23,6 +24,16 @@ export async function hashPassword(pw: string) {
   const salt = randomBytes(16)
   const key = await scryptAsync(pw, salt, 32)
   return ['scrypt', salt.toString('hex'), key.toString('hex')].join('$')
+}
+
+/**
+ * Olmayan ad için de bir scrypt hesaplanır: yanıt süresi adın kayıtlı olup olmadığını ele vermesin
+ * (adlar skor tablosunda zaten açık; yine de giriş ucu hesap yoklamaya yaramasın).
+ */
+const DUMMY_HASH = `scrypt$${'0'.repeat(32)}$${'0'.repeat(64)}`
+export async function checkPasswordOrDummy(pw: string, stored: string | null | undefined) {
+  const ok = await checkPassword(pw, stored ?? DUMMY_HASH)
+  return ok && !!stored
 }
 
 export async function checkPassword(pw: string, stored: string) {
@@ -84,6 +95,19 @@ export function cookieSession(req: NextRequest) {
   const v = req.cookies.get(SESSION_COOKIE)?.value ?? ''
   const [id, token] = v.split('.')
   return id && token ? { id, token } : null
+}
+
+/**
+ * Yeni ad için: büyük/küçük harf ve I/ı/İ/i farkıyla da başka bir hesabın adına denk geliyor mu (taklit önlemi).
+ * `exceptId` adını değiştiren oyuncunun kendisi.
+ */
+export async function nameTaken(name: string, exceptId?: string) {
+  const rows = await db()
+    .select({ id: players.id })
+    .from(players)
+    .where(sql`replace(${players.nameKey}, 'ı', 'i') = ${nameFold(name)}`)
+    .limit(2)
+  return rows.some((r) => r.id !== exceptId)
 }
 
 export async function findByName(name: string) {

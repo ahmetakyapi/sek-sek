@@ -5,7 +5,7 @@ import TouchControls from '@/components/TouchControls'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { BossFigure } from '@/components/Figures'
-import CityBanner, { Choice, CompactToggles, Level, Toggle } from '@/components/CityBanner'
+import CityBanner, { CardToggles, Choice, CompactToggles, Level, Toggle } from '@/components/CityBanner'
 import NameForm from '@/components/NameForm'
 import AuthForm from '@/components/AuthForm'
 import TitleMenu from '@/components/TitleMenu'
@@ -27,7 +27,7 @@ import { LOOKS } from '@/game/heroDraw'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
 import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
-import { MedalBadge, Overlay, displayName, haptic, ic, medalFor } from '@/components/ui'
+import { MedalBadge, SectionTitle, Overlay, displayName, haptic, ic, medalFor } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager, normalizeDuo, normalizeKeys } from '@/game/input'
@@ -1767,7 +1767,7 @@ export default function Game() {
   )
   const controlSet = (
     <>
-      <Toggle label={t('Dokunmatik Kontroller')} hint={t('Ekranda joystick ve tuşlar. Kapatırsan klavye ya da oyun koluyla oynarsın.')} on={showTouch} onChange={() => patch({ touch: showTouch ? 'off' : 'on' })} />
+      <Toggle label={t('Dokunmatik Kontroller')} hint={t('Ekranda joystick ve tuşlar.')} on={showTouch} onChange={() => patch({ touch: showTouch ? 'off' : 'on' })} />
       {/* ikisi de hep listede: dokunmatik açılıp kapanınca liste zıplamasın */}
       <Toggle label={t('Tuş İpuçları')} hint={t('Klavyeyle oynarken ekranın altında tuş rehberi')} on={save.keyHints} onChange={() => patch({ keyHints: !save.keyHints })} />
       <Toggle label={t('Büyük Tuşlar')} hint={t('Dokunmatik kontrollerde daha geniş dokunma alanı')} on={save.controlSize === 'buyuk'} onChange={() => patch({ controlSize: save.controlSize === 'buyuk' ? 'normal' : 'buyuk' })} />
@@ -1775,11 +1775,11 @@ export default function Game() {
   )
   const gameSet = (
     <>
-      <Toggle label={t('Hayalet Koşu')} hint={t('Bir şehri bitirdikten sonra, oradaki en iyi koşunun soluk hayaleti yanında koşar.')} on={save.ghost} onChange={() => patch({ ghost: !save.ghost })} />
+      <Toggle label={t('Hayalet Koşu')} hint={t('Bitirdiğin şehirde en iyi koşunun hayaleti yanında koşar.')} on={save.ghost} onChange={() => patch({ ghost: !save.ghost })} />
       <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekor koşuna göre kaç saniye önde ya da geride olduğun')} on={save.splits !== false} onChange={() => patch({ splits: save.splits === false })} />
-      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır. Kapalıyken görüntü hep sabit kalır.')} on={save.shake ?? !reduceMotion} onChange={() => patch({ shake: !(save.shake ?? !reduceMotion) })} />
+      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır.')} on={save.shake ?? !reduceMotion} onChange={() => patch({ shake: !(save.shake ?? !reduceMotion) })} />
       <div>
-        <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar, zıplamaya zaman kalır. Bu modda skorlar tabloya yazılmaz.')} on={save.relaxed} onChange={() => patch({ relaxed: !save.relaxed })} />
+        <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar; bu modda skor yazılmaz.')} on={save.relaxed} onChange={() => patch({ relaxed: !save.relaxed })} />
         {save.relaxed && <Choice label={t('Oyun Hızı')} value={save.relaxedSpeed ?? 0.8} options={[0.6, 0.7, 0.8, 0.9].map((v) => ({ v, label: `%${Math.round(v * 100)}` }))} onChange={(v) => patch({ relaxedSpeed: v })} />}
       </div>
     </>
@@ -1789,6 +1789,53 @@ export default function Game() {
       {soundSet}
       {controlSet}
       {gameSet}
+    </div>
+  )
+  /**
+   * Ayarlar ekranı (geniş): dört öbek. Ses düzey çubuklarıyla; Oynanış ile Ekran ve Kontroller iki sütunlu kartlar (adı,
+   * anahtarı ve ne işe yaradığı); Dil ve Yardım kendi satırında. Molada sıkı kutucuklar (settingsPause) kalır.
+   */
+  const settingsWide = (
+    <div className="grid gap-4">
+      <section>
+        <SectionTitle title={t('Ses')} note={t('Efekt ve müzik ayrı ayrı')} tone="var(--color-teal)" />
+        {/* iki ses yan yana: her biri adı, anahtarı ve düzey çubuğuyla kendi kutusunda */}
+        <div className="sound-pair mt-2 grid grid-cols-2 gap-2">{soundSet}</div>
+      </section>
+      <CardToggles.Provider value>
+        <section>
+          <SectionTitle title={t('Oynanış')} note={t('Koşunun akışı ve kolaylıklar')} tone="var(--color-gold)" />
+          <div className="mt-2 grid grid-cols-2 gap-2">{gameSet}</div>
+        </section>
+        <section>
+          <SectionTitle title={t('Ekran ve Kontroller')} note={t('Dokunmatik ve görünüm')} tone="var(--color-accent)" />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {controlSet}
+            {canFull && (
+              <button type="button" className="flex h-full w-full flex-col border-2 border-line bg-ink/30 px-3 py-2.5 text-left hover:bg-panel-2/60" onClick={fullscreen}>
+                <span className="flex w-full items-center justify-between gap-2 text-[14px] font-semibold text-cream">
+                  {t('Tam Ekran')}
+                  <span aria-hidden className="text-accent-2">⛶</span>
+                </span>
+                <span className="mt-1 text-[13px] leading-snug text-muted">{t('Tarayıcı çubukları gizlenir; Esc ile çıkılır.')}</span>
+              </button>
+            )}
+          </div>
+        </section>
+      </CardToggles.Provider>
+      {/* yardım: rehber ve uygulama gibi kur (dil başlıkta) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button className="pixel-btn px-3 py-1.5 text-[13px]" onClick={() => (ui(), patch({ tutorial: true }))} disabled={save.tutorial}>
+          {save.tutorial ? t('Rehber Açık') : t('Rehberi Yeniden Göster')}
+        </button>
+        {installer.canInstall && (
+          <button className="pixel-btn primary px-3 py-1.5 text-[13px]" onClick={() => void installer.install()}>
+            {ic(t('⤓ Ana Ekrana Ekle'))}
+          </button>
+        )}
+        {save.tutorial && <span className="text-[13px] text-muted">{t('Sıradaki oyunda adım adım gösterilecek.')}</span>}
+        {installer.iosHint && <span className="text-[13px] text-muted">{t('Uygulama gibi açmak için Safari’de Paylaş → Ana Ekrana Ekle.')}</span>}
+      </div>
     </div>
   )
   // molada: üstte ses (düzey çubuklarıyla), altında öbür ayarlar iki sütunlu sıkı kutucuklar (iki sütun dengeli, kaydırma yok)
@@ -2612,12 +2659,27 @@ export default function Game() {
           <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-lg flex-col p-5 sm:p-6 short:max-w-[min(860px,100%)] short:py-3 wide:max-w-[min(1040px,100%)]">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[12px] font-bold tracking-[0.18em] text-accent max-sm:hidden short:hidden">{t('OYUNU KENDİNE GÖRE KUR')}</p>
-                <h2 className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Ayarlar')}</h2>
+                <h2 className="font-display text-3xl leading-none text-cream short:text-2xl">{t('Ayarlar')}</h2>
+                <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Değişiklikler hemen uygulanır ve kaydedilir.')}</p>
               </div>
-              <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
-                {ic(t("← Geri"))}
-              </button>
+              <div className="flex shrink-0 items-center gap-3">
+                {/* dil: başlıkta kendi seçicisi (geniş ekranda; dar ekranda listenin altında) */}
+                <span className="hidden overflow-hidden border-2 border-line wide:flex" role="group" aria-label={t('Dil')}>
+                  {(
+                    [
+                      ['tr', 'Türkçe'],
+                      ['en', 'English'],
+                    ] as const
+                  ).map(([l, name]) => (
+                    <button key={l} lang={l} aria-pressed={lang === l} className={`min-h-[40px] px-3.5 text-[14px] font-semibold ${lang === l ? 'bg-gold text-ink' : 'bg-ink/30 text-cream/75 hover:text-cream'}`} onClick={() => (ui(), patch({ lang: l }))}>
+                      {name}
+                    </button>
+                  ))}
+                </span>
+                <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
+                  {ic(t("← Geri"))}
+                </button>
+              </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 wide:hidden" role="tablist">
               {([['ayar', t('Oyun')], ['tus', t('Kontroller')]] as const).map(([k, label]) => (
@@ -2628,12 +2690,10 @@ export default function Game() {
             </div>
             <div className="overlay-scroll -mx-1 mt-2 min-h-0 flex-1 overflow-y-auto px-1 wide:grid wide:grid-cols-2 wide:gap-8">
             <div className={`${setTab === 'ayar' ? '' : 'hidden'} wide:block`}>
-              <p className="hidden items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold wide:flex">
-                {t('OYUN')} <span className="kilim h-[6px] flex-1 opacity-50" />
-              </p>
-              {/* geniş ekranda sıkı kutucuklar: sol sütun sağdaki kontrollerle aynı boyda kalır */}
-              <div className="wide:hidden">{settingsList}</div>
-              <div className="hidden wide:block">{settingsPause}</div>
+              {/* geniş ekranda dört öbek (settingsWide); dar ekranda tek liste ve altında dil */}
+              <div className="hidden wide:block">{settingsWide}</div>
+              <div className="wide:hidden">
+              <div>{settingsList}</div>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t-2 border-line/60 pt-2.5">
                 <span className="flex items-center gap-2 text-[14px] font-semibold text-cream">
                   {t('Dil')}
@@ -2662,11 +2722,10 @@ export default function Game() {
               <button className="mt-2 text-[13px] text-muted underline-offset-4 hover:text-cream hover:underline" onClick={() => (ui(), patch({ tutorial: true }))} disabled={save.tutorial}>
                 {save.tutorial ? t('Rehber açık: sıradaki oyunda adım adım gösterilecek.') : t('Oyun içi rehberi yeniden göster')}
               </button>
+              </div>
             </div>
             <div className={`${setTab === 'tus' ? '' : 'hidden'} wide:block`}>
-              <p className="hidden items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold wide:flex">
-                {t('KONTROLLER')} <span className="kilim h-[6px] flex-1 opacity-50" />
-              </p>
+              <SectionTitle title={t('Kontroller')} note={t('Bir eyleme dokun, yeni tuşa bas')} tone="var(--color-accent-2)" className="hidden wide:flex" />
             <KeyRemap keys={save.keys} onChange={(k) => patch({ keys: k })} />
             <DuoRemap keys={save.duoKeys} onChange={(k) => patch({ duoKeys: k })} />
             <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2 short:mt-2 short:gap-5 short:text-[13px]">

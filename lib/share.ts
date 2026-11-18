@@ -1,5 +1,6 @@
 import { LEVELS } from '@/game/levels'
 import type { CharacterId } from '@/game/characters'
+import { isRude } from '@/lib/communityMaps'
 import { SCARVES } from '@/lib/extras'
 
 export interface ShareData {
@@ -35,7 +36,9 @@ export function parseShare(p: Record<string, string | string[] | undefined>): Sh
   if (!Number.isInteger(deaths) || deaths < 0 || deaths > 9999) return null
   if (!Number.isInteger(items) || items < 0 || items > 3) return null
   const character: CharacterId = g('c') === 'memo' ? 'memo' : 'uktun'
-  const name = g('n').replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 16)
+  // bağlantıdaki ad doğrulanmaz (kart herkesin kurabileceği bir davettir): kaba söz kartın başlığına ve görseline çıkmasın
+  const raw = g('n').replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 16)
+  const name = isRude(raw) ? '' : raw
   const scarf = (SCARVES.find((s) => s.id === g('k')) ?? SCARVES[0]).id
   return { level, timeMs, deaths, items, character, name, scarf, lang: g('l') === 'en' ? 'en' : 'tr' }
 }

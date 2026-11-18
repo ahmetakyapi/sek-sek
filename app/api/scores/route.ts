@@ -6,12 +6,15 @@ import { minScoreMs } from '@/lib/antiCheat'
 import { db } from '@/lib/db'
 import { istanbulDay, shiftDay, tournamentFor, tournamentKey, tournamentWeek } from '@/lib/extras'
 import { nameKey, verifyPlayer } from '@/lib/players'
-import { LIMITS, hit, ipKey, tooMany } from '@/lib/rateLimit'
+import { LIMITS, hit, ipKey, playerKey, tooMany } from '@/lib/rateLimit'
+import { crossSite, crossSiteError } from '@/lib/sameOrigin'
 import { challengeScoreKey, currentKeys, dailyScoreKey, scoreKey, fullScoreKey, TOUR_KEYS } from '@/lib/scoreKey'
 
 export const dynamic = 'force-dynamic'
 
 const LEVEL_IDS = new Set(LEVELS.map((l) => l.id))
+/** şehir rekorlarının anahtarları (`istanbul@s`): toplu aktarım yalnız bunları yazar */
+const CITY_KEYS = new Set(currentKeys())
 /** mücadele haritaları: `mucadele-<id>` → tabloda `mucadele:<id>` */
 const CHALLENGE_IDS = new Set(ALL_CHALLENGES.map((c) => `mucadele-${c.id}`))
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -234,17 +237,23 @@ async function upsert(playerId: string, name: string, r: Run, played: number) {
  * Haritanın fiziksel en kısa süresinden hızlı koşu 422 (lib/antiCheat.ts); oyuncu başına saatte 120, IP başına 600 istek; aşınca 429.
  */
 export async function POST(req: NextRequest) {
+  if (crossSite(req)) return crossSiteError()
   const b = ((await req.json().catch(() => null)) ?? {}) as Record<string, unknown>
-  // sınır oyuncu başına (aynı evdeki yolcular ortak IP'yi paylaşır, birinin koşuları ötekinin skorunu düşürmesin)
-  const who = typeof b.playerId === 'number' || typeof b.playerId === 'string' ? `p:${b.playerId}` : ipKey(req)
-  const wait = (await hit(LIMITS.score, who)) || (await hit(LIMITS.scoreIp, ipKey(req)))
-  if (wait) return tooMany(wait, 'Çok sık skor gönderildi, biraz sonra tekrar dene')
+  const ip = ipKey(req)
+  const ipWait = await hit(LIMITS.scoreIp, ip)
+  if (ipWait) return tooMany(ipWait, 'Çok sık skor gönderildi, biraz sonra tekrar dene')
   try {
+    // sınır oyuncu başına (aynı evdeki yolcular ortak IP'yi paylaşır, birinin koşuları ötekinin skorunu düşürmesin);
+    // anahtar doğrulanmış kimlikten: istemcinin yazdığı playerId ile başkasının hakkı tüketilemez, kimlik değiştirerek
+    // sınır da aşılamaz (oturumsuz istek IP'ye sayılır)
+    const me = await verifyPlayer(b.playerId, b.token)
+    const wait = await hit(LIMITS.score, me ? playerKey(me.id) : ip)
+    if (wait) return tooMany(wait, 'Çok sık skor gönderildi, biraz sonra tekrar dene')
     if (Array.isArray(b.batch)) {
       const runs = b.batch.slice(0, LEVELS.length).map((x) => (x && typeof x === 'object' ? parseRun(x as Record<string, unknown>) : 'x'))
       // toplu aktarımda fiziğe sığmayan rekor sessizce atlanır: öteki şehirler yine yazılsın
-      const ok = runs.filter((r): r is Run => typeof r !== 'string' && !r.key.startsWith('gunluk:') && !r.key.startsWith('mucadele:') && !r.key.startsWith('turnuva:') && !r.key.startsWith('yuzde:') && !(TOUR_KEYS as readonly string[]).includes(r.key) && !tooFast(r))
-      const me = await verifyPlayer(b.playerId, b.token)
+      // toplu aktarım yalnız şehir rekorlarını taşır (beyaz liste: yeni bir tablo türü eklenince kendiliğinden dışarıda kalır)
+      const ok = runs.filter((r): r is Run => typeof r !== 'string' && CITY_KEYS.has(r.key) && !tooFast(r))
       if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
       for (const r of ok) await upsert(me.id, me.name, r, 0)
       return NextResponse.json({ ok: true, synced: ok.length })
@@ -252,7 +261,6 @@ export async function POST(req: NextRequest) {
     const run = parseRun(b)
     if (typeof run === 'string') return bad(run)
     if (tooFast(run)) return bad('Bu süre haritanın en kısa yolundan bile hızlı', 422)
-    const me = await verifyPlayer(b.playerId, b.token)
     if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
     const d = db()
     const prev = (

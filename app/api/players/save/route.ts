@@ -2,6 +2,8 @@ import { eq } from 'drizzle-orm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { cookieSession, verifyPlayer } from '@/lib/players'
+import { LIMITS, hit, playerKey, tooMany } from '@/lib/rateLimit'
+import { crossSite, crossSiteError } from '@/lib/sameOrigin'
 import { saves } from '@/lib/schema'
 import { cleanIncoming, cloudPart, mergeSaves, normalizeSave, type Save } from '@/lib/storage'
 
@@ -34,11 +36,15 @@ export async function GET(req: NextRequest) {
 
 /** PUT { data } → hesabın ilerlemesini yazar (istemci önce birleştirir, sonra gönderir) */
 export async function PUT(req: NextRequest) {
+  if (crossSite(req)) return crossSiteError()
+  // başlık bayt sayar, sınır karakter: Türkçe harf iki bayt tutar, pay bırakılır
+  if (Number(req.headers.get('content-length') ?? 0) > MAX * 3) return NextResponse.json({ error: 'Kayıt çok büyük' }, { status: 413 })
   const text = await req.text()
   if (text.length > MAX) return NextResponse.json({ error: 'Kayıt çok büyük' }, { status: 413 })
   const body = (() => {
     try {
-      return JSON.parse(text) as { data?: unknown }
+      // "__proto__" gibi anahtarlar düşer: birleştirme (mergeSaves) şehir kimliğini nesne anahtarı yapar, kirlenmesin
+      return JSON.parse(text, (k, v) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v)) as { data?: unknown }
     } catch {
       return null
     }
@@ -47,6 +53,8 @@ export async function PUT(req: NextRequest) {
   try {
     const me = await who(req)
     if (!me) return NextResponse.json({ error: 'Oturum yok' }, { status: 401 })
+    const wait = await hit(LIMITS.save, playerKey(me.id))
+    if (wait) return tooMany(wait, 'Kayıt çok sık gönderildi, biraz sonra yeniden denenecek')
     // sunucu da birleştirir: eski kaydı taşıyan bir cihaz (açık kalmış sekme, başka telefon) buluttaki ilerlemeyi geri alamaz
     const row = (await db().select().from(saves).where(eq(saves.playerId, me.id)).limit(1))[0]
     const incoming = normalizeSave({ ...cleanIncoming(body.data as Record<string, unknown>), accountVersion: 2 })

@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { DAILY_LIMIT, PAGE_SIZE, cleanTitle, parseSort, titleProblem, type CommunityMap, type MapSort } from '@/lib/communityMaps'
 import { decodeMap, encodeMap } from '@/lib/customLevel'
 import { db } from '@/lib/db'
+import { LIMITS, hit, ipKey, tooMany } from '@/lib/rateLimit'
+import { crossSite, crossSiteError } from '@/lib/sameOrigin'
 import { hasSession, mapViewer } from './who'
 
 export const dynamic = 'force-dynamic'
@@ -50,6 +52,8 @@ export async function GET(req: NextRequest) {
  * son 24 saatte en çok DAILY_LIMIT harita. Tablo yoksa 503.
  */
 export async function POST(req: NextRequest) {
+  if (crossSite(req)) return crossSiteError()
+  if (Number(req.headers.get('content-length') ?? 0) > MAX_CODE + 1000) return bad('Harita çok büyük', 413)
   const text = await req.text()
   if (text.length > MAX_CODE + 1000) return bad('Harita çok büyük', 413)
   let b: Record<string, unknown>
@@ -70,6 +74,8 @@ export async function POST(req: NextRequest) {
   try {
     const me = await mapViewer(req)
     if (!me) return bad('Yayınlamak için giriş yap.', 401)
+    const wait = await hit(LIMITS.mapPublishIp, ipKey(req))
+    if (wait) return tooMany(wait, 'Bu bağlantıdan çok fazla harita yayınlandı, biraz sonra tekrar dene')
     const d = db()
     const recent = (await d.execute(sql`select count(*)::int as n from seksek_maps where player_id = ${me.id} and created_at > now() - interval '1 day'`)).rows[0] as { n: number }
     if (recent.n >= DAILY_LIMIT) return bad('Bugünlük yayın sınırına geldin (günde 10 harita). Yarın yeniden dene.', 429)

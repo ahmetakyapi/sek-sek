@@ -10,6 +10,7 @@ import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { minTimeMs } from '../lib/antiCheat'
 import { dailyRun, istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
+import { parseShare } from '../lib/share'
 
 /**
  * Skor tablosu gerçek SQL ile (bellekte Postgres: PGlite): göçler sırayla uygulanır, sonra API uçları çağrılır.
@@ -23,6 +24,8 @@ const { GET, POST } = await import('../app/api/scores/route')
 const ghostApi = await import('../app/api/ghosts/route')
 const loginApi = await import('../app/api/players/login/route')
 const playersApi = await import('../app/api/players/route')
+const meApi = await import('../app/api/players/me/route')
+const saveApi = await import('../app/api/players/save/route')
 
 const sha = (t: string) => createHash('sha256').update(t).digest('hex')
 const P = [
@@ -262,12 +265,27 @@ describe('hile önleme ve hız sınırı', () => {
     expect(keys.some((k) => k.includes('9.9.9'))).toBe(false)
   })
 
-  it('skor: aynı evden (aynı IP) oynayan iki yolcu birbirinin hakkını yemez', async () => {
+  it('skor: aynı evden (aynı IP) oynayan iki yolcu birbirinin hakkını yemez; sınır doğrulanmış kimliğe sayılır', async () => {
+    const H = [
+      { id: '00000000-0000-4000-8000-000000000091', name: 'Ev Bir', token: '1'.repeat(40) },
+      { id: '00000000-0000-4000-8000-000000000092', name: 'Ev İki', token: '2'.repeat(40) },
+    ]
+    for (const p of H) {
+      await pg.query(`insert into seksek_players (id, name, name_key, password_hash) values ($1, $2, $3, 'x')`, [p.id, p.name, p.name.toLocaleLowerCase('tr')])
+      await pg.query(`insert into seksek_sessions (player_id, token_hash) values ($1, $2)`, [p.id, sha(p.token)])
+    }
+    const as = (p: (typeof H)[number], ip: string) => post({ level: 'yok', playerId: p.id, token: p.token }, ip)
     // birinci yolcu kendi hakkını bitirir
-    for (let i = 0; i < 120; i++) expect((await post({ level: 'yok', playerId: 9001 }, '5.5.5.5')).status).toBe(400)
-    expect((await post({ level: 'yok', playerId: 9001 }, '5.5.5.5')).status).toBe(429)
+    for (let i = 0; i < 120; i++) expect((await as(H[0], '5.5.5.5')).status).toBe(400)
+    expect((await as(H[0], '5.5.5.5')).status).toBe(429)
     // aynı IP'deki ikinci yolcu gönderebilir
-    expect((await post({ level: 'yok', playerId: 9002 }, '5.5.5.5')).status).toBe(400)
+    expect((await as(H[1], '5.5.5.5')).status).toBe(400)
+    // başkasının kimliğini (oturumsuz) yazmak onun hakkını tüketmez: istek gönderenin IP'sine sayılır
+    for (let i = 0; i < 120; i++) await post({ level: 'yok', playerId: H[1].id, token: 'yanlış' }, '5.5.6.6')
+    expect((await post({ level: 'yok', playerId: H[1].id }, '5.5.6.6')).status).toBe(429)
+    expect((await as(H[1], '5.5.7.7')).status).toBe(400)
+    // kimlik değiştirerek de sınır aşılamaz
+    expect((await post({ level: 'yok', playerId: '00000000-0000-4000-8000-0000000000ff' }, '5.5.6.6')).status).toBe(429)
   })
 
   it('giriş: IP başına ve ad başına 15 dakikada 10 deneme', async () => {
@@ -294,5 +312,93 @@ describe('hile önleme ve hız sınırı', () => {
     } finally {
       await pg.query('alter table seksek_rate_x rename to seksek_rate')
     }
+  })
+})
+
+describe('güvenlik', () => {
+  const H = { id: '00000000-0000-4000-8000-0000000000a1', name: 'Irmak', token: '9'.repeat(40) }
+  beforeAll(async () => {
+    await pg.query(`insert into seksek_players (id, name, name_key, password_hash) values ($1, $2, $3, 'x')`, [H.id, H.name, H.name.toLocaleLowerCase('tr')])
+    await pg.query(`insert into seksek_sessions (player_id, token_hash) values ($1, $2)`, [H.id, sha(H.token)])
+  })
+  const evil = { origin: 'https://kotu.example', 'sec-fetch-site': 'cross-site' }
+
+  it('başka siteden gelen yazma isteği 403: giriş, çerez kurma, skor, hayalet, kayıt, ad, çıkış', async () => {
+    const req = (url: string, method: string, body: unknown, headers: Record<string, string> = evil) =>
+      new NextRequest(`http://x${url}`, { method, body: JSON.stringify(body), headers: { 'x-forwarded-for': nextIp(), ...headers } })
+    const auth = { id: H.id, token: H.token }
+    const calls = [
+      () => loginApi.POST(req('/api/players/login', 'POST', { name: 'Irmak', password: 'gizli123' })),
+      () => meApi.POST(req('/api/players/me', 'POST', auth)),
+      () => playersApi.POST(req('/api/players', 'POST', { name: 'Yeni Biri', password: 'gizli123' })),
+      () => playersApi.PATCH(req('/api/players', 'PATCH', { ...auth, name: 'Irmak Su' })),
+      () => playersApi.DELETE(req('/api/players', 'DELETE', auth)),
+      () => POST(req('/api/scores', 'POST', { level: 'konya', playerId: H.id, token: H.token, timeMs: 200000, deaths: 0, items: 0 })),
+      () => ghostApi.POST(req('/api/ghosts', 'POST', { level: 'konya', timeMs: 200000, data: [] })),
+      () => saveApi.PUT(req('/api/players/save', 'PUT', { data: {} }, { ...evil, cookie: `seksek_oturum=${H.id}.${H.token}` })),
+    ]
+    for (const c of calls) expect((await c()).status).toBe(403)
+    // yalnız Origin (Sec-Fetch-Site'sız eski tarayıcı) ya da "null" köken de reddedilir
+    expect((await meApi.POST(req('/api/players/me', 'POST', auth, { origin: 'https://kotu.example' }))).status).toBe(403)
+    expect((await meApi.POST(req('/api/players/me', 'POST', auth, { origin: 'null' }))).status).toBe(403)
+    // kendi kökeninden gelen istek geçer
+    const ok = await meApi.POST(req('/api/players/me', 'POST', auth, { origin: 'http://x', host: 'x', 'sec-fetch-site': 'same-origin' }))
+    expect(ok.status).toBe(200)
+    // oturum hâlâ açık (başka siteden çıkış yaptırılamadı)
+    expect((await meApi.GET(new NextRequest('http://x/api/players/me', { headers: { cookie: `seksek_oturum=${H.id}.${H.token}` } }))).status).toBe(200)
+  })
+
+  it('ad taklidi: başka alfabeden benzer harf, tam genişlik ve I/ı farkıyla aynı ad alınamaz', async () => {
+    const signup = (name: string) => playersApi.POST(new NextRequest('http://x/api/players', { method: 'POST', body: JSON.stringify({ name, password: 'gizli123' }), headers: { 'x-forwarded-for': nextIp() } }))
+    const avail = async (name: string) => ((await (await playersApi.GET(new NextRequest(`http://x/api/players?name=${encodeURIComponent(name)}`))).json()) as { available: boolean }).available
+    // Kiril А, Yunan Α, tam genişlikli Ａ, sıfır genişlikli boşluk: hepsi 400
+    for (const n of ['Аyşe', 'Αyşe', 'Ａyşe', 'Ay\u200bşe', '...']) {
+      expect((await signup(n)).status, n).toBe(400)
+      expect(await avail(n), n).toBe(false)
+    }
+    // "Irmak" (anahtarı "ırmak") varken "irmak", "İRMAK" de alınmış sayılır
+    for (const n of ['irmak', 'IRMAK', 'İrmak']) {
+      expect(await avail(n), n).toBe(false)
+      expect((await signup(n)).status, n).toBe(409)
+    }
+    // ayrık yazılmış Türkçe harf bileşik biçime çevrilir; Türkçe harfli ad geçer
+    const r = await signup('Ays\u0327e Gu\u0308l')
+    expect(r.status).toBe(200)
+    expect(((await r.json()) as { name: string }).name).toBe('Ayşe Gül')
+    // kendi adının büyük/küçük harfini değiştirmek serbest
+    const me = await playersApi.PATCH(new NextRequest('http://x/api/players', { method: 'PATCH', body: JSON.stringify({ id: H.id, token: H.token, name: 'IRMAK' }) }))
+    expect(me.status).toBe(200)
+  })
+
+  it('ad değiştirme oyuncu başına saatte 10', async () => {
+    const rename = (name: string) => playersApi.PATCH(new NextRequest('http://x/api/players', { method: 'PATCH', body: JSON.stringify({ id: H.id, token: H.token, name }) }))
+    let last = 200
+    for (let i = 0; i < 11; i++) last = (await rename(`Irmak ${i}`)).status
+    expect(last).toBe(429)
+  })
+
+  it('giriş: olmayan ad ile yanlış şifre aynı yanıtı verir', async () => {
+    const login = (name: string) => loginApi.POST(new NextRequest('http://x/api/players/login', { method: 'POST', body: JSON.stringify({ name, password: 'yanlış-şifre' }), headers: { 'x-forwarded-for': nextIp() } }))
+    const a = await login('hiç-olmayan-ad')
+    const b = await login('Ayşe')
+    expect(a.status).toBe(401)
+    expect(b.status).toBe(401)
+    expect(await a.json()).toEqual(await b.json())
+  })
+
+  it('skor kartı bağlantısı: ad süzülür, kaba söz karta çıkmaz', () => {
+    const q = { s: 'konya', t: '90000', d: '1', i: '2', c: 'memo' }
+    expect(parseShare({ ...q, n: 'Ayşe<script>' })!.name).toBe('Ayşescript')
+    expect(parseShare({ ...q, n: 'siktir' })!.name).toBe('')
+    expect(parseShare({ ...q, n: 'Defne' })!.name).toBe('Defne')
+  })
+
+  it('bulut kaydı: __proto__ anahtarı nesne zincirini kirletemez', async () => {
+    const body = `{"data":{"best":{"__proto__":{"polluted":1}},"__proto__":{"polluted":1},"stamps":{"__proto__":{"polluted":1}}}}`
+    const r = await saveApi.PUT(new NextRequest('http://x/api/players/save', { method: 'PUT', body, headers: { cookie: `seksek_oturum=${H.id}.${H.token}` } }))
+    expect(r.status).toBe(200)
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+    const g = (await (await saveApi.GET(new NextRequest('http://x/api/players/save', { headers: { cookie: `seksek_oturum=${H.id}.${H.token}` } }))).json()) as { data: Record<string, unknown> }
+    expect(JSON.stringify(g.data)).not.toContain('polluted')
   })
 })

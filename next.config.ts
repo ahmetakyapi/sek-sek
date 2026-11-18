@@ -1,5 +1,30 @@
 import type { NextConfig } from 'next'
 
+const dev = process.env.NODE_ENV !== 'production'
+
+/**
+ * İçerik Güvenliği Politikası: her şey kendi kökenimizden. Inline betik Next'in hidrasyon verisi için gerekir
+ * (nonce her sayfayı dinamik yapardı); geliştirmede React eval ister. Vercel Analytics ve Speed Insights üretimde
+ * `/_vercel/*` altından aynı kökenden gelir; va.vercel-scripts.com yalnız hata ayıklama betiği için. Görsel ve
+ * dosyalar data:/blob: (tuval, Fotoğraf Kipi, kartpostal), worker kendi kökenimizden (çözücü, service worker).
+ * Değiştirirsen `npx next start` ile oyunu, /duzenle ve /haritalar'ı açıp konsolda CSP ihlali olmadığına bak.
+ */
+const CSP = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com${dev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  `connect-src 'self' https://vitals.vercel-insights.com${dev ? ' ws: wss:' : ''}`,
+  "media-src 'self' data: blob:",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ')
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // skor kartı görseli fontları, amblemi ve portreyi dosyadan okur
@@ -19,6 +44,10 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Content-Security-Policy', value: CSP },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self)' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
         ],
       },
     ]
