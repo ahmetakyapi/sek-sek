@@ -1,16 +1,23 @@
 'use client'
 import { DAILY_RULES, type DailyRule } from '@/lib/extras'
 
-/** Kural aileleri: Sinir Bozucu ekranında modlar bu başlıklar altında durur, renk aileyi söyler */
-export type RuleFamily = 'zemin' | 'gorus' | 'fizik' | 'tekcan' | 'karisim' | 'kural'
+/** Kural aileleri: Sinir Bozucu ekranında modlar bu başlıklar altında durur (kolaydan zora), renk aileyi söyler */
+export type RuleFamily = 'zemin' | 'gorus' | 'fizik' | 'baski' | 'karisim' | 'kural'
 
 export const FAMILIES: Record<RuleFamily, { name: string; tagline: string; color: string }> = {
   zemin: { name: 'Zemin', tagline: 'Ayağının altı güvenilmez', color: '#7fd3ff' },
   gorus: { name: 'Görüş', tagline: 'Gözüne güvenme', color: '#b9a4ff' },
   fizik: { name: 'Fizik', tagline: 'Dünyanın kuralı değişti', color: '#ffd166' },
-  tekcan: { name: 'Tek Can', tagline: 'Bir hata, baştan', color: '#ff7a7a' },
+  baski: { name: 'Baskı', tagline: 'Peşinde biri var ya da tek canın', color: '#ff7a7a' },
   karisim: { name: 'Karışım', tagline: 'Hepsi bir arada', color: '#ff9a6b' },
   kural: { name: 'Kurallar', tagline: 'Aynı şehir, başka oyun', color: '#a9b4ff' },
+}
+
+/** Ekranda sıra: aileler kolaydan zora, her ailenin içi zorluğa göre (eşitse tanımdaki sıra). Günlük kuralın seçimi
+ * `RULES` dizisinin sırasına bağlıdır, o dizi değişmez: sıralama yalnız gösterimdir. */
+export const FAMILY_ORDER: RuleFamily[] = ['kural', 'zemin', 'gorus', 'fizik', 'baski', 'karisim']
+export function byHeat<R extends DailyRule>(list: readonly R[]): R[] {
+  return [...list].sort((a, b) => RULE_ART[a].heat - RULE_ART[b].heat || list.indexOf(a) - list.indexOf(b))
 }
 
 /** Her kuralın ailesi ve zorluğu (1-5 alev): elle, oynanışa göre */
@@ -34,13 +41,13 @@ export const RULE_ART: Record<DailyRule, { family: RuleFamily; heat: 1 | 2 | 3 |
   ay: { family: 'fizik', heat: 2 },
   firtina: { family: 'fizik', heat: 3 },
   ters: { family: 'fizik', heat: 3 },
-  cehennem: { family: 'tekcan', heat: 4 },
-  sonnefes: { family: 'tekcan', heat: 5 },
-  geceyarisi: { family: 'tekcan', heat: 4 },
+  cehennem: { family: 'baski', heat: 4 },
+  sonnefes: { family: 'baski', heat: 5 },
+  geceyarisi: { family: 'baski', heat: 4 },
   kabus: { family: 'karisim', heat: 5 },
   kaos: { family: 'karisim', heat: 5 },
   korkabus: { family: 'karisim', heat: 5 },
-  kovala: { family: 'fizik', heat: 3 },
+  kovala: { family: 'baski', heat: 3 },
 }
 
 const HEART = 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'

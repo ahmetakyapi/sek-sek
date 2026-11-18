@@ -1278,7 +1278,6 @@ export const UI_EN: Record<string, string> = {
   "Gözüne güvenme": "Don't trust your eyes",
   "Fizik": "Physics",
   "Dünyanın kuralı değişti": "The world's rules changed",
-  "Bir hata, baştan": "One mistake, start over",
   "Karışım": "Mix",
   "Hepsi bir arada": "All at once",
   "Kurallar": "Rules",
@@ -1737,4 +1736,7 @@ export const UI_EN: Record<string, string> = {
   "Bu kuralda ceza yok: skorun süren.": "This rule has no penalties: your score is your time.",
   "Nefesin azalıyor: yüzeye çık!": "Running out of air: get to the surface!",
   "Nefesin bitti: başın suyun üstündeyken nefes dolar.": "Out of breath: your air refills once your head is above water.",
+  "Klavye ya da iki oyun kolu ister": "Needs a keyboard or two gamepads",
+  "Baskı": "Pressure",
+  "Peşinde biri var ya da tek canın": "Something's chasing you, or you get one life",
 }

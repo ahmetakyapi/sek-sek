@@ -2802,6 +2802,7 @@ export default function Game() {
           onRage={() => (ui(), (rageStartRef.current = undefined), setScreen('rageSetup'))}
           onChase={() => (ui(), (rageStartRef.current = 'kovala'), setScreen('rageSetup'))}
           chaseCities={LEVELS.filter((l) => save.best[l.id] && ruleFits('kovala', l)).length}
+          touch={coarse}
           onRageCourses={() => (ui(), setScreen('rageCourses'))}
           rageCoursesDone={RAGE_COURSES.filter((c) => save.challenges?.[c.id]).length}
           ruleCount={Object.keys(save.rules ?? {}).filter((k) => !RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}

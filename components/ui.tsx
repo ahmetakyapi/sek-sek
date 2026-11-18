@@ -14,7 +14,8 @@ export function Overlay({ children, dim = false }: { children: React.ReactNode; 
     <div
       ref={ref}
       className={`overlay-scroll absolute inset-0 z-20 flex overflow-y-auto p-4 ${dim ? 'bg-ink/60' : 'bg-ink/35'}`}
-      style={{ paddingTop: 'max(16px, var(--safe-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+      // kayan katman çentiğin altından başlar: iOS Safari durum çubuğunun altına giren kayan içeriği bulanıklaştırıyordu
+      style={{ top: 'env(safe-area-inset-top)', paddingTop: '16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
     >
       <div className="m-auto flex w-full justify-center">{children}</div>
     </div>

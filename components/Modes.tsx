@@ -7,7 +7,7 @@ import { ItemIcon } from '@/components/HudBits'
 import { Board } from '@/components/ScoreBoard'
 import { Overlay, SectionTitle, displayName, ic } from '@/components/ui'
 import { CourseScene } from '@/components/MapThumb'
-import { FAMILIES, Heat, RULE_ART, RuleIcon, rulePerks, type RuleFamily } from '@/components/RuleArt'
+import { FAMILIES, FAMILY_ORDER, Heat, RULE_ART, RuleIcon, byHeat, rulePerks } from '@/components/RuleArt'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
@@ -65,6 +65,7 @@ export function ModesHub({
   onRage,
   onChase,
   chaseCities,
+  touch = false,
   dailyUsed,
   tried,
   onRageCourses,
@@ -106,6 +107,8 @@ export function ModesHub({
   onChase: () => void
   /** Kovalamaca'nın açıldığı ve bitirilmiş şehir sayısı */
   chaseCities: number
+  /** dokunmatik cihaz: Co-op klavye ya da iki oyun kolu ister, kutucuk bunu söyler */
+  touch?: boolean
   /** bugünün günlük hakkı kullanıldı (başlandı ya da bitti) */
   dailyUsed: boolean
   /** en az bir şehirde rekoru olan kurallar (simge panosunda parlar) */
@@ -208,8 +211,11 @@ export function ModesHub({
                   const done = tournament?.week === week && tournament.best[id] !== undefined
                   return lvl && c ? (
                     <span key={id} className={`flex min-w-0 flex-1 items-center gap-2 border-2 px-2 py-1.5 ${done ? 'border-gold/60 bg-gold/10' : 'border-line bg-ink/40'}`}>
-                      <ItemIcon city={lvl.city} taken={done} size={18} />
-                      <span className="truncate text-[13px] text-cream/85">{t(c.name)}</span>
+                      <span className="shrink-0 max-sm:hidden">
+                        <ItemIcon city={lvl.city} taken={done} size={18} />
+                      </span>
+                      {/* parkur adı kesilmez: dar ekranda iki satıra iner */}
+                      <span className="min-w-0 text-[13px] leading-tight text-cream/85 [text-wrap:balance]">{t(c.name)}</span>
                     </span>
                   ) : null
                 })}
@@ -222,67 +228,63 @@ export function ModesHub({
           </section>
 
           {/* bütün modlar tek ızgarada; aile rengi kutucuğun sol şeridinde (turkuaz birlikte, kiremit meydan okuma, çivit yol) */}
+          {/* Bütün modlar tek ızgarada, ailelere göre ve her ailenin içi açılış sırasına / zorluğa göre (geniş ekranda her aile
+              bir satır): çivit yol (Kurallı Koşu, Mücadeleler, Ayna Yolu, Speedrun) · kiremit meydan okuma (Boss Rush, Maraton,
+              Kovalamaca, Sinir Bozucu) · turkuaz birlikte (Düello, Co-op) · altın üret (Bölüm Düzenleyici, Topluluk Haritaları) */}
           <div className="mt-4 grid gap-2.5 sm:grid-cols-2 wide:grid-cols-4 short:mt-3">
             <ModeTile
-              tone="var(--color-teal)"
-              title={t('Co-op')}
-              desc={t('İki yolcu birlikte, tek klavyede.')}
-              status={t('Şehir, boss ya da parkur')}
-              onClick={onCoop}
-              art={
-                <span className="flex items-end">
-                  <Portrait id="uktun" className="w-[30px] rotate-[-5deg]" />
-                  <Portrait id="memo" className="-ml-2 w-[30px] rotate-[5deg]" />
-                </span>
-              }
-            />
-            <ModeTile
-              tone="var(--color-teal)"
-              title={t('Düello')}
-              desc={t('Yan yana ya da sırayla yarış.')}
-              status={t('1, 3 ya da 5 tur')}
-              onClick={onDuel}
-              art={
-                <span className="relative flex items-end">
-                  <Portrait id="uktun" className="w-[30px] rotate-[-6deg]" />
-                  <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 font-display text-[12px] text-accent-2 [text-shadow:0_2px_0_#0e0d22]">vs</span>
-                  <Portrait id="memo" className="-ml-1 w-[30px] rotate-[6deg]" />
-                </span>
-              }
-            />
-            <ModeTile
-              tone="var(--color-coral)"
-              title={t('Kovalamaca')}
-              desc={t('Bir Kangal izini sürüyor.')}
-              status={chaseCities ? t('{n} şehirde açık', { n: chaseCities }) : t('Bir şehri bitirince açılır')}
-              locked={!chaseCities}
-              onClick={onChase}
-              art={<DogFigure className={`h-[38px] w-[54px] ${chaseCities ? '' : 'opacity-40 grayscale'}`} />}
-            />
-            <ModeTile
-              tone="var(--color-coral)"
-              title={t('Sinir Bozucu')}
-              desc={t('On dokuz zorlu mod.')}
-              status={!rulesOpen ? t('Bir şehri bitirince açılır') : t('{n}/{total} denendi', { n: rageTried, total: RAGE_RULES.length })}
-              progress={rulesOpen ? rageTried / RAGE_RULES.length : undefined}
+              tone="var(--color-accent)"
+              title={t('Kurallı Koşu')}
+              desc={t('Şehri ve kuralı sen seç.')}
+              status={!rulesOpen ? t('Bir şehri bitirince açılır') : ruleCount ? t('{n} rekor', { n: ruleCount }) : t('Yedi kural')}
               locked={!rulesOpen}
-              onClick={onRage}
-              extra={
-                RAGE_COURSES.length > 0 && (
-                  <TileChip disabled={!rulesOpen} onClick={onRageCourses} title={t('Öfke Parkurları: {n}/{m}', { n: rageCoursesDone, m: RAGE_COURSES.length })}>
-                    {t('Parkurlar')}
-                  </TileChip>
-                )
-              }
+              onClick={onRules}
               art={
-                <span className="grid grid-cols-2 gap-0.5">
-                  {(['kaygan', 'basasagi', 'karanlik', 'cehennem'] as DailyRule[]).map((r) => (
-                    <span key={r} className="flex h-[19px] w-[19px] items-center justify-center rounded-sm" style={{ color: FAMILIES[RULE_ART[r].family].color, background: `${FAMILIES[RULE_ART[r].family].color}1f` }}>
+                <span className="grid grid-cols-2 gap-0.5 text-accent-2">
+                  {(['tekcan', 'zaman', 'dashsiz', 'hiz'] as DailyRule[]).map((r) => (
+                    <span key={r} className="flex h-[19px] w-[19px] items-center justify-center rounded-sm bg-accent/10">
                       <RuleIcon rule={r} size={14} />
                     </span>
                   ))}
                 </span>
               }
+            />
+            <ModeTile
+              tone="var(--color-accent)"
+              title={t('Mücadeleler')}
+              desc={t('Zor şehirlerin en sıkı yerleri.')}
+              status={t('{n}/{m} bitti', { n: challengeDone, m: CHALLENGES.length })}
+              progress={challengeDone / CHALLENGES.length}
+              onClick={onChallenges}
+              art={<span className="font-display text-[24px] leading-none text-accent-2">▲</span>}
+            />
+            <ModeTile
+              tone="var(--color-accent)"
+              title={t('Ayna Yolu')}
+              desc={t('Otuz şehir sağdan sola.')}
+              status={mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık')) : t('Otuz şehri bitirince açılır')}
+              locked={!mirrorOpen}
+              onClick={onMirror}
+              art={
+                <span className={`flex items-end ${mirrorOpen ? '' : 'opacity-40 grayscale'}`}>
+                  <Portrait id="uktun" className="w-[27px]" />
+                  <Portrait id="uktun" className="w-[27px] -scale-x-100 opacity-55" />
+                </span>
+              }
+            />
+            <ModeTile
+              tone="var(--color-accent)"
+              title={t('Speedrun')}
+              desc={t('Otuz şehir arka arkaya, tek süre.')}
+              status={mirrorOpen ? (tourBest ? t('Tam Tur {time}', { time: formatTime(tourBest.timeMs) }) : t('Rekorunu yaz')) : t('Otuz şehri bitirince açılır')}
+              locked={!mirrorOpen}
+              onClick={() => onTour('tur')}
+              extra={
+                <TileChip disabled={!mirrorOpen} onClick={() => onTour('aynaTur')} title={aynaTourBest ? formatTime(aynaTourBest.timeMs) : undefined}>
+                  {t('Aynalı')}
+                </TileChip>
+              }
+              art={<RuleIcon rule="zaman" size={28} className="text-gold" />}
             />
             <ModeTile
               tone="var(--color-coral)"
@@ -321,16 +323,33 @@ export function ModesHub({
               }
             />
             <ModeTile
-              tone="var(--color-accent)"
-              title={t('Kurallı Koşu')}
-              desc={t('Şehri ve kuralı sen seç.')}
-              status={!rulesOpen ? t('Bir şehri bitirince açılır') : ruleCount ? t('{n} rekor', { n: ruleCount }) : t('Yedi kural')}
+              tone="var(--color-coral)"
+              title={t('Kovalamaca')}
+              desc={t('Bir Kangal izini sürüyor.')}
+              status={chaseCities ? t('{n} şehirde açık', { n: chaseCities }) : t('Bir şehri bitirince açılır')}
+              locked={!chaseCities}
+              onClick={onChase}
+              art={<DogFigure className={`h-[38px] w-[54px] ${chaseCities ? '' : 'opacity-40 grayscale'}`} />}
+            />
+            <ModeTile
+              tone="var(--color-coral)"
+              title={t('Sinir Bozucu')}
+              desc={t('On dokuz zorlu mod.')}
+              status={!rulesOpen ? t('Bir şehri bitirince açılır') : t('{n}/{total} denendi', { n: rageTried, total: RAGE_RULES.length })}
+              progress={rulesOpen ? rageTried / RAGE_RULES.length : undefined}
               locked={!rulesOpen}
-              onClick={onRules}
+              onClick={onRage}
+              extra={
+                RAGE_COURSES.length > 0 && (
+                  <TileChip disabled={!rulesOpen} onClick={onRageCourses} title={t('Öfke Parkurları: {n}/{m}', { n: rageCoursesDone, m: RAGE_COURSES.length })}>
+                    {t('Parkurlar')}
+                  </TileChip>
+                )
+              }
               art={
-                <span className="grid grid-cols-2 gap-0.5 text-accent-2">
-                  {(['tekcan', 'zaman', 'dashsiz', 'hiz'] as DailyRule[]).map((r) => (
-                    <span key={r} className="flex h-[19px] w-[19px] items-center justify-center rounded-sm bg-accent/10">
+                <span className="grid grid-cols-2 gap-0.5">
+                  {(['kaygan', 'basasagi', 'karanlik', 'cehennem'] as DailyRule[]).map((r) => (
+                    <span key={r} className="flex h-[19px] w-[19px] items-center justify-center rounded-sm" style={{ color: FAMILIES[RULE_ART[r].family].color, background: `${FAMILIES[RULE_ART[r].family].color}1f` }}>
                       <RuleIcon rule={r} size={14} />
                     </span>
                   ))}
@@ -338,44 +357,34 @@ export function ModesHub({
               }
             />
             <ModeTile
-              tone="var(--color-accent)"
-              title={t('Mücadeleler')}
-              desc={t('Zor şehirlerin en sıkı yerleri.')}
-              status={t('{n}/{m} bitti', { n: challengeDone, m: CHALLENGES.length })}
-              progress={challengeDone / CHALLENGES.length}
-              onClick={onChallenges}
-              art={<span className="font-display text-[24px] leading-none text-accent-2">▲</span>}
+              tone="var(--color-teal)"
+              title={t('Düello')}
+              desc={t('Yan yana ya da sırayla yarış.')}
+              status={t('1, 3 ya da 5 tur')}
+              onClick={onDuel}
+              art={
+                <span className="relative flex items-end">
+                  <Portrait id="uktun" className="w-[30px] rotate-[-6deg]" />
+                  <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 font-display text-[12px] text-accent-2 [text-shadow:0_2px_0_#0e0d22]">vs</span>
+                  <Portrait id="memo" className="-ml-1 w-[30px] rotate-[6deg]" />
+                </span>
+              }
             />
             <ModeTile
-              tone="var(--color-accent-2)"
-              title={t('Ayna Yolu')}
-              desc={t('Otuz şehir sağdan sola.')}
-              status={mirrorOpen ? (mirrorDone ? t('{n} ayna rekoru', { n: mirrorDone }) : t('Kapı açık')) : t('Otuz şehri bitirince açılır')}
-              locked={!mirrorOpen}
-              onClick={onMirror}
+              tone="var(--color-teal)"
+              title={t('Co-op')}
+              desc={t('İki yolcu birlikte, tek klavyede.')}
+              status={touch ? t('Klavye ya da iki oyun kolu ister') : t('Şehir, boss ya da parkur')}
+              onClick={onCoop}
               art={
-                <span className={`flex items-end ${mirrorOpen ? '' : 'opacity-40 grayscale'}`}>
-                  <Portrait id="uktun" className="w-[27px]" />
-                  <Portrait id="uktun" className="w-[27px] -scale-x-100 opacity-55" />
+                <span className="flex items-end">
+                  <Portrait id="uktun" className="w-[30px] rotate-[-5deg]" />
+                  <Portrait id="memo" className="-ml-2 w-[30px] rotate-[5deg]" />
                 </span>
               }
             />
             <ModeTile
               tone="var(--color-gold)"
-              title={t('Speedrun')}
-              desc={t('Otuz şehir arka arkaya, tek süre.')}
-              status={mirrorOpen ? (tourBest ? t('Tam Tur {time}', { time: formatTime(tourBest.timeMs) }) : t('Rekorunu yaz')) : t('Otuz şehri bitirince açılır')}
-              locked={!mirrorOpen}
-              onClick={() => onTour('tur')}
-              extra={
-                <TileChip disabled={!mirrorOpen} onClick={() => onTour('aynaTur')} title={aynaTourBest ? formatTime(aynaTourBest.timeMs) : undefined}>
-                  {t('Aynalı')}
-                </TileChip>
-              }
-              art={<RuleIcon rule="zaman" size={28} className="text-gold" />}
-            />
-            <ModeTile
-              tone="var(--color-accent-2)"
               title={t('Bölüm Düzenleyici')}
               desc={t('Kendi bölümünü ve boss’unu çiz.')}
               status={t('Paylaş ya da yayınla')}
@@ -619,7 +628,7 @@ export function RuleSetup({ rage, startLevel, startRule, finished, records, onSt
   // istenen kural varsa ona uyan bir şehirden açılır
   const fitting = startRule ? finished.filter((i) => ruleFits(startRule, LEVELS[i])) : finished
   const [level, setLevel] = useState(fitting.includes(startLevel) ? startLevel : (fitting[0] ?? finished[0] ?? 0))
-  const [rule, setRule] = useState<DailyRule>(startRule && list.includes(startRule) ? startRule : (list.find((r) => ruleFits(r, LEVELS[level])) ?? list[0]))
+  const [rule, setRule] = useState<DailyRule>(startRule && list.includes(startRule) ? startRule : (byHeat(list).find((r) => ruleFits(r, LEVELS[level])) ?? list[0]))
   const lv = localize(LEVELS[level], lng)
   const fits = ruleFits(rule, LEVELS[level])
   const done = list.filter((r) => records[ruleKey(lv.id, r)] !== undefined).length
@@ -628,8 +637,8 @@ export function RuleSetup({ rage, startLevel, startRule, finished, records, onSt
   const fam = FAMILIES[art.family]
   const best = records[ruleKey(lv.id, rule)]
   const lim = ruleLimit(rule, LEVELS[level])
-  // aileler: Sinir Bozucu beş başlık altında; Kurallı Koşu tek öbek
-  const groups = (rage ? (['zemin', 'gorus', 'fizik', 'tekcan', 'karisim'] as RuleFamily[]) : (['kural'] as RuleFamily[])).map((f) => ({ f, rules: list.filter((r) => RULE_ART[r].family === f) }))
+  // aileler kolaydan zora, içleri zorluğa göre (Kurallı Koşu tek öbek)
+  const groups = FAMILY_ORDER.filter((f) => (rage ? f !== 'kural' : f === 'kural')).map((f) => ({ f, rules: byHeat(list.filter((r) => RULE_ART[r].family === f)) }))
   const step = (k: number) => {
     const i = finished.indexOf(level)
     setLevel(finished[(i + k + finished.length) % finished.length])
@@ -689,16 +698,22 @@ export function RuleSetup({ rage, startLevel, startRule, finished, records, onSt
           </div>
           {/* sağ: seçilen modun canlı önizlemesi, ne değiştirdiği, şehir ve başla */}
           <section className="flex min-h-0 flex-col border-2 bg-ink/30 p-2.5" style={{ borderColor: `${fam.color}88` }}>
-            <RulePreview rule={rule} level={level} className="min-h-[84px] flex-1 max-sm:h-24 max-sm:flex-none short:min-h-[60px]" />
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate font-display text-xl leading-tight text-cream short:text-lg">{t(def.name)}</p>
+            {/* telefonda önizleme yer yemesin: listede yer kalsın, ne yaptığı yazıyla söylensin */}
+            <RulePreview rule={rule} level={level} className="min-h-[84px] flex-1 max-sm:hidden short:min-h-[60px]" />
+            <div className="mt-2 flex items-center justify-between gap-2 max-sm:mt-0">
+              <p className="flex min-w-0 items-center gap-2 font-display text-xl leading-tight text-cream short:text-lg">
+                <span className="hidden shrink-0 sm:hidden max-sm:inline-flex" style={{ color: fam.color }}>
+                  <RuleIcon rule={rule} size={20} />
+                </span>
+                <span className="truncate">{t(def.name)}</span>
+              </p>
               <Heat n={art.heat} label={t('Zorluk {n}/5', { n: art.heat })} className="shrink-0 scale-125 origin-right" />
             </div>
-            <p className="mt-1 text-[13px] leading-snug text-muted max-sm:hidden short:hidden">
+            <p className="mt-1 text-[13px] leading-snug text-muted short:hidden">
               {t(def.text)}
               {lim ? ` ${t('Sınır: {s} sn.', { s: lim })}` : ''}
             </p>
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-1 max-sm:hidden">
               {rulePerks(rule).map((p) => (
                 <span key={p.text} className="flex items-center gap-1 border-2 border-line bg-ink/50 px-1.5 py-0.5 text-[12px] font-semibold text-cream/90">
                   <span style={{ color: FAMILIES[RULE_ART[p.icon].family].color }}>

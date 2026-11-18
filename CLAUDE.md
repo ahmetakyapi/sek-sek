@@ -146,7 +146,7 @@ değiştirmez; yeni kural eklerken her şehirde bitirilebildiğini kanıtla. Eti
 bitmiyor, bu yüzden Dash’siz yalnız NO_DASH_OK listesinde çıkar (`npx tsx scripts/verify-rules.ts`; o şehirlerin haritası
 değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açılır; rekoru şehir + kural başınadır.
 
-**Kural simgeleri.** `components/RuleArt.tsx`: her kuralın SVG piktogramı, ailesi (Zemin, Görüş, Fizik, Tek Can, Karışım)
+**Kural simgeleri.** `components/RuleArt.tsx`: her kuralın SVG piktogramı, ailesi (Zemin, Görüş, Fizik, Baskı, Karışım)
 ve zorluğu (1-5 alev); "ne değişir" rozetleri kural tanımından türer (`rulePerks`). Seçim ekranında canlı önizleme
 (`CourseScene` + kuralın görünüşü). Yeni kural eklersen RULE_ART'a ve `glyph`'e yaz.
 
@@ -159,8 +159,11 @@ fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya d
 
 **Modlar ekranı.** Üstte tam genişlikte "Bugün" şeridi: Günlük Meydan Okuma (ekranın tek dolu düğmesi) ve sağ yarısında Haftalık
 Turnuva. Altında tek ızgara (geniş ekranda 4 sütun): on mod + Bölüm Düzenleyici + Topluluk Haritaları. Öbek başlığı yok; aile rengi
-kutucuğun sol şeridinde (turkuaz birlikte: Co-op, Düello · kiremit `--color-coral` meydan okuma: Kovalamaca, Sinir Bozucu, Boss Rush,
-Maraton · çivit yol: Kurallı, Mücadeleler, Ayna, Speedrun). Her mod bir `ModeTile`: çizim, ad, tek satır açıklama (~30 harf, kesilmesin),
+kutucuğun sol şeridinde. Sıra ailelere göre, her ailenin içi açılış sırası / zorluğa göre (geniş ekranda her aile bir satır):
+çivit yol (Kurallı Koşu, Mücadeleler, Ayna Yolu, Speedrun) · kiremit `--color-coral` meydan okuma (Boss Rush, Maraton, Kovalamaca,
+Sinir Bozucu) · turkuaz birlikte (Düello, Co-op; dokunmatikte Co-op klavye ister) · altın üret (Bölüm Düzenleyici, Topluluk Haritaları).
+Sinir Bozucu ve Kurallı Koşu listeleri ekranda kolaydan zora dizilir (`RuleArt.tsx` `FAMILY_ORDER`, `byHeat`; aileler Zemin, Görüş,
+Fizik, Baskı (Kovalamaca + tek can), Karışım). `RULES` dizisinin sırası değişmez: günlük kural onunla seçilir. Her mod bir `ModeTile`: çizim, ad, tek satır açıklama (~30 harf, kesilmesin),
 durum; kutucuğun tamamı modu açar (`href` ile sayfa), öbür yollar başlık satırında küçük `TileChip` (Parkurlar, Kâbus, Çifte, Aynalı).
 Kilitli kutucuk kesik çizgili ve nasıl açılacağını söyler. Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun.
 

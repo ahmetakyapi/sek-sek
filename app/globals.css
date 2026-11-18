@@ -1011,8 +1011,8 @@ blockquote {
 }
 
 /* Çentik / durum çubuğu şeridi: iOS 26 Safari bu şeridin altına giren içeriği bulanık gösterir. Opak bir örtü
-   koyunca şerit düz renk olur; oyun ve menüler ayrıca şeridin 8 px altından başlar (--safe-top). */
-:root { --safe-top: max(12px, calc(env(safe-area-inset-top) + 8px)); }
+   koyunca şerit düz renk olur; HUD şeridin 12 px altından (--safe-top), menü katmanı (Overlay) şeridin altından başlar. */
+:root { --safe-top: max(12px, calc(env(safe-area-inset-top) + 12px)); }
 .status-cover {
   position: fixed;
   inset: 0 0 auto 0;
@@ -1020,4 +1020,8 @@ blockquote {
   background: #0e0d22;
   z-index: 70;
   pointer-events: none;
+}
+/* Menü katmanı çentiğin altından başladığı için paneller güvenli alanları da düşer (telefonda taşmasın) */
+.overlay-scroll .max-h-\[calc\(100dvh-32px\)\] {
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
