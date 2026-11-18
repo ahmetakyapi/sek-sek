@@ -1884,9 +1884,7 @@ export default function Game() {
   const nextMedal = cityMedal === 'altin' ? null : cityMedal === 'gumus' ? 0 : cityMedal === 'bronz' ? 1 : 2
   const cityCard = (
     <div className="mt-3 border-2 border-line bg-ink/40 px-3 py-2.5 short:hidden">
-      <p className="flex items-center gap-2 text-[14px] font-semibold text-gold">
-        {t('Bu Şehirde')} <span className="kilim h-[6px] flex-1 opacity-50" />
-      </p>
+      <SectionTitle title={t('Bu Şehirde')} />
       <div className="mt-2 flex items-center gap-1.5">
         {[0, 1, 2].map((k) => (
           <ItemIcon key={k} city={level.city} taken={hud.items[k] || !!cityBest?.items[k]} size={24} />
@@ -2028,7 +2026,7 @@ export default function Game() {
 
       {screen === 'title' && (mapNotice.renewed.length > 0 || mapNotice.added.length > 0) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e0d22]/80 p-4" role="dialog" aria-modal="true" aria-labelledby="harita-notu">
-          <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-lg flex-col p-5 sm:p-6 short:py-3">
+          <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:p-6 short:py-3">
             <p className="text-[14px] font-semibold text-accent-2">{t('Deftere Yeni Sayfalar')}</p>
             <h2 id="harita-notu" className="mt-1 font-display text-3xl text-cream short:text-2xl">{t('Yolda Neler Değişti')}</h2>
             <p className="mt-2 text-[14px] leading-relaxed text-cream/85">{t('İlerlemen yerinde: açtığın şehirler, hatıraların, pulların ve nazar boncukların duruyor. Bir şehre dokun, hemen oyna.')}</p>
@@ -2041,9 +2039,7 @@ export default function Game() {
               ).map(([k, title, note, tone]) =>
                 mapNotice[k].length ? (
                   <div key={k} className="mb-3">
-                    <p className="flex items-center gap-2 text-[14px] font-semibold text-gold">
-                      {title} <span className="kilim h-[6px] flex-1 opacity-50" />
-                    </p>
+                    <SectionTitle title={title} tone="var(--color-gold)" />
                     <p className="mt-1 text-[13px] text-muted">{note}</p>
                     <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {mapNotice[k].map((id) => {
@@ -2061,7 +2057,7 @@ export default function Game() {
                             }}
                           >
                             <span className="text-[13px] font-bold tabular-nums opacity-80">{String(LEVELS[i].plate).padStart(2, '0')}</span>
-                            <span className="min-w-0 flex-1 truncate font-display text-[16px] text-cream">{displayName(LEVELS[i])}</span>
+                            <span className="min-w-0 flex-1 font-display text-[16px] leading-tight text-cream">{displayName(LEVELS[i])}</span>
                             <span className="text-[13px]">{locked ? '🔒' : '▶'}</span>
                           </button>
                         )
@@ -2073,9 +2069,7 @@ export default function Game() {
               {/* yeni şehirle gelen yenilikler: eski oyuncu yeni modları da görsün */}
               {mapNotice.added.flatMap((id) => RELEASE_NOTES[id] ?? []).length > 0 && (
                 <div className="mb-3">
-                  <p className="flex items-center gap-2 text-[14px] font-semibold text-gold">
-                    {t('Bu Sürümde')} <span className="kilim h-[6px] flex-1 opacity-50" />
-                  </p>
+                  <SectionTitle title={t('Bu Sürümde')} tone="var(--color-gold)" />
                   <ul className="mt-2 grid gap-1.5">
                     {mapNotice.added.flatMap((id) => RELEASE_NOTES[id] ?? []).map(([head, body]) => (
                       <li key={head} className="border-l-2 border-accent pl-2.5 text-[14px] leading-snug text-cream/85">
