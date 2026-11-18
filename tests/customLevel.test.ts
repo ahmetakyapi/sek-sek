@@ -247,3 +247,11 @@ describe('gelgit karosu (A)', () => {
     expect(solve(customLevel(map, 'istanbul'), { exitOnly: true, budget: 20000 }).won).toBe(true)
   })
 })
+
+describe('boss tasarımı boss\'suz haritada', () => {
+  it('haritada Q yoksa boss seçimi koda girmez: kod tasarımsızla aynı', () => {
+    const plain = encodeMap(SAMPLE_MAP, 'istanbul')
+    const withDesign = encodeMap(SAMPLE_MAP, 'istanbul', { signs: [], npcs: [], boss: 'van', bossTier: 3, bossSpeed: 130, bossHp: 2 })
+    expect(withDesign).toBe(plain)
+  })
+})

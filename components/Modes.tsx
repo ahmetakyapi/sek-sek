@@ -525,6 +525,8 @@ function RulePreview({ rule, level, className = '' }: { rule: DailyRule; level: 
       {d.speed > 1 && <div className="rage-streak pointer-events-none absolute inset-0" />}
       {d.storm && <div className="rage-wind pointer-events-none absolute inset-0" />}
       {v.dark && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_var(--px)_var(--py),transparent_0_9%,rgba(6,5,18,0.95)_24%)]" />}
+      {/* Kovalamaca: Kangal yolun başında, yolcunun ardında */}
+      {d.chase && <DogFigure className="pointer-events-none absolute bottom-[12%] left-[2%] h-[26%] w-[20%]" />}
       {d.swapKeys && (
         <span className="rage-pulse pointer-events-none absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink/80 text-[#ffd166] shadow-[0_0_0_2px_#ffd166]">
           <RuleIcon rule="ters" size={26} />
@@ -613,7 +615,8 @@ export function RuleSetup({ rage, startLevel, startRule, finished, records, onSt
                           <RuleIcon rule={r} size={22} />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className={`block font-display text-[14px] leading-tight text-cream max-sm:text-[12px] ${rage ? 'line-clamp-2 text-[13px] short:text-[11px]' : 'truncate text-[16px]'}`}>{t(DAILY_RULES[r].name)}</span>
+                          {/* bölünmeyen uzun tek kelime (Kovalamaca) kutuya sığsın diye bir boy küçük */}
+                          <span className={`block font-display leading-tight text-cream max-sm:text-[12px] ${rage ? `line-clamp-2 ${!t(DAILY_RULES[r].name).includes(' ') && t(DAILY_RULES[r].name).length >= 10 ? 'text-[12px] tracking-[-0.01em]' : 'text-[13px]'} short:text-[11px]` : 'truncate text-[16px]'}`}>{t(DAILY_RULES[r].name)}</span>
                           <span className={`mt-0.5 flex items-center gap-1.5 max-sm:justify-center short:justify-center`}>
                             <Heat n={RULE_ART[r].heat} label={t('Zorluk {n}/5', { n: RULE_ART[r].heat })} />
                             {b !== undefined ? <span className="text-[11px] tabular-nums text-gold max-sm:hidden short:hidden">★ {formatTime(b)}</span> : !ok ? <span className="text-[11px] text-muted max-sm:hidden short:hidden">{t('Bu Şehirde Yok')}</span> : null}

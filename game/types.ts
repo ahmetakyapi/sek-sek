@@ -128,6 +128,6 @@ export type GameEvent =
   /** Kovalamaca: Kangal yetişti */
   | { type: 'bite'; x: number; y: number }
   /** co-op: biri ötekinin omzundan sekti */
-  | { type: 'shoulder'; x: number; y: number }
+  | { type: 'shoulder'; x: number; y: number; /** seken eş mi (2. oyuncu) */ partner: boolean }
   /** dost bir hayvanı sevdin */
   | { type: 'pet'; x: number; y: number }

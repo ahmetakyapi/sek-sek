@@ -42,10 +42,21 @@ interface Seen {
   fresh: boolean
 }
 
+/** arenadaki ayakta boss'lar (Çifte Boss Rush ve Co-op'ta iki boss) */
+const alive = (w: World) => [w.boss, w.boss2].filter((b): b is NonNullable<World['boss']> => !!b && b.state !== 'down')
+const allDown = (w: World) => alive(w).length === 0
+const hpSum = (w: World) => (w.boss?.hp ?? 0) + (w.boss2?.hp ?? 0)
+/** hedef: yorgun olan, yoksa en yakın ayaktaki boss */
+function target(w: World) {
+  const p = w.player
+  const list = alive(w)
+  return list.find((b) => b.state === 'tired' && !b.hidden) ?? list.sort((x, y) => Math.abs(x.x - p.x) - Math.abs(y.x - p.x))[0]
+}
+
 function stepFor(w: World, a: Act, secs: number, prevJump: { v: boolean }, seen?: Seen) {
   const n = Math.round(secs / DT)
   for (let i = 0; i < n; i++) {
-    const b = w.boss
+    const b = target(w)
     if (seen && b) {
       if (b.state === 'warn' && (seen.state !== 'warn' || (b.hidden && b.x !== seen.x))) seen.fresh = true
       seen.state = b.state
@@ -58,16 +69,18 @@ function stepFor(w: World, a: Act, secs: number, prevJump: { v: boolean }, seen?
     inp.jumpPressed = a.jump && !prevJump.v
     prevJump.v = a.jump
     w.step(DT, inp)
-    if (w.player.dead || w.boss?.state === 'down') return
+    if (w.player.dead || allDown(w)) return
   }
 }
 
 function score(w: World, hp0: number, deaths0: number): number {
-  const b = w.boss!
   const p = w.player
   if (w.deaths > deaths0 || p.dead) return -1000
-  let s = (hp0 - b.hp) * 600
-  if (b.state === 'down') return s + 600
+  let s = (hp0 - hpSum(w)) * 600
+  const b = target(w)
+  if (!b) return s + 600
+  // ikinci boss da varsa: öbürünün saldırısından uzak dur
+  for (const o of alive(w)) if (o !== b && o.state !== 'tired' && o.state !== 'sleep') s -= Math.max(0, 48 - Math.abs(p.x + p.w / 2 - (o.x + o.w / 2))) * 0.8
   const dx = Math.abs(p.x + p.w / 2 - (b.x + b.w / 2))
   // yorgunken yanaş ve tepesine çık; değilken bir zıplama uzağında dur (yorulunca yetişebilmek için)
   if (b.state === 'tired' && !b.hidden) s -= dx * 2 + Math.max(0, p.y + p.h - b.y) * 0.5
@@ -93,8 +106,7 @@ export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number
     const w = new World(level)
     w.enemies.length = 0
     w.turrets.length = 0
-    const b = w.boss
-    if (!b) return { won: false, deaths: 0, seconds: 0, hpLeft: -1 }
+    if (!w.boss) return { won: false, deaths: 0, seconds: 0, hpLeft: -1 }
     // arenanın bayrağı yolun sonundaki bayraktır (Ayna Yolu'nda en solda)
     const flag = [...w.checkpoints].sort((x, y) => (level.mirror ? x.x - y.x : y.x - x.x))[0]
     const p = w.player
@@ -108,7 +120,7 @@ export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number
     let pending: Act = last
     const limit = opts.limit ?? 150
     let t = 0
-    const down = () => (b.state as string) === 'down'
+    const down = () => allDown(w)
     while (t < limit && !down()) {
       if (p.dead) {
         w.step(DT, emptyInput())
@@ -116,10 +128,11 @@ export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number
         continue
       }
       const s0 = snapshot(w)
-      const hp0 = b.hp
+      const hp0 = hpSum(w)
       const deaths0 = w.deaths
       let best = -Infinity
       let bestAct = last
+      const b = target(w)!
       const toBoss: -1 | 1 = b.x + b.w / 2 > p.x + p.w / 2 ? 1 : -1
       const tries = b.state === 'tired' && !b.hidden ? TRIES + STOMPS : TRIES
       for (let k = 0; k < tries; k++) {
@@ -153,7 +166,7 @@ export function fightBoss(level: LevelDef, opts: { seed?: number; limit?: number
       last = bestAct
       t += SEG
     }
-    return { won: down(), deaths: w.deaths, seconds: t, hpLeft: b.hp }
+    return { won: down(), deaths: w.deaths, seconds: t, hpLeft: hpSum(w) }
   } finally {
     Object.assign(phys, base)
   }

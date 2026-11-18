@@ -1041,7 +1041,7 @@ export const UI_EN: Record<string, string> = {
   "Öfke Kontrolü": "Anger Management",
   "Yirmi beş Sinir Bozucu rekoru yaz.": "Set twenty-five rage mode records.",
   "Taş Gibi Sabır": "Patience of Stone",
-  "Bir şehirde on sekiz Sinir Bozucu modun hepsini bitir.": "Finish all eighteen rage modes in one city.",
+  "Bir şehirde bütün Sinir Bozucu modları bitir.": "Finish every rage mode in one city.",
   "Parkur Avcısı": "Course Hunter",
   "Üç Öfke Parkuru bitir.": "Finish three rage courses.",
   "Öfkenin Efendisi": "Master of Rage",
@@ -1439,4 +1439,5 @@ export const UI_EN: Record<string, string> = {
   "Kâbus ve Çifte Boss Rush": "Nightmare and Double Boss Rush",
   "Boss’lar en sert hâlinde ya da ikişer ikişer.": "Bosses at their fiercest, or two at a time.",
   "Bölüm Düzenleyici’de iki boss, kademe, hız ve can seç; gelgit suyu da karolarda.": "Pick two bosses, tier, speed and health in the Level Editor; tide water is among the tiles too.",
+  "Kangal Kovalar": "Kangal on Your Trail",
 }

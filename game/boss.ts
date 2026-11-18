@@ -28,6 +28,8 @@ export interface BossDef {
    * 3 Çok Zor (zincir: ikinci hamle, çift mermi, şok dalgası, sahte kabarma). Kural her kademede aynıdır.
    */
   tier: 1 | 2 | 3
+  /** Boss Tasarımcısı'nın fazladan canı (hp'ye dahil): yalnız uzatır; hız, öfke ve yorgunluk asıl cana göre */
+  bonus?: number
   w: number
   h: number
   /** meydana girince çıkan söz ve nasıl yenileceğinin ipucu */
@@ -161,10 +163,12 @@ function nearestHole(b: Boss, pcx: number, skip: number | null): number {
   return best
 }
 
-const pace = (b: Boss) => b.def.speed * (1 + 0.1 * (b.def.hp - b.hp))
+/** asıl candan kaç can gitti: fazladan can (bonus) bitmeden boss hızlanmaz, kısalmaz */
+const lost = (b: Boss) => Math.max(0, b.def.hp - (b.def.bonus ?? 0) - b.hp)
+const pace = (b: Boss) => b.def.speed * (1 + 0.1 * lost(b))
 /** son can öfkesi (kademe 2-3): hamleler arası bekleme kısalır; işaret ve yorgunluk kısalmaz */
 /** öfke: kademe 2-3'te son iki canda (üç canlıda son canda) hamleler arası bekleme kısalır */
-const rush = (b: Boss) => (b.def.tier > 1 && b.hp <= (b.def.hp >= 4 ? 2 : 1) ? 1.25 : 1)
+const rush = (b: Boss) => (b.def.tier > 1 && b.hp <= (b.def.hp - (b.def.bonus ?? 0) >= 4 ? 2 : 1) ? 1.25 : 1)
 const clampX = (b: Boss, x: number) => Math.min(b.max, Math.max(b.min, x))
 
 /** Oyuncunun `air` sn sonra varacağı yer (gövde ortası). Kademe 1 hızı saymaz: durduğu yer. */
@@ -213,7 +217,7 @@ function begin(b: Boss, host: BossHost) {
 
 function tire(b: Boss) {
   b.state = 'tired'
-  b.timer = BOSS.tired[b.move] / (1 + 0.06 * (b.def.hp - b.hp))
+  b.timer = BOSS.tired[b.move] / (1 + 0.06 * lost(b))
   if (b.def.tier > 1) b.timer = Math.max(BOSS.tiredMin, b.timer)
   b.span = b.timer
   b.vx = 0

@@ -90,9 +90,10 @@ export const PERFECT_SPRING = 1.22
 
 /**
  * Kovalamaca: köpek doğuşta `wait` sn bekler, sonra izini `speed` px/sn ile koşar (oyuncunun koşusu 100); hızı saniyede
- * `ramp` artar, en çok `top`. En çok `maxLag` sn'lik iz geride kalır. İz halkası `trail` örnek (120 Hz).
+ * `ramp` artar, en çok `top`. En çok `maxLag` sn'lik yol (en yüksek hızla) geride kalır. İz halkası `trail` örnek, `sample`
+ * pikselde bir (mesafeyle; yerinde durmak izi doldurmaz).
  */
-export const CHASE = { wait: 1.6, speed: 78, ramp: 0.25, top: 94, maxLag: 4, trail: 600 }
+export const CHASE = { wait: 1.6, speed: 78, ramp: 0.25, top: 94, maxLag: 4, trail: 600, sample: 2 }
 
 export interface Chaser {
   /** ayak tabanı ortası (dünya px) */
@@ -608,7 +609,7 @@ export class World {
             break
           case 'Q': {
             // arena sınırları: boss’un satırında | ya da duvara kadar
-            const boost = (d: BossDef): BossDef => (level.bossBoost ? { ...d, tier: Math.max(d.tier, level.bossBoost.tier) as 1 | 2 | 3, speed: d.speed * level.bossBoost.speed, hp: d.hp + (level.bossBoost.hp ?? 0) } : d)
+            const boost = (d: BossDef): BossDef => (level.bossBoost ? { ...d, tier: Math.max(d.tier, level.bossBoost.tier) as 1 | 2 | 3, speed: d.speed * level.bossBoost.speed, hp: d.hp + (level.bossBoost.hp ?? 0), bonus: level.bossBoost.hp || undefined } : d)
             const def = boost(BOSSES[level.bossOf ?? level.city])
             const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
             let l = tx - 1
@@ -1009,8 +1010,26 @@ export class World {
       if (bossAwake) c.state = 'wait'
       return
     }
-    // hareketli şeylerin başında (raylı platform, asansör, tokmak, ritim, gelgit) beklemek zorunludur: köpek oturup
-    // soluklanır, iz de birikmez; oyuncu oradan ayrılınca kaldığı yerden sürer
+    // iz: oyuncunun ayak noktası ve o ana dek aldığı yolun boyu; mesafeyle örneklenir (yerinde durmak izi doldurmaz).
+    // İz her zaman kaydedilir, beklemede de: köpek oyuncunun gerçekten geçtiği yoldan gelir, düz çizgiden değil
+    const n = CHASE.trail
+    const t = c.trail
+    const fx = p.x + p.w / 2
+    const fy = p.y + p.h
+    const last = c.count ? (c.head - 1 + n) % n : -1
+    const stepLen = last < 0 ? 0 : Math.hypot(fx - t[last * 4], fy - t[last * 4 + 1])
+    const arc = last < 0 ? 0 : t[last * 4 + 3] + stepLen
+    if (last < 0 || stepLen >= CHASE.sample) {
+      const o = c.head * 4
+      t[o] = fx
+      t[o + 1] = fy
+      t[o + 2] = p.facing
+      t[o + 3] = arc
+      c.head = (c.head + 1) % n
+      c.count++
+    }
+    // hareketli şeylerin başında (raylı platform, asansör, tokmak, ritim, gelgit, plaka) beklemek zorunludur: köpek oturup
+    // soluklanır; oyuncu oradan ayrılınca kaldığı yerden, izin üstünden sürer
     if (p.onPlatform || this.chaseCalm.some((z) => overlap(p, z))) {
       c.state = 'wait'
       c.calm = true
@@ -1018,39 +1037,39 @@ export class World {
     }
     c.calm = false
     c.since += dt
-    const n = CHASE.trail
-    // iz: oyuncunun ayak noktası ve o ana dek yürüdüğü yolun boyu
-    const fx = p.x + p.w / 2
-    const fy = p.y + p.h
-    const prev = c.count ? (c.head - 1 + n) % n : -1
-    const arc = prev < 0 ? 0 : c.trail[prev * 4 + 3] + Math.hypot(fx - c.trail[prev * 4], fy - c.trail[prev * 4 + 1])
-    c.trail.set([fx, fy, p.facing, arc], c.head * 4)
-    c.head = (c.head + 1) % n
-    c.count++
     if (c.since < CHASE.wait) {
       c.state = 'wait'
       return
     }
-    // köpek iz üzerinde ilerler; izin ucundan (oyuncudan) en çok maxLag saniyelik iz geride kalabilir
+    // köpek iz üzerinde ilerler; oyuncudan en çok maxLag saniyelik yol (en yüksek hızıyla) geride kalabilir
     const speed = Math.min(CHASE.top, CHASE.speed + (c.since - CHASE.wait) * CHASE.ramp)
     const kept = Math.min(c.count, n)
-    const lag = Math.min(kept - 1, Math.round(CHASE.maxLag / dt))
-    const oldest = c.trail[((c.head - 1 - lag) % n + n) % n * 4 + 3]
-    c.arc = Math.min(arc, Math.max(c.arc + speed * dt, oldest))
-    // köpeğin yayına denk gelen iz noktasını sondan geriye ara (köpek hep izin son birkaç saniyesinde)
-    let k = (c.head - 1 + n) % n
-    for (let i = 0; i < kept - 1; i++) {
-      const b = (k - 1 + n) % n
-      if (c.trail[b * 4 + 3] < c.arc) {
-        const a0 = c.trail[b * 4 + 3]
-        const a1 = c.trail[k * 4 + 3]
-        const u = a1 > a0 ? (c.arc - a0) / (a1 - a0) : 1
-        c.x = c.trail[b * 4] + (c.trail[k * 4] - c.trail[b * 4]) * u
-        c.y = c.trail[b * 4 + 1] + (c.trail[k * 4 + 1] - c.trail[b * 4 + 1]) * u
-        c.facing = c.trail[k * 4 + 2] < 0 ? -1 : 1
-        break
+    const head = (c.head - 1 + n) % n
+    const oldest = t[((c.head - kept) % n + n) % n * 4 + 3]
+    c.arc = Math.min(arc, Math.max(c.arc + speed * dt, arc - CHASE.maxLag * CHASE.top, oldest))
+    if (c.arc >= t[head * 4 + 3]) {
+      // son örnekle oyuncunun şimdiki yeri arasında
+      const a0 = t[head * 4 + 3]
+      const u = arc > a0 ? (c.arc - a0) / (arc - a0) : 1
+      c.x = t[head * 4] + (fx - t[head * 4]) * u
+      c.y = t[head * 4 + 1] + (fy - t[head * 4 + 1]) * u
+      c.facing = p.facing < 0 ? -1 : 1
+    } else {
+      // köpeğin yayına denk gelen iz noktasını sondan geriye ara (köpek hep izin son birkaç yüz pikselinde)
+      let k = head
+      for (let i = 0; i < kept - 1; i++) {
+        const q = (k - 1 + n) % n
+        if (t[q * 4 + 3] <= c.arc) {
+          const a0 = t[q * 4 + 3]
+          const a1 = t[k * 4 + 3]
+          const u = a1 > a0 ? (c.arc - a0) / (a1 - a0) : 1
+          c.x = t[q * 4] + (t[k * 4] - t[q * 4]) * u
+          c.y = t[q * 4 + 1] + (t[k * 4 + 1] - t[q * 4 + 1]) * u
+          c.facing = t[k * 4 + 2] < 0 ? -1 : 1
+          break
+        }
+        k = q
       }
-      k = b
     }
     const gap = (arc - c.arc) / speed
     // yetişmesine bir saniye kala bir kez hırlar (uzaklaşınca yeniden kurulur)
@@ -2214,7 +2233,7 @@ export class World {
     top.coyote = 0
     top.canDash = true
     top.dashTime = 0
-    this.events.push({ type: 'shoulder', x: top.x + top.w / 2, y: base.y })
+    this.events.push({ type: 'shoulder', x: top.x + top.w / 2, y: base.y, partner: top === this.partner })
   }
 
   respawn() {

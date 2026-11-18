@@ -1932,8 +1932,8 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
         </Link>
         <h1 className="hidden shrink-0 font-display text-xl text-cream xl:block">{t('Bölüm Düzenleyici')}</h1>
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5">
-          <button type="button" className={btn} onClick={() => setTab('harita')} title={t('Şablonlar ve taslaklar')}>
-            ＋ {t('Yeni Harita')}
+          <button type="button" className={btn} onClick={() => setTab('harita')} title={t('Şablonlar ve taslaklar')} aria-label={t('Yeni Harita')}>
+            ＋ <span className="max-sm:hidden">{t('Yeni Harita')}</span>
           </button>
           <select value={city} onChange={(e) => setCity(e.target.value as CityKey)} className="shrink-0 border-2 border-line bg-panel-2 px-1.5 py-1 text-[14px] text-cream" aria-label={t('Şehir')} title={t('Şehir: görünüş, müzik ve boss’un varsayılanı')}>
             {LEVELS.map((l) => (

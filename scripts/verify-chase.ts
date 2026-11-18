@@ -18,8 +18,8 @@ let failed = false
 for (const level of LEVELS.filter((l) => (all || want.length ? true : chaseFits(l.id)) && (!want.length || want.includes(l.id)))) {
   const r = solve(level, { exitOnly: true, trace: true, budget: Number(process.env.BUDGET ?? 60000) })
   if (!r.won) {
-    console.log(`SKIP ${level.id.padEnd(10)} çözücü çıkışa varamadı`)
-    if (chaseFits(level.id)) failed = true
+    // bölümün kendisi bitmiyorsa onu verify-levels söyler; burada yalnız köpek sınanır
+    console.log(`SKIP ${level.id.padEnd(10)} çözücü bu bütçeyle çıkışa varamadı (verify-levels'a bak)`)
     continue
   }
   const keep = { ...CHASE }

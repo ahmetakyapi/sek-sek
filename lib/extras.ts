@@ -300,8 +300,6 @@ export function dailyScore(rule: DailyRule, timeMs: number, deaths: number, foun
   return timeMs + deaths * r.perDeath * 1000 + Math.max(0, 3 - found) * r.perMissing * 1000
 }
 
-/** İki kişilik Düello'da bir koşunun skoru: süre + düşüş başına 5 sn */
-export const duelScore = (timeMs: number, deaths: number) => timeMs + deaths * 5000
 
 /** Günlük Meydan Okuma'nın cihazdaki izi: bugünkü en iyi skor ve kaç gün üst üste oynandığı */
 export interface DailyMark {

@@ -83,7 +83,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   // Sinir Bozucu: modlar ve Öfke Parkurları
   { id: 'rage1', name: 'Sabrın Sınavı', text: 'Bir Sinir Bozucu modu bitir.', icon: '✸', progress: (s) => [Math.min(1, rageKeys(s).length), 1] },
   { id: 'rage25', name: 'Öfke Kontrolü', text: 'Yirmi beş Sinir Bozucu rekoru yaz.', icon: '✸', progress: (s) => [Math.min(25, rageKeys(s).length), 25] },
-  { id: 'rageCity', name: 'Taş Gibi Sabır', text: 'Bir şehirde on sekiz Sinir Bozucu modun hepsini bitir.', icon: '✸', progress: (s) => [Math.min(RAGE_RULES.length, rageBestCity(s)), RAGE_RULES.length] },
+  { id: 'rageCity', name: 'Taş Gibi Sabır', text: 'Bir şehirde bütün Sinir Bozucu modları bitir.', icon: '✸', progress: (s) => [Math.min(RAGE_RULES.length, rageBestCity(s)), RAGE_RULES.length] },
   { id: 'chase1', name: 'Kangal’dan Kaçan', text: 'Kovalamaca’yı bir şehirde bitir.', icon: '✸', progress: (s) => [Math.min(1, chased(s)), 1] },
   { id: 'chase5', name: 'Rüzgârın Oğlu', text: 'Kovalamaca’yı beş şehirde bitir.', icon: '✸', progress: (s) => [Math.min(5, chased(s)), 5] },
   { id: 'course3', name: 'Parkur Avcısı', text: 'Üç Öfke Parkuru bitir.', icon: '⚑', progress: (s) => [Math.min(3, courses(s)), 3] },

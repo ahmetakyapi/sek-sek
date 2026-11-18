@@ -76,7 +76,8 @@ export function textProblem(t: CustomTexts): string | null {
   return null
 }
 
-const hasTexts = (t?: CustomTexts) => !!t && (!!t.boss || !!t.boss2 || !!t.bossTier || !!t.bossSpeed || !!t.bossHp || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
+/** metin bölümü gerekiyor mu: söz varsa ya da haritada boss (Q) varken boss tasarımı seçildiyse (boss'suz haritada tasarım koda girmez) */
+const hasTexts = (t: CustomTexts | undefined, boss: boolean) => !!t && ((boss && (!!t.boss || !!t.boss2 || !!t.bossTier || !!t.bossSpeed || !!t.bossHp)) || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
 
 /** Kodda şehrin sırası; kalıcı (yeni şehir sona). */
 export const CITY_CODES = [
@@ -142,7 +143,8 @@ const checksum = (bytes: number[]) => bytes.reduce((a, b) => (a * 31 + b) % 251,
 export function encodeMap(map: string[], city: CityKey, texts?: CustomTexts): string {
   const problem = validateMap(map) ?? (texts ? textProblem(texts) : null)
   if (problem) throw new Error(problem)
-  const withText = hasTexts(texts)
+  const hasBoss = map.some((r) => r.includes('Q'))
+  const withText = hasTexts(texts, hasBoss)
   const ci = CITY_CODES.indexOf(city as (typeof CITY_CODES)[number])
   if (ci < 0) throw new Error(`bilinmeyen şehir: ${city}`)
   const flat = map.join('')
@@ -170,7 +172,7 @@ export function encodeMap(map: string[], city: CityKey, texts?: CustomTexts): st
     i = j
   }
   if (withText) {
-    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...bossJson(texts!) })
+    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...(hasBoss ? bossJson(texts!) : {}) })
     body.push(...new TextEncoder().encode(json))
   }
   return toB64url([v1 ? 1 : withText ? 3 : 2, ci, w >> 8, w & 0xff, checksum(body), ...body])

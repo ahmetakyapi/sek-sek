@@ -4,7 +4,7 @@
  * verify-levels (geçilebilir mi) ve audit-difficulty (ne kadar hassas oyun istiyor) kullanır.
  */
 import type { LevelDef } from '../game/types'
-import { RHYTHM, RHYTHM_A, RHYTHM_B, TIDE_CYCLE, World, snapshot, restore, type Snapshot } from '../game/sim'
+import { RHYTHM, RHYTHM_A, RHYTHM_B, TIDE_CYCLE, World, tidePhase, snapshot, restore, type Snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 const DT = 1 / 120
@@ -147,10 +147,12 @@ function key(s: Snapshot, w: World) {
   const boost = p.nitro > 0 ? `n${Math.ceil(p.nitro * 2)}` : ''
   // ritim blokları saate bağlı: yakında ritim bloğu varsa evre (takım + dörtte bir dilim) durumun parçası
   const beat = w.hasRhythm && rhythmNear(w, p.x, p.y) ? `${Math.floor(s.clock / RHYTHM.half) % 2}.${Math.floor(((s.clock % RHYTHM.half) / RHYTHM.half) * 4)}` : ''
-  // gelgit saate bağlı: yakında gelgit havuzu varsa döngünün evresi (altıda bir dilim) durumun parçası. Gelgit suyunda
+  // gelgit saate bağlı: yakında gelgit havuzu varsa evre (yüksek, iniyor, alçak, yükseliyor) ve evrenin hangi yarısı
+  // durumun parçası; dilimler evre sınırlarına oturur (dolu su ile inmeye başlayan su aynı anahtarı almaz). Gelgit suyunda
   // yüzerken konum daha kaba tutulur: havuz geniştir, evreyle çarpılan su durumları aramayı boğmasın
   const nearTide = w.hasTide && tideNear(w, p.x, p.y)
-  const tide = nearTide ? `t${Math.floor(((s.clock % TIDE_CYCLE.period) / TIDE_CYCLE.period) * 6)}` : ''
+  const tp = nearTide ? tidePhase(s.clock) : null
+  const tide = tp ? `t${tp.phase[0]}${tp.next > (tp.phase === 'high' || tp.phase === 'low' ? TIDE_CYCLE.hold : TIDE_CYCLE.move) / 2 ? 0 : 1}` : ''
   const coarse = nearTide && p.swim
   const pos = coarse ? [Math.round(p.x / 12), Math.round(p.y / 8), Math.round(p.vx / 60)] : [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40)]
   const swim = coarse ? `s${Math.round(p.vy / 120)}` : held

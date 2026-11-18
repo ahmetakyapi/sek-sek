@@ -220,7 +220,12 @@ describe('co-op eşi', () => {
     for (let i = 0; i < 180; i++) {
       w.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i % 10 === 0 })
       w.stepPartner(1 / 120, emptyInput())
-      if (w.events.some((e) => e.type === 'shoulder')) bounced = true
+      const sh = w.events.find((e) => e.type === 'shoulder')
+      if (sh) {
+        bounced = true
+        // seken 1. oyuncu: olay onu söyler (Kim Ne Yaptı tablosu buna göre yazılır)
+        expect(sh.type === 'shoulder' && sh.partner).toBe(false)
+      }
       w.events.length = 0
       top = Math.min(top, w.player.y)
     }

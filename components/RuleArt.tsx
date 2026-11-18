@@ -236,6 +236,7 @@ export function rulePerks(rule: DailyRule): Array<{ icon: DailyRule; text: strin
   if (d.swapKeys) out.push({ icon: 'ters', text: 'Ters Tuşlar' })
   if (d.lowGravity) out.push({ icon: 'ay', text: 'Az Yerçekimi' })
   if (d.storm) out.push({ icon: 'firtina', text: 'Dönen Rüzgâr' })
+  if (d.chase) out.push({ icon: 'kovala', text: 'Kangal Kovalar' })
   if (v.dark) out.push({ icon: 'karanlik', text: 'Karanlık' })
   if (v.flipY) out.push({ icon: 'basasagi', text: 'Ters Ekran' })
   if (v.flipX) out.push({ icon: 'aynaekran', text: 'Ayna Görüntü' })

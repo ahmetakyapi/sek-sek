@@ -155,6 +155,13 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
   const set = (p: Partial<CoopPlan>) => setPlan((x) => ({ ...x, ...p }))
   // boss seçiminde hangi yuvayı dolduruyoruz: birinci ya da ikinci boss
   const [slot, setSlot] = useState<'a' | 'b'>('a')
+  // liste açılınca (ve kip ya da yuva değişince) seçili öğe görünsün: uzun listede aşağıda kalmasın
+  const listRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const list = listRef.current
+    const on = list?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (list && on) list.scrollTop = Math.max(0, on.offsetTop - list.clientHeight / 2 + on.clientHeight / 2)
+  }, [plan.mode, slot])
   const { mode, boss, heroes } = plan
   const lv = localize(LEVELS[plan.level], lng)
   const pick = (i: number) => {
@@ -199,7 +206,8 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
         </div>
         <div className="overlay-scroll -mx-1 mt-3 min-h-0 flex-1 overflow-y-auto px-1 short:mt-2 short:grid short:grid-cols-2 short:gap-4 wide:grid wide:grid-cols-2 wide:gap-4">
           <div>
-            <div className="grid grid-cols-2 gap-2">
+            {/* alçak ekranda (yatay telefon) oyuncu kartları gizlenir: co-op klavye ister, yer seçime kalsın */}
+            <div className="grid grid-cols-2 gap-2 short:hidden">
               {([0, 1] as const).map((k) => (
                 <button
                   key={k}
@@ -240,7 +248,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
               </div>
             )}
             {mode === 'boss' && (
-              <div className="mt-3">
+              <div className="mt-3 short:mt-0">
                 {/* seçilen boss'lar: canlı çizim; tıklanan yuva aşağıdaki listeden doldurulur */}
                 <div className="grid grid-cols-2 gap-2">
                   {(['a', 'b'] as const).map((k) => {
@@ -276,7 +284,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
             <p className="text-[12px] font-bold tracking-[0.14em] text-muted">{mode === 'yol' ? t('ŞEHİR') : mode === 'parkur' ? t('PARKUR') : slot === 'a' ? t('1. BOSS’U SEÇ') : t('2. BOSS’U SEÇ')}</p>
             {mode === 'parkur' ? (
               courses.length ? (
-                <div className="mt-1.5 grid max-h-[160px] grid-cols-2 gap-1.5 overflow-y-auto short:max-h-[120px] wide:max-h-[220px]">
+                <div ref={listRef} className="relative mt-1.5 grid max-h-[160px] grid-cols-2 gap-1.5 overflow-y-auto short:max-h-[120px] wide:max-h-[220px]">
                   {courses.map((c) => {
                     const city = LEVELS.find((l) => l.id === c.level)!.city
                     const on = c.id === course?.id
@@ -295,7 +303,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
                 <p className="mt-1.5 border-2 border-line bg-ink/40 p-3 text-[14px] leading-snug text-cream/85">{t('Parkurlar Zor şehirlerden kesilir. Bir Zor şehri bitirince burada açılır.')}</p>
               )
             ) : (
-              <div className="mt-1.5 grid max-h-[160px] grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3 short:max-h-[120px] wide:max-h-[220px]">
+              <div ref={listRef} className="relative mt-1.5 grid max-h-[160px] grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3 short:max-h-[120px] wide:max-h-[220px]">
                 {open.map((l, i) => (
                   <button key={l.id} aria-pressed={sel(i)} className={`flex items-center gap-1.5 border-2 px-2 py-1.5 text-left text-[13px] ${sel(i) ? (mode === 'yol' ? 'border-gold bg-gold/10' : 'border-coral bg-coral/10') + ' text-cream' : 'border-line bg-ink/40 text-cream/80'}`} onClick={() => pick(i)}>
                     <ItemIcon city={l.city} taken size={16} />
@@ -508,7 +516,11 @@ export default function Coop({ plan, sound, keys, onKeys, onDone, onQuit }: { pl
             world.step(STEP, strip(inputs[0]))
             const n1 = world.events.length
             world.stepPartner(STEP, strip(inputs[1]))
-            for (let k = n0; k < world.events.length; k++) credit(share[k < n1 ? 0 : 1], world.events[k])
+            for (let k = n0; k < world.events.length; k++) {
+              const e = world.events[k]
+              // omuz sekmesi ikisinin de adımından sonra denetlenir: olay sekenin kim olduğunu taşır
+              credit(share[e.type === 'shoulder' ? (e.partner ? 1 : 0) : k < n1 ? 0 : 1], e)
+            }
             first = false
             acc -= STEP
           }
@@ -672,6 +684,8 @@ export function CoopEnd({ plan, result, best, newBest, onAgain, onSetup, onMenu 
     [t('Düşüş'), (s) => s.deaths],
   ]
   const shownRows = rows.filter(([, f]) => f(result.share[0]) + f(result.share[1]) > 0)
+  // oyuncunun adı: kılığın adı; ikisi aynı kılıktaysa numarası
+  const who = (k: 0 | 1) => (heroes[0] === heroes[1] ? t('{n}. Oyuncu', { n: k + 1 }) : CHARACTERS[heroes[k]].short)
   return (
     <Overlay dim>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-lg flex-col p-5 text-center sm:p-6 short:max-w-[min(880px,100%)] short:grid short:grid-cols-2 short:gap-5 short:py-3">
@@ -716,7 +730,7 @@ export function CoopEnd({ plan, result, best, newBest, onAgain, onSetup, onMenu 
             <div className="flex flex-wrap justify-center gap-1.5">
               {awards.map((a) => (
                 <span key={a.name} className={`border-2 px-2 py-0.5 text-[13px] text-cream ${a.who === 0 ? 'border-accent/70' : 'border-gold/70'}`}>
-                  {t('{n}. Oyuncu', { n: a.who + 1 })} · <strong className="font-display">{t(a.name)}</strong>
+                  {who(a.who)} · <strong className="font-display">{t(a.name)}</strong>
                 </span>
               ))}
             </div>
@@ -726,8 +740,8 @@ export function CoopEnd({ plan, result, best, newBest, onAgain, onSetup, onMenu 
               <thead>
                 <tr className="text-[12px] text-muted">
                   <th className="py-1 text-left font-bold">{t('Kim Ne Yaptı')}</th>
-                  <th className="py-1 text-right font-bold text-accent">{CHARACTERS[heroes[0]].short}</th>
-                  <th className="py-1 text-right font-bold text-gold">{CHARACTERS[heroes[1]].short}</th>
+                  <th className="py-1 text-right font-bold text-accent">{who(0)}</th>
+                  <th className="py-1 text-right font-bold text-gold">{who(1)}</th>
                 </tr>
               </thead>
               <tbody>
