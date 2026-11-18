@@ -2729,7 +2729,6 @@ export default function Game() {
           rageCoursesDone={RAGE_COURSES.filter((c) => save.challenges?.[c.id]).length}
           ruleCount={Object.keys(save.rules ?? {}).filter((k) => !RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
           dailyUsed={dailyUsed}
-          rageCount={Object.keys(save.rules ?? {}).filter((k) => RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
           tried={Object.keys(save.rules ?? {}).map((k) => k.split(':')[1])}
           rulesOpen={Object.keys(save.best).length > 0}
           onChallenges={() => (ui(), setScreen('challenges'))}

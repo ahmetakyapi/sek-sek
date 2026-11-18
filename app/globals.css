@@ -255,6 +255,74 @@ input {
   border-color: color-mix(in srgb, var(--tone) 30%, transparent);
   box-shadow: inset 0 3px 0 0 color-mix(in srgb, var(--tone) 35%, transparent);
 }
+/* Modlar ekranının kutucuğu: soldan renkli şerit, hafif ton; üstüne gelince ve odakta ton belirginleşir */
+.mode-tile {
+  border: 2px solid color-mix(in srgb, var(--tone) 28%, var(--color-line));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--tone) 14%, transparent) 0%, transparent 55%),
+    rgb(14 13 34 / 0.45);
+  box-shadow: inset 3px 0 0 0 var(--tone);
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.mode-tile:hover,
+.mode-tile:focus-within {
+  border-color: color-mix(in srgb, var(--tone) 70%, transparent);
+  background-color: color-mix(in srgb, var(--tone) 9%, rgb(14 13 34 / 0.45));
+}
+.mode-tile > button:first-child:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 2px;
+}
+.mode-tile.locked {
+  border-style: dashed;
+  box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--tone) 35%, transparent);
+  background: rgb(14 13 34 / 0.35);
+}
+.mode-tile.locked:hover {
+  border-color: color-mix(in srgb, var(--tone) 28%, var(--color-line));
+}
+.tile-chip {
+  color: var(--tone);
+  border: 2px solid color-mix(in srgb, var(--tone) 50%, transparent);
+  background: color-mix(in srgb, var(--tone) 10%, var(--color-panel-2));
+}
+.tile-chip:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tone) 22%, var(--color-panel-2));
+}
+.tile-chip:disabled {
+  opacity: 0.45;
+}
+/* kutucuğun açıklaması iki satır; alçak masaüstü ekranında (720 px) tek satır: bütün modlar kaydırmadan sığsın */
+.mode-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+@media (max-height: 780px) and (min-width: 1024px) {
+  .mode-desc {
+    -webkit-line-clamp: 1;
+  }
+  .mode-tile {
+    padding-block: 0.4rem !important;
+  }
+}
+/* Günlük Meydan Okuma: ekranın öne çıkan kartı */
+.mode-card.today {
+  background:
+    radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--tone) 18%, transparent) 0%, transparent 60%),
+    rgb(14 13 34 / 0.5);
+}
+/* düzenleyici ve topluluk bağlantıları */
+.mode-link {
+  border: 2px dashed var(--color-line);
+  background: rgb(14 13 34 / 0.35);
+}
+.mode-link:hover,
+.mode-link:focus-visible {
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 8%, rgb(14 13 34 / 0.35));
+}
+
 /* Ailesinin renginde ikincil düğme: koyu zemin, renkli çerçeve ve yazı; dolu düğme ekranda tek kalır */
 .pixel-btn.tone {
   color: var(--tone);
