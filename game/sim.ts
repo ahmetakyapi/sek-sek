@@ -111,6 +111,8 @@ export interface Chaser {
   gap: number
   /** bu yaklaşmada hırladı mı */
   growled: boolean
+  /** oyuncu hareketli bir şeyin başında bekliyor: köpek oturur */
+  calm: boolean
   /** oyuncunun izi: [x, ayak y, yön, o ana dek alınan yol] dörtlüleri, halka tampon */
   trail: Float32Array
   head: number
@@ -397,6 +399,8 @@ export class World {
   boss2: Boss | null = null
   /** Kovalamaca'nın Kangal'ı (LevelDef.chaser); yoksa null */
   chaser: Chaser | null = null
+  /** Kovalamaca: köpeğin beklediği yerler (hareketli şeylerin yolu ve çevresi) */
+  chaseCalm: Box[] = []
   /** bayrak alındığındaki düğme durumu: ölünce buna dönülür, bloklar yanlış tarafta kalmaz */
   private cpSwitch = false
   get checkpointSwitch() {
@@ -687,10 +691,6 @@ export class World {
     this.start = start
     this.spawn = { ...start }
     this.exit = exit
-    if (level.chaser) {
-      this.chaser = { x: 0, y: 0, px: 0, py: 0, facing: 1, state: 'wait', since: 0, arc: 0, gap: 9, growled: false, trail: new Float32Array(CHASE.trail * 4), head: 0, count: 0 }
-      this.resetChaser()
-    }
     // derin suyun içine konan toplanabilir (hatıra, pul, nazar, anahtar) karosunu kuru boşluğa çevirmesin: çevresinin en az
     // ikisi yüzülen suysa o karo da sudur (hatıra derenin dibinde suyun içinde durur)
     for (const b of [...this.pickups, this.stampBox, this.charmBox, this.keyBox]) {
@@ -709,6 +709,11 @@ export class World {
     if (level.poison) this.poisonPits()
     if (level.crumbleAll) this.crumbleSurfaces()
     this.player = this.freshPlayer(start.x, start.y)
+    if (level.chaser) {
+      this.buildChaseCalm()
+      this.chaser = { x: 0, y: 0, px: 0, py: 0, facing: 1, state: 'wait', since: 0, arc: 0, gap: 9, growled: false, calm: false, trail: new Float32Array(CHASE.trail * 4), head: 0, count: 0 }
+      this.resetChaser()
+    }
   }
 
   /**
@@ -1004,6 +1009,14 @@ export class World {
       if (bossAwake) c.state = 'wait'
       return
     }
+    // hareketli şeylerin başında (raylı platform, asansör, tokmak, ritim, gelgit) beklemek zorunludur: köpek oturup
+    // soluklanır, iz de birikmez; oyuncu oradan ayrılınca kaldığı yerden sürer
+    if (p.onPlatform || this.chaseCalm.some((z) => overlap(p, z))) {
+      c.state = 'wait'
+      c.calm = true
+      return
+    }
+    c.calm = false
     c.since += dt
     const n = CHASE.trail
     // iz: oyuncunun ayak noktası ve o ana dek yürüdüğü yolun boyu
@@ -1054,6 +1067,31 @@ export class World {
       this.events.push({ type: 'bite', x: c.x, y: c.y - 8 })
       this.kill()
     }
+  }
+
+  /**
+   * Köpeğin beklediği yerler: hareketli platformun bütün yolu (yatayda 3, yukarıda 4, aşağıda 2 karo payla), tokmakların
+   * çevresi, plakalar (5 karo), ritim blokları ve gelgit havuzları (3 karo payla). Bunlar zamanlama ya da geri dönüş ister;
+   * köpek orada bekleyeni cezalandırmaz.
+   */
+  private buildChaseCalm() {
+    const z = this.chaseCalm
+    const pad = (x0: number, y0: number, x1: number, y1: number, sx = 3 * T, up = 4 * T, down = 2 * T) => z.push({ x: x0 - sx, y: y0 - up, w: x1 - x0 + 2 * sx, h: y1 - y0 + up + down })
+    for (const pl of this.platforms) {
+      if (pl.axis === 'x') pad(pl.min, pl.y, pl.max + pl.w, pl.y + pl.h)
+      else if (pl.axis === 'y') pad(pl.x, pl.min, pl.x + pl.w, pl.max + pl.h)
+      else if (pl.axis === 'o' && pl.cx !== undefined && pl.cy !== undefined && pl.r !== undefined) pad(pl.cx - pl.r, pl.cy - pl.r, pl.cx + pl.r + pl.w, pl.cy + pl.r + pl.h)
+      else pad(pl.x, pl.y - HORON.lift - 6 * T, pl.x + pl.w, pl.y + pl.h)
+    }
+    for (const h of this.hammers) pad(h.x - T, h.top, h.x + 2 * T, h.bottom, 2 * T, T, 2 * T)
+    // plaka bulmacası: basıp geri dönmek gerekir
+    for (const pl of this.plates) pad(pl.x, pl.y - T, pl.x + pl.w, pl.y + pl.h, 5 * T, 6 * T, T)
+    for (let ty = 0; ty < this.rows; ty++)
+      for (let tx = 0; tx < this.cols; tx++) {
+        const t = this.tiles[ty * this.cols + tx]
+        if (t === RHYTHM_A || t === RHYTHM_B) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 3 * T, 3 * T)
+      }
+    for (const q of this.tidePools) pad(q.x0 * T, q.top, q.x1 * T + T, q.bottom, 3 * T, 4 * T, T)
   }
 
   /** köpeği yeniden doğuş yerine koyar: iz silinir, bekler */

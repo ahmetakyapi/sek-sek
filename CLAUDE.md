@@ -223,9 +223,10 @@ aynı arenada, `bossOf2`). Rekorları `save.rushPlus[variant]`.
 
 **Kovalamaca (Sinir Bozucu `kovala`).** `LevelDef.chaser` → `World.chaser` (`sim.ts` `updateChaser`, `CHASE`): Kangal oyuncunun
 izini (yol boyu) sabit hızla koşar, hızı artar, en çok `maxLag` sn geride kalır; yetişince ısırır (`bite` olayı, `kill`).
-Doğuşta ve meydan kapısında bekler, boss uyanınca durur. Ekran dışındayken kenarda yakınlık işareti (`render.ts`
-`drawChaserHD`, çizim `enemyDraw.ts` `drawChaseDog`). Uzun bekleme isteyen şehirde adil olmaz: yalnız CHASE_OK şehirlerinde
-açılır; kanıt `npx tsx scripts/verify-chase.ts [şehir] [--hepsi]` (çözücünün yolu, köpek %15 hızlıyken ısırılmadan biter).
+Doğuşta ve meydan kapısında bekler, boss uyanınca durur; hareketli platform, asansör, tokmak, ritim, gelgit ve plakanın
+başında (`chaseCalm`) oturur, iz de birikmez: zorunlu bekleme ve bulmacada geri dönüş cezalanmaz. Ekran dışındayken kenarda yakınlık işareti (`render.ts`
+`drawChaserHD`, çizim `enemyDraw.ts` `drawChaseDog`). Bu sayede Sivas (Kangal orada dost) dışında her şehirde açık (`CHASE_NO`);
+kanıt `npx tsx scripts/verify-chase.ts [şehir] [--hepsi]` (çözücünün yolu, köpek %15 hızlıyken ısırılmadan biter; makronun duvarı iterek geçen süresi sayılmaz).
 Haritası değişen şehirde yeniden koş (CI her şehirde koşar). Köpek yetişmesine bir saniye kala bir kez hırlar (`growl`).
 
 **Sürüm notu.** Yeni şehirle gelen yenilikler `Game.tsx` RELEASE_NOTES[şehir]: o şehir "Yolda Neler Değişti" notunda yeni
@@ -315,7 +316,7 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
   duvardan en az 8 karo uzak olsun: her duvar tırmanılır), alçak suda dipten ve mağara ağzından yürü (yüksekte dalınır).
   Dipte duran oyuncu boğulmaz: su altı süresi (~3,8 sn) nefesten kısa. Uyarı: değişimden 0,9 sn önce varılacak çizgide köpük
   yanıp söner (render `drawTide`, saat ara değerlenir) ve havuza 14 karo yakın oyuncuya ses (`tideUp` / `tideDown`). Düzenleyicide
-  de karo (`A`). Mersin bütün Sinir Bozucu fiziklerinde kanıtlı (RAGE_PROVEN); Kovalamaca'da yok (gelgiti beklemek gerekir). Çözücü yakındaki gelgitin evresini durum sayar; geniş havuz aramayı
+  de karo (`A`). Mersin bütün Sinir Bozucu fiziklerinde kanıtlı (RAGE_PROVEN); Kovalamaca'da köpek gelgit havuzunun başında bekler. Çözücü yakındaki gelgitin evresini durum sayar; geniş havuz aramayı
   yavaşlatır, havuzu dar tut.
 - `{` `}` ritim blokları (`sim.ts` RHYTHM): saate bağlı iki takım, 1,6 sn'de bir yer değiştirir, kaybolmadan 0,45 sn önce yanıp söner;
   belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır (`rhythmHold`). Çözücü yakındaki ritim evresini durum sayar.

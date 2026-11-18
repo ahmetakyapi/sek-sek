@@ -417,6 +417,33 @@ describe('derin suda nefes', () => {
   })
 })
 
+describe('Kovalamaca: hareketli şeylerin başında', () => {
+  it('raylı platformu bekleyen oyuncuyu köpek ısırmaz; ayrılınca yeniden sürer', () => {
+    // solda yol, ortada raylı platform (M) ve çukur: oyuncu kıyıda bekler
+    const map = ['                              ', ' P                            ', '#########   MMM      ##########', '#########~~~~~~~~~~~~##########']
+    const w = new World({ ...LEVELS[0], map, wind: 0, chaser: true })
+    w.started = true
+    // kıyıya yürü (platformun yoluna 3 karo yakın)
+    for (let i = 0; i < 120 * 3 && w.player.x < 7 * 16; i++) w.step(1 / 120, { ...emptyInput(), right: true })
+    let bit = false
+    for (let i = 0; i < 120 * 8 && !bit; i++) {
+      w.step(1 / 120, emptyInput())
+      bit = w.events.some((e) => e.type === 'bite')
+      w.events.length = 0
+    }
+    expect(bit).toBe(false)
+    expect(w.chaser!.calm).toBe(true)
+    // geri, platformdan uzağa dönüp durunca köpek yeniden yetişir
+    for (let i = 0; i < 120 && w.player.x > 2 * 16; i++) w.step(1 / 120, { ...emptyInput(), left: true })
+    for (let i = 0; i < 120 * 8 && !bit; i++) {
+      w.step(1 / 120, emptyInput())
+      bit = w.events.some((e) => e.type === 'bite')
+      w.events.length = 0
+    }
+    expect(bit).toBe(true)
+  })
+})
+
 describe('Kovalamaca', () => {
   const long = ['                                                                                                    ', ' P                                                                                                  ', '####################################################################################################']
   const chase = () => new World({ ...LEVELS[0], map: long, wind: 0, chaser: true })

@@ -156,18 +156,19 @@ export interface DailyRuleDef {
   lowGravity?: boolean
   /** Fırtına: güçlü rüzgâr yön değiştirir (LevelDef.storm + wind) */
   storm?: boolean
-  /** Kovalamaca: oyuncunun izini süren bir Kangal (LevelDef.chaser; yalnız CHASE_OK şehirlerinde) */
+  /** Kovalamaca: oyuncunun izini süren bir Kangal (LevelDef.chaser; CHASE_NO şehirlerinde kapalı) */
   chase?: boolean
   /** yalnız görüntüyü değiştirir (fizik aynı, her şehirde bitirilebilir): karanlık, baş aşağı, ayna */
   view?: { dark?: boolean; flipX?: boolean; flipY?: boolean; hiddenSpikes?: boolean; ghostGround?: boolean; zoom?: number }
 }
 
 /**
- * Kovalamaca'nın açıldığı şehirler: çözücünün yolu, köpek oyundakinden sıkı kovalarken ısırılmadan biter
- * (`npx tsx scripts/verify-chase.ts`). Uzun bekleme isteyen (raylı platform, asansör) şehirler listede yok; Sivas'ta Kangal
- * dost hayvan olduğu için Sivas da yok (dost ile düşman aynı tür olmaz).
+ * Kovalamaca'nın açılmadığı şehirler. Köpek hareketli şeylerin ve plakaların başında beklediği için (sim.ts chaseCalm) bütün
+ * şehirlerde çözücünün yolu, köpek %15 hızlıyken ısırılmadan biter (`npx tsx scripts/verify-chase.ts --hepsi`; CI her şehirde
+ * koşar). Sivas'ta Kangal dost hayvan: dost ile düşman aynı tür olmaz.
  */
-export const CHASE_OK: string[] = ['adana', 'amasya', 'bursa', 'diyarbakir', 'gaziantep', 'izmir', 'kayseri', 'kocaeli', 'malatya', 'mardin', 'mugla', 'nevsehir', 'sanliurfa', 'sinop', 'tokat', 'van']
+export const CHASE_NO: string[] = ['sivas']
+export const chaseFits = (id: string) => !CHASE_NO.includes(id)
 
 /** Kural metni (TR); İngilizcesi lib/ui.en.ts'te aynı anahtarla durur. */
 export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
@@ -251,7 +252,7 @@ export const ruleFits = (rule: DailyRule, level: LevelDef) => {
   if (r.crumbleAll && !CRUMBLE_OK.includes(level.id)) return false
   if (r.lowGravity && !MOON_OK.includes(level.id)) return false
   if (r.storm && !STORM_OK.includes(level.id)) return false
-  if (r.chase && !CHASE_OK.includes(level.id)) return false
+  if (r.chase && !chaseFits(level.id)) return false
   return true
 }
 

@@ -10,7 +10,7 @@
  * durur. Her karonun rastgeleliği konumundan türetilir: parça sınırlarında doku kesilmez.
  */
 import { CITY } from './art'
-import { CRUMBLE, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, TURRET, WET, type World } from './sim'
+import { BLOCK_A, BLOCK_B, CRUMBLE, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, SWIM, TURRET, WATER, WET, type World } from './sim'
 import { T, type CityKey } from './types'
 
 type Ctx = CanvasRenderingContext2D
@@ -26,10 +26,14 @@ const VAHEAD = 2
 /** haritanın altına sürdürülen satır: dikey ekranda kamera haritanın altını da gösterir, zemin orada düz bir banda dönmesin */
 const BELOW = 16
 
-type Material = 'brick' | 'ashlar' | 'cyclop' | 'strata' | 'earth' | 'rock' | 'coal'
-type Cap = 'stone' | 'grass' | 'snow'
+type Material = 'brick' | 'ashlar' | 'cyclop' | 'strata' | 'earth' | 'rock' | 'coal' | 'quadratum'
+/** merlon: taş silmenin altında mazgallı burç dişleri (yürünen yüz düz kalır, salt görünüş) */
+type Cap = 'stone' | 'grass' | 'snow' | 'merlon'
+/** zeminin renkleri (şehir paletinin zemin alanları; bölgesel görünüş kendi paletini taşır) */
+type Pal = { tile: string; tileLight: string; tileDark: string; tileTop: string }
+type Look = { mat: Material; cap: Cap }
 
-const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
+const LOOK: Record<CityKey, Look> = {
   istanbul: { mat: 'brick', cap: 'stone' },
   kocaeli: { mat: 'brick', cap: 'grass' },
   canakkale: { mat: 'ashlar', cap: 'stone' },
@@ -73,6 +77,15 @@ const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   // Akdeniz kıyısı: güneşte sararmış kumtaşı katmanları, üstü taş silme
   mersin: { mat: 'strata', cap: 'stone' },
   bayburt: { mat: 'rock', cap: 'snow' },
+}
+
+/**
+ * Bölgesel ikinci görünüş: meydan kapısının (@) ardı (meydan yolu + boss arenası; yalnız arenadan oluşan bölümde
+ * bütün harita) şehrin başka bir yapısıdır. Fizik değişmez, yalnız malzeme, örtü ve renk.
+ */
+const LOOK2: Partial<Record<CityKey, Look & { pal: Pal }>> = {
+  // Mamure Kalesi (Anamur): iri, düzgün kesilmiş bal sarısı-gri kesme taş, sıra sıra; üstü mazgallı burç
+  mersin: { mat: 'quadratum', cap: 'merlon', pal: { tile: '#bba57e', tileLight: '#e0cfa4', tileDark: '#5e5646', tileTop: '#d9c79c' } },
 }
 
 /** konumdan türeyen 0..1 sayı: aynı yer hep aynı değeri verir */
@@ -164,6 +177,19 @@ function quad(p: Path2D, ax: number, ay: number, bx: number, by: number, ex: num
   p.closePath()
 }
 
+/** taş tonları: açık, koyu, bir sıcak, bir soğuk */
+function toneSet(p: Pal): string[] {
+  return [
+    p.tile,
+    mix(p.tile, p.tileLight, 0.35),
+    mix(p.tile, p.tileLight, 0.7),
+    mix(p.tile, p.tileDark, 0.3),
+    mix(p.tile, p.tileDark, 0.55),
+    mix(p.tile, p.tileLight, 0.2, '#c08a5c', 0.12),
+    mix(p.tile, p.tileDark, 0.15, '#5c7ea0', 0.13),
+  ]
+}
+
 /** dışbükey köşelerin yenmişliği (dünya pikseli): kütle, örtü ve dış hat aynı yarıçapı kullanır */
 const NIB = 2
 /** derinlik gölgesinin küçük tuvali: karo başına bir piksel, büyütülerek basılır (yumuşak geçiş) */
@@ -174,6 +200,8 @@ const MASON = {
   brick: { bw: 16, bh: 8, wj: 0.14, wl: 13, jy: 0.3, lean: 0.3, r: 0.8, gap: 0.6, half: true, split: 0.1, chip: 0.1, tone: [0.2, 0.38, 0.5, 0.68, 0.8, 0.92] },
   ashlar: { bw: 30, bh: 16, wj: 0.42, wl: 13, jy: 0.4, lean: 0.45, r: 1.2, gap: 0.7, half: false, split: 0.2, chip: 0.14, tone: [0.38, 0.6, 0.68, 0.84, 0.9, 0.95] },
   cyclop: { bw: 21, bh: 15, wj: 0.5, wl: 13, jy: 2.4, lean: 3, r: 2.8, gap: 0.85, half: false, split: 0.14, chip: 0.2, tone: [0.24, 0.44, 0.54, 0.72, 0.82, 0.91] },
+  // kale taşı (opus quadratum): sıra yüksekliği tam bir karo, yarım taş kaydırmalı, düz derz
+  quadratum: { bw: 30, bh: 16, wj: 0.08, wl: 40, jy: 0.12, lean: 0.12, r: 1, gap: 0.75, half: true, split: 0.07, chip: 0.08, tone: [0.3, 0.52, 0.64, 0.82, 0.9, 0.95] },
   rock: { bw: 34, bh: 23, wj: 0.5, wl: 40, jy: 1.5, lean: 5, r: 1.5, gap: 0.45, half: false, split: 0.22, chip: 0.25, tone: [0.34, 0.54, 0.62, 0.82, 0.9, 0.95] },
 }
 
@@ -193,6 +221,10 @@ export class TerrainHD {
   /** derinlik gölgesinin rengi (şehrin koyu taşına çalan mürekkep) ve taş tonları (açık, koyu, bir sıcak, bir soğuk) */
   private readonly deep: [number, number, number]
   private readonly tones: string[]
+  /** bölgesel görünüş (LOOK2) ve kapladığı sütunlar [za, zb); yoksa null */
+  private readonly zone: { look: Look; pal: Pal; tones: string[]; za: number; zb: number } | null = null
+  /** gelgit ve su kıyısındaki taş (yalnız bölgede): su hizasında yosunlu koyu sıra; değer suyun yönü (1 sol, 2 sağ, 4 üst) */
+  private readonly moss = new Map<number, number>()
 
   constructor(
     private readonly w: World,
@@ -212,15 +244,29 @@ export class TerrainHD {
     const st = CITY[city]
     const dk = hex(st.tileDark)
     this.deep = [Math.round(dk[0] * 0.35 + 21 * 0.65), Math.round(dk[1] * 0.35 + 12 * 0.65), Math.round(dk[2] * 0.35 + 32 * 0.65)]
-    this.tones = [
-      st.tile,
-      mix(st.tile, st.tileLight, 0.35),
-      mix(st.tile, st.tileLight, 0.7),
-      mix(st.tile, st.tileDark, 0.3),
-      mix(st.tile, st.tileDark, 0.55),
-      mix(st.tile, st.tileLight, 0.2, '#c08a5c', 0.12),
-      mix(st.tile, st.tileDark, 0.15, '#5c7ea0', 0.13),
-    ]
+    this.tones = toneSet(st)
+    const z2 = LOOK2[city]
+    if (z2) {
+      const span = w.warp
+        ? w.level.mirror
+          ? [0, Math.floor(w.warp.x / T)]
+          : [Math.floor(w.warp.x / T) + 1, w.cols]
+        : w.boss
+          ? [0, w.cols]
+          : null
+      if (span) {
+        this.zone = { look: z2, pal: z2.pal, tones: toneSet(z2.pal), za: span[0], zb: span[1] }
+        const wet = (x: number, y: number) => w.isTide(x, y) || w.raw(x, y) === WATER || w.raw(x, y) === SWIM
+        for (let ty = 0; ty < w.rows; ty++)
+          for (let tx = span[0]; tx < span[1]; tx++) {
+            if (!base(tx, ty)) continue
+            // su kapısının (renkli blok) altı da havuz tabanıdır
+            const gate = w.raw(tx, ty - 1) === BLOCK_A || w.raw(tx, ty - 1) === BLOCK_B
+            const m = (wet(tx - 1, ty) ? 1 : 0) | (wet(tx + 1, ty) ? 2 : 0) | (wet(tx, ty - 1) || (gate && (wet(tx - 1, ty - 1) || wet(tx + 1, ty - 1))) ? 4 : 0)
+            if (m) this.moss.set(ty * w.cols + tx, m)
+          }
+      }
+    }
     // uzaklık alanı: iki geçişli (5-7) yaklaşık Öklid; haritanın yanları ve tepesi açıklık sayılmaz
     const n = w.cols
     const depth = new Uint8Array(n * this.rows)
@@ -406,6 +452,101 @@ export class TerrainHD {
     return cv
   }
 
+  /** sütun bölgesel görünüşün (LOOK2) içinde mi */
+  private inZone(tx: number): boolean {
+    const z = this.zone
+    return !!z && tx >= z.za && tx < z.zb
+  }
+
+  /** üstü su (gelgit havuzunun tabanı) olan bölge karosu */
+  private seabed(tx: number, ty: number): boolean {
+    return ((this.moss.get(ty * this.w.cols + tx) ?? 0) & 4) !== 0
+  }
+
+  private lookAt(inside: boolean): Look {
+    return inside && this.zone ? this.zone.look : LOOK[this.city]
+  }
+
+  private palAt(tx: number): Pal {
+    return this.inZone(tx) ? this.zone!.pal : CITY[this.city]
+  }
+
+  /** x0..x1 (dünya pikseli) aralığının bölgelere göre parçaları: [baş, son, görünüş, palet, taş tonları] */
+  private spans(x0: number, x1: number): [number, number, Look, Pal, string[]][] {
+    const base: [Look, Pal, string[]] = [LOOK[this.city], CITY[this.city], this.tones]
+    const z = this.zone
+    if (!z) return [[x0, x1, ...base]]
+    const za = z.za * T
+    const zb = z.zb * T
+    const out: [number, number, Look, Pal, string[]][] = []
+    if (x0 < za) out.push([x0, Math.min(x1, za), ...base])
+    if (x1 > za && x0 < zb) out.push([Math.max(x0, za), Math.min(x1, zb), z.look, z.pal, z.tones])
+    if (x1 > zb) out.push([Math.max(x0, zb), x1, ...base])
+    return out
+  }
+
+  /**
+   * Su hizasındaki yosun: gelgit ve su kıyısındaki taşın sudan yana koyu yeşile döner, sınırı yer yer sarkan
+   * dalgalı bir çizgi (deniz çekilince kalan iz). Yollar toplanır, tek seferde boyanır.
+   */
+  private algae(c: Ctx, tx0: number, tx1: number, r0: number, r1: number) {
+    const cols = this.w.cols
+    const film = new Path2D()
+    const edge = new Path2D()
+    const tuft = new Path2D()
+    for (let ty = r0; ty < Math.min(r1, this.w.rows); ty++)
+      for (let tx = tx0; tx <= tx1; tx++) {
+        const m = this.moss.get(ty * cols + tx)
+        if (!m) continue
+        const x = tx * T
+        const y = ty * T
+        // en üstteki yosunlu karo: yosun su hizasının biraz altından başlar
+        const top = (m & 4) === 0 && !this.moss.has((ty - 1) * cols + tx)
+        const y0 = top ? y + 3 + hash(tx, ty, 61) * 3 : y
+        if (m & 4) {
+          // havuz tabanı: üst yüzde ince bir yosun bandı
+          film.rect(x, y, T, 6)
+          for (let k = 0; k < 3; k++) {
+            const px = x + 2 + k * 5 + hash(tx, ty, 62 + k) * 2
+            tuft.moveTo(px, y + 1)
+            tuft.quadraticCurveTo(px + 0.8, y + 3, px + 0.3, y + 5 + hash(tx, ty, 65 + k) * 3)
+          }
+        }
+        for (const [bit, side] of [[1, 0], [2, 1]] as const) {
+          if (!(m & bit)) continue
+          // sudan yana 9 piksellik koyu şerit, içe doğru sivrilen dişlerle
+          const ex = side ? x + T : x
+          const dir = side ? -1 : 1
+          const reach = 6 + hash(tx, ty, 66 + side) * 3
+          film.moveTo(ex, y0)
+          film.lineTo(ex + dir * (reach - 2), y0)
+          for (let k = 1; k <= 3; k++) {
+            const yy = y0 + ((y + T - y0) * k) / 3
+            const ym = yy - (y + T - y0) / 6
+            film.quadraticCurveTo(ex + dir * (reach + 1 + hash(tx, ty * 7 + k, 67 + side) * 2.5), ym, ex + dir * (reach - 2), yy)
+          }
+          film.lineTo(ex, y + T)
+          film.closePath()
+          if (top) {
+            edge.moveTo(ex, y0)
+            edge.lineTo(ex + dir * (reach - 2), y0)
+            // sarkan tutam
+            const px = ex + dir * (2 + hash(tx, ty, 68 + side) * 3)
+            tuft.moveTo(px, y0)
+            tuft.quadraticCurveTo(px + dir, y0 - 2.5, px + dir * 0.4, y0 - 4)
+          }
+        }
+      }
+    c.fillStyle = 'rgba(38,70,52,0.55)'
+    c.fill(film)
+    c.strokeStyle = 'rgba(108,150,92,0.75)'
+    c.lineWidth = 0.7
+    c.stroke(edge)
+    c.strokeStyle = 'rgba(30,58,40,0.8)'
+    c.lineWidth = 0.6
+    c.stroke(tuft)
+  }
+
   /** dışbükey köşe mi (dx, dy: köşenin baktığı yön): yalnız düz taşta; buz, ıslak taş ve tünel ağzı köşeli kalır */
   private nib(tx: number, ty: number, dx: number, dy: number): boolean {
     const w = this.w
@@ -461,7 +602,6 @@ export class TerrainHD {
   private paint(c: Ctx, tx0: number, tx1: number, ty0: number, ty1: number) {
     const w = this.w
     const s = CITY[this.city]
-    const look = LOOK[this.city]
     const rows = this.rows
     const solid = this.solid
     const r0 = Math.max(0, ty0 - 1)
@@ -505,27 +645,58 @@ export class TerrainHD {
         }
     if (any) {
       c.clip()
-      // derz: taşların arasından görünen koyu harç
-      c.fillStyle = mix(s.tileDark, '#1c1226', 0.28)
-      c.fillRect(tx0 * T, r0 * T, (tx1 - tx0 + 1) * T, (r1 - r0) * T)
       // malzeme yalnız hücrenin kendi şeridine (ve dış hat payına) çizilir: konumdan türediği için komşu hücreyle birebir oturur
       const mx0 = (tx0 + 1) * T - MARGIN - 1
       const mx1 = tx1 * T + MARGIN + 1
       const my0 = ty0 * T - MARGIN - 1
       const my1 = (ty1 + 1) * T + MARGIN + 1
-      if (look.mat === 'strata' || look.mat === 'earth' || look.mat === 'coal') this.strata(c, look.mat, mx0, mx1, my0, my1)
-      else this.masonry(c, look.mat, mx0, mx1, my0, my1)
+      // bölge sınırı hücreden geçiyorsa iki yanı ayrı ayrı (kendi şeridine kırpılarak) çizilir
+      for (const [ax, bx, lk, pal, tones] of this.spans(mx0, mx1)) {
+        const cut = ax > mx0 || bx < mx1
+        if (cut) {
+          c.save()
+          c.beginPath()
+          c.rect(ax, my0, bx - ax, my1 - my0)
+          c.clip()
+        }
+        // derz: taşların arasından görünen koyu harç
+        c.fillStyle = mix(pal.tileDark, '#1c1226', 0.28)
+        c.fillRect(Math.max(ax, tx0 * T), r0 * T, Math.min(bx, (tx1 + 1) * T) - Math.max(ax, tx0 * T), (r1 - r0) * T)
+        if (lk.mat === 'strata' || lk.mat === 'earth' || lk.mat === 'coal') this.strata(c, lk.mat, ax, bx, my0, my1)
+        else this.masonry(c, lk.mat, ax, bx, my0, my1, tones)
+        if (cut) c.restore()
+      }
+      // bölge sınırı: yapı kayaya yaslanır, aralarında koyu derz ve yapının ışık alan kenarı
+      if (this.zone)
+        for (const zx of [this.zone.za, this.zone.zb]) {
+          const x = zx * T
+          if (zx <= 0 || zx >= w.cols || x < mx0 || x > mx1) continue
+          c.strokeStyle = 'rgba(26,14,36,0.5)'
+          c.lineWidth = 1
+          c.beginPath()
+          wline(c, x, my0, x, my1, 0.4, 17)
+          c.stroke()
+          c.strokeStyle = 'rgba(255,240,212,0.3)'
+          c.lineWidth = 0.7
+          c.beginPath()
+          const lx = zx === this.zone.za ? x + 1.1 : x - 1.1
+          wline(c, lx, my0, lx, my1, 0.3, 18)
+          c.stroke()
+        }
 
       // yüzeyin yaşanmışlığı: örtünün altından sarkan yosun, kök, akıntı izi, liken, çatlağa dolmuş kar
+      for (const inside of this.zone ? [false, true] : [false]) {
+      const lk = this.lookAt(inside)
+      const cap = lk.cap === 'merlon' ? 'stone' : lk.cap
       const patch = new Path2D()
       const fleck = new Path2D()
       const line = new Path2D()
       for (let ty = r0; ty < r1; ty++)
         for (let tx = tx0; tx <= tx1; tx++) {
-          if (!solid(tx, ty) || solid(tx, ty - 1) || ty === 0 || w.tile(tx, ty) !== SOLID) continue
-          this.dress(look.cap, look.mat, tx, ty, patch, fleck, line)
+          if (!solid(tx, ty) || solid(tx, ty - 1) || ty === 0 || w.tile(tx, ty) !== SOLID || this.inZone(tx) !== inside) continue
+          this.dress(cap, lk.mat, tx, ty, patch, fleck, line)
         }
-      if (look.cap === 'grass') {
+      if (cap === 'grass') {
         c.fillStyle = mix(mix(s.tileTop, '#3f7a3a', 0.4), s.tileDark, 0.3)
         c.globalAlpha = 0.6
         c.fill(patch)
@@ -533,7 +704,7 @@ export class TerrainHD {
         c.strokeStyle = mix(s.tileDark, '#20120c', 0.45)
         c.lineWidth = 0.6
         c.stroke(line)
-      } else if (look.cap === 'stone') {
+      } else if (cap === 'stone') {
         c.strokeStyle = 'rgba(22,12,34,0.13)'
         c.lineWidth = 1.1
         c.stroke(line)
@@ -547,8 +718,10 @@ export class TerrainHD {
         c.stroke(line)
       }
       c.globalAlpha = 1
+      }
 
       this.shade(c, tx0, tx1, r0, r1)
+      if (this.moss.size) this.algae(c, tx0, tx1, r0, r1)
 
       // ışık sol üstten, tek kademe: sola bakan açık yüzler aydınlanır, sağa bakanlar ve çıkıntı altları gölgelenir
       const lit = new Path2D()
@@ -649,10 +822,15 @@ export class TerrainHD {
       let kind = SOLID
       for (let tx = tx0; tx <= tx1 + 1; tx++) {
         const open = tx <= tx1 && solid(tx, ty) && !solid(tx, ty - 1) && w.tile(tx, ty - 1) !== CRUMBLE && ty > 0
-        // buz ve ıslak taş kendi örtüsünü taşır: koşu malzeme değişince bölünür
+        // buz ve ıslak taş kendi örtüsünü taşır: koşu malzeme (ya da bölge) değişince bölünür
         const t = open ? (w.tile(tx, ty) === ICE ? ICE : w.tile(tx, ty) === WET ? WET : SOLID) : EMPTY
-        if (run >= 0 && t !== kind) {
-          this.cap(c, look.cap, kind, run, tx - 1, ty, this.nib(run, ty, -1, -1) ? NIB : 0, this.nib(tx - 1, ty, 1, -1) ? NIB : 0)
+        if (run >= 0 && (t !== kind || this.inZone(tx) !== this.inZone(run) || this.seabed(tx, ty) !== this.seabed(run, ty))) {
+          const lk = this.lookAt(this.inZone(run))
+          // su altında kalan taban burç değildir: yosun tutmuş düz silme
+          const bed = this.seabed(run, ty)
+          const pal = this.palAt(run)
+          const cap = bed ? 'stone' : lk.cap
+          this.cap(c, cap, kind, run, tx - 1, ty, this.nib(run, ty, -1, -1) ? NIB : 0, this.nib(tx - 1, ty, 1, -1) ? NIB : 0, bed ? { ...pal, tileTop: mix(pal.tileTop, '#4e7a58', 0.55) } : pal)
           run = -1
         }
         if (open && run < 0) {
@@ -812,9 +990,9 @@ export class TerrainHD {
    * sıra çizgisi hafif dalgalanır, bazı taşlar ikiye bölünür, bazılarının köşesi kırıktır. Taş tonu konumdan seçilir
    * (yedi ton: açık, koyu, bir sıcak, bir soğuk). Aynı tondaki taşlar tek yolda toplanıp tek seferde boyanır.
    */
-  private masonry(c: Ctx, mat: Exclude<Material, 'strata' | 'earth' | 'coal'>, x0: number, x1: number, y0: number, y1: number) {
+  private masonry(c: Ctx, mat: Exclude<Material, 'strata' | 'earth' | 'coal'>, x0: number, x1: number, y0: number, y1: number, tones: string[]) {
     const P = MASON[mat]
-    const fills = this.tones.map(() => new Path2D())
+    const fills = tones.map(() => new Path2D())
     const lit = new Path2D()
     const dim = new Path2D()
     const mark = new Path2D()
@@ -922,7 +1100,7 @@ export class TerrainHD {
       }
     }
     for (let t = 0; t < fills.length; t++) {
-      c.fillStyle = this.tones[t]
+      c.fillStyle = tones[t]
       c.fill(fills[t])
     }
     c.fillStyle = 'rgba(255,240,212,0.085)'
@@ -1076,8 +1254,7 @@ export class TerrainHD {
    * loblarla sarkan örtü). Altında tek kademe temas gölgesi, üstünde yürünen kenarı okutan parlak çizgi. Alt kenar dünyadaki
    * konumdan türer (mutlak kafes): koşu hangi hücrede kesilirse kesilsin aynıdır. ra, rb: uçlardaki yenmiş köşe yarıçapı.
    */
-  private cap(c: Ctx, cap: Cap, kind: number, a: number, b: number, ty: number, ra: number, rb: number) {
-    const s = CITY[this.city]
+  private cap(c: Ctx, cap: Cap, kind: number, a: number, b: number, ty: number, ra: number, rb: number, s: Pal) {
     const x0 = a * T
     const x1 = (b + 1) * T
     const y = ty * T
@@ -1088,6 +1265,10 @@ export class TerrainHD {
       wline(c, x0 + 0.5, y + 0.9, x1 - 0.5, y + 0.9, 0.25, 41)
       c.stroke()
       return
+    }
+    if (cap === 'merlon') {
+      this.merlons(c, x0, x1, y, s)
+      cap = 'stone'
     }
     const color = cap === 'snow' ? '#eef5fc' : s.tileTop
     // örtünün kalınlığı (x'e göre): taşta düz; çimende yuvarlak öbekler, yer yer sarkan tutam; karda yumuşak, iri sarkmalar
@@ -1227,6 +1408,61 @@ export class TerrainHD {
       c.stroke(blades)
       c.globalAlpha = 1
     }
+  }
+
+  /**
+   * Burç dişleri: taş silmenin hemen altında, mutlak kafese oturan sıra; dişler (açık, sol kenarı ışıklı) ve aralarındaki
+   * mazgallar (koyu oyuk, içinde sağ yanı ışık alan tek kademe). Yürünen yüz düzdür: çizim örtünün altında kalır.
+   */
+  private merlons(c: Ctx, x0: number, x1: number, y: number, s: Pal) {
+    const P = 16
+    const hole = new Path2D()
+    const face = new Path2D()
+    const lit = new Path2D()
+    const sill = new Path2D()
+    const top = y + 3
+    const bot = y + 11
+    for (let k = Math.floor(x0 / P) - 1; k * P < x1; k++) {
+      const ma = k * P + 3
+      const ha = ma + 9
+      const hb = ma + P
+      // diş
+      const fa = Math.max(ma, x0)
+      const fb = Math.min(ha, x1)
+      if (fb - fa > 1.5) {
+        face.rect(fa, top, fb - fa, bot - top)
+        if (fa === ma) {
+          lit.moveTo(fa + 0.5, top)
+          lit.lineTo(fa + 0.5, bot - 0.5)
+        }
+      }
+      // mazgal: yalnız koşunun içinde tam kalanı
+      if (ha < x0 + 1.5 || hb > x1 - 1.5) continue
+      hole.roundRect(ha + 0.3, top, hb - ha - 0.6, bot - top - 0.4, [0, 0, 1.2, 1.2])
+      sill.moveTo(ha + 1, bot - 1)
+      sill.lineTo(hb - 1, bot - 1)
+      sill.moveTo(hb - 1, top + 1)
+      sill.lineTo(hb - 1, bot - 1.2)
+    }
+    c.fillStyle = mix(s.tile, s.tileLight, 0.45)
+    c.fill(face)
+    c.strokeStyle = 'rgba(255,244,214,0.5)'
+    c.lineWidth = 0.6
+    c.stroke(lit)
+    c.fillStyle = mix(s.tileDark, '#1c1226', 0.35)
+    c.fill(hole)
+    c.strokeStyle = 'rgba(26,14,36,0.55)'
+    c.lineWidth = 0.55
+    c.stroke(hole)
+    c.strokeStyle = mix(s.tile, s.tileDark, 0.25)
+    c.lineWidth = 0.6
+    c.stroke(sill)
+    // diş sırasının altında ince silme çizgisi
+    c.strokeStyle = 'rgba(26,14,36,0.35)'
+    c.lineWidth = 0.6
+    c.beginPath()
+    wline(c, x0 + 0.5, bot + 0.3, x1 - 0.5, bot + 0.3, 0.2, 44)
+    c.stroke()
   }
 
   private plank(c: Ctx, x: number, y: number, left: boolean, right: boolean, color: string, tx: number) {

@@ -205,7 +205,7 @@ export function ModesHub({
                 <DogFigure className={`h-[64px] w-[96px] short:h-[44px] short:w-[66px] ${chaseCities ? '' : 'opacity-40 grayscale'}`} />
               </div>
               <p className="mt-2 text-[13px] leading-snug text-cream/85">{t('Bir Kangal izini sürüyor. Koştukça aranı açarsın; durursan, geri dönersen yetişir.')}</p>
-              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{chaseCities ? t('{n} şehirde açık. Ekran kenarındaki işaret köpeğin ne kadar yakın olduğunu söyler.', { n: chaseCities }) : t('Uygun bir şehri bitirince açılır (İzmir, Kocaeli gibi).')}</p>
+              <p className="mb-3 mt-1 text-[13px] leading-snug text-muted">{chaseCities ? t('{n} şehirde açık. Ekran kenarındaki işaret köpeğin ne kadar yakın olduğunu söyler.', { n: chaseCities }) : t('Bir şehri bitirince o şehirde açılır.')}</p>
               <button className="pixel-btn tone mt-auto shrink-0 justify-center" disabled={!chaseCities} onClick={onChase}>
                 {ic(chaseCities ? t('▶ Kaç!') : t('Kilitli'))}
               </button>
