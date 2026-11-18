@@ -1423,4 +1423,6 @@ export const UI_EN: Record<string, string> = {
   "İlk koşu senin. Düşmek ceza değil: yalnız süre sayılır.": "You run first. Falling isn't penalised: only time counts.",
   "İki kişi aynı ekranda: şehir yolu, boss kapışması ya da parkur. Omuzdan sekin, canları paylaşın.": "Two players, one screen: a city road, a boss brawl or a course. Bounce off shoulders, share your lives.",
   "Şehir ya da kısa parkur, 1, 3 ya da 5 tur. Düşüş cezası, Hatıra Avı ve avantajla kendi kuralını kur.": "A city or a short course, 1, 3 or 5 rounds. Set your own terms with fall penalties, Keepsake Hunt and head starts.",
+  "Gelgit Suyu": "Tide Water",
+  "Sekiz saniyede bir yükselip alçalır: yüksekken yüzülür, alçakken dibinde yürünür. Bitişik karolar tek havuzdur.": "Rises and falls every eight seconds: swim it at high tide, walk its floor at low tide. Touching tiles form one pool.",
 }

@@ -82,6 +82,7 @@ describe('bölüm verisi', () => {
       ['Tokat', 60],
       ['Denizli', 20],
       ['Zonguldak', 67],
+      ['Mersin', 33],
     ])
   })
 })

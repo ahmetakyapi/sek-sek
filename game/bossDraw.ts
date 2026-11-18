@@ -2093,6 +2093,70 @@ const PAINT: Record<CityKey, Painter> = {
     aura(c, mood, t, -4.6 + sway, -29, 4.4 + sway, -19.4, -1 + sway)
     if (b.state === 'warn' && b.move === 'throw') ell(c, 10 + sway, -15, 2, 2, '#58d0e0', '#2a8a9a')
   },
+  // Sepetteki Yılan (Kızkalesi efsanesi): hasır meyve sepetinden S çizerek yükselen yeşil yılan, sarı karın,
+  // sepette üzüm salkımı ve portakal. Saldırırken boynunu öne atar, yorulunca sepetin kenarına sarkar
+  mersin: (c, b, mood, t) => {
+    const lunge = b.state === 'attack' ? 3 : 0
+    const droop = mood === 'dizzy' ? 5 : beat(mood) ? 3 : 0
+    const sway = Math.sin(t * 3.4) * 1.4 * (droop ? 0.3 : 1)
+    const hx = 3 + sway + lunge - droop * 0.4
+    const hy = -21 + droop + (mad(mood) ? -1 : 0)
+    // sepetin arkasında kalan kuyruk ucu
+    stroke(c, [-8, -7, -11.4, -9.6, -12.6, -13 + Math.sin(t * 5) * 1.2], 1.6, '#4e9a3a')
+    // gövde: sepetten çıkan S kıvrımı (koyu hat, sonra karın şeridi)
+    const body = [-2.6, -6, -6.4, -10.6, -3.4, -15.2, hx - 3.2, hy + 3.4]
+    stroke(c, body, 4.4, '#5aae44')
+    stroke(c, [-2.2, -6.6, -5.2, -10.6, -2.8, -14.6, hx - 3.6, hy + 3], 1.3, '#f2d86a', false)
+    // pullar: gövdede açık benekler
+    for (let i = 0; i < 4; i++) dab(c, body[i * 2] + 0.9, body[i * 2 + 1] - 0.6, 0.7, 0.5, '#8ad46a')
+    // baş: geniş, yassı; çatal dil saldırıda ve işarette
+    if (mad(mood)) {
+      const fl = Math.sin(t * 30) * 0.6
+      stroke(c, [hx + 4.6, hy + 1.2, hx + 8, hy + 1.6 + fl, hx + 9.6, hy + 0.6 + fl], 0.55, '#e23a4a', false)
+      stroke(c, [hx + 8, hy + 1.6 + fl, hx + 9.6, hy + 2.8 + fl], 0.55, '#e23a4a', false)
+    }
+    ell(c, hx, hy, 5.6, 4, '#62b84a', '#3a7a2a')
+    dab(c, hx - 1.4, hy - 2.2, 2.2, 0.8, '#9ade7a')
+    dab(c, hx + 3.2, hy + 1.6, 1.4, 0.8, BLUSH)
+    eye(c, hx + 0.8, hy - 1.4, 1.9, mood, t)
+    mouth(c, hx + 3.2, hy + 1.6, 1.3, mood, t)
+    if (mood === 'dizzy') stroke(c, [hx + 4, hy + 2.2, hx + 5.4, hy + 5.2], 1, TONGUE, false)
+    aura(c, mood, t, hx - 4, hy - 4, hx + 6.6, hy - 1)
+    // hasır sepet: ağzı geniş, örgü çizgileri; içinde üzüm ve portakal
+    fine(() => {
+      for (let i = 0; i < 5; i++) ell(c, -6.4 + i * 1.5, -9.4 + (i % 2) * 1.2, 1.3, 1.3, '#7a3a8a', '#4e2060')
+      ell(c, 5.6, -9.2, 2.4, 2.4, '#f29a2a', '#b8641a')
+      stroke(c, [5.8, -11.6, 6.6, -12.8], 0.5, '#4e8a2a', false)
+    })
+    blob(
+      c,
+      () => {
+        c.moveTo(-10.4, -9)
+        c.lineTo(10.4, -9)
+        c.quadraticCurveTo(9.4, -1, 7.4, 0)
+        c.lineTo(-7.4, 0)
+        c.quadraticCurveTo(-9.4, -1, -10.4, -9)
+      },
+      '#d8a85a',
+      shade('#9a6a2a'),
+    )
+    c.strokeStyle = 'rgba(122,78,30,0.8)'
+    c.lineWidth = 0.55
+    for (let y = -7; y < 0; y += 2.2) {
+      c.beginPath()
+      c.moveTo(-9.6 + (-7 - y) * -0.2, y)
+      c.lineTo(9.6 - (-7 - y) * -0.2, y)
+      c.stroke()
+    }
+    for (let x = -8; x <= 8; x += 2.6) {
+      c.beginPath()
+      c.moveTo(x, -8.6)
+      c.lineTo(x * 0.85, -0.4)
+      c.stroke()
+    }
+    ell(c, 0, -9.2, 10.8, 1.3, '#e8c07a', '#a87a3a')
+    if (b.state === 'warn' && b.move === 'throw') ell(c, hx + 6, hy - 3, 1.6, 1.6, '#7a3a8a', '#4e2060')
+  },
   // Dev Kayısı: turuncu, çilli, tek dişli gülüş; çevresinde bir arı döner
   malatya: (c, b, mood, t) => {
     const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 11) * b.dir : 0

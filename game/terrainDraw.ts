@@ -70,6 +70,8 @@ const LOOK: Record<CityKey, { mat: Material; cap: Cap }> = {
   denizli: { mat: 'strata', cap: 'snow' },
   // Kara Elmas: koyu şeyl tabakaları arasında parıltılı kömür damarları, üstü Karadeniz yamacının çimeni
   zonguldak: { mat: 'coal', cap: 'grass' },
+  // Akdeniz kıyısı: güneşte sararmış kumtaşı katmanları, üstü taş silme
+  mersin: { mat: 'strata', cap: 'stone' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 

@@ -24,11 +24,11 @@ export const metadata: Metadata = {
     title: 'Sek-Sek · Şehir Şehir Anadolu',
     description: 'İstanbul’dan Pamukkale’ye 38 şehirlik platform oyunu. Simitçiden kale burcuna tek defterde bir yolculuk.',
   },
-  description: 'İstanbul’dan Pamukkale’ye 38 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir platform oyunu.',
+  description: 'İstanbul’dan Mersin’e 40 şehir: her şehri kendi dokusu, insanları ve hikâyeleriyle aşan bir platform oyunu.',
   applicationName: 'Sek-Sek',
   openGraph: {
     title: 'Sek-Sek · Şehir Şehir Anadolu',
-    description: 'İstanbul’dan Pamukkale’ye 38 şehir ve 114 hatıra. Martılar, cumbalar, kayısı kasaları ve Hitit ok tuzakları seni bekliyor.',
+    description: 'İstanbul’dan Mersin’e 40 şehir ve 120 hatıra. Martılar, cumbalar, kayısı kasaları ve Hitit ok tuzakları seni bekliyor.',
     locale: 'tr_TR',
     type: 'website',
     siteName: 'Sek-Sek',

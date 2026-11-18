@@ -8,7 +8,7 @@ import { cleanIncoming, cloudPart, mergeSaves, normalizeSave, type Save } from '
 export const dynamic = 'force-dynamic'
 
 /** bulut kaydı en çok bu kadar (bayt): 25 şehrin süreleri, pul, nazar ve rozetleri birkaç KB tutar */
-// dolu bir kayıt (39 şehir × 25 kural rekoru, istatistik, başarım) ~35 KB; sınır geniş tutulur ki kayıt reddedilmesin
+// dolu bir kayıt (40 şehir × 25 kural rekoru, istatistik, başarım) ~35 KB; sınır geniş tutulur ki kayıt reddedilmesin
 const MAX = 256_000
 
 /** Oturum: çerezden, yoksa başlıktan (x-seksek-oyuncu: <id>.<anahtar>) */

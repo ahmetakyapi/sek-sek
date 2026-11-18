@@ -38,5 +38,6 @@ export const FEATURES: Record<string, { tr: string; en: string }> = {
   tokat: { tr: 'Taşhan, kale halatları, yazma kalıplarının tokmakları, Zile surları', en: 'Taşhan, the castle ropes, the hammering print blocks, the walls of Zile' },
   denizli: { tr: 'Horozlu meydan, Laodikeia sütunları, kaygan travertenler, Hierapolis tiyatrosu', en: 'The rooster square, the columns of Laodikeia, slippery travertine, the theatre of Hierapolis' },
   zonguldak: { tr: 'Kapuz’dan denizin dibine dalış, nefes ve piranalar, maden vagonları, Gökgöl’ün yer altı gölünde Esoli', en: 'A dive to the sea floor at Kapuz, breath and piranhas, mine carts, Esoli in the underground lake of Gökgöl' },
+  mersin: { tr: 'Gelgit: su yükselince yüz, alçalınca kumsaldan yürü; denizdeki Kızkalesi, Cennet ve Cehennem obrukları, Tarsus’ta Kleopatra Kapısı', en: 'The tide: swim when the water rises, walk the sand when it ebbs; Kızkalesi in the sea, the Heaven and Hell sinkholes, Cleopatra’s Gate in Tarsus' },
   agri: { tr: 'Halatlı saray avluları, Meteor Çukuru üstünde teleferik, buzlu yamaç, karşı rüzgâr', en: 'Palace courtyards with ropes, a cable line over the Meteor Crater, an icy slope, a headwind' },
 }

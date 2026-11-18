@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { AIR, CHASE, NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
+import { AIR, CHASE, EMPTY, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -450,5 +450,127 @@ describe('Kovalamaca', () => {
     expect(w.chaser!.state).toBe('wait')
     expect(Math.abs(w.chaser!.x - (w.spawn.x + w.player.w / 2))).toBeLessThan(2)
     expect(CHASE.top).toBeLessThan(PHYS.run)
+  })
+})
+
+describe('gelgit (Mersin)', () => {
+  const { hold, move, period } = TIDE_CYCLE
+  // 3 karo derin gelgit havuzu, altı taş; havuzun dibi 5. satırın üstü
+  const bay = ['            ', ' P          ', '####AAAA####', '####AAAA####', '####AAAA####', '############']
+  const HIGH = 0.5
+  const LOW = hold + move + 0.5
+
+  it('saate bağlı döngü: yüksekte durur, iner, alçakta durur, yükselir', () => {
+    expect(tideFill(0)).toBe(1)
+    expect(tideFill(hold - 0.01)).toBe(1)
+    expect(tideFill(hold + move / 2)).toBeCloseTo(0.5, 5)
+    expect(tideFill(LOW)).toBe(0)
+    expect(tideFill(period - 0.01)).toBeGreaterThan(0.99)
+    expect(tideFill(period + 0.5)).toBe(tideFill(0.5))
+    expect(tidePhase(hold + 0.1).phase).toBe('ebb')
+    expect(tidePhase(LOW).phase).toBe('low')
+    expect(tidePhase(period - 0.1).phase).toBe('flood')
+  })
+
+  it('yüksek suda kareler derin su, alçak suda boş hava; ham karo gelgit kalır', () => {
+    const w = mk(bay)
+    expect(w.hasTide).toBe(true)
+    expect(w.tidePools.length).toBe(1)
+    w.clock = HIGH
+    for (let ty = 2; ty <= 4; ty++) expect(w.tile(5, ty)).toBe(SWIM)
+    w.clock = LOW
+    for (let ty = 2; ty <= 4; ty++) expect(w.tile(5, ty)).toBe(EMPTY)
+    expect(w.isTide(5, 3)).toBe(true)
+    // inerken su yüzü yukarıdan aşağı çekilir: üst kare önce açılır
+    w.clock = hold + move * 0.45
+    expect(w.tile(5, 2)).toBe(EMPTY)
+    expect(w.tile(5, 4)).toBe(SWIM)
+  })
+
+  it('yüksek suda havuza giren yüzer; alçak suda dipte yürür; su yükselince yine yüzer', () => {
+    const w = mk(bay)
+    w.started = true
+    w.clock = HIGH
+    w.player.x = 5 * T
+    w.player.y = 2 * T
+    step(w, 0.4)
+    expect(w.player.swim).toBe(true)
+    // kulaçla yüzeye çıkıp kıyıya sıçrar
+    for (let i = 0; i < 120; i++) w.step(1 / 120, { ...emptyInput(), right: true, jump: true, jumpPressed: i % 20 === 0 })
+    expect(w.player.dead).toBe(false)
+    expect(w.player.x).toBeGreaterThan(8 * T)
+    expect(w.player.y).toBeLessThan(2 * T)
+
+    const v = mk(bay)
+    v.started = true
+    v.clock = LOW
+    v.player.x = 5 * T
+    v.player.y = 3 * T
+    step(v, 0.6)
+    expect(v.player.swim).toBe(false)
+    expect(v.player.grounded).toBe(true)
+    expect(v.player.y + v.player.h).toBe(5 * T)
+    // alçak su biter, su yükselir: dipte duran yüzmeye başlar ve boğulmaz (su altı süresi nefesten kısa)
+    let drown = false
+    for (let i = 0; i < 120 * period; i++) {
+      v.step(1 / 120, emptyInput())
+      if (v.events.some((e) => e.type === 'drown')) drown = true
+      v.events.length = 0
+    }
+    expect(drown).toBe(false)
+    expect(v.player.dead).toBe(false)
+    expect(v.player.air).toBeLessThanOrEqual(AIR.max)
+  })
+
+  it('Ayna Yolu: gelgit yalnız saate bağlı, aynalı harita aynı anda aynı suyu taşır', () => {
+    const w = mk(bay)
+    const m = new World({ ...LEVELS[0], map: bay.map((r) => [...r].reverse().join('')), wind: 0, mirror: true })
+    for (const c of [0.3, hold + 0.6, LOW, period - 0.7]) {
+      w.clock = c
+      m.clock = c
+      for (let ty = 2; ty <= 4; ty++) for (let tx = 4; tx <= 7; tx++) expect(m.tile(w.cols - 1 - tx, ty)).toBe(w.tile(tx, ty))
+    }
+  })
+
+  it('anlık görüntü gelgiti saatle taşır (çözücü geri sarar)', () => {
+    const w = mk(bay)
+    w.clock = LOW
+    const s = snapshot(w)
+    w.clock = HIGH
+    expect(w.tile(5, 3)).toBe(SWIM)
+    restore(w, s)
+    expect(w.tile(5, 3)).toBe(EMPTY)
+  })
+
+  it('co-op eşi de aynı kuralı taşır: yüksek suda yüzer, nefesi azalır; alçak suda yürür', () => {
+    const w = mk(bay)
+    w.enableCoop()
+    w.started = true
+    w.clock = HIGH
+    const q = w.partner!
+    q.x = 5 * T
+    q.y = 3 * T
+    for (let i = 0; i < 60; i++) {
+      w.step(1 / 120, emptyInput())
+      w.stepPartner(1 / 120, emptyInput())
+    }
+    expect(q.swim).toBe(true)
+    expect(q.air).toBeLessThan(AIR.max)
+    w.clock = LOW
+    for (let i = 0; i < 90; i++) {
+      w.step(1 / 120, emptyInput())
+      w.stepPartner(1 / 120, emptyInput())
+    }
+    expect(q.swim).toBe(false)
+    expect(q.grounded).toBe(true)
+    expect(q.air).toBe(AIR.max)
+  })
+
+  it('gelgitin içindeki hatıra havuzun parçası olur (kuru kalmaz)', () => {
+    const w = mk(['            ', ' P          ', '####AAAA####', '####ACAA####', '####AAAA####', '############'])
+    w.clock = HIGH
+    expect(w.tile(5, 3)).toBe(SWIM)
+    w.clock = LOW
+    expect(w.tile(5, 3)).toBe(EMPTY)
   })
 })

@@ -28,6 +28,11 @@ export const SWIM = 17
 /** ritim blokları: saate bağlı, iki takım sırayla belirip kaybolur (`{` önce, `}` sonra) */
 export const RHYTHM_A = 18
 export const RHYTHM_B = 19
+/**
+ * gelgit suyu (A, Mersin): saate bağlı yükselip alçalır. Su altında kalan karesi derin su (`SWIM`: yüzülür, nefes
+ * kuralı geçerli), açıkta kalan karesi boş havadır. tile() bu karoyu o anki hâline çevirir; ham hâli isTide() söyler.
+ */
+export const TIDE = 20
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
@@ -52,6 +57,34 @@ export const STORM = { freq: 0.7 }
  * Belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır: kimse taşın içinde sıkışmaz.
  */
 export const RHYTHM = { half: 1.6, warn: 0.45 }
+/**
+ * Gelgit (A karoları): `period` saniyelik döngü, saatten (aynalı haritada da aynı). Yüksekte `hold` saniye durur,
+ * `move` saniyede iner, alçakta `hold` saniye durur, `move` saniyede yükselir. Değişimden `warn` saniye önce suyun
+ * varacağı çizgide köpük yanıp söner (render). Birbirine değen gelgit kareleri bir havuzdur: havuzun suyu düz durur,
+ * yüksekte en üst karesine dek dolar, alçakta tamamen çekilir (kalıcı su isteniyorsa altına `W` konur).
+ */
+export const TIDE_CYCLE = { period: 8, hold: 2.6, move: 1.4, warn: 0.9 }
+
+/** gelgitin doluluğu (0: alçak, 1: yüksek) verilen saatte; yumuşak (kosinüs) iniş çıkış */
+export function tideFill(clock: number): number {
+  const { period, hold, move } = TIDE_CYCLE
+  const ph = ((clock % period) + period) % period
+  if (ph < hold) return 1
+  if (ph < hold + move) return 0.5 + 0.5 * Math.cos((Math.PI * (ph - hold)) / move)
+  if (ph < hold * 2 + move) return 0
+  return 0.5 - 0.5 * Math.cos((Math.PI * (ph - hold * 2 - move)) / move)
+}
+
+/** gelgitin evresi: yüksek, iniyor, alçak, yükseliyor; `next` o evrenin bitmesine kalan saniye */
+export function tidePhase(clock: number): { phase: 'high' | 'ebb' | 'low' | 'flood'; next: number } {
+  const { period, hold, move } = TIDE_CYCLE
+  const ph = ((clock % period) + period) % period
+  if (ph < hold) return { phase: 'high', next: hold - ph }
+  if (ph < hold + move) return { phase: 'ebb', next: hold + move - ph }
+  if (ph < hold * 2 + move) return { phase: 'low', next: hold * 2 + move - ph }
+  return { phase: 'flood', next: period - ph }
+}
+
 /** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
 export const PERFECT_SPRING = 1.22
 
@@ -377,6 +410,14 @@ export class World {
   /** belirdiği an oyuncunun içinde kalan ritim blokları: oyuncu çıkana dek boş */
   readonly rhythmHold = new Set<number>()
   private rhythmLast = -1
+  /** haritada gelgit suyu var mı */
+  hasTide = false
+  /** gelgit karosunun havuzu (y * cols + x → havuz sırası; -1: gelgit değil) */
+  tideOf: Int16Array = new Int16Array(0)
+  /** havuzlar: en üst karesinin üstü ve en alt karesinin altı (dünya pikseli), sütun aralığı */
+  readonly tidePools: Array<{ top: number; bottom: number; x0: number; x1: number }> = []
+  private tideClock = -1
+  private tideNow = 1
   /** zehirli su karoları (y * cols + x): fizikte öldüren su, çizimde yeşil */
   readonly poison = new Set<number>()
 
@@ -462,6 +503,10 @@ export class World {
             break
           case 'R':
             this.set(tx, ty, CABLE)
+            break
+          case 'A':
+            this.set(tx, ty, TIDE)
+            this.hasTide = true
             break
           case 'W':
           case 'y':
@@ -651,9 +696,14 @@ export class World {
       const tx = Math.floor((b.x + b.w / 2) / T)
       const ty = Math.floor((b.y + b.h / 2) / T)
       if (this.tile(tx, ty) !== EMPTY) continue
-      const wet = [this.tile(tx - 1, ty), this.tile(tx + 1, ty), this.tile(tx, ty - 1), this.tile(tx, ty + 1)].filter((t) => t === SWIM).length
-      if (wet >= 2) this.set(tx, ty, SWIM)
+      const around = [this.raw(tx - 1, ty), this.raw(tx + 1, ty), this.raw(tx, ty - 1), this.raw(tx, ty + 1)]
+      if (around.filter((t) => t === SWIM).length >= 2) this.set(tx, ty, SWIM)
+      else if (around.filter((t) => t === TIDE).length >= 2) {
+        this.set(tx, ty, TIDE)
+        this.hasTide = true
+      }
     }
+    if (this.hasTide) this.buildTidePools()
     if (level.poison) this.poisonPits()
     if (level.crumbleAll) this.crumbleSurfaces()
     this.player = this.freshPlayer(start.x, start.y)
@@ -795,7 +845,72 @@ export class World {
     // tepeye dayanan duvar göğe kadar sürer: üstünden tırmanıp aşılmaz
     if (ty < 0) return this.tiles[tx] === SOLID ? SOLID : EMPTY
     if (ty >= this.rows) return EMPTY
+    const t = this.tiles[ty * this.cols + tx]
+    // gelgit karosu o anki hâlidir: su altındaysa derin su, açıktaysa boşluk
+    if (t === TIDE) return this.tideCovers(tx, ty) ? SWIM : EMPTY
+    return t
+  }
+
+  /** haritadaki ham karo (gelgit karosu TIDE olarak kalır) */
+  raw(tx: number, ty: number): number {
+    if (tx < 0 || tx >= this.cols || ty < 0 || ty >= this.rows) return EMPTY
     return this.tiles[ty * this.cols + tx]
+  }
+
+  isTide(tx: number, ty: number): boolean {
+    return this.raw(tx, ty) === TIDE
+  }
+
+  /** gelgitin şu anki doluluğu (0..1); saat değişmedikçe yeniden hesaplanmaz */
+  get tideFill(): number {
+    if (this.tideClock !== this.clock) {
+      this.tideClock = this.clock
+      this.tideNow = tideFill(this.clock)
+    }
+    return this.tideNow
+  }
+
+  /** havuzun su yüzü (dünya pikseli y); fill verilmezse şu anki doluluk */
+  tideSurface(pool: number, fill = this.tideFill): number {
+    const q = this.tidePools[pool]
+    return q.bottom - (q.bottom - q.top) * fill
+  }
+
+  /** gelgit karesi su altında mı: karenin ortası su yüzünün altındaysa */
+  private tideCovers(tx: number, ty: number): boolean {
+    const pool = this.tideOf[ty * this.cols + tx]
+    if (pool === undefined || pool < 0) return false
+    return ty * T + T / 2 > this.tideSurface(pool)
+  }
+
+  /** birbirine (dört yönden) değen gelgit kareleri bir havuzdur: suyu düz durur */
+  private buildTidePools() {
+    this.tideOf = new Int16Array(this.cols * this.rows).fill(-1)
+    for (let i = 0; i < this.tiles.length; i++) {
+      if (this.tiles[i] !== TIDE || this.tideOf[i] >= 0) continue
+      const id = this.tidePools.length
+      const pool = { top: Infinity, bottom: -Infinity, x0: Infinity, x1: -Infinity }
+      const stack = [i]
+      this.tideOf[i] = id
+      while (stack.length) {
+        const k = stack.pop()!
+        const tx = k % this.cols
+        const ty = Math.floor(k / this.cols)
+        pool.top = Math.min(pool.top, ty * T)
+        pool.bottom = Math.max(pool.bottom, ty * T + T)
+        pool.x0 = Math.min(pool.x0, tx)
+        pool.x1 = Math.max(pool.x1, tx)
+        for (const [nx, ny] of [[tx - 1, ty], [tx + 1, ty], [tx, ty - 1], [tx, ty + 1]]) {
+          if (nx < 0 || ny < 0 || nx >= this.cols || ny >= this.rows) continue
+          const n = ny * this.cols + nx
+          if (this.tiles[n] === TIDE && this.tideOf[n] < 0) {
+            this.tideOf[n] = id
+            stack.push(n)
+          }
+        }
+      }
+      this.tidePools.push(pool)
+    }
   }
 
   isSolid(tx: number, ty: number): boolean {

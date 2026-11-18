@@ -130,6 +130,8 @@ export const SCALES: Record<CityKey, Makam> = {
   denizli: { root: 57, steps: [0,  1,  3,  5,  7,  8,  10,  12], meter: [2,  2,  2,  3], tempo: 0.2 },
   // Hüseyni, Karadeniz madenci türküsü 9/8 ağırlığı (Zonguldak)
   zonguldak: { root: 50, steps: [0,  2,  3,  5,  7,  9,  10,  12], meter: [3,  2,  2,  2], tempo: 0.15 },
+  // Hicaz, Akdeniz kıyısı ve Yörük havası 9/8 (Mersin)
+  mersin: { root: 59, steps: [0,  1,  4,  5,  7,  8,  10,  12], meter: [2,  2,  2,  3], tempo: 0.17 },
   // Hüseyni, dağ havası 9/8 (Ağrı)
   agri: { root: 57, steps: [0,  2,  3,  5,  7,  9,  10,  12], meter: [2,  2,  2,  3], tempo: 0.15 },
 }

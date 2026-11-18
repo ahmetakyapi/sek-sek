@@ -4,7 +4,7 @@
  * verify-levels (geçilebilir mi) ve audit-difficulty (ne kadar hassas oyun istiyor) kullanır.
  */
 import type { LevelDef } from '../game/types'
-import { RHYTHM, RHYTHM_A, RHYTHM_B, World, snapshot, restore, type Snapshot } from '../game/sim'
+import { RHYTHM, RHYTHM_A, RHYTHM_B, TIDE_CYCLE, World, snapshot, restore, type Snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 const DT = 1 / 120
@@ -124,6 +124,13 @@ function rhythmNear(w: World, x: number, y: number) {
   return false
 }
 
+/** oyuncunun yakınında (12 karo yan, 9 karo dikey) gelgit havuzu var mı */
+function tideNear(w: World, x: number, y: number) {
+  const cx = Math.floor(x / 16)
+  const cy = Math.floor(y / 16)
+  return w.tidePools.some((q) => q.x0 - 12 <= cx && cx <= q.x1 + 12 && q.top / 16 - 9 <= cy && cy <= q.bottom / 16 + 9)
+}
+
 function key(s: Snapshot, w: World) {
   const p = s.player
   // sema halkaları ve tokmaklar ortak saate bağlı: konumları yerine saatin evresi yeter
@@ -140,7 +147,14 @@ function key(s: Snapshot, w: World) {
   const boost = p.nitro > 0 ? `n${Math.ceil(p.nitro * 2)}` : ''
   // ritim blokları saate bağlı: yakında ritim bloğu varsa evre (takım + dörtte bir dilim) durumun parçası
   const beat = w.hasRhythm && rhythmNear(w, p.x, p.y) ? `${Math.floor(s.clock / RHYTHM.half) % 2}.${Math.floor(((s.clock % RHYTHM.half) / RHYTHM.half) * 4)}` : ''
-  return [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40), plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, held, boost, beat].join('|')
+  // gelgit saate bağlı: yakında gelgit havuzu varsa döngünün evresi (altıda bir dilim) durumun parçası. Gelgit suyunda
+  // yüzerken konum daha kaba tutulur: havuz geniştir, evreyle çarpılan su durumları aramayı boğmasın
+  const nearTide = w.hasTide && tideNear(w, p.x, p.y)
+  const tide = nearTide ? `t${Math.floor(((s.clock % TIDE_CYCLE.period) / TIDE_CYCLE.period) * 6)}` : ''
+  const coarse = nearTide && p.swim
+  const pos = coarse ? [Math.round(p.x / 12), Math.round(p.y / 8), Math.round(p.vx / 60)] : [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40)]
+  const swim = coarse ? `s${Math.round(p.vy / 120)}` : held
+  return [...pos, plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, swim, boost, beat, tide].join('|')
 }
 
 export interface SolveResult {

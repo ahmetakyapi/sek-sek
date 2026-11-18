@@ -234,3 +234,16 @@ describe('Boss Tasarımcısı', () => {
     expect(BOSS_SPEEDS).toContain(100)
   })
 })
+
+describe('gelgit karosu (A)', () => {
+  it('kodda yer alır, kod gidip gelir ve gelgitli harita çözücüyle biter', () => {
+    const map = SAMPLE_MAP.map((r, y) => (y >= 20 ? r.slice(0, 12) + 'AAAA' + r.slice(16) : r))
+    expect(validateMap(map)).toBeNull()
+    const code = encodeMap(map, 'istanbul')
+    const back = decodeMap(code)
+    expect('error' in back).toBe(false)
+    if (!('error' in back)) expect(back.map).toEqual(map)
+    expect(SYMBOLS).toContain('A')
+    expect(solve(customLevel(map, 'istanbul'), { exitOnly: true, budget: 20000 }).won).toBe(true)
+  })
+})

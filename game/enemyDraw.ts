@@ -1574,6 +1574,23 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     dab(c, -2.1, 3.4, 0.5, 1.2, '#fff0c0')
     dab(c, -1.2, -4.6, 0.8, 0.35, '#fff0c0')
   },
+  // Cezerye: havuçtan pişen amber renkli iki dilim, üstleri hindistan cevizi tozlu; altında yağlı kâğıt
+  mersin: (c) => {
+    poly(c, [-6, 4.6, 5.6, 3.2, 6.2, 5.4, -5.4, 6.4], '#f4ead2', '#cdbf9e')
+    const piece = (x: number, y: number, w: number, h: number) => {
+      shape(c, () => c.roundRect(x, y, w, h, 1.1), '#de7f22', '#9c4a12')
+      if (halo) return
+      // kesik yüzde havuç lifleri ve ceviz içi
+      for (let i = 0; i < 3; i++) dab(c, x + 1.2 + i * (w / 3.2), y + h * 0.6, 0.5, 0.3, '#f4a650')
+      dab(c, x + w * 0.6, y + h * 0.45, 0.65, 0.45, '#8a5226')
+      // üstü: hindistan cevizi tozu
+      dab(c, x + w / 2, y + 0.5, w / 2 - 0.3, 0.75, '#fffaf0')
+      for (let i = 0; i < 4; i++) dab(c, x + 0.8 + i * (w / 4.2), y + 1.4 + (i % 2) * 0.4, 0.35, 0.3, '#fffaf0')
+    }
+    piece(-5, -2.2, 6.2, 6.4)
+    piece(0.6, -5, 5, 8.6)
+    dab(c, -3.6, -1.2, 0.9, 0.4, 'rgba(255,255,255,0.7)', -0.2)
+  },
   // Çay: ince belli bardakta tavşan kanı çay, beyaz tabak, kenarda şeker
   rize: (c) => {
     ell(c, 0, 4.4, 5.4, 1.3, '#f8f6f0', '#c8ccd4')

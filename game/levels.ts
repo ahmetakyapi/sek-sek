@@ -23,6 +23,7 @@ import { road as giresunRoad } from './cities/giresun'
 import { road as tokatRoad } from './cities/tokat'
 import { road as denizliRoad } from './cities/denizli'
 import { road as zonguldakRoad } from './cities/zonguldak'
+import { road as mersinRoad } from './cities/mersin'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { medalsFor } from './medals'
@@ -38,6 +39,7 @@ import type { LevelDef } from './types'
  *  P  başlangıç   F  bayrak (kontrol noktası)   E  çıkış kapısı   C  hatıra (bilgi kartı)
  *  e  yerde dolaşan düşman   f  uçan düşman   ?  tabela (ipucu)
  *  M  yatay hareketli platform, sınırları |   N  dikey hareketli platform, sınırları :
+ *  A  gelgit suyu: saatle dolar (yüzülür) ve çekilir (yürünür); sim.ts TIDE_CYCLE
  *  süs: l fener · t ağaç · k şehrin hayvanı · w pencere · a kemer · o kasa/küp · b bayrak süsü
  */
 
@@ -1113,6 +1115,7 @@ const DECOR_CYCLE: Record<string, string> = {
   giresun: 'tzl',
   tokat: 'zlt',
   denizli: 'lzt',
+  mersin: 'tlz',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2318,6 +2321,40 @@ export const LEVELS: LevelDef[] = [
       'Cehennemağzı: Herakles’in indiği kapı. Duvardan duvara sek, dash ile yukarı çık.',
     ],
     map: roadMap(zonguldakRoad),
+  },
+  {
+    id: 'mersin',
+    city: 'mersin',
+    name: 'Mersin',
+    nickname: 'İçel',
+    plate: 33,
+    subtitle: 'Gelgit, Kale ve Obruk',
+    difficulty: 'Orta',
+    note: 'Defterin bu sayfası tuzlu, kenarları dalgadan kıvrılmış. Mersin’de deniz nefes alır gibi gelir gider: su yükselir, kumsal kaybolur; çekilir, mağaraların ağzı açılır. Bu yolda acele etme, denizi dinle.',
+    npcs: [
+      { name: 'Tantunici Cevdet Usta', look: 'usta', text: 'Sacım kırk yıldır cızırdar, tantunim limonsuz çıkmaz! Üç dilim cezerye kaybettim: biri limandaki yüzen iskelede, biri Kızkalesi’nin damında, biri Cennet obruğunun dibinde kaldı.' },
+      { name: 'Masalcı Nazlı Teyze', look: 'teyze', text: 'Kral, kızını yılandan korumak için denizin ortasına kale yaptırmış. Ama yılan bir üzüm sepetine saklanıp gelmiş! Kalenin damına mı çıkacaksın? Su yükselince yüz, balkona sıçra.' },
+      { name: 'Rehber Emre', look: 'genc', text: 'Cennet’e yüzlerce basamakla inilir, Cehennem’in dibine kimse inemez. Basamakların altındaki karanlık ağza bir bak: eski kilisenin önünde biri bir pul unutmuş.' },
+      { name: 'Çaycı Bülent', look: 'amca', text: 'Kleopatra bu kapıdan geçmiş derler; ben de her sabah buradan geçerim, tepsim elimde! Şelalenin yarlarına duvardan sekerek çık; Aziz Pavlus’un kuyusu yukarıda.' },
+    ],
+    medals: [150, 210, 290],
+    quips: ['Deniz seni geri aldı.', 'Yılan sepette kıkırdadı.', 'Gelgiti kaçırdın.', 'Tantunin soğudu.'],
+    item: 'Cezerye',
+    intro: 'Mersin Limanı’ndan denizdeki Kızkalesi’ne, Silifke’de Cennet ve Cehennem obruklarından Tarsus’ta Kleopatra Kapısı’na. Bu yolda deniz nefes alıp verir: gelgiti izle.',
+    facts: [
+      { title: 'Kızkalesi', text: 'Kıyının birkaç yüz metre açığındaki adacıkta duran Kızkalesi Orta Çağ’dan kalmadır. Efsaneye göre kral, kızını yılandan korumak için bu kaleyi yaptırdı; yılan yine de bir üzüm sepetine saklanıp geldi.' },
+      { title: 'Cennet ve Cehennem', text: 'Silifke’deki Cennet obruğuna yüzlerce basamakla inilir; dibindeki mağaranın ağzında küçük bir kilise durur. Yanındaki Cehennem obruğunun dik duvarlarından inilmez: efsaneye göre Zeus, canavar Tayfun’u buraya hapsetti.' },
+      { title: 'Tarsus', text: 'Tarsus, Aziz Pavlus’un doğduğu kenttir. Kleopatra’nın MÖ 41’de Marcus Antonius’la buluşmaya gelirken Kleopatra Kapısı’ndan geçtiği anlatılır.' },
+    ],
+    secret: { title: 'Yumuktepe', text: 'Şehrin içindeki Yumuktepe Höyüğü’nde dokuz bin yıla yakın yerleşim izi bulundu: Mersin’in altında kat kat köyler ve kaleler uyur.' },
+    hints: [
+      'Mersin’e hoş geldin! Deniz burada nefes alır: su yükselir, sonra çekilir. Önündeki çukurda dene: alçakken yürü, yüksekken yüz.',
+      'Liman havuzu: su yükselince yüz, yüzen iskeleye sıçra. Su çekilince dipten yürü. Köpük çizgisi suyun varacağı yeri gösterir.',
+      'Kızkalesi: alçak suda kalenin altındaki mağaradan yürü, yüksek suda dal. Kalenin damına yüksek suda balkondan çık.',
+      'Cennet ve Cehennem obrukları: Cennet’e basamaklarla in, dipten duvardan sekerek çık. Cehennem’in üstünden atla!',
+      'Tarsus: Kleopatra Kapısı’ndan geç. Şelalenin yarları yüksek: duvardan sekerek tırman.',
+    ],
+    map: roadMap(mersinRoad),
   },
 ]
 

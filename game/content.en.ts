@@ -1276,6 +1276,33 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     ],
     quips: ['You slipped on the travertine.', 'The rooster laughed at you.', 'The towel got wet.', 'The column fell, and so did you.'],
   },
+  mersin: {
+    subtitle: 'Tide, Castle and Sinkhole',
+    item: 'Cezerye',
+    intro: 'From Mersin Harbour to Kızkalesi out at sea, from the Heaven and Hell sinkholes of Silifke to Cleopatra’s Gate in Tarsus. On this road the sea breathes in and out: watch the tide.',
+    note: 'This page of the notebook is salty, its edges curled by the waves. In Mersin the sea comes and goes like a breath: the water rises and the beach disappears; it ebbs and the mouths of the caves open. Do not hurry on this road; listen to the sea.',
+    facts: [
+      { title: 'Kızkalesi', text: 'Kızkalesi, standing on an islet a few hundred metres off the shore, dates from the Middle Ages. Legend says a king built it to keep his daughter safe from a snake; the snake came all the same, hidden in a basket of grapes.' },
+      { title: 'Heaven and Hell', text: 'You go down hundreds of steps into the Heaven sinkhole in Silifke; a small church stands at the mouth of the cave at its bottom. Nobody climbs down the sheer walls of the Hell sinkhole beside it: legend says Zeus imprisoned the monster Typhon there.' },
+      { title: 'Tarsus', text: 'Tarsus is the city where Saint Paul was born. Cleopatra is said to have passed through Cleopatra’s Gate in 41 BC on her way to meet Mark Antony.' },
+    ],
+    secret: { title: 'Yumuktepe', text: 'At the Yumuktepe mound in the middle of the city, traces of nearly nine thousand years of settlement were found: under Mersin, villages and castles sleep layer upon layer.' },
+    hints: [
+      'Welcome to Mersin! Here the sea breathes: the water rises, then ebbs. Try it in the dip ahead: walk when it is low, swim when it is high.',
+      'Harbour basin: when the water rises, swim and leap onto the floating pier. When it ebbs, walk along the bottom. The line of foam shows where the water is heading.',
+      'Kızkalesi: at low tide walk through the sea cave under the castle; at high tide dive. Climb to the castle roof from the balcony at high tide.',
+      'The Heaven and Hell sinkholes: go down into Heaven by the steps and wall-jump your way out. Jump over Hell!',
+      'Tarsus: pass through Cleopatra’s Gate. The cliffs of the waterfall are high: wall-jump your way up.',
+    ],
+    npcs: [
+      { name: 'Master Cevdet, Tantuni Maker', text: 'My griddle has sizzled for forty years, and no tantuni leaves it without lemon! I lost three slices of cezerye: one on the floating pier in the harbour, one on the roof of Kızkalesi, one at the bottom of the Heaven sinkhole.' },
+      { name: 'Auntie Nazlı the Storyteller', text: 'The king had a castle built in the middle of the sea to keep his daughter safe from a snake. But the snake came hidden in a basket of grapes! Want to climb to the castle roof? When the water rises, swim and leap onto the balcony.' },
+      { name: 'Emre the Guide', text: 'You go down into Heaven by hundreds of steps; nobody can reach the bottom of Hell. Take a look into the dark mouth under the steps: someone left a stamp in front of the old church.' },
+      { name: 'Bülent the Tea Seller', text: 'They say Cleopatra passed through this gate; I pass through it every morning too, tray in hand! Wall-jump up the cliffs of the waterfall; Saint Paul’s Well is up there.' },
+    ],
+    quips: ['The sea took you back.', 'The snake giggled in its basket.', 'You missed the tide.', 'Your tantuni went cold.'],
+    nickname: 'İçel',
+  },
   zonguldak: {
     subtitle: 'The Bottom of the Sea, the Depth of the Mine',
     item: 'Miner’s Lamp',

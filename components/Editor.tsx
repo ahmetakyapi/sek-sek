@@ -47,6 +47,7 @@ const TILES: TileDef[] = [
   { sym: 'X', name: 'Çatlak Taş', desc: 'Üstüne basınca az sonra çöker. Aşağı inen yollar için.', key: '8', cat: 'zemin' },
   { sym: '%', name: 'Sahte Duvar', desc: 'Duvar gibi görünür, içinden geçilir: gizli köşeler için.', key: '%', cat: 'zemin' },
   { sym: 'W', name: 'Derin Su (Yüzülür)', desc: 'Yüzülür: zıplama kulaç atar, boğulma yok.', key: 'N', cat: 'zemin' },
+  { sym: 'A', name: 'Gelgit Suyu', desc: 'Sekiz saniyede bir yükselip alçalır: yüksekken yüzülür, alçakken dibinde yürünür. Bitişik karolar tek havuzdur.', key: 'E', cat: 'zemin' },
   { sym: '^', name: 'Diken', desc: 'Değen düşer. Çukurdaysa bir karo gömülü ve en çok iki karo geniş olsun.', key: '3', cat: 'tehlike' },
   { sym: 'v', name: 'Tavan Dikeni', desc: 'Tavandan sarkar; kafasını çarpan düşer.', key: '4', cat: 'tehlike' },
   { sym: '~', name: 'Su', desc: 'Düşülen su: değen son bayraktan yeniden başlar.', key: '5', cat: 'tehlike' },
@@ -616,6 +617,17 @@ function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: number,
       c.fillRect(x, y + 3 * u, s, s - 3 * u)
       c.fillStyle = '#a8eef2'
       c.fillRect(x, y + 3 * u, s, u)
+      break
+    case 'A':
+      // gelgit: yarısı su, yarısı kum (yükselip alçalır)
+      c.fillStyle = '#d9c48f'
+      c.fillRect(x, y, s, s)
+      c.fillStyle = '#3fa9b8'
+      c.fillRect(x, y + 8 * u, s, s - 8 * u)
+      c.fillStyle = '#a8eef2'
+      c.fillRect(x, y + 8 * u, s, u)
+      c.fillRect(x + 2 * u, y + 4 * u, 4 * u, u)
+      c.fillRect(x + 10 * u, y + 4 * u, 4 * u, u)
       break
     case 'b':
       c.fillStyle = look.cream
