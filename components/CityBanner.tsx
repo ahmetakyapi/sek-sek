@@ -1,12 +1,11 @@
 import { createContext, useContext } from 'react'
-import { useLang, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import type { LevelDef } from '@/game/types'
 
 /** Panel başlığı: şehrin piksel sahnesi, posta pulu biçiminde plaka ve şehir adı. */
 export default function CityBanner({ level, index, total, eyebrow, height = 120, short, wide }: { level: LevelDef; index?: number; total?: number; eyebrow?: string; height?: number; short?: number; wide?: number }) {
   const plate = String(level.plate).padStart(2, '0')
   const t = useT()
-  const lang = useLang()
   return (
     // short: yatay telefonda (alçak ekranda) daha basık şerit; giriş kartı kaydırmadan sığsın
     <div
@@ -25,8 +24,8 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120,
       </div>
       <div className="absolute bottom-2 left-6 right-28">
         {eyebrow || index !== undefined ? (
-          <p className="text-[12px] font-bold tracking-[0.16em] text-accent-2 [text-shadow:0_1px_0_#0e0d22]">
-            {eyebrow ?? `${String((index ?? 0) + 1).padStart(2, '0')} / ${String(total ?? 0).padStart(2, '0')} · ${t(level.difficulty).toLocaleUpperCase(lang)}`}
+          <p className="text-[14px] font-semibold text-accent-2 [text-shadow:0_1px_0_#0e0d22]">
+            {eyebrow ?? `${(index ?? 0) + 1} / ${total ?? 0} · ${t(level.difficulty)}`}
           </p>
         ) : null}
         <h2 className="font-display text-4xl leading-none text-cream [text-shadow:0_3px_0_#0e0d22] short:text-2xl">

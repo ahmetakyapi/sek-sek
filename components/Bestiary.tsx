@@ -1,4 +1,5 @@
 'use client'
+import { SectionTitle } from '@/components/ui'
 
 import { useEffect, useState } from 'react'
 import { CITY, CREATURE_NAMES, enemySpecies, rect, type Ctx } from '@/game/art'
@@ -171,7 +172,7 @@ export default function Bestiary({ level, only }: { level: LevelDef; /** canlıl
   if (!list.length) return null
   return (
     <div className={only === 'help' ? 'mt-3' : 'mt-4'}>
-      <p className="text-[12px] font-bold tracking-[0.14em] text-muted">{only === 'help' ? t('YOLDA NE VAR, NE İŞE YARAR') : t('BU ŞEHİRDE')}</p>
+      <SectionTitle title={only === 'help' ? t('Yolda Ne Var') : t('Bu Şehirde')} note={only === 'help' ? t('Ne işe yarar') : t('Dostlar ve düşmanlar')} tone={only === 'help' ? 'var(--color-accent-2)' : 'var(--color-coral)'} />
       <ul className={`mt-1.5 grid ${only === 'help' ? 'gap-1' : 'gap-2 sm:grid-cols-2'}`}>
         {list.map((e) =>
           only === 'help' ? (

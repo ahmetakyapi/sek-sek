@@ -140,7 +140,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
 
   return (
     <div className="grid gap-4">
-      <div className="grid grid-cols-3 gap-1.5" role="tablist" aria-label={t('Sıralama')}>
+      <div className="grid grid-cols-3 gap-1.5" role="tablist" aria-label={t('Sırala')}>
         {TABS.map(([k, label]) => (
           <button key={k} type="button" role="tab" aria-selected={sort === k} onClick={() => setSort(k)} className={`pixel-btn justify-center px-1 py-2 text-[13px] sm:text-sm ${sort === k ? 'primary' : ''}`}>
             {t(label)}
