@@ -119,7 +119,7 @@ interface Rival {
   run: GhostRun
 }
 
-/** Boss Rush: yenilmiş bekçiler arka arkaya; süre ve düşüş birikir */
+/** Boss Rush: yenilmiş boss’lar arka arkaya; süre ve düşüş birikir */
 interface Rush {
   /** boss: yalnız arenalar · maraton: üç şehir baştan sona · tur / aynaTur: ilk defterin bütün şehirleri (speedrun) */
   kind: 'boss' | 'maraton' | 'tur' | 'aynaTur'

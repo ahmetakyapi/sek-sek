@@ -103,13 +103,13 @@ export default function Ending({
                   <Portrait id="memo" className="w-[64px]" />
                 </div>
                 <p className="mt-1 text-[14px] text-cream">Uktun · Memo</p>
-                <p className="mt-8 text-[12px] font-bold tracking-[0.18em] text-gold">{t('MEYDAN BEKÇİLERİ')}</p>
+                <p className="mt-8 text-[12px] font-bold tracking-[0.18em] text-gold">{t('YOLUN BOSS’LARI')}</p>
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-left">
                   {LEVELS.map((l) => (
                     <p key={l.id} className="flex items-center gap-2 text-[13px] text-cream/90">
                       <BossFigure city={l.city} className="h-[26px] w-[30px] shrink-0" />
                       <span className="min-w-0">
-                        <span className="block truncate">{lng === 'en' ? BOSSES[l.city].nameEn : BOSSES[l.city].name}</span>
+                        <span className="block leading-tight">{lng === 'en' ? BOSSES[l.city].nameEn : BOSSES[l.city].name}</span>
                         <span className="block text-[12px] text-muted">{displayName(l)}</span>
                       </span>
                     </p>

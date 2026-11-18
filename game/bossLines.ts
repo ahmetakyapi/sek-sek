@@ -32,7 +32,7 @@ export const BOSS_LINES: Record<CityKey, { wake: [string, string]; tired: [strin
   hatay: { wake: ['Sıcak sıcak geliyorum!', 'Coming in hot!'], tired: ['Soğudum…', 'I have cooled down…'], ouch: ['Peynirim uzadı!', 'My cheese stretched!'] },
   eskisehir: { wake: ['Suyum kaynıyor!', 'My filling is boiling!'], tired: ['Sönüyorum…', 'Going soggy…'], ouch: ['Hamurum yırtıldı!', 'My dough tore!'] },
   erzurum: { wake: ['Çığ geliyoor!', 'Avalaaanche!'], tired: ['Eriyorum…', 'I am melting…'], ouch: ['Kıtlama şekerim!', 'My sugar cube!'] },
-  ardahan: { wake: ['Tısss!', 'Hisss!'], tired: ['Tüylerim döküldü…', 'I am losing feathers…'], ouch: ['Vak!', 'Honk!'] },
+  ardahan: { wake: ['Tısss!', 'Hisss!'], tired: ['Tüylerim döküldü…', 'I am losing feathers…'], ouch: ['Boynum!', 'My neck!'] },
   amasya: { wake: ['Dağı ben deldim!', 'I split the mountain!'], tired: ['Ucum köreldi…', 'My tip has gone blunt…'], ouch: ['Sapım çatladı!', 'My handle cracked!'] },
   mugla: { wake: ['Poyraz geliyor!', 'Here comes the north wind!'], tired: ['Rüzgârım kesildi…', 'I am out of wind…'], ouch: ['Kanadım büküldü!', 'You bent my sail!'] },
   rize: { wake: ['Çay saati geldi!', 'Tea time!'], tired: ['Suyum kaynamıyor…', 'My water won’t boil…'], ouch: ['Musluğum gevşedi!', 'My tap came loose!'] },

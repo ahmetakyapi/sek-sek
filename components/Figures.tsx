@@ -78,7 +78,7 @@ export function HeroFigure({ look, scarf, className = '' }: { look: Look; scarf?
   return <canvas ref={ref} className={className} aria-hidden />
 }
 
-/** Şehrin bekçisi: bölüm kartında küçük, hareketli tanıtım. */
+/** Şehrin boss’u: bölüm kartında küçük, hareketli tanıtım. */
 export function BossFigure({ city, className = '' }: { city: CityKey; className?: string }) {
   const ref = useCanvasLoop(
     (c, w, h, t) => {

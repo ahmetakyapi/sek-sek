@@ -457,17 +457,20 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
   const rule = DAILY_RULES[result.run.rule]
   const fam = FAMILIES[RULE_ART[result.run.rule].family]
   const lv = localize(LEVELS.find((l) => l.id === result.run.levelId)!, lng)
-  const lines: [string, string][] = [
-    [t('Süre'), formatTime(result.timeMs)],
+  // skorun hesabı: cezalar yalnız varsa yazılır; ceza yoksa skor sürenin kendisidir, aynı sayı tekrar edilmez
+  const penalties: [string, string][] = [
     ...(rule.perDeath && result.deaths ? ([[t('{n} düşüş × {s} sn', { n: result.deaths, s: rule.perDeath }), `+${result.deaths * rule.perDeath} sn`]] as [string, string][]) : []),
     ...(rule.perMissing && result.found < 3 ? ([[t('{n} eksik hatıra × {s} sn', { n: 3 - result.found, s: rule.perMissing }), `+${(3 - result.found) * rule.perMissing} sn`]] as [string, string][]) : []),
   ]
-  // koşunun özeti: en iyi, seri (serbest koşuda düşüş) ve hatıra; birkaç denemede bittiyse kaçıncısı
+  const lines: [string, string][] = penalties.length ? [[t('Süre'), formatTime(result.timeMs)], ...penalties] : []
+  const cleanNote = rule.perDeath || rule.perMissing ? t('Cezasız bitirdin: skorun süren kadar.') : t('Bu kuralda ceza yok: skorun süren.')
+  // koşunun özeti: skorla aynı sayıyı yinelemez (rekor bu koşuysa en iyi yerine düşüş yazılır)
   const stats: [string, string][] = [
-    [result.free ? t('Rekorun') : t('En İyin'), formatTime(result.mark.bestMs)],
-    result.free ? [t('Düşüş'), String(result.deaths)] : [t('Gün Serisi'), String(result.mark.streak)],
+    ...(result.best ? [] : ([[result.free ? t('Rekorun') : t('En İyin'), formatTime(result.mark.bestMs)]] as [string, string][])),
+    ...(result.free ? [] : ([[t('Gün Serisi'), String(result.mark.streak)]] as [string, string][])),
+    [t('Düşüş'), String(result.deaths)],
     (result.tries ?? 1) > 1 ? [t('Deneme'), String(result.tries)] : [t('Hatıra'), `${result.found}/3`],
-  ]
+  ].slice(0, 3) as [string, string][]
   return (
     <Overlay dim>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-xl flex-col p-5 sm:p-6 short:grid short:max-w-[min(900px,100%)] short:grid-cols-2 short:gap-5 short:py-3 wide:grid wide:max-w-[min(940px,100%)] wide:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] wide:gap-7">
@@ -489,12 +492,16 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
               <span className="font-display text-5xl leading-none text-cream short:text-4xl">{formatTime(result.scoreMs)}</span>
             </p>
             <div className="mt-2 border-t-2 border-line pt-1.5 text-[13px]">
-              {lines.map(([k, v]) => (
-                <p key={k} className="flex justify-between gap-3 py-0.5 text-cream/85">
-                  <span>{k}</span>
-                  <span>{v}</span>
-                </p>
-              ))}
+              {lines.length ? (
+                lines.map(([k, v]) => (
+                  <p key={k} className="flex justify-between gap-3 py-0.5 text-cream/85">
+                    <span>{k}</span>
+                    <span>{v}</span>
+                  </p>
+                ))
+              ) : (
+                <p className="py-0.5 text-cream/85">{cleanNote}</p>
+              )}
             </div>
           </div>
           <div className="mt-2 grid grid-cols-3 gap-2 short:hidden">

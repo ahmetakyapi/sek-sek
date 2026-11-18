@@ -877,7 +877,7 @@ export const UI_EN: Record<string, string> = {
   "Bütün Yol, Bir Bakışta": "The Whole Road at a Glance",
   "{n} şehir · {found} hatıra · toplam {time}": "{n} cities · {found} keepsakes · total {time}",
   "Türkiye’nin otuz şehrinde bir yol defteri": "A travel notebook across thirty cities of Türkiye",
-  "MEYDAN BEKÇİLERİ": "GUARDIANS OF THE SQUARES",
+  "YOLUN BOSS’LARI": "BOSSES OF THE ROAD",
   "YOLDA TANIŞTIKLARIN": "PEOPLE YOU MET ON THE ROAD",
   "İyi yolculuklar.": "Safe travels.",
   "Ayna Yolu Açıldı": "The Mirror Road Is Open",
@@ -1733,4 +1733,6 @@ export const UI_EN: Record<string, string> = {
   "Kullanıcı Adı": "Username",
   "Şifre": "Password",
   "Bütün yolcular, şehir şehir: süre, düşüş ve hatıra.": "Every traveller, city by city: time, falls and keepsakes.",
+  "Cezasız bitirdin: skorun süren kadar.": "No penalties: your score is your time.",
+  "Bu kuralda ceza yok: skorun süren.": "This rule has no penalties: your score is your time.",
 }

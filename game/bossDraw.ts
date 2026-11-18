@@ -375,7 +375,7 @@ function flame(c: Ctx, x: number, y: number, w: number, h: number, t: number) {
 type Painter = (c: Ctx, b: Boss, mood: Mood, t: number) => void
 
 const PAINT: Record<CityKey, Painter> = {
-  // Adanın Karabatağı: dik duran siyah-yeşil parlak tüylü karabatak, uzun kancalı gaga, sarı gırtlak;
+  // Ada Karabatağı: dik duran siyah-yeşil parlak tüylü karabatak, uzun kancalı gaga, sarı gırtlak;
   // yorulunca ıslak kanatlarını iki yana açıp kurutur, tüylerinden su damlar
   giresun: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
@@ -479,7 +479,7 @@ const PAINT: Record<CityKey, Painter> = {
     eye(c, hx + 0.6, hy - 0.4, 1.8, mood, t, '#d8f0e6')
     aura(c, mood, t, hx - 5, hy - 4, hx + 12, hy - 1)
   },
-  // Kızgın Baskı Kalıbı: ceviz tahtasından oyma yazma kalıbı; tepesinde tutamak, alt yüzü kök boya ve çivitle boyalı;
+  // Yazma Kalıbı: ceviz tahtasından oyma yazma kalıbı; tepesinde tutamak, alt yüzü kök boya ve çivitle boyalı;
   // saldırırken boyası damlar, yorulunca boyası kuruyup solar
   tokat: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
@@ -631,7 +631,7 @@ const PAINT: Record<CityKey, Painter> = {
     eye(c, hx + 0.4, hy - 0.4, 1.7, mood, t)
     aura(c, mood, t, hx - 5, hy - 4, hx + 7.4, hy - 0.6)
   },
-  // Kara Elmas Golemi: kömür bloklarından yontulmuş dev; yer yer parlayan elmas yüzleri, göğsünde madenci lambası gibi
+  // Kara Elmas Devi: kömür bloklarından yontulmuş dev; yer yer parlayan elmas yüzleri, göğsünde madenci lambası gibi
   // tek sarı göz, omzuna saplanmış eğri ray. Öfkelenince damarları kor gibi yanar, lambası öne ışık saçar;
   // yorulunca lambası titrer, üstünden kömür tozu tüter
   zonguldak: (c, b, mood, t) => {
@@ -828,7 +828,7 @@ const PAINT: Record<CityKey, Painter> = {
     dab(c, 6, -8.6, 1.3, 0.8, BLUSH)
     face(c, 0.2, -8.2, 1.8, mood, t, -8.6, -18)
   },
-  // Kafkasör'ün Boğası: kara güreş boğası, kalın boyun, ileri dönük boynuz, boynunda püsküllü boncuk;
+  // Kafkasör Boğası: kara güreş boğası, kalın boyun, ileri dönük boynuz, boynunda püsküllü boncuk;
   // yorulunca boynuzu taşa saplanır
   artvin: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
@@ -898,7 +898,7 @@ const PAINT: Record<CityKey, Painter> = {
     mouth(c, hx + 2.6, hy + 3.6, 1.1, mood, t, CREAM)
     aura(c, mood, t, hx - 4, hy - 6, hx + 6.2, hy + 1.4)
   },
-  // Kızgın Kaz: kabarık gri-beyaz Kars kazı, kalın turuncu gaga, kanat uçları koyu çizgili; yorulunca tüyleri kabarır
+  // Kars Kazı: kabarık gri-beyaz Kars kazı, kalın turuncu gaga, kanat uçları koyu çizgili; yorulunca tüyleri kabarır
   kars: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
     const out = beat(mood)
@@ -948,7 +948,7 @@ const PAINT: Record<CityKey, Painter> = {
     eye(c, hx + 0.2, hy - 0.6, 1.9, mood, t)
     aura(c, mood, t, hx - 5, hy - 4, hx + 9, hy - 0.6)
   },
-  // Nemrut'un Lav Taşı: köşeli bazalt kaya, çatlaklarından kor ışık; yorulunca soğuyup kararır, tüter
+  // Nemrut Lav Taşı: köşeli bazalt kaya, çatlaklarından kor ışık; yorulunca soğuyup kararır, tüter
   bitlis: (c, b, mood, t) => {
     const out = beat(mood)
     const cool = out ? 1 : 0
@@ -1006,7 +1006,7 @@ const PAINT: Record<CityKey, Painter> = {
     aura(c, mood, t, -8, -8, 9.4, 0.4, -5.4)
     c.restore()
   },
-  // Koca Kartopu: dev kartopu, tepesinde buz kristalleri, buzdan kalın kaşlar; yorulunca erir, damlar
+  // Ağrı Kartopu: dev kartopu, tepesinde buz kristalleri, buzdan kalın kaşlar; yorulunca erir, damlar
   agri: (c, b, mood, t) => {
     const out = beat(mood)
     const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 13) * b.dir : 0
@@ -1076,7 +1076,7 @@ const PAINT: Record<CityKey, Painter> = {
     dab(c, -7.6, -9.6, 1.6, 1, BLUSH)
     face(c, 1, -8.4, 2.6, mood, t, -10, -22)
   },
-  // Simit Hırsızı Martı: hırsız maskesi, gagasında susamlı simit; yorulunca simidi düşürür
+  // Galata Martısı: hırsız maskesi, gagasında susamlı simit; yorulunca simidi düşürür
   istanbul: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
     const flap = air ? Math.sin(t * 16) * 6 : 0
@@ -1200,7 +1200,7 @@ const PAINT: Record<CityKey, Painter> = {
     } else mouth(c, 15.4, -24.6, 1.5, mood, t)
     aura(c, mood, t, 6, -33.4, 18.8, -27.8)
   },
-  // Dev Karpuz: çizgili yeşil kabuk, karpuz dilimi gülüşü, festival birincilik rozeti; yorulunca çatlar
+  // Dicle Karpuzu: çizgili yeşil kabuk, karpuz dilimi gülüşü, festival birincilik rozeti; yorulunca çatlar
   diyarbakir: (c, b, mood, t) => {
     const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 12) * b.dir : 0
     const air = b.y < b.floor - b.h - 2
@@ -1476,7 +1476,7 @@ const PAINT: Record<CityKey, Painter> = {
     aura(c, mood, t, -8.4, -26.6, 2.6, -11.6, -2.6)
     c.restore()
   },
-  // Dikilitaş Bekçisi: T biçimli kireçtaşı, kabartma kollar ve tilki; tepesinde bir kelaynak tüner
+  // Göbeklitepe Dikilitaşı: T biçimli kireçtaşı, kabartma kollar ve tilki; tepesinde bir kelaynak tüner
   sanliurfa: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
     const lean = b.state === 'warn' ? Math.sin(t * 28) * 0.03 : 0
@@ -1518,7 +1518,7 @@ const PAINT: Record<CityKey, Painter> = {
     dab(c, -3.3, -34.3 + by, 0.4, 0.4, INK)
     c.restore()
   },
-  // Göl Canavarı: turkuaz yılan boyun; kafasında Van kahvaltısı tabağı, sırtında ince belli çay bardağı
+  // Van Gölü Canavarı: turkuaz yılan boyun; kafasında Van kahvaltısı tabağı, sırtında ince belli çay bardağı
   van: (c, _b, mood, t) => {
     const w = Math.sin(t * 5) * 1.2
     const out = beat(mood)
@@ -1688,7 +1688,7 @@ const PAINT: Record<CityKey, Painter> = {
     stroke(c, [-4.5, -1.4, 0, -0.6, 4.5, -1.4], 1.3, '#d83c36', false)
     c.restore()
   },
-  // Evrak Canavarı: dosya yığını; memur gözlüğü, kravat, mühür izleri, havada uçuşan kâğıtlar
+  // Bakanlık Dosyası: dosya yığını; memur gözlüğü, kravat, mühür izleri, havada uçuşan kâğıtlar
   ankara: (c, b, mood, t) => {
     const out = beat(mood)
     const sheet = (x: number, y: number, rot: number) => {
@@ -1754,7 +1754,7 @@ const PAINT: Record<CityKey, Painter> = {
       poly(c, [10.6, -15 + lift, 16.6, -15 + lift, 16.6, -13 + lift, 10.6, -13 + lift], '#d83c36')
     }
   },
-  // Dev Topaç: ağaç gövde, çini şerit, demir uç; başında sikke, kolları semazen gibi açık
+  // Semazen Topacı: ağaç gövde, çini şerit, demir uç; başında sikke, kolları semazen gibi açık
   konya: (c, b, mood, t) => {
     const out = beat(mood)
     const wob = mood === 'dizzy' ? Math.sin(t * 5) * 0.22 : b.state === 'attack' ? Math.sin(t * 40) * 0.05 : 0
@@ -1829,7 +1829,7 @@ const PAINT: Record<CityKey, Painter> = {
       }
     }
   },
-  // Kaçak Balon: çizgili yamalı kubbe, altında ateş; sepette fotoğraf çeken şaşkın bir turist, kopmuş halat
+  // Kapadokya Balonu: çizgili yamalı kubbe, altında ateş; sepette fotoğraf çeken şaşkın bir turist, kopmuş halat
   nevsehir: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
     const out = beat(mood)
@@ -1894,7 +1894,7 @@ const PAINT: Record<CityKey, Painter> = {
     dab(c, -6, -15.4 + fy, 1.6, 1, 'rgba(255,220,200,0.5)')
     face(c, 1.8, -14 + fy, 2.2, mood, t, -8, -27)
   },
-  // Acı Biber: kırmızı gövde, yeşil sap; işarette ağzından alev çıkar, dili yanınca şalgama sarılır
+  // Adana Biberi: kırmızı gövde, yeşil sap; işarette ağzından alev çıkar, dili yanınca şalgama sarılır
   adana: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
     if (!air) feet(c, 3.4, '#7a2a1e')
@@ -1976,7 +1976,7 @@ const PAINT: Record<CityKey, Painter> = {
       }
     } else if (!mad(mood)) stroke(c, [7.4, -11, 10.6, -8.6, 8.6, -6.4], 1.4, '#c82a20')
   },
-  // Fıstık Hırsızı: maskeli fare; yamalı çuvalından fıstık dökülür, elinde çıtlamış bir fıstık
+  // Fıstık Faresi: maskeli fare; yamalı çuvalından fıstık dökülür, elinde çıtlamış bir fıstık
   gaziantep: (c, b, mood, t) => {
     const run = b.state === 'attack' && b.move === 'charge' ? Math.sin(t * 26) * 1.6 : 0
     const out = beat(mood)
@@ -2026,7 +2026,7 @@ const PAINT: Record<CityKey, Painter> = {
       nut(c, 12.4, -4.4, 2.1, -0.3)
     }
   },
-  // Şahmaran'ın Sınavı: taçlı, uzun saçlı, küpeli; kuyruğunun ucunda ikinci bir yılan başı, çatal dili
+  // Şahmaran: taçlı, uzun saçlı, küpeli; kuyruğunun ucunda ikinci bir yılan başı, çatal dili
   mardin: (c, b, mood, t) => {
     const sway = Math.sin(t * 3) * 1.6
     const out = beat(mood)
@@ -2093,7 +2093,7 @@ const PAINT: Record<CityKey, Painter> = {
     aura(c, mood, t, -4.6 + sway, -29, 4.4 + sway, -19.4, -1 + sway)
     if (b.state === 'warn' && b.move === 'throw') ell(c, 10 + sway, -15, 2, 2, '#58d0e0', '#2a8a9a')
   },
-  // Sepetteki Yılan (Kızkalesi efsanesi): hasır meyve sepetinden S çizerek yükselen yeşil yılan, sarı karın,
+  // Kızkalesi Yılanı (Kızkalesi efsanesi): hasır meyve sepetinden S çizerek yükselen yeşil yılan, sarı karın,
   // sepette üzüm salkımı ve portakal. Saldırırken boynunu öne atar, yorulunca sepetin kenarına sarkar
   mersin: (c, b, mood, t) => {
     const lunge = b.state === 'attack' ? 3 : 0
@@ -2157,7 +2157,7 @@ const PAINT: Record<CityKey, Painter> = {
     ell(c, 0, -9.2, 10.8, 1.3, '#e8c07a', '#a87a3a')
     if (b.state === 'warn' && b.move === 'throw') ell(c, hx + 6, hy - 3, 1.6, 1.6, '#7a3a8a', '#4e2060')
   },
-  // Dev Kayısı: turuncu, çilli, tek dişli gülüş; çevresinde bir arı döner
+  // Malatya Kayısısı: turuncu, çilli, tek dişli gülüş; çevresinde bir arı döner
   malatya: (c, b, mood, t) => {
     const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 11) * b.dir : 0
     const air = b.y < b.floor - b.h - 2
@@ -2375,7 +2375,7 @@ const PAINT: Record<CityKey, Painter> = {
     aura(c, mood, t, 0.6, -10.6, 13.6, -1.4)
     c.restore()
   },
-  // Ayaz Dede: kardan gövde, buzdan sakal, saçaklı mavi külah, çizgili atkı, kırmızı eldiven, donmuş havuç burun
+  // Ayaz Ata: kardan gövde, buzdan sakal, saçaklı mavi külah, çizgili atkı, kırmızı eldiven, donmuş havuç burun
   sivas: (c, b, mood, t) => {
     const slide = b.state === 'attack' && b.move === 'charge'
     const out = beat(mood)
@@ -2429,20 +2429,21 @@ const PAINT: Record<CityKey, Painter> = {
       fine(() => ell(c, 13.6, out ? -4 : -9, 1.8, 1.8, '#d83c36', '#9e2430'))
     }
   },
-  // Dev Kaz: beyaz gövde, uzun boyun; ponponlu bere, uçuşan atkı, tıslarken dişli gaga
+  // Çıldır Kuğusu: bembeyaz gövde, S kıvrımlı uzun boyun, turuncu gaga ve kökünde kara yumru, kara ayaklar;
+  // donmuş gölün soğuğuna ponponlu bere ve atkı. Tıslarken gagası açılır
   ardahan: (c, b, mood, t) => {
     const air = b.y < b.floor - b.h - 2
     const flap = air ? Math.sin(t * 15) * 5 : 0
     const run = b.state === 'attack' && !air ? Math.sin(t * 24) * 1.6 : 0
-    if (!air) feet(c, 3.6, '#f08a3a', run)
+    if (!air) feet(c, 3.6, '#3a3a42', run)
     const low = b.state === 'attack' && !air ? 5 : 0
     const hx = 10 + low
-    const hy = -23 + low * 1.4
+    const hy = -26 + low * 1.4
     // kuyruk tüyleri
     poly(c, [-11, -10, -16, -14.6, -13.6, -9, -16.4, -8.6, -11.6, -6], '#f8f6f0', '#c8ccd2')
     ell(c, -2, -9, 10.6, 7.4, '#f8f6f0', '#c8ccd2')
     poly(c, [-6, -11, -14, -15 - flap, -2, -5], '#e2e4e8', '#a8aeb8')
-    stroke(c, [5, -12, 8 + low, -19 + low, 9 + low, -22 + low * 1.4], 4.6, '#f8f6f0')
+    stroke(c, [5, -12, 9.4 + low * 0.6, -16 + low, 6.8 + low, -21 + low * 1.2, 9 + low, -25 + low * 1.4], 4.4, '#f8f6f0')
     // atkı
     const fl = Math.sin(t * 9) * 1.2
     stroke(c, [4.6, -14.4, 2.4 + fl * 0.5, -10.4, 3 + fl, -7.4], 2, '#3a7ac8')
@@ -2459,6 +2460,9 @@ const PAINT: Record<CityKey, Painter> = {
     })
     poly(c, [hx + 2.6, hy - 1.8, hx + 8.6, hy - 0.2, hx + 2.6, hy + 0.8], '#f08a3a', '#c05e1c')
     if (open) fine(() => poly(c, [hx + 3.4, hy + 0.5, hx + 4, hy + 1.5, hx + 4.6, hy + 0.3, hx + 5.2, hy + 1.2, hx + 5.8, hy + 0.1, hx + 6.4, hy + 0.9, hx + 7, hy - 0.2], '#fffaf0'))
+    // gaga kökündeki kara yumru ve göze uzanan kara çizgi: kuğunun imzası
+    ell(c, hx + 3, hy - 1.6, 1.5, 1.3, '#26262c')
+    fine(() => stroke(c, [hx + 1.6, hy - 0.4, hx + 3, hy - 0.6], 1.2, '#26262c', false))
     eye(c, hx + 0.8, hy - 0.6, 2, mood, t)
     // ponponlu bere
     blob(
@@ -2805,7 +2809,7 @@ const PAINT: Record<CityKey, Painter> = {
       })
     aura(c, mood, t, 9.6, -24, 5.6, -12.4, -2.4)
   },
-  // Dev Mantı: dört köşesi tepede büzülmüş hamur bohçası; sırtında sarımsaklı yoğurt, üstünde pul biberli tereyağı
+  // Kayseri Mantısı: dört köşesi tepede büzülmüş hamur bohçası; sırtında sarımsaklı yoğurt, üstünde pul biberli tereyağı
   kayseri: (c, b, mood, t) => {
     const roll = b.state === 'attack' && b.move === 'charge' ? (b.x / 11) * b.dir : 0
     const air = b.y < b.floor - b.h - 2
@@ -2912,7 +2916,7 @@ const PAINT: Record<CityKey, Painter> = {
       dab(c, 12.2, -17.6, 0.6, 0.5, '#a8201a')
     } else stroke(c, [9.6, -8, 12.4, out ? -4 : -6.6, 13.2, out ? -2.6 : -9], 2.6, '#ecd2a0')
   },
-  // Kızgın Künefe Tepsisi: kulplu bakır tepside tel kadayıf; üstünde fıstık, şerbet parıltısı, buhar; soğuyunca solar
+  // Künefe Tepsisi: kulplu bakır tepside tel kadayıf; üstünde fıstık, şerbet parıltısı, buhar; soğuyunca solar
   hatay: (c, b, mood, t) => {
     const spin = b.state === 'attack' && b.move === 'charge'
     const air = b.y < b.floor - b.h - 2
@@ -3043,7 +3047,7 @@ const PAINT: Record<CityKey, Painter> = {
       c.stroke()
     }
   },
-  // Dev Çibörek: yarım ay hamur, tırtıklı çatal izli kenar, kabarcıklı altın kabuk; kızgın yağdan fırlar, sönünce yumuşar
+  // Tatar Çiböreği: yarım ay hamur, tırtıklı çatal izli kenar, kabarcıklı altın kabuk; kızgın yağdan fırlar, sönünce yumuşar
   eskisehir: (c, b, mood, t) => {
     const dash = b.state === 'attack' && b.move === 'charge'
     const air = b.y < b.floor - b.h - 2
