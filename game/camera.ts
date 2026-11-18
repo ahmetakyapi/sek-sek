@@ -5,7 +5,7 @@
  * saniyede aynı yere varır; sarsıntı her karede rastgele sayı çekmez (yüksek Hz'de titreme olur), zamanla
  * dalgalanır. Yeni kamera davranışı eklerken bu dosyaya ekle ve testi genişlet.
  */
-import { NITRO, ONEWAY, PHYS, SPIKE_UP, SWIM, WATER, type World } from './sim'
+import { NITRO, ONEWAY, PHYS, SKY_ROWS, SPIKE_UP, SWIM, WATER, type World } from './sim'
 import { T } from './types'
 
 export const CAM = {
@@ -243,7 +243,8 @@ export function bossFrame(w: World, vw: number, vh: number): [number, number] | 
 export function camYRange(lh: number, vw: number, vh: number): [number, number] {
   const portrait = vh > vw * 1.25
   const hi = portrait ? lh - vh * 0.66 : lh - vh
-  const lo = Math.min(0, lh - vh, hi)
+  // haritanın üstündeki gök payı da görünebilir: tepeye tırmanan oyuncu kadrajdan çıkmaz, tepeye dayanan duvarın sürdüğü görünür
+  const lo = Math.min(-SKY_ROWS * T, lh - vh, hi)
   return [lo, Math.max(lo, hi)]
 }
 

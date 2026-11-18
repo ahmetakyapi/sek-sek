@@ -4,7 +4,7 @@ import { drawChaseDog, drawEnemy, drawFriend, drawKeepsake, drawThing } from './
 import { CHARACTERS, type CharacterDef } from './characters'
 import type { Boss } from './boss'
 import { drawBoss } from './bossDraw'
-import { INK, LOOKS, POSES, airPose, climbPose, drawHero, gait, handPos, lerpPose, type Look, type Pose } from './heroDraw'
+import { INK, LOOKS, POSES, airPose, climbPose, drawHero, gait, handPos, lerpPose, swimStroke, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
@@ -431,9 +431,16 @@ export class Renderer {
         else this.burst(p.x + p.w / 2, p.y + 4, 5, 'rgba(235,252,255,0.8)', 30, 1)
         break
       }
+      case 'breath':
+        // nefes azalıyor: ağızdan kabarcık kaçar, gösterge bir kez nabız atar
+        this.breathPulse = 1
+        this.burst(p.x + p.w / 2 + p.facing * 4, p.y + 3, 3 + (3 - e.left) * 2, 'rgba(235,252,255,0.9)', 34, 1)
+        break
       case 'drown':
-        this.burst(p.x + p.w / 2, p.y, 10, '#bfefff', 60, 1)
-        this.pop(p.x + p.w / 2, p.y - 10, this.lang === 'en' ? 'Out of breath!' : 'Nefes bitti!', '#bfefff', true)
+        // nefes bitti: büyük kabarcık bulutu ve açık bir söz (düşüşten ayrı anlaşılsın)
+        this.burst(p.x + p.w / 2, p.y + 2, 22, '#d8f6ff', 80, 1.4)
+        this.flash = 0.12
+        this.pop(p.x + p.w / 2, p.y - 12, this.lang === 'en' ? 'Out of Breath!' : 'Nefesin Bitti!', '#bfefff', true)
         break
       case 'respawn': {
         // uzaktan doğuşta kamera bölümü boydan boya taramaz: yeni yere sıçrar (yakınsa yumuşakça kayar)
@@ -3764,36 +3771,89 @@ export class Renderer {
     }
   }
 
-  /** Nefes göstergesi: derin suda başın üstünde altı kabarcık; azaldıkça söner, son saniyelerde kızarır ve titrer */
+  /** nefes uyarısında bir kez atan nabız (1 → 0) */
+  private breathPulse = 0
+
+  /**
+   * Nefes göstergesi: derin suda başın üstünde kabarcık simgeli bir çubuk; nefes azaldıkça boşalır. Son 2,5 saniyede
+   * kızarır, yanıp söner, kabarcığın içinde kalan saniye yazar ve ekranın kenarı koyu maviyle nabız gibi atar.
+   * Altı küçük boncuk telefonda okunmuyordu: boğulma "neden öldüm" diye şaşırtıyordu.
+   */
   private drawBreath(w: World, cx: number, cy: number) {
     const c = this.ctx
     const sc = this.scale
+    this.breathPulse = Math.max(0, this.breathPulse - this.frameDt * 2.5)
     for (const p of [w.player, w.partner]) {
       if (!p || p.dead || p.air >= AIR.max) continue
-      const n = 6
-      const left = Math.ceil((p.air / AIR.max) * n)
+      const frac = Math.max(0, p.air / AIR.max)
       const warn = p.air < AIR.warn
-      const shake = warn ? Math.sin(this.t * 30) * sc * 0.6 : 0
-      const x0 = (p.x + p.w / 2 - cx) * sc - ((n - 1) * 5 * sc) / 2 + shake
-      const y = (p.y - 14 - cy) * sc
+      const blink = warn && Math.sin(this.t * 14) > 0
+      const r = 4.2 * sc
+      const bw = 20 * sc
+      const bh = 4.6 * sc
+      const mx = (p.x + p.w / 2 - cx) * sc
+      const my = (p.y - 17 - cy) * sc
+      const k = warn ? 1.08 + Math.sin(this.t * 10) * 0.05 + this.breathPulse * 0.25 : 1 + this.breathPulse * 0.15
+      const lw = Math.max(1.5, sc * 0.75)
       c.save()
-      c.lineWidth = Math.max(1.5, sc * 0.7)
+      c.translate(mx, my)
+      c.scale(k, k)
+      const x0 = -(bw + r * 2 + sc) / 2
+      // çubuk: koyu yuva, içinde dolum
+      c.lineWidth = lw
       c.strokeStyle = '#120f1a'
-      for (let i = 0; i < n; i++) {
-        const on = i < left
+      c.fillStyle = 'rgba(18,15,26,0.78)'
+      c.beginPath()
+      c.roundRect(x0 + r * 1.4, -bh / 2, bw + r * 0.6, bh, bh / 2)
+      c.fill()
+      c.stroke()
+      const inner = (bw - sc) * frac
+      if (inner > 0.5) {
+        c.fillStyle = warn ? (blink ? '#ffb0a4' : '#ff5f52') : frac < 0.6 ? '#ffd36a' : '#8fe8ff'
         c.beginPath()
-        c.arc(x0 + i * 5 * sc, y, sc * (on ? 2 : 1.3), 0, Math.PI * 2)
-        c.fillStyle = on ? (warn ? '#ff7a6a' : '#bfefff') : 'rgba(191,239,255,0.25)'
+        c.roundRect(x0 + r * 2 + sc * 0.2, -bh / 2 + sc * 0.9, inner, bh - sc * 1.8, (bh - sc * 1.8) / 2)
         c.fill()
-        if (on) c.stroke()
-        if (on && !warn) {
-          c.fillStyle = 'rgba(255,255,255,0.85)'
-          c.beginPath()
-          c.arc(x0 + i * 5 * sc - sc * 0.6, y - sc * 0.6, sc * 0.55, 0, Math.PI * 2)
-          c.fill()
-        }
+      }
+      // kabarcık simgesi: son saniyelerde içinde kalan saniye
+      c.beginPath()
+      c.arc(x0 + r, 0, r, 0, Math.PI * 2)
+      c.fillStyle = warn ? (blink ? '#ffd4cc' : '#ff8a7c') : '#cdf3ff'
+      c.fill()
+      c.stroke()
+      if (warn) {
+        c.fillStyle = '#120f1a'
+        c.font = `800 ${Math.round(r * 1.5)}px ${this.popFont()}`
+        c.textAlign = 'center'
+        c.textBaseline = 'middle'
+        c.fillText(String(Math.max(1, Math.ceil(p.air))), x0 + r, r * 0.08)
+      } else {
+        c.fillStyle = 'rgba(255,255,255,0.9)'
+        c.beginPath()
+        c.arc(x0 + r * 0.7, -r * 0.35, r * 0.28, 0, Math.PI * 2)
+        c.fill()
       }
       c.restore()
+      // ekranın kenarı: nefes azaldıkça koyulaşan, nabız gibi atan mavi (yalnız 1. oyuncu; dört ince şerit, tam ekran katman değil)
+      if (warn && p === w.player) {
+        const a = (0.25 + (1 - p.air / AIR.warn) * 0.45) * (0.7 + 0.3 * Math.sin(this.t * 7)) + this.breathPulse * 0.15
+        const W = this.canvas.width
+        const H = this.canvas.height
+        const d = Math.min(W, H) * 0.16
+        const edge = (x: number, y: number, ww: number, hh: number, gx0: number, gy0: number, gx1: number, gy1: number) => {
+          const g = c.createLinearGradient(gx0, gy0, gx1, gy1)
+          g.addColorStop(0, `rgba(8,22,58,${a.toFixed(3)})`)
+          g.addColorStop(1, 'rgba(8,22,58,0)')
+          c.fillStyle = g
+          c.fillRect(x, y, ww, hh)
+        }
+        c.save()
+        c.setTransform(1, 0, 0, 1, 0, 0)
+        edge(0, 0, W, d, 0, 0, 0, d)
+        edge(0, H - d, W, d, 0, H, 0, H - d)
+        edge(0, 0, d, H, 0, 0, d, 0)
+        edge(W - d, 0, d, H, W, 0, W - d, 0)
+        c.restore()
+      }
     }
   }
 
@@ -3820,7 +3880,7 @@ export class Renderer {
   }
 
   /** asılma ve yüzme pozlarının evresi (oyuncu başına): yalnız hareket ederken ilerler */
-  private holdPhase = new WeakMap<Player, { x: number; y: number; ph: number }>()
+  private holdPhase = new WeakMap<Player, { x: number; y: number; ph: number; rot: number }>()
 
   /**
    * Halatta, teleferikte ve suda poz. Teleferikte eller tam tele oturur (karakter pozun el yüksekliği kadar aşağı çizilir),
@@ -3833,7 +3893,7 @@ export class Renderer {
     const under = p.swim && this.world?.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + 1) / T)) === SWIM
     if (!p.hang && !(p.swim && (!p.grounded || under))) return null
     let st = this.holdPhase.get(p)
-    if (!st) this.holdPhase.set(p, (st = { x: p.x, y: p.y, ph: 0 }))
+    if (!st) this.holdPhase.set(p, (st = { x: p.x, y: p.y, ph: 0, rot: 1.35 }))
     const moved = Math.hypot(p.x - st.x, p.y - st.y) > 0.05
     st.x = p.x
     st.y = p.y
@@ -3873,21 +3933,31 @@ export class Renderer {
       return { pose, rot: 0, pivot: 0, dy, dx: -p.facing * 7, moving: moved }
     }
     // su
-    const horizontal = Math.abs(p.vx) > 22
-    st.ph += dt * (horizontal ? 6.5 : 3.2)
-    const ph = st.ph
-    if (horizontal) {
-      // serbest stil: kollar karşıt evrede tam tur döner, bacaklar hızlı çırpar; gövde neredeyse yatay
-      const a = (ph * 180) / Math.PI
-      const pose: Pose = { arms: [[a % 360, (a % 360) - 25], [(a + 180) % 360, ((a + 180) % 360) - 25]], legs: [[-6 + Math.sin(ph * 2.2) * 16, 10], [6 - Math.sin(ph * 2.2) * 16, 10]], hair: 1.1, lift: 0.3 }
-      return { pose, rot: 1.3 + Math.sin(ph) * 0.06, pivot: size * 0.29, dy: -2 + Math.sin(ph * 2) * 0.8, moving: true }
+    const speed = Math.hypot(p.vx, p.vy)
+    const stroking = Math.abs(p.vx) > 22 || (speed > 50 && p.vy > 0)
+    if (stroking) {
+      // Kurbağalama (yan profil): çekiş → toplanma → tekme → süzülme. Kollar öne uzanır, yanlara açılıp göğse çeker;
+      // dizler toplanır ve tekmeyle düzleşir. Döngü ~1,4 sn, hızlandıkça sıklaşır. Gövde gidiş yönüne yumuşakça döner
+      // (yatay ~66°: yüz dibe değil ileri bakar; dalarken daha dik, yüzeye çıkarken daha yatık); kulaçla gelen ani hız gövdeyi titretmez.
+      st.ph += dt * (3.6 + Math.min(1.6, Math.abs(p.vx) / 90))
+      const pose = swimStroke((st.ph / (Math.PI * 2)) % 1)
+      const dive = Math.atan2(p.vy, Math.max(30, Math.abs(p.vx)))
+      const target = Math.max(0.62, Math.min(1.95, 1.16 + dive * 0.55))
+      st.rot += (target - st.rot) * (1 - Math.pow(0.02, dt))
+      const surge = Math.sin(st.ph) * 0.05
+      return { pose, rot: st.rot + surge, pivot: size * 0.29, dy: -2 + Math.sin(st.ph) * 0.6, moving: true }
     }
-    // suda durma: dik, kollar yanlarda suyu iter, bacaklar bisiklet çevirir; kulaçta (yükselirken) kollar aşağı iter
+    st.rot = 1.35
+    st.ph += dt * 3.2
+    const ph = st.ph
+    // suda durma (yerinde kalma): dik, kollar önde yatay kürek çeker (sculling), bacaklar sırayla çırpar (eggbeater);
+    // kulaçta (yükselirken) kollar aşağı iter, bacaklar birlikte vurur
     const up = p.vy < -60
     const k = Math.sin(ph)
+    const k2 = Math.sin(ph + 1.4)
     const pose: Pose = up
-      ? { arms: [[-30, -10], [30, 10]], legs: [[-10, 8], [10, 8]], hair: 0.4, lift: -0.6 }
-      : { arms: [[95 + k * 25, 70 + k * 25], [-95 - k * 25, -70 - k * 25]], legs: [[-18 + k * 22, 40], [18 - k * 22, 40]], hair: 0.7, lift: 0.4 }
+      ? { arms: [[-38, -16], [34, 14]], legs: [[-12, 18], [14, 22]], hair: 0.5, lift: -0.7, tilt: 0.06 }
+      : { arms: [[64 + k * 16, 92 + k * 26], [-58 - k * 16, -86 - k * 26]], legs: [[22 + k * 20, 62 + k2 * 22], [6 - k * 20, 56 - k2 * 22]], hair: 0.55, lift: 0.35, tilt: 0.05 }
     // su üstünde hafifçe iner kalkar (yüzüyormuş gibi)
     return { pose, rot: 0, pivot: 0, dy: 2 + Math.sin(this.t * 2.6 + p.x * 0.05) * 1.3, moving: true }
   }
@@ -4507,3 +4577,4 @@ function tideHash(a: number, b: number) {
   h = Math.imul(h ^ (h >>> 13), 1274126177)
   return (h ^ (h >>> 16)) >>> 0
 }
+

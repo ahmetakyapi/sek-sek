@@ -95,6 +95,8 @@ export type GameEvent =
   | { type: 'land' }
   | { type: 'death'; x: number; y: number }
   | { type: 'respawn' }
+  /** derin suda nefes azalıyor: kalan saniye (3, 2, 1) */
+  | { type: 'breath'; left: number }
   /** derin suda nefes bitti */
   | { type: 'drown' }
   | { type: 'checkpoint'; index: number }

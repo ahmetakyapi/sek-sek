@@ -8,12 +8,17 @@ type Kind = 'jump' | 'dash'
 
 /**
  * Sol yarıda yüzen joystick, sağda DASH ve ZIPLA.
- * Tuşların dokunma alanı görünen dairelerden geniştir; kaçırılan basış olmasın.
+ * - Joystick başparmağın indiği yerde açılır; parmak çemberin dışına taşınca merkez peşinden gelir (yön değiştirmek için
+ *   parmağı geri taşımak gerekmez). Dört yön gösterilir: halat, yüzme ve tek yönlü platformdan iniş için yukarı/aşağı.
+ * - Sağ yarının alt kısmı bütünüyle ZIPLA'dır (DASH dairesi hariç): başparmak tam daireye denk gelmese de zıplanır.
+ *   Başparmak ZIPLA'dan DASH'a kayınca kaldırmadan geçiş olur.
  */
 export default function TouchControls({ input, big = false, canDash = true, focus = null }: { input: InputManager; big?: boolean; canDash?: boolean; focus?: 'stick' | 'jump' | 'dash' | null }) {
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null)
   const [pressed, setPressed] = useState({ jump: false, dash: false })
   const stickId = useRef<number | null>(null)
+  /** joystick bölgesinin ekrandaki sol üst köşesi: parmak ekran koordinatında, çizim bölgeye göre */
+  const zone = useRef({ x: 0, y: 0 })
   const R = big ? 56 : 46
   const jumpD = big ? 112 : 94
   const dashD = big ? 92 : 78
@@ -23,6 +28,9 @@ export default function TouchControls({ input, big = false, canDash = true, focu
     let dy = e.clientY - oy
     const len = Math.hypot(dx, dy)
     if (len > R) {
+      // merkez parmağın peşinden gelir: ters yöne dönmek için parmak yalnız R kadar geri gider
+      ox += dx * (1 - R / len)
+      oy += dy * (1 - R / len)
       dx = (dx / len) * R
       dy = (dy / len) * R
     }
@@ -79,7 +87,9 @@ export default function TouchControls({ input, big = false, canDash = true, focu
     onContextMenu: block,
   })
 
+  // okların yanması girdinin eşikleriyle aynı (game/input.ts: yukarı -0,5, aşağı 0,72 ve çoğunlukla dikey)
   const dir = stick ? (stick.x < -R * 0.35 ? 'left' : stick.x > R * 0.35 ? 'right' : null) : null
+  const vdir = stick ? (stick.y < -R * 0.5 ? 'up' : stick.y > R * 0.72 && Math.abs(stick.x) < stick.y * 0.7 ? 'down' : null) : null
 
   const t = useT()
   return (
@@ -93,6 +103,8 @@ export default function TouchControls({ input, big = false, canDash = true, focu
           e.preventDefault()
           stickId.current = e.pointerId
           e.currentTarget.setPointerCapture(e.pointerId)
+          const r = e.currentTarget.getBoundingClientRect()
+          zone.current = { x: r.left, y: r.top }
           move(e, e.clientX, e.clientY)
         }}
         onPointerMove={(e) => {
@@ -103,10 +115,12 @@ export default function TouchControls({ input, big = false, canDash = true, focu
         onPointerCancel={(e) => e.pointerId === stickId.current && end()}
       >
         {stick ? (
-          <div className="absolute" style={{ left: stick.ox - R - 14, top: stick.oy - R - 14 }}>
+          <div className="absolute" style={{ left: stick.ox - zone.current.x - R - 14, top: stick.oy - zone.current.y - R - 14 }}>
             <div className="relative rounded-full border-2 border-white/25 bg-black/30" style={{ width: (R + 14) * 2, height: (R + 14) * 2 }}>
-              <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-lg ${dir === 'left' ? 'text-gold' : 'text-white/30'}`}>◀</span>
-              <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-lg ${dir === 'right' ? 'text-gold' : 'text-white/30'}`}>▶</span>
+              <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-lg ${dir === 'left' ? 'text-gold' : 'text-white/35'}`}>◀</span>
+              <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-lg ${dir === 'right' ? 'text-gold' : 'text-white/35'}`}>▶</span>
+              <span className={`absolute left-1/2 top-1 -translate-x-1/2 text-[13px] ${vdir === 'up' ? 'text-gold' : 'text-white/25'}`}>▲</span>
+              <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[13px] ${vdir === 'down' ? 'text-gold' : 'text-white/25'}`}>▼</span>
             </div>
             <div
               className="absolute rounded-full border-2 border-white/60 bg-white/35 shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
@@ -125,11 +139,13 @@ export default function TouchControls({ input, big = false, canDash = true, focu
         )}
       </div>
 
+      {/* geniş zıplama bölgesi: sağ yarının alt %62'si; DASH ve ZIPLA daireleri bunun üstünde */}
+      <div className="pointer-events-auto absolute bottom-0 right-0 h-[62%] w-1/2" aria-hidden {...btn('jump')} />
       <div
         className="pointer-events-none absolute flex items-end gap-3"
         style={{ right: 'max(14px, env(safe-area-inset-right))', bottom: 'max(22px, env(safe-area-inset-bottom))' }}
       >
-        <button type="button" aria-label={t("Dash")} className="pointer-events-auto p-2" {...btn('dash')}>
+        <button type="button" aria-label={t("Dash")} className="pointer-events-auto p-3" {...btn('dash')}>
           <span
             className={`flex flex-col items-center justify-center rounded-full border-2 font-display text-sm text-cream shadow-[inset_0_-4px_0_rgba(0,0,0,0.35)] transition-transform duration-75 ${focus === 'dash' ? 'tut-focus' : ''} ${pressed.dash ? 'translate-y-0.5 scale-95 border-gold bg-[#2f2b6a]' : canDash ? 'border-[#d6403a] bg-[#221f4a]/85 shadow-[0_0_12px_rgba(214,64,58,0.45)]' : 'border-white/20 bg-[#221f4a]/60 opacity-60'}`}
             style={{ width: dashD, height: dashD }}

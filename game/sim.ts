@@ -123,6 +123,9 @@ export interface Chaser {
 /** omuz sekmesinin gücü (zıplama hızına oran): tam zıplamadan yüksek, yaydan alçak */
 export const SHOULDER_BOOST = 1.2
 
+/** haritanın üstünde oyuncunun çıkabildiği gök payı (karo); üstü tavandır. Kamera da bu kadar yukarıyı gösterir. */
+export const SKY_ROWS = 4
+
 export const PHYS = {
   gravity: 980,
   fallMax: 300,
@@ -850,8 +853,9 @@ export class World {
 
   tile(tx: number, ty: number): number {
     if (tx < 0 || tx >= this.cols) return SOLID
-    // tepeye dayanan duvar göğe kadar sürer: üstünden tırmanıp aşılmaz
-    if (ty < 0) return this.tiles[tx] === SOLID ? SOLID : EMPTY
+    // tepeye dayanan duvar göğe kadar sürer: üstünden tırmanıp aşılmaz. Haritanın SKY_ROWS karo üstü tavandır:
+    // duvar dibinde sekerek sonsuza (ekranın dışına) tırmanılmaz, oyuncu görünür bir yükseklikte durur
+    if (ty < 0) return ty < -SKY_ROWS || this.tiles[tx] === SOLID ? SOLID : EMPTY
     if (ty >= this.rows) return EMPTY
     const t = this.tiles[ty * this.cols + tx]
     // gelgit karosu o anki hâlidir: su altındaysa derin su, açıktaysa boşluk
@@ -1242,7 +1246,10 @@ export class World {
     p.landTimer = Math.max(0, p.landTimer - dt)
     // nefes: baş derin suyun içindeyse azalır, dışındaysa hemen dolar
     if (this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + 2) / T)) === SWIM) {
+      const before = p.air
       p.air -= dt
+      // son üç saniyede her saniye bir uyarı: ses, titreşim ve kabarcık (render, Game)
+      for (const left of [3, 2, 1]) if (before >= left && p.air < left) this.events.push({ type: 'breath', left })
       if (p.air <= 0) {
         p.air = 0
         this.events.push({ type: 'drown' })

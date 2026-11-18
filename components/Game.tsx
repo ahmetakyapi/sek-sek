@@ -465,6 +465,7 @@ export default function Game() {
           // yolda geçen süre yalnız oyun akarken birikir (menüde bekleyen dünya sayılmaz)
           statRef.current.playMs += dt * 1000
         }
+        let drowned = false
         for (const e of w.events) {
           renderer.handle(e, w)
           soundRef.current?.sfx(e.type)
@@ -476,6 +477,15 @@ export default function Game() {
               haptic([12, 40, 12])
               break
             }
+            case 'breath':
+              // nefes azalıyor: kısa, kalan saniye azaldıkça sıklaşan titreşim; ilk üç saniyede bir de söz
+              haptic(e.left === 1 ? [18, 50, 18, 50, 18] : e.left === 2 ? [18, 60, 18] : [18])
+              if (e.left === 3) setQuip({ text: t('Nefesin azalıyor: yüzeye çık!'), key: Date.now() })
+              break
+            case 'drown':
+              drowned = true
+              haptic([40, 60, 40])
+              break
             case 'stomp':
               statRef.current.stomps++
               freezeRef.current = 0.06
@@ -489,7 +499,9 @@ export default function Game() {
               setCoach(false)
               haptic(40)
               const q = localize(w.level, langRef.current).quips
-              if (Math.random() < 0.4) setQuip({ text: q[Math.floor(Math.random() * q.length)], key: Date.now() })
+              // boğulma düşüşten ayrı anlaşılsın: neden olduğu ve ne yapılacağı yazar
+              if (drowned) setQuip({ text: t('Nefesin bitti: başın suyun üstündeyken nefes dolar.'), key: Date.now() })
+              else if (Math.random() < 0.4) setQuip({ text: q[Math.floor(Math.random() * q.length)], key: Date.now() })
               break
             }
             case 'checkpoint': {
@@ -724,7 +736,8 @@ export default function Game() {
 
   useEffect(() => {
     if (!quip) return
-    const id = setTimeout(() => setQuip(null), 1400)
+    // uzun söz (boğulmanın açıklaması gibi) okunacak kadar kalır
+    const id = setTimeout(() => setQuip(null), quip.text.length > 34 ? 2600 : 1400)
     return () => clearTimeout(id)
   }, [quip])
 

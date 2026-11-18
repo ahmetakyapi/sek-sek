@@ -1537,3 +1537,34 @@ export const POSES: Record<string, Pose> = {
   stomp: { legs: [[10, 12], [-6, 6]], arms: [[150, 170], [-118, -150]], hair: 0.1, lift: 1 },
   wave: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [105, 140]], ground: true },
 }
+
+/**
+ * Kurbağalama döngüsünün pozu (f: 0..1). Anahtar pozlar arasında yumuşak geçiş (smoothstep):
+ * 0 süzülme (kollar çenenin altından öne uzanır, yüzü örtmez; bacaklar düz) · 0,3 çekiş (kollar yanlara açılır) · 0,5 toplanma (eller göğüste,
+ * dizler karına) · 0,7 tekme (kollar öne uzanırken bacaklar geriye vurur) · 1 süzülme.
+ */
+const STROKE: [number, Pose][] = [
+  [0, { arms: [[126, 130], [132, 136]], legs: [[-4, 6], [4, 10]], hair: 1.2, lift: 0.1, reach: 1.28 }],
+  [0.3, { arms: [[88, 66], [94, 72]], legs: [[-2, 8], [6, 12]], hair: 1.1, lift: 0.2, reach: 1.1 }],
+  [0.5, { arms: [[54, 146], [60, 152]], legs: [[48, 112], [58, 122]], hair: 0.9, lift: 0.35, reach: 1 }],
+  [0.7, { arms: [[112, 120], [118, 126]], legs: [[-14, 14], [-4, 20]], hair: 1.3, lift: 0, reach: 1.2 }],
+  [1, { arms: [[126, 130], [132, 136]], legs: [[-4, 6], [4, 10]], hair: 1.2, lift: 0.1, reach: 1.28 }],
+]
+
+export function swimStroke(f: number): Pose {
+  let i = 0
+  while (i < STROKE.length - 2 && f >= STROKE[i + 1][0]) i++
+  const [fa, a] = STROKE[i]
+  const [fb, b] = STROKE[i + 1]
+  const u = Math.min(1, Math.max(0, (f - fa) / (fb - fa)))
+  const e = u * u * (3 - 2 * u)
+  const m = (x: number, y: number) => x + (y - x) * e
+  const pair = (x: [number, number], y: [number, number]): [number, number] => [m(x[0], y[0]), m(x[1], y[1])]
+  return {
+    arms: [pair(a.arms[0], b.arms[0]), pair(a.arms[1], b.arms[1])],
+    legs: [pair(a.legs[0], b.legs[0]), pair(a.legs[1], b.legs[1])],
+    hair: m(a.hair ?? 0, b.hair ?? 0),
+    lift: m(a.lift ?? 0, b.lift ?? 0),
+    reach: m((a.reach as number) ?? 1, (b.reach as number) ?? 1),
+  }
+}

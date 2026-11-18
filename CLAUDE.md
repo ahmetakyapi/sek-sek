@@ -333,6 +333,9 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 
 - Platformun yerden yüksekliği **en çok 32 piksel** (2 karo) olsun; 48 piksel zıplama sınırıdır, oyuncu çoğu zaman tutturamaz.
 - Oyuncu her duvara tırmanabilir: bir alanı kapatan duvar haritanın en üst satırına kadar çıkmalı.
+  Tepeye dayanan duvar göğe kadar katıdır; haritanın `SKY_ROWS` (4) karo üstü tavandır (`sim.ts` `tile`): duvar dibinde
+  sekerek ekranın dışına tırmanılmaz. Kamera bu gök payını gösterir, zemin çizimi tepeye dayanan sütunu ekranın üstüne
+  dek sürdürür (`terrainDraw.ts` `drawAbove`): duvar "üstünden aşılır" gibi kesik görünmez.
 - Alçak tavanlı koridorda zıplama kısalır; dikenli çukur 2 karoyu geçmesin.
 - **Rüzgâr gerçek kuvvettir** (`LevelDef.wind`, `sim.ts` `PHYS.windAir` / `windGround`): havadaki hedef hızı kaydırır, yerde
   yalnız yürürken; dururken itmez. Bayburt'un karşı rüzgârında atlayış ~0,75 karo kısalır. Esinti ~5,7 sn'de güçlenip
@@ -356,8 +359,10 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 - `{` `}` ritim blokları (`sim.ts` RHYTHM): saate bağlı iki takım, 1,6 sn'de bir yer değiştirir, kaybolmadan 0,45 sn önce yanıp söner;
   belirecek blok oyuncunun içindeyse oyuncu çıkana dek boş kalır (`rhythmHold`). Çözücü yakındaki ritim evresini durum sayar.
   Tam zamanında yay: yaya inerken zıplama basılıysa (tampon) sekiş ×1,22 (`PERFECT_SPRING`); yalnız isteğe bağlı kestirme.
-- Derin suda nefes (`sim.ts` AIR, 6 sn): başı `W` içindeyken azalır, sudan çıkınca dolar, biterse boğulur (`drown` olayı;
-  başın üstünde kabarcık göstergesi). Havasız su tüneli zayıf oyuncu için ~2,5 sn'yi geçmesin; suya dokunan haritada
+- Derin suda nefes (`sim.ts` AIR, 6 sn): başı `W` içindeyken azalır, sudan çıkınca dolar, biterse boğulur (`drown` olayı).
+  Son üç saniyede her saniye `breath` olayı (ses, titreşim, kabarcık, ilkinde "yüzeye çık" sözü); başın üstünde kabarcık
+  simgeli çubuk (son 2,5 sn kırmızı, içinde kalan saniye, ekran kenarı mavi nabız: `render.ts` `drawBreath`); boğulunca
+  düşüş sözü yerine nedeni yazar. Yüzme pozu kurbağalama döngüsü (`heroDraw.ts` `swimStroke`, föyde "kulaç"). Havasız su tüneli zayıf oyuncu için ~2,5 sn'yi geçmesin; suya dokunan haritada
   verify-levels / respawn / items koş.
 - Suda yüzen düşmanlar (karesi derin su sayılır): `y` Esoli (köpekbalığı: devriye → yüzeni görünce titreyip uyarır → hamle →
   soluklanır; ezilmez, kaçılır), `U` pirana (±2,5 karo gidip gelir; basılır, dash'le vurulur).
@@ -431,6 +436,8 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
   inişi birlikte tutar, düşerken dikey takip çevikleşir (`tests/camera.test.ts` "düşerken iniş yeri kadrajda").
 - **Yüzerken ve halatta kamera inip çıkar** (çapa yalnız zeminde değil, suda ve halatta da güncellenir); uzaktan
   yeniden doğuşta kamera bölümü taramaz, yeni yere sıçrar (`render.ts` `respawn`).
+- **Dokunmatik** (`components/TouchControls.tsx`): joystick parmağın indiği yerde açılır, bölgeye göre konumlanır, merkez
+  parmağın peşinden gelir, dört yön gösterir; sağ yarının alt %62'si DASH dairesi dışında bütünüyle ZIPLA'dır.
 - **Kamera telefonda sakin.** Bakış payı ekrana orantılı (`CAM.leadMax`), dönüşte yumuşakça kayar (`leadKeep`); ölü bölge
   kameraya değil hedefe uygulanır (`anchor`): ufak adımlar ve eşikte titreyen joystick kadrajı oynatmaz. Joystick'in yön eşiği
   pay ile çalışır (basmak 0,28, bırakmak 0,18). Sarsıntı küçük ekranda orana göre küçülür.

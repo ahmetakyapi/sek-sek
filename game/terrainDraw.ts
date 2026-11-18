@@ -361,6 +361,7 @@ export class TerrainHD {
         if (cv) c.drawImage(cv, Math.round((i * span - MARGIN - camX) * sc), Math.round((this.top(bb) - camY) * sc))
       }
     }
+    if (camY < 0) for (let i = first; i <= last; i++) if (this.valid(i)) this.drawAbove(c, i, camX, camY)
     // önce görünen parçaların altı ve üstü, sonra yakından uzağa iki yandaki parçalar: bütçe bitene dek
     const start = performance.now()
     const lo = Math.max(0, b0 - VAHEAD)
@@ -411,6 +412,40 @@ export class TerrainHD {
 
   private valid(i: number) {
     return i >= 0 && i * CHUNK < this.w.cols
+  }
+
+  /**
+   * Haritanın tepesinin üstü: tepeye dayanan duvar (ilk üç satırı katı sütun) ekranın üstüne dek sürer. Kesik bitseydi
+   * "üstünden aşılır" gibi görünürdü; oysa sim onu göğe kadar katı sayar. Bant 0'da bu sütunların üst kenarı çizilmez,
+   * dokusu kesintisizdir: 1-2. satırlarının görüntüsü yukarıya iki karoluk adımlarla yeniden basılır (yeni çizim yok).
+   */
+  private drawAbove(c: Ctx, i: number, camX: number, camY: number) {
+    const w = this.w
+    const pillar = (tx: number) => tx >= 0 && tx < w.cols && [0, 1, 2].every((ty) => w.tile(tx, ty) === SOLID)
+    const x0 = i * CHUNK
+    let tx = x0
+    while (tx < x0 + CHUNK) {
+      if (!pillar(tx)) {
+        tx++
+        continue
+      }
+      let end = tx
+      while (end + 1 < x0 + CHUNK && pillar(end + 1)) end++
+      const cv = this.cell(i, 0, true)
+      if (cv) {
+        const sc = this.scale
+        // yanlarda dış hat payı (komşu sütun da sütunsa ek yeri olmasın diye pay yok)
+        const padL = pillar(tx - 1) ? 0 : 3
+        const padR = pillar(end + 1) ? 0 : 3
+        const wx = tx * T - padL
+        const ww = (end + 1 - tx) * T + padL + padR
+        const sx = (wx - (i * CHUNK * T - MARGIN)) * sc
+        const sy = (T - this.top(0)) * sc
+        for (let y = -2 * T; y + 2 * T > camY; y -= 2 * T)
+          c.drawImage(cv, sx, sy, ww * sc, 2 * T * sc, Math.round((wx - camX) * sc), Math.round((y - camY) * sc), Math.round(ww * sc), Math.round(2 * T * sc))
+      }
+      tx = end + 1
+    }
   }
 
   /** hücrenin üst ve alt kenarı (dünya pikseli); ilk ve son hücre dış hat payını da taşır */

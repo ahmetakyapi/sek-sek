@@ -1735,4 +1735,6 @@ export const UI_EN: Record<string, string> = {
   "Bütün yolcular, şehir şehir: süre, düşüş ve hatıra.": "Every traveller, city by city: time, falls and keepsakes.",
   "Cezasız bitirdin: skorun süren kadar.": "No penalties: your score is your time.",
   "Bu kuralda ceza yok: skorun süren.": "This rule has no penalties: your score is your time.",
+  "Nefesin azalıyor: yüzeye çık!": "Running out of air: get to the surface!",
+  "Nefesin bitti: başın suyun üstündeyken nefes dolar.": "Out of breath: your air refills once your head is above water.",
 }

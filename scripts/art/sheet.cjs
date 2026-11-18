@@ -16,12 +16,12 @@ const out = process.argv[2] || '/tmp/seksek-foy.png'
 ;(async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seksek-foy-'))
   const entry = path.join(dir, 'entry.ts')
-  fs.writeFileSync(entry, `export { drawHero, gait, airPose, climbPose, POSES, LOOKS } from ${JSON.stringify(path.join(root, 'game/heroDraw'))}\nexport { drawBoss } from ${JSON.stringify(path.join(root, 'game/bossDraw'))}\nexport { BOSSES, makeBoss } from ${JSON.stringify(path.join(root, 'game/boss'))}\n`)
+  fs.writeFileSync(entry, `export { drawHero, gait, airPose, climbPose, swimStroke, POSES, LOOKS } from ${JSON.stringify(path.join(root, 'game/heroDraw'))}\nexport { drawBoss } from ${JSON.stringify(path.join(root, 'game/bossDraw'))}\nexport { BOSSES, makeBoss } from ${JSON.stringify(path.join(root, 'game/boss'))}\n`)
   await esbuild.build({ entryPoints: [entry], bundle: true, format: 'iife', globalName: 'S', outfile: path.join(dir, 's.js'), logLevel: 'silent' })
   fs.writeFileSync(path.join(dir, 'index.html'), `<!doctype html><body style="margin:0;background:#4a3550"><canvas id="c"></canvas><script src="s.js"></script><script>
 const looks = Object.keys(S.LOOKS), bosses = Object.keys(S.BOSSES)
 const cols = 8, cw = 230, W = cols * cw
-const heroRows = 3, bossRows = Math.ceil(bosses.length / cols)
+const heroRows = 4, bossRows = Math.ceil(bosses.length / cols)
 const H = 340 * heroRows + 60 + bossRows * 420
 const cv = document.getElementById('c'); cv.width = W; cv.height = H
 const c = cv.getContext('2d'); c.fillStyle = '#5a4660'; c.fillRect(0, 0, W, H)
@@ -30,7 +30,8 @@ const floor = (x, y) => { c.fillStyle = '#8a95a8'; c.fillRect(x - 90, y, 180, 5)
 // 1. sıra: bütün kılıklar bekleme pozunda · 2. sıra: iki kahramanın hareketleri
 looks.forEach((k, i) => { const x = cw / 2 + i * cw, y = 300; floor(x, y); S.drawHero(c, k, S.POSES.idle, x, y, 260, false, 0.3, {}); label(k, x, 24) })
 const moves = [['koşu', S.gait(0), 1], ['koşu', S.gait(0.25), 1], ['yüksel', S.airPose(-260), 0.2], ['tepe', S.airPose(0), 0.6], ['düş', S.airPose(260, 0.1), 0.7], ['in', S.POSES.land, 0], ['fren', S.POSES.brake, 0.8], ['duvar', S.POSES.wall, 0.4],
-  ['dash', S.POSES.dash, 1.4, 0.5], ['roket (yukarı)', S.POSES.rocket, 1.4], ['ayakla (aşağı)', S.POSES.stomp, 1], ['halat', S.climbPose(0.6), 0.2], ['yavaş koşu', S.gait(0.1, 0.45), 0.5], ['nitro', S.gait(0.1, 1.55), 1.2], ['el salla', S.POSES.wave, 0], ['bekle', S.POSES.idle, 0]]
+  ['dash', S.POSES.dash, 1.4, 0.5], ['roket (yukarı)', S.POSES.rocket, 1.4], ['ayakla (aşağı)', S.POSES.stomp, 1], ['halat', S.climbPose(0.6), 0.2], ['yavaş koşu', S.gait(0.1, 0.45), 0.5], ['nitro', S.gait(0.1, 1.55), 1.2], ['el salla', S.POSES.wave, 0], ['bekle', S.POSES.idle, 0],
+  ['kulaç: süzül', S.swimStroke(0), 1.2, 1.16], ['kulaç: çek', S.swimStroke(0.3), 1.1, 1.16], ['kulaç: topla', S.swimStroke(0.5), 0.9, 1.16], ['kulaç: tekme', S.swimStroke(0.7), 1.3, 1.16]]
 moves.forEach(([n, p, flow, rot], i) => {
   const x = cw / 2 + (i % cols) * cw, y = 640 + Math.floor(i / cols) * 340
   floor(x, y)

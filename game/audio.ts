@@ -417,6 +417,14 @@ export class Sound {
         return this.tone(196 * vary, 0.08, 'sine', 0.035, 30)
       case 'swim':
         return this.noise(0.14, 0.03, 650 * vary, now, 0.6, 'lowpass')
+      case 'breath':
+        // nefes azalıyor: kabarcık "blup" + makamdan inen tek nota; kalan saniye azaldıkça biraz daha belirgin
+        this.tone(330, 0.12, 'sine', 0.04, -150)
+        return this.chime(this.scaleNote(2, 0), 0.045, now + 0.05, 0.35)
+      case 'drown':
+        // nefes bitti: kabarcık dizisi yukarı kaçar
+        ;[0, 1, 2, 3].forEach((i) => this.tone(260 + i * 90, 0.07, 'sine', 0.035, 120, now + i * 0.05))
+        return
       case 'ui':
         return this.tone(560, 0.04, 'sine', 0.022)
     }
