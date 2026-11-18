@@ -353,9 +353,21 @@ export class Renderer {
         this.burst(p.x + p.w / 2, p.y, 8, s.accent, 60, 1)
         break
       }
-      case 'spring':
-        this.burst(p.x + p.w / 2, p.y + p.h, 8, '#ffd36a', 50, 1)
+      case 'spring': {
+        // olay kimin bastığını söylemez: co-op'ta yeni ezilmiş bir yaya en yakın olan (oyuncu ya da eş) sekmiştir
+        let who = p
+        let best = Infinity
+        for (const q of w.partner && !w.partner.dead ? [p, w.partner] : [p])
+          for (const sp of w.springs) {
+            const d = Math.hypot(q.x + q.w / 2 - (sp.x + sp.w / 2), q.y + q.h - sp.y) - (sp.squash > 0 ? 1000 : 0)
+            if (d < best) {
+              best = d
+              who = q
+            }
+          }
+        this.burst(who.x + who.w / 2, who.y + who.h, 8, '#ffd36a', 50, 1)
         break
+      }
       case 'bite':
         this.shake = Math.max(this.shake, 3)
         this.burst(e.x, e.y, 12, '#f4f0e6', 70, 1)
@@ -516,6 +528,8 @@ export class Renderer {
   private frameDt = 1 / 60
   /** gelgitin çizim saati (fizik saatinin ara değerlenmiş hâli) */
   private tideT = 0
+  /** gelgit havuzlarının dibi: havuz başına bir kez çizilen ıslak kum (dünya değişince yeniden) */
+  private tideBeds: { w: World; beds: { cv: HTMLCanvasElement; x: number; y: number; x1: number }[] } | null = null
 
   /** 60 Hz'de kare başına p olasılığı, her kare hızında saniyede aynı sıklık verir (yüksek Hz'de parçacık yığılmaz) */
   private chance(p60: number) {
@@ -655,6 +669,7 @@ export class Renderer {
     // dünya, arka: süsler zeminin arkasında kalır
     b.save()
     b.translate(-cx, -cy)
+    if (w.hasTide) this.drawTideBeds(b, w, cx)
     this.drawDecor(b, w, cx, cy)
     b.restore()
 
@@ -2877,9 +2892,42 @@ export class Renderer {
     const alpha = near < 10 ? 0.15 : 0.46
     const code = g.data[i * 3 + 2]
     const pose = code & 7
-    const run = gait((w.time * 15) / 8 % 1)
-    const body: Pose = pose === 4 ? POSES.dash : pose === 2 ? POSES.jump : pose === 3 ? POSES.fall : pose === 1 ? run : POSES.idle
-    this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1, sx: 1, sy: 1 })
+    // hayalet hız yazmaz: ardışık örneklerden (iki yanın ortalaması, adımlar arasında ara değerlenir)
+    const sdt = (g.step ?? 1) / GHOST_HZ
+    const vel = (j: number, o: number) => {
+      const a = Math.max(0, j - 1)
+      const b = Math.min(n - 1, j + 1)
+      return b > a ? (g.data[b * 3 + o] - g.data[a * 3 + o]) / ((b - a) * sdt) : 0
+    }
+    const vx = vel(i, 0) + (vel(i + 1, 0) - vel(i, 0)) * k
+    const vy = vel(i, 1) + (vel(i + 1, 1) - vel(i, 1)) * k
+    // oyuncuyla aynı pozlar (heroAnim): koşu adımı katedilen yoldan (ayak kaymaz), havada dikey hıza göre, dash eğik ve gergin
+    let body: Pose = POSES.idle
+    let rot = 0
+    let sx = 1
+    let sy = 1
+    if (pose === 4 && Math.abs(vy) > Math.abs(vx) * 1.2) {
+      body = vy < 0 ? POSES.rocket : POSES.stomp
+      sx = 0.9
+      sy = 1.14
+    } else if (pose === 4) {
+      body = POSES.dash
+      rot = 0.3
+      sx = 1.14
+      sy = 0.9
+    } else if (pose === 2 || pose === 3) {
+      body = airPose(vy, this.t)
+      const up = Math.max(0, Math.min(1, -vy / PHYS.jumpV)) * 0.09
+      sx = 1 - up * 0.75
+      sy = 1 + up
+    } else if (pose === 1) {
+      const cyc = (x * 15) / 8 / PHYS.run
+      body = gait(cyc - Math.floor(cyc), Math.min(1.6, Math.abs(vx) / PHYS.run))
+    } else {
+      const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
+      body = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
+    }
+    this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1 || pose === 4, sx, sy, rot, pivot: pose === 4 ? DASH_PIVOT : 0, flow: Math.min(1.3, Math.hypot(vx, vy * 0.6) / PHYS.run) })
   }
 
   /** İtilebilen sandıklar: tahta kasa, çapraz kuşak; oyundaki öbür vektör çizimlerle aynı mürekkep hat. */
@@ -3040,11 +3088,101 @@ export class Renderer {
    * deniz izi durur. Uyarı: değişimden TIDE_CYCLE.warn sn önce, alçak suda varılacak çizgide köpük yanıp söner;
    * yüksek suda yüzey köpürür ve kenarlarda çekilme okları belirir.
    */
+  /** Gelgit havuzlarının dibi (arka tampon, zeminin arkası): önbellekteki ıslak kum, görünen havuzlar için tek drawImage. */
+  private drawTideBeds(b: Ctx, w: World, cx: number) {
+    if (this.tideBeds?.w !== w) this.tideBeds = { w, beds: w.tidePools.map((_, id) => this.paintTideBed(w, id)) }
+    for (const bed of this.tideBeds.beds) if (bed.x1 >= cx && bed.x <= cx + this.viewW) b.drawImage(bed.cv, bed.x, bed.y)
+  }
+
+  /**
+   * Bir havuzun dibi: koyu ıslak kum (havuzun ağzı gölgede, dibe doğru açılır), kum dalgacıkları, benekler; tabanda açık kum
+   * şeridi, çakıl, deniz kabuğu ve ara sıra deniz yıldızı. Desen karo koordinatından türer (sabit, her açılışta aynı).
+   */
+  private paintTideBed(w: World, id: number) {
+    const q = w.tidePools[id]
+    const ox = q.x0 * T
+    const oy = q.top
+    const cv = document.createElement('canvas')
+    cv.width = (q.x1 - q.x0 + 1) * T
+    cv.height = q.bottom - q.top
+    const g = cv.getContext('2d')!
+    const hh = q.bottom - q.top
+    const solid = (tx: number, ty: number) => !w.isTide(tx, ty) && w.isSolid(tx, ty)
+    for (let tx = q.x0; tx <= q.x1; tx++) {
+      for (let ty = q.top / T; ty < q.bottom / T; ty++) {
+        if (w.tideOf[ty * w.cols + tx] !== id) continue
+        const x = tx * T - ox
+        const y = ty * T - oy
+        const h = tideHash(tx, ty)
+        // gövde: ağızda koyu, dipte ıslak kum
+        for (let r = 0; r < T; r++) rect(g, x, y + r, T, 1, mixHex('#54432f', '#8a6d48', Math.min(1, (y + r) / Math.max(T, hh - 4))))
+        // kum dalgacıkları: dalgalı koyu çizgiler, karo başına kayık
+        for (let r = (h % 7) + 2; r < T; r += 8)
+          for (let i = 0; i < T; i++) {
+            const gx = tx * T + i
+            if (Math.sin(gx * 0.45 + ty * 1.7) > -0.3) rect(g, x + i, y + r + Math.round(Math.sin(gx * 0.3) * 0.8), 1, 1, 'rgba(30,20,12,0.2)')
+          }
+        // benekler
+        for (let k = 0; k < 4; k++) {
+          const v = tideHash(tx * 7 + k, ty * 13 - k)
+          rect(g, x + (v % T), y + ((v >> 4) % T), 1, 1, k % 2 ? 'rgba(255,232,196,0.22)' : 'rgba(24,16,10,0.3)')
+        }
+        // sol duvarın gölgesi (ışık sol üstten)
+        if (solid(tx - 1, ty)) rect(g, x, y, 2, T, 'rgba(16,10,6,0.28)')
+        if (solid(tx, ty - 1)) rect(g, x, y, T, 2, 'rgba(16,10,6,0.25)')
+        if (!solid(tx, ty + 1)) continue
+        // taban: açık ıslak kum şeridi ve üstünde çakıl, kabuk, ara sıra deniz yıldızı
+        rect(g, x, y + T - 4, T, 4, '#a3855a')
+        for (let i = 0; i < T; i++) if (Math.sin((tx * T + i) * 0.7) > 0.2) rect(g, x + i, y + T - 5, 1, 1, '#a3855a')
+        rect(g, x, y + T - 4, T, 1, 'rgba(255,236,200,0.22)')
+        const px = x + 1 + (h % 9)
+        if (h % 4 === 0) {
+          // yassı çakıl: açık tepe, koyu alt
+          rect(g, px + 1, y + T - 8, 4, 1, '#9c978c')
+          rect(g, px, y + T - 7, 6, 2, '#77736b')
+          rect(g, px + 1, y + T - 7, 2, 1, '#c4bfb2')
+          rect(g, px, y + T - 5, 6, 1, '#3e3a34')
+        } else if (h % 4 === 1) {
+          rect(g, px + 2, y + T - 6, 3, 2, '#86817a')
+          rect(g, px + 2, y + T - 6, 1, 1, '#c4bfb2')
+          rect(g, px + 2, y + T - 4, 3, 1, '#3e3a34')
+        }
+        const sx = x + 2 + ((h >> 5) % 9)
+        if ((h >> 3) % 3 === 0) {
+          // tarak kabuğu: yelpaze, kaburgalı
+          rect(g, sx + 1, y + T - 8, 3, 1, '#f6d6bc')
+          rect(g, sx, y + T - 7, 5, 2, '#f2c6a6')
+          rect(g, sx + 1, y + T - 7, 1, 2, '#c4876a')
+          rect(g, sx + 3, y + T - 7, 1, 2, '#c4876a')
+          rect(g, sx + 1, y + T - 5, 3, 1, '#8a5440')
+        } else if (h % 13 === 7) {
+          // deniz yıldızı
+          rect(g, sx + 2, y + T - 9, 1, 2, '#e07a3e')
+          rect(g, sx, y + T - 7, 5, 1, '#e07a3e')
+          rect(g, sx + 1, y + T - 6, 1, 1, '#e07a3e')
+          rect(g, sx + 3, y + T - 6, 1, 1, '#e07a3e')
+          rect(g, sx + 2, y + T - 7, 1, 1, '#f8c08a')
+        }
+      }
+    }
+    // havuzun ağzı gökyüzüne yumuşakça açılır: üst kenar sert bir duvar çizgisi olmasın
+    const fade = g.createLinearGradient(0, 0, 0, 28)
+    fade.addColorStop(0, 'rgba(0,0,0,0.9)')
+    fade.addColorStop(1, 'rgba(0,0,0,0)')
+    g.globalCompositeOperation = 'destination-out'
+    g.fillStyle = fade
+    g.fillRect(0, 0, cv.width, 28)
+    g.globalCompositeOperation = 'source-over'
+    return { cv, x: ox, y: oy, x1: (q.x1 + 1) * T }
+  }
+
   private drawTide(b: Ctx, w: World, cx: number) {
     const fill = tideFill(this.tideT)
     const { phase, next } = tidePhase(this.tideT)
     const warn = (phase === 'high' || phase === 'low') && next < TIDE_CYCLE.warn
     const blink = warn && Math.floor(next * 8) % 2 === 0
+    // su çekilirken kum ıslak parlar; alçak suda kurudukça söner
+    const wet = phase === 'ebb' ? 1 : phase === 'low' ? next / TIDE_CYCLE.hold : phase === 'flood' ? 0.45 : 0
     const x0 = Math.max(0, Math.floor(cx / T))
     const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T))
     for (let tx = x0; tx <= x1; tx++) {
@@ -3056,6 +3194,38 @@ export class Renderer {
         const y = ty * T
         const top = Math.max(y, Math.round(surf))
         const isTop = !w.isTide(tx, ty - 1)
+        const floor = !w.isTide(tx, ty + 1) && w.isSolid(tx, ty + 1)
+        const hv = tideHash(tx, ty)
+        // yosun: tabanda, suyun içinde salınır, su çekilince kuma yatar
+        if (floor && hv % 3 === 0) {
+          const under = surf < y + T - 8
+          for (let s = 0; s < 2; s++) {
+            const bx = x + 3 + ((hv >> (2 + s * 3)) % 10)
+            const len = under ? 6 + ((hv >> s) % 4) : 3
+            for (let r = 0; r < len; r++) {
+              const sway = Math.round(Math.sin(this.t * 1.6 + tx + s * 2 + r * 0.5) * (under ? r / 4 : 0) + (under ? 0 : r * 0.7))
+              rect(b, bx + sway, y + T - 5 - r, 1, 1, r % 3 === 1 ? '#6fae5e' : '#3c7a46')
+            }
+          }
+        }
+        // ıslak iz: suyun hemen üstünde koyu ıslak kum ve yanıp sönen parıltılar
+        if (wet > 0.02 && surf > y) {
+          const band0 = Math.max(y, Math.round(surf) - 10)
+          const band1 = Math.min(y + T, Math.round(surf))
+          if (band1 > band0) {
+            rect(b, x, band0, T, band1 - band0, `rgba(20,30,40,${(0.16 * wet).toFixed(2)})`)
+            for (let i = 0; i < T; i++) {
+              // suyun bıraktığı parlak çizgi (kesik kesik), üstünde seyrek parıltı
+              const sy = Math.round(surf) - 2
+              if (sy >= band0 && sy < band1 && Math.sin((x + i) * 0.5) > -0.2) rect(b, x + i, sy, 1, 1, `rgba(220,245,250,${(0.45 * wet).toFixed(2)})`)
+              const v = tideHash(x + i, ty)
+              if (v % 9 !== 0) continue
+              const gy = Math.round(surf) - 1 - ((v >> 3) % 9)
+              const a = wet * (0.35 + 0.35 * Math.sin(this.t * 5 + (v % 17)))
+              if (gy >= band0 && gy < band1 && a > 0.05) rect(b, x + i, gy, 1, 1, `rgba(236,250,255,${a.toFixed(2)})`)
+            }
+          }
+        }
         // deniz izi: havuzun en üst çizgisi (su oraya dek dolar), su çekilince soluk noktalar; alçak suda uyarıyla parlar
         if (isTop && surf > y + 2) {
           const strong = warn && phase === 'low'
@@ -3073,7 +3243,9 @@ export class Renderer {
         if (top > y && !w.isTide(tx, ty + 1) && surf > y + T - 1) rect(b, x, y + T - 2, T, 2, 'rgba(30,60,70,0.22)')
         if (top >= y + T) continue
         const h = y + T - top
-        rect(b, x, top, T, h, SWIM_COLORS[ty % 2 ? 1 : 0])
+        // dibe yakın su berrak: kum, çakıl ve yosun altından görünür
+        const toFloor = floor ? 0 : !w.isTide(tx, ty + 2) ? 1 : 2
+        rect(b, x, top, T, h, hexA(SWIM_COLORS[ty % 2 ? 1 : 0], [0.58, 0.78, 0.9][toFloor]))
         const depth = (y + T / 2 - surf) / T
         const dk = Math.min(0.42, Math.max(0, depth - 0.5) * 0.11)
         if (dk > 0) rect(b, x, top, T, h, `rgba(8,14,36,${dk.toFixed(2)})`)
@@ -3103,31 +3275,46 @@ export class Renderer {
     }
   }
 
-  /** Gelgit suyunun yarı saydam önü (ekran çözünürlüğünde): yüzen yolcu suyun içinde görünür, yüz akıcı iner çıkar */
+  /**
+   * Gelgit suyunun yarı saydam önü (ekran çözünürlüğünde): yüzen yolcu suyun içinde görünür, yüz akıcı iner çıkar.
+   * Sütun başına tek dikdörtgen (havuz karo karo değil, bitişik karolar birlikte) ve bütün yüz çizgileri tek yol: büyük
+   * havuzda yüzlerce yarı saydam boyama kare kaçırtıyordu.
+   */
   private drawTideHD(w: World, cx: number, cy: number, x0: number, x1: number, y0: number, y1: number) {
     const c = this.ctx
     const sc = this.scale
     const fill = tideFill(this.tideT)
+    c.fillStyle = 'rgba(70,180,200,0.34)'
+    const wave = new Path2D()
+    let waves = false
     for (let tx = x0; tx <= x1; tx++) {
-      for (let ty = y0; ty <= y1; ty++) {
-        if (!w.isTide(tx, ty)) continue
-        const surf = w.tideSurface(w.tideOf[ty * w.cols + tx], fill)
-        const top = Math.max(ty * T, surf)
-        if (top >= ty * T + T) continue
-        c.fillStyle = 'rgba(70,180,200,0.34)'
-        c.fillRect((tx * T - cx) * sc, (top - cy) * sc, T * sc + 0.5, (ty * T + T - top) * sc + 0.5)
-        if (surf >= ty * T - 0.5 && surf < ty * T + T) {
-          c.strokeStyle = 'rgba(235,252,255,0.7)'
-          c.lineWidth = sc * 0.9
-          c.beginPath()
+      let ty = y0
+      while (ty <= y1) {
+        if (!w.isTide(tx, ty)) {
+          ty++
+          continue
+        }
+        const start = ty
+        while (ty <= y1 && w.isTide(tx, ty)) ty++
+        const surf = w.tideSurface(w.tideOf[start * w.cols + tx], fill)
+        const top = Math.max(start * T, surf)
+        const bottom = ty * T
+        if (top >= bottom) continue
+        c.fillRect((tx * T - cx) * sc, (top - cy) * sc, T * sc + 0.5, (bottom - top) * sc + 0.5)
+        if (surf >= start * T - 0.5 && surf < bottom) {
           for (let i = 0; i <= 16; i += 2) {
             const yy = top + Math.sin(this.t * 3 + (tx * T + i) * 0.35) * 1.1
-            if (i === 0) c.moveTo((tx * T + i - cx) * sc, (yy - cy) * sc)
-            else c.lineTo((tx * T + i - cx) * sc, (yy - cy) * sc)
+            if (i === 0) wave.moveTo((tx * T + i - cx) * sc, (yy - cy) * sc)
+            else wave.lineTo((tx * T + i - cx) * sc, (yy - cy) * sc)
           }
-          c.stroke()
+          waves = true
         }
       }
+    }
+    if (waves) {
+      c.strokeStyle = 'rgba(235,252,255,0.7)'
+      c.lineWidth = sc * 0.9
+      c.stroke(wave)
     }
   }
 
@@ -3167,7 +3354,12 @@ export class Renderer {
       }
     }
     if (w.hasTide) this.drawTideHD(w, cx, cy, x0, x1, y0, y1)
-    // berrak su: dipten yükselen ışık huzmeleri ve kendi kendine çıkan kabarcıklar (saate bağlı, sütuna göre sabit)
+    // berrak su: dipten yükselen ışık huzmeleri ve kendi kendine çıkan kabarcıklar (saate bağlı, sütuna göre sabit).
+    // Huzmeler üç parlaklık kademesinde, kabarcıklar tek yolda toplanır: karo başına ayrı boyama büyük suda kare kaçırtıyordu
+    const beams = [new Path2D(), new Path2D(), new Path2D()]
+    const used = [false, false, false]
+    const bubbles = new Path2D()
+    let anyBubble = false
     for (let tx = x0; tx <= x1; tx++) {
       for (let ty = y0; ty <= y1; ty++) {
         if (w.tile(tx, ty) !== SWIM) continue
@@ -3175,28 +3367,38 @@ export class Renderer {
         const ly = (ty * T - cy) * sc
         const band = Math.sin(this.t * 0.8 + tx * 0.9 + ty * 0.35)
         if (band > 0.55) {
-          c.fillStyle = `rgba(220,252,255,${((band - 0.55) * 0.16).toFixed(3)})`
-          c.beginPath()
-          c.moveTo(lx + 3 * sc, ly)
-          c.lineTo(lx + 9 * sc, ly)
-          c.lineTo(lx + 6 * sc, ly + T * sc)
-          c.lineTo(lx, ly + T * sc)
-          c.closePath()
-          c.fill()
+          const k = Math.min(2, Math.floor((band - 0.55) / 0.15))
+          const pth = beams[k]
+          used[k] = true
+          pth.moveTo(lx + 3 * sc, ly)
+          pth.lineTo(lx + 9 * sc, ly)
+          pth.lineTo(lx + 6 * sc, ly + T * sc)
+          pth.lineTo(lx, ly + T * sc)
+          pth.closePath()
         }
         if ((tx * 13 + ty * 7) % 6 === 0) {
           const ph = (this.t * 0.35 + ((tx * 31 + ty * 17) % 10) / 10) % 1
           const bx = tx * T + 4 + ((tx * 5) % 8) + Math.sin(this.t * 2 + tx) * 1.5
           const by = ty * T + T - ph * T
           if (w.tile(Math.floor(bx / T), Math.floor(by / T)) === SWIM) {
-            c.strokeStyle = 'rgba(235,252,255,0.55)'
-            c.lineWidth = sc * 0.6
-            c.beginPath()
-            c.arc((bx - cx) * sc, (by - cy) * sc, sc * 0.9, 0, Math.PI * 2)
-            c.stroke()
+            const px = (bx - cx) * sc
+            const py = (by - cy) * sc
+            bubbles.moveTo(px + sc * 0.9, py)
+            bubbles.arc(px, py, sc * 0.9, 0, Math.PI * 2)
+            anyBubble = true
           }
         }
       }
+    }
+    beams.forEach((pth, k) => {
+      if (!used[k]) return
+      c.fillStyle = `rgba(220,252,255,${(0.012 + k * 0.024).toFixed(3)})`
+      c.fill(pth)
+    })
+    if (anyBubble) {
+      c.strokeStyle = 'rgba(235,252,255,0.55)'
+      c.lineWidth = sc * 0.6
+      c.stroke(bubbles)
     }
     // yüzenlerin ayak izi: ilerlerken arkada çırpınma kabarcıkları
     for (const q of [w.player, w.partner]) {
@@ -4297,4 +4499,11 @@ function lighten(hex: string) {
   const g = Math.min(255, ((n >> 8) & 255) + 40)
   const b = Math.min(255, (n & 255) + 40)
   return `rgb(${r},${g},${b})`
+}
+
+/** karo koordinatından sabit desen sayısı (gelgit dibinin çakılı, kabuğu, yosunu) */
+function tideHash(a: number, b: number) {
+  let h = (Math.imul(a, 374761393) + Math.imul(b, 668265263)) | 0
+  h = Math.imul(h ^ (h >>> 13), 1274126177)
+  return (h ^ (h >>> 16)) >>> 0
 }

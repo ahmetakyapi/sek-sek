@@ -109,6 +109,8 @@ export interface Chaser {
   arc: number
   /** köpeğin yetişmesine kalan süre (sn): göstergede ve havlamada */
   gap: number
+  /** bu yaklaşmada hırladı mı */
+  growled: boolean
   /** oyuncunun izi: [x, ayak y, yön, o ana dek alınan yol] dörtlüleri, halka tampon */
   trail: Float32Array
   head: number
@@ -686,7 +688,7 @@ export class World {
     this.spawn = { ...start }
     this.exit = exit
     if (level.chaser) {
-      this.chaser = { x: 0, y: 0, px: 0, py: 0, facing: 1, state: 'wait', since: 0, arc: 0, gap: 9, trail: new Float32Array(CHASE.trail * 4), head: 0, count: 0 }
+      this.chaser = { x: 0, y: 0, px: 0, py: 0, facing: 1, state: 'wait', since: 0, arc: 0, gap: 9, growled: false, trail: new Float32Array(CHASE.trail * 4), head: 0, count: 0 }
       this.resetChaser()
     }
     // derin suyun içine konan toplanabilir (hatıra, pul, nazar, anahtar) karosunu kuru boşluğa çevirmesin: çevresinin en az
@@ -870,6 +872,20 @@ export class World {
     return this.tideNow
   }
 
+  /**
+   * Gelgit değişmeden `warn` saniye önce (yüksekte ya da alçakta beklerken) oyuncu bir havuzun yakınındaysa tideUp / tideDown:
+   * ses uyarısı (görsel uyarı render'da). Saate bağlı, her Hz'de aynı anda.
+   */
+  private tideCue(clock0: number) {
+    const a = tidePhase(clock0)
+    const b = tidePhase(this.clock)
+    if (a.phase !== b.phase || (b.phase !== 'high' && b.phase !== 'low') || a.next <= TIDE_CYCLE.warn || b.next > TIDE_CYCLE.warn) return
+    const p = this.player
+    const tx = (p.x + p.w / 2) / T
+    if (!this.tidePools.some((q) => tx > q.x0 - 14 && tx < q.x1 + 15)) return
+    this.events.push({ type: b.phase === 'low' ? 'tideUp' : 'tideDown' })
+  }
+
   /** havuzun su yüzü (dünya pikseli y); fill verilmezse şu anki doluluk */
   tideSurface(pool: number, fill = this.tideFill): number {
     const q = this.tidePools[pool]
@@ -941,7 +957,9 @@ export class World {
     if (!this.started && (input.left || input.right || input.jump || input.jumpPressed || input.dashPressed || input.up || input.down)) this.started = true
     if (this.started) this.time += dt
 
+    const clock0 = this.clock
     this.updatePlatforms(dt)
+    if (this.hasTide) this.tideCue(clock0)
     this.updateCrumbles(dt)
     this.updateRhythm()
     if (this.crates.length) this.updateCrates(dt)
@@ -1022,6 +1040,12 @@ export class World {
       k = b
     }
     const gap = (arc - c.arc) / speed
+    // yetişmesine bir saniye kala bir kez hırlar (uzaklaşınca yeniden kurulur)
+    if (gap < 1 && c.gap >= 1 && !c.growled) {
+      c.growled = true
+      this.events.push({ type: 'growl' })
+    }
+    if (gap > 1.8) c.growled = false
     c.gap = gap
     c.state = gap < 0.6 ? 'bite' : 'run'
     // ısırık: köpeğin ağzı (önünde) oyuncunun gövdesine değerse
@@ -1041,6 +1065,7 @@ export class World {
     c.since = 0
     c.arc = 0
     c.gap = 9
+    c.growled = false
     c.x = c.px = this.spawn.x + PW / 2
     c.y = c.py = this.spawn.y + PH
     c.state = 'wait'

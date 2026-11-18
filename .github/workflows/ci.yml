@@ -23,9 +23,9 @@ jobs:
   levels:
     runs-on: ubuntu-latest
     # çözücüsü uzun süren şehirlere daha geniş süre. Yerelde (4 çekirdek, paralel) verify-levels: Nevşehir ~17 dk;
-    # İzmir, Konya, Gaziantep, Trabzon, Kayseri, Amasya, Ordu, Hatay, Çorum 3-9 dk; gerisi 1 dk altı. verify-respawn
+    # İzmir, Konya, Gaziantep, Trabzon, Kayseri, Amasya, Ordu, Hatay, Çorum, Mersin 3-9 dk; gerisi 1 dk altı. verify-respawn
     # her bayraktan yeniden çözdüğü için bunun birkaç katını sürebilir.
-    timeout-minutes: ${{ matrix.level == 'nevsehir' && 120 || contains(fromJSON('["izmir","konya","gaziantep","trabzon","kayseri","amasya","ordu","hatay","corum"]'), matrix.level) && 75 || 30 }}
+    timeout-minutes: ${{ matrix.level == 'nevsehir' && 120 || contains(fromJSON('["izmir","konya","gaziantep","trabzon","kayseri","amasya","ordu","hatay","corum","mersin"]'), matrix.level) && 75 || 30 }}
     strategy:
       fail-fast: false
       matrix:
@@ -45,3 +45,6 @@ jobs:
       - name: Boss (bossbot)
         if: ${{ !cancelled() }}
         run: npx tsx scripts/bossbot.ts ${{ matrix.level }}
+      - name: Kovalamaca (verify-chase; yalnız CHASE_OK şehirleri FAIL verebilir)
+        if: ${{ !cancelled() }}
+        run: npx tsx scripts/verify-chase.ts ${{ matrix.level }}

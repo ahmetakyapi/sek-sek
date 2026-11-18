@@ -24,7 +24,7 @@ const CLIPS = process.env.TEL ? [
   // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
   ['erzurum-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
-  ['efektler', 16, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete']; names.forEach((n,i)=>setAt(0.5+i*0.9,()=>s.sfx(n)))`],
+  ['efektler', 17, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown']; names.forEach((n,i)=>setAt(0.5+i*0.7,()=>s.sfx(n)))`],
 ]
 ;(async () => {
   let bad = 0

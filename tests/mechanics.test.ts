@@ -425,12 +425,18 @@ describe('Kovalamaca', () => {
     w.started = true
     step(w, 0.6, { right: true })
     let bit = false
-    for (let i = 0; i < 120 * 5 && !bit; i++) {
+    let growlAt = -1
+    let i = 0
+    for (; i < 120 * 5 && !bit; i++) {
       w.step(1 / 120, emptyInput())
       bit = w.events.some((e) => e.type === 'bite')
+      if (growlAt < 0 && w.events.some((e) => e.type === 'growl')) growlAt = i
       w.events.length = 0
     }
     expect(bit).toBe(true)
+    // ısırmadan önce hırlar (uyarı), en az yarım saniye önce
+    expect(growlAt).toBeGreaterThanOrEqual(0)
+    expect(i - growlAt).toBeGreaterThan(60)
     expect(w.deaths).toBe(1)
   })
   it('koşmaya devam eden oyuncuya yetişemez; düşünce köpek doğuşta bekler', () => {
@@ -450,6 +456,20 @@ describe('Kovalamaca', () => {
     expect(w.chaser!.state).toBe('wait')
     expect(Math.abs(w.chaser!.x - (w.spawn.x + w.player.w / 2))).toBeLessThan(2)
     expect(CHASE.top).toBeLessThan(PHYS.run)
+  })
+})
+
+describe('gelgit uyarısı', () => {
+  it('değişimden önce havuzun yakınındaki oyuncuya bir kez tideUp ve tideDown', () => {
+    const w = new World({ ...LEVELS[0], map: ['            ', ' P          ', '####AAAA####', '####AAAA####', '############'], wind: 0 })
+    w.started = true
+    const seen: string[] = []
+    for (let i = 0; i < Math.round(TIDE_CYCLE.period * 120); i++) {
+      w.step(1 / 120, emptyInput())
+      for (const e of w.events) if (e.type === 'tideUp' || e.type === 'tideDown') seen.push(e.type)
+      w.events.length = 0
+    }
+    expect(seen.sort()).toEqual(['tideDown', 'tideUp'])
   })
 })
 

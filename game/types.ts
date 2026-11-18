@@ -120,6 +120,11 @@ export type GameEvent =
   | { type: 'bossSlam'; x: number; y: number }
   | { type: 'bossHit'; x: number; y: number; hp: number }
   | { type: 'bossDown'; x: number; y: number }
+  /** gelgit birazdan değişecek: su yükselecek ya da çekilecek */
+  | { type: 'tideUp' }
+  | { type: 'tideDown' }
+  /** Kovalamaca: Kangal yaklaştı (yetişmesine az kaldı) */
+  | { type: 'growl' }
   /** Kovalamaca: Kangal yetişti */
   | { type: 'bite'; x: number; y: number }
   /** co-op: biri ötekinin omzundan sekti */

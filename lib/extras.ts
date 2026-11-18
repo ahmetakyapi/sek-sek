@@ -232,7 +232,7 @@ export const NO_DASH_OK = ['edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale
 /** kaygan, çöken, ay ve fırtına fiziğiyle kanıtlanmış şehirler (16 Kasım 2026); yeni şehri betikle kanıtlayıp buraya yaz */
 export const RAGE_PROVEN = [
   'istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri',
-  'giresun', 'tokat', 'denizli', 'zonguldak',
+  'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin',
 ]
 /** Fırtına'nın rüzgâr ivmesi (px/s²): Bayburt'un karşı rüzgârından güçlü, yön değiştirir */
 export const STORM_WIND = 230

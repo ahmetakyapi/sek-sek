@@ -135,6 +135,17 @@ interface Rush {
 
 const STEP = 1 / 120
 
+/** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
+const RELEASE_NOTES: Record<string, [string, string][]> = {
+  mersin: [
+    ['Kovalamaca', 'Bir Kangal izini sürüyor: dur, yetişsin. Modlar ekranında kendi kartı var.'],
+    ['Co-op’ta Parkur ve Omuz Sekmesi', 'Eşinin başına inerken zıpla, yükseğe sek. Ortak can, kısa ip, zamana karşı.'],
+    ['Düello Şartları', 'Beş tur, kısa parkurlar, düşüş cezası, Hatıra Avı ve avantaj.'],
+    ['Kâbus ve Çifte Boss Rush', 'Boss’lar en sert hâlinde ya da ikişer ikişer.'],
+    ['Boss Tasarımcısı', 'Bölüm Düzenleyici’de iki boss, kademe, hız ve can seç; gelgit suyu da karolarda.'],
+  ],
+}
+
 interface HudState {
   time: number
   deaths: number
@@ -2006,6 +2017,24 @@ export default function Game() {
                     </div>
                   </div>
                 ) : null,
+              )}
+              {/* yeni şehirle gelen yenilikler: eski oyuncu yeni modları da görsün */}
+              {mapNotice.added.flatMap((id) => RELEASE_NOTES[id] ?? []).length > 0 && (
+                <div className="mb-3">
+                  <p className="flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] text-gold">
+                    {t('BU SÜRÜMDE')} <span className="kilim h-[6px] flex-1 opacity-50" />
+                  </p>
+                  <ul className="mt-2 grid gap-1.5">
+                    {mapNotice.added.flatMap((id) => RELEASE_NOTES[id] ?? []).map(([head, body]) => (
+                      <li key={head} className="border-l-2 border-accent pl-2.5 text-[14px] leading-snug text-cream/85">
+                        <strong className="font-display text-cream">{t(head)}</strong> · {t(body)}
+                      </li>
+                    ))}
+                  </ul>
+                  <button className="pixel-btn mt-2 w-full justify-center text-[14px]" onClick={() => (ui(), persist(ackMapNews), setScreen('modes'))}>
+                    {t('Modlara Bak')}
+                  </button>
+                </div>
               )}
             </div>
             <button className="pixel-btn primary mt-3 justify-center text-base" autoFocus onClick={() => (ui(), persist(ackMapNews))}>

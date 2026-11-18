@@ -341,6 +341,15 @@ export class Sound {
         return
       case 'spring':
         return this.tone(220, 0.22, 'sine', 0.06, 330)
+      case 'growl':
+        // Kangal yaklaşıyor: alçak, titreyen hırıltı
+        this.noise(0.45, 0.035, 320, now, 0.8, 'lowpass')
+        return this.tone(95 * vary, 0.45, 'triangle', 0.045, -15, now)
+      case 'tideUp':
+      case 'tideDown':
+        // gelgit dönüyor: dalga hışırtısı ve makamdan bir çan (yükselecekse tiz, çekilecekse pes)
+        this.noise(0.9, 0.03, 900, now, 0.5, 'lowpass')
+        return this.chime(this.scaleNote(name === 'tideUp' ? 4 : 0, name === 'tideUp' ? 1 : 0), 0.05, now + 0.15, 0.7)
       case 'bite':
         // Kangal havlar: iki kısa, inen "hav"
         this.tone(220 * vary, 0.09, 'triangle', 0.06, -90, now)
