@@ -4,7 +4,7 @@ import { World } from '../game/sim'
 import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
-import { ACCESSORIES, accessoryFor, walletOf } from '../game/accessories'
+import { ACCESSORIES, NO_KIT, earned, kitFor, walletOf } from '../game/accessories'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
@@ -249,12 +249,28 @@ describe('Ayna Yolu', () => {
 })
 
 describe('Kılık Dükkânı', () => {
-  it('cüzdan bulunan parçalardan alınanların fiyatı düşülerek hesaplanır, eksiye inmez', () => {
+  it('cüzdan kazanılan parçadan alınanların fiyatı düşülerek hesaplanır, eksiye inmez', () => {
     expect(walletOf(40, {})).toBe(40)
     expect(walletOf(40, { papatya: true, gozluk: true })).toBe(5)
     expect(walletOf(10, { fes: true })).toBe(0)
-    expect(accessoryFor('yok-boyle')).toBe('yok')
     expect(new Set(ACCESSORIES.map((a) => a.id)).size).toBe(ACCESSORIES.length)
+  })
+  it('parça: hatıra, pul, nazar 1 · boss 2 · Usta Mührü 3; oyunun tamamı dükkânın tamamını alır', () => {
+    expect(earned(10, 2, 1)).toBe(17)
+    const all = earned(LEVELS.length * 5, LEVELS.length, LEVELS.length)
+    const prices = ACCESSORIES.filter((a) => a.seals === undefined).reduce((a, x) => a + x.price, 0)
+    expect(all).toBeGreaterThanOrEqual(prices)
+    // hepsi alınca oyunun parçasının büyük kısmı harcanmış olur (seçim anlamlı kalsın)
+    expect(prices).toBeGreaterThan(all * 0.8)
+  })
+  it('kombin: yuva başına bir parça; eski tek aksesuar kendi yuvasına geçer, bilinmeyen ya da yanlış yuva boş sayılır', () => {
+    expect(kitFor(undefined, undefined)).toEqual(NO_KIT)
+    expect(kitFor(undefined, 'heybe')).toEqual({ ...NO_KIT, back: 'heybe' })
+    expect(kitFor(undefined, 'yok-boyle')).toEqual(NO_KIT)
+    expect(kitFor({ head: 'fes', face: 'gunes', back: 'pelerin' })).toEqual({ head: 'fes', face: 'gunes', back: 'pelerin' })
+    expect(kitFor({ head: 'gozluk', face: 'fes' })).toEqual(NO_KIT)
+    // yeni kayıt eskisinin önüne geçer
+    expect(kitFor({ face: 'kayak' }, 'fes')).toEqual({ ...NO_KIT, face: 'kayak' })
   })
 })
 

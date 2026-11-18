@@ -6,7 +6,7 @@ import { BossFigure } from '@/components/Figures'
 import { ItemIcon } from '@/components/HudBits'
 import TurkeyMap from '@/components/TurkeyMap'
 import { Overlay, displayName, ic } from '@/components/ui'
-import type { AccessoryId } from '@/game/accessories'
+import type { Kit } from '@/game/accessories'
 import { BOSSES } from '@/game/boss'
 import type { CharacterId } from '@/game/characters'
 import { FIRST_BOOK, LEVELS as ALL } from '@/game/levels'
@@ -38,7 +38,7 @@ export default function Ending({
   hero: CharacterId
   heroShort: string
   scarf: Scarf | null
-  accessory?: AccessoryId
+  accessory?: Kit
   totalFound: number
   totalMs: number
   notebookLeft: number

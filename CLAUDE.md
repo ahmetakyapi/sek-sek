@@ -243,8 +243,14 @@ görünürken "Bu Sürümde" listesi ve "Modlara Bak" düğmesi çıkar. Yeni ş
 sim'in sağ-sol simetrisi bozulursa (yeni nesne, x'e bağlı faz) `mirror` kipinde de düzelt, sonra `verify-mirror` ve
 `AYNA=1 bossbot` koş. Çözücü Ayna Yolu'nda sola doğru arar (`mx`). Rekor `save.ayna`.
 
-**Kılık Dükkânı.** Para = bulunan parçalar (hatıra + pul + nazar) eksi alınanların fiyatı (`walletOf`). Yeni aksesuar:
-`ACCESSORIES` + heroDraw/portraitDraw çizimi + föy (`node scripts/art/accessories.cjs`). `seals` verilen aksesuar parayla alınmaz, o kadar Usta Mührüyle açılır (Altın Defne Tacı: 10).
+**Kılık Dükkânı.** Bütün kılık tek yerde (`components/Shop.tsx`): baş, yüz ve sırtta birer parça (kombin, `Kit`;
+kayıtta `save.kit`, eski tek `accessory` `kitFor` ile kendi yuvasına geçer) ve atkı rengi (nazar boncuğuyla açılır).
+Tam boy canlı önizleme (dur / koş), önizlemede Uktun / Memo. Para birimi **parça**: hatıra, pul, nazar 1 · yenilen boss 2 ·
+Usta Mührü 3 (`earned`); cüzdan kazanılan eksi alınanların fiyatı (`walletOf`). Fiyatlar oyunun bütün parçasıyla dükkânın
+tamamı alınacak biçimde (`tests/extras.test.ts` bekler). Yeni aksesuar: `ACCESSORIES` (yuva, fiyat) + heroDraw/portraitDraw
+çizimi + föy (`node scripts/art/accessories.cjs`). `seals` verilen aksesuar parayla alınmaz, o kadar Usta Mührüyle açılır
+(Altın Defne Tacı: 10). Yolcu (Uktun / Memo) şehir kartında seçilir; molada değişirse onayla şehrin başına dönülür
+(yalnız düz şehir koşusunda, `plainRun`).
 
 **Topluluk haritaları.** Düzenleyicide çözücüyle bitirilen harita "Topluluğa Yayınla" ile `seksek_maps` tablosuna gider
 (giriş gerekir, günde 10, başlık süzgeci `lib/communityMaps.ts`); galeri `/haritalar` (Yeni, En Beğenilen, En Çok Oynanan),

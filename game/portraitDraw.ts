@@ -5,7 +5,7 @@
  * Kadraj vesikalık gibidir: baş tam, yüz kadrajı doldurur, boyun ve omuzların yalnız üstü görünür, fon sade.
  * Birim: 100 x 119'luk çerçeve (64:76), yüz hafifçe sağa dönük; kılığa göre saç, sakal, başlık ve yaka değişir.
  */
-import { COVERS_HEAD, ON_HEAD, type AccessoryId } from './accessories'
+import { COVERS_HEAD, NO_KIT, ON_HEAD, type AccessoryId, type Kit } from './accessories'
 import { INK, LOOKS, blob, setInkWidth, stroke, type Look } from './heroDraw'
 
 type Skin = (typeof LOOKS)[Look]
@@ -34,8 +34,8 @@ export interface PortraitOpts {
   /** oyuncunun seçtiği atkı (lib/extras.ts SCARVES): renk ve gölgesi */
   scarf?: string
   scarfS?: string
-  /** Kılık Dükkânı aksesuarı (game/accessories.ts); başa takılan, kılığın şapkasının yerine geçer */
-  acc?: AccessoryId
+  /** Kılık Dükkânı kombini (game/accessories.ts): baş, yüz, sırt; başa takılan kılığın şapkasının yerine geçer */
+  acc?: Kit
   /** yalnız yüz: kare çerçeveye kaştan çeneye kırpılır (gösterge pulu) */
   face?: boolean
   /** hareketsiz: nefes, salınım ve göz kırpma yok */
@@ -1369,6 +1369,83 @@ function glasses(c: Ctx) {
   curve(c, 59.4, 51.2, 60.2, 49.4, 62.4, 49, 1, 'rgba(255,255,255,0.6)')
 }
 
+/** güneş gözlüğü: koyu cam, dış üst köşeleri hafif kanatlı kalın çerçeve; yakın camda tek beyaz parıltı */
+function shades(c: Ctx) {
+  const lenses = () => {
+    // yakın cam: üstü düz, dış üst köşe kanat gibi kalkar
+    c.moveTo(36.4, 48)
+    c.quadraticCurveTo(45, 49, 53, 49.4)
+    c.quadraticCurveTo(53.6, 59, 47, 60.6)
+    c.quadraticCurveTo(39.4, 61.4, 37.8, 53)
+    c.closePath()
+    // uzak cam: köprünün öbür yanında, kanadı yüzün kenarına doğru
+    c.moveTo(56.4, 49.2)
+    c.quadraticCurveTo(64, 49, 71.6, 47.6)
+    c.quadraticCurveTo(70.6, 52.6, 69.6, 55)
+    c.quadraticCurveTo(67.6, 61, 61.6, 60.4)
+    c.quadraticCurveTo(56, 59, 56.4, 49.2)
+    c.closePath()
+  }
+  c.lineCap = 'round'
+  c.lineJoin = 'round'
+  // köprü ve saplar
+  stroke(c, [53, 50.6, 54.7, 49.6, 56.4, 50.4], 1.4, '#3a2c3a')
+  stroke(c, [37, 49.4, 29.4, 51.4], 1.4, '#3a2c3a')
+  stroke(c, [71, 49, 75.8, 48.6], 1.4, '#3a2c3a')
+  c.beginPath()
+  lenses()
+  c.strokeStyle = INK
+  c.lineWidth = (1.8 + 1.6) * boost
+  c.stroke()
+  c.strokeStyle = '#3a2c3a'
+  c.lineWidth = 1.8 * boost
+  c.stroke()
+  c.fillStyle = '#2a2236'
+  c.fill()
+  // camın altında mor yansıma, yakın camda tek parıltı
+  curve(c, 40.6, 57.6, 45, 59.6, 50.6, 57.4, 1.3, '#5a4a78')
+  curve(c, 59.4, 57.6, 63, 59.2, 67.4, 56.6, 1.1, '#5a4a78')
+  curve(c, 40.4, 55, 41.2, 52, 44.4, 50.8, 1.6, 'rgba(255,255,255,0.9)')
+}
+
+/** kayak gözlüğü: iki gözü örten tek parça ayna cam (turuncudan mora), kalın çerçeve; lastik bant kulakların üstünden arkaya */
+function goggles(c: Ctx) {
+  // bant: çerçevenin iki yanından başın arkasına
+  stroke(c, [34, 53, 27, 52, 21.4, 50.6], 6, '#4a3a7a')
+  stroke(c, [74, 52.4, 78, 51.6, 80.4, 50.6], 6, '#4a3a7a')
+  curve(c, 33, 51, 27, 50, 22.4, 48.8, 1, '#f08a3a')
+  const rimPath = () => {
+    c.moveTo(33.4, 47.8)
+    c.quadraticCurveTo(54, 43, 75, 47.4)
+    c.quadraticCurveTo(76.6, 55, 74, 61.6)
+    c.quadraticCurveTo(66.6, 63.4, 61, 62)
+    // burun çentiği
+    c.quadraticCurveTo(57.6, 57.6, 54, 61.8)
+    c.quadraticCurveTo(43, 64, 35, 62)
+    c.quadraticCurveTo(31.4, 55, 33.4, 47.8)
+  }
+  blob(c, rimPath, '#3a3446')
+  rim(c, rimPath, 'rgba(255,220,170,0.5)', -1.2, 0.3)
+  c.save()
+  c.translate(54.2, 54.4)
+  c.scale(0.9, 0.78)
+  c.translate(-54.2, -54.4)
+  c.beginPath()
+  rimPath()
+  c.closePath()
+  const g = c.createLinearGradient(40, 46, 46, 63)
+  g.addColorStop(0, '#ffb347')
+  g.addColorStop(0.5, '#e8603c')
+  g.addColorStop(1, '#7a4ab0')
+  c.fillStyle = g
+  c.fill()
+  c.restore()
+  // ayna camda çapraz parıltılar
+  curve(c, 38.6, 56.4, 40.4, 51.4, 45.6, 48.8, 2, 'rgba(255,255,255,0.85)')
+  curve(c, 44, 57.6, 45.6, 54, 49, 52, 1.1, 'rgba(255,255,255,0.6)')
+  curve(c, 64, 56, 66, 52.6, 69.6, 50.4, 1.1, 'rgba(255,255,255,0.45)')
+}
+
 /** başa takılan aksesuar; sw: nefesle salınım (püskül ve ponpon izler) */
 function headAcc(c: Ctx, acc: AccessoryId, sw: number) {
   switch (acc) {
@@ -1484,6 +1561,72 @@ function headAcc(c: Ctx, acc: AccessoryId, sw: number) {
       c.stroke()
       break
     }
+    case 'lale': {
+      // lale tokası: yakın şakakta, kulağın üstünde saça takılı; sap ve yaprak saçın içine iner, çiçek dışa yatık
+      stroke(c, [33.4, 47, 30.6, 41, 27.4, 35.4 + sw * 0.2], 1.6, '#4f8f3a')
+      c.save()
+      c.translate(32, 44)
+      c.rotate(-2.2)
+      blob(
+        c,
+        () => {
+          c.moveTo(0, 0)
+          c.quadraticCurveTo(4.4, -3, 10, 0)
+          c.quadraticCurveTo(4.4, 3, 0, 0)
+        },
+        '#6eae48',
+        { color: '#4f8f3a', dx: 0, dy: -1.2 },
+      )
+      c.restore()
+      c.save()
+      c.translate(26.6, 31.6 + sw * 0.2)
+      c.rotate(-0.5)
+      const cup = () => {
+        c.moveTo(-5.4, -1.4)
+        c.lineTo(-6, -10)
+        c.lineTo(-2.6, -6.4)
+        c.lineTo(0, -11)
+        c.lineTo(2.6, -6.4)
+        c.lineTo(6, -10)
+        c.lineTo(5.4, -1.4)
+        c.quadraticCurveTo(4.8, 4.4, 0, 4.6)
+        c.quadraticCurveTo(-4.8, 4.4, -5.4, -1.4)
+      }
+      blob(c, cup, '#d8343a', { color: '#9a1f2a', dx: -1.8, dy: -0.8 })
+      rim(c, cup, 'rgba(255,200,180,0.55)', -1, 0.2)
+      curve(c, 0, 4, -0.3, -1.6, 0, -6.8, 1, '#9a1f2a')
+      curve(c, -3.8, 1, -4.2, -3, -3.8, -6.4, 1.3, 'rgba(255,225,215,0.75)')
+      c.restore()
+      break
+    }
+    case 'kulaklik': {
+      // kulaklık: tepeden geçen bant, iki kulağın üstünde yastıklı kap (uzak kap yüz döndüğü için dar)
+      const col = '#2fb3a6'
+      const dark = '#1d7f78'
+      const band = () => {
+        c.beginPath()
+        c.moveTo(25.4, 50)
+        c.bezierCurveTo(17, -2.4, 87, -4.4, 79, 49)
+      }
+      band()
+      c.strokeStyle = INK
+      c.lineWidth = 4.4 + inkw
+      c.lineCap = 'round'
+      c.stroke()
+      band()
+      c.strokeStyle = dark
+      c.lineWidth = 4.4
+      c.stroke()
+      curve(c, 26.6, 26, 31, 13, 44, 10.4, 1.3, '#7fd6cc')
+      const near = () => c.ellipse(26.2, 56.6, 7, 9.2, 0.08, 0, Math.PI * 2)
+      blob(c, near, col, { color: dark, dx: -2.2, dy: -1.8 })
+      blob(c, () => c.ellipse(28.8, 56.6, 3, 6.4, 0.08, 0, Math.PI * 2), '#3a3446')
+      curve(c, 21.4, 55, 21.4, 50.4, 24.6, 48.6, 1.5, 'rgba(255,255,255,0.6)')
+      const far = () => c.ellipse(79.2, 55.4, 4.2, 8.4, -0.06, 0, Math.PI * 2)
+      blob(c, far, col, { color: dark, dx: -1.6, dy: -1.4 })
+      rim(c, far, 'rgba(255,220,170,0.6)', -1, 0.2)
+      break
+    }
     case 'papatya':
     case 'defne': {
       // önden görünen yarım halka: alnın üstünden şakaktan şakağa (defne: altın sap, çiçeksiz sık altın yapraklar)
@@ -1559,11 +1702,90 @@ function bagStrap(c: Ctx) {
   curve(c, 25, 91, 28.4, 91, 31, 94.6, 1, 'rgba(255,220,180,0.5)')
 }
 
+/**
+ * sırtta bağlama: sap omzun arkasından çaprazlama yukarı uzanır, burguluk başın yanından görünür (uzun saçtan da önce
+ * çizilir: saç bağlamanın üstüne düşer)
+ */
+function sazBack(c: Ctx) {
+  c.save()
+  c.translate(45, 128)
+  c.rotate(-0.28)
+  // sap ve burguluk (yukarı: -y)
+  stroke(c, [0, 0, 0, -96], 5.6, '#7a4a24')
+  stroke(c, [0, -95, -2.2, -110], 6.8, '#5e3a1c')
+  for (const y of [-99, -104, -109]) stroke(c, [-1.6 + (y + 95) * 0.15, y, -7.4 + (y + 95) * 0.15, y - 1], 1.6, '#e0b878')
+  c.beginPath()
+  for (let y = -40; y > -94; y -= 7) {
+    c.moveTo(-2.6, y)
+    c.lineTo(2.6, y)
+  }
+  c.strokeStyle = '#e0b878'
+  c.lineWidth = 0.9 * boost
+  c.stroke()
+  c.beginPath()
+  c.moveTo(-1, -30)
+  c.lineTo(-1, -95)
+  c.moveTo(1, -30)
+  c.lineTo(1, -95)
+  c.strokeStyle = 'rgba(255,240,210,0.7)'
+  c.lineWidth = 0.5 * boost
+  c.stroke()
+  curve(c, -1.6, -40, -1.8, -65, -1.6, -92, 1.1, GLOSS)
+  c.restore()
+}
+
+/** bağlamanın askısı: dokuma kayış yakın omuzdan göğsü çaprazlama geçer (yakadan sonra, atkıdan önce) */
+function sazStrap(c: Ctx) {
+  stroke(c, [18, 94, 26, 90.4, 34, 96, 60, 124], 4, '#b0302e')
+  c.setLineDash([1.6, 2])
+  curve(c, 26, 90.8, 31, 92, 34.6, 97, 1.1, '#f2c45a')
+  curve(c, 34.6, 97, 46, 109, 59, 123.4, 1.1, '#f2c45a')
+  c.setLineDash([])
+}
+
+/** pelerin: omuzların arkasından taşar, ense arkasında yakası kalkar (uzun saçtan da önce çizilir) */
+function capeBack(c: Ctx) {
+  const path = () => {
+    c.moveTo(-6, 124)
+    c.bezierCurveTo(-7, 96, 2, 84, 26, 80)
+    c.quadraticCurveTo(30, 72, 38, 71)
+    c.quadraticCurveTo(52, 68, 66, 71)
+    c.quadraticCurveTo(74, 72, 78, 80)
+    c.bezierCurveTo(102, 84, 110, 96, 108, 124)
+  }
+  blob(c, path, '#4656b0', { color: '#2e3a80', dx: -4, dy: -1.5 })
+  rim(c, path, 'rgba(190,205,255,0.6)', -1.6, 0.4)
+  // yakanın iç yüzü (koyu) ve altın sırma
+  blob(
+    c,
+    () => {
+      c.moveTo(31, 84)
+      c.quadraticCurveTo(34, 76, 40, 75)
+      c.quadraticCurveTo(52, 72.6, 64, 75)
+      c.quadraticCurveTo(71, 76, 73.6, 84)
+    },
+    '#2e3a80',
+  )
+  curve(c, 27.4, 83.6, 31, 74.6, 38.4, 72.8, 1.4, '#e8b04a')
+  curve(c, 66, 72.8, 73.4, 74.6, 76.8, 83.6, 1.4, '#e8b04a')
+  curve(c, -1, 110, 0, 94, 16, 86, 2, 'rgba(190,205,255,0.5)')
+}
+
+/** pelerinin bağı: iki altın toka omuzların önünde, aralarında atkının altından geçen kordon (yakadan sonra) */
+function capeClasp(c: Ctx) {
+  stroke(c, [30, 97, 52, 104, 74, 96], 1.3, '#e8b04a')
+  for (const [x, y] of [[29.4, 96.4], [74.6, 95.6]]) {
+    blob(c, () => c.arc(x, y, 3.2, 0, Math.PI * 2), '#e8b04a', { color: '#b07a24', dx: -1, dy: -1 })
+    ell(c, x - 1, y - 1, 1, 0.8, 'rgba(255,255,255,0.7)')
+  }
+}
+
 /** Kadraj: [ölçek, başın orta x'i, en üst nokta]. Baş tam sığar, yüz kadrajı doldurur. */
 function frame(s: Skin, acc: AccessoryId): [number, number, number] {
   if (acc === 'fes') return [1.0, 52, -2]
   if (acc === 'bere') return [1.0, 52, -6]
   if (acc === 'hasir') return [0.94, 53, 0]
+  if (acc === 'kulaklik') return [1.04, 52, 6]
   if (s.long) return [1.07, 50.5, 11.5]
   if (s.hat === 'toque') return [0.98, 52, -5.5]
   if (s.hat === 'kalpak') return [1.04, 52, 5]
@@ -1578,7 +1800,8 @@ function frame(s: Skin, acc: AccessoryId): [number, number, number] {
  */
 export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number, opts: PortraitOpts = {}) {
   const s0 = LOOKS[look]
-  const acc = opts.acc ?? 'yok'
+  const kit = opts.acc ?? NO_KIT
+  const acc = kit.head
   const s1: Skin = opts.scarf ? { ...s0, scarf: opts.scarf, scarfS: opts.scarfS ?? s0.scarfS } : s0
   // başa takılan aksesuar kılığın şapkasının yerine geçer (yazma kalır, başlık üstüne oturur)
   const s: Skin = ON_HEAD.has(acc) && s1.hat && s1.hat !== 'yazma' ? { ...s1, hat: undefined } : s1
@@ -1620,7 +1843,17 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     c.rotate(tilt)
     c.translate(-52, -92)
   }
-  // uzun saç omuzların arkasına düşer: en önce çizilir
+  // sırttaki bağlama ve pelerin her şeyin arkasında (uzun saç üstlerine düşer)
+  if (kit.back === 'saz' || kit.back === 'pelerin') {
+    c.save()
+    c.translate(0, breath + BODY_DY)
+    ink(INKW)
+    if (kit.back === 'saz') sazBack(c)
+    else capeBack(c)
+    ink(MID_INKW)
+    c.restore()
+  }
+  // uzun saç omuzların arkasına düşer
   if (s.long) {
     c.save()
     head()
@@ -1632,14 +1865,16 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   c.save()
   c.translate(0, breath + BODY_DY)
   propBack(c, s)
-  if (acc === 'heybe') bagBack(c)
+  if (kit.back === 'heybe') bagBack(c)
   ink(INKW)
   shoulders(c, look, s)
   ink(MID_INKW)
   if (look === 'genc') hoodie(c, s)
   else collar(c, look, s)
   propFront(c, s)
-  if (acc === 'heybe') bagStrap(c)
+  if (kit.back === 'heybe') bagStrap(c)
+  if (kit.back === 'saz') sazStrap(c)
+  if (kit.back === 'pelerin') capeClasp(c)
   c.restore()
 
   c.save()
@@ -1705,7 +1940,9 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   }
   else shortHair(c, s)
   if (s.hat === 'yazma') {
-    if (acc === 'gozluk') glasses(c)
+    if (kit.face === 'gozluk') glasses(c)
+    if (kit.face === 'gunes') shades(c)
+    if (kit.face === 'kayak') goggles(c)
     yazmaFront(c, s)
     if (ON_HEAD.has(acc)) {
       c.save()
@@ -1717,7 +1954,9 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     yazmaKnot(c, s)
   } else {
     if (look !== 'memo') ear(c, s)
-    if (acc === 'gozluk') glasses(c)
+    if (kit.face === 'gozluk') glasses(c)
+    if (kit.face === 'gunes') shades(c)
+    if (kit.face === 'kayak') goggles(c)
     hat(c, s)
     if (ON_HEAD.has(acc)) {
       c.save()

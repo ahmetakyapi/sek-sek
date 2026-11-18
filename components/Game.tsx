@@ -21,9 +21,8 @@ import { TournamentHub } from '@/components/Tournament'
 import Ending from '@/components/Ending'
 import MirrorList from '@/components/Mirror'
 import Shop from '@/components/Shop'
-import { ACCESSORIES, accessoryFor, walletOf, type AccessoryId } from '@/game/accessories'
+import { ACCESSORIES, earned, kitFor, kitKey, walletOf, type AccessoryId, type Kit } from '@/game/accessories'
 import { mirrorLevel } from '@/game/mirror'
-import { LOOKS } from '@/game/heroDraw'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
 import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
@@ -45,7 +44,7 @@ import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { CHALLENGE_TEXT, DAILY_RULES, SCARVES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, type Scarf, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -262,6 +261,8 @@ export default function Game() {
   const [challengeSend, setChallengeSend] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null }>({ status: 'idle', rank: null })
   const [dailySend, setDailySend] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null }>({ status: 'idle', rank: null })
   const [pauseSet, setPauseSet] = useState(false)
+  /** molada yolcu değiştirme onayı bekleyen karakter (yola çıkılmışsa şehrin başına dönülür) */
+  const [pauseHero, setPauseHero] = useState<CharacterId | null>(null)
   const [quiet, setQuiet] = useState(false)
   const [achToast, setAchToast] = useState<{ at: number; name: string; icon: string; more: number } | null>(null)
   const [setTab, setSetTab] = useState<'ayar' | 'tus'>('ayar')
@@ -293,11 +294,12 @@ export default function Game() {
   /** seçilen atkı (al ise karakterin kendi atkısı: null) */
   const heroScarf = scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)
   const charmCount = LEVELS.filter((l) => save.charms[l.id]).length
-  /** yolda bulunan bütün parçalar (hatıra + pul + nazar): Kılık Dükkânı'nın parası */
-  /** Kılık Dükkânı'nın parası: bulunan parçalar ve usta mühürleri */
+  /** Kılık Dükkânı'nın parası (parça): hatıra + pul + nazar 1, yenilen boss 2, Usta Mührü 3 (game/accessories.ts) */
   const ustaCount = Object.values(save.ustalar ?? {}).filter(Boolean).length
   const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
-  const heroAcc = accessoryFor(save.accessory)
+  const bossCount = LEVELS.filter((l) => save.bosses[l.id]).length
+  const wallet = walletOf(earned(foundTotal, bossCount, ustaCount), save.owned)
+  const heroAcc = kitFor(save.kit, save.accessory)
   // ?debug (ölçüm ve görsel betikleri): güncelleme notu ekranı kapatmasın
   const mapNotice = quiet ? { renewed: [], added: [] } : mapNews(save)
   const now = new Date()
@@ -309,9 +311,11 @@ export default function Game() {
   challenges[1][2] = save.weekly.last === challenges[1][1].key
 
   /* ── kurulum ─────────────────────────────────────────────── */
+  const kitId = kitKey(heroAcc)
   useEffect(() => {
-    if (rendererRef.current) rendererRef.current.accessory = accessoryFor(save.accessory)
-  }, [save.accessory])
+    if (rendererRef.current) rendererRef.current.accessory = kitFor(save.kit, save.accessory)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kitId])
 
   // final sahnesi görüldü: Ayna Yolu'nun kapısı açılmış sayılır
   useEffect(() => {
@@ -369,7 +373,7 @@ export default function Game() {
     const canvas = canvasRef.current!
     const renderer = new Renderer(canvas)
     renderer.character = CHARACTERS[s.character ?? 'uktun']
-    renderer.accessory = accessoryFor(s.accessory)
+    renderer.accessory = kitFor(s.kit, s.accessory)
     const input = new InputManager()
     const sound = new Sound()
     sound.sfxOn = s.sfx
@@ -1071,6 +1075,11 @@ export default function Game() {
 
   /** sıralamalı günlük koşu sürüyor mu (mola menüsü buna göre) */
   const rankedDaily = modeRef.current?.kind === 'daily' && !modeRef.current.free
+  useEffect(() => {
+    if (screen !== 'pause') setPauseHero(null)
+  }, [screen])
+  /** düz şehir koşusu (mod, parkur, Boss Rush, ayna, özel harita değil): molada yolcu burada değişebilir, baştan yükleme şehri yükler */
+  const plainRun = !modeRef.current && !rushRef.current && !challengeRef.current && !aynaRef.current && !customRef.current
   /** günlükte "Baştan Başla": şehrin başına döner, süre ve düşüş sürer (tek hak) */
   const restartKeep = () => {
     const w = worldRef.current
@@ -1153,12 +1162,17 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: t('Özel Harita') })
   }
 
-  /** Kılık Dükkânı: parça karşılığı aksesuar alır ya da takar */
+  /** Kılık Dükkânı: parça karşılığı aksesuar alır ve kendi yuvasına takar */
   const buyAccessory = (id: AccessoryId) => {
     const item = ACCESSORIES.find((a) => a.id === id)
-    if (!item || walletOf(foundTotal + ustaCount, save.owned) < item.price) return
+    if (!item || item.seals !== undefined || wallet < item.price) return
     ui()
-    patch({ owned: { ...(save.owned ?? {}), [id]: true }, accessory: id })
+    persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [id]: true }, kit: { ...kitFor(s.kit, s.accessory), [item.slot]: id }, accessory: undefined }))
+  }
+  /** kombini giyer (yuva başına bir parça) */
+  const wearKit = (k: Kit) => {
+    ui()
+    persist((s) => ({ ...s, kit: { ...k }, accessory: undefined }))
   }
 
   /** Arkadaş listesine ekler ya da çıkarır (skor tablosundaki ☆) */
@@ -2194,34 +2208,21 @@ export default function Game() {
                 )
               })}
             </div>
-            <div className="mt-4 flex items-center justify-between gap-2 short:mt-2">
-              <SectionTitle title={t('Atkı Rengi')} note={lang === 'en' ? scarfFor(save.scarf).nameEn : scarfFor(save.scarf).name} tone="var(--color-gold)" />
-              <button className="pixel-btn shrink-0 px-2.5 py-1 text-[13px]" onClick={() => (ui(), setScreen('shop'))}>
-                {t('Kılık Dükkânı · {n}', { n: walletOf(foundTotal + ustaCount, save.owned) })}
+            {/* kılık: takılı kombin ve atkı tek satırda; seçimi Kılık Dükkânı'nda (baş, yüz, sırt, atkı) */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-2 border-line bg-ink/40 px-3 py-2.5 short:mt-2 short:py-2">
+              <div className="min-w-0">
+                <SectionTitle title={t('Kılık')} tone="var(--color-gold)" />
+                <p className="mt-0.5 text-[13px] leading-snug text-muted">
+                  {[
+                    ...(['head', 'face', 'back'] as const).map((k) => ACCESSORIES.find((a) => a.id === heroAcc[k])).filter((a) => !!a).map((a) => (lang === 'en' ? a!.nameEn : a!.name)),
+                    lang === 'en' ? scarfFor(save.scarf).nameEn : scarfFor(save.scarf).name,
+                  ].join(' · ')}
+                </p>
+              </div>
+              <button className="pixel-btn primary shrink-0 px-4" onClick={() => (ui(), setScreen('shop'))}>
+                {t('Kılık Dükkânı · {n} Parça', { n: wallet })}
               </button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2 short:mt-1.5">
-              {SCARVES.map((sc) => {
-                const open = charmCount >= sc.need
-                const on = scarfFor(save.scarf).id === sc.id
-                return (
-                  <button
-                    key={sc.id}
-                    disabled={!open}
-                    aria-pressed={on}
-                    onClick={() => (ui(), patch({ scarf: sc.id }))}
-                    title={open ? (lang === 'en' ? sc.nameEn : sc.name) : t('{n} nazar boncuğu bulunca açılır', { n: sc.need })}
-                    aria-label={lang === 'en' ? sc.nameEn : sc.name}
-                    className={`flex items-center gap-2 border-2 bg-panel-2 px-1.5 py-1.5 text-[12px] sm:px-2.5 sm:text-[13px] short:px-1.5 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold text-cream' : 'border-line text-muted hover:border-accent-2'} ${open ? '' : 'opacity-45'}`}
-                  >
-                    <span className="h-5 w-5 border-2 border-ink sm:h-4 sm:w-4" style={{ background: sc.id === 'al' ? `linear-gradient(135deg, ${LOOKS[hero.id].scarf} 55%, ${LOOKS[hero.id].scarfS} 55%)` : `linear-gradient(135deg, ${sc.color} 55%, ${sc.shade} 55%)` }} />
-                    <span className="max-sm:hidden short:hidden">{lang === 'en' ? sc.nameEn : sc.name}</span>
-                    {!open && <span className="tabular-nums max-sm:hidden short:hidden">· {charmCount}/{sc.need}</span>}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="mt-1.5 text-[13px] text-muted short:hidden max-sm:[@media(max-height:700px)]:hidden">{t("Yeni renkler, şehirlerde saklı nazar boncuklarını buldukça açılır.")}</p>
           </div>
         </Overlay>
       )}
@@ -2539,7 +2540,16 @@ export default function Game() {
                 {introGoals}
               </div>
             </details>
-            <div className="sticky bottom-0 z-10 -mx-6 mt-4 grid grid-cols-[1fr_auto] wide:-mx-8 wide:mt-6 wide:flex wide:justify-end wide:px-8 [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:py-2 gap-3 border-t-2 border-line bg-[#171538]/95 px-6 py-3 [padding-bottom:max(12px,env(safe-area-inset-bottom))]">
+            {/* yola çıkmadan yolcuyu seç: bölüm başlamadığı için hemen değişir */}
+            <div className="mt-3 flex items-center justify-between gap-3 [@media(max-height:500px)]:hidden">
+              <span className="text-[14px] font-semibold text-cream/80">{t('Yolcu')}</span>
+              <HeroSwitch value={hero.id} onChange={(id) => (ui(), patch({ character: id }))} scarf={heroScarf} kit={heroAcc} />
+            </div>
+            <div className="sticky bottom-0 z-10 -mx-6 mt-3 grid grid-cols-[1fr_auto] [@media(max-height:500px)]:grid-cols-[auto_1fr_auto] wide:-mx-8 wide:mt-6 wide:flex wide:justify-end wide:px-8 [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:py-2 gap-3 border-t-2 border-line bg-[#171538]/95 px-6 py-3 [padding-bottom:max(12px,env(safe-area-inset-bottom))]">
+              {/* alçak ekranda (yatay telefon) yolcu seçici çubukta */}
+              <span className="hidden [@media(max-height:500px)]:block">
+                <HeroSwitch value={hero.id} onChange={(id) => (ui(), patch({ character: id }))} scarf={heroScarf} kit={heroAcc} />
+              </span>
               <button className="pixel-btn primary justify-center py-3 text-lg wide:min-w-[360px]" onClick={beginPlay} autoFocus>
                 {ic(t("▶ Başla"))}
               </button>
@@ -2603,6 +2613,45 @@ export default function Game() {
                 </div>
                 {rankedDaily && <p className="mt-2.5 border-2 border-gold/50 bg-gold/10 px-2.5 py-1.5 text-[13px] leading-snug text-cream">{t('Günlük Meydan Okuma’nın tek hakkı var: baştan başlasan da süre ve düşüş sürer, çıkarsan bugünkü koşun biter.')}</p>}
                 {cityCard}
+                {plainRun && (
+                  <div className="mt-3 border-2 border-line bg-ink/40 px-3 py-2.5 short:mt-2 short:py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[14px] font-semibold text-cream/80">{t('Yolcu')}</span>
+                      <HeroSwitch
+                        value={hero.id}
+                        scarf={heroScarf}
+                        kit={heroAcc}
+                        onChange={(id) => {
+                          ui()
+                          // yola çıkılmadıysa hemen değişir; çıkıldıysa onay: şehrin başına dönülür
+                          if (hud.time < 0.05) patch({ character: id })
+                          else setPauseHero(id)
+                        }}
+                      />
+                    </div>
+                    {pauseHero && (
+                      <div className="mt-2.5 border-t-2 border-line pt-2.5">
+                        <p className="text-[13px] leading-snug text-cream/85">{t('{name} ile devam etmek için şehrin başına dönülür; süre ve düşüş sıfırlanır.', { name: CHARACTERS[pauseHero].name })}</p>
+                        <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                          <button
+                            className="pixel-btn primary justify-center py-2 text-[14px]"
+                            onClick={() => {
+                              const id = pauseHero
+                              setPauseHero(null)
+                              patch({ character: id })
+                              loadLevel(levelIdx, 'play')
+                            }}
+                          >
+                            {t('Değiştir ve Baştan Başla')}
+                          </button>
+                          <button className="pixel-btn px-3 py-2 text-[14px]" onClick={() => setPauseHero(null)}>
+                            {t('Vazgeç')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="mt-3 flex gap-2 short:mt-2">
                   <button className="pixel-btn flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
                     {ic(t('◉ Fotoğraf Kipi'))}
@@ -2992,7 +3041,24 @@ export default function Game() {
           onSecondBook={() => loadLevel(FIRST_BOOK)}
         />
       )}
-      {screen === 'shop' && <Shop hero={hero.id} scarf={heroScarf} owned={save.owned ?? {}} seals={ustaCount} wearing={heroAcc} wallet={walletOf(foundTotal + ustaCount, save.owned)} onBuy={buyAccessory} onWear={(id) => (ui(), patch({ accessory: id }))} onBack={() => setScreen('character')} />}
+      {screen === 'shop' && (
+        <Shop
+          hero={hero.id}
+          onHero={(id) => (ui(), patch({ character: id }))}
+          scarf={heroScarf}
+          scarfId={scarfFor(save.scarf).id}
+          charms={charmCount}
+          onScarf={(id) => (ui(), patch({ scarf: id }))}
+          owned={save.owned ?? {}}
+          seals={ustaCount}
+          kit={heroAcc}
+          wallet={wallet}
+          parts={{ found: foundTotal, bosses: bossCount, seals: ustaCount }}
+          onBuy={buyAccessory}
+          onWear={wearKit}
+          onBack={() => setScreen('character')}
+        />
+      )}
       {screen === 'mirror' && <MirrorList best={save.ayna ?? {}} open={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])} onStart={startMirror} onBack={() => setScreen('modes')} />}
       {screen === 'custom' && custom && (
         <Overlay dim>
@@ -3525,6 +3591,21 @@ function Seal({ medal, bronze }: { medal: 'altin' | 'gumus' | 'bronz' | null; br
         <span className="font-display text-[17px] leading-none">{look[0]}</span>
         <span className="mt-0.5 text-[12px] font-bold leading-none tracking-[0.02em]">{t("MADALYA")}</span>
       </div>
+    </div>
+  )
+}
+
+/** Yolcu seçici (şehir kartı ve mola): Uktun ya da Memo; küçük portreli bölmeli düğme */
+function HeroSwitch({ value, onChange, scarf, kit }: { value: CharacterId; onChange: (id: CharacterId) => void; scarf: Scarf | null; kit: Kit }) {
+  const t = useT()
+  return (
+    <div className="seg" role="group" aria-label={t('Yolcu')}>
+      {(['uktun', 'memo'] as const).map((id) => (
+        <button key={id} aria-pressed={value === id} onClick={() => value !== id && onChange(id)} className="flex items-center gap-1.5 !px-2.5">
+          <Portrait id={id} scarf={scarf} accessory={kit} className="w-[22px]" />
+          {CHARACTERS[id].name}
+        </button>
+      ))}
     </div>
   )
 }

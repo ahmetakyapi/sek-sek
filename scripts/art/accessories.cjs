@@ -1,8 +1,11 @@
 /**
- * Aksesuar föyü: Kılık Dükkânı'nın her aksesuarı (game/accessories.ts) iki kahramanda hareket hâlinde, portrede,
- * telefon boyunda ve sekiz kılıkta. heroDraw.ts ya da portraitDraw.ts'te aksesuar çizimi değişince buna bak.
+ * Aksesuar föyü: Kılık Dükkânı'nın her aksesuarı (game/accessories.ts) kendi yuvasında tek başına, ardından birkaç
+ * kombin (baş + yüz + sırt); her satır iki kahramanda hareket hâlinde, portrede, telefon boyunda ve sekiz kılıkta.
+ * heroDraw.ts ya da portraitDraw.ts'te aksesuar çizimi değişince buna bak.
  *
- *   node scripts/art/accessories.cjs [çıktı.png]        (varsayılan /tmp/seksek-aksesuar.png)
+ *   node scripts/art/accessories.cjs [çıktı.png] [süzgeç]   (varsayılan /tmp/seksek-aksesuar.png)
+ *
+ * süzgeç: virgülle kimlikler; yalnız bunlardan birini taşıyan satırlar çizilir (ör. `lale,pelerin`).
  */
 const { chromium } = require('playwright')
 const esbuild = require('esbuild')
@@ -12,6 +15,7 @@ const os = require('os')
 
 const root = path.join(__dirname, '..', '..')
 const out = process.argv[2] || '/tmp/seksek-aksesuar.png'
+const only = process.argv[3] ? process.argv[3].split(',') : null
 
 ;(async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seksek-aksesuar-'))
@@ -26,7 +30,18 @@ const out = process.argv[2] || '/tmp/seksek-aksesuar.png'
   fs.writeFileSync(
     path.join(dir, 'index.html'),
     `<!doctype html><body style="margin:0;background:#4a3550"><canvas id="c"></canvas><script src="s.js"></script><script>
-const accs = S.ACCESSORIES.map((a) => a.id)
+const none = { head: 'yok', face: 'yok', back: 'yok' }
+const combos = [
+  { head: 'kulaklik', face: 'gunes', back: 'pelerin' },
+  { head: 'fes', face: 'kayak', back: 'saz' },
+  { head: 'kulaklik', face: 'kayak', back: 'heybe' },
+  { head: 'lale', face: 'gozluk', back: 'pelerin' },
+  { head: 'bere', face: 'gunes', back: 'saz' },
+  { head: 'hasir', face: 'kayak', back: 'pelerin' },
+]
+const only = ${JSON.stringify(only)}
+const accs = [...S.ACCESSORIES.map((a) => ({ ...none, [a.slot]: a.id })), ...combos].filter((k) => !only || only.some((id) => Object.values(k).includes(id)))
+const name = (k) => Object.values(k).filter((v) => v !== 'yok').join(' + ')
 const looks = Object.keys(S.LOOKS)
 const moves = [['uktun', 'bekle', S.POSES.idle, false], ['uktun', 'koş', S.gait(0.25), true], ['uktun', 'zıpla', S.POSES.jump, true], ['uktun', 'dash', S.POSES.dash, true], ['uktun', 'duvar', S.POSES.wall, false],
   ['memo', 'bekle', S.POSES.idle, false], ['memo', 'koş', S.gait(0), true], ['memo', 'düş', S.POSES.fall, true], ['memo', 'tepe', S.POSES.apex, true], ['memo', 'duvar', S.POSES.wall, false]]
@@ -40,7 +55,7 @@ const label = (t, x, y, a = 'center') => { c.fillStyle = '#fff'; c.font = '14px 
 const floor = (x, y, w = 130) => { c.fillStyle = '#8a95a8'; c.fillRect(x - w / 2, y, w, 4) }
 accs.forEach((acc, r) => {
   const y0 = r * rowH
-  label(acc, 10, y0 + 120, 'left')
+  label(name(acc), 10, y0 + 20, 'left')
   moves.forEach(([who, n, p, mv], i) => {
     const x = 120 + cw / 2 + i * cw, y = y0 + 200
     floor(x, y)
@@ -64,7 +79,7 @@ accs.forEach((acc, r) => {
 // sekiz kılık: her aksesuarla bekleme pozunda
 const ly0 = accs.length * rowH + 40
 accs.forEach((acc, r) => {
-  label(acc, 10, ly0 + r * lookRowH + 80, 'left')
+  label(name(acc), 10, ly0 + r * lookRowH + 20, 'left')
   looks.forEach((k, i) => {
     const x = 120 + 60 + i * 130, y = ly0 + r * lookRowH + 135
     floor(x, y, 100)

@@ -133,9 +133,12 @@ export interface Save {
   turnuva?: TournamentMark | null
   /** Ayna Yolu (Yeni Oyun+) rekorları (ms), şehir kimliğiyle */
   ayna?: Record<string, number>
-  /** kılık dükkânında alınan aksesuarlar ve takılı olan */
+  /** kılık dükkânında alınan aksesuarlar */
   owned?: Record<string, boolean>
+  /** eski kayıtta takılı tek aksesuar (yeni kayıtta `kit`; kitFor ikisini de okur) */
   accessory?: string
+  /** takılı kombin: yuva başına bir aksesuar (baş, yüz, sırt) */
+  kit?: { head?: string; face?: string; back?: string }
   /** final sahnesi görüldü mü */
   sawEnding?: boolean
   /** mücadele haritalarının en iyi süreleri (ms), mücadele kimliğiyle */
@@ -266,7 +269,7 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'kit', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -319,6 +322,7 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     friends: local.friends ?? cloud.friends,
     owned: { ...cloud.owned, ...local.owned },
     accessory: local.accessory ?? cloud.accessory,
+    kit: local.kit ?? cloud.kit,
     sawEnding: local.sawEnding || cloud.sawEnding,
     ustalar: { ...cloud.ustalar, ...local.ustalar },
     coop: Object.fromEntries([...Object.entries(cloud.coop ?? {}), ...Object.entries(local.coop ?? {})].map(([k, v]) => [k, Math.min(v, cloud.coop?.[k] ?? v, local.coop?.[k] ?? v)])),
@@ -380,7 +384,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, turnuva: null, ayna: {}, sawEnding: false, owned: {}, accessory: undefined })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, turnuva: null, ayna: {}, sawEnding: false, owned: {}, accessory: undefined, kit: undefined })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {

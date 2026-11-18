@@ -5,7 +5,7 @@ import { CHARACTERS, type CharacterDef } from './characters'
 import type { Boss } from './boss'
 import { drawBoss } from './bossDraw'
 import { INK, LOOKS, POSES, airPose, climbPose, drawHero, gait, handPos, lerpPose, swimStroke, type Look, type Pose } from './heroDraw'
-import type { AccessoryId } from './accessories'
+import { NO_KIT, type Kit } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
@@ -98,7 +98,7 @@ export class Renderer {
   /** oyuncunun seçtiği atkı rengi (yoksa karakterin kendi atkısı) */
   scarf: { color: string; shade: string } | null = null
   /** Kılık Dükkânı'ndan takılan aksesuar (game/accessories.ts) */
-  accessory: AccessoryId = 'yok'
+  accessory: Kit = NO_KIT
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
@@ -4461,7 +4461,7 @@ interface HeroDraw {
   sy: number
   scarf?: string
   scarfS?: string
-  acc?: AccessoryId
+  acc?: Kit
   /** bütün gövdenin dönüşü (radyan, ileri +): yüzerken yatar, telde salınır; `pivot` ayak tabanından yukarı (dünya px) */
   rot?: number
   pivot?: number
