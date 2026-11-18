@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { World } from '@/game/sim'
 import { ROWS, customLevel, decodeMap, encodeMap, validateMap } from '@/lib/customLevel'
-import { KEEP, STAMPS, TEMPLATES, cut, fillRect, floodFill, mirrorRect, mirrorRows, placePattern } from '@/lib/editorKit'
+import { KEEP, STAMPS, TEMPLATES, cut, fillRect, floodFill, mapNotes, mirrorRect, mirrorRows, placePattern } from '@/lib/editorKit'
 import { solve } from '../scripts/solver'
 
 /** 80 sütun düz zemin (üst yüzey 20. satır), başlangıç solda, çıkış sağda */
@@ -69,5 +69,31 @@ describe('araçlar', () => {
     expect(flipped[19][78]).toBe('P')
     expect(flipped[19][2]).toBe('E')
     expect(mirrorRect(flipped, r)).toEqual(ground())
+  })
+})
+
+describe('harita uyarıları', () => {
+  it('düz zeminde uyarı yok; şablon ve parçalar uyarısız', () => {
+    const flagged = ground().map((r, y) => (y === 19 ? r.slice(0, 40) + 'F' + r.slice(41) : r))
+    expect(mapNotes(flagged)).toEqual([])
+    for (const tpl of TEMPLATES) expect(mapNotes(tpl.make()), tpl.name).toEqual([])
+  })
+  it('havadaki başlangıç, uzak bayrak, kapısız boss, bloksuz plaka ve boşlukta biten teleferik', () => {
+    const m = ground().map((r) => r + ' '.repeat(40))
+    const wide = m.map((r, y) => (y >= 20 ? '#'.repeat(r.length) : r))
+    const put = (rows: string[], x: number, y: number, ch: string) => rows.map((r, yy) => (yy === y ? r.slice(0, x) + ch + r.slice(x + 1) : r))
+    let bad = wide.map((r, y) => (y >= 20 ? r.slice(0, 1) + '~' + r.slice(2) : r))
+    bad = put(bad, 1, 19, 'P').map((r, y) => (y === 19 ? r.slice(0, 2) + ' ' + r.slice(3) : r))
+    bad = put(bad, 40, 19, 'Q')
+    bad = put(bad, 50, 19, '_')
+    bad = put(put(put(bad, 60, 10, 'R'), 61, 10, 'R'), 62, 10, 'R')
+    const texts = mapNotes(bad).map((n) => n.text)
+    expect(texts.some((t) => t.startsWith('Başlangıcın altında'))).toBe(true)
+    expect(texts.some((t) => t.startsWith('Bayraklar arası'))).toBe(true)
+    expect(texts.some((t) => t.startsWith('Boss var'))).toBe(true)
+    expect(texts.some((t) => t.startsWith('Plaka var'))).toBe(true)
+    expect(mapNotes(put(put(put(wide, 40, 19, 'F'), 60, 10, 'R'), 61, 10, 'R')).some((n) => n.text.startsWith('Teleferik'))).toBe(false)
+    const hole = put(put(wide, 60, 10, 'R'), 61, 10, 'R').map((r, y) => (y >= 20 ? r.slice(0, 61) + '~' + r.slice(62) : r))
+    expect(mapNotes(hole).filter((n) => n.text.startsWith('Teleferik')).map((n) => n.x)).toEqual([61])
   })
 })

@@ -387,22 +387,26 @@ function drawTorso(c: CanvasRenderingContext2D, s: Skin, x: number, y: number) {
  * Atkı. Arka uç ensedeki düğümden çıkan bir kurdeledir: dururken sırta sarkar ve hafifçe salınır, koşarken geriye
  * uzanıp dalga dalga çırpınır (dalga düğümden uca doğru yürür), düşerken yukarı savrulur. lift: -1 aşağı .. 1 yukarı.
  */
-function drawScarf(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, t: number, moving: boolean, lift: number) {
+function drawScarf(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, t: number, flow: number, lift: number) {
   const ox = x - 6
   const oy = y - 24.5
+  // flow: 0 sarkık .. 1 koşu .. 1,4 dash; ara değerler sürekli (oyunda gecikmeli izler: render.ts heroAnim)
+  const f = Math.max(0, Math.min(1, flow))
+  const over = Math.max(0, Math.min(0.4, flow - 1))
   // uzun saçlıda uç saçın arkasından çıkacak kadar uzar (yoksa yalnız ucu görünür, yumru gibi durur)
-  const ex = moving ? (s.long ? -29 : -19) : -5.5 - Math.abs(lift) * 6
-  const ey = moving ? 1 - lift * 10 : 11 - lift * 14
+  const ex = (-5.5 - Math.abs(lift) * 6) * (1 - f) + (s.long ? -29 : -19) * f * (1 + over * 0.35)
+  const ey = (11 - lift * 14) * (1 - f) + (1 - lift * 10) * f
   const len = Math.hypot(ex, ey)
   const nx = -ey / len
   const ny = ex / len
-  const sp = moving ? 13 : 2.6
-  const amp = moving ? 2.8 : 0.8
+  // iki dalga karışır: dururken yavaş salınım, koşarken hızlı çırpınma (hız değişince evre sıçramaz)
+  const fast = 2.8 * (f + over * 1.5)
+  const slow = 0.8 * (1 - f)
   // kurdelenin iki kenarı: u düğümden uca 0..1, side +1 / -1
   const P = (u: number, side: number): [number, number] => {
-    const wv = Math.sin(t * sp - u * 4.4) * amp * u
+    const wv = (Math.sin(t * 13 - u * 4.4) * fast + Math.sin(t * 2.6 - u * 4.4) * slow) * u
     const off = wv + side * (2.3 + u * 1.2)
-    return [ox + ex * u + nx * off, oy + ey * u + ny * off - Math.sin(u * Math.PI) * (moving ? 0 : 1.6)]
+    return [ox + ex * u + nx * off, oy + ey * u + ny * off - Math.sin(u * Math.PI) * 1.6 * (1 - f)]
   }
   const a1 = P(0.34, 1)
   const a2 = P(0.7, 1)
@@ -449,7 +453,7 @@ function drawScarf(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, t
   )
   fine(c, x - 5.4, y - 27.4, x - 1, y - 28.6, x + 3, y - 28, 1.1, GLINT)
   // önden düşen uç: adımla hafifçe sallanır
-  const sw = Math.sin(t * (moving ? 13 : 2.6) + 1.3) * (moving ? 1.1 : 0.3)
+  const sw = Math.sin(t * 13 + 1.3) * 1.1 * f + Math.sin(t * 2.6 + 1.3) * 0.3 * (1 - f)
   c.beginPath()
   c.moveTo(x + 2.5, y - 24)
   c.lineTo(x + 6.5, y - 24)
@@ -1302,9 +1306,9 @@ function drawStrap(c: CanvasRenderingContext2D, tx: number, ty: number) {
 
 /**
  * Karakteri çizer. (x, y): ayak tabanı orta noktası ekran pikselinde, size: karakter boyu pikselde.
- * flip: sola bakar. t: saniye (atkı ve saç salınımı, nefes).
+ * flip: sola bakar. t: saniye (atkı ve saç salınımı, nefes). opts.flow: atkının savrulması (0 sarkık .. 1,4 dash).
  */
-export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x: number, y: number, size: number, flip: boolean, t: number, opts: { moving?: boolean; sx?: number; sy?: number; scarf?: string; scarfS?: string; acc?: AccessoryId } = {}) {
+export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x: number, y: number, size: number, flip: boolean, t: number, opts: { moving?: boolean; sx?: number; sy?: number; scarf?: string; scarfS?: string; acc?: AccessoryId; flow?: number } = {}) {
   const s0 = LOOKS[look]
   const s = opts.scarf ? { ...s0, scarf: opts.scarf, scarfS: opts.scarfS ?? s0.scarfS } : s0
   const moving = !!opts.moving
@@ -1417,7 +1421,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
     c.fill()
     fine(c, tx - 4.6, ty - 5.4, tx - 3.4, ty - 9.4, tx + 0.4, ty - 11, 1.2, GLINT)
   }
-  if (!s.bare) drawScarf(c, s, tx, ty + breath, t, moving, lift)
+  if (!s.bare) drawScarf(c, s, tx, ty + breath, t, opts.flow ?? (moving ? 1 : 0), lift)
   // kafa boyuna göre biraz büyük: sevimli oran
   c.save()
   c.translate(tx + 1, ty - 28 + breath)
@@ -1432,43 +1436,104 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
 }
 
 /**
- * Koşu döngüsü: 0 ve 0,5 temas, 0,25 ve 0,75 geçiş. Gövde hafifçe öne eğilir; saç ve atkı her adımda bir kez
- * yaylanır (ikincil hareket), kollar bacaklara ters salınır ve öndeki kol dirsekten daha çok bükülür.
+ * Koşu döngüsü: 0 ve 0,5 temas, 0,25 ve 0,75 geçiş. Gövde öne eğilir ve geçişte hafifçe havalanır (adım yaylanır);
+ * saç ve atkı her adımda bir kez yaylanır (ikincil hareket), kollar dirsekten bükük, bacaklara ters salınır.
+ * speed: koşu hızının tam koşuya oranı (yavaşta adım kısalır, nitroda gövde daha çok eğilir).
  */
-export function gait(phase: number): Pose {
+export function gait(phase: number, speed = 1): Pose {
+  const k = Math.max(0.3, Math.min(1.6, speed))
+  const slow = Math.min(1, k)
+  const fast = Math.max(0, k - 1)
   const ph = phase * Math.PI * 2 + Math.PI / 2
   const sn = Math.sin(ph)
   const cs = Math.cos(ph)
+  const stride = 34 * (0.55 + 0.45 * slow) * (1 + fast * 0.25)
   const leg = (sign: number): [number, number] => {
-    const th = 32 * sn * sign
+    const th = stride * sn * sign
     // v > 0: bacak öne savruluyor (havada, diz bükülür); v < 0: ayak yerde geriye itiyor (bacak düz). Eskiden işaret
     // tersti: diz yerdeyken bükülüp havada düzleşiyor, karakter geri geri yürüyor gibi görünüyordu
     const v = cs * sign
-    const bend = v > 0 ? 10 + 70 * Math.pow(v, 1.2) : 6 + 12 * -v
+    const bend = v > 0 ? 10 + (62 + 18 * slow) * Math.pow(v, 1.2) : 6 + 12 * -v
     return [th, bend]
   }
   const spring = Math.sin(ph * 2)
+  // geçişte (iki ayak alt alta) gövde en yüksekte: koşunun yaylanması
+  const hop = 0.5 + 0.5 * Math.cos(ph * 2)
+  const swing = 38 * (0.6 + 0.4 * slow) * (1 + fast * 0.2)
   return {
     legs: [leg(-1), leg(1)],
     arms: [
-      [32 * sn, 32 * sn + 42 + 26 * Math.max(0, sn)],
-      [-32 * sn, -32 * sn + 42 + 26 * Math.max(0, -sn)],
+      [swing * sn, swing * sn + 58 + 30 * Math.max(0, sn)],
+      [-swing * sn, -swing * sn + 58 + 30 * Math.max(0, -sn)],
     ],
-    lean: 1.2,
-    tilt: 0.075 + 0.012 * spring,
+    lean: 1.6,
+    tilt: 0.06 + 0.06 * slow + 0.07 * fast + 0.014 * spring,
     ground: true,
-    hair: 0.5 + 0.22 * spring,
+    bob: -1.7 * hop * slow,
+    hair: 0.45 + 0.25 * slow + 0.22 * spring,
     lift: 0.12 * spring,
   }
+}
+
+/** iki poz arasında doğrusal geçiş (eklem açıları, eğim, savrulma); u = 0 a, 1 b */
+export function lerpPose(a: Pose, b: Pose, u: number): Pose {
+  const m = (x: number, y: number) => x + (y - x) * u
+  const pair = (p: [number, number], q: [number, number]): [number, number] => [m(p[0], q[0]), m(p[1], q[1])]
+  const ra = a.reach ?? 1
+  const rb = b.reach ?? 1
+  return {
+    legs: [pair(a.legs[0], b.legs[0]), pair(a.legs[1], b.legs[1])],
+    arms: [pair(a.arms[0], b.arms[0]), pair(a.arms[1], b.arms[1])],
+    lean: m(a.lean ?? 0, b.lean ?? 0),
+    tilt: m(a.tilt ?? 0, b.tilt ?? 0),
+    bob: m(a.bob ?? 0, b.bob ?? 0),
+    hair: m(a.hair ?? 0, b.hair ?? 0),
+    lift: m(a.lift ?? 0, b.lift ?? 0),
+    ground: u < 0.5 ? a.ground : b.ground,
+    reach: typeof ra === 'number' && typeof rb === 'number' ? m(ra, rb) : u < 0.5 ? ra : rb,
+  }
+}
+
+const smooth = (u: number) => u * u * (3 - 2 * u)
+
+/**
+ * Havada poz, dikey hıza göre sürekli: yükselişte gövde uzar, bir diz toplanır, öndeki kol yukarı uzanır →
+ * tepede iki diz toplanır, kollar yana açılır (asılı an) → düşüşte kollar yukarı açılır, bacaklar inişe uzanır.
+ * vy: px/sn (+ aşağı). t: saniye (düşerken kollar hafifçe çırpınır).
+ */
+export function airPose(vy: number, t = 0): Pose {
+  const u = Math.max(0, Math.min(1, 0.5 + vy / 560))
+  const p = u < 0.5 ? lerpPose(POSES.rise, POSES.apex, smooth(u * 2)) : lerpPose(POSES.apex, POSES.fall, smooth((u - 0.5) * 2))
+  const fl = Math.max(0, u - 0.6) / 0.4
+  if (fl > 0) {
+    const w = Math.sin(t * 11) * 9 * fl
+    p.arms = [[p.arms[0][0] - w, p.arms[0][1] - w * 1.3], [p.arms[1][0] + w, p.arms[1][1] + w * 1.3]]
+    const k = Math.sin(t * 9 + 1) * 6 * fl
+    p.legs = [[p.legs[0][0] + k, p.legs[0][1]], [p.legs[1][0] - k, p.legs[1][1]]]
+  }
+  return p
 }
 
 export const POSES: Record<string, Pose> = {
   idle: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [-8, 10]], ground: true },
   jump: { legs: [[-16, 14], [52, 96]], arms: [[-50, -30], [115, 140]], hair: 0.7, lift: -0.5, tilt: 0.04 },
-  apex: { legs: [[24, 80], [48, 96]], arms: [[-95, -70], [100, 125]], hair: 0.6, lift: 0.25, bob: -2 },
-  fall: { legs: [[-20, 24], [18, 32]], arms: [[-120, -140], [105, 125]], hair: 0.9, lift: 1, tilt: -0.03 },
-  land: { legs: [[22, 70], [42, 90]], arms: [[-40, -15], [45, 75]], ground: true, hair: 0.5, lift: 0.5, tilt: 0.1 },
-  wall: { legs: [[8, 30], [42, 72]], arms: [[60, 80], [112, 126]], lift: 0.4 },
-  dash: { legs: [[-78, 8], [-52, 38]], arms: [[-78, -88], [-92, -102]], lean: -2.5, tilt: 0.36, hair: 1.3 },
+  /** yükseliş: gövde uzun, yakın diz göğse, öndeki kol göğe uzanır, arka bacak itişten düz kalır */
+  rise: { legs: [[-20, 10], [62, 104]], arms: [[-48, -24], [118, 142]], hair: 0.75, lift: -0.7, tilt: 0.02 },
+  /** tepe: asılı an; dizler toplanır, kollar yana açılır */
+  apex: { legs: [[26, 84], [50, 100]], arms: [[-98, -74], [98, 122]], hair: 0.55, lift: 0.2, bob: -2 },
+  /** düşüş: kollar yukarı açılır, bacaklar aşağı uzanıp inişe hazırlanır */
+  fall: { legs: [[-16, 22], [20, 30]], arms: [[-128, -108], [104, 126]], hair: 0.95, lift: 1, tilt: -0.04 },
+  /** iniş: dizler bükük, kollar dengeye açılır (squash render.ts'te) */
+  land: { legs: [[26, 78], [46, 96]], arms: [[-36, -8], [52, 86]], ground: true, hair: 0.5, lift: 0.55, tilt: 0.16 },
+  /** duvar kayması: yüz duvara dönük, iki el duvarda, yakın diz kalkık, taban duvara dayalı */
+  wall: { legs: [[-8, 22], [62, 50]], arms: [[128, 162], [62, 104]], lean: 1.5, lift: 0.6, hair: 0.2, tilt: 0.05 },
+  /** fren: eski yöne bakar, geriye yaslanır; yakın bacak önde dümdüz kayar, kollar savrulur */
+  brake: { legs: [[-24, 52], [40, 4]], arms: [[150, 128], [96, 112]], lean: -2.2, tilt: -0.3, ground: true, hair: 0.05, lift: 0.5 },
+  /** yatay dash: gövde öne yatar (render.ts ayrıca döndürür), kollar ve bacaklar geriye savrulur */
+  dash: { legs: [[-80, 6], [-56, 34]], arms: [[-82, -92], [-96, -106]], lean: -2.5, tilt: 0.42, hair: 1.3 },
+  /** yukarı / çapraz dash: roket; uzak kol başın üstünden yöne uzanır, yakın kol gövdeye yapışık, bacaklar bitişik (render.ts yöne döndürür) */
+  rocket: { legs: [[-6, 4], [4, 10]], arms: [[166, 176], [-22, -12]], hair: 1.2, lift: -1 },
+  /** aşağı dash: ayakla iner; uzak kol yukarı, yakın kol geriye savrulur, dizler hafif bükük */
+  stomp: { legs: [[10, 12], [-6, 6]], arms: [[150, 170], [-118, -150]], hair: 0.1, lift: 1 },
   wave: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [105, 140]], ground: true },
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '@/game/levels'
 import { World } from '@/game/sim'
-import { CITY_CODES, MAX_W, ROWS, SAMPLE_MAP, SYMBOLS, customLevel, customMedals, decodeMap, encodeMap, validateMap, textProblem } from '@/lib/customLevel'
+import { BOSS_SPEEDS, CITY_CODES, MAX_W, ROWS, SAMPLE_MAP, SYMBOLS, bossDesign, customLevel, customMedals, decodeMap, encodeMap, validateMap, textProblem } from '@/lib/customLevel'
 import { solve } from '../scripts/solver'
 
 const blank = (w: number) => {
@@ -196,5 +196,41 @@ describe('özel haritada boss', () => {
     const lv = customLevel(r.map, r.city, r.texts)
     expect(lv.bossOf).toBe('denizli')
     expect(new World(lv).boss?.def.name).toBe('Denizli Horozu')
+  })
+})
+
+describe('Boss Tasarımcısı', () => {
+  const arena = SAMPLE_MAP.map((r, y) => (y === 19 ? r.slice(0, 45) + 'Q' + r.slice(46) : r))
+  it('tasarımdan önceki kod aynen açılır ve aynı kodu verir', () => {
+    // bu kod Boss Tasarımcısı'ndan önceki sürümle üretildi (Van'ın boss'u, bir tabela yazısı)
+    const old = 'AwAAPPMD2gcsA3ELAQMZQAMASAMMKAMHTAINAtADAEgDAkQBBw4hBzYhBzYhBzYhByR7InMiOlsiTWVyaGFiYSJdLCJuIjpbXSwiYiI6InZhbiJ9'
+    const r = decodeMap(old)
+    expect('error' in r).toBe(false)
+    if ('error' in r) return
+    expect(r.map).toEqual(arena)
+    expect(r.texts).toEqual({ signs: ['Merhaba'], npcs: [], boss: 'van' })
+    expect(encodeMap(r.map, r.city, r.texts)).toBe(old)
+    expect(customLevel(r.map, r.city, r.texts).bossBoost).toBeUndefined()
+  })
+  it('ikinci boss, kademe, hız ve can kodla gider gelir ve dünyaya işler', () => {
+    const design = { signs: [], npcs: [], boss: 'istanbul' as const, boss2: 'kocaeli' as const, bossTier: 3 as const, bossSpeed: 115, bossHp: 2 }
+    const r = decodeMap(encodeMap(arena, 'izmir', design))
+    expect('error' in r).toBe(false)
+    if ('error' in r) return
+    expect(r.texts).toEqual(design)
+    const lv = customLevel(r.map, r.city, r.texts)
+    expect(lv).toMatchObject({ bossOf: 'istanbul', bossOf2: 'kocaeli', bossBoost: { tier: 3, speed: 1.15, hp: 2 } })
+    const w = new World(lv)
+    expect(w.boss!.def.tier).toBe(3)
+    expect(w.boss!.hp).toBe(5)
+    expect(w.boss!.def.speed).toBeCloseTo(0.85 * 1.15)
+    expect(w.boss2!.def.name).toBe('Pişmaniye Yumağı')
+  })
+  it('boss yoksa tasarım bölüme yazılmaz; bozuk değerler yok sayılır', () => {
+    const lv = customLevel(SAMPLE_MAP, 'izmir', { signs: [], npcs: [], boss2: 'van', bossTier: 3 })
+    expect(lv.bossOf2).toBeUndefined()
+    expect(lv.bossBoost).toBeUndefined()
+    expect(bossDesign(arena, { signs: [], npcs: [], bossSpeed: 100 })).toEqual({})
+    expect(BOSS_SPEEDS).toContain(100)
   })
 })

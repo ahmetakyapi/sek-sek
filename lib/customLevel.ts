@@ -10,6 +10,8 @@
  *   Sürüm 2: her koşu üst 6 bit simge sırası (64 simgeye yer), alt 2 bit (uzunluk - 1); 3 ise ardından (uzunluk - 4) varint.
  *   Sürüm 3: sürüm 2 + haritanın ardından metin bölümü: tabela (?) ve şehir insanı (n) metinleri, UTF-8 JSON
  *            `{ s: string[], n: [ad, söz, kılık][] }` (soldan sağa haritadaki sırayla). Metinsiz harita sürüm 1/2 kalır.
+ *            Boss Tasarımcısı aynı JSON'a isteğe bağlı anahtarlar ekler: `b` boss'un şehri, `b2` ikinci boss, `bt` en az kademe
+ *            (2-3), `bs` hız yüzdesi (BOSS_SPEEDS), `bh` fazladan can (1-3). Anahtarı olmayan eski kod aynen açılır.
  * Simge ve şehir sıraları kalıcıdır: yeni simge ya da şehir yalnız listenin SONUNA eklenir, yoksa eski kodlar bozulur.
  */
 import { LEVELS } from '@/game/levels'
@@ -44,7 +46,18 @@ export interface CustomTexts {
   npcs: { name: string; text: string; look: Npc['look'] }[]
   /** haritadaki boss'un (Q) hangi şehrin boss'u olduğu; yoksa seçilen şehrinki */
   boss?: CityKey
+  /** Boss Tasarımcısı: arenanın öbür ucundan katılan ikinci boss (LevelDef.bossOf2; kapı ikisi de düşünce açılır) */
+  boss2?: CityKey
+  /** en az kademe (2-3); boss'un kendi kademesi daha yüksekse o kalır */
+  bossTier?: 2 | 3
+  /** hız yüzdesi (BOSS_SPEEDS); yoksa 100 */
+  bossSpeed?: number
+  /** fazladan can (1-BOSS_HP_MAX) */
+  bossHp?: number
 }
+/** Boss Tasarımcısı'nın hız seçenekleri (yüzde): yavaş, normal, hızlı, çok hızlı. Kural ve işaret süreleri hızla birlikte ölçeklenir. */
+export const BOSS_SPEEDS = [80, 100, 115, 130] as const
+export const BOSS_HP_MAX = 3
 export const MAX_SIGNS = 8
 export const MAX_NPCS = 4
 export const SIGN_MAX = 140
@@ -63,7 +76,7 @@ export function textProblem(t: CustomTexts): string | null {
   return null
 }
 
-const hasTexts = (t?: CustomTexts) => !!t && (!!t.boss || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
+const hasTexts = (t?: CustomTexts) => !!t && (!!t.boss || !!t.boss2 || !!t.bossTier || !!t.bossSpeed || !!t.bossHp || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
 
 /** Kodda şehrin sırası; kalıcı (yeni şehir sona). */
 export const CITY_CODES = [
@@ -156,10 +169,21 @@ export function encodeMap(map: string[], city: CityKey, texts?: CustomTexts): st
     i = j
   }
   if (withText) {
-    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...(texts!.boss ? { b: texts!.boss } : {}) })
+    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...bossJson(texts!) })
     body.push(...new TextEncoder().encode(json))
   }
   return toB64url([v1 ? 1 : withText ? 3 : 2, ci, w >> 8, w & 0xff, checksum(body), ...body])
+}
+
+/** Boss Tasarımcısı'nın anahtarları: yalnız varsayılandan farklı olanlar yazılır (eski haritanın kodu değişmez) */
+function bossJson(t: CustomTexts) {
+  return {
+    ...(t.boss ? { b: t.boss } : {}),
+    ...(t.boss2 ? { b2: t.boss2 } : {}),
+    ...(t.bossTier ? { bt: t.bossTier } : {}),
+    ...(t.bossSpeed && t.bossSpeed !== 100 ? { bs: t.bossSpeed } : {}),
+    ...(t.bossHp ? { bh: t.bossHp } : {}),
+  }
 }
 
 /** Kodu haritaya çevirir; bozuk kod, boyut, yasak karakter ve P/E sayısı denetlenir. */
@@ -206,12 +230,17 @@ export function decodeMap(code: string): { map: string[]; city: CityKey; texts: 
   let texts = emptyTexts()
   if (ver === 3) {
     try {
-      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown; b?: unknown }
+      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown; b?: unknown; b2?: unknown; bt?: unknown; bs?: unknown; bh?: unknown }
+      const city = (v: unknown) => ((CITY_CODES as readonly unknown[]).includes(v) ? (v as CityKey) : undefined)
       const str = (v: unknown) => (typeof v === 'string' ? v : '')
       texts = {
         signs: Array.isArray(j.s) ? j.s.map(str) : [],
         npcs: Array.isArray(j.n) ? j.n.map((x) => (Array.isArray(x) ? { name: str(x[0]), text: str(x[1]), look: NPC_LOOKS.includes(x[2]) ? x[2] : 'amca' } : { name: '', text: '', look: 'amca' as const })) : [],
-        ...((CITY_CODES as readonly string[]).includes(str(j.b)) ? { boss: str(j.b) as CityKey } : {}),
+        ...(city(j.b) ? { boss: city(j.b) } : {}),
+        ...(city(j.b2) ? { boss2: city(j.b2) } : {}),
+        ...(j.bt === 2 || j.bt === 3 ? { bossTier: j.bt } : {}),
+        ...((BOSS_SPEEDS as readonly unknown[]).includes(j.bs) && j.bs !== 100 ? { bossSpeed: j.bs as number } : {}),
+        ...(typeof j.bh === 'number' && Number.isInteger(j.bh) && j.bh >= 1 && j.bh <= BOSS_HP_MAX ? { bossHp: j.bh } : {}),
       }
     } catch {
       return { error: 'Harita kodu bozuk.' }
@@ -224,6 +253,17 @@ export function decodeMap(code: string): { map: string[]; city: CityKey; texts: 
 
 /** Madalya süreleri genişlikten: altın 0,12 · gümüş 0,18 · bronz 0,26 sn/sütun. */
 export const customMedals = (w: number): [number, number, number] => [Math.round(w * 0.12), Math.round(w * 0.18), Math.round(w * 0.26)]
+
+/** Boss Tasarımcısı'nın seçimi bölüme: yalnız haritada boss (Q) varsa */
+export function bossDesign(map: string[], t: CustomTexts): Pick<LevelDef, 'bossOf' | 'bossOf2' | 'bossBoost'> {
+  if (!map.some((r) => r.includes('Q'))) return {}
+  const boosted = t.bossTier || (t.bossSpeed && t.bossSpeed !== 100) || t.bossHp
+  return {
+    ...(t.boss ? { bossOf: t.boss } : {}),
+    ...(t.boss2 ? { bossOf2: t.boss2 } : {}),
+    ...(boosted ? { bossBoost: { tier: t.bossTier ?? 1, speed: (t.bossSpeed ?? 100) / 100, ...(t.bossHp ? { hp: t.bossHp } : {}) } } : {}),
+  }
+}
 
 /** Özel haritayı oyunun okuyacağı bölüme çevirir: görünüm ve şehir metinleri seçilen şehirden, harita ve ad özel. */
 export function customLevel(map: string[], city: CityKey, texts: CustomTexts = emptyTexts()): LevelDef {
@@ -248,7 +288,7 @@ export function customLevel(map: string[], city: CityKey, texts: CustomTexts = e
       return { name: n?.name.trim() || 'Yolcu', look: n?.look ?? 'amca', text: n?.text.trim() || '…' }
     }),
     medals: customMedals(map[0]?.length ?? MIN_W),
-    bossOf: map.some((r) => r.includes('Q')) ? texts.boss : undefined,
+    ...bossDesign(map, texts),
     quips: base.quips,
     wind: undefined,
     finaleAt: undefined,

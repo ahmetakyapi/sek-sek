@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { AIR, NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
+import { AIR, CHASE, NITRO, PHYS, RHYTHM, World, restore, snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -195,6 +195,60 @@ describe('co-op eşi', () => {
     expect(Math.abs(w.player.x - w.partner!.x)).toBeLessThan(16)
   })
 
+  it('omuz sekmesi: eşin başına inerken zıplayan tek zıplamadan yükseğe çıkar', () => {
+    const tall = ['            ', '            ', '            ', '            ', '            ', '            ', '            ', ' P          ', '############']
+    // tek başına zıplamanın tepesi
+    const solo = mk(tall)
+    solo.started = true
+    step(solo, 0.3)
+    const floor = solo.player.y
+    let soloTop = floor
+    for (let i = 0; i < 120; i++) {
+      solo.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i === 0 })
+      soloTop = Math.min(soloTop, solo.player.y)
+    }
+    // co-op: eş yerde durur, oyuncu zıplayıp eşin başına iner ve inerken yeniden zıplamaya basar
+    const w = mk(tall)
+    w.enableCoop()
+    w.started = true
+    two(w, 0.3)
+    w.player.x = w.partner!.x
+    w.player.y = w.partner!.y - 30
+    w.player.vy = 60
+    let top = w.player.y
+    let bounced = false
+    for (let i = 0; i < 180; i++) {
+      w.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i % 10 === 0 })
+      w.stepPartner(1 / 120, emptyInput())
+      if (w.events.some((e) => e.type === 'shoulder')) bounced = true
+      w.events.length = 0
+      top = Math.min(top, w.player.y)
+    }
+    expect(bounced).toBe(true)
+    expect(floor - top).toBeGreaterThan((floor - soloTop) * 1.2)
+  })
+
+  it('omuzda sekmeyen kısa hop yapar, başta takılı kalmaz', () => {
+    const w = mk(['            ', '            ', '            ', ' P          ', '############'])
+    w.enableCoop()
+    w.started = true
+    two(w, 0.3)
+    w.player.x = w.partner!.x
+    w.player.y = w.partner!.y - 20
+    w.player.vy = 40
+    let hops = 0
+    for (let i = 0; i < 240; i++) {
+      w.step(1 / 120, emptyInput())
+      w.stepPartner(1 / 120, emptyInput())
+      hops += w.events.filter((e) => e.type === 'shoulder').length
+      w.events.length = 0
+    }
+    expect(hops).toBeGreaterThan(0)
+    // hop'lar söner: ikisi sonunda yan yana yerde (biri ötekinin başında sonsuza dek sekmez)
+    expect(hops).toBeLessThanOrEqual(2)
+    expect(Math.abs(w.player.y - w.partner!.y)).toBeLessThan(2)
+  })
+
   it('eş çıkışa varınca bölüm biter', () => {
     const w = mk(['            ', ' P      E   ', '############'])
     w.enableCoop()
@@ -360,5 +414,41 @@ describe('derin suda nefes', () => {
     for (let i = 0; i < 120 * 3; i++) w.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i % 20 === 0 })
     expect(w.player.dead).toBe(false)
     expect(w.player.air).toBe(AIR.max)
+  })
+})
+
+describe('Kovalamaca', () => {
+  const long = ['                                                                                                    ', ' P                                                                                                  ', '####################################################################################################']
+  const chase = () => new World({ ...LEVELS[0], map: long, wind: 0, chaser: true })
+  it('duran oyuncuya köpek yetişir ve ısırır', () => {
+    const w = chase()
+    w.started = true
+    step(w, 0.6, { right: true })
+    let bit = false
+    for (let i = 0; i < 120 * 5 && !bit; i++) {
+      w.step(1 / 120, emptyInput())
+      bit = w.events.some((e) => e.type === 'bite')
+      w.events.length = 0
+    }
+    expect(bit).toBe(true)
+    expect(w.deaths).toBe(1)
+  })
+  it('koşmaya devam eden oyuncuya yetişemez; düşünce köpek doğuşta bekler', () => {
+    const w = chase()
+    w.started = true
+    let bit = false
+    for (let i = 0; i < 120 * 12 && !bit; i++) {
+      w.step(1 / 120, { ...emptyInput(), right: true })
+      bit = w.events.some((e) => e.type === 'bite')
+      w.events.length = 0
+      if (w.player.x > 95 * 16) break
+    }
+    expect(bit).toBe(false)
+    expect(w.chaser!.state).toBe('run')
+    w.kill()
+    step(w, 1)
+    expect(w.chaser!.state).toBe('wait')
+    expect(Math.abs(w.chaser!.x - (w.spawn.x + w.player.w / 2))).toBeLessThan(2)
+    expect(CHASE.top).toBeLessThan(PHYS.run)
   })
 })

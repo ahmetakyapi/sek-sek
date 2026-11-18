@@ -174,6 +174,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   // boss da zamanlama engelidir: çözücüde yok sayılır, meydan kapısı açık kabul edilir
   // (yenilebilirliği tests/boss.test.ts oynayarak doğrular)
   w.boss = null
+  w.boss2 = null
   const ms = macros(opts.moves ?? 'all')
   // ilerleme yönü: Ayna Yolu'nda çıkış solda, arama da sola doğru ilerlemeyi öne alır
   const mx = (x: number) => (level.mirror ? w.cols * T - x : x)

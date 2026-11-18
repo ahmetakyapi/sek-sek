@@ -90,7 +90,7 @@ export default function Race({
     phase.current = 'over'
     const runs = sides.current.map((s) => {
       const timeMs = s.doneMs ?? Math.round(s.world.time * 1000)
-      return { timeMs, deaths: s.world.deaths, score: s.doneMs ?? DNF }
+      return { timeMs, deaths: s.world.deaths, items: s.world.pickups.filter((p) => p.taken).length, score: s.doneMs ?? DNF }
     }) as [DuelRun, DuelRun]
     doneRef.current(runs)
   }

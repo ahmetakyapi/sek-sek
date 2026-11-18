@@ -978,6 +978,206 @@ export function drawEnemy(
   }
 }
 
+/* ── Kovalayan köpek ──────────────────────────────────────────── */
+
+const DOG = { fur: '#ead6ae', furS: '#c4a676', far: '#bfa071', mask: '#2e2420', maskL: '#4a3a32', collar: '#7a3a24', stud: '#e8e2d4', mouth: '#7a1c2a', tongue: '#e8687a' }
+
+/** köpek bacağı: (x, y) omuz ya da kalça, a1 üst, a2 alt kemiğin dikeyden açısı (radyan, + ileri); ucunda pati */
+function dogLeg(c: Ctx, x: number, y: number, a1: number, a2: number, color: string, l1 = 3.7, l2 = 3.5) {
+  const kx = x + Math.sin(a1) * l1
+  const ky = y + Math.cos(a1) * l1
+  const fx = kx + Math.sin(a2) * l2
+  const fy = ky + Math.cos(a2) * l2
+  line(c, [x, y, kx, ky, fx, fy], 2, color)
+  ell(c, fx + 0.5, fy - 0.2, 1.25, 0.8, color)
+}
+
+/** köpeğin başı: (0, 0) kafatasının ortası, burun +x; open 0..1 ağız, ear -1..1 kulak savrulması */
+function dogHead(c: Ctx, t: number, open: number, ear: number, mood: Mood) {
+  const g = open
+  // uzak kulak: kafanın ardında, ucu görünür
+  poly(c, [-0.6, -3.4, -3.2 - ear * 0.6, -2.6, -3.4 - ear * 0.8, 0.6, -1.4, -0.6], DOG.mask)
+  // açık ağızda alt çene aşağı döner; içi kırmızı, dişler beyaz
+  if (g > 0.08) {
+    c.save()
+    c.translate(2.6, 1.6)
+    c.rotate(0.85 * g)
+    poly(c, [-0.4, -0.6, 5.4, -0.4, 5.2, 1, 0, 1.4], DOG.mask, '#18100c')
+    if (!halo) {
+      c.fillStyle = '#fffaf0'
+      for (const x of [2.6, 4.2]) {
+        c.beginPath()
+        c.moveTo(x, -0.5)
+        c.lineTo(x + 0.4, -1.6)
+        c.lineTo(x + 0.8, -0.5)
+        c.fill()
+      }
+    }
+    c.restore()
+    if (!halo) {
+      c.beginPath()
+      c.moveTo(2.4, 1.2)
+      c.lineTo(7.6 - g * 0.6, 0.9)
+      c.lineTo(6.8 - g * 1.8, 1.4 + g * 4.4)
+      c.closePath()
+      c.fillStyle = DOG.mouth
+      c.fill()
+      ell(c, 4.6, 1.8 + g * 1.2, 1.4, 0.7, DOG.tongue)
+    }
+  }
+  ell(c, 0, 0, 4.2, 3.7, DOG.fur, DOG.furS)
+  // namlu: kara maske burna doğru uzar; ağız açılınca üst çene biraz kalkar
+  c.save()
+  c.translate(2.4, 0.6)
+  c.rotate(-0.3 * g)
+  shape(
+    c,
+    () => {
+      c.moveTo(-0.6, -2.2)
+      c.quadraticCurveTo(3, -2.6, 5.4, -1.4)
+      c.quadraticCurveTo(6.4, -0.2, 5.6, 1)
+      c.quadraticCurveTo(2.6, 1.8, -0.4, 1.4)
+      c.quadraticCurveTo(-1.4, -0.4, -0.6, -2.2)
+    },
+    DOG.mask,
+    '#18100c',
+  )
+  dab(c, 5.3, -1.2, 0.95, 0.75, '#0e0806')
+  dab(c, 5.1, -1.5, 0.35, 0.22, 'rgba(255,255,255,0.55)')
+  if (!halo) line(c, [2, 0.6, 3.6, 1, 5, 0.6], 0.35, '#5a4a42', false)
+  c.restore()
+  // gözün çevresinde kara maske lekesi (Kangal), göz yine okunur
+  dab(c, 1.6, -1.1, 1.7, 1.45, DOG.maskL)
+  eye(c, 1.6, -1.2, 0.95, mood, t)
+  // kapalı ağız: dil yandan sarkar (koşarken soluk soluğa)
+  if (g <= 0.08 && !halo) {
+    c.beginPath()
+    c.ellipse(4.4, 2.8, 0.85, 1.3 + Math.sin(t * 14) * 0.2, 0.2, 0, TAU)
+    c.fillStyle = DOG.tongue
+    c.fill()
+    c.strokeStyle = INK
+    c.lineWidth = 0.35
+    c.stroke()
+  }
+  // yakın kulak: kafanın arkasında sarkar, koşuda savrulur
+  poly(c, [-0.4, -3.6, -2.8 - ear * 1.1, -2.8 - ear * 0.6, -3.4 - ear * 1.2, 1.4 - ear * 0.6, -1.4, 0.8, -0.6, -1.2], DOG.mask, '#18100c')
+}
+
+/** kıvrık kuyruk: (x, y) kökü, wag -1..1 */
+function dogTail(c: Ctx, x: number, y: number, wag: number, up: number) {
+  line(c, [x, y, x - 2.2, y - 2.4 * up, x - 1.6 + wag * 1.4, y - 4.6 * up, x + 0.4 + wag * 1.8, y - 5 * up], 1.9, DOG.fur)
+  if (!halo) line(c, [x - 0.8, y - 1.6 * up, x - 1.4 + wag * 0.6, y - 3.4 * up], 0.6, DOG.furS, false)
+}
+
+/** çivili tasma: (x, y) boyun, açı a */
+function dogCollar(c: Ctx, x: number, y: number, a: number) {
+  c.save()
+  c.translate(x, y)
+  c.rotate(a)
+  ell(c, 0, 0, 1.1, 2.8, DOG.collar)
+  if (!halo) for (const yy of [-1.6, 0, 1.6]) dab(c, 0.3, yy, 0.42, 0.42, DOG.stud)
+  c.restore()
+}
+
+/**
+ * Kovalayan köpek (Kangal cinsi iri çoban köpeği): açık bej post, kara maske ve kulak, çivili tasma, kıvrık kuyruk.
+ * (x, y) ayak tabanı orta noktası (ekran pikseli), scale: bir dünya pikseli kaç ekran pikseli; gövde ~22 px uzun,
+ * ~14 px yüksek. flip: sola bakar. state: 'run' dörtnala (t ile döner), 'wait' oturup havlamaya hazır (kuyruk sallar),
+ * 'bite' ağzı açık hamle. Düşmandır: kırmızı haleyle (iki geçiş) çizilir; dost Kangal'dan büyük, kaşı çatık, tasmalı.
+ */
+export function drawChaseDog(c: CanvasRenderingContext2D, x: number, y: number, scale: number, t: number, flip: boolean, state: 'run' | 'wait' | 'bite'): void {
+  begin(c, x, y, scale)
+  if (flip) c.scale(-1, 1)
+  const paint = () => {
+    if (state === 'wait') {
+      // oturuş: arka kalça yerde, ön bacaklar dik, gövde yukarı kalkık; arada bir havlar (ağız açılır, baş kalkar)
+      const bark = Math.max(0, Math.sin(t * 4.2)) ** 6
+      const wag = Math.sin(t * 11)
+      dogTail(c, -7.6, -1.6, wag, 0.8)
+      dogLeg(c, 3.2, -8, 0.04, 0.02, DOG.far, 4, 3.8)
+      ell(c, -1.4, -7.2, 5.6, 5, DOG.fur, DOG.furS, -0.9)
+      ell(c, -4.4, -3, 4, 3, DOG.fur, DOG.furS)
+      // arka pati önde, kalçanın altında
+      ell(c, -1.6, -0.8, 2.2, 0.9, DOG.furS)
+      dab(c, -0.6, -6.6, 2.4, 3.2, '#f6ead0', -0.9)
+      // boyun ve göğüs: başı gövdeye bağlar
+      ell(c, 3.4, -10.4, 3, 4.4, DOG.fur, DOG.furS, 0.25)
+      dab(c, 4.2, -8.8, 1.6, 2.6, '#f6ead0', 0.25)
+      dogCollar(c, 3.8, -12.4, -0.3)
+      dogLeg(c, 4.6, -8.2, -0.02, 0.04, DOG.fur, 4, 4)
+      c.save()
+      c.translate(6.2, -14.4 - bark * 0.8)
+      c.rotate(-0.12 - bark * 0.25)
+      dogHead(c, t, bark * 0.8, Math.sin(t * 3) * 0.2, bark > 0.3 ? 'angry' : 'stern')
+      c.restore()
+      return
+    }
+    const bite = state === 'bite'
+    // dörtnal: saniyede ~2,6 adım; ön ve arka çiftler karşıt, yakın-uzak arasında küçük gecikme
+    const g = t * TAU * 2.6
+    const bob = bite ? -1.6 : -1.1 * (0.5 + 0.5 * Math.cos(g * 2))
+    const pitch = bite ? -0.12 : Math.sin(g) * 0.07
+    c.save()
+    c.translate(0, bob)
+    c.rotate(pitch)
+    const front = (k: number) => {
+      const s = bite ? 1 : Math.sin(g + k)
+      const a1 = bite ? 0.95 : 0.15 + 0.7 * s
+      return [a1, a1 + (bite ? 0.5 : 0.55 * Math.max(0, Math.cos(g + k)))] as const
+    }
+    const hind = (k: number) => {
+      const s = bite ? -1 : Math.sin(g + Math.PI + k)
+      const a1 = 0.3 + 0.7 * s
+      return [a1, a1 - 0.8 + (bite ? 0.4 : 0)] as const
+    }
+    const wag = Math.sin(t * (bite ? 6 : 9))
+    dogTail(c, -8.6, -9.6, wag * 0.8, bite ? 0.6 : 1)
+    const ff = front(0.45)
+    const hf = hind(0.45)
+    dogLeg(c, 4.6, -7.2, ff[0], ff[1], DOG.far)
+    dogLeg(c, -6.2, -7.6, hf[0], hf[1], DOG.far)
+    // gövde: göğüs dolgun, bel ince, sırt hafif kavisli
+    shape(
+      c,
+      () => {
+        c.moveTo(-9.4, -10.4)
+        c.quadraticCurveTo(-2, -12.8, 5, -11.4)
+        c.quadraticCurveTo(8.6, -10.6, 8.2, -7)
+        c.quadraticCurveTo(7.4, -4.6, 4.4, -4.8)
+        c.quadraticCurveTo(-0.6, -6, -4.6, -5.6)
+        c.quadraticCurveTo(-9, -5.2, -10.2, -7.4)
+        c.quadraticCurveTo(-10.8, -9.4, -9.4, -10.4)
+      },
+      DOG.fur,
+      DOG.furS,
+    )
+    dab(c, 4.6, -7.4, 2.4, 1.8, '#f6ead0')
+    if (!halo) line(c, [-6.4, -11.2, -1.6, -12.2, 3, -11.6], 0.7, 'rgba(255,255,255,0.4)', false)
+    const fn = front(0)
+    const hn = hind(0)
+    dogLeg(c, -6.6, -7.2, hn[0], hn[1], DOG.fur)
+    dogLeg(c, 5.2, -6.8, fn[0], fn[1], DOG.fur)
+    dogCollar(c, 6.8, -10.6, 0.35)
+    c.save()
+    c.translate(10, -12.2 + (bite ? 1.4 : Math.sin(g * 2) * 0.3))
+    c.rotate(bite ? 0.16 : -0.04)
+    dogHead(c, t, bite ? 1 : 0, bite ? -0.8 : Math.sin(g + 1.2) * 0.9, 'angry')
+    c.restore()
+    c.restore()
+  }
+  try {
+    groundShadow(c, state === 'wait' ? 7 : 9)
+    haloW = 0.55 + Math.sin(t * 5) * 0.12
+    halo = true
+    paint()
+    halo = false
+    paint()
+  } finally {
+    halo = false
+    end(c)
+  }
+}
+
 /* ── Dost hayvanlar ───────────────────────────────────────────── */
 
 interface Pal {

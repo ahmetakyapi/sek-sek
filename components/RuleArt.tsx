@@ -40,6 +40,7 @@ export const RULE_ART: Record<DailyRule, { family: RuleFamily; heat: 1 | 2 | 3 |
   kabus: { family: 'karisim', heat: 5 },
   kaos: { family: 'karisim', heat: 5 },
   korkabus: { family: 'karisim', heat: 5 },
+  kovala: { family: 'fizik', heat: 3 },
 }
 
 const HEART = 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'
@@ -50,6 +51,15 @@ function glyph(rule: DailyRule) {
   switch (rule) {
     case 'cehennem':
       return <path d="M12 2.5c1.2 3.4 5 5.4 5 10.2a5 5 0 0 1-10 0c0-2.4 1.2-3.8 2.4-4.8 0 2.2 1 3.4 2.4 3.6-.6-3.4-.6-6 .2-9z" fill="currentColor" fillOpacity=".25" />
+    case 'kovala':
+      // koşan Kangal: gövde, baş, dik kuyruk, dörtnala bacaklar
+      return (
+        <>
+          <path d="M4 12.5c2-1.6 5-2 8.5-1.6l3.2-2.4 3.4.6 1.4 2.2-2.2 1.2-2 .2-1.3 2.8" fill="currentColor" fillOpacity=".25" />
+          <path d="M4 12.5 2.5 9M6.5 14l-2.5 4M9 14.5l1 4M14.5 15l2.2 3.2M12 14.8l-1.5 3.6" />
+          <path d="M18 9.2l1-2.2" />
+        </>
+      )
     case 'kaygan':
       return (
         <>

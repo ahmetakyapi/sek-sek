@@ -125,7 +125,7 @@ export const STAMPS: Stamp[] = [
   {
     id: 'arena',
     name: 'Boss Arenası',
-    desc: 'Sol ucu ray sonuyla (|) kapalı düz arena, ortada boss; sağdaki boss kapısı boss yenilince açılır. Boss’u Metinler kutusundan seç.',
+    desc: 'Sol ucu ray sonuyla (|) kapalı düz arena, ortada boss; sağdaki boss kapısı boss yenilince açılır. Boss’u Boss sekmesinde tasarla.',
     rows: ['                                 #', '                                 #', '                                 #', '                                 #', '                                 G', '|               Q                G', '##################################'],
     ax: 0,
     ay: 6,
@@ -139,12 +139,77 @@ export const STAMPS: Stamp[] = [
     ay: 4,
   },
   {
-    id: 'hammers',
+    id: 'hammerHall',
     name: 'Tokmak Koridoru',
     desc: 'Dört tokmaklı alçak koridor; tokmak kalkınca geç, inerken altında durma.',
     rows: ['######################', '#   Y    Y    Y    Y  ', '#                     ', '#                     ', '######################'],
     ax: 0,
     ay: 4,
+  },
+  {
+    id: 'dive',
+    name: 'Dalış Havuzu',
+    desc: 'Derin suya dal, tepeye dek örülü duvarın altından yüz, karşıda yüzeye çık. Su altı kısa: nefes yeter.',
+    rows: ['......#......', '.WWWWW#WWWWW.', '.WWWWWWWWWWW.', '.WWWWWWWWWWW.'],
+    ax: 0,
+    ay: 0,
+    toTop: [6],
+  },
+  {
+    id: 'ropeClimb',
+    name: 'Halat Tırmanışı',
+    desc: 'Yüksek çıkıntının önünde sarkan halat: zıpla, tutun, yukarı tırman, çıkıntıya atla.',
+    rows: ['  L      ', '  L      ', '  L      ', '  L #####', '  L #####', '  L #####', '  L #####', '    #####', '    #####'],
+    ax: 0,
+    ay: 8,
+  },
+  {
+    id: 'nitro',
+    name: 'Nitro Pisti',
+    desc: 'Nitro tüpünden sonra iki kısa çukur: nitroyla hızlı ve uzun atlarsın, nitrosuz da adım adım geçilir.',
+    rows: [' T            ', '####  ###  ###', '####~~###~~###', '##############'],
+    ax: 0,
+    ay: 0,
+  },
+  {
+    id: 'ringPit',
+    name: 'Halka Kestirmesi',
+    desc: 'Suyun ortasında basamak taşı; üstündeki dash halkasıyla taşa basmadan tek seferde de geçilir.',
+    rows: ['....      ....', '....      ....', '....  **  ....', '..............', '#   ######   #', '#~~~######~~~#', '##############'],
+    ax: 0,
+    ay: 3,
+  },
+  {
+    id: 'crate',
+    name: 'Sandık Basamağı',
+    desc: 'Sandığı duvarın dibine it, üstüne çık, yüksek çıkıntıya atla.',
+    rows: ['         ...', '         ...', '      ######', '      ######', '      ######', '  p   ######'],
+    ax: 0,
+    ay: 5,
+  },
+  {
+    id: 'balloon',
+    name: 'Balon Kalkışı',
+    desc: 'Balona bin: iki nokta üst üste (:) olan yere dek yükselir. Çıkıntıya geç; inince balon yavaşça alçalır.',
+    rows: ['::      ', '        ', '  ######', '  #.....', '  #.....', '  #.....', '  #.....', 'BB#.....'],
+    ax: 0,
+    ay: 7,
+  },
+  {
+    id: 'ice',
+    name: 'Buz Göleti',
+    desc: 'Kaygan buzun ortasında gömülü dikenli çukur: erken zıpla, inince kaymayı hesaba kat.',
+    rows: ['..............', 'IIIIII  IIIIII', '######^^######', '##############'],
+    ax: 0,
+    ay: 0,
+  },
+  {
+    id: 'wetSteps',
+    name: 'Islak Basamaklar',
+    desc: 'Islak taştan üç basamak: biraz kayar, acele etme.',
+    rows: ['......   ', '......   ', '...   iii', '...   iii', '   iiiiii', '   iiiiii', 'iiiiiiiii', 'iiiiiiiii'],
+    ax: 0,
+    ay: 5,
   },
 ]
 
@@ -259,6 +324,7 @@ export const TEMPLATES: Template[] = [
     make: () => {
       const r = flat(100, 20)
       r[19][2] = 'P'
+      r[19][50] = 'F'
       r[19][97] = 'E'
       return join(r)
     },
@@ -308,6 +374,14 @@ export const TEMPLATES: Template[] = [
         i++
       }
       for (let y = 19; y < ROWS; y++) for (let dx = W - 8; dx < W; dx++) r[y][dx] = y === 19 ? ' ' : '#'
+      // ortadaki adada bayrak: düşen baştan başlamasın
+      for (let fx = W / 2; fx < W; fx++) {
+        const top = r.findIndex((row) => row[fx] === '#')
+        if (top > 0 && r[top][fx + 1] === '#') {
+          r[top - 1][fx] = 'F'
+          break
+        }
+      }
       r[19][2] = 'P'
       r[19][W - 3] = 'E'
       return join(r)
@@ -339,6 +413,89 @@ export const TEMPLATES: Template[] = [
   },
 ]
 
+/** Hazır parçayı şablonun içine basar (şablonlar da parçalar gibi oynanabilir kalır) */
+const stampAt = (rows: string[][], id: string, x: number, y: number): string[][] => grid(placePattern(join(rows), STAMPS.find((s) => s.id === id)!, x, y))
+
+TEMPLATES.push(
+  {
+    id: 'underwater',
+    name: 'Su Altı Mağarası',
+    desc: 'Tavanı sarkıtlı mağarada iki dalış havuzu ve halatlı bir çukur; bir hatıra su altında saklı.',
+    make: () => {
+      const W = 100
+      let r = flat(W, 20)
+      for (let y = 0; y < 4; y++) r[y].fill('#')
+      for (const x of [12, 37, 64, 92]) r[4][x] = 'v'
+      // ilk havuz: tavandan inen iki duvarın altından yüzülür, aradaki yüzeyde nefes alınır
+      for (let x = 14; x <= 40; x++) for (let y = 20; y <= 22; y++) r[y][x] = 'W'
+      for (const wx of [22, 32]) for (let y = 4; y <= 20; y++) r[y][wx] = '#'
+      r[22][27] = 'C'
+      r[19][46] = 'F'
+      r = stampAt(r, 'ropes', 52, 19)
+      for (let x = 67; x <= 71; x++) r[18][x] = '='
+      r[16][69] = 'C'
+      r = stampAt(r, 'dive', 76, 19)
+      r[19][2] = 'P'
+      r[19][8] = 'l'
+      r[19][96] = 'E'
+      return join(r)
+    },
+  },
+  {
+    id: 'rhythmTower',
+    name: 'Ritim Kulesi',
+    desc: 'Kulenin katları sırayla belirip kaybolan ritim bloklarından; düşen bir alt kattaki tahtaya iner.',
+    make: () => {
+      const W = 60
+      const r = flat(W, 20)
+      for (let y = 5; y < 20; y++) {
+        if (y < 18) r[y][20] = '#'
+        r[y][39] = '#'
+      }
+      for (let x = 31; x < 39; x++) r[18][x] = r[19][x] = '#'
+      // katlar: tahta, önce, sonra, tahta, önce, sonra; tahtalar dinlenme yeri
+      const floors = ['=', '{', '}', '=', '{', '}']
+      floors.forEach((ch, i) => {
+        const k = i + 1
+        const y = 18 - k * 2
+        for (let dx = 0; dx < 8; dx++) r[y][k % 2 ? 21 + dx : 31 + dx] = ch
+      })
+      for (let x = 21; x < 39; x++) r[4][x] = '='
+      for (let y = 4; y < ROWS; y++) for (let x = 39; x < W; x++) r[y][x] = '#'
+      r[19][3] = 'P'
+      r[19][14] = 'F'
+      r[3][30] = 'C'
+      r[3][W - 3] = 'E'
+      return join(r)
+    },
+  },
+  {
+    id: 'bossCastle',
+    name: 'Boss Kalesi',
+    desc: 'Kısa bir yol, arenadan hemen önce bayrak ve tabela, kalenin içinde boss; kapı boss yenilince açılır. Boss’u Boss sekmesinde tasarla.',
+    make: () => {
+      const W = 120
+      let r = flat(W, 20)
+      r = stampAt(r, 'pit', 12, 19)
+      r = stampAt(r, 'stairs', 22, 19)
+      r[19][2] = 'P'
+      r[19][8] = 't'
+      r[15][30] = 'C'
+      r[19][45] = '?'
+      r[19][47] = 'F'
+      // kale: arena, iki yanında tepeye dek duvar; sağdaki duvarın tek geçidi boss kapısı
+      r = stampAt(r, 'arena', 50, 20)
+      for (let y = 0; y < 14; y++) r[y][83] = '#'
+      for (let y = 8; y < 18; y++) r[y][49] = '#'
+      r[19][58] = 'l'
+      r[19][76] = 'l'
+      r[19][100] = 't'
+      r[19][115] = 'E'
+      return join(r)
+    },
+  },
+)
+
 /** Kuşbakışı renkleri (galeri küçük resmi ve düzenleyicinin harita şeridi): karo başına tek renk, şehrin paletinden. */
 export function thumbColors(p: CityStyle): Record<string, string> {
   const gold = '#ffcc66'
@@ -351,4 +508,65 @@ export function thumbColors(p: CityStyle): Record<string, string> {
     '%': p.tileLight, '*': '#9fd8ff', T: '#ff9a3c', '{': '#ff9a7a', '}': '#5ad6c6', p: p.plank, _: p.accent, '[': '#4a7bd8', ']': '#e0b030', M: p.plank, N: p.plank, B: red,
     Y: p.tileDark,
   }
+}
+
+/**
+ * Haritayı bozmayan ama oyuncuyu üzebilecek durumlar (uyarı; kodlamayı engellemez). Metin Türkçe şablon, arayüz t() ile
+ * çevirir; `x` uyarının sütunu (düzenleyici oraya kaydırır).
+ */
+export interface MapNote {
+  text: string
+  vars?: Record<string, string | number>
+  x: number
+}
+
+/** üstünde durulan karolar (çözücünün katı saydıkları ve platformlar) */
+const STAND = new Set('#=IiX[]DG><{}pMNWS_'.split(''))
+const DEADLY = new Set(['~', '^'])
+
+/** (x, y) noktasından aşağı düşen oyuncu güvenli bir yere mi iner? */
+function landsSafely(map: string[], x: number, y: number): boolean {
+  for (let yy = y + 1; yy < ROWS; yy++) {
+    const ch = map[yy][x]
+    if (DEADLY.has(ch)) return false
+    if (STAND.has(ch)) return true
+  }
+  return false
+}
+
+export function mapNotes(map: string[]): MapNote[] {
+  const notes: MapNote[] = []
+  const w = map[0]?.length ?? 0
+  const find = (ch: string) => {
+    const out: Array<{ x: number; y: number }> = []
+    map.forEach((row, y) => {
+      for (let x = row.indexOf(ch); x >= 0; x = row.indexOf(ch, x + 1)) out.push({ x, y })
+    })
+    return out
+  }
+  const [p] = find('P')
+  const [e] = find('E')
+  if (p && !landsSafely(map, p.x, p.y)) notes.push({ text: 'Başlangıcın altında güvenli zemin yok: oyuncu doğar doğmaz düşer.', x: p.x })
+  if (e && !landsSafely(map, e.x, e.y)) notes.push({ text: 'Çıkışın altında zemin yok: kapıya havada varılabilir mi, bir bak.', x: e.x })
+  // bayraklar arası en çok 75 karo (CLAUDE.md: her yaştan oyuncu)
+  const stops = [...(p ? [p.x] : []), ...find('F').map((f) => f.x), ...(e ? [e.x] : [])].sort((a, b) => a - b)
+  for (let i = 1; i < stops.length; i++) {
+    const gap = stops[i] - stops[i - 1]
+    if (gap > 75) notes.push({ text: 'Bayraklar arası {n} karo: 75’ten uzun yolda düşen oyuncu çok geriden başlar. Araya bayrak koy.', vars: { n: gap }, x: stops[i - 1] + 75 })
+  }
+  const [q] = find('Q')
+  if (q && !find('G').length) notes.push({ text: 'Boss var ama boss kapısı (G) yok: çıkışa boss’u yenmeden de gidilebilir.', x: q.x })
+  const [plate] = find('_')
+  if (plate && !find('[').length && !find(']').length) notes.push({ text: 'Plaka var ama değiştireceği blok ([ ya da ]) yok.', x: plate.x })
+  // teleferik halatının iki ucunda bırakınca düz aşağı inilir: altı güvenli zemin olsun
+  map.forEach((row, y) => {
+    for (let x = 0; x < w; x++) {
+      if (row[x] !== 'R' || row[x - 1] === 'R') continue
+      let end = x
+      while (row[end + 1] === 'R') end++
+      for (const ex of new Set([x, end])) if (!landsSafely(map, ex, y)) notes.push({ text: 'Teleferik halatının ucunun altı boş ya da tehlikeli: bırakan oyuncu düşer.', x: ex })
+      x = end
+    }
+  })
+  return notes.sort((a, b) => a.x - b.x)
 }

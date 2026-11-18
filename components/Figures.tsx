@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { BOSSES, makeBoss } from '@/game/boss'
 import { drawBoss } from '@/game/bossDraw'
+import { drawChaseDog } from '@/game/enemyDraw'
 import { POSES, drawHero, type Look, type Pose } from '@/game/heroDraw'
 import type { CityKey } from '@/game/types'
 
@@ -96,5 +97,18 @@ export function BossFigure({ city, className = '' }: { city: CityKey; className?
     },
     [city],
   )
+  return <canvas ref={ref} className={className} aria-hidden />
+}
+
+/** Kovalamaca'nın Kangal'ı: dörtnala koşu döngüsü (Modlar kartı) */
+export function DogFigure({ className = '' }: { className?: string }) {
+  const ref = useCanvasLoop((c, w, h, t) => {
+    const sc = Math.min((w * 0.8) / 26, (h * 0.8) / 18)
+    c.fillStyle = 'rgba(18,12,26,0.35)'
+    c.beginPath()
+    c.ellipse(w / 2, h * 0.9, 11 * sc, h * 0.04, 0, 0, Math.PI * 2)
+    c.fill()
+    drawChaseDog(c, w / 2, h * 0.9, sc, t, false, 'run')
+  }, [])
   return <canvas ref={ref} className={className} aria-hidden />
 }

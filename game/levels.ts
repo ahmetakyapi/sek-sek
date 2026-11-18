@@ -2378,6 +2378,17 @@ export function bossLevel(l: LevelDef): LevelDef {
   return { ...l, map: buildArena(l.city), hints: [], npcs: [], finaleAt: undefined, wind: undefined }
 }
 
+/** Boss Rush'ın zor çeşitleri: kâbus (en yüksek kademe, %30 hızlı) ve çifte (her arenada iki boss) */
+export type RushVariant = 'kabus' | 'cifte'
+
+/** Boss Rush arenası: şehrin arenası; çeşide göre güçlenmiş boss ya da ikinci boss (kural aynı: işaret → saldırı → yorgunluk → bas) */
+export function rushArena(l: LevelDef, variant?: RushVariant, second?: number): LevelDef {
+  const a = bossLevel(l)
+  if (variant === 'kabus') return { ...a, bossBoost: { tier: 3, speed: 1.3 } }
+  if (variant === 'cifte' && second !== undefined && second >= 0) return { ...a, bossOf: l.city, bossOf2: LEVELS[second].city }
+  return a
+}
+
 for (const l of LEVELS) {
   extend(l)
   addSignature(l)

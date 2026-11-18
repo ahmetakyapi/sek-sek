@@ -48,12 +48,15 @@ export interface LevelDef {
   crumbleAll?: boolean
   /** Ay Yerçekimi (zor mod): oyuncunun yerçekimi ve düşüş hızı azalır, atlayış yükselir ve süzülür */
   lowGravity?: boolean
+  /** Kovalamaca: oyuncunun izini süren bir Kangal (World.chaser); yakalarsa düşülür */
+  chaser?: boolean
   /** boss başka bir şehrin boss'u (Bölüm Düzenleyici: istenen boss seçilir); yoksa bölümün şehrininki */
   bossOf?: CityKey
   /** Co-op Boss Kapışması: arenaya ikinci boss (bu şehrin boss'u) arenanın öbür ucundan katılır; kapı ikisi de düşünce açılır */
   bossOf2?: CityKey
-  /** Co-op Boss Kapışması zorluğu: boss'lar bu kademede ve bu hız çarpanıyla dövüşür (kural aynı: işaret, saldırı, yorgunluk, bas) */
-  bossBoost?: { tier: 1 | 2 | 3; speed: number }
+  /** Co-op Boss Kapışması ve Bölüm Düzenleyici zorluğu: boss'lar en az bu kademede, bu hız çarpanıyla ve `hp` kadar fazla canla
+   *  dövüşür (kural aynı: işaret, saldırı, yorgunluk, bas) */
+  bossBoost?: { tier: 1 | 2 | 3; speed: number; hp?: number }
   /** Fırtına (zor mod): rüzgâr (wind) birkaç saniyede bir yön değiştirir: önce arkadan, sonra karşıdan eser */
   storm?: boolean
   /** Ayna Yolu: harita sağdan sola çevrilmiş (game/mirror.ts); hareketli platformlar da ayna fazında başlar */
@@ -117,5 +120,9 @@ export type GameEvent =
   | { type: 'bossSlam'; x: number; y: number }
   | { type: 'bossHit'; x: number; y: number; hp: number }
   | { type: 'bossDown'; x: number; y: number }
+  /** Kovalamaca: Kangal yetişti */
+  | { type: 'bite'; x: number; y: number }
+  /** co-op: biri ötekinin omzundan sekti */
+  | { type: 'shoulder'; x: number; y: number }
   /** dost bir hayvanı sevdin */
   | { type: 'pet'; x: number; y: number }

@@ -55,6 +55,36 @@ export const RHYTHM = { half: 1.6, warn: 0.45 }
 /** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
 export const PERFECT_SPRING = 1.22
 
+/**
+ * Kovalamaca: köpek doğuşta `wait` sn bekler, sonra izini `speed` px/sn ile koşar (oyuncunun koşusu 100); hızı saniyede
+ * `ramp` artar, en çok `top`. En çok `maxLag` sn'lik iz geride kalır. İz halkası `trail` örnek (120 Hz).
+ */
+export const CHASE = { wait: 1.6, speed: 78, ramp: 0.25, top: 94, maxLag: 4, trail: 600 }
+
+export interface Chaser {
+  /** ayak tabanı ortası (dünya px) */
+  x: number
+  y: number
+  /** bir önceki adımdaki yer: çizim ara değerler */
+  px: number
+  py: number
+  facing: number
+  state: 'wait' | 'run' | 'bite'
+  /** son doğuştan beri geçen süre (sn): hız bununla artar */
+  since: number
+  /** köpeğin iz boyunca aldığı yol (px) */
+  arc: number
+  /** köpeğin yetişmesine kalan süre (sn): göstergede ve havlamada */
+  gap: number
+  /** oyuncunun izi: [x, ayak y, yön, o ana dek alınan yol] dörtlüleri, halka tampon */
+  trail: Float32Array
+  head: number
+  count: number
+}
+
+/** omuz sekmesinin gücü (zıplama hızına oran): tam zıplamadan yüksek, yaydan alçak */
+export const SHOULDER_BOOST = 1.2
+
 export const PHYS = {
   gravity: 980,
   fallMax: 300,
@@ -330,6 +360,8 @@ export class World {
   boss: Boss | null = null
   /** Co-op Boss Kapışması'nda ikinci boss (LevelDef.bossOf2) */
   boss2: Boss | null = null
+  /** Kovalamaca'nın Kangal'ı (LevelDef.chaser); yoksa null */
+  chaser: Chaser | null = null
   /** bayrak alındığındaki düğme durumu: ölünce buna dönülür, bloklar yanlış tarafta kalmaz */
   private cpSwitch = false
   get checkpointSwitch() {
@@ -525,7 +557,7 @@ export class World {
             break
           case 'Q': {
             // arena sınırları: boss’un satırında | ya da duvara kadar
-            const boost = (d: BossDef): BossDef => (level.bossBoost ? { ...d, tier: Math.max(d.tier, level.bossBoost.tier) as 1 | 2 | 3, speed: d.speed * level.bossBoost.speed } : d)
+            const boost = (d: BossDef): BossDef => (level.bossBoost ? { ...d, tier: Math.max(d.tier, level.bossBoost.tier) as 1 | 2 | 3, speed: d.speed * level.bossBoost.speed, hp: d.hp + (level.bossBoost.hp ?? 0) } : d)
             const def = boost(BOSSES[level.bossOf ?? level.city])
             const stop = (c: string | undefined) => c === undefined || c === '|' || c === '#' || c === 'G'
             let l = tx - 1
@@ -608,6 +640,10 @@ export class World {
     this.start = start
     this.spawn = { ...start }
     this.exit = exit
+    if (level.chaser) {
+      this.chaser = { x: 0, y: 0, px: 0, py: 0, facing: 1, state: 'wait', since: 0, arc: 0, gap: 9, trail: new Float32Array(CHASE.trail * 4), head: 0, count: 0 }
+      this.resetChaser()
+    }
     // derin suyun içine konan toplanabilir (hatıra, pul, nazar, anahtar) karosunu kuru boşluğa çevirmesin: çevresinin en az
     // ikisi yüzülen suysa o karo da sudur (hatıra derenin dibinde suyun içinde durur)
     for (const b of [...this.pickups, this.stampBox, this.charmBox, this.keyBox]) {
@@ -801,9 +837,9 @@ export class World {
       if (p.deadTimer <= 0) this.respawn()
       this.updateEnemies(dt)
       if (this.boss) updateBoss(this.boss, this, dt)
-    if (this.boss2) updateBoss(this.boss2, this, dt)
       if (this.boss2) updateBoss(this.boss2, this, dt)
       this.updateTurrets(dt)
+      if (this.chaser) this.updateChaser(dt)
       return
     }
 
@@ -816,6 +852,83 @@ export class World {
     if (this.boss2) updateBoss(this.boss2, this, dt)
     this.updateTurrets(dt)
     this.interactions()
+    if (this.chaser) this.updateChaser(dt)
+  }
+
+  /**
+   * Kovalamaca: Kangal oyuncunun izini sürer (aynı yoldan: tırmandığın duvarı tırmanır, yüzdüğün suyu yüzer). İz boyunca
+   * sabit hızla koşar: sen koştukça ve dash attıkça arayı açarsın, durunca o pay erir; pay bitince yetişir ve ısırır.
+   * Doğuşta biraz bekler; hızı ara uzadıkça artar; en çok `maxLag` saniyelik iz geride kalır (sınırsız pay biriktirilmez).
+   * Boss uyanınca arenanın kapısında oturur: boss kavgası köpeksiz.
+   */
+  private updateChaser(dt: number) {
+    const c = this.chaser!
+    const p = this.player
+    c.px = c.x
+    c.py = c.y
+    const bossAwake = (this.boss && this.boss.state !== 'sleep') || (this.boss2 && this.boss2.state !== 'sleep')
+    if (p.dead || !this.started || bossAwake) {
+      if (bossAwake) c.state = 'wait'
+      return
+    }
+    c.since += dt
+    const n = CHASE.trail
+    // iz: oyuncunun ayak noktası ve o ana dek yürüdüğü yolun boyu
+    const fx = p.x + p.w / 2
+    const fy = p.y + p.h
+    const prev = c.count ? (c.head - 1 + n) % n : -1
+    const arc = prev < 0 ? 0 : c.trail[prev * 4 + 3] + Math.hypot(fx - c.trail[prev * 4], fy - c.trail[prev * 4 + 1])
+    c.trail.set([fx, fy, p.facing, arc], c.head * 4)
+    c.head = (c.head + 1) % n
+    c.count++
+    if (c.since < CHASE.wait) {
+      c.state = 'wait'
+      return
+    }
+    // köpek iz üzerinde ilerler; izin ucundan (oyuncudan) en çok maxLag saniyelik iz geride kalabilir
+    const speed = Math.min(CHASE.top, CHASE.speed + (c.since - CHASE.wait) * CHASE.ramp)
+    const kept = Math.min(c.count, n)
+    const lag = Math.min(kept - 1, Math.round(CHASE.maxLag / dt))
+    const oldest = c.trail[((c.head - 1 - lag) % n + n) % n * 4 + 3]
+    c.arc = Math.min(arc, Math.max(c.arc + speed * dt, oldest))
+    // köpeğin yayına denk gelen iz noktasını sondan geriye ara (köpek hep izin son birkaç saniyesinde)
+    let k = (c.head - 1 + n) % n
+    for (let i = 0; i < kept - 1; i++) {
+      const b = (k - 1 + n) % n
+      if (c.trail[b * 4 + 3] < c.arc) {
+        const a0 = c.trail[b * 4 + 3]
+        const a1 = c.trail[k * 4 + 3]
+        const u = a1 > a0 ? (c.arc - a0) / (a1 - a0) : 1
+        c.x = c.trail[b * 4] + (c.trail[k * 4] - c.trail[b * 4]) * u
+        c.y = c.trail[b * 4 + 1] + (c.trail[k * 4 + 1] - c.trail[b * 4 + 1]) * u
+        c.facing = c.trail[k * 4 + 2] < 0 ? -1 : 1
+        break
+      }
+      k = b
+    }
+    const gap = (arc - c.arc) / speed
+    c.gap = gap
+    c.state = gap < 0.6 ? 'bite' : 'run'
+    // ısırık: köpeğin ağzı (önünde) oyuncunun gövdesine değerse
+    const mouth = { x: c.x + c.facing * 6 - 7, y: c.y - 12, w: 14, h: 10 }
+    if (gap < 0.2 && overlap(shrink(p, 2), mouth)) {
+      this.events.push({ type: 'bite', x: c.x, y: c.y - 8 })
+      this.kill()
+    }
+  }
+
+  /** köpeği yeniden doğuş yerine koyar: iz silinir, bekler */
+  private resetChaser() {
+    const c = this.chaser
+    if (!c) return
+    c.head = 0
+    c.count = 0
+    c.since = 0
+    c.arc = 0
+    c.gap = 9
+    c.x = c.px = this.spawn.x + PW / 2
+    c.y = c.py = this.spawn.y + PH
+    c.state = 'wait'
   }
 
   private updatePlatforms(dt: number) {
@@ -1793,6 +1906,7 @@ export class World {
     if (this.warp && this.arrival && overlap(p, this.warp)) {
       Object.assign(p, this.freshPlayer(this.arrival.x, this.arrival.y))
       this.spawn = { ...this.arrival }
+      this.resetChaser()
       // final kendi düğme düzeniyle başlar: önceki bölümden kalan durum bulmacayı bozmasın
       this.switchOn = false
       this.cpSwitch = false
@@ -1895,10 +2009,39 @@ export class World {
       this.prevDown = down
       this.prevFeet = feet
     }
+    if (!this.player.dead && !q.dead) {
+      this.shoulder(this.player, q, dt)
+      this.shoulder(q, this.player, dt)
+    }
+  }
+
+  /**
+   * Omuz sekmesi (co-op): inerken eşin başına basan seker. Zıplama basılıysa (tampon) tek başına varılamayan yüksekliğe
+   * çıkar (~3,5 karo), basılı değilse yana kısa bir hop: kimse ötekinin başında takılı kalmaz. Dash yenilenir.
+   */
+  private shoulder(top: Player, base: Player, dt: number) {
+    if (top.vy <= 0 || top.hang || top.swim || base.swim) return
+    const feet = top.y + top.h
+    const prevFeet = feet - top.vy * dt
+    if (Math.abs(top.x + top.w / 2 - (base.x + base.w / 2)) > (top.w + base.w) / 2 - 2) return
+    if (prevFeet > base.y + 3 || feet < base.y) return
+    const strong = top.buffer > 0
+    top.y = base.y - top.h
+    top.vy = -PHYS.jumpV * (strong ? SHOULDER_BOOST : 0.5)
+    // zıplamadan inen yana kayar: başın üstünde durmadan sekip durmaz
+    if (!strong) top.vx = (Math.sign(top.x - base.x) || top.facing) * 70
+    top.buffer = 0
+    top.grounded = false
+    top.onPlatform = null
+    top.coyote = 0
+    top.canDash = true
+    top.dashTime = 0
+    this.events.push({ type: 'shoulder', x: top.x + top.w / 2, y: base.y })
   }
 
   respawn() {
     Object.assign(this.player, this.freshPlayer(this.spawn.x, this.spawn.y))
+    this.resetChaser()
     // düğmeler bayrağı aldığın andaki haline döner: açtığın köprü kapanmaz, kapattığın açık kalmaz
     this.switchOn = this.cpSwitch
     for (const pl of this.plates) pl.pressed = false

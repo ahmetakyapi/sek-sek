@@ -127,7 +127,7 @@ export const completes = (ch: Challenge, level: LevelDef, run: RunStats) => !run
  */
 export type DailyRule = 'ceza' | 'hiz' | 'hatira' | 'tekcan' | 'bayraksiz' | 'zaman' | 'dashsiz' | RageRule
 /** Sinir bozucu (zor) modlar: Kurallı Koşu altyapısında, günlüğe çıkmaz */
-export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos' | 'ay' | 'firtina' | 'gorunmez' | 'hayalet' | 'dar' | 'korkabus'
+export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos' | 'ay' | 'firtina' | 'gorunmez' | 'hayalet' | 'dar' | 'korkabus' | 'kovala'
 
 export interface DailyRuleDef {
   name: string
@@ -156,9 +156,18 @@ export interface DailyRuleDef {
   lowGravity?: boolean
   /** Fırtına: güçlü rüzgâr yön değiştirir (LevelDef.storm + wind) */
   storm?: boolean
+  /** Kovalamaca: oyuncunun izini süren bir Kangal (LevelDef.chaser; yalnız CHASE_OK şehirlerinde) */
+  chase?: boolean
   /** yalnız görüntüyü değiştirir (fizik aynı, her şehirde bitirilebilir): karanlık, baş aşağı, ayna */
   view?: { dark?: boolean; flipX?: boolean; flipY?: boolean; hiddenSpikes?: boolean; ghostGround?: boolean; zoom?: number }
 }
+
+/**
+ * Kovalamaca'nın açıldığı şehirler: çözücünün yolu, köpek oyundakinden sıkı kovalarken ısırılmadan biter
+ * (`npx tsx scripts/verify-chase.ts`). Uzun bekleme isteyen (raylı platform, asansör) şehirler listede yok; Sivas'ta Kangal
+ * dost hayvan olduğu için Sivas da yok (dost ile düşman aynı tür olmaz).
+ */
+export const CHASE_OK: string[] = ['adana', 'amasya', 'bursa', 'diyarbakir', 'gaziantep', 'izmir', 'kayseri', 'kocaeli', 'malatya', 'mardin', 'mugla', 'nevsehir', 'sanliurfa', 'sinop', 'tokat', 'van']
 
 /** Kural metni (TR); İngilizcesi lib/ui.en.ts'te aynı anahtarla durur. */
 export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
@@ -186,11 +195,12 @@ export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
   hayalet: { name: 'Hayalet Zemin', text: 'Zemin yalnız yakınındayken görünür; uzaktaki taşlar sise karışır. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { ghostGround: true } },
   dar: { name: 'Dar Kadraj', text: 'Kamera iyice yaklaşır: önünü az görürsün, atlayışı tahminle yaparsın. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { zoom: 1.7 } },
   korkabus: { name: 'Kör Kâbus', text: 'Görünmez dikenler, karanlık ve tek can. Dayanabilen yok gibi.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true, view: { hiddenSpikes: true, dark: true } },
+  kovala: { name: 'Kovalamaca', text: 'Bir Kangal izini sürüyor: koştukça aranı açarsın, durursan yetişir. Yakalanırsan bayraktan. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, chase: true },
   kaos: { name: 'Kaos', text: 'Baş aşağı ekran, ters tuşlar ve kaygan zemin bir arada. Her düşüş 5 saniye.', speed: 1, perDeath: 5, perMissing: 0, slippery: true, swapKeys: true, view: { flipY: true } },
 }
 
 /** Sinir bozucu modların sırası (Modlar → Sinir Bozucu). Günlük Meydan Okuma bunları seçmez (RULES'ta yoklar). */
-export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos', 'ay', 'firtina', 'gorunmez', 'hayalet', 'dar', 'korkabus']
+export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos', 'ay', 'firtina', 'gorunmez', 'hayalet', 'dar', 'korkabus', 'kovala']
 
 /** Ters Tuşlar: her 9 sn'lik turun son 4 sn'si ters; dönmeden 1,5 sn önce uyarılır. Saat dünyanın süresidir (her Hz'de aynı). */
 export const SWAP = { cycle: 9, flipped: 4, warn: 1.5 }
@@ -203,8 +213,8 @@ export function swapPhase(time: number): { flipped: boolean; warn: boolean } {
 /** Zor modun bölüme yazdığı fizik değişiklikleri (harita aynı; zemin kayar ya da çöker) */
 export function ruleLevel(rule: DailyRule, level: LevelDef): LevelDef {
   const r = DAILY_RULES[rule]
-  if (!r.slippery && !r.crumbleAll && !r.lowGravity && !r.storm) return level
-  return { ...level, slippery: r.slippery || undefined, crumbleAll: r.crumbleAll || undefined, lowGravity: r.lowGravity || undefined, storm: r.storm || undefined, wind: r.storm ? STORM_WIND : level.wind }
+  if (!r.slippery && !r.crumbleAll && !r.lowGravity && !r.storm && !r.chase) return level
+  return { ...level, chaser: r.chase || undefined, slippery: r.slippery || undefined, crumbleAll: r.crumbleAll || undefined, lowGravity: r.lowGravity || undefined, storm: r.storm || undefined, wind: r.storm ? STORM_WIND : level.wind }
 }
 
 /**
@@ -241,6 +251,7 @@ export const ruleFits = (rule: DailyRule, level: LevelDef) => {
   if (r.crumbleAll && !CRUMBLE_OK.includes(level.id)) return false
   if (r.lowGravity && !MOON_OK.includes(level.id)) return false
   if (r.storm && !STORM_OK.includes(level.id)) return false
+  if (r.chase && !CHASE_OK.includes(level.id)) return false
   return true
 }
 
@@ -323,6 +334,26 @@ export interface DuelRun {
   timeMs: number
   deaths: number
   score: number
+  /** toplanan hatıra (Hatıra Avı şartında skordan düşer) */
+  items?: number
+}
+
+/**
+ * Düello şartları: düşüş cezası, hatıra ödülü (her hatıra skordan düşer) ve avantaj (oyuncuya baştan düşülen saniye;
+ * aileyle, farklı yaşlarla oynarken dengeyi kurar). Eski kurulumlar şartsız gelir: sırayla 5 sn ceza, yan yana cezasız.
+ */
+export interface DuelTerms {
+  penalty: 0 | 5 | 10
+  itemBonus: 0 | 5
+  handicap: [number, number]
+}
+export const DUEL_PENALTIES = [0, 5, 10] as const
+export const DUEL_HANDICAPS = [0, 3, 5, 10] as const
+
+/** Düello'da bir koşunun skoru (ms): süre + düşüş cezası − hatıra ödülü − avantaj; bitiremeyen DNF'de kalır */
+export function duelScoreWith(t: DuelTerms, k: 0 | 1, timeMs: number, deaths: number, items: number, dnf = Infinity): number {
+  if (!Number.isFinite(timeMs) || timeMs >= dnf) return dnf
+  return Math.max(0, timeMs + deaths * t.penalty * 1000 - items * t.itemBonus * 1000 - t.handicap[k] * 1000)
 }
 
 /** her tur [birinci oyuncu, ikinci oyuncu]; henüz koşulmamış null */
@@ -347,10 +378,10 @@ export function duelWins(rounds: DuelRounds): [number, number] {
  * Düello bitti mi, kim kazandı. Tek turda tek koşu yeter; üç turluda iki tur alan kazanır. Beraberlikler fazladan tur
  * açar ama en çok iki tane: sonunda hâlâ eşitse toplam skoru düşük olan kazanır, o da eşitse berabere (-1).
  */
-export function duelResult(rounds: DuelRounds, bestOf: 1 | 3): { over: boolean; winner: 0 | 1 | -1 | null } {
+export function duelResult(rounds: DuelRounds, bestOf: 1 | 3 | 5): { over: boolean; winner: 0 | 1 | -1 | null } {
   const done = rounds.filter((r) => roundWinner(r) !== null)
   const w = duelWins(rounds)
-  const need = bestOf === 1 ? 1 : 2
+  const need = Math.ceil(bestOf / 2)
   if (w[0] >= need) return { over: true, winner: 0 }
   if (w[1] >= need) return { over: true, winner: 1 }
   if (done.length < bestOf + 2) return { over: false, winner: null }
@@ -467,4 +498,20 @@ export function mergeTournament(a: TournamentMark | null | undefined, b: Tournam
   const best = { ...b.best }
   for (const [k, v] of Object.entries(a.best)) best[k] = Math.min(v, best[k] ?? v)
   return { week: a.week, best }
+}
+
+/* ── Boss Rush çeşitleri ───────────────────────────────────────────────────── */
+/**
+ * Boss Rush'ın sırası: düz ve Kâbus'ta yenilen boss'lar şehir sırasıyla; Çifte'de ikişer ikişer (birincinin arenası,
+ * ikincisi yanında). Tek sayıda boss varsa sonuncusu tek çıkar (pairs'te -1).
+ */
+export function rushPlan(beaten: number[], variant?: 'kabus' | 'cifte'): { order: number[]; pairs?: number[] } {
+  if (variant !== 'cifte') return { order: [...beaten] }
+  const order: number[] = []
+  const pairs: number[] = []
+  for (let i = 0; i < beaten.length; i += 2) {
+    order.push(beaten[i])
+    pairs.push(beaten[i + 1] ?? -1)
+  }
+  return { order, pairs }
 }

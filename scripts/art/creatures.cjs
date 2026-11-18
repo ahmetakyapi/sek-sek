@@ -18,7 +18,7 @@ const out = process.argv[2] || '/tmp/seksek-yaratiklar.png'
   const entry = path.join(dir, 'entry.ts')
   fs.writeFileSync(
     entry,
-    `export { drawEnemy, drawFriend, drawKeepsake, drawThing } from ${JSON.stringify(path.join(root, 'game/enemyDraw'))}\nexport { CREATURE_NAMES, CITY } from ${JSON.stringify(path.join(root, 'game/art'))}\nexport { LEVELS } from ${JSON.stringify(path.join(root, 'game/levels'))}\n`,
+    `export { drawEnemy, drawFriend, drawKeepsake, drawThing, drawChaseDog } from ${JSON.stringify(path.join(root, 'game/enemyDraw'))}\nexport { CREATURE_NAMES, CITY } from ${JSON.stringify(path.join(root, 'game/art'))}\nexport { LEVELS } from ${JSON.stringify(path.join(root, 'game/levels'))}\n`,
   )
   await esbuild.build({ entryPoints: [entry], bundle: true, format: 'iife', globalName: 'S', outfile: path.join(dir, 's.js'), logLevel: 'silent' })
   fs.writeFileSync(
@@ -35,7 +35,7 @@ const BIG = 9, cols = 5, cw = 366, W = cols * cw
 const eRows = Math.ceil(species.length / cols), eh = 250
 const fRows = Math.ceil(friends.length / 5), fh = 260
 const kRows = Math.ceil(cities.length / 9), kh = 190
-const H = 40 + eRows * eh + 40 + fRows * fh + 40 + kRows * kh + 40 + 200
+const H = 40 + eRows * eh + 40 + fRows * fh + 40 + kRows * kh + 40 + 200 + 40 + 260
 const cv = document.getElementById('c'); cv.width = W; cv.height = H
 const c = cv.getContext('2d')
 // zemin renkleri: açık gök, koyu mağara, kum; hale ve dış hat hepsinde okunmalı
@@ -103,6 +103,18 @@ things.forEach(([k, o, n], i) => {
   S.drawThing(c, k, x0 + tw / 2, y0 + 100, 9, 0.3, o)
   S.drawThing(c, k, x0 + tw * 0.3, y0 + 176, 3, 0.3, o); S.drawThing(c, k, x0 + tw * 0.7, y0 + 176, 4, 0.3, o)
   label(n, x0 + tw / 2, y0 + 20, i % 3 === 1 ? '#fff' : '#1e1626', 13)
+})
+y0 += 200
+head('KOVALAYAN KÖPEK  ·  dörtnal (dört evre) / bekle / havla / ısır   ·   alt sıra: oyundaki boy (3x, 4x; sola bakan)', y0); y0 += 40
+const dogs = [['run', 0], ['run', 0.1], ['run', 0.19], ['run', 0.29], ['wait', 0.1], ['wait', 0.37], ['bite', 0.2]]
+const dw = W / dogs.length
+dogs.forEach(([st, t], i) => {
+  const x0 = i * dw, x = x0 + dw / 2
+  c.fillStyle = BG[i % 3]; c.fillRect(x0 + 2, y0 + 2, dw - 4, 256)
+  floor(x, y0 + 160, dw - 20)
+  S.drawChaseDog(c, x - 10, y0 + 160, 6.5, t, false, st)
+  S.drawChaseDog(c, x0 + dw * 0.3, y0 + 244, 3, t, true, st); S.drawChaseDog(c, x0 + dw * 0.7, y0 + 244, 4, t, true, st)
+  label(st + (st === 'wait' && t > 0.3 ? ' (havlar)' : '') + '  t=' + t, x, y0 + 20, i % 3 === 1 ? '#fff' : '#1e1626', 13)
 })
 </script></body>`,
   )

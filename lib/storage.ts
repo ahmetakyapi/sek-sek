@@ -144,6 +144,10 @@ export interface Save {
   /** Speedrun tam turları: ilk defterin bütün şehirleri arka arkaya (düz ve aynalı) */
   tur?: { timeMs: number; deaths: number } | null
   aynaTur?: { timeMs: number; deaths: number } | null
+  /** Co-op rekorları (ms): coopKey (kip, şehir ya da boss'lar, zorluk) → ikilinin en iyi süresi. Şehir rekoruna karışmaz. */
+  coop?: Record<string, number>
+  /** Boss Rush'ın zor çeşitleri (Kâbus, Çifte): en iyi süre ve boss sayısı */
+  rushPlus?: Record<string, { timeMs: number; bosses: number }>
   /** Maraton'un (rastgele üç şehir arka arkaya) en iyi toplam süresi */
   maraton?: { timeMs: number } | null
   /** eski haritalardan kalan süreler işaretlendi mi (bir kez) */
@@ -163,6 +167,12 @@ export interface Save {
    * başka bir hesaba ait ilerleme yeni girişe karışmaz, misafir ilerlemesi ilk girişte hesaba aktarılır.
    */
   owner?: string | null
+}
+
+/** iki Boss Rush koşusundan iyisi: çok boss önce, eşitse kısa süre */
+export function betterRush<R extends { timeMs: number; bosses: number }>(a: R | null | undefined, b: R | null | undefined): R | undefined {
+  if (!a || !b) return a ?? b ?? undefined
+  return a.bosses > b.bosses || (a.bosses === b.bosses && a.timeMs <= b.timeMs) ? a : b
 }
 
 const KEY = 'seksek:v1'
@@ -253,7 +263,7 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -281,7 +291,7 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     best[id] = merged
   }
   const more = (a: { last: string; count: number }, b: { last: string; count: number }) => (b.count > a.count ? b : a)
-  const rush = !local.rush ? cloud.rush : !cloud.rush ? local.rush : local.rush.bosses > cloud.rush.bosses || (local.rush.bosses === cloud.rush.bosses && local.rush.timeMs <= cloud.rush.timeMs) ? local.rush : cloud.rush
+  const rush = betterRush(local.rush, cloud.rush) ?? null
   return {
     ...local,
     unlocked: Math.max(local.unlocked, cloud.unlocked),
@@ -308,6 +318,8 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     accessory: local.accessory ?? cloud.accessory,
     sawEnding: local.sawEnding || cloud.sawEnding,
     ustalar: { ...cloud.ustalar, ...local.ustalar },
+    coop: Object.fromEntries([...Object.entries(cloud.coop ?? {}), ...Object.entries(local.coop ?? {})].map(([k, v]) => [k, Math.min(v, cloud.coop?.[k] ?? v, local.coop?.[k] ?? v)])),
+    rushPlus: Object.fromEntries([...new Set([...Object.keys(cloud.rushPlus ?? {}), ...Object.keys(local.rushPlus ?? {})])].map((k) => [k, betterRush(local.rushPlus?.[k], cloud.rushPlus?.[k])!])),
     full: Object.fromEntries([...Object.entries(cloud.full ?? {}), ...Object.entries(local.full ?? {})].map(([k, v]) => [k, Math.min(v, cloud.full?.[k] ?? v, local.full?.[k] ?? v)])),
     tur: !local.tur ? cloud.tur : !cloud.tur ? local.tur : local.tur.timeMs <= cloud.tur.timeMs ? local.tur : cloud.tur,
     aynaTur: !local.aynaTur ? cloud.aynaTur : !cloud.aynaTur ? local.aynaTur : local.aynaTur.timeMs <= cloud.aynaTur.timeMs ? local.aynaTur : cloud.aynaTur,
@@ -365,7 +377,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null, rules: {}, challenges: {}, feats: {}, ach: {}, turnuva: null, ayna: {}, sawEnding: false, owned: {}, accessory: undefined })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, turnuva: null, ayna: {}, sawEnding: false, owned: {}, accessory: undefined })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {

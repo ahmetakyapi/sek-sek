@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK } from '../lib/extras'
+import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
 import { ACCESSORIES, accessoryFor, walletOf } from '../game/accessories'
@@ -138,6 +138,9 @@ describe('Düello', () => {
     const ties: DuelRounds = [[r(5), r(5)], [r(5), r(5)], [r(5), r(5)], [r(5), r(5)], [r(4), r(5)]]
     expect(duelResult(ties, 3)).toEqual({ over: true, winner: 0 })
     expect(duelResult(ties.slice(0, 4).concat([[r(5), r(5)]]), 3)).toEqual({ over: true, winner: -1 })
+    // beş turda üç alan kazanır
+    expect(duelResult([[r(5), r(6)], [r(5), r(6)]], 5).over).toBe(false)
+    expect(duelResult([[r(5), r(6)], [r(5), r(6)], [r(5), r(6)]], 5)).toEqual({ over: true, winner: 0 })
     expect(duelFirst(0)).toBe(0)
     expect(duelFirst(1)).toBe(1)
   })
@@ -295,7 +298,7 @@ describe('sinir bozucu modlar', () => {
     expect(ruleLevel('ay', lv).lowGravity).toBe(true)
     expect(ruleLevel('firtina', lv).storm).toBe(true)
     expect(ruleLevel('firtina', lv).wind).toBeGreaterThan(0)
-    expect(RAGE_RULES.length).toBe(18)
+    expect(RAGE_RULES.length).toBe(19)
   })
   it('kaygan ve çöken modlar yalnız kanıtlanmış şehirlerde açılır', () => {
     for (const lv of LEVELS) {
@@ -311,5 +314,19 @@ describe('sinir bozucu modlar', () => {
       expect(ruleFits('firtina', lv)).toBe(STORM_OK.includes(lv.id))
       for (const r of ['gorunmez', 'hayalet', 'dar', 'korkabus'] as const) expect(ruleFits(r, lv)).toBe(true)
     }
+  })
+})
+
+describe('düello şartları ve Boss Rush çeşitleri', () => {
+  it('skor: süre + düşüş cezası − hatıra − avantaj; bitiremeyen DNF', () => {
+    const terms = { penalty: 5 as const, itemBonus: 5 as const, handicap: [0, 3] as [number, number] }
+    expect(duelScoreWith(terms, 0, 30000, 2, 1)).toBe(30000 + 10000 - 5000)
+    expect(duelScoreWith(terms, 1, 30000, 0, 0)).toBe(27000)
+    expect(duelScoreWith(terms, 0, 1000, 0, 3)).toBe(0)
+    expect(duelScoreWith(terms, 0, 1e9, 0, 0, 1e9)).toBe(1e9)
+  })
+  it('çifte Boss Rush boss\'ları ikişer eşler, tek kalan yalnız çıkar', () => {
+    expect(rushPlan([1, 2, 3], undefined)).toEqual({ order: [1, 2, 3] })
+    expect(rushPlan([1, 2, 3, 4, 5], 'cifte')).toEqual({ order: [1, 3, 5], pairs: [2, 4, -1] })
   })
 })

@@ -341,6 +341,14 @@ export class Sound {
         return
       case 'spring':
         return this.tone(220, 0.22, 'sine', 0.06, 330)
+      case 'bite':
+        // Kangal havlar: iki kısa, inen "hav"
+        this.tone(220 * vary, 0.09, 'triangle', 0.06, -90, now)
+        return this.tone(180 * vary, 0.11, 'triangle', 0.06, -80, now + 0.13)
+      case 'shoulder':
+        // omuz sekmesi: yayınkinden yumuşak, makamdan iki nota
+        this.chime(this.scaleNote(2, 1), 0.05, now, 0.4)
+        return this.tone(260 * vary, 0.16, 'sine', 0.045, 260)
       case 'stomp':
         // ezme: tok, yumuşak bir "pop"
         this.tone(160, 0.1, 'sine', 0.06, -70)

@@ -15,7 +15,7 @@ import Bestiary from '@/components/Bestiary'
 import Defter, { RUSH_NEEDS } from '@/components/Defter'
 import ScoreBoard, { Board } from '@/components/ScoreBoard'
 import Race from '@/components/Race'
-import { DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, type DailyResult, type DuelSetupValue } from '@/components/Modes'
+import { DNF, DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, duelLevel, duelTerms, type DailyResult, type DuelSetupValue } from '@/components/Modes'
 import { ChallengeEnd, ChallengeList, type ChallengeResult } from '@/components/Challenges'
 import { TournamentHub } from '@/components/Tournament'
 import Ending from '@/components/Ending'
@@ -33,25 +33,25 @@ import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager, normalizeDuo, normalizeKeys } from '@/game/input'
 import PhotoMode from '@/components/PhotoMode'
 import KeyRemap, { DuoRemap } from '@/components/KeyRemap'
-import Coop, { CoopEnd, CoopSetup, coopLevel, type CoopBoss, type CoopResult } from '@/components/Coop'
+import Coop, { CoopEnd, CoopSetup, coopKey, type CoopPlan, type CoopResult } from '@/components/Coop'
 import { useInstallPrompt } from '@/lib/useInstallPrompt'
 import { USTA_TEXT, ustaDone, ustaTask } from '@/lib/ustalar'
 import { BOSSES } from '@/game/boss'
 import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
-import { LEVELS, bossLevel, FIRST_BOOK } from '@/game/levels'
+import { LEVELS, rushArena, type RushVariant, FIRST_BOOK } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
 import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { CHALLENGE_TEXT, DAILY_RULES, SCARVES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScore, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleLevel, ruleLimit, markTournament, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { CHALLENGE_TEXT, DAILY_RULES, SCARVES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
 import { cityVersion } from '@/lib/mapVersion'
 import { freshAchievements, type Feat } from '@/lib/achievements'
-import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, parseSaveText, SAVE_KEY, type Player, type Save } from '@/lib/storage'
+import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, betterRush, parseSaveText, SAVE_KEY, type Player, type Save } from '@/lib/storage'
 
 /** zorluk rozeti: yeşilden kırmızıya */
 const DIFF_TONE: Record<string, string> = {
@@ -123,6 +123,10 @@ interface Rival {
 interface Rush {
   /** boss: yalnız arenalar · maraton: üç şehir baştan sona · tur / aynaTur: ilk defterin bütün şehirleri (speedrun) */
   kind: 'boss' | 'maraton' | 'tur' | 'aynaTur'
+  /** Boss Rush'ın zor çeşidi: kâbus (en yüksek kademe, %30 hızlı) ya da çifte (her arenada iki boss) */
+  variant?: RushVariant
+  /** çiftede her arenanın ikinci boss'u (LEVELS dizini) */
+  pairs?: number[]
   order: number[]
   i: number
   timeMs: number
@@ -193,6 +197,8 @@ export default function Game() {
   /** Düello: rakibin bu turdaki koşusu (hayalet olarak yanında koşar) */
   const duelGhostRef = useRef<GhostRun | null>(null)
   const duelRef = useRef<Duel | null>(null)
+  /** Sinir Bozucu seçim ekranı hangi kuralla açılsın (Kovalamaca kartı) */
+  const rageStartRef = useRef<DailyRule | undefined>(undefined)
   /** hesap ekranından sonra dönülecek ekran (günlük bitişinden girişe gidildiyse) */
   const returnRef = useRef<Screen | null>(null)
   /** kurallı koşuda kaçıncı deneme (Tek Can, Zamana Karşı) */
@@ -249,12 +255,12 @@ export default function Game() {
   const [achToast, setAchToast] = useState<{ at: number; name: string; icon: string; more: number } | null>(null)
   const [setTab, setSetTab] = useState<'ayar' | 'tus'>('ayar')
   const [boardTab, setBoardTab] = useState<'genel' | 'gunluk'>('genel')
-  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: Rush['kind'] } | null>(null)
+  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: Rush['kind']; variant?: RushVariant } | null>(null)
   /** tam tur sunucuya yazıldıysa sırası (speedrun tablosu) */
   const [tourSent, setTourSent] = useState<string | null>(null)
   const [coarse, setCoarse] = useState(false)
   /** co-op: şehir, iki kılık, bitiş sonucu; key her başlatışta artar (bileşen yeniden kurulur) */
-  const [coop, setCoop] = useState<{ level: number; heroes: [CharacterId, CharacterId]; boss: CoopBoss | null; result: CoopResult | null; key: number } | null>(null)
+  const [coop, setCoop] = useState<{ plan: CoopPlan; result: CoopResult | null; key: number; best?: number; newBest: boolean } | null>(null)
   const [ready, setReady] = useState(false)
   const [storyPage, setStoryPage] = useState(0)
   const [canFull, setCanFull] = useState(false)
@@ -884,8 +890,9 @@ export default function Game() {
       const ay = aynaRef.current === LEVELS[idx].id || rush?.kind === 'aynaTur'
       const cu = customRef.current?.city === LEVELS[idx].city ? customRef.current : null
       const md = modeRef.current
-      const base = md?.kind === 'daily' ? ruleLevel(md.run.rule, LEVELS[idx]) : LEVELS[idx]
-      const w = new World(cu ?? (ch ? challengeLevel(ch) : ay ? mirrorLevel(LEVELS[idx]) : rush?.kind === 'boss' ? bossLevel(LEVELS[idx]) : base))
+      const duelSetup = md?.kind === 'duel' ? duelRef.current?.setup : undefined
+      const base = md?.kind === 'daily' ? ruleLevel(md.run.rule, LEVELS[idx]) : duelSetup ? duelLevel(duelSetup) : LEVELS[idx]
+      const w = new World(cu ?? (ch ? challengeLevel(ch) : ay ? mirrorLevel(LEVELS[idx]) : rush?.kind === 'boss' ? rushArena(LEVELS[idx], rush.variant, rush.pairs?.[rush.i]) : base))
       worldRef.current = w
       ghostRecRef.current = []
       dashRef.current = 0
@@ -992,16 +999,21 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: t(kind === 'tur' ? 'Tam Tur: {n} şehir arka arkaya' : 'Ayna Tam Tur: {n} şehir arka arkaya', { n: order.length }) })
   }
 
-  /** Boss Rush: yenilmiş bekçiler şehir sırasıyla, arka arkaya. */
-  const startRush = () => {
-    const order = LEVELS.map((l, i) => (save.bosses[l.id] ? i : -1)).filter((i) => i >= 0)
-    if (order.length < RUSH_NEEDS) return
+  /**
+   * Boss Rush: yenilmiş boss'lar şehir sırasıyla, arka arkaya. Kâbus'ta her biri en yüksek kademede ve %30 hızlı; Çifte'de
+   * boss'lar ikişer ikişer aynı arenaya çıkar (her arenada iki boss, arena sayısı yarıya iner).
+   */
+  const startRush = (variant?: RushVariant) => {
+    const all = LEVELS.map((l, i) => (save.bosses[l.id] ? i : -1)).filter((i) => i >= 0)
+    if (all.length < RUSH_NEEDS) return
+    const plan = rushPlan(all, variant)
     soundRef.current?.unlock()
     ui()
-    rushRef.current = { kind: 'boss', order, i: 0, timeMs: 0, deaths: 0 }
-    loadLevel(order[0], 'play')
+    modeRef.current = null
+    rushRef.current = { kind: 'boss', variant, order: plan.order, pairs: plan.pairs, i: 0, timeMs: 0, deaths: 0 }
+    loadLevel(plan.order[0], 'play')
     beginPlay()
-    setCpToast({ at: Date.now() + 1, text: t('Boss {i}/{n}', { i: 1, n: order.length }) })
+    setCpToast({ at: Date.now() + 1, text: t('Boss {i}/{n}', { i: 1, n: plan.order.length }) })
   }
 
   const today = istanbulDay(now)
@@ -1243,7 +1255,8 @@ export default function Game() {
     const d = duelRef.current
     if (!d) return
     const rounds = d.rounds.map((r) => [...r]) as DuelRounds
-    rounds[d.round] = runs
+    const terms = duelTerms(d.setup)
+    rounds[d.round] = runs.map((r, k) => ({ ...r, score: r.score >= DNF ? DNF : duelScoreWith(terms, k as 0 | 1, r.timeMs, r.deaths, r.items ?? 0) })) as [DuelRun, DuelRun]
     if (duelResult(rounds, d.setup.bestOf).over) {
       setDuel({ ...d, rounds })
       addFeat('duel')
@@ -1478,9 +1491,19 @@ export default function Game() {
       }
       rushRef.current = null
       const relaxed = relaxedRef.current
-      const total = { timeMs: rush.timeMs, deaths: rush.deaths, bosses: rush.order.length }
+      const total = { timeMs: rush.timeMs, deaths: rush.deaths, bosses: rush.order.length + (rush.pairs?.filter((x) => x >= 0).length ?? 0) }
       const kind = rush.kind
+      const variant = rush.variant
       setSave((prev) => {
+        if (kind === 'boss' && variant) {
+          const old = prev.rushPlus?.[variant]
+          const best = !relaxed && betterRush(total, old) === total && (!old || old.timeMs !== total.timeMs || old.bosses !== total.bosses)
+          setRushResult({ ...total, best, relaxed, kind, variant })
+          if (!best) return prev
+          const next = { ...prev, rushPlus: { ...(prev.rushPlus ?? {}), [variant]: { timeMs: total.timeMs, bosses: total.bosses } } }
+          writeSave(next)
+          return next
+        }
         if (kind === 'tur' || kind === 'aynaTur') {
           const old = prev[kind]
           const best = !relaxed && (!old || total.timeMs < old.timeMs)
@@ -1544,7 +1567,8 @@ export default function Game() {
       const d = duelRef.current
       if (!d) return
       const rounds = d.rounds.map((r) => [...r]) as DuelRounds
-      rounds[d.round][d.turn] = { timeMs, deaths: w.deaths, score: duelScore(timeMs, w.deaths) }
+      const items = w.pickups.filter((p) => p.taken).length
+      rounds[d.round][d.turn] = { timeMs, deaths: w.deaths, items, score: duelScoreWith(duelTerms(d.setup), d.turn, timeMs, w.deaths, items) }
       const other = (1 - d.turn) as 0 | 1
       if (!rounds[d.round][other]) {
         // rakip aynı turda bu koşunun hayaletiyle yarışır
@@ -1846,7 +1870,7 @@ export default function Game() {
         <>
           <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
             label={modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('DÜELLO')} · ${duel.setup.names[duel.turn]}` : customRef.current ? t('Özel Harita') : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined}
-            penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' ? (d: number) => duelScore(0, d) : undefined}
+            penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' && duel ? (d: number, f: number) => d * duelTerms(duel.setup).penalty * 1000 - f * duelTerms(duel.setup).itemBonus * 1000 : undefined}
             onPause={() => setScreen('pause')} />
           {titleCard > 0 && hud.time < 0.05 && (
             <div key={titleCard} className={`title-card ${save.tutorial ? 'slow' : ''} pointer-events-none absolute inset-x-0 top-[30%] z-10 flex flex-col items-center ${save.tutorial ? '[@media(max-height:500px)]:top-[20%]' : '[@media(max-height:500px)]:top-[12%]'}`}>
@@ -2664,11 +2688,14 @@ export default function Game() {
           onDuel={() => (ui(), setScreen('duelSetup'))}
           onCoop={() => (ui(), setScreen('coopSetup'))}
           onRush={startRush}
+          rushPlus={save.rushPlus ?? {}}
           marathonOpen={save.unlocked + 1 >= MARATHON_CITIES}
           marathonBest={save.maraton ?? null}
           onMarathon={startMarathon}
           onRules={() => (ui(), setScreen('ruleSetup'))}
-          onRage={() => (ui(), setScreen('rageSetup'))}
+          onRage={() => (ui(), (rageStartRef.current = undefined), setScreen('rageSetup'))}
+          onChase={() => (ui(), (rageStartRef.current = 'kovala'), setScreen('rageSetup'))}
+          chaseCities={LEVELS.filter((l) => save.best[l.id] && ruleFits('kovala', l)).length}
           onRageCourses={() => (ui(), setScreen('rageCourses'))}
           rageCoursesDone={RAGE_COURSES.filter((c) => save.challenges?.[c.id]).length}
           ruleCount={Object.keys(save.rules ?? {}).filter((k) => !RAGE_RULES.includes(k.split(':')[1] as RageRule)).length}
@@ -2732,7 +2759,7 @@ export default function Game() {
       )}
 
       {screen === 'ruleSetup' && <RuleSetup startLevel={levelIdx} finished={LEVELS.map((l, i) => (save.best[l.id] ? i : -1)).filter((i) => i >= 0)} records={save.rules ?? {}} onStart={startRule} onBack={() => setScreen('modes')} />}
-      {screen === 'rageSetup' && <RuleSetup rage startLevel={levelIdx} finished={LEVELS.map((l, i) => (save.best[l.id] ? i : -1)).filter((i) => i >= 0)} records={save.rules ?? {}} onStart={startRule} onBack={() => setScreen('modes')} />}
+      {screen === 'rageSetup' && <RuleSetup rage startLevel={levelIdx} startRule={rageStartRef.current} finished={LEVELS.map((l, i) => (save.best[l.id] ? i : -1)).filter((i) => i >= 0)} records={save.rules ?? {}} onStart={startRule} onBack={() => setScreen('modes')} />}
 
       {screen === 'dailyEnd' && dailyResult && (
         <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={dailyResult.free ? () => startRule(LEVELS.findIndex((l) => l.id === dailyResult.run.levelId), dailyResult.run.rule) : undefined} onModes={() => setScreen('modes')} onLogin={() => ((returnRef.current = 'dailyEnd'), setScreen('name'))} />
@@ -2742,6 +2769,7 @@ export default function Game() {
         <DuelSetup
           initial={duel?.setup ?? { level: Math.min(levelIdx, save.unlocked), names: [save.player?.name ?? hero.short, lang === 'en' ? 'Guest' : 'Misafir'], heroes: [hero.id, hero.id === 'uktun' ? 'memo' : 'uktun'], bestOf: 1, style: coarse ? 'sirayla' : 'yanyana' }}
           unlocked={save.unlocked}
+          finished={new Set(Object.keys(save.best))}
           canSide={!coarse}
           onStart={duelStart}
           onBack={() => setScreen('modes')}
@@ -2753,7 +2781,7 @@ export default function Game() {
       {screen === 'race' && duel && (
         <Race
           key={duel.round}
-          level={LEVELS[duel.setup.level]}
+          level={duelLevel(duel.setup)}
           names={duel.setup.names}
           heroes={duel.setup.heroes}
           roundLabel={duel.setup.bestOf === 1 ? t('TEK TUR') : t('{n}. TUR', { n: duel.round + 1 })}
@@ -2769,12 +2797,15 @@ export default function Game() {
         <CoopSetup
           keys={duoKeys}
           unlocked={save.unlocked}
+          finished={new Set(Object.keys(save.best))}
+          initial={coop?.plan ?? null}
+          best={save.coop ?? {}}
           hero={hero.id}
           canPlay={!coarse || (typeof navigator !== 'undefined' && !!navigator.getGamepads && [...navigator.getGamepads()].filter(Boolean).length >= 2)}
-          onStart={(level, heroes, boss) => {
+          onStart={(plan) => {
             soundRef.current?.unlock()
             ui()
-            setCoop((c) => ({ level, heroes, boss, result: null, key: (c?.key ?? 0) + 1 }))
+            setCoop((c) => ({ plan, result: null, key: (c?.key ?? 0) + 1, newBest: false }))
             setScreen('coop')
           }}
           onBack={() => setScreen('modes')}
@@ -2783,13 +2814,17 @@ export default function Game() {
       {screen === 'coop' && coop && (
         <Coop
           key={coop.key}
-          level={coopLevel(coop.level, coop.boss)}
+          plan={coop.plan}
           keys={duoKeys}
           onKeys={(k) => patch({ duoKeys: k })}
-          heroes={coop.heroes}
           sound={soundRef.current}
           onDone={(r) => {
-            setCoop((c) => (c ? { ...c, result: r } : c))
+            // ikilinin rekoru: yalnız bitirilen koşu yazılır (canlar ya da süre biterse yazılmaz); şehir rekoruna karışmaz
+            const key = coopKey(coop.plan)
+            const old = saveRef.current?.coop?.[key]
+            const better = !r.failed && (old === undefined || r.timeMs < old)
+            if (better) persist((s) => ({ ...s, coop: { ...(s.coop ?? {}), [key]: r.timeMs } }))
+            setCoop((c) => (c ? { ...c, result: r, best: old, newBest: better && old !== undefined } : c))
             setScreen('coopEnd')
           }}
           onQuit={() => setScreen('modes')}
@@ -2797,14 +2832,15 @@ export default function Game() {
       )}
       {screen === 'coopEnd' && coop?.result && (
         <CoopEnd
-          level={LEVELS[coop.level]}
-          boss={coop.boss}
-          heroes={coop.heroes}
+          plan={coop.plan}
           result={coop.result}
+          best={coop.best}
+          newBest={coop.newBest}
           onAgain={() => {
-            setCoop((c) => (c ? { ...c, result: null, key: c.key + 1 } : c))
+            setCoop((c) => (c ? { ...c, result: null, key: c.key + 1, newBest: false } : c))
             setScreen('coop')
           }}
+          onSetup={() => setScreen('coopSetup')}
           onMenu={() => setScreen('modes')}
         />
       )}
@@ -2814,16 +2850,17 @@ export default function Game() {
       {screen === 'rushEnd' && rushResult && (
         <Overlay dim>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
-            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{rushResult.best ? t('YENİ REKOR') : rushResult.kind === 'boss' ? t('BOSS RUSH') : rushResult.kind === 'tur' ? t('TAM TUR') : rushResult.kind === 'aynaTur' ? t('AYNA TAM TUR') : t('MARATON')}</p>
+            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{rushResult.best ? t('YENİ REKOR') : rushResult.variant === 'kabus' ? t('KÂBUS BOSS RUSH') : rushResult.variant === 'cifte' ? t('ÇİFTE BOSS RUSH') : rushResult.kind === 'boss' ? t('BOSS RUSH') : rushResult.kind === 'tur' ? t('TAM TUR') : rushResult.kind === 'aynaTur' ? t('AYNA TAM TUR') : t('MARATON')}</p>
             <h2 className="mt-2 font-display text-6xl tabular-nums text-cream">{formatTime(rushResult.timeMs)}</h2>
             <p className="mt-2 text-[13px] text-muted">{rushResult.kind === 'boss' ? t('{n} boss · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths }) : t('{n} şehir · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths })}</p>
             {rushResult.relaxed && <p className="mt-2 text-[13px] text-muted">{t("Rahat Mod’da koştun: rekor yazılmadı.")}</p>}
-            {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'boss' && save.rush && <p className="mt-2 text-[13px] text-muted">{t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })}</p>}
+            {!rushResult.best && !rushResult.relaxed && rushResult.variant && save.rushPlus?.[rushResult.variant] && <p className="mt-2 text-[13px] text-muted">{t('Rekor: {time} · {n} boss', { time: formatTime(save.rushPlus[rushResult.variant].timeMs), n: save.rushPlus[rushResult.variant].bosses })}</p>}
+            {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'boss' && !rushResult.variant && save.rush && <p className="mt-2 text-[13px] text-muted">{t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })}</p>}
             {!rushResult.best && !rushResult.relaxed && (rushResult.kind === 'tur' || rushResult.kind === 'aynaTur') && save[rushResult.kind] && <p className="mt-2 text-[13px] text-muted">{t('Rekorun: {time}', { time: formatTime(save[rushResult.kind]!.timeMs) })}</p>}
             {(rushResult.kind === 'tur' || rushResult.kind === 'aynaTur') && tourSent && <p className="mt-2 text-[13px] text-[#7ad88a]">{tourSent}</p>}
             {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'maraton' && save.maraton && <p className="mt-2 text-[13px] text-muted">{t('Maraton rekorun: {time}', { time: formatTime(save.maraton.timeMs) })}</p>}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <button className="pixel-btn primary justify-center" onClick={rushResult.kind === 'boss' ? startRush : rushResult.kind === 'tur' || rushResult.kind === 'aynaTur' ? () => startTour(rushResult.kind as 'tur' | 'aynaTur') : startMarathon} autoFocus>
+              <button className="pixel-btn primary justify-center" onClick={rushResult.kind === 'boss' ? () => startRush(rushResult.variant) : rushResult.kind === 'tur' || rushResult.kind === 'aynaTur' ? () => startTour(rushResult.kind as 'tur' | 'aynaTur') : startMarathon} autoFocus>
                 {ic(t("↺ Yeniden Oyna"))}
               </button>
               <button className="pixel-btn justify-center" onClick={() => setScreen('modes')}>

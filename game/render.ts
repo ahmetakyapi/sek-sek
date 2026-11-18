@@ -1,10 +1,10 @@
 import { CITY, LAYER_H, LAYER_W, buildLayers, disc, enemySpecies, rect, type Ctx, type Layers } from './art'
 import { BOSS_LINES } from './bossLines'
-import { drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
+import { drawChaseDog, drawEnemy, drawFriend, drawKeepsake, drawThing } from './enemyDraw'
 import { CHARACTERS, type CharacterDef } from './characters'
 import type { Boss } from './boss'
 import { drawBoss } from './bossDraw'
-import { INK, LOOKS, POSES, climbPose, drawHero, gait, handPos, type Look, type Pose } from './heroDraw'
+import { INK, LOOKS, POSES, airPose, climbPose, drawHero, gait, handPos, lerpPose, type Look, type Pose } from './heroDraw'
 import type { AccessoryId } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
@@ -42,6 +42,8 @@ interface Ghost {
   y: number
   life: number
   flip: boolean
+  pose: Pose
+  rot: number
 }
 
 interface Ambient {
@@ -353,6 +355,15 @@ export class Renderer {
       }
       case 'spring':
         this.burst(p.x + p.w / 2, p.y + p.h, 8, '#ffd36a', 50, 1)
+        break
+      case 'bite':
+        this.shake = Math.max(this.shake, 3)
+        this.burst(e.x, e.y, 12, '#f4f0e6', 70, 1)
+        this.pop(e.x, e.y - 12, this.lang === 'en' ? 'Woof!' : 'Hav!', '#ffd36a', true)
+        break
+      case 'shoulder':
+        this.burst(e.x, e.y, 10, '#7ee0d2', 60, 1)
+        this.pop(e.x, e.y - 14, this.lang === 'en' ? 'Boost!' : 'Omuz!', '#7ee0d2')
         break
       case 'stomp': {
         this.shake = Math.max(this.shake, 2)
@@ -720,6 +731,7 @@ export class Renderer {
     this.drawThingsHD(w, hdX, hdY)
     this.drawCratesHD(w, hdX, hdY)
     this.drawBossHD(w, hdX, hdY)
+    if (w.chaser) this.drawChaserHD(w, hdX, hdY, alpha)
     this.drawHeroes(hdX, hdY)
     this.drawBreath(w, hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
@@ -3169,6 +3181,42 @@ export class Renderer {
     c.restore()
   }
 
+  /** Kovalamaca'nın Kangal'ı: ana tuvalde vektör; adımlar arası ara değerlenir (ışınlanmada değil) */
+  private drawChaserHD(w: World, cx: number, cy: number, alpha: number) {
+    const d = w.chaser!
+    const jump = Math.abs(d.x - d.px) > 24 || Math.abs(d.y - d.py) > 24
+    const x = jump ? d.x : d.px + (d.x - d.px) * alpha
+    const y = jump ? d.y : d.py + (d.y - d.py) * alpha
+    const sc = this.scale
+    const sx = (x - cx) * sc
+    const sy = (y - cy) * sc
+    const W = this.canvas.width
+    if (sx > -40 * sc && sx < W + 40 * sc) drawChaseDog(this.ctx, sx, sy, sc, this.t, d.facing < 0, d.state)
+    // ekran dışındaysa kenarda işaret: yaklaştıkça kırmızılaşır ve atar (saate bağlı)
+    if ((sx < 0 || sx > W) && d.state !== 'wait') {
+      const c = this.ctx
+      const left = sx < 0
+      const near = Math.max(0, Math.min(1, 1 - (d.gap - 0.4) / 2.6))
+      const r = (6 + near * 3 + (near > 0.6 ? Math.sin(this.t * 14) * 1.2 : 0)) * sc
+      const ex = left ? r + 4 * sc : W - r - 4 * sc
+      const ey = Math.max(r + 40 * sc, Math.min(this.canvas.height - r - 8 * sc, sy - 8 * sc))
+      c.save()
+      c.fillStyle = near > 0.6 ? '#e5534b' : near > 0.3 ? '#e8a33d' : '#f4f0e6'
+      c.strokeStyle = '#1b1530'
+      c.lineWidth = 1.5 * sc
+      c.beginPath()
+      c.arc(ex, ey, r, 0, Math.PI * 2)
+      c.moveTo(ex + (left ? -r - 4 * sc : r + 4 * sc), ey)
+      c.lineTo(ex + (left ? -r * 0.4 : r * 0.4), ey - r * 0.8)
+      c.lineTo(ex + (left ? -r * 0.4 : r * 0.4), ey + r * 0.8)
+      c.closePath()
+      c.fill()
+      c.stroke()
+      drawChaseDog(c, ex, ey + r * 0.55, sc * 0.45, this.t, !left, 'run')
+      c.restore()
+    }
+  }
+
   private drawBossHD(w: World, cx: number, cy: number) {
     this.drawOneBoss(w.boss, this.bossCity, cx, cy, true)
     // Co-op Boss Kapışması: ikinci boss kendi şehrinin çizimiyle (konuşma balonu birincinin)
@@ -3416,7 +3464,7 @@ export class Renderer {
         c.rotate(h.flip ? -h.rot : h.rot)
         c.translate(-px, -py)
       }
-      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc })
+      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc, flow: h.flow })
       c.restore()
     }
     this.heroes = []
@@ -3499,19 +3547,152 @@ export class Renderer {
   partnerLook: Look = 'memo'
   partnerScarf: { color: string; shade: string } | null = null
 
+  private anims = new WeakMap<Player, HeroAnim>()
+
+  /**
+   * Oyuncunun (ve co-op eşinin) bu karedeki pozu. Her şey fizik durumundan ve saatten türer, kare hızından bağımsızdır:
+   * koşu hızla adımlanır, havada poz dikey hıza göre sürekli akar (yükseliş → tepe → düşüş), inişin çöküşü düşüşün
+   * sertliğiyle derinleşir, ters yöne basınca fren pozu, duvarda yüz duvara döner ve eller duvara değer. Dash yöne göre
+   * döner (yatay: öne yatar, yukarı: roket, aşağı: ayakla iner) ve bitince kısa bir toparlanmayla dikilir. Teleferikte
+   * gövde ilerleme hızına göre sarkaç gibi geride kalır, durunca salınıp oturur. Atkı, saç ve savrulma hedefi gecikmeyle izler.
+   */
+  private heroAnim(p: Player, self: boolean) {
+    let a = this.anims.get(p)
+    if (!a) {
+      a = { flow: 0, lift: 0, hair: 0, ang: 0, angV: 0, cvx: 0, px: p.x, rec: 0, recPose: POSES.dash, recRot: 0, recK: [1, 1], airMax: 0, hard: 0.5, grounded: p.grounded }
+      this.anims.set(p, a)
+    }
+    const dt = Math.min(0.1, this.frameDt)
+    const ease = (tau: number) => 1 - Math.exp(-dt / tau)
+    const dashing = p.dashTime > 0
+    const hold = dashing ? null : this.holdPose(p)
+    // iniş sertliği: havadaki en büyük düşüş hızından
+    if (!p.grounded) a.airMax = Math.max(a.airMax, p.vy)
+    else if (!a.grounded) {
+      a.hard = Math.max(0.45, Math.min(1, (a.airMax - 60) / 220))
+      a.airMax = 0
+    }
+    a.grounded = p.grounded
+    // teleferikte ilerleme hızı konumdan (teleferik vx yazmaz)
+    a.cvx += ((dt > 0 ? (p.x - a.px) / dt : 0) - a.cvx) * ease(0.06)
+    a.px = p.x
+    let pose: Pose
+    let rot = 0
+    let pivot = 0
+    let dx = 0
+    let dy = 0
+    let flip = p.facing < 0
+    let kx = 1
+    let ky = 1
+    let brake = false
+    let flowT = Math.min(1.3, Math.hypot(p.vx, p.vy * 0.6) / PHYS.run)
+    if (dashing) {
+      const [ddx, ddy] = p.dashDir
+      if (ddx !== 0) flip = ddx < 0
+      const fx = Math.abs(ddx)
+      // kalkışta en çok gerilir, sonuna doğru toparlanır (yön boyunca uzar, hacim korunur)
+      const u = Math.min(1, p.dashTime / PHYS.dashTime)
+      const st = 0.08 + 0.14 * u
+      if (Math.abs(ddy) < 0.35) {
+        pose = POSES.dash
+        rot = 0.2 + 0.18 * u
+        kx = 1 + st
+        ky = 1 - st * 0.7
+      } else {
+        pose = ddy < 0 ? POSES.rocket : POSES.stomp
+        rot = ddy < 0 ? Math.atan2(fx, -ddy) : Math.atan2(-fx, ddy) * 0.8
+        kx = 1 - st * 0.7
+        ky = 1 + st
+      }
+      pivot = DASH_PIVOT
+      flowT = 1.4
+      a.rec = DASH_RECOVER
+      a.recPose = pose
+      a.recRot = rot
+      a.recK = [kx, ky]
+    } else if (hold) {
+      pose = hold.pose
+      rot = hold.rot
+      pivot = hold.pivot
+      dx = hold.dx ?? 0
+      dy = hold.dy
+      flowT = p.hang === 1 ? 0.15 : hold.moving ? 0.7 : 0.25
+      if (p.hang === 2) {
+        // sarkaç: gövde ilerleme yönünün tersine geride kalır; durunca birkaç kez salınıp oturur (sabit alt adımlarla)
+        const target = Math.max(-1, Math.min(1, a.cvx / PHYS.cableMove)) * 0.3
+        for (let left = dt; left > 1e-6; left -= 1 / 240) {
+          const h = Math.min(left, 1 / 240)
+          a.angV += (-58 * (a.ang - target) - 3.2 * a.angV) * h
+          a.ang += a.angV * h
+        }
+        rot = (p.facing < 0 ? -a.ang : a.ang) + hold.rot * 0.5
+        flowT = Math.min(1, Math.abs(a.cvx) / PHYS.cableMove) * 0.8
+      }
+    } else if (!p.grounded) {
+      if (p.wallDir !== 0 && p.vy > 0) {
+        // yüz duvara döner, eller duvara değer (gövde duvardan biraz geri çizilir)
+        pose = POSES.wall
+        flip = p.wallDir < 0
+        dx = -p.wallDir * 2.5
+      } else {
+        pose = airPose(p.vy, this.t)
+        // yükselişte incelip uzar, hızlı düşüşte hafifçe uzar
+        const up = Math.max(0, Math.min(1, -p.vy / PHYS.jumpV)) * 0.09
+        const down = Math.max(0, Math.min(1, (p.vy - 150) / 150)) * 0.05
+        kx = 1 - (up + down) * 0.75
+        ky = 1 + up + down
+      }
+    } else {
+      const speed = Math.abs(p.vx)
+      if (speed > 35 && Math.sign(p.vx) !== p.facing && !p.swim) {
+        // fren: eski yöne bakar, geriye yaslanıp kayar
+        pose = POSES.brake
+        flip = p.vx < 0
+        brake = true
+      } else if (speed > 8) pose = gait(((p.runTime * 15) / 8) % 1, Math.min(1.6, speed / PHYS.run))
+      else if (self && this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) {
+        const wv = Math.sin(this.idleT * 13) * 22
+        pose = { ...POSES.wave, arms: [POSES.wave.arms[0], [POSES.wave.arms[1][0], POSES.wave.arms[1][1] + wv]] }
+      } else {
+        // nefes: dizler hafifçe esner, gövde iner kalkar
+        const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
+        pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
+      }
+      if (p.landTimer > 0 && !brake) {
+        // iniş: dizler çöker, sertlikle derinleşir; esneme hacmi korur
+        const k = Math.min(1, p.landTimer / 0.12)
+        const d = k * k * (3 - 2 * k) * a.hard
+        pose = lerpPose(pose, POSES.land, d)
+        kx = 1 + 0.2 * d
+        ky = 1 - 0.16 * d
+      }
+    }
+    // dash bitti: gövde birkaç kare içinde dikilir, dönüş ve esneme söner
+    if (!dashing) a.rec = Math.max(0, a.rec - dt)
+    if (!dashing && !hold && a.rec > 0) {
+      const k = (a.rec / DASH_RECOVER) ** 2
+      pose = lerpPose(pose, a.recPose, k)
+      rot += a.recRot * k
+      pivot = DASH_PIVOT
+      kx += (a.recK[0] - 1) * k
+      ky += (a.recK[1] - 1) * k
+    }
+    // gecikmeli izleme: atkı hızla açılır, yavaş söner; saç ve savrulma kısa gecikmeyle
+    a.flow += (flowT - a.flow) * ease(flowT > a.flow ? 0.05 : 0.22)
+    a.lift += ((pose.lift ?? 0) - a.lift) * ease(0.09)
+    a.hair += ((pose.hair ?? 0) - a.hair) * ease(0.07)
+    pose = { ...pose, lift: a.lift, hair: a.hair }
+    const moving = hold ? hold.moving : Math.abs(p.vx) > 40 || !p.grounded
+    return { pose, rot, pivot, dx, dy, flip, kx, ky, moving, flow: a.flow, brake }
+  }
+
   /** Co-op eşi: oyuncuyla aynı pozlar (iz ve toz yok); dash hakkı bitince atkısı soluklaşır */
   private drawPartner(w: World) {
     const q = w.partner
     if (!q || q.dead) return
-    let pose: Pose
-    const hold = q.dashTime > 0 ? null : this.holdPose(q)
-    if (q.dashTime > 0) pose = POSES.dash
-    else if (hold) pose = hold.pose
-    else if (!q.grounded) pose = q.wallDir !== 0 && q.vy > 0 ? POSES.wall : q.vy < -70 ? POSES.jump : q.vy < 70 ? POSES.apex : POSES.fall
-    else if (Math.abs(q.vx) > 8) pose = gait(((q.runTime * 15) / 8) % 1)
-    else pose = POSES.idle
+    const m = this.heroAnim(q, false)
     const spent = !q.canDash
-    this.heroes.push({ look: this.partnerLook, pose: { ...pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2 + (hold?.dx ?? 0), y: q.y + q.h + (hold?.dy ?? 0), flip: q.facing < 0, alpha: 1, ghost: false, moving: hold ? hold.moving : Math.abs(q.vx) > 40 || !q.grounded, sx: 1, sy: 1, rot: hold?.rot, pivot: hold?.pivot, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade })
+    this.heroes.push({ look: this.partnerLook, pose: { ...m.pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2 + m.dx, y: q.y + q.h + m.dy, flip: m.flip, alpha: 1, ghost: false, moving: m.moving, sx: m.kx, sy: m.ky, rot: m.rot, pivot: m.pivot, flow: m.flow, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade })
   }
 
   private drawPlayer(w: World, dt: number) {
@@ -3521,10 +3702,16 @@ export class Renderer {
     // 60 Hz'de de 120 Hz'de de aynı iz, üst üste yığılmaz ve çizim yükü sabit kalır
     for (const g of this.ghosts) g.life -= dt
     this.ghosts = this.ghosts.filter((g) => g.life > 0)
-    if (p.dashTime > 0 && !p.dead) {
+    // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir
+    const still = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0
+    this.idleT = still ? this.idleT + dt : 0
+    if (!p.grounded) this.airVy = Math.max(this.airVy, p.vy)
+    // poz bir kez, iz bırakılmadan önce hesaplanır: iz kopyası karakterle aynı pozda ve dönüşte kalır
+    const m = p.dead ? null : this.heroAnim(p, true)
+    if (m && p.dashTime > 0) {
       const last = this.ghosts[this.ghosts.length - 1]
       if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= GHOST_GAP) {
-        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: p.facing < 0 })
+        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: m.flip, pose: m.pose, rot: m.rot })
         if (this.ghosts.length > GHOST_MAX) this.ghosts.shift()
       }
     }
@@ -3533,7 +3720,7 @@ export class Renderer {
       if (Math.hypot(p.x - g.x, p.y - g.y) < GHOST_GAP * 0.6) continue
       // iz eskidikçe hem solar hem incelir: hız hissi kuyruğa doğru sivrilir
       const k = g.life / GHOST_LIFE
-      this.heroes.push({ look, pose: POSES.dash, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory })
+      this.heroes.push({ look, pose: g.pose, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory, rot: g.rot, pivot: DASH_PIVOT, flow: 1.4 })
     }
     // hız çizgileri: dash boyunca gövdenin arkasında kısa, parlak çizgiler (mesafeye göre; kare hızından bağımsız)
     if (p.dashTime > 0 && !p.dead) {
@@ -3562,60 +3749,25 @@ export class Renderer {
         this.nitroAt = [p.x, p.y]
       }
     } else this.nitroAt = null
-    if (p.dead) return
+    if (!m) return
 
-    // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir
-    const still = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0
-    this.idleT = still ? this.idleT + dt : 0
-    if (!p.grounded) this.airVy = Math.max(this.airVy, p.vy)
-
-    // poz: koşu, koşu süresinden sürekli hesaplanır (kare atlamadan akar)
-    let pose: Pose
-    const hold = p.dashTime > 0 ? null : this.holdPose(p)
-    if (p.dashTime > 0) pose = POSES.dash
-    else if (hold) pose = hold.pose
-    else if (!p.grounded) pose = p.wallDir !== 0 && p.vy > 0 ? POSES.wall : p.vy < -70 ? POSES.jump : p.vy < 70 ? POSES.apex : POSES.fall
-    else if (p.landTimer > 0.05) pose = POSES.land
-    else if (Math.abs(p.vx) > 8) pose = gait(((p.runTime * 15) / 8) % 1)
-    else if (this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) {
-      const wv = Math.sin(this.idleT * 13) * 22
-      pose = { ...POSES.wave, arms: [POSES.wave.arms[0], [POSES.wave.arms[1][0], POSES.wave.arms[1][1] + wv]] }
-    } else {
-      // nefes: dizler hafifçe esner, gövde iner kalkar
-      const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
-      pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
-    }
-    pose = { ...pose, blink: this.t % 3.4 < 0.12 }
-
-    // esneme: zıplarken incelip uzar, konarken basılır (hacim korunur, abartısız)
-    let kx = 1
-    let ky = 1
-    if (p.landTimer > 0) {
-      const a = p.landTimer / 0.12
-      kx = 1 + 0.18 * a
-      ky = 1 - 0.14 * a
-    } else if (!p.grounded && p.vy < -150) {
-      kx = 0.92
-      ky = 1.08
-    } else if (p.dashTime > 0) {
-      // dash: kalkışta en çok gerilir, sonuna doğru toparlanır (yön boyunca uzar, hacim korunur)
-      const a = 0.08 + 0.14 * Math.min(1, p.dashTime / PHYS.dashTime)
-      const side = Math.abs(p.dashDir[0]) > 0.5
-      kx = side ? 1 + a : 1 - a * 0.7
-      ky = side ? 1 - a * 0.7 : 1 + a
-    }
+    const pose: Pose = { ...m.pose, blink: this.t % 3.4 < 0.12 }
     const footX = p.x + p.w / 2
     const footY = p.y + p.h
-    const moving = Math.abs(p.vx) > 40 || !p.grounded
     // dash hakkı bitince atkı soluklaşır: ne zaman yeniden dash atabileceğin görünür
     const spent = !p.canDash
-    this.heroes.push({ look, pose, x: footX + (hold?.dx ?? 0), y: footY + (hold?.dy ?? 0), flip: p.facing < 0, alpha: 1, ghost: false, moving: hold ? hold.moving : moving, sx: hold ? 1 : kx, sy: hold ? 1 : ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade, acc: this.accessory, rot: hold?.rot, pivot: hold?.pivot })
+    this.heroes.push({ look, pose, x: footX + m.dx, y: footY + m.dy, flip: m.flip, alpha: 1, ghost: false, moving: m.moving, sx: m.kx, sy: m.ky, scarf: spent ? '#7f8ca8' : this.scarf?.color, scarfS: spent ? '#5a6680' : this.scarf?.shade, acc: this.accessory, rot: m.rot, pivot: m.pivot, flow: m.flow })
 
     this.petTimer = Math.max(0, this.petTimer - dt)
     // koşu tozu ve duvar kayma kıvılcımı
     this.dustTimer -= dt
     if (this.dustTimer <= 0) {
-      if (p.grounded && Math.abs(p.vx) > 60) {
+      if (m.brake) {
+        // fren tozu: kayan ayağın önünden, kayış yönüne savrulur
+        const d = Math.sign(p.vx)
+        this.particles.push({ x: footX + d * 5, y: footY - 1, vx: d * (30 + (this.streakN = (this.streakN + 1) % 6) * 6), vy: -22, life: 0.3, max: 0.3, color: 'rgba(230,220,200,0.75)', size: this.streakN % 2 ? 1 : 2, grav: 60 })
+        this.dustTimer = 0.035
+      } else if (p.grounded && Math.abs(p.vx) > 60) {
         this.particles.push({ x: footX - p.facing * 5, y: footY - 1, vx: -p.facing * 20, vy: -18, life: 0.35, max: 0.35, color: 'rgba(230,220,200,0.7)', size: 1, grav: 40 })
         this.dustTimer = 0.09
       } else if (!p.grounded && p.wallDir !== 0 && p.vy > 20) {
@@ -3894,7 +4046,35 @@ interface HeroDraw {
   /** bütün gövdenin dönüşü (radyan, ileri +): yüzerken yatar, telde salınır; `pivot` ayak tabanından yukarı (dünya px) */
   rot?: number
   pivot?: number
+  /** atkının savrulması (0 sarkık .. 1,4 dash), gecikmeli izler */
+  flow?: number
 }
+
+/** oyuncu başına çizim durumu (render.ts heroAnim): gecikmeler, sarkaç, dash toparlanması, iniş sertliği */
+interface HeroAnim {
+  flow: number
+  lift: number
+  hair: number
+  /** teleferikte sarkaç açısı (dünya, saat yönü +) ve açısal hızı */
+  ang: number
+  angV: number
+  /** teleferikte ilerleme hızı (konumdan; teleferik vx yazmaz) */
+  cvx: number
+  px: number
+  /** dash bitince toparlanma süresi, dash'in son pozu ve dönüşü */
+  rec: number
+  recPose: Pose
+  recRot: number
+  recK: [number, number]
+  airMax: number
+  hard: number
+  grounded: boolean
+}
+
+/** dash'in ardından gövdenin toparlanma süresi (sn) */
+const DASH_RECOVER = 0.13
+/** dash ve toparlanmada gövdenin döndüğü nokta: ayak tabanından yukarı (dünya px) */
+const DASH_PIVOT = 14
 
 interface Pop {
   x: number

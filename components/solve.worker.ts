@@ -25,6 +25,8 @@ ctx.addEventListener('message', (e) => {
     const w = new World(level)
     w.enemies.length = 0
     w.turrets.length = 0
+    w.boss = null
+    w.boss2 = null
     for (const m of r.path) runMacro(w, m, () => (w.events.length = 0))
     const total = w.pickups.length
     const all = total || w.stampBox || w.charmBox ? solve(level, { budget }) : null
