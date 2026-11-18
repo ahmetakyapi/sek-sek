@@ -2649,7 +2649,10 @@ export default function Game() {
         <Overlay>
           <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:p-7 short:max-w-[min(760px,100%)] short:py-3 wide:max-w-[min(900px,100%)]">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Skor Tablosu")}</h2>
+              <div className="min-w-0">
+                <h2 className="font-display text-3xl leading-none text-cream short:text-2xl">{t('Skor Tablosu')}</h2>
+                <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Bütün yolcular, şehir şehir: süre, düşüş ve hatıra.')}</p>
+              </div>
               <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                 {ic(t("← Geri"))}
               </button>

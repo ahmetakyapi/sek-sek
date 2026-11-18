@@ -98,7 +98,7 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
         ))}
       </div>
       <label className="grid gap-1">
-        <span className="text-[12px] font-bold tracking-[0.14em] text-muted">{t('KULLANICI ADI')}</span>
+        <span className="text-[13px] font-semibold text-muted">{t('Kullanıcı Adı')}</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -119,7 +119,7 @@ export default function AuthForm({ onDone, onMode, suggestion = '', autoFocus = 
         )}
       </label>
       <label className="grid gap-1">
-        <span className="text-[12px] font-bold tracking-[0.14em] text-muted">{t('ŞİFRE')}</span>
+        <span className="text-[13px] font-semibold text-muted">{t('Şifre')}</span>
         <span className="flex gap-2">
           <input
             type={show ? 'text' : 'password'}

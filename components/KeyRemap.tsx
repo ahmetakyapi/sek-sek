@@ -107,7 +107,7 @@ export function DuoRemap({ keys, onChange, compact = false }: { keys?: Partial<R
       <div className="mt-1.5 grid grid-cols-2 gap-2">
         {([0, 1] as const).map((pl) => (
           <div key={pl} className={`border-2 p-2 ${pl === 0 ? 'border-accent/60' : 'border-gold/60'}`}>
-            <p className="text-[11px] font-bold tracking-[0.14em] text-muted">{t('{n}. OYUNCU', { n: pl + 1 })}</p>
+            <p className="text-[13px] font-semibold text-muted">{t('{n}. Oyuncu', { n: pl + 1 })}</p>
             <ul className="mt-1 grid gap-1">
               {KEY_ACTIONS.map((a) => {
                 const on = wait?.[0] === pl && wait[1] === a

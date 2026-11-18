@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
-import { MedalBadge, displayName, medalFor, ic } from '@/components/ui'
+import { MedalBadge, SectionTitle, displayName, medalFor, ic } from '@/components/ui'
 import { LEVELS } from '@/game/levels'
 import { DAILY_RULES, dailyRun, istanbulDay, shiftDay } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
@@ -190,10 +190,10 @@ export function Board({
                 </span>
                 <span className="min-w-0">
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`truncate font-semibold text-cream underline-offset-4 hover:underline ${compact ? '' : 'text-[16px]'}`}>
+                    <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`min-w-0 font-semibold leading-tight text-cream underline-offset-4 break-words hover:underline ${compact ? '' : 'text-[16px]'}`}>
                       {r.name}
                     </a>
-                    {r.me && <span className="shrink-0 text-[12px] font-bold tracking-[0.12em] text-gold">{t('SEN')}</span>}
+                    {r.me && <span className="shrink-0 border border-gold/70 bg-gold/10 px-1.5 text-[12px] font-bold leading-snug text-gold">{t('Sen')}</span>}
                     {onFriend && !r.me && (
                       <button
                         className={`shrink-0 px-0.5 text-[15px] leading-none ${friends?.includes(r.name) ? 'text-gold' : 'text-muted hover:text-cream'}`}
@@ -345,13 +345,12 @@ export default function ScoreBoard({
 
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col short:mt-1.5">
-      <div className="grid grid-cols-5 gap-1.5" role="tablist">
+      <div className="seg seg-tabs" role="tablist">
         {tabs.map(([k, label]) => (
           <button
             key={k}
             role="tab"
             aria-selected={tab === k}
-            className={`pixel-btn justify-center px-1 py-1.5 text-[13px] sm:text-[13px] short:py-1 ${tab === k ? 'primary' : ''}`}
             onClick={() => {
               setTab(k)
               setSort('')
@@ -398,39 +397,51 @@ export default function ScoreBoard({
             <ItemIcon city={dailyLevel.city} taken size={30} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-bold tracking-[0.14em] text-gold">{day === today ? t('BUGÜN') : t('DÜN')} · {t(rule.name).toLocaleUpperCase(lng)}</p>
+            <p className="text-[13px] font-bold text-gold">{day === today ? t('Bugün') : t('Dün')} · {t(rule.name)}</p>
             <p className="truncate font-display text-lg leading-tight text-cream">{displayName(dailyLevel)}</p>
             <p className="text-[13px] leading-snug text-muted short:hidden">{t(rule.text)}</p>
           </div>
           <div className="flex shrink-0 flex-col gap-1.5">
             {day === today && onDaily ? (
-              <button className="pixel-btn primary px-3 py-1.5 text-[13px]" onClick={onDaily}>
+              <button className="pixel-btn tone justify-center px-3 py-1.5 text-[13px] [--tone:var(--color-gold)]" onClick={onDaily}>
                 {ic(t('▶ Oyna'))}
               </button>
             ) : null}
-            <button className="pixel-btn px-2 py-1 text-[13px]" onClick={() => setDay(day === today ? shiftDay(today, -1) : today)}>
+            <button className="pixel-btn justify-center px-2 py-1 text-[13px]" onClick={() => setDay(day === today ? shiftDay(today, -1) : today)}>
               {day === today ? t('Dünkü') : t('Bugünkü')}
             </button>
           </div>
         </div>
-      ) : (
-        <p className="mt-2.5 font-display text-xl text-gold short:hidden">{tab === 'city' || (tab === 'speedrun' && !sort) ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : tab === 'speedrun' ? (sort === 'tur' ? t('Tam Tur') : t('Ayna Tam Tur')) : t('Koleksiyoncular')}</p>
-      )}
-      <p className="mt-0.5 text-[13px] leading-snug text-muted short:hidden">{tab === 'city' ? `${lv.subtitle} · ${note}` : note}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 short:mt-1">
-        {sorts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Sıralama')}>
-            {sorts.map(([k, label]) => (
-              <button key={k || 'default'} aria-pressed={sort === k} className={`pixel-btn px-2.5 py-1.5 text-[13px] ${sort === k ? 'primary' : ''}`} onClick={() => setSort(k)}>
-                {label}
-              </button>
-            ))}
+      ) : null}
+      <div className="mt-2.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 short:mt-1.5">
+        <div className="min-w-0 flex-1 basis-[260px] short:hidden">
+          {tab !== 'gunluk' && (
+            <SectionTitle
+              title={tab === 'city' || (tab === 'speedrun' && !sort) ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : tab === 'speedrun' ? (sort === 'tur' ? t('Tam Tur') : t('Ayna Tam Tur')) : t('Koleksiyoncular')}
+              note={tab === 'city' ? lv.subtitle : undefined}
+            />
+          )}
+          <p className={`text-[13px] leading-snug text-muted ${tab === 'gunluk' ? '' : 'mt-0.5 pl-[18px]'}`}>{note}</p>
+        </div>
+        {(sorts.length > 0 || (tab !== 'koleksiyon' && friends && onFriend)) && (
+          <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
+            {sorts.length > 0 && (
+              <div className="seg" role="group" aria-label={t('Sırala')}>
+                {sorts.map(([k, label]) => (
+                  <button key={k || 'default'} aria-pressed={sort === k} onClick={() => setSort(k)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {tab !== 'koleksiyon' && friends && onFriend && (
+              <div className="seg max-sm:ml-auto [--seg-on:var(--color-gold)]">
+                <button aria-pressed={onlyFriends} aria-label={t('Arkadaşlar')} onClick={() => setOnlyFriends((v) => !v)}>
+                  {onlyFriends ? '★' : '☆'} <span className="max-sm:hidden">{t('Arkadaşlar')}</span> {friends.length ? `(${friends.length})` : ''}
+                </button>
+              </div>
+            )}
           </div>
-        )}
-        {tab !== 'koleksiyon' && friends && onFriend && (
-          <button aria-pressed={onlyFriends} className={`pixel-btn ml-auto px-2.5 py-1.5 text-[13px] ${onlyFriends ? 'primary' : ''}`} onClick={() => setOnlyFriends((v) => !v)}>
-            ★ {t('Arkadaşlar')} {friends.length ? `(${friends.length})` : ''}
-          </button>
         )}
       </div>
       {onlyFriends && tab !== 'koleksiyon' && friends && onFriend && <AddFriend friends={friends} me={me} onAdd={onFriend} />}

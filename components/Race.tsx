@@ -286,7 +286,7 @@ export default function Race({
           )}
           {huds[k].done !== null && (
             <div className="rise pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-ink/55">
-              <p className="text-[13px] font-bold tracking-[0.18em] text-gold">{huds[1 - k].done === null || huds[k].done! <= huds[1 - k].done! ? t('İLK VARAN') : t('VARDI')}</p>
+              <p className="font-display text-xl text-gold [text-shadow:0_2px_0_#0e0d22]">{huds[1 - k].done === null || huds[k].done! <= huds[1 - k].done! ? t('İlk Varan') : t('Vardı')}</p>
               <p className="font-display text-6xl tabular-nums text-cream [text-shadow:0_4px_0_#0e0d22]">{formatTime(huds[k].done!)}</p>
             </div>
           )}
@@ -329,8 +329,8 @@ export default function Race({
       {paused && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/70 p-4">
           <div className="pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-md overflow-y-auto p-5 text-center short:p-3">
-            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('MOLA')}</p>
-            <h2 className="mt-1 font-display text-3xl text-cream">{t('Yarış Durdu')}</h2>
+            <h2 className="font-display text-3xl text-cream">{t('Yarış Durdu')}</h2>
+            <p className="mt-1 text-[14px] text-muted short:hidden">{t('Süre durdu. Tuşları buradan değiştirebilirsiniz.')}</p>
             <div className="mt-4 grid gap-2.5">
               <button
                 className="pixel-btn primary justify-center"

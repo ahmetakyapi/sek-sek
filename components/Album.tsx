@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
-import { MedalBadge, displayName, medalFor, ic } from '@/components/ui'
+import { MedalBadge, SectionTitle, displayName, medalFor, ic } from '@/components/ui'
 import { BOSSES } from '@/game/boss'
 import { FEATURES } from '@/game/features'
 import { LEVELS } from '@/game/levels'
@@ -17,12 +17,6 @@ const DIFF_TONE: Record<LevelDef['difficulty'], string> = {
   Zor: 'border-[#e8794a] text-[#f5a571]',
   'Çok Zor': 'border-[#d6403a] text-[#f08a80]',
 }
-
-const Eyebrow = ({ children, tone = 'text-gold' }: { children: React.ReactNode; tone?: string }) => (
-  <p className={`flex items-center gap-2 text-[12px] font-bold tracking-[0.14em] ${tone}`}>
-    {children} <span className="kilim h-[6px] flex-1 opacity-50" />
-  </p>
-)
 
 /** Albümde ilk açılan şehir: en son açılan yol (bitmemişse bir öncekinin sayfası daha doludur) */
 function firstPage(save: Save) {
@@ -83,7 +77,7 @@ export default function Album({ save }: { save: Save }) {
   const next = LEVELS[(sel + 1) % n]
 
   return (
-    <div className="mt-2 flex h-[72dvh] min-h-[150px] shrink gap-3 overflow-hidden">
+    <div className="mt-2 flex h-[72dvh] min-h-[150px] flex-1 shrink gap-3 overflow-hidden">
       {/* şehir ızgarası */}
       <ul
         ref={gridRef}
@@ -100,7 +94,7 @@ export default function Album({ save }: { save: Save }) {
                 aria-label={off ? t('{city}: Kilitli', { city: name }) : seen ? name : t('{city}: Henüz Gezilmedi', { city: name })}
                 aria-current={i === sel ? 'page' : undefined}
                 onClick={() => go(i)}
-                className={`relative block w-full overflow-hidden border-2 text-left transition-colors ${i === sel ? 'border-gold' : 'border-line hover:border-muted'} ${seen ? 'bg-panel-2' : 'bg-ink/40'}`}
+                className={`relative block w-full overflow-hidden border-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${i === sel ? 'border-gold' : off ? 'border-dashed border-line/80 hover:border-muted' : 'border-line hover:border-muted'} ${seen ? 'bg-panel-2' : 'bg-ink/40'}`}
               >
                 <span className="relative block aspect-[16/7] overflow-hidden">
                   <img src={`/sehirler/${c.id}.webp`} alt="" className={`h-full w-full object-cover ${seen ? '' : off ? 'opacity-20 brightness-0' : 'opacity-35 grayscale'}`} style={{ imageRendering: 'pixelated', objectPosition: '50% 70%' }} />
@@ -122,7 +116,7 @@ export default function Album({ save }: { save: Save }) {
           <button className={`pixel-btn px-2 py-1 text-[13px] ${open ? '' : 'hidden'} side:hidden`} onClick={() => setOpen(false)} aria-label={t('Albüme Dön')}>
             {ic(t('← Albüm'))}
           </button>
-          <p className="hidden min-w-0 truncate pl-1.5 text-[12px] font-bold tracking-[0.14em] text-gold side:block">{t('ŞEHİR ALBÜMÜ')}</p>
+          <p className="hidden min-w-0 truncate pl-1.5 font-display text-[15px] text-cream side:block">{t('Şehir Albümü')}</p>
           <button className="pixel-btn ml-auto px-2 py-1 text-[13px]" onClick={() => go(sel - 1)} aria-label={t('Önceki Şehir: {city}', { city: prev.name })} title={t('Önceki Şehir: {city}', { city: prev.name })}>
             ←
           </button>
@@ -163,7 +157,7 @@ export default function Album({ save }: { save: Save }) {
               <>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-2 border-line bg-panel-2 px-3 py-2">
                   <div>
-                    <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('EN İYİ SÜRE')}</p>
+                    <p className="text-[12px] text-muted">{t('En İyi Süre')}</p>
                     <p className="font-display text-xl tabular-nums text-cream">{best.stale ? '—' : formatTime(best.timeMs)}</p>
                   </div>
                   {!best.stale && <MedalBadge medal={medalFor(base, best.timeMs)} size="lg" />}
@@ -180,7 +174,7 @@ export default function Album({ save }: { save: Save }) {
 
                 {features && (
                   <section>
-                    <Eyebrow>{t('GEZİLEN YERLER')}</Eyebrow>
+                    <SectionTitle title={t('Gezilen Yerler')} />
                     <p className="mt-1.5 text-[14px] leading-relaxed text-cream">{features}</p>
                   </section>
                 )}
@@ -188,12 +182,12 @@ export default function Album({ save }: { save: Save }) {
                 <p className="text-[14px] leading-relaxed text-cream/90">{l.intro}</p>
 
                 <section className="border-2 border-line bg-panel-2 px-3 py-2">
-                  <Eyebrow tone="text-accent">{t('GEZGİN’İN NOTU')}</Eyebrow>
+                  <SectionTitle title={t('Gezgin’in Notu')} tone="var(--color-accent)" />
                   <p className="mt-1.5 text-[14px] italic leading-relaxed text-cream/90">{l.note}</p>
                 </section>
 
                 <section>
-                  <Eyebrow>{t('ŞEHİR BİLGİLERİ')}</Eyebrow>
+                  <SectionTitle title={t('Şehir Bilgileri')} note={t('Her hatıra bir sayfa açar')} />
                   <ul className="mt-2 grid gap-2 wide:grid-cols-3">
                     {l.facts.map((f, k) => {
                       const got = !!best.items[k]
@@ -221,7 +215,7 @@ export default function Album({ save }: { save: Save }) {
                 <section className="flex items-center gap-3 border-2 border-line bg-panel-2 px-3 py-2">
                   <BossFigure city={l.city} className={`h-16 w-16 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
                   <div className="min-w-0">
-                    <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('MEYDANIN BOSS’U')}</p>
+                    <p className="text-[12px] text-muted">{t('Meydanın Boss’u')}</p>
                     <p className="font-display text-[15px] leading-tight text-cream">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : '???'}</p>
                     <p className="mt-0.5 text-[13px] leading-snug text-muted">{beaten ? (lang === 'en' ? boss.tauntEn : boss.taunt) : t('Meydanın boss’unu yen, sayfası açılsın.')}</p>
                   </div>
@@ -229,7 +223,7 @@ export default function Album({ save }: { save: Save }) {
 
                 {npcs.length > 0 && (
                   <section>
-                    <Eyebrow>{t('TANIŞTIĞIN İNSANLAR')}</Eyebrow>
+                    <SectionTitle title={t('Tanıştığın İnsanlar')} />
                     <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                       {npcs.map((p) => (
                         <li key={p.name} className="flex gap-2.5 border-2 border-line bg-panel-2 px-2.5 py-2">

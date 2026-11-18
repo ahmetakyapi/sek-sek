@@ -5,7 +5,7 @@ import Album from '@/components/Album'
 import MusicBox from '@/components/MusicBox'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
-import { MedalBadge, Overlay, displayName, medalFor, ic } from '@/components/ui'
+import { MedalBadge, Overlay, SectionTitle, displayName, medalFor, ic } from '@/components/ui'
 import type { Sound } from '@/game/audio'
 import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
@@ -18,8 +18,8 @@ import { formatTime, titleFacts, type Save } from '@/lib/storage'
 export const RUSH_NEEDS = 3
 
 /**
- * Yol Defteri: yolculukta toplanan her şey tek sayfada. Şehir başına üç hatıra, gizli pul, nazar boncuğu
- * ve meydanın bekçisi; üstte toplamlar, görev rozetleri ve Boss Rush.
+ * Yol Defteri: yolculukta toplanan her şey tek sayfada. Üstte toplamlar tek şeritte; sekmeler şehirler (üç hatıra,
+ * gizli pul, nazar boncuğu, meydanın boss’u), albüm, başarımlar (üstünde yol sayaçları, görevler, Günlük ve Boss Rush) ve müzik.
  */
 export default function Defter({ save, today, sound, onClose, onModes, onMusicOn }: { save: Save; today: string; sound: Sound | null; onClose: () => void; onModes: () => void; onMusicOn: () => void }) {
   const t = useT()
@@ -44,90 +44,71 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
     [t('Usta Mührü'), LEVELS.filter((l) => save.ustalar?.[l.id]).length, n],
     [t('Atkı'), scarves, SCARVES.length],
   ]
+  const journey: [string, string][] = [
+    [t('Koşu'), stats.runs.toLocaleString(lang)],
+    [t('Zıplama'), stats.jumps.toLocaleString(lang)],
+    [t('Dash'), stats.dashes.toLocaleString(lang)],
+    [t('Düşüş'), stats.deaths.toLocaleString(lang)],
+    [t('Ezilen Düşman'), stats.stomps.toLocaleString(lang)],
+    [t('Yolda Geçen Süre'), hours],
+  ]
+  const compact = tab === 'album' || tab === 'muzik'
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1100px,100%)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-bold tracking-[0.18em] text-accent">{t('YOLCULUĞUN ÖZETİ')}</p>
-            <h2 className="mt-1 flex flex-wrap items-baseline gap-x-3 font-display text-3xl text-cream short:text-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-display text-3xl leading-none text-cream short:text-2xl">
               {t('Yol Defteri')}
-              <span className="border-2 border-gold bg-gold/10 px-2 py-0.5 text-[13px] tracking-[0.06em] text-gold" title={t('Unvanın: yolculuğunun en parlak yanı')}>
+              <span className="border-2 border-gold/80 bg-gold/10 px-2 py-0.5 font-mono text-[13px] font-bold leading-snug text-gold" title={t('Unvanın: yolculuğunun en parlak yanı')}>
                 ★ {t(travelerTitle(titleFacts(save, today)))}
               </span>
             </h2>
+            <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Yolculukta topladığın her şey: şehirler, albüm, başarımlar ve besteler.')}</p>
           </div>
           <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onClose}>
             {ic(t('← Geri'))}
           </button>
         </div>
 
-        <div className={`mt-4 grid grid-cols-3 gap-1.5 text-center sm:grid-cols-6 sm:gap-2 short:mt-2 short:grid-cols-6 ${tab === 'album' || tab === 'muzik' ? 'max-sm:hidden short:hidden' : ''}`}>
+        {/* toplamlar tek şeritte; albüm ve müzik açıkken telefonda sayfaya yer bırakır */}
+        <dl className={`mt-4 grid grid-cols-3 gap-[2px] border-2 border-line bg-line/70 sm:grid-cols-6 short:mt-2 short:grid-cols-6 ${compact ? 'max-sm:hidden short:hidden' : ''}`}>
           {totals.map(([k, v, max]) => (
-            <div key={k} className={`border-2 py-1.5 short:py-1 ${v === max ? 'border-gold bg-gold/10' : 'border-line bg-ink/40'}`}>
-              <p className="font-display text-base leading-none tabular-nums text-cream sm:text-lg">
+            <div key={k} className="min-w-0 bg-panel px-2 py-2 text-center short:py-1">
+              <dd className={`font-display text-lg leading-none tabular-nums short:text-base ${v === max ? 'text-gold' : 'text-cream'}`}>
                 {v}
-                <span className="text-sm text-muted">/{max}</span>
-              </p>
-              <p className="mt-1 truncate px-0.5 text-[12px] text-muted">{k}</p>
+                <span className="text-[13px] text-muted">/{max}</span>
+              </dd>
+              <dt className="mt-1 truncate text-[12px] text-muted">{k}</dt>
+              <span className="mx-auto mt-1.5 block h-1 w-full max-w-[96px] overflow-hidden rounded-full bg-ink/80 max-sm:hidden short:hidden" aria-hidden>
+                <span className={`block h-full rounded-full ${v === max ? 'bg-gold' : 'bg-accent'}`} style={{ width: `${Math.round((v / max) * 100)}%` }} />
+              </span>
             </div>
           ))}
-        </div>
+        </dl>
 
-        {/* Albüm açıkken görev ve istatistik satırları sayfaya yer bırakır */}
-        <div className={`mt-3 grid-cols-2 gap-2 sm:grid-cols-3 short:hidden ${tab === 'album' || tab === 'muzik' ? 'hidden' : 'grid'}`}>
-          <div className="border-2 border-line bg-ink/40 px-3 py-2 max-sm:hidden">
-            <p className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('GÖREVLER')}</p>
-            <p className="mt-0.5 text-[13px] text-cream">{t('{d} gün · {w} hafta tamamlandı', { d: save.daily.count, w: save.weekly.count })}</p>
-          </div>
-          <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" onClick={onModes}>
-            <span className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('GÜNLÜK MEYDAN OKUMA')}</span>
-            <span className="text-[13px]">{ic(streak ? t('🔥 {n} günlük seri', { n: streak }) : t('▶ Bugün Oyna, Seriyi Başlat'))}</span>
-          </button>
-          <button className="pixel-btn flex-col items-start gap-0.5 px-3 py-2 text-left" onClick={onModes}>
-            <span className="text-[12px] font-bold tracking-[0.18em] text-gold">{t('BOSS RUSH')}</span>
-            <span className="text-[13px]">
-              {ic(
-                bosses < RUSH_NEEDS
-                  ? t('Önce {n} Boss Yen', { n: RUSH_NEEDS })
-                  : save.rush
-                    ? t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })
-                    : t('▶ Yendiğin Boss’larla Arka Arkaya'),
-              )}
-            </span>
-          </button>
-        </div>
-
-        {/* yol istatistikleri: küçük sayaçlar, bir bakışta */}
-        <p className={`mt-2 flex-wrap gap-x-4 gap-y-0.5 text-[13px] tabular-nums text-muted max-sm:hidden short:hidden ${stats.runs && tab !== 'album' && tab !== 'muzik' ? 'flex' : 'hidden'}`}>
-          {(
-            [
-              [t('Koşu'), stats.runs],
-              [t('Zıplama'), stats.jumps],
-              [t('Dash'), stats.dashes],
-              [t('Düşüş'), stats.deaths],
-              [t('Ezilen Düşman'), stats.stomps],
-            ] as const
-          ).map(([k, v]) => (
-            <span key={k}>
-              {k} <strong className="text-cream">{v.toLocaleString(lang)}</strong>
-            </span>
-          ))}
-          <span>
-            {t('Yolda Geçen Süre')} <strong className="text-cream">{hours}</strong>
-          </span>
-        </p>
-
-        <div className="mt-3 -mx-1 flex shrink-0 items-center gap-2 overflow-x-auto p-1 short:mt-2" role="tablist">
+        <div className="seg seg-tabs mt-3 shrink-0 short:mt-2" role="tablist">
           {(
             [
               ['sehir', t('Şehirler')],
               ['album', t('Albüm')],
-              ['basarim', `${t('Başarımlar')} ${got}/${ACHIEVEMENTS.length}`],
-              ['muzik', t('Müzik Kutusu')],
+              [
+                'basarim',
+                <>
+                  {t('Başarımlar')}
+                  <span className="ml-1.5 tabular-nums text-muted max-sm:hidden">{got}/{ACHIEVEMENTS.length}</span>
+                </>,
+              ],
+              [
+                'muzik',
+                <>
+                  <span className="max-sm:hidden">{t('Müzik Kutusu')}</span>
+                  <span className="sm:hidden">{t('Müzik')}</span>
+                </>,
+              ],
             ] as const
           ).map(([k, label]) => (
-            <button key={k} role="tab" aria-selected={tab === k} className={`pixel-btn shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px] ${tab === k ? 'primary' : ''}`} onClick={() => setTab(k)}>
+            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
               {label}
             </button>
           ))}
@@ -138,7 +119,38 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
         ) : tab === 'muzik' ? (
           <MusicBox save={save} sound={sound} onMusicOn={onMusicOn} />
         ) : tab === 'basarim' ? (
-          <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="overlay-scroll mt-2 min-h-[120px] overflow-y-auto pr-1">
+            {/* yolculuğun sayaçları ve iki kısayol: başarımların hemen üstünde, onlarla birlikte kayar */}
+            <section className="mode-card grid gap-3 p-3 [--tone:var(--color-gold)] wide:grid-cols-[minmax(0,1fr)_auto] wide:items-center">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                  <SectionTitle title={t('Yolculuğun')} />
+                  <span className="text-[13px] text-muted">{t('{d} günlük ve {w} haftalık görev tamamlandı', { d: save.daily.count, w: save.weekly.count })}</span>
+                </div>
+                <dl className="mt-2.5 grid grid-cols-3 gap-x-4 gap-y-2 tabular-nums sm:grid-cols-[repeat(6,auto)] sm:justify-between">
+                  {journey.map(([k, v]) => (
+                    <div key={k} className="min-w-0">
+                      <dd className="font-display text-[17px] leading-none text-cream">{v}</dd>
+                      <dt className="mt-0.5 text-[12px] leading-tight text-muted sm:whitespace-nowrap">{k}</dt>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 wide:w-[372px]">
+                <button className="pixel-btn tone flex-col items-start gap-0.5 px-3 py-2 text-left [--tone:var(--color-gold)] max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3" onClick={onModes}>
+                  <span className="text-[12px] font-bold">{t('Günlük Meydan Okuma')}</span>
+                  <span className="text-[13px] text-cream">{ic(streak ? t('🔥 {n} günlük seri', { n: streak }) : t('▶ Bugün Oyna'))}</span>
+                </button>
+                <button className="pixel-btn tone flex-col items-start gap-0.5 px-3 py-2 text-left [--tone:var(--color-coral)] max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3" onClick={onModes}>
+                  <span className="text-[12px] font-bold">{t('Boss Rush')}</span>
+                  <span className="text-[13px] text-cream">
+                    {ic(bosses < RUSH_NEEDS ? t('🔒 Önce {n} Boss Yen', { n: RUSH_NEEDS }) : save.rush ? t('Rekor {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses }) : t('▶ Arka Arkaya Yen'))}
+                  </span>
+                </button>
+              </div>
+            </section>
+            <SectionTitle className="mt-4" title={t('Başarımlar')} note={t('{n}/{m} açıldı', { n: got, m: ACHIEVEMENTS.length })} />
+          <ul className="mt-2 grid grid-cols-1 content-start gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ACHIEVEMENTS.map((a) => {
               const [now, goal] = a.progress(save)
               const done = now >= goal
@@ -163,6 +175,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
               )
             })}
           </ul>
+          </div>
         ) : (
         <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 wide:grid-cols-4">
           {LEVELS.map((l, i) => {
@@ -171,16 +184,16 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
             const beaten = !!save.bosses[l.id]
             const boss = BOSSES[l.city]
             return (
-              <li key={l.id} className={`flex items-center gap-2.5 border-2 px-2.5 py-1.5 ${locked ? 'border-line/50 opacity-50' : 'border-line bg-panel-2'}`}>
-                <span className="plate shrink-0 text-[12px]">
+              <li key={l.id} className={`flex items-center gap-2.5 border-2 px-2.5 py-1.5 ${locked ? 'border-dashed border-line/80 bg-ink/30' : 'border-line bg-panel-2'}`}>
+                <span className={`plate shrink-0 text-[12px] ${locked ? 'opacity-50' : ''}`}>
                   <span>{String(l.plate).padStart(2, '0')}</span>
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 font-display text-[15px] leading-tight text-cream">
-                    <span className="truncate">{displayName(l)}</span>
+                  <p className={`flex items-center gap-1.5 font-display text-[15px] leading-tight ${locked ? 'text-cream/60' : 'text-cream'}`}>
+                    <span className="truncate" title={displayName(l)}>{l.name}</span>
                     {best && !best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}
                   </p>
-                  <p className="mt-1 flex items-center gap-1.5" title={localize(l, lang).item}>
+                  <p className={`mt-1 flex items-center gap-1.5 ${locked ? 'opacity-50' : ''}`} title={localize(l, lang).item}>
                     {[0, 1, 2].map((k) => (
                       <ItemIcon key={k} city={l.city} taken={!!best?.items[k]} size={17} />
                     ))}
@@ -188,9 +201,9 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
                     <ThingIcon kind="stamp" taken={!!save.stamps[l.id]} size={17} />
                     <ThingIcon kind="charm" taken={!!save.charms[l.id]} size={17} />
                   </p>
-                  <p className="mt-0.5 truncate text-[12px] text-muted">{beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Boss: ???')}</p>
+                  <p className="mt-0.5 truncate text-[12px] text-muted">{locked ? t('🔒 Önceki şehri bitirince açılır') : beaten ? (lang === 'en' ? boss.nameEn : boss.name) : t('Boss: ???')}</p>
                 </div>
-                <BossFigure city={l.city} className={`h-10 w-10 shrink-0 ${beaten ? '' : 'opacity-40 brightness-0'}`} />
+                <BossFigure city={l.city} className={`h-10 w-10 shrink-0 ${beaten ? '' : locked ? 'opacity-20 brightness-0' : 'opacity-40 brightness-0'}`} />
               </li>
             )
           })}
