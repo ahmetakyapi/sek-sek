@@ -1009,3 +1009,15 @@ blockquote {
     animation: none;
   }
 }
+
+/* Çentik / durum çubuğu şeridi: iOS 26 Safari bu şeridin altına giren içeriği bulanık gösterir. Opak bir örtü
+   koyunca şerit düz renk olur; oyun ve menüler ayrıca şeridin 8 px altından başlar (--safe-top). */
+:root { --safe-top: max(12px, calc(env(safe-area-inset-top) + 8px)); }
+.status-cover {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: env(safe-area-inset-top);
+  background: #0e0d22;
+  z-index: 70;
+  pointer-events: none;
+}

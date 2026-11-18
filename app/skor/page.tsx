@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Logo from '@/components/Logo'
+import SiteHeader from '@/components/SiteHeader'
 import { LEVELS } from '@/game/levels'
 import { parseShare, shareQuery } from '@/lib/share'
 import { formatTime } from '@/lib/storage'
@@ -28,20 +28,11 @@ export default async function SkorPage({ searchParams }: Props) {
   const l = d ? LEVELS.find((x) => x.id === d.level)! : null
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
-      <header className="border-b-2 border-line">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <Link href="/">
-            <Logo size={32} />
-          </Link>
-          <Link href="/" className="pixel-btn primary py-2 text-sm">
-            ▶ Hemen Oyna
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-10">
         {d && l ? (
           <>
-            <p className="text-[12px] font-bold tracking-[0.3em] text-accent">SKOR KARTI</p>
+            <p className="text-[14px] font-semibold text-accent-2">Skor Kartı</p>
             <h1 className="mt-2 font-display text-4xl text-cream">
               {d.name || 'Bir Yolcu'} {l.name} Şehrini Geçti
             </h1>

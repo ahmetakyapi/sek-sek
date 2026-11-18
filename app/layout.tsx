@@ -50,6 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" className={`${title.variable} ${body.variable}`}>
       <body>
+        {/* iOS durum çubuğunun altı düz renk: Safari oraya kayan içeriği bulanıklaştırmasın */}
+        <div className="status-cover" aria-hidden />
         {children}
         <PwaRegister />
         <Telemetry />

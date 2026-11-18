@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Logo from '@/components/Logo'
+import SiteHeader from '@/components/SiteHeader'
 import { BOSSES } from '@/game/boss'
 import { FEATURES } from '@/game/features'
 import { LEVELS } from '@/game/levels'
@@ -46,24 +47,14 @@ export default async function Sehir({ params }: Props) {
 
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
-      <header className="border-b-2 border-line">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" aria-label="Oyuna Dön">
-            <Logo size={32} />
-          </Link>
-          <nav className="flex items-center gap-4 text-sm text-muted">
-            <Link href="/hakkinda#sehirler" className="hidden hover:text-cream sm:block">
-              Bütün Şehirler
-            </Link>
-            <Link href="/siralama" className="hidden hover:text-cream sm:block">
-              Sıralama
-            </Link>
-            <Link href="/" className="pixel-btn primary py-2 text-sm">
-              ▶ Hemen Oyna
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader>
+        <Link href="/hakkinda#sehirler" className="hidden hover:text-cream sm:block">
+          Bütün Şehirler
+        </Link>
+        <Link href="/siralama" className="hidden hover:text-cream sm:block">
+          Sıralama
+        </Link>
+      </SiteHeader>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
         <div className="grid gap-8 md:grid-cols-[1.15fr_1fr] md:items-start">
@@ -80,7 +71,7 @@ export default async function Sehir({ params }: Props) {
           </figure>
 
           <div>
-            <p className="text-[12px] font-bold tracking-[0.3em] text-accent">{l.subtitle.toLocaleUpperCase('tr')}</p>
+            <p className="text-[14px] font-semibold text-accent-2">{l.subtitle}</p>
             <h1 className="mt-2 font-display text-5xl leading-[1] text-cream sm:text-6xl">
               {l.name}
               {l.nickname && <span className="block text-2xl text-accent-2 sm:text-3xl">({l.nickname})</span>}
@@ -113,7 +104,7 @@ export default async function Sehir({ params }: Props) {
         </section>
 
         <section className="mt-6 border-2 border-line p-5" aria-label="Defterden Bir Sayfa">
-          <p className="text-[12px] font-bold tracking-[0.3em] text-accent">DEFTERDEN BİR SAYFA</p>
+          <p className="text-[14px] font-semibold text-accent-2">Defterden Bir Sayfa</p>
           <h2 className="mt-1 font-display text-2xl text-gold">{l.facts[0].title}</h2>
           <p className="mt-2 text-[14px] leading-relaxed text-muted">{l.facts[0].text}</p>
           <p className="mt-2 text-[12px] text-muted">Diğer iki sayfa ve gizli pulun sayfası oyunda, hatıraları toplayınca açılır.</p>

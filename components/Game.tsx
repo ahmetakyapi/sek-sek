@@ -1847,10 +1847,10 @@ export default function Game() {
   const settingsPause = pauseKeys ? (
     <>
       {/* molada tuş atama: oyuna dönmeden tuşları değiştir */}
-      <button className="pixel-btn back-btn mt-1 w-full justify-center py-1.5 text-[13px]" onClick={() => setPauseKeys(false)}>
+      <button className="pixel-btn back-btn mt-2 w-full justify-center py-2 text-[13px]" onClick={() => setPauseKeys(false)}>
         {ic(t('← Ayarlar'))}
       </button>
-      <KeyRemap keys={save.keys} onChange={(k) => patch({ keys: k })} />
+      <KeyRemap keys={save.keys} onChange={(k) => patch({ keys: k })} stack />
     </>
   ) : (
     <>
@@ -1936,14 +1936,14 @@ export default function Game() {
           {titleCard > 0 && hud.time < 0.05 && (
             <div key={titleCard} className={`title-card ${save.tutorial ? 'slow' : ''} pointer-events-none absolute inset-x-0 top-[30%] z-10 flex flex-col items-center ${save.tutorial ? '[@media(max-height:500px)]:top-[20%]' : '[@media(max-height:500px)]:top-[12%]'}`}>
               <div className="kilim w-[min(520px,80vw)]" />
-              <p className="mt-3 text-[13px] font-bold tracking-[0.4em] text-accent-2 [text-shadow:0_2px_0_#0e0d22]">
+              <p className="mt-3 max-w-[min(560px,92vw)] px-4 text-center text-[12px] font-bold tracking-[0.16em] text-accent-2 [text-shadow:0_2px_0_#0e0d22] [text-wrap:balance] sm:text-[13px] sm:tracking-[0.4em]">
                 {String(level.plate).padStart(2, '0')} · {level.subtitle.toLocaleUpperCase(lang)}
               </p>
-              <p className="font-display text-6xl text-cream [text-shadow:0_4px_0_#0e0d22] sm:text-7xl [@media(max-height:500px)]:text-5xl">{level.name}</p>
+              <p className="px-4 text-center font-display text-5xl text-cream [text-shadow:0_4px_0_#0e0d22] min-[420px]:text-6xl sm:text-7xl [@media(max-height:500px)]:text-5xl">{level.name}</p>
               {save.tutorial && !rushRef.current && !modeRef.current ? (
                 <p className="mt-2 max-w-[min(520px,88vw)] px-2 text-center text-[15px] leading-snug text-gold [text-shadow:0_2px_0_#0e0d22,0_0_10px_#0e0d22] [text-wrap:balance] [@media(max-height:500px)]:mt-1 [@media(max-height:500px)]:text-[13px]">{t('Gezgin’in defterini tamamla: her şehirde 3 hatıra topla, meydandaki boss’u yen.')}</p>
               ) : (
-                <p className="mt-1 text-[13px] text-cream/80 [text-shadow:0_2px_0_#0e0d22]">{t("Hareket Edince Süre Başlar")}</p>
+                <p className="mt-2 bg-ink/70 px-2.5 py-0.5 text-[13px] font-semibold text-cream">{t("Hareket Edince Süre Başlar")}</p>
               )}
               <div className="kilim mt-3 w-[min(520px,80vw)]" />
             </div>
@@ -1957,12 +1957,12 @@ export default function Game() {
           ) : null}
           {quip && (
             // ölünce şehrin lafı: oynanış alanında değil, üstte HUD'ın altında; küçük ve soluk (yeniden doğuşu kapatmaz)
-            <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+66px)] z-10 flex justify-center px-4">
+            <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+62px)] z-10 flex justify-center px-4">
               <p className="rise font-display text-[13px] text-cream/75 [text-shadow:0_1px_0_#0e0d22,0_0_8px_#0e0d22] sm:text-sm">{quip.text}</p>
             </div>
           )}
           {toast && (
-            <div key={toast.key} className="toast-strip pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+62px)] z-10 flex justify-center px-4">
+            <div key={toast.key} className="toast-strip pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+58px)] z-10 flex justify-center px-4">
               <p className="flex max-w-[92vw] items-center gap-2 bg-ink/85 py-1.5 pl-1.5 pr-3 text-[13px] text-cream [box-shadow:0_-2px_0_0_#d9a441,0_2px_0_0_#d9a441,-2px_0_0_0_#d9a441,2px_0_0_0_#d9a441] sm:text-[13px]">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#221f4a]">
                   <ItemIcon city={level.city} taken size={20} />
@@ -1975,7 +1975,7 @@ export default function Game() {
             </div>
           )}
           {coach && (
-            <div className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+112px)] z-10 flex justify-center px-3 [@media(max-height:500px)]:top-[calc(env(safe-area-inset-top)+76px)]">
+            <div className="rise pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+108px)] z-10 flex justify-center px-3 [@media(max-height:500px)]:top-[calc(var(--safe-top)+72px)]">
               <ol className="flex max-w-[96vw] items-stretch gap-1.5 text-[13px] font-bold text-cream sm:gap-2 sm:text-[13px]">
                 {[t('İşareti Gör'), t('Saldırıdan Kaç'), t('Yorulunca Üstüne Bas')].map((s, i) => (
                   <li key={s} className={`flex items-center gap-1.5 bg-ink/85 px-2 py-1.5 [box-shadow:0_-2px_0_0_#37337a,0_2px_0_0_#37337a,-2px_0_0_0_#37337a,2px_0_0_0_#37337a] ${i === 2 ? 'text-gold' : ''}`}>
@@ -1987,7 +1987,7 @@ export default function Game() {
             </div>
           )}
           {cpToast && Date.now() - cpToast.at < 3200 && (
-            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(env(safe-area-inset-top)+104px)]' : 'top-[calc(env(safe-area-inset-top)+64px)]'}`}>
+            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(var(--safe-top)+100px)]' : 'top-[calc(var(--safe-top)+60px)]'}`}>
               {/* sakin şerit: yarı saydam, solda ince kırmızı çizgi; göze batmaz, oynanışı kapatmaz */}
               <div className="max-w-[min(88vw,380px)] border-l-2 border-[#e30a17] bg-ink/60 px-3 py-1.5 text-left backdrop-blur-[2px]">
                 <p className="flex items-center gap-1.5 font-display text-[13px] text-cream/90">
@@ -2010,7 +2010,7 @@ export default function Game() {
 
       {achToast && (
         // başarım: her ekranda üstte, küçük bir şerit; oynanışı ve menüyü kapatmaz
-        <div key={achToast.at} className="rise pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+10px)] z-[60] flex justify-center px-4">
+        <div key={achToast.at} className="rise pointer-events-none fixed inset-x-0 top-[calc(var(--safe-top)+6px)] z-[60] flex justify-center px-4">
           <div className="flex items-center gap-2.5 bg-ink/90 py-1.5 pl-1.5 pr-3.5 [box-shadow:0_0_0_2px_#d9a441]">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold font-display text-lg text-ink">{achToast.icon}</span>
             <span className="leading-tight">
@@ -2600,9 +2600,12 @@ export default function Game() {
                 </div>
               </div>
               <div className={`min-w-0 side:mt-0 side:block ${pauseSet ? '' : 'hidden'}`}>
-                <button className="pixel-btn back-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
-                  {ic(t('← Mola'))}
-                </button>
+                {/* dar ekranda tek geri düğmesi: tuş atamadayken Ayarlar'a, değilken Mola'ya döner */}
+                {!pauseKeys && (
+                  <button className="pixel-btn back-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
+                    {ic(t('← Mola'))}
+                  </button>
+                )}
                 <SectionTitle title={t('Ayarlar')} note={t('Değişiklik hemen uyar')} tone="var(--color-accent-2)" />
                 {settingsPause}
               </div>
@@ -3088,7 +3091,7 @@ function Hud({ level, hud, hero, scarf, showGoal, penaltyFor, label, onPause }: 
   return (
     <div
       className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 px-3"
-      style={{ paddingTop: 'max(10px, env(safe-area-inset-top))', paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))' }}
+      style={{ paddingTop: 'var(--safe-top)', paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))' }}
     >
       <div className="flex min-w-0 items-center gap-2.5 bg-ink/80 py-1.5 pl-1.5 pr-2.5 [box-shadow:0_0_0_2px_rgba(61,53,80,0.8)]">
         <span className="hidden min-[400px]:block">

@@ -190,7 +190,7 @@ export function Board({
                 </span>
                 <span className="min-w-0">
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`min-w-0 font-semibold leading-tight text-cream underline-offset-4 break-words hover:underline ${compact ? '' : 'text-[16px]'}`}>
+                    <a href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`min-w-0 font-semibold truncate leading-tight text-cream underline-offset-4 hover:underline ${compact ? '' : 'text-[16px]'}`}>
                       {r.name}
                     </a>
                     {r.me && <span className="shrink-0 border border-gold/70 bg-gold/10 px-1.5 text-[12px] font-bold leading-snug text-gold">{t('Sen')}</span>}

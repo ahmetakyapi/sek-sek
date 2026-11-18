@@ -67,10 +67,10 @@ export default function PhotoMode({ canvas, renderer, level, onClose }: { canvas
   return (
     <div className="absolute inset-0 z-20 cursor-grab touch-none active:cursor-grabbing" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <div className="pointer-events-none absolute inset-3 border-2 border-cream/25 [box-shadow:inset_0_0_0_1px_rgb(14_13_34/0.4)]" />
-      <p className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+14px)] text-center text-[13px] text-cream/80 [text-shadow:0_1px_2px_#0e0d22]">
+      <p className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+10px)] text-center text-[13px] text-cream/80 [text-shadow:0_1px_2px_#0e0d22]">
         {t('Kadrajı kaydırmak için sürükle ya da ok tuşlarını kullan')}
       </p>
-      {note && <p className="rise pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+40px)] text-center font-display text-[15px] text-gold [text-shadow:0_2px_0_#0e0d22]">{note}</p>}
+      {note && <p className="rise pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+36px)] text-center font-display text-[15px] text-gold [text-shadow:0_2px_0_#0e0d22]">{note}</p>}
       <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+14px)] flex justify-center px-3" onPointerDown={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 bg-ink/80 p-2 backdrop-blur-[2px] [box-shadow:inset_0_0_0_2px_#37337a]">
           <button className="pixel-btn back-btn px-3 py-2 text-[13px]" onClick={onClose}>

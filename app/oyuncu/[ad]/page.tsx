@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { and, eq, inArray, sql } from 'drizzle-orm'
-import Logo from '@/components/Logo'
+import SiteHeader from '@/components/SiteHeader'
 import { medalFor } from '@/components/medal'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
@@ -83,20 +82,11 @@ export default async function OyuncuPage({ params }: Props) {
 
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
-      <header className="border-b-2 border-line">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <Link href="/">
-            <Logo size={32} />
-          </Link>
-          <Link href="/" className="pixel-btn primary py-2 text-sm">
-            ▶ Hemen Oyna
-          </Link>
-        </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-4 py-10">
-        <p className="text-[12px] font-bold tracking-[0.3em] text-accent">YOLCU DEFTERİ</p>
-        <h1 className="mt-2 break-words font-display text-5xl text-cream">{player.name}</h1>
-        <p className="mt-2 text-muted">{since} tarihinden beri yolda.</p>
+      <SiteHeader />
+      <main className="mx-auto max-w-4xl px-4 pb-10 pt-6 sm:pt-10" style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}>
+        <p className="text-[14px] font-semibold text-accent-2">Yolcu Defteri</p>
+        <h1 className="mt-1 break-words font-display text-4xl leading-tight text-cream sm:text-5xl">{player.name}</h1>
+        <p className="mt-1 text-[15px] text-muted">{since} tarihinden beri yolda.</p>
         {[1, 2, 3].some((r) => podium[r]) && (
           <p className="mt-3 flex flex-wrap gap-2" aria-label="Haftalık Turnuva kürsüleri">
             {([1, 2, 3] as const).map((r) =>
@@ -109,29 +99,30 @@ export default async function OyuncuPage({ params }: Props) {
           </p>
         )}
 
-        <dl className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+        {/* özet: telefonda 3 + 2, geniş ekranda tek sıra; kutular sade, sayı önde */}
+        <dl className="mt-5 grid grid-cols-6 gap-2 sm:mt-7 sm:grid-cols-5">
           {stats.map(([k, v], i) => (
-            <div key={k} className={`pixel-panel px-4 py-3 ${i === stats.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}>
-              <dt className="text-[11px] font-bold tracking-[0.18em] text-muted">{k.toLocaleUpperCase('tr')}</dt>
-              <dd className="mt-1 font-display text-2xl tabular-nums text-cream">{v}</dd>
+            <div key={k} className={`flex flex-col-reverse border-2 border-line bg-panel-2/40 px-3 py-2.5 sm:col-span-1 ${i < 3 ? 'col-span-2' : 'col-span-3'}`}>
+              <dt className="mt-1.5 text-[12px] leading-tight text-muted">{k}</dt>
+              <dd className="font-display text-xl leading-none tabular-nums text-cream sm:text-2xl">{v}</dd>
             </div>
           ))}
         </dl>
 
-        <h2 className="mt-10 font-display text-3xl text-cream">Şehir Şehir</h2>
-        <p className="mt-1 text-[13px] text-muted">Her şehirdeki en iyi süre, en az düşüş ve en çok hatıra. Sıra, şehrin bütün yolcuları arasında süreye göre.</p>
-        <ol className="mt-4 grid gap-2">
+        <h2 className="mt-8 font-display text-2xl text-cream sm:mt-10 sm:text-3xl">Şehir Şehir</h2>
+        <p className="mt-1 text-[14px] text-muted">En iyi süre, en az düşüş ve en çok hatıra; sıra, şehrin bütün yolcuları arasında süreye göre.</p>
+        <ol className="mt-3 grid gap-1.5 sm:mt-4 sm:gap-2">
           {LEVELS.map((l) => {
             const r = byLevel.get(l.id)
             const medal = r ? medalFor(l, r.timeMs) : null
             return (
-              <li key={l.id} className={`grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 border-2 px-3 py-2.5 ${r ? 'border-line bg-panel-2/50' : 'border-line/50 opacity-60'}`}>
-                <span className="plate justify-self-start text-[15px]">
+              <li key={l.id} className={`grid grid-cols-[2.6rem_minmax(0,1fr)_auto] items-center gap-2.5 border-2 px-2.5 py-2 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3 sm:py-2.5 ${r ? 'border-line bg-panel-2/50' : 'border-line/50 opacity-60'}`}>
+                <span className="plate justify-self-start text-[13px] sm:text-[15px]">
                   <span>{String(l.plate).padStart(2, '0')}</span>
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-display text-lg text-cream">{l.name}</span>
-                  <span className="block text-[12px] text-muted">
+                  <span className="block truncate font-display text-[17px] leading-tight text-cream sm:text-lg">{l.name}</span>
+                  <span className="mt-0.5 block text-[12px] leading-snug text-muted">
                     {r ? (
                       <>
                         ✕{r.deaths} düşüş · {r.items}/3 hatıra · {r.plays} kez · {r.rank}. sırada
@@ -147,7 +138,7 @@ export default async function OyuncuPage({ params }: Props) {
                     )}
                   </span>
                 </span>
-                <span className="font-display text-xl tabular-nums text-cream">{r ? formatTime(r.timeMs) : '—'}</span>
+                <span className="font-display text-lg tabular-nums text-cream sm:text-xl">{r ? formatTime(r.timeMs) : '—'}</span>
               </li>
             )
           })}

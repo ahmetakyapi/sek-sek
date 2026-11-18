@@ -30,12 +30,12 @@ export function ItemIcon({ city, taken, size = 18 }: { city: CityKey; taken: boo
       width={size}
       height={size}
       alt=""
-      className={`inline-block transition-[filter,opacity] duration-300 ${taken ? 'drop-shadow-[0_0_4px_rgba(242,193,78,0.7)]' : 'opacity-35 brightness-0 invert-[0.35]'}`}
+      className={`inline-block transition-[filter,opacity] duration-300 ${taken ? 'drop-shadow-[0_0_4px_rgba(242,193,78,0.7)]' : 'opacity-45 grayscale brightness-[0.85]'}`}
     />
   )
 }
 
-/** Gizli pul ya da nazar boncuğu simgesi (oyundaki çizimin aynısı); bulunmamışsa soluk siluet. */
+/** Gizli pul ya da nazar boncuğu simgesi (oyundaki çizimin aynısı); bulunmamışsa gri ve soluk (mürekkep hattı net kalır, leke gibi durmaz). */
 export function ThingIcon({ kind, taken, size = 18 }: { kind: 'stamp' | 'charm'; taken: boolean; size?: number }) {
   const [src, setSrc] = useState<string | null>(null)
   useEffect(() => {
@@ -51,7 +51,7 @@ export function ThingIcon({ kind, taken, size = 18 }: { kind: 'stamp' | 'charm';
   }, [kind])
   if (!src) return <span style={{ width: size, height: size }} className="inline-block" />
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} width={size} height={size} alt="" className={`inline-block ${taken ? '' : 'opacity-35 brightness-0 invert-[0.35]'}`} />
+  return <img src={src} width={size} height={size} alt="" className={`inline-block ${taken ? '' : 'opacity-45 grayscale brightness-[0.85]'}`} />
 }
 
 export function Key({ children, wide = false, dim = false }: { children: React.ReactNode; wide?: boolean; dim?: boolean }) {

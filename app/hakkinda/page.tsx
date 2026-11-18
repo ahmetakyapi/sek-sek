@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import SiteHeader from '@/components/SiteHeader'
 import Portrait from '@/components/Portrait'
 import TurkeyMap from '@/components/TurkeyMap'
 import { CHARACTERS } from '@/game/characters'
@@ -23,23 +24,15 @@ export default function Hakkinda() {
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
       {/* ── üst bar */}
-      <header className="sticky top-0 z-30 border-b-2 border-line bg-ink">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" aria-label="Oyuna dön">
-            <Logo size={36} />
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm text-muted md:flex" aria-label="Bölümler">
-            <a href="#hikaye" className="hover:text-cream">Hikâye</a>
-            <a href="#karakterler" className="hover:text-cream">Karakterler</a>
-            <a href="#sehirler" className="hover:text-cream">Şehirler</a>
-            <a href="#nasil" className="hover:text-cream">Nasıl Oynanır</a>
-            <Link href="/siralama" className="hover:text-cream">Sıralama</Link>
-          </nav>
-          <Link href="/" className="pixel-btn primary py-2 text-sm">
-            ▶ Hemen Oyna
-          </Link>
-        </div>
-      </header>
+      <SiteHeader wide>
+        <span className="hidden items-center gap-6 md:flex">
+          <a href="#hikaye" className="hover:text-cream">Hikâye</a>
+          <a href="#karakterler" className="hover:text-cream">Karakterler</a>
+          <a href="#sehirler" className="hover:text-cream">Şehirler</a>
+          <a href="#nasil" className="hover:text-cream">Nasıl Oynanır</a>
+          <Link href="/siralama" className="hover:text-cream">Sıralama</Link>
+        </span>
+      </SiteHeader>
 
       {/* ── kahraman: tam genişlik illüstrasyon levhası */}
       <section className="relative isolate overflow-hidden border-b-2 border-line">
@@ -120,7 +113,7 @@ export default function Hakkinda() {
             <p className="mt-4 text-[14px] italic">“Yolun sonu, başladığım yer.”</p>
           </div>
           <div>
-            <p className="text-[12px] font-bold tracking-[0.3em] text-accent">HİKÂYE</p>
+            <p className="text-[14px] font-semibold text-accent-2">Hikâye</p>
             <h2 className="mt-2 font-display text-4xl text-cream">Sahaftaki Defter</h2>
             <p className="mt-4 leading-relaxed text-muted">
               Bir sahafın rafından tozlu bir yol defteri çıkar; altındaki imza tek kelime: Gezgin. Her sayfa bir şehre ayrılmış, her şehirde üç boş kutu var. Sırt çantanı hazırla, kırmızı atkını
@@ -133,7 +126,7 @@ export default function Hakkinda() {
 
       {/* ── karakterler */}
       <section id="karakterler" className="scroll-mt-20 mx-auto max-w-6xl px-4 py-16">
-        <p className="text-[12px] font-bold tracking-[0.3em] text-accent">YOL ARKADAŞIN</p>
+        <p className="text-[14px] font-semibold text-accent-2">Yol Arkadaşın</p>
         <h2 className="mt-2 font-display text-4xl text-cream">İki Yolcu, Tek Defter</h2>
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           {(['uktun', 'memo'] as const).map((id) => {
@@ -144,7 +137,7 @@ export default function Hakkinda() {
                   <Portrait id={id} className="w-full" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold tracking-[0.2em] text-accent">{c.role.toLocaleUpperCase('tr')}</p>
+                  <p className="text-[13px] font-semibold text-accent-2">{c.role}</p>
                   <h3 className="font-display text-3xl text-cream">{c.name}</h3>
                   <p className="mt-2 text-[14px] leading-relaxed text-muted">{c.bio}</p>
                   <Link href={`/?karakter=${id}`} className="pixel-btn primary mt-4 py-2 text-sm">
@@ -162,7 +155,7 @@ export default function Hakkinda() {
         <div className="mx-auto max-w-6xl px-4 py-16">
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-end">
             <div>
-              <p className="text-[12px] font-bold tracking-[0.3em] text-accent">ROTA</p>
+              <p className="text-[14px] font-semibold text-accent-2">Rota</p>
               <h2 className="mt-2 font-display text-4xl text-cream">Otuz Beş Şehir, İki Defter</h2>
               <p className="mt-3 leading-relaxed text-muted">
                 Her şehir yeni bir şey öğretir, bir sonraki onu bekler. Kolay İstanbul’dan Çok Zor Bayburt’a; her şehirde üç hatıra, altın-gümüş-bronz süre madalyaları
@@ -208,7 +201,7 @@ export default function Hakkinda() {
 
       {/* ── nasıl oynanır */}
       <section id="nasil" className="scroll-mt-20 mx-auto max-w-6xl px-4 py-16">
-        <p className="text-[12px] font-bold tracking-[0.3em] text-accent">KONTROLLER</p>
+        <p className="text-[14px] font-semibold text-accent-2">Kontroller</p>
         <h2 className="mt-2 font-display text-4xl text-cream">Telefonda da Klavyede de Kolay</h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {[

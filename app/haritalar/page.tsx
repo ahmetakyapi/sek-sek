@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Logo from '@/components/Logo'
+import SiteHeader from '@/components/SiteHeader'
 import MapGallery from '@/components/MapGallery'
 
 export const metadata: Metadata = {
@@ -13,23 +13,13 @@ export const metadata: Metadata = {
 export default function Haritalar() {
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
-      <header className="border-b-2 border-line">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" aria-label="Oyuna dön">
-            <Logo size={32} />
-          </Link>
-          <nav className="flex items-center gap-4 text-sm text-muted">
-            <Link href="/duzenle" className="hover:text-cream">
-              Harita Çiz
-            </Link>
-            <Link href="/" className="pixel-btn primary py-2 text-sm">
-              ▶ Hemen Oyna
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader>
+        <Link href="/duzenle" className="whitespace-nowrap hover:text-cream">
+          Harita Çiz
+        </Link>
+      </SiteHeader>
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <p className="text-[12px] font-bold tracking-[0.3em] text-accent">YOLCULARIN ÇİZDİĞİ</p>
+        <p className="text-[14px] font-semibold text-accent-2">Yolcuların Çizdiği</p>
         <h1 className="mt-2 font-display text-4xl text-cream sm:text-5xl">Topluluk Haritaları</h1>
         <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
           Her biri Bölüm Düzenleyici’de çizildi ve çözücüyle bitirilebilir olduğu kanıtlandı. Birini seç, oyna, beğendiysen kalbini bırak.

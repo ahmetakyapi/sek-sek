@@ -10,7 +10,8 @@ const NAMES: Record<KeyAction, string> = { left: 'Sola Yürü', right: 'Sağa Y�
  * Klavye tuşlarını yeniden atama: bir eylemin "+" düğmesine basılır, sonraki tuş o eyleme bağlanır (başka eylemdeyse
  * oradan alınır). Mola (Esc / P) ve Checkpoint (R) sabittir. Değişiklik kayda yazılır, girdi hemen uyar.
  */
-export default function KeyRemap({ keys, onChange }: { keys?: Partial<KeyBindings>; onChange: (k: KeyBindings) => void }) {
+/** `stack`: dar sütunda (molanın sağ yarısı) satırlar tek sütunda kalır; yatay telefonda ikiye bölünüp tuşlar alt alta dizilmesin */
+export default function KeyRemap({ keys, onChange, stack = false }: { keys?: Partial<KeyBindings>; onChange: (k: KeyBindings) => void; stack?: boolean }) {
   const t = useT()
   const lang = useLang()
   const b = normalizeKeys(keys)
@@ -42,7 +43,7 @@ export default function KeyRemap({ keys, onChange }: { keys?: Partial<KeyBinding
           </button>
         )}
       </div>
-      <ul className="mt-1.5 grid gap-1.5 short:grid-cols-2 short:gap-x-4">
+      <ul className={`mt-1.5 grid gap-1.5 ${stack ? '' : 'short:grid-cols-2 short:gap-x-4'}`}>
         {KEY_ACTIONS.map((a) => (
           <li key={a} className="flex items-center gap-2 text-[13px]">
             <span className="w-28 shrink-0 text-muted short:w-24">{t(NAMES[a])}</span>

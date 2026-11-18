@@ -1458,7 +1458,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   /** Araçlar, fırça boyutu, arama, karo sekmeleri, karolar ve seçilenin açıklaması */
   const palette = (inPanel: boolean) => (
     <>
-      <section aria-label={t('Araçlar')} className="grid shrink-0 grid-cols-6 gap-1 wide:grid-cols-3">
+      <section aria-label={t('Araçlar')} className="grid shrink-0 grid-cols-3 gap-1 min-[480px]:grid-cols-6 wide:grid-cols-3">
         {TOOLS.map((x) => (
           <button
             key={x.id}
@@ -1466,7 +1466,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
             onClick={() => chooseTool(x.id)}
             aria-pressed={tool === x.id}
             title={`${t(x.name)} (${x.key}): ${t(x.desc)}`}
-            className={`flex flex-col items-center gap-0.5 border-2 px-1 py-1 text-[12px] leading-tight transition-colors ${tool === x.id ? 'border-gold bg-panel-2 text-cream' : 'border-line bg-panel text-muted hover:border-accent hover:text-cream'}`}
+            className={`flex flex-row items-center justify-center gap-1.5 border-2 px-1 py-1.5 text-[12px] leading-tight transition-colors min-[480px]:flex-col min-[480px]:gap-0.5 min-[480px]:py-1 ${tool === x.id ? 'border-gold bg-panel-2 text-cream' : 'border-line bg-panel text-muted hover:border-accent hover:text-cream'}`}
           >
             <span className="text-[17px] leading-none text-cream" aria-hidden>
               {x.glyph}
