@@ -378,6 +378,24 @@ export class TerrainHD {
     for (let d = 1; d <= AHEAD; d++) for (const i of [last + d, first - d]) if (!warm(i, lo, hi)) return
   }
 
+  /**
+   * Bölüm Düzenleyici: her düzenlemede zemin baştan çizilmesin diye eski önbellekten, değişen karolara uzak hücreler devralınır.
+   * changed(tx0, tx1, ty0, ty1): bu karo aralığında değişen karo var mı. Derinlik gölgesi ve üst örtü birkaç karo öteye
+   * uzandığı için hücrenin çevresinde PAD karoluk pay bırakılır; harita altına sürdürülen pay son satırla birlikte değişir.
+   */
+  adopt(old: TerrainHD, changed: (tx0: number, tx1: number, ty0: number, ty1: number) => boolean) {
+    if (old.scale !== this.scale || old.city !== this.city || old.w.cols !== this.w.cols) return
+    const PAD = 6
+    const last = this.w.rows - 1
+    for (const [key, cv] of old.cells) {
+      const i = Math.floor(key / 64)
+      const b = key % 64
+      const ty0 = Math.min(last, b * BAND - PAD)
+      const ty1 = Math.min(last, (b + 1) * BAND + PAD)
+      if (!changed(i * CHUNK - PAD, i * CHUNK + CHUNK + PAD, ty0, ty1)) this.cells.set(key, cv)
+    }
+  }
+
   /** İlk çizim öncesi: görünen bölge ve çevresi hazırlanır (bölüm açılırken bir kez) */
   prime(camX: number, camY: number, devW: number, devH: number) {
     const span = CHUNK * T

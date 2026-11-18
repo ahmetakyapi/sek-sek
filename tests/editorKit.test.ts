@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { World } from '@/game/sim'
 import { ROWS, customLevel, decodeMap, encodeMap, validateMap } from '@/lib/customLevel'
-import { KEEP, STAMPS, TEMPLATES, cut, fillRect, floodFill, mapNotes, mirrorRect, mirrorRows, placePattern } from '@/lib/editorKit'
+import { KEEP, STAMPS, TEMPLATES, cut, fillRect, flipRowsV, floodFill, mapNotes, mirrorRect, mirrorRows, placePattern, rotateRows } from '@/lib/editorKit'
 import { solve } from '../scripts/solver'
 
 /** 80 sütun düz zemin (üst yüzey 20. satır), başlangıç solda, çıkış sağda */
@@ -95,5 +95,18 @@ describe('harita uyarıları', () => {
     expect(mapNotes(put(put(put(wide, 40, 19, 'F'), 60, 10, 'R'), 61, 10, 'R')).some((n) => n.text.startsWith('Teleferik'))).toBe(false)
     const hole = put(put(wide, 60, 10, 'R'), 61, 10, 'R').map((r, y) => (y >= 20 ? r.slice(0, 61) + '~' + r.slice(62) : r))
     expect(mapNotes(hole).filter((n) => n.text.startsWith('Teleferik')).map((n) => n.x)).toEqual([61])
+  })
+})
+
+describe('seçimi döndür ve çevir', () => {
+  it('dikey ayna dikenleri çevirir, iki kez uygulanınca aynı kalır', () => {
+    const rows = ['^ #', '#=v']
+    expect(flipRowsV(rows)).toEqual(['#=^', 'v #'])
+    expect(flipRowsV(flipRowsV(rows))).toEqual(rows)
+  })
+  it('çeyrek dönüş boyutu değiştirir, dört dönüş başa döner', () => {
+    const rows = ['ab', 'cd', 'ef']
+    expect(rotateRows(rows)).toEqual(['eca', 'fdb'])
+    expect(rotateRows(rotateRows(rotateRows(rotateRows(rows))))).toEqual(rows)
   })
 })

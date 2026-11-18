@@ -1,6 +1,7 @@
 /**
  * Bölüm Düzenleyici'nin "Bitirilebilir mi?" sınaması: çözücü (scripts/solver.ts) ana iş parçacığını kilitlemesin diye burada koşar.
  * Çözücü düşmanları ve okları kapatır; önce yalnız çıkışa giden yolu arar, bulursa o yolu baştan oynatıp süresini ölçer.
+ * Oynatırken oyuncunun yolu saniyede 20 noktayla kaydedilir: düzenleyici çözücünün yolunu ızgaraya çizer.
  * Haritada hatıra, pul ya da nazar varsa ikinci bir arama hangilerine varılabildiğini söyler (bilgi; bitirmeyi etkilemez).
  */
 import { World } from '../game/sim'
@@ -13,7 +14,7 @@ export interface SolveRequest {
 }
 
 export type SolveReply =
-  | { won: true; seconds: number; items: [number, number]; stamp: boolean | null; charm: boolean | null }
+  | { won: true; seconds: number; items: [number, number]; stamp: boolean | null; charm: boolean | null; trail: Array<[number, number]> }
   | { won: false; unsure: boolean; far: { x: number; y: number } }
 
 const ctx = self as unknown as { postMessage(m: SolveReply): void; addEventListener(t: 'message', f: (e: MessageEvent<SolveRequest>) => void): void }
@@ -27,7 +28,14 @@ ctx.addEventListener('message', (e) => {
     w.turrets.length = 0
     w.boss = null
     w.boss2 = null
-    for (const m of r.path) runMacro(w, m, () => (w.events.length = 0))
+    const trail: Array<[number, number]> = []
+    let n = 0
+    for (const m of r.path)
+      runMacro(w, m, () => {
+        w.events.length = 0
+        // dünya pikseli, gövdenin ortası
+        if (n++ % 6 === 0) trail.push([Math.round(w.player.x + w.player.w / 2), Math.round(w.player.y + w.player.h / 2)])
+      })
     const total = w.pickups.length
     const all = total || w.stampBox || w.charmBox ? solve(level, { budget }) : null
     ctx.postMessage({
@@ -36,6 +44,7 @@ ctx.addEventListener('message', (e) => {
       items: [all?.picks.size ?? 0, total],
       stamp: w.stampBox ? !!all?.stamp : null,
       charm: w.charmBox ? !!all?.charm : null,
+      trail,
     })
     return
   }

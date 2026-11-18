@@ -280,6 +280,13 @@ export function cut(map: string[], r: Rect): string[] {
 const FLIP: Record<string, string> = { '>': '<', '<': '>' }
 export const mirrorRows = (rows: string[]): string[] => rows.map((row) => Array.from(row, (ch) => FLIP[ch] ?? ch).reverse().join(''))
 
+/** Alt-üst ayna: diken ve tavan dikeni yer değiştirir. */
+const FLIP_V: Record<string, string> = { '^': 'v', v: '^' }
+export const flipRowsV = (rows: string[]): string[] => [...rows].reverse().map((row) => Array.from(row, (ch) => FLIP_V[ch] ?? ch).join(''))
+
+/** Saat yönünde çeyrek dönüş: sütunlar satır olur (yön bilgisi taşıyan karolar olduğu gibi kalır). */
+export const rotateRows = (rows: string[]): string[] => Array.from({ length: rows[0].length }, (_, x) => Array.from({ length: rows.length }, (_, y) => rows[rows.length - 1 - y][x]).join(''))
+
 export function mirrorRect(map: string[], r: Rect): string[] {
   const n = norm(r)
   const flipped = mirrorRows(cut(map, n))
@@ -518,6 +525,8 @@ export interface MapNote {
   text: string
   vars?: Record<string, string | number>
   x: number
+  /** sorunun satırı (biliniyorsa): düzenleyici ızgarada oraya işaret koyar */
+  y?: number
 }
 
 /** üstünde durulan karolar (çözücünün katı saydıkları ve platformlar) */
@@ -546,8 +555,8 @@ export function mapNotes(map: string[]): MapNote[] {
   }
   const [p] = find('P')
   const [e] = find('E')
-  if (p && !landsSafely(map, p.x, p.y)) notes.push({ text: 'Başlangıcın altında güvenli zemin yok: oyuncu doğar doğmaz düşer.', x: p.x })
-  if (e && !landsSafely(map, e.x, e.y)) notes.push({ text: 'Çıkışın altında zemin yok: kapıya havada varılabilir mi, bir bak.', x: e.x })
+  if (p && !landsSafely(map, p.x, p.y)) notes.push({ text: 'Başlangıcın altında güvenli zemin yok: oyuncu doğar doğmaz düşer.', x: p.x, y: p.y })
+  if (e && !landsSafely(map, e.x, e.y)) notes.push({ text: 'Çıkışın altında zemin yok: kapıya havada varılabilir mi, bir bak.', x: e.x, y: e.y })
   // bayraklar arası en çok 75 karo (CLAUDE.md: her yaştan oyuncu)
   const stops = [...(p ? [p.x] : []), ...find('F').map((f) => f.x), ...(e ? [e.x] : [])].sort((a, b) => a - b)
   for (let i = 1; i < stops.length; i++) {
@@ -555,16 +564,16 @@ export function mapNotes(map: string[]): MapNote[] {
     if (gap > 75) notes.push({ text: 'Bayraklar arası {n} karo: 75’ten uzun yolda düşen oyuncu çok geriden başlar. Araya bayrak koy.', vars: { n: gap }, x: stops[i - 1] + 75 })
   }
   const [q] = find('Q')
-  if (q && !find('G').length) notes.push({ text: 'Boss var ama boss kapısı (G) yok: çıkışa boss’u yenmeden de gidilebilir.', x: q.x })
+  if (q && !find('G').length) notes.push({ text: 'Boss var ama boss kapısı (G) yok: çıkışa boss’u yenmeden de gidilebilir.', x: q.x, y: q.y })
   const [plate] = find('_')
-  if (plate && !find('[').length && !find(']').length) notes.push({ text: 'Plaka var ama değiştireceği blok ([ ya da ]) yok.', x: plate.x })
+  if (plate && !find('[').length && !find(']').length) notes.push({ text: 'Plaka var ama değiştireceği blok ([ ya da ]) yok.', x: plate.x, y: plate.y })
   // teleferik halatının iki ucunda bırakınca düz aşağı inilir: altı güvenli zemin olsun
   map.forEach((row, y) => {
     for (let x = 0; x < w; x++) {
       if (row[x] !== 'R' || row[x - 1] === 'R') continue
       let end = x
       while (row[end + 1] === 'R') end++
-      for (const ex of new Set([x, end])) if (!landsSafely(map, ex, y)) notes.push({ text: 'Teleferik halatının ucunun altı boş ya da tehlikeli: bırakan oyuncu düşer.', x: ex })
+      for (const ex of new Set([x, end])) if (!landsSafely(map, ex, y)) notes.push({ text: 'Teleferik halatının ucunun altı boş ya da tehlikeli: bırakan oyuncu düşer.', x: ex, y })
       x = end
     }
   })

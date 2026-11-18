@@ -291,6 +291,14 @@ rekorlara ve deftere (pul, nazar) dokunmaz. Boss Tasarımcısı (Boss sekmesi) a
 eski kod aynen açılır ve aynı kodu verir (`tests/customLevel.test.ts`). Çözücü iki boss'u da yok sayar (`w.boss2 = null`).
 Uyarılar (`mapNotes`: havadaki başlangıç, 75 karoyu aşan bayrak aralığı, kapısız boss…) kodlamayı engellemez. Ekran tek bakışta
 sığar: geniş ekranda palet | ızgara | sekmeli panel, dar ekranda Karolar panelin ilk sekmesi; ızgara kutuya sığacak yakınlıkta açılır.
+Izgara iki katman: alt katman `components/editorScene.ts` (Oyun görünüşü: şehrin gökyüzü ve parallax katmanları, oyunun zemini
+`TerrainHD`, nesne ve canlılar `enemyDraw`/`heroDraw`/`bossDraw` çizimleri, ölçek başına önbellekte; hareketli karolar sade. Şema
+görünüşü sade karolar), üst katman imleç, fırça/kova/dikdörtgen hayaleti, seçim, uyarı üçgenleri, çözücünün yolu (turkuaz,
+`solve.worker.ts` `trail`) ve son denemenin izi (altın, düşülen yer çarpı). Düzenlemede zemin baştan çizilmez: `TerrainHD.adopt`
+değişen karolara uzak hücreleri devralır; sürükleyerek boyarken zemin bırakınca yenilenir. Hızlı Deneme `components/EditorPlay.tsx`:
+ızgaranın yerinde oyunun kendisi (Renderer + World, Esc döner, R baştan; Enter baştan, Shift+Enter ya da "Buradan Oyna" seçilen
+karodan). Kısayollar kartı `?` (Tabela'nın tuşu yok), karo arama `/`, son kullanılanlar şeridi, Ctrl+tekerlek yakınlık, boşluk +
+sürükle kaydırma, Shift+H/V/R seçimi çevir ve döndür (`flipRowsV`, `rotateRows`). İlk açılışta "İlk Adımlar" kartı.
 
 **Hayalete karşı yarış.** Rekor koşunun hayaleti sunucuya da yüklenir (`seksek_ghosts`, oyuncu + şehir başına tek satır; yalnız
 skor tablosundaki süreyle eşleşen ve haritanın bugünkü sürümünde koşulmuş olan). Skor tablosunun Şehirler sekmesinde açılmış şehirde
