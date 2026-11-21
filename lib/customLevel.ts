@@ -54,7 +54,12 @@ export interface CustomTexts {
   bossSpeed?: number
   /** fazladan can (1-BOSS_HP_MAX) */
   bossHp?: number
+  /** haritanın adı ve kısa açıklaması (koda `t` ve `d` olarak girer; yoksa eski kod aynen kalır) */
+  title?: string
+  desc?: string
 }
+export const MAP_TITLE_MAX = 40
+export const MAP_DESC_MAX = 140
 /** Boss Tasarımcısı'nın hız seçenekleri (yüzde): yavaş, normal, hızlı, çok hızlı. Kural ve işaret süreleri hızla birlikte ölçeklenir. */
 export const BOSS_SPEEDS = [80, 100, 115, 130] as const
 export const BOSS_HP_MAX = 3
@@ -71,13 +76,15 @@ export function textProblem(t: CustomTexts): string | null {
   if (t.signs.length > MAX_SIGNS) return 'En çok sekiz tabela konabilir.'
   if (t.npcs.length > MAX_NPCS) return 'En çok dört şehir insanı konabilir.'
   if (t.signs.some((s) => s.length > SIGN_MAX)) return 'Tabela yazısı en çok 140 karakter olabilir.'
+  if ((t.title?.length ?? 0) > MAP_TITLE_MAX) return 'Harita adı en çok 40 karakter olabilir.'
+  if ((t.desc?.length ?? 0) > MAP_DESC_MAX) return 'Harita açıklaması en çok 140 karakter olabilir.'
   if (t.npcs.some((n) => n.name.length > NPC_NAME_MAX || n.text.length > NPC_TEXT_MAX)) return 'Kişinin adı en çok 24, sözü en çok 160 karakter olabilir.'
-  if ([...t.signs, ...t.npcs.flatMap((n) => [n.name, n.text])].some((s) => isRude(s))) return 'Metinlerden biri yayınlanamaz; başka bir söz dene.'
+  if ([...t.signs, ...t.npcs.flatMap((n) => [n.name, n.text]), t.title ?? '', t.desc ?? ''].some((s) => isRude(s))) return 'Metinlerden biri yayınlanamaz; başka bir söz dene.'
   return null
 }
 
 /** metin bölümü gerekiyor mu: söz varsa ya da haritada boss (Q) varken boss tasarımı seçildiyse (boss'suz haritada tasarım koda girmez) */
-const hasTexts = (t: CustomTexts | undefined, boss: boolean) => !!t && ((boss && (!!t.boss || !!t.boss2 || !!t.bossTier || !!t.bossSpeed || !!t.bossHp)) || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
+const hasTexts = (t: CustomTexts | undefined, boss: boolean) => !!t && ((boss && (!!t.boss || !!t.boss2 || !!t.bossTier || !!t.bossSpeed || !!t.bossHp)) || !!t.title?.trim() || !!t.desc?.trim() || t.signs.some((s) => s.trim()) || t.npcs.some((n) => n.name.trim() || n.text.trim()))
 
 /** Kodda şehrin sırası; kalıcı (yeni şehir sona). */
 export const CITY_CODES = [
@@ -85,7 +92,7 @@ export const CITY_CODES = [
   'adana', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon',
   'sivas', 'van', 'erzurum', 'kayseri', 'hatay', 'eskisehir', 'ardahan', 'amasya', 'mugla', 'bayburt',
   'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak',
-  'mersin',
+  'mersin', 'karabuk', 'aydin',
 ] as const satisfies readonly CityKey[]
 
 const V1_SYMBOLS = 25
@@ -172,7 +179,7 @@ export function encodeMap(map: string[], city: CityKey, texts?: CustomTexts): st
     i = j
   }
   if (withText) {
-    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...(hasBoss ? bossJson(texts!) : {}) })
+    const json = JSON.stringify({ s: texts!.signs.map((s) => s.trim()), n: texts!.npcs.map((n) => [n.name.trim(), n.text.trim(), n.look]), ...(texts!.title?.trim() ? { t: texts!.title.trim() } : {}), ...(texts!.desc?.trim() ? { d: texts!.desc.trim() } : {}), ...(hasBoss ? bossJson(texts!) : {}) })
     body.push(...new TextEncoder().encode(json))
   }
   return toB64url([v1 ? 1 : withText ? 3 : 2, ci, w >> 8, w & 0xff, checksum(body), ...body])
@@ -233,12 +240,14 @@ export function decodeMap(code: string): { map: string[]; city: CityKey; texts: 
   let texts = emptyTexts()
   if (ver === 3) {
     try {
-      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown; b?: unknown; b2?: unknown; bt?: unknown; bs?: unknown; bh?: unknown }
+      const j = JSON.parse(new TextDecoder().decode(new Uint8Array(body.slice(i)))) as { s?: unknown; n?: unknown; b?: unknown; b2?: unknown; bt?: unknown; bs?: unknown; bh?: unknown; t?: unknown; d?: unknown }
       const city = (v: unknown) => ((CITY_CODES as readonly unknown[]).includes(v) ? (v as CityKey) : undefined)
       const str = (v: unknown) => (typeof v === 'string' ? v : '')
       texts = {
         signs: Array.isArray(j.s) ? j.s.map(str) : [],
         npcs: Array.isArray(j.n) ? j.n.map((x) => (Array.isArray(x) ? { name: str(x[0]), text: str(x[1]), look: NPC_LOOKS.includes(x[2]) ? x[2] : 'amca' } : { name: '', text: '', look: 'amca' as const })) : [],
+        ...(str(j.t).trim() ? { title: str(j.t).trim() } : {}),
+        ...(str(j.d).trim() ? { desc: str(j.d).trim() } : {}),
         ...(city(j.b) ? { boss: city(j.b) } : {}),
         ...(city(j.b2) ? { boss2: city(j.b2) } : {}),
         ...(j.bt === 2 || j.bt === 3 ? { bossTier: j.bt } : {}),
@@ -274,12 +283,12 @@ export function customLevel(map: string[], city: CityKey, texts: CustomTexts = e
   return {
     id: 'ozel',
     city: base.city,
-    name: 'Özel Harita',
+    name: texts.title?.trim() || 'Özel Harita',
     plate: base.plate,
     subtitle: base.name,
     difficulty: 'Orta',
     item: base.item,
-    intro: base.intro,
+    intro: texts.desc?.trim() || base.intro,
     facts: base.facts,
     secret: base.secret,
     // yazar metin girmediyse tabela boş kalmasın: kısa bir yönerge

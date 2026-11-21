@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
 import { MedalBadge, SectionTitle, displayName, medalFor, ic } from '@/components/ui'
+import { CHALLENGES } from '@/game/challenges'
+import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
-import { DAILY_RULES, dailyRun, istanbulDay, shiftDay } from '@/lib/extras'
+import { DAILY_RULES, RAGE_RULES, RULES, dailyBoss, dailyMini, dailyRun, istanbulDay, ruleFits, shiftDay, type DailyRule } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
 /** Tablo türü: bir şehir, genel toplamlar, hesaba kayıtlı defter, günün meydan okuması ya da haftanın turnuvası */
-export type BoardKind = 'city' | 'genel' | 'koleksiyon' | 'gunluk' | 'turnuva' | 'yuzde' | 'tur' | 'aynatur'
+export type BoardKind = 'city' | 'genel' | 'koleksiyon' | 'gunluk' | 'gunluk-m' | 'gunluk-b' | 'kural' | 'bossrush' | 'turnuva' | 'yuzde' | 'tur' | 'aynatur'
 
 interface Row {
   name: string
@@ -48,6 +50,7 @@ export function Board({
   sort = '',
   day = '',
   week = '',
+  extra,
   me,
   refresh = 0,
   compact = false,
@@ -61,6 +64,8 @@ export function Board({
   sort?: string
   day?: string
   week?: string
+  /** tabloya özel sorgu parametreleri: kural tablosunda şehir ve kural, Boss Rush'ta çeşit ve boss sayısı */
+  extra?: Record<string, string>
   me: string
   refresh?: number
   compact?: boolean
@@ -84,7 +89,7 @@ export function Board({
     setRows(null)
     setRaceMsg(null)
     const nameList = names?.join(',') ?? ''
-    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(kind === 'yuzde' ? { city: level } : {}), ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(week ? { week } : {}), ...(nameList ? { names: nameList } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
+    const q = new URLSearchParams({ level: kind === 'city' ? level : kind, ...(kind === 'yuzde' ? { city: level } : {}), ...(sort ? { sort } : {}), ...(day ? { day } : {}), ...(week ? { week } : {}), ...(extra ?? {}), ...(nameList ? { names: nameList } : {}), ...(me ? { me } : {}), ...(refresh || retry ? { r: `${refresh}.${retry}` } : {}) })
     fetch(`/api/scores?${q}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('x'))))
       .then((j: { scores: Row[] }) => live && setRows(j.scores))
@@ -93,7 +98,7 @@ export function Board({
       live = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, level, sort, day, week, names?.join(','), me, refresh, retry])
+  }, [kind, level, sort, day, week, JSON.stringify(extra ?? {}), names?.join(','), me, refresh, retry])
 
   if (failed)
     return (
@@ -116,7 +121,7 @@ export function Board({
   if (!rows.length)
     return (
       <p className="mt-3 border-2 border-dashed border-line/70 px-3 py-4 text-center text-[13px] text-muted">
-        {names ? t('Arkadaşların bu tabloda henüz yok.') : kind === 'gunluk' ? t('Bugün henüz kimse koşmadı. İlk skor senin olsun!') : kind === 'turnuva' ? t('Bu hafta üç mücadeleyi de bitiren henüz yok. İlk sen ol!') : t('Henüz skor yok. İlk sen ol!')}
+        {names ? t('Arkadaşların bu tabloda henüz yok.') : kind === 'gunluk' || kind === 'gunluk-m' || kind === 'gunluk-b' ? t('Bugün henüz kimse koşmadı. İlk skor senin olsun!') : kind === 'turnuva' ? t('Bu hafta üç mücadeleyi de bitiren henüz yok. İlk sen ol!') : t('Henüz skor yok. İlk sen ol!')}
       </p>
     )
 
@@ -143,7 +148,7 @@ export function Board({
     const plays = n(r.plays) > 1 ? ` · ${t('{n} koşu', { n: n(r.plays) })}` : ''
     if (kind === 'turnuva') return [formatTime(n(r.timeMs)), `${t('3 mücadele')} · ✕${n(r.deaths)}`]
     // speedrun: süre ve düşüş (%100'de her şey alındı, turda otuz şehir)
-    if (kind === 'yuzde' || kind === 'tur' || kind === 'aynatur') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
+    if (kind === 'yuzde' || kind === 'tur' || kind === 'aynatur' || kind === 'gunluk-m' || kind === 'gunluk-b' || kind === 'kural' || kind === 'bossrush') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
     if (kind === 'gunluk') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
     // mücadele haritasında hatıra yok: süre ve düşüş
     if (level.startsWith('mucadele-')) return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
@@ -261,14 +266,19 @@ export function Board({
   )
 }
 
-type Tab = 'genel' | 'city' | 'gunluk' | 'koleksiyon' | 'speedrun'
+type Tab = 'genel' | 'city' | 'gunluk' | 'modlar' | 'koleksiyon' | 'speedrun'
 
 /** Skor Tablosu ekranı: dört sekme; her sekmenin kendi sıralama seçenekleri ve kısa bir açıklaması var. */
 export default function ScoreBoard({
   me,
   startCity = 0,
   startTab = 'genel',
+  startSub = '',
+  startRule,
   onDaily,
+  onMini,
+  onBoss,
+  bossCount = 1,
   canRace,
   onRace,
   friends,
@@ -277,8 +287,16 @@ export default function ScoreBoard({
   me: string
   startCity?: number
   startTab?: Tab
+  /** açılışta seçili alt seçim (günlük: m / b · modlar: rush) ve kural tablosunun kuralı */
+  startSub?: string
+  startRule?: DailyRule
   /** bugünün hakkı kullanıldıysa verilmez (düğme görünmez) */
   onDaily?: () => void
+  /** Günün Mücadelesi ve Günün Boss'u (bugünün sekmesinde Oyna düğmesi) */
+  onMini?: () => void
+  onBoss?: () => void
+  /** oyuncunun yendiği boss sayısı: Boss Rush tablosu ilk bu boyutta açılır */
+  bossCount?: number
   canRace?: (levelIdx: number) => boolean
   onRace?: (levelIdx: number, name: string) => Promise<string | null>
   /** arkadaş listesi (adlar); ☆ ile eklenir, süzgeçte yalnız onlar ve oyuncu görünür */
@@ -290,7 +308,10 @@ export default function ScoreBoard({
   const lng = useLang()
   const [tab, setTab] = useState<Tab>(startTab)
   const [idx, setIdx] = useState(startCity)
-  const [sort, setSort] = useState('')
+  const [sort, setSort] = useState(startSub)
+  const [rule, setRule] = useState<DailyRule>(startRule ?? 'tekcan')
+  const [rv, setRv] = useState<'duz' | 'kabus' | 'cifte'>('duz')
+  const [rn, setRn] = useState(Math.max(1, Math.min(bossCount, LEVELS.length)))
   const today = istanbulDay(new Date())
   const [day, setDay] = useState(today)
   const strip = useRef<HTMLDivElement>(null)
@@ -305,6 +326,7 @@ export default function ScoreBoard({
     ['genel', t('Genel')],
     ['city', t('Şehirler')],
     ['gunluk', t('Günlük')],
+    ['modlar', t('Modlar')],
     ['koleksiyon', t('Koleksiyon')],
     ['speedrun', t('Speedrun')],
   ]
@@ -315,11 +337,21 @@ export default function ScoreBoard({
         ? [['', t('Süre')], ['deaths', t('En Az Düşüş')], ['items', t('Hatıra')]]
         : tab === 'speedrun'
           ? [['', '%100'], ['tur', t('Tam Tur')], ['aynatur', t('Ayna Tam Tur')]]
-          : []
+          : tab === 'gunluk'
+            ? [['', t('Meydan Okuma')], ['m', t('Mücadele')], ['b', t('Boss')]]
+            : tab === 'modlar'
+              ? [['', t('Kurallı Koşu')], ['rush', t('Boss Rush')]]
+              : []
   const lv = localize(LEVELS[idx], lng)
   const daily = dailyRun(day, LEVELS)
   const dailyLevel = LEVELS.find((l) => l.id === daily.levelId)!
-  const rule = DAILY_RULES[daily.rule]
+  const dRule = DAILY_RULES[daily.rule]
+  const miniC = CHALLENGES.find((c) => c.id === dailyMini(day))!
+  const miniLv = LEVELS.find((l) => l.id === miniC.level)!
+  const bossLv = LEVELS[dailyBoss(day, LEVELS)]
+  const bossDef = BOSSES[bossLv.city]
+  const ruleList = [...RULES, ...RAGE_RULES].filter((r) => ruleFits(r, LEVELS[idx]))
+  const ruleNow = ruleList.includes(rule) ? rule : ruleList[0]
   const note =
     tab === 'genel'
       ? sort === 'items'
@@ -341,7 +373,17 @@ export default function ScoreBoard({
               : t('Üç hatıra, gizli pul ve nazar boncuğu aynı koşuda alınarak bitirilen en hızlı koşu.')
           : tab === 'koleksiyon'
           ? t('Hesaba kayıtlı defterden: hatıra, gizli pul ve nazar boncuğu toplamı.')
-          : t('Herkes için aynı şehir ve aynı kural; skor süreye cezalar eklenerek hesaplanır.')
+          : tab === 'gunluk'
+            ? sort === 'm'
+              ? t('Herkes için aynı kesit, serbest tekrar: en iyi süren sayılır.')
+              : sort === 'b'
+                ? t('Herkes için aynı boss arenası, serbest tekrar: en iyi süren sayılır.')
+                : t('Herkes için aynı şehir ve aynı kural; skor süreye cezalar eklenerek hesaplanır.')
+            : tab === 'modlar'
+              ? sort === 'rush'
+                ? t('Aynı sayıda boss yenen koşular birbiriyle yarışır; en kısa süre önde.')
+                : t('Şehir ve kural seç: her kuralın kendi tablosu var. Skor süreye cezalar eklenerek hesaplanır.')
+              : ''
 
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col short:mt-1.5">
@@ -361,7 +403,7 @@ export default function ScoreBoard({
         ))}
       </div>
 
-      {(tab === 'city' || (tab === 'speedrun' && !sort)) && (
+      {(tab === 'city' || (tab === 'speedrun' && !sort) || (tab === 'modlar' && !sort)) && (
         <div className="mt-3 flex items-center gap-2 short:mt-1.5">
           <button aria-label={t('Önceki Şehir')} className="pixel-btn h-12 shrink-0 px-3 text-lg short:h-9" onClick={() => step(-1)}>
             ‹
@@ -391,19 +433,58 @@ export default function ScoreBoard({
         </div>
       )}
 
+      {tab === 'modlar' && !sort && ruleList.length > 0 && (
+        <div className="mt-2 flex items-center gap-2 short:mt-1.5">
+          <span className="shrink-0 text-[13px] font-semibold text-muted">{t('Kural')}</span>
+          <select value={ruleNow} onChange={(e) => setRule(e.target.value as DailyRule)} className="min-w-0 flex-1 border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream outline-none focus:border-gold" aria-label={t('Kural')}>
+            <optgroup label={t('Kurallı Koşu')}>
+              {ruleList.filter((r) => !RAGE_RULES.includes(r as never)).map((r) => (
+                <option key={r} value={r}>
+                  {t(DAILY_RULES[r].name)}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={t('Sinir Bozucu')}>
+              {ruleList.filter((r) => RAGE_RULES.includes(r as never)).map((r) => (
+                <option key={r} value={r}>
+                  {t(DAILY_RULES[r].name)}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        </div>
+      )}
+      {tab === 'modlar' && sort === 'rush' && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 short:mt-1.5">
+          <div className="seg" role="group" aria-label={t('Çeşit')}>
+            {([['duz', t('Düz')], ['kabus', t('Kâbus')], ['cifte', t('Çifte')]] as const).map(([k, label]) => (
+              <button key={k} aria-pressed={rv === k} onClick={() => setRv(k)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <select value={rn} onChange={(e) => setRn(Number(e.target.value))} className="border-2 border-line bg-ink px-2 py-1.5 text-[14px] text-cream outline-none focus:border-gold" aria-label={t('Boss Sayısı')}>
+            {Array.from({ length: LEVELS.length }, (_, i) => i + 1).map((k) => (
+              <option key={k} value={k}>
+                {t('{n} boss', { n: k })}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {tab === 'gunluk' ? (
         <div className="mt-2.5 flex items-center gap-3 border-2 border-gold/70 bg-gold/5 px-3 py-2 short:mt-1.5 short:py-1">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441]">
-            <ItemIcon city={dailyLevel.city} taken size={30} />
+            <ItemIcon city={sort === 'm' ? miniLv.city : sort === 'b' ? bossLv.city : dailyLevel.city} taken size={30} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-bold text-gold">{day === today ? t('Bugün') : t('Dün')} · {t(rule.name)}</p>
-            <p className="truncate font-display text-lg leading-tight text-cream">{displayName(dailyLevel)}</p>
-            <p className="text-[13px] leading-snug text-muted short:hidden">{t(rule.text)}</p>
+            <p className="text-[13px] font-bold text-gold">{day === today ? t('Bugün') : t('Dün')} · {sort === 'm' ? t('Günün Mücadelesi') : sort === 'b' ? t('Günün Boss’u') : t(dRule.name)}</p>
+            <p className="truncate font-display text-lg leading-tight text-cream">{sort === 'm' ? `${t(miniC.name)} · ${miniLv.name}` : sort === 'b' ? `${lng === 'en' ? bossDef.nameEn : bossDef.name} · ${bossLv.name}` : displayName(dailyLevel)}</p>
+            <p className="text-[13px] leading-snug text-muted short:hidden">{sort === 'm' ? t('Kısa ve sert kesit: en hızlı varan önde.') : sort === 'b' ? t('Boss’un üç işaretini oku, yorulunca üstüne bas.') : t(dRule.text)}</p>
           </div>
           <div className="flex shrink-0 flex-col gap-1.5">
-            {day === today && onDaily ? (
-              <button className="pixel-btn tone justify-center px-3 py-1.5 text-[13px] [--tone:var(--color-gold)]" onClick={onDaily}>
+            {day === today && (sort === 'm' ? onMini : sort === 'b' ? onBoss : onDaily) ? (
+              <button className="pixel-btn tone justify-center px-3 py-1.5 text-[13px] [--tone:var(--color-gold)]" onClick={sort === 'm' ? onMini : sort === 'b' ? onBoss : onDaily}>
                 {ic(t('▶ Oyna'))}
               </button>
             ) : null}
@@ -447,10 +528,11 @@ export default function ScoreBoard({
       {onlyFriends && tab !== 'koleksiyon' && friends && onFriend && <AddFriend friends={friends} me={me} onAdd={onFriend} />}
       <div className="overlay-scroll mt-1 min-h-[160px] flex-1 overflow-y-auto overscroll-contain pr-1 short:min-h-[72px]">
         <Board
-          kind={tab === 'speedrun' ? (sort === 'tur' || sort === 'aynatur' ? sort : 'yuzde') : tab}
+          kind={tab === 'speedrun' ? (sort === 'tur' || sort === 'aynatur' ? sort : 'yuzde') : tab === 'gunluk' ? (sort === 'm' ? 'gunluk-m' : sort === 'b' ? 'gunluk-b' : 'gunluk') : tab === 'modlar' ? (sort === 'rush' ? 'bossrush' : 'kural') : tab}
           level={LEVELS[idx].id}
-          sort={tab === 'speedrun' ? '' : sort}
+          sort={tab === 'speedrun' || tab === 'gunluk' || tab === 'modlar' ? '' : sort}
           day={tab === 'gunluk' ? day : ''}
+          extra={tab === 'modlar' ? (sort === 'rush' ? { variant: rv, n: String(rn) } : { city: LEVELS[idx].id, rule: ruleNow }) : undefined}
           me={me}
           names={onlyFriends && tab !== 'koleksiyon' && friends ? friends : undefined}
           friends={friends}

@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Portrait from '@/components/Portrait'
+import Portrait, { PortraitFace } from '@/components/Portrait'
 import { Overlay, SectionTitle, ic } from '@/components/ui'
-import { ACCESSORIES, SLOTS, kitKey, type Accessory, type AccessoryId, type Kit, type Slot } from '@/game/accessories'
-import type { CharacterId } from '@/game/characters'
+import { HEROES, SLOTS, forHero, hasAccessory, kitFor, kitKey, walletOf, ACCESSORIES, type Accessory, type AccessoryId, type Hero, type Kit, type Slot } from '@/game/accessories'
+import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { LOOKS, POSES, drawHero, gait } from '@/game/heroDraw'
 import { SCARVES, type Scarf } from '@/lib/extras'
 import { useLang, useT } from '@/lib/i18n'
@@ -74,47 +74,59 @@ function HeroPreview({ hero, kit, scarf, run }: { hero: CharacterId; kit: Kit; s
 export default function Shop({
   hero,
   onHero,
-  scarf,
-  scarfId,
+  scarfIds,
   charms,
   onScarf,
   owned,
   seals,
-  kit,
-  wallet,
+  kits,
+  earnedTotal,
   parts,
   onBuy,
   onWear,
   onBack,
 }: {
+  /** kılığı kurulan yolcu: sekmeyi değiştirmek oyundaki yolcuyu da değiştirir */
   hero: CharacterId
-  /** önizlemede ve oyunda karakteri değiştirir */
   onHero: (id: CharacterId) => void
-  scarf: Scarf | null
-  scarfId: string
+  /** her yolcunun atkı rengi kimliği */
+  scarfIds: Record<Hero, string>
   /** bulunan nazar boncuğu: atkı renkleri bununla açılır */
   charms: number
-  onScarf: (id: string) => void
+  onScarf: (hero: Hero, id: string) => void
   owned: Record<string, boolean>
   seals: number
-  kit: Kit
-  wallet: number
+  /** her yolcunun takılı kombini */
+  kits: Record<Hero, Kit>
+  /** kazanılan toplam parça (cüzdan yolcu başına: kazanç eksi o yolcunun aldıkları) */
+  earnedTotal: number
   parts: WalletParts
-  onBuy: (id: AccessoryId) => void
-  onWear: (k: Kit) => void
+  onBuy: (hero: Hero, id: AccessoryId) => void
+  onWear: (hero: Hero, k: Kit) => void
   onBack: () => void
 }) {
   const t = useT()
   const lng = useLang()
   const [tab, setTab] = useState<Tab>('head')
-  const [draft, setDraft] = useState<Kit>(kit)
-  const [focus, setFocus] = useState<AccessoryId>(kit.head)
+  const [drafts, setDrafts] = useState<Record<Hero, Kit>>(kits)
   const [run, setRun] = useState(true)
-  // takılı kombin dışarıda değişince (alınca takılır) deneme de onu izler
+  const [note, setNote] = useState('')
+  const kit = kits[hero]
+  const draft = drafts[hero]
+  const wallet = walletOf(earnedTotal, owned, hero)
+  const scarfId = scarfIds[hero]
+  const [focus, setFocus] = useState<AccessoryId>(kit.head)
+  const scarf = SCARVES.find((x) => x.id === scarfId) ?? SCARVES[0]
+  // takılı kombin dışarıda değişince (alınca takılır, kopyalanınca) deneme de onu izler
   const worn = kitKey(kit)
-  useEffect(() => setDraft(kit), [worn]) // eslint-disable-line react-hooks/exhaustive-deps
+  const wornAll = HEROES.map((h) => kitKey(kits[h])).join('|')
+  useEffect(() => {
+    setDrafts(kits)
+    setNote('')
+  }, [wornAll]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setFocus(kits[hero].head), [hero]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isMine = (a: Accessory) => !!owned[a.id] || (a.seals !== undefined && seals >= a.seals)
+  const isMine = (a: Accessory) => hasAccessory(owned, hero, a.id) || (a.seals !== undefined && seals >= a.seals)
   const nameOf = (a: { name: string; nameEn: string }) => (lng === 'en' ? a.nameEn : a.name)
   const priceLabel = (a: Accessory) => (a.seals !== undefined ? t('{n} Usta Mührü', { n: a.seals }) : t('{n} Parça', { n: a.price }))
   const item = ACCESSORIES.find((a) => a.id === focus)
@@ -122,11 +134,35 @@ export default function Shop({
   const missing = draftItems.filter((a) => !isMine(a))
   const changed = kitKey(draft) !== worn
   const pick = (slot: Slot, id: AccessoryId) => {
-    setDraft((d) => ({ ...d, [slot]: id }))
+    setDrafts((d) => ({ ...d, [hero]: { ...d[hero], [slot]: id } }))
     setFocus(id)
+    setNote('')
   }
-  const mineCount = ACCESSORIES.filter(isMine).length
+  const closet = forHero(hero)
+  const mineCount = closet.filter(isMine).length
+  const other: Hero = hero === 'uktun' ? 'memo' : 'uktun'
+  // öbür yolcuya kopya: yalnız onun dolabında olan ve ona uyan parçalar geçer
+  const copyOver = () => {
+    const mineFor = (a: Accessory) => hasAccessory(owned, other, a.id) || (a.seals !== undefined && seals >= a.seals)
+    const fit = kitFor(other, kit)
+    const next: Kit = { ...fit }
+    let skipped = 0
+    for (const sl of SLOTS) {
+      const a = ACCESSORIES.find((x) => x.id === kit[sl.id])
+      if (!a) continue
+      if (fit[sl.id] === 'yok' || !mineFor(a)) {
+        next[sl.id] = 'yok'
+        skipped++
+      }
+    }
+    onWear(other, next)
+    setNote(skipped ? t('{name} için kopyalandı; {n} parça onun dolabında yok.', { name: CHARACTERS[other].name, n: skipped }) : t('{name} için kopyalandı.', { name: CHARACTERS[other].name }))
+  }
   const scarfOf = (sc: Scarf) => (sc.id === 'al' ? { color: LOOKS[hero].scarf, shade: LOOKS[hero].scarfS } : sc)
+  const scarfFor = (h: Hero) => {
+    const sc = SCARVES.find((x) => x.id === scarfIds[h]) ?? SCARVES[0]
+    return sc.id === 'al' ? null : sc
+  }
 
   // eylem: odaktaki parça alınmamışsa "Al"; deneme kombini farklı ve hepsi seninse "Giy"
   const action =
@@ -134,12 +170,12 @@ export default function Shop({
       item.seals !== undefined ? (
         <p className="text-[13px] leading-snug text-cream/85">{t('Şehir ustalarının görevlerini yap: {n} mühür daha.', { n: item.seals - seals })}</p>
       ) : (
-        <button className="pixel-btn primary w-full justify-center" disabled={wallet < item.price} onClick={() => onBuy(item.id)}>
+        <button className="pixel-btn primary w-full justify-center" disabled={wallet < item.price} onClick={() => onBuy(hero, item.id)}>
           {wallet < item.price ? t('{n} Parça Daha Bul', { n: item.price - wallet }) : t('Al ve Giy · {n} Parça', { n: item.price })}
         </button>
       )
     ) : changed ? (
-      <button className="pixel-btn primary w-full justify-center" disabled={missing.length > 0} onClick={() => onWear(draft)}>
+      <button className="pixel-btn primary w-full justify-center" disabled={missing.length > 0} onClick={() => onWear(hero, draft)}>
         {missing.length ? t('Önce {name} Al', { name: nameOf(missing[0]) }) : t('Kombini Giy')}
       </button>
     ) : (
@@ -157,7 +193,7 @@ export default function Shop({
                 {t('{n} Parça', { n: wallet })}
               </span>
             </h2>
-            <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Baş, yüz ve sırtta birer parça: kombinini kur, atkını seç.')}</p>
+            <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Her yolcunun kılığı ayrı: kombinini kur, atkını seç. Alınan parça yalnız seçili yolcunun olur.')}</p>
           </div>
           <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>
             {ic(t('← Geri'))}
@@ -169,16 +205,23 @@ export default function Shop({
           <div className="mode-card flex min-h-0 flex-col p-3 [--tone:var(--color-gold)] max-sm:p-2.5">
             <div className="flex gap-3 sm:flex-col short:!flex-row">
               <div className="relative h-[150px] w-[120px] shrink-0 overflow-hidden border-2 border-line bg-[radial-gradient(ellipse_at_50%_35%,#3a3478,#1a1838)] sm:h-[230px] sm:w-full short:!h-[120px] short:!w-[96px]">
-                <HeroPreview hero={hero} kit={draft} scarf={scarf} run={run} />
+                <HeroPreview hero={hero} kit={draft} scarf={scarf.id === 'al' ? null : scarf} run={run} />
                 <button className="absolute right-1.5 top-1.5 border-2 border-line bg-ink/70 px-1.5 py-0.5 text-[12px] font-semibold text-cream" onClick={() => setRun((r) => !r)} aria-pressed={run}>
                   {run ? t('Dur') : t('Koş')}
                 </button>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:mt-3 short:!mt-0">
-                <div className="seg w-full" role="group" aria-label={t('Karakter')}>
-                  {(['uktun', 'memo'] as const).map((id) => (
-                    <button key={id} className="flex-1" aria-pressed={hero === id} onClick={() => onHero(id)}>
-                      {id === 'uktun' ? 'Uktun' : 'Memo'}
+                <div className="grid grid-cols-2 gap-1.5" role="tablist" aria-label={t('Karakter')}>
+                  {HEROES.map((id) => (
+                    <button
+                      key={id}
+                      role="tab"
+                      aria-selected={hero === id}
+                      onClick={() => (setNote(''), onHero(id))}
+                      className={`flex min-w-0 items-center gap-1.5 border-2 px-1.5 py-1 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${hero === id ? 'border-gold bg-gold/10' : 'border-line bg-panel-2 hover:border-accent-2'}`}
+                    >
+                      <PortraitFace id={id} scarf={scarfFor(id)} accessory={drafts[id]} />
+                      <span className="truncate text-[14px] font-semibold text-cream">{CHARACTERS[id].name}</span>
                     </button>
                   ))}
                 </div>
@@ -193,7 +236,17 @@ export default function Shop({
                     )
                   })}
                 </ul>
-                <div className="mt-auto">{action}</div>
+                <div className="mt-auto flex flex-col gap-1.5">
+                  {action}
+                  <button className="pixel-btn w-full justify-center py-1.5 text-[13px]" onClick={copyOver} title={t('Takılı kombini öbür yolcuya giydirir')}>
+                    {t('Öbürüne Kopyala')}
+                  </button>
+                  {note && (
+                    <p className="text-[12px] leading-snug text-teal" role="status">
+                      {note}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             {/* cüzdan: nereden kazanıldığı açıkça */}
@@ -203,7 +256,7 @@ export default function Shop({
                   [parts.found, t('Hatıra · Pul · Nazar'), '×1'],
                   [parts.bosses, t('Boss'), '×2'],
                   [parts.seals, t('Usta Mührü'), '×3'],
-                  [`${mineCount}/${ACCESSORIES.length}`, t('Kılık'), ''],
+                  [`${mineCount}/${closet.length}`, t('Kılık'), ''],
                 ] as const
               ).map(([v, k, m]) => (
                 <div key={k} className="bg-panel px-1 py-1.5">
@@ -241,7 +294,7 @@ export default function Shop({
                           key={sc.id}
                           disabled={!open}
                           aria-pressed={on}
-                          onClick={() => onScarf(sc.id)}
+                          onClick={() => onScarf(hero, sc.id)}
                           className={`flex flex-col items-center border-2 p-2 transition-colors max-sm:p-1.5 ${on ? 'border-gold bg-gold/10' : open ? 'border-line bg-panel-2 hover:border-accent-2' : 'border-dashed border-line bg-ink/30 opacity-60'}`}
                         >
                           <Portrait id={hero} scarf={sc.id === 'al' ? null : col} accessory={draft} className="w-[64px] max-sm:w-[54px] short:w-[48px]" />
@@ -254,7 +307,7 @@ export default function Shop({
                 </>
               ) : (
                 <div className="grid grid-cols-3 gap-2 max-sm:gap-1.5 wide:grid-cols-4">
-                  {[null, ...ACCESSORIES.filter((a) => a.slot === tab)].map((a) => {
+                  {[null, ...closet.filter((a) => a.slot === tab)].map((a) => {
                     const id: AccessoryId = a ? a.id : 'yok'
                     const mine = !a || isMine(a)
                     const reach = !!a && a.seals === undefined && wallet >= a.price
@@ -267,7 +320,7 @@ export default function Shop({
                         onClick={() => pick(tab, id)}
                         className={`flex flex-col items-center border-2 p-2 transition-colors max-sm:p-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${sel ? 'border-gold bg-gold/10' : mine || reach ? 'border-line bg-panel-2 hover:border-accent-2' : 'border-dashed border-line bg-ink/30 hover:border-muted'}`}
                       >
-                        <Portrait id={hero} scarf={scarf} accessory={{ ...draft, [tab]: id }} className={`w-[72px] max-sm:w-[58px] short:w-[50px] ${mine ? '' : 'opacity-80'}`} />
+                        <Portrait id={hero} scarf={scarf.id === 'al' ? null : scarf} accessory={{ ...draft, [tab]: id }} className={`w-[72px] max-sm:w-[58px] short:w-[50px] ${mine ? '' : 'opacity-80'}`} />
                         <span className="mt-1 text-center text-[13px] font-semibold leading-tight text-cream">{a ? nameOf(a) : t('Yok')}</span>
                         <span className={`text-[12px] ${wearing ? 'text-gold' : mine ? 'text-teal' : 'text-muted'}`}>{wearing ? t('Takılı') : mine ? (a ? t('Senin') : t('Boş')) : `${reach ? '' : '🔒 '}${priceLabel(a!)}`}</span>
                       </button>

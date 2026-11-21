@@ -12,7 +12,7 @@ import { ALL_CHALLENGES, challengeLevel } from '@/game/challenges'
 import { LEVELS, FIRST_BOOK } from '@/game/levels'
 import { PHYS, World } from '@/game/sim'
 import { T, type LevelDef } from '@/game/types'
-import { dailyRun } from './extras'
+import { dailyMini, dailyRun } from './extras'
 
 /** oyuncunun yatayda erişebileceği en yüksek hız (px/sn) */
 export const VMAX_X = PHYS.dashSpeed
@@ -53,6 +53,9 @@ function geo(level: LevelDef): Geo {
 /** bölümün kabul edilen en kısa süresi (ms) */
 export const minTimeMs = (level: LevelDef) => Math.floor(((geo(level).dist / VMAX_X) * SAFETY) * 1000)
 
+/** bir boss arenasının kabul edilen en kısa süresi: her boss işaret, saldırı ve yorgunluk evresini bekler */
+export const BOSS_FLOOR_MS = 6000
+
 const byId = new Map(LEVELS.map((l) => [l.id, l]))
 
 /**
@@ -65,6 +68,18 @@ export function minScoreMs(key: string): number {
   const [head, ...rest] = key.split(':')
   if (head === 'gunluk') {
     const l = byId.get(dailyRun(rest[0], LEVELS).levelId)
+    return l ? minTimeMs(l) : 0
+  }
+  // Günün Mücadelesi: o günün kesiti; Günün Boss'u arenada boss'un üç işareti için sabit alt sınır; Boss Rush boss başına aynı
+  if (head === 'gunluk-m') {
+    const c = ALL_CHALLENGES.find((x) => x.id === dailyMini(rest[0]))
+    return c ? minTimeMs(challengeLevel(c)) : 0
+  }
+  if (head === 'gunluk-b') return BOSS_FLOOR_MS
+  if (head === 'bossrush') return BOSS_FLOOR_MS * (Number(rest[1]) || 1)
+  // Kurallı Koşu ve Sinir Bozucu: şehrin kendi yolu (skor süreden kısa olamaz)
+  if (head === 'kural') {
+    const l = byId.get(rest[0])
     return l ? minTimeMs(l) : 0
   }
   if (head === 'mucadele' || head === 'turnuva') {

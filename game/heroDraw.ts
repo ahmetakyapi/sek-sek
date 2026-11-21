@@ -5,6 +5,7 @@
  * Birim: karakter boyu ~100 birim, ayak tabanı orta noktası (0, 0), y yukarı eksi.
  */
 import { COVERS_HEAD, NO_KIT, ON_HEAD, type AccessoryId, type Kit } from './accessories'
+import { drawFaceItem, drawHeadItem, drawHeroBack, drawHeroBackFront, heroHead } from './accessoryDraw'
 
 export type Look = 'uktun' | 'memo' | 'amca' | 'teyze' | 'usta' | 'genc' | 'coban' | 'ozan'
 
@@ -894,6 +895,7 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
   }
   if (kit.face === 'gozluk') drawGlasses(c, hx, hy)
   if (kit.face === 'gunes') drawShades(c, hx, hy)
+  drawFaceItem(c, kit.face, heroHead(hx, hy), { t, moving, hair, lift })
   // başa takılan aksesuar kılığın şapkasının yerine geçer; yazma örtüdür, kalır ve başlık üstüne oturur
   if (s.hat && (s.hat === 'yazma' || !ON_HEAD.has(acc))) drawHat(c, s, hx, hy)
   // kayak bandı ve kulaklık yazmanın üstünden geçer; kulaklığın kabı kayak bandını örter
@@ -1164,6 +1166,7 @@ function drawPhones(c: CanvasRenderingContext2D, hx: number, hy: number, top: nu
 
 /** başa takılan aksesuar (baş koordinatında). hair: geriye savrulma, lift: dikey savrulma (püskül ve ponpon izler) */
 function drawHeadAcc(c: CanvasRenderingContext2D, acc: AccessoryId, hx: number, hy: number, t: number, moving: boolean, hair: number, lift: number) {
+  if (drawHeadItem(c, acc, heroHead(hx, hy), { t, moving, hair, lift })) return
   const sway = Math.sin(t * (moving ? 11 : 1.8) - 0.8) * (moving ? 1.2 : 0.5)
   switch (acc) {
     case 'fes': {
@@ -1632,6 +1635,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   const bagSw = Math.sin(t * (moving ? 13 : 2.2)) * (moving ? 1 : 0.3) + (pose.ground ? 0 : lift * 2)
   if (kit.back === 'heybe') drawBag(c, tx, ty, bagSw)
   if (kit.back === 'saz') drawBackSaz(c, tx, ty, bagSw)
+  drawHeroBack(c, kit.back, tx, ty, t, bagSw, opts.flow ?? (moving ? 1 : 0), lift)
   drawTorso(c, s, tx, ty)
   if (s.robe) {
     // etek / cübbe: belden bileğe, hafif açılarak iner
@@ -1673,6 +1677,7 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   }
   if (kit.back === 'heybe') drawStrap(c, tx, ty)
   if (kit.back === 'saz') drawSazStrap(c, tx, ty)
+  drawHeroBackFront(c, kit.back, tx, ty)
   if (s.prop === 'saz') {
     // bağlama: gövde belde, sap omuza doğru
     stroke(c, [tx + 2, ty - 8, tx + 22, ty - 30], 2.4, '#7a4a24')

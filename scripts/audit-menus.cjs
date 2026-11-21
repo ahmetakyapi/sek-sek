@@ -39,6 +39,8 @@ const SCREENS = {
   'skorlar-sehir': [SAVE, ['Skorlar', 'tab:Şehirler']],
   'skorlar-gunluk': [SAVE, ['Skorlar', 'tab:Günlük']],
   'skorlar-speedrun': [SAVE, ['Skorlar', 'tab:Speedrun']],
+  'skorlar-modlar': [SAVE, ['Skorlar', 'tab:Modlar']],
+  'skorlar-boss-rush': [SAVE, ['Skorlar', 'tab:Modlar', 'Boss Rush']],
   'coop-kur': [SAVE, ['Modlar', 'Co-op']],
   'coop-boss': [SAVE, ['Modlar', 'Co-op', 'tab:Boss Kapışması']],
   'coop-parkur': [SAVE, ['Modlar', 'Co-op', 'tab:Parkur']],

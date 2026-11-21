@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK } from '../lib/extras'
+import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK, dailyBoss, dailyMini, cleanTrio, markTrio, mergeTrio, settleTrio, trioCount, trioParts } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
-import { ACCESSORIES, NO_KIT, earned, kitFor, walletOf } from '../game/accessories'
+import { ACCESSORIES, HEROES, NO_KIT, earned, forHero, kitFor, walletOf } from '../game/accessories'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
 import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
@@ -249,28 +249,50 @@ describe('Ayna Yolu', () => {
 })
 
 describe('Kılık Dükkânı', () => {
-  it('cüzdan kazanılan parçadan alınanların fiyatı düşülerek hesaplanır, eksiye inmez', () => {
-    expect(walletOf(40, {})).toBe(40)
-    expect(walletOf(40, { papatya: true, gozluk: true })).toBe(5)
-    expect(walletOf(10, { fes: true })).toBe(0)
+  it('cüzdan kazanılan parçadan o karakterin aldıklarının fiyatı düşülerek hesaplanır, eksiye inmez', () => {
+    expect(walletOf(40, {}, 'uktun')).toBe(40)
+    // yolcuya özgü alım yalnız o yolcunun cüzdanını azaltır
+    expect(walletOf(40, { 'uktun:papatya': true, 'uktun:gozluk': true }, 'uktun')).toBe(40 - 10 - 12)
+    expect(walletOf(40, { 'uktun:papatya': true, 'uktun:gozluk': true }, 'memo')).toBe(40)
+    // karakter ayrımından önce alınan (düz kimlik) iki yolcuya da açıktır ve ikisinin cüzdanından düşer
+    expect(walletOf(40, { gozluk: true }, 'uktun')).toBe(28)
+    expect(walletOf(40, { gozluk: true }, 'memo')).toBe(28)
+    // başka yolcunun parçası dolapta yoktur: fiyatı düşülmez
+    expect(walletOf(40, { papatya: true }, 'memo')).toBe(40)
+    expect(walletOf(10, { 'memo:fes': true }, 'memo')).toBe(0)
     expect(new Set(ACCESSORIES.map((a) => a.id)).size).toBe(ACCESSORIES.length)
   })
-  it('parça: hatıra, pul, nazar 1 · boss 2 · Usta Mührü 3; oyunun tamamı dükkânın tamamını alır', () => {
+  it('parça: hatıra, pul, nazar 1 · boss 2 · Usta Mührü 3; oyunun tamamı her karakterin dolabını alır', () => {
     expect(earned(10, 2, 1)).toBe(17)
     const all = earned(LEVELS.length * 5, LEVELS.length, LEVELS.length)
-    const prices = ACCESSORIES.filter((a) => a.seals === undefined).reduce((a, x) => a + x.price, 0)
-    expect(all).toBeGreaterThanOrEqual(prices)
-    // hepsi alınca oyunun parçasının büyük kısmı harcanmış olur (seçim anlamlı kalsın)
-    expect(prices).toBeGreaterThan(all * 0.8)
+    for (const h of HEROES) {
+      const prices = forHero(h).filter((a) => a.seals === undefined).reduce((a, x) => a + x.price, 0)
+      expect(all).toBeGreaterThanOrEqual(prices)
+      // hepsi alınca oyunun parçasının büyük kısmı harcanmış olur (seçim anlamlı kalsın)
+      expect(prices).toBeGreaterThan(all * 0.8)
+    }
   })
-  it('kombin: yuva başına bir parça; eski tek aksesuar kendi yuvasına geçer, bilinmeyen ya da yanlış yuva boş sayılır', () => {
-    expect(kitFor(undefined, undefined)).toEqual(NO_KIT)
-    expect(kitFor(undefined, 'heybe')).toEqual({ ...NO_KIT, back: 'heybe' })
-    expect(kitFor(undefined, 'yok-boyle')).toEqual(NO_KIT)
-    expect(kitFor({ head: 'fes', face: 'gunes', back: 'pelerin' })).toEqual({ head: 'fes', face: 'gunes', back: 'pelerin' })
-    expect(kitFor({ head: 'gozluk', face: 'fes' })).toEqual(NO_KIT)
+  it('her karakterin her yuvada en az üç özel parçası var; ortak parçalar iki dolapta da', () => {
+    for (const h of HEROES)
+      for (const slot of ['head', 'face', 'back'] as const) expect(ACCESSORIES.filter((a) => a.for === h && a.slot === slot).length).toBeGreaterThanOrEqual(3)
+    const common = ACCESSORIES.filter((a) => !a.for)
+    expect(common.length).toBeGreaterThan(0)
+    for (const a of common) expect(forHero('uktun')).toContain(a), expect(forHero('memo')).toContain(a)
+    // özel parça öbür karakterin dolabında yok
+    for (const a of ACCESSORIES.filter((x) => x.for)) expect(forHero(a.for === 'uktun' ? 'memo' : 'uktun')).not.toContain(a)
+  })
+  it('kombin: yuva başına bir parça; eski tek aksesuar kendi yuvasına geçer, bilinmeyen, yanlış yuva ya da başka karakterin parçası boş sayılır', () => {
+    expect(kitFor('uktun', undefined, undefined)).toEqual(NO_KIT)
+    expect(kitFor('uktun', undefined, 'heybe')).toEqual({ ...NO_KIT, back: 'heybe' })
+    expect(kitFor('uktun', undefined, 'yok-boyle')).toEqual(NO_KIT)
+    expect(kitFor('uktun', { head: 'fes', face: 'gunes', back: 'pelerin' })).toEqual({ head: 'fes', face: 'gunes', back: 'pelerin' })
+    expect(kitFor('uktun', { head: 'gozluk', face: 'fes' })).toEqual(NO_KIT)
     // yeni kayıt eskisinin önüne geçer
-    expect(kitFor({ face: 'kayak' }, 'fes')).toEqual({ ...NO_KIT, face: 'kayak' })
+    expect(kitFor('uktun', { face: 'kayak' }, 'fes')).toEqual({ ...NO_KIT, face: 'kayak' })
+    // karakterlere özgü
+    expect(kitFor('uktun', { head: 'fiyonk', face: 'bant' })).toEqual({ ...NO_KIT, head: 'fiyonk' })
+    expect(kitFor('memo', { head: 'fiyonk', face: 'bant', back: 'okluk' })).toEqual({ head: 'yok', face: 'bant', back: 'okluk' })
+    expect(kitFor('memo', undefined, 'papatya')).toEqual(NO_KIT)
   })
 })
 
@@ -344,5 +366,56 @@ describe('düello şartları ve Boss Rush çeşitleri', () => {
   it('çifte Boss Rush boss\'ları ikişer eşler, tek kalan yalnız çıkar', () => {
     expect(rushPlan([1, 2, 3], undefined)).toEqual({ order: [1, 2, 3] })
     expect(rushPlan([1, 2, 3, 4, 5], 'cifte')).toEqual({ order: [1, 3, 5], pairs: [2, 4, -1] })
+  })
+})
+
+describe('Günün Üçlüsü', () => {
+  const days = Array.from({ length: 60 }, (_, i) => shiftDay('2026-11-01', i))
+  it('günün mücadelesi ve boss\'u tarihe bağlı, herkes için aynı; art arda iki gün aynı gelmez', () => {
+    for (const d of days) {
+      expect(dailyMini(d)).toBe(dailyMini(d))
+      expect(CHALLENGES.some((c) => c.id === dailyMini(d))).toBe(true)
+      expect(dailyMini(d)).not.toBe(dailyMini(shiftDay(d, -1)))
+      const b = dailyBoss(d, LEVELS)
+      expect(b).toBeGreaterThanOrEqual(0)
+      expect(b).toBeLessThan(LEVELS.length)
+      expect(b).not.toBe(dailyBoss(shiftDay(d, -1), LEVELS))
+      // meydan okuma şehriyle çakışmaz: üç ayrı iş
+      expect(LEVELS[b].id).not.toBe(dailyRun(d, LEVELS).levelId)
+    }
+    expect(new Set(days.map((d) => dailyMini(d))).size).toBeGreaterThan(5)
+    expect(new Set(days.map((d) => dailyBoss(d, LEVELS))).size).toBeGreaterThan(15)
+  })
+  it('parça en iyi süreyle tutulur, yeni günde sıfırlanır, Üçlü günde bir kez sayılır', () => {
+    const d = '2026-11-21'
+    const daily = { day: d, bestMs: 90000, streak: 1 }
+    let a = markTrio(null, d, 'mini', 20000)
+    expect(a.best).toBe(true)
+    a = markTrio(a.mark, d, 'mini', 25000)
+    expect(a.best).toBe(false)
+    expect(a.mark.mini).toBe(20000)
+    expect(settleTrio(a.mark, d, daily)!.days).toBe(0)
+    const b = markTrio(a.mark, d, 'boss', 40000).mark
+    expect(trioCount(trioParts(b, d, daily))).toBe(3)
+    const done = settleTrio(b, d, daily)!
+    expect(done).toMatchObject({ days: 1, last: d })
+    expect(settleTrio(done, d, daily)!.days).toBe(1)
+    // meydan okuma yapılmadıysa üçlü sayılmaz
+    expect(settleTrio(b, d, null)!.days).toBe(0)
+    // ertesi gün parçalar sıfır, sayaç sürer
+    const n = markTrio(done, shiftDay(d, 1), 'boss', 30000).mark
+    expect(n).toMatchObject({ day: shiftDay(d, 1), boss: 30000, days: 1 })
+    expect(n.mini).toBeUndefined()
+  })
+  it('iki cihazın izi birleşir: sayaç kaybolmaz, aynı günde en iyi süreler', () => {
+    const x = { day: '2026-11-21', mini: 20000, days: 3, last: '2026-11-20' }
+    const y = { day: '2026-11-21', mini: 18000, boss: 50000, days: 5, last: '2026-11-19' }
+    expect(mergeTrio(x, y)).toEqual({ day: '2026-11-21', mini: 18000, boss: 50000, days: 5, last: '2026-11-20' })
+    expect(mergeTrio(x, null)).toBe(x)
+    expect(mergeTrio({ ...x, day: '2026-11-22', mini: undefined }, y)!.mini).toBeUndefined()
+  })
+  it('bozuk iz biçime zorlanır', () => {
+    expect(cleanTrio('x')).toBeNull()
+    expect(cleanTrio({ day: 5, mini: -1, boss: 'a', days: 1e9, last: '2026-11-21' })).toEqual({ day: '', mini: undefined, boss: undefined, days: 5000, last: '2026-11-21' })
   })
 })

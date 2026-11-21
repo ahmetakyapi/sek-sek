@@ -6,6 +6,7 @@
  * Birim: 100 x 119'luk çerçeve (64:76), yüz hafifçe sağa dönük; kılığa göre saç, sakal, başlık ve yaka değişir.
  */
 import { COVERS_HEAD, NO_KIT, ON_HEAD, type AccessoryId, type Kit } from './accessories'
+import { PORTRAIT_HEAD, drawFaceItem, drawHeadItem, drawPortraitBack, drawPortraitBackFront } from './accessoryDraw'
 import { INK, LOOKS, blob, setInkWidth, stroke, type Look } from './heroDraw'
 
 type Skin = (typeof LOOKS)[Look]
@@ -1781,7 +1782,14 @@ function capeClasp(c: Ctx) {
 }
 
 /** Kadraj: [ölçek, başın orta x'i, en üst nokta]. Baş tam sığar, yüz kadrajı doldurur. */
+/** omuzların ve saçın arkasına, her şeyden önce çizilen sırt parçaları (öbürleri omuzlarla birlikte) */
+const BEHIND_ALL: ReadonlySet<AccessoryId> = new Set(['sal', 'okluk', 'kalkan'])
+
 function frame(s: Skin, acc: AccessoryId): [number, number, number] {
+  if (acc === 'kovboy') return [0.9, 53, 0]
+  if (acc === 'asci') return [1.0, 52, 0]
+  if (acc === 'fiyonk') return [1.02, 52, 2]
+  if (acc === 'bandana') return [1.0, 52, 0]
   if (acc === 'fes') return [1.0, 52, -2]
   if (acc === 'bere') return [1.0, 52, -6]
   if (acc === 'hasir') return [0.94, 53, 0]
@@ -1844,12 +1852,13 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     c.translate(-52, -92)
   }
   // sırttaki bağlama ve pelerin her şeyin arkasında (uzun saç üstlerine düşer)
-  if (kit.back === 'saz' || kit.back === 'pelerin') {
+  if (kit.back === 'saz' || kit.back === 'pelerin' || BEHIND_ALL.has(kit.back)) {
     c.save()
     c.translate(0, breath + BODY_DY)
     ink(INKW)
     if (kit.back === 'saz') sazBack(c)
-    else capeBack(c)
+    else if (kit.back === 'pelerin') capeBack(c)
+    else drawPortraitBack(c, kit.back)
     ink(MID_INKW)
     c.restore()
   }
@@ -1866,6 +1875,7 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   c.translate(0, breath + BODY_DY)
   propBack(c, s)
   if (kit.back === 'heybe') bagBack(c)
+  else if (!BEHIND_ALL.has(kit.back)) drawPortraitBack(c, kit.back)
   ink(INKW)
   shoulders(c, look, s)
   ink(MID_INKW)
@@ -1875,6 +1885,7 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   if (kit.back === 'heybe') bagStrap(c)
   if (kit.back === 'saz') sazStrap(c)
   if (kit.back === 'pelerin') capeClasp(c)
+  drawPortraitBackFront(c, kit.back)
   c.restore()
 
   c.save()
@@ -1943,11 +1954,12 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     if (kit.face === 'gozluk') glasses(c)
     if (kit.face === 'gunes') shades(c)
     if (kit.face === 'kayak') goggles(c)
+    drawFaceItem(c, kit.face, PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
     yazmaFront(c, s)
     if (ON_HEAD.has(acc)) {
       c.save()
       c.translate(0, -3)
-      headAcc(c, acc, sway)
+      if (!drawHeadItem(c, acc, PORTRAIT_HEAD, { t, moving: false, hair: sway * 0.25, lift: 0 })) headAcc(c, acc, sway)
       c.restore()
     }
     c.translate(0, BODY_DY)
@@ -1957,11 +1969,12 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     if (kit.face === 'gozluk') glasses(c)
     if (kit.face === 'gunes') shades(c)
     if (kit.face === 'kayak') goggles(c)
+    drawFaceItem(c, kit.face, PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
     hat(c, s)
     if (ON_HEAD.has(acc)) {
       c.save()
       if (s.long && COVERS_HEAD.has(acc)) c.translate(0, -2)
-      headAcc(c, acc, sway)
+      if (!drawHeadItem(c, acc, PORTRAIT_HEAD, { t, moving: false, hair: sway * 0.25, lift: 0 })) headAcc(c, acc, sway)
       c.restore()
     }
   }

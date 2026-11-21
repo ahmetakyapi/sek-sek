@@ -45,6 +45,14 @@ const variant = (n: number) => {
   return encodeMap(map, n % 2 ? 'van' : 'izmir')
 }
 
+/** ayrı kodlu çok harita (çıkış sütunu ve şehir birlikte değişir) */
+const fresh = (n: number) => {
+  const map = SAMPLE_MAP.map((r) => r.replace('E', ' '))
+  const col = 44 + (n % 10)
+  map[19] = map[19].slice(0, col) + 'E' + map[19].slice(col + 1)
+  return encodeMap(map, (['bursa', 'konya', 'sivas', 'mardin', 'kars', 'edirne', 'rize'] as const)[Math.floor(n / 10) % 7])
+}
+
 const publish = async (p: Who | undefined, body: Record<string, unknown>) => {
   const r = await POST(new NextRequest('http://x/api/maps', { method: 'POST', headers: cookie(p), body: JSON.stringify(body) }))
   return { status: r.status, j: (await r.json()) as Record<string, unknown> }
@@ -52,6 +60,15 @@ const publish = async (p: Who | undefined, body: Record<string, unknown>) => {
 let ipSeq = 0
 const act = async (p: Who | undefined, id: number, action: string, ip = `10.0.0.${++ipSeq}`) => {
   const r = await one.POST(new NextRequest(`http://x/api/maps/${id}`, { method: 'POST', headers: { ...cookie(p), 'x-forwarded-for': ip }, body: JSON.stringify({ action }) }), { params: Promise.resolve({ id: String(id) }) })
+  return { status: r.status, j: (await r.json()) as Record<string, unknown> }
+}
+
+const put = async (p: Who | undefined, id: number, body: Record<string, unknown>, headers: Record<string, string> = {}) => {
+  const r = await one.PUT(new NextRequest(`http://x/api/maps/${id}`, { method: 'PUT', headers: { ...cookie(p), ...headers }, body: JSON.stringify(body) }), { params: Promise.resolve({ id: String(id) }) })
+  return { status: r.status, j: (await r.json()) as Record<string, unknown> }
+}
+const del = async (p: Who | undefined, id: number) => {
+  const r = await one.DELETE(new NextRequest(`http://x/api/maps/${id}`, { method: 'DELETE', headers: cookie(p) }), { params: Promise.resolve({ id: String(id) }) })
   return { status: r.status, j: (await r.json()) as Record<string, unknown> }
 }
 const list = async (q: string, p?: Who) => {
@@ -162,6 +179,87 @@ describe('topluluk haritaları', () => {
     expect(p1.maps.map((m) => m.title)).toEqual(['İlk Yol'])
     // bilinmeyen sıralama yeniye düşer
     expect((await list('sort=xyz')).maps[0].title).toBe('On Üçüncü Yol')
+  })
+})
+
+describe('yayındaki haritayı güncelleme', () => {
+  const evil = { origin: 'https://kotu.example', 'sec-fetch-site': 'cross-site' }
+  let id = 0
+  let before: CommunityMap
+
+  it('sahibi aynı bağlantıyla günceller; sayaçlar ve yayın tarihi korunur', async () => {
+    const p = await publish(P[2], { code: fresh(300), title: 'Güncellenecek Yol', solved: true })
+    expect(p.status).toBe(200)
+    id = p.j.id as number
+    await act(P[0], id, 'like')
+    await act(undefined, id, 'play')
+    before = (await list('sort=yeni', P[2])).maps.find((m) => m.id === id)!
+    expect(before).toMatchObject({ likes: 1, plays: 1, updatedAt: null, mine: true })
+    const nextCode = fresh(301)
+    const r = await put(P[2], id, { code: nextCode, title: '  Güncel   Yol ', solved: true })
+    expect(r).toMatchObject({ status: 200, j: { id, code: nextCode } })
+    const after = (await list('sort=yeni', P[2])).maps.find((m) => m.id === id)!
+    expect(after).toMatchObject({ title: 'Güncel Yol', code: nextCode, likes: 1, plays: 1, createdAt: before.createdAt })
+    expect(after.updatedAt).not.toBeNull()
+    // aynı kodla yeniden gönderince de (yalnız başlık değişir) sorun yok
+    expect((await put(P[2], id, { code: nextCode, title: 'Yeni Ad', solved: true })).status).toBe(200)
+    expect((await list('sort=yeni', P[0])).maps.find((m) => m.id === id)).toMatchObject({ mine: false, liked: true })
+  })
+
+  it('başkası güncelleyemez ve silemez; oturumsuz 401; olmayan harita 404', async () => {
+    expect((await put(P[1], id, { code: fresh(302), title: 'Ele Geçirme', solved: true })).status).toBe(403)
+    expect((await put(undefined, id, { code: fresh(302), title: 'Ele Geçirme', solved: true })).status).toBe(401)
+    expect((await put(P[2], 99999, { code: fresh(302), title: 'Hayalet Yol', solved: true })).status).toBe(404)
+    expect((await del(P[1], id)).status).toBe(403)
+    expect((await del(undefined, id)).status).toBe(401)
+    const row = (await list('sort=yeni')).maps.find((m) => m.id === id)!
+    expect(row.title).toBe('Yeni Ad')
+  })
+
+  it('yayındakiyle aynı şartlar: çözücü, başlık, kod; başka haritanın kodu 409', async () => {
+    const code = fresh(303)
+    expect((await put(P[2], id, { code, title: 'Çözülmemiş', solved: false })).j.error).toMatch(/çözücü/)
+    expect((await put(P[2], id, { code, title: 'Yo', solved: true })).status).toBe(400)
+    expect((await put(P[2], id, { code: 'bozuk!!', title: 'Bozuk Kod', solved: true })).status).toBe(400)
+    const other = (await list('sort=yeni')).maps.find((m) => m.id !== id)!
+    expect((await put(P[2], id, { code: other.code, title: 'Kopya Yol', solved: true })).status).toBe(409)
+  })
+
+  it('arama ve Haritalarım süzgeci', async () => {
+    const found = await list(`sort=yeni&q=${encodeURIComponent('yeni ad')}`)
+    expect(found.maps.map((m) => m.id)).toEqual([id])
+    expect((await list('sort=yeni&q=%25')).maps).toHaveLength(0)
+    const mine = await list('sort=yeni&mine=1', P[2])
+    expect(mine.maps.length).toBeGreaterThan(0)
+    expect(mine.maps.every((m) => m.mine)).toBe(true)
+    expect((await list('sort=yeni&mine=1')).maps).toHaveLength(0)
+  })
+
+  it('sahibi siler, beğeniler birlikte gider', async () => {
+    expect((await del(P[2], id)).j).toEqual({ ok: true })
+    expect((await list('sort=yeni')).maps.some((m) => m.id === id)).toBe(false)
+    expect((await pg.query<{ n: number }>(`select count(*)::int as n from seksek_map_likes where map_id = $1`, [id])).rows[0].n).toBe(0)
+    expect((await del(P[2], id)).status).toBe(404)
+  })
+
+  it('başka siteden güncelleme ve silme 403', async () => {
+    const mine = (await list('sort=yeni&mine=1', P[2])).maps[0]
+    expect((await put(P[2], mine.id, { code: fresh(304), title: 'Sahte Yol', solved: true }, evil)).status).toBe(403)
+    const r = await one.DELETE(new NextRequest(`http://x/api/maps/${mine.id}`, { method: 'DELETE', headers: { ...cookie(P[2]), ...evil } }), { params: Promise.resolve({ id: String(mine.id) }) })
+    expect(r.status).toBe(403)
+  })
+
+  it('güncelleme oyuncu başına saatte 60 ile sınırlı', async () => {
+    const mine = (await list('sort=yeni&mine=1', P[2])).maps[0]
+    let last = 200
+    let retry: string | null = null
+    for (let i = 0; i < 62 && last !== 429; i++) {
+      const r = await one.PUT(new NextRequest(`http://x/api/maps/${mine.id}`, { method: 'PUT', headers: cookie(P[2]), body: JSON.stringify({ code: mine.code, title: `Tekrar ${i}`, solved: true }) }), { params: Promise.resolve({ id: String(mine.id) }) })
+      last = r.status
+      retry = r.headers.get('retry-after')
+    }
+    expect(last).toBe(429)
+    expect(Number(retry)).toBeGreaterThan(0)
   })
 })
 

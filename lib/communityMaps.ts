@@ -24,8 +24,18 @@ export interface CommunityMap {
   plays: number
   likes: number
   createdAt: string
+  /** sahibi güncellediyse son güncelleme, yoksa null */
+  updatedAt: string | null
   liked: boolean
+  /** harita bakan oyuncunundur (düzenle / sil / güncelle yalnız ona) */
+  mine: boolean
 }
+
+/** arama kutusunun üst sınırı */
+export const QUERY_MAX = 40
+
+/** ILIKE kalıbı için % _ \ kaçışı */
+export const likePattern = (q: string) => `%${q.replace(/[\\%_]/g, '\\$&')}%`
 
 export const cleanTitle = (t: unknown) => (typeof t === 'string' ? t.trim().replace(/\s+/g, ' ') : '')
 

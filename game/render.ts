@@ -101,6 +101,7 @@ export class Renderer {
   accessory: Kit = NO_KIT
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
+  private ghostIdle: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], 0], [POSES.idle.legs[1][0], 0]] }
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
   /** boss'u çizilen şehir (özel haritada başka şehrin boss'u olabilir) */
   bossCity: CityKey = 'istanbul'
@@ -1301,6 +1302,31 @@ export class Renderer {
         }
         break
       }
+      case 'aydin': {
+        // incir ve zeytinyağı tezgâhı: sepet sepet mor incir, yanında yeşil-altın zeytinyağı şişeleri; mor beyaz çizgili tente
+        rect(b, x - 4, bot - 8, 26, 8, '#7a5a38')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a7a52')
+        for (const dx of [-3, 5]) {
+          rect(b, x + dx, bot - 13, 7, 5, '#b8884e')
+          rect(b, x + dx, bot - 11, 7, 1, '#8a6034')
+          for (let i = 0; i < 3; i++) rect(b, x + dx + i * 2, bot - 15 + (i % 2), 2, 2, i % 2 ? '#6a3a7a' : '#8a5a9a')
+          rect(b, x + dx + 2, bot - 16, 2, 1, '#5a9a3a')
+        }
+        for (const dx of [14, 17, 20]) {
+          rect(b, x + dx, bot - 14, 2, 6, '#9ab24a')
+          rect(b, x + dx, bot - 14, 1, 6, '#c8d878')
+          rect(b, x + dx, bot - 15, 2, 1, '#5a4a2a')
+        }
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#7a4a8c')
+        for (let i = 0; i < 3; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.4 + i * 1.7) * 0.8)
+          rect(b, x + 3 + i * 8 + sw, bot - 29, 1, 3, '#4e8a2a')
+          rect(b, x + 2 + i * 8 + sw, bot - 26, 3, 3, '#7a4a8c')
+        }
+        break
+      }
       case 'mersin': {
         // tantuni tezgâhı: büyük sacda cızırdayan et, yanında dürülmüş lavaşlar, limon ve maydanoz; tentede portakal
         rect(b, x - 4, bot - 8, 26, 8, '#8a5a32')
@@ -1324,6 +1350,27 @@ export class Renderer {
           const sw = Math.round(Math.sin(this.t * 1.4 + i * 1.7) * 0.8)
           rect(b, x + 3 + i * 8 + sw, bot - 29, 1, 3, '#4e8a2a')
           rect(b, x + 2 + i * 8 + sw, bot - 26, 3, 3, '#f29a2a')
+        }
+        break
+      }
+      case 'karabuk': {
+        // safranlı lokum tezgâhı: pudra şekerli lokum küpleri, safran kavanozu, tentede mor-krem şeritler
+        rect(b, x - 4, bot - 8, 26, 8, '#7a4e2c')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a6e48')
+        for (let i = 0; i < 5; i++) {
+          rect(b, x - 2 + i * 4, bot - 12, 3, 4, i % 2 ? '#f2c24a' : '#e8a8c0')
+          rect(b, x - 2 + i * 4, bot - 12, 3, 1, '#fffaf0')
+        }
+        rect(b, x + 18, bot - 15, 4, 7, '#d8e4e8')
+        rect(b, x + 19, bot - 12, 2, 4, '#e8451c')
+        rect(b, x + 18, bot - 16, 4, 1, '#8a5a32')
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3a22')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3a22')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4ecd8' : '#8a52a8')
+        for (let i = 0; i < 3; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.4 + i * 1.7) * 0.8)
+          rect(b, x + 2 + i * 8 + sw, bot - 29, 3, 3, '#8a52a8')
+          rect(b, x + 3 + i * 8 + sw, bot - 26, 1, 3, '#e8451c')
         }
         break
       }
@@ -2029,6 +2076,23 @@ export class Renderer {
         rect(b, x + 8, bot - 19, 1, 1, '#2a2420')
         break
       }
+      case 'aydin': {
+        // Selçuk'taki tek Artemis sütunu: yivli mermer gövde, kaide ve başlık; tepesinde dal yığınından leylek yuvası ve bir leylek
+        rect(b, x + 1, bot - 3, 14, 3, '#cfc8b8')
+        rect(b, x + 2, bot - 5, 12, 2, '#e4ded0')
+        rect(b, x + 4, bot - 34, 8, 29, '#f0ece2')
+        rect(b, x + 4, bot - 34, 1, 29, '#fffcf4')
+        rect(b, x + 10, bot - 34, 2, 29, '#c4beb0')
+        for (let i = 0; i < 3; i++) rect(b, x + 6 + i * 2, bot - 32, 1, 26, 'rgba(120,112,98,0.28)')
+        rect(b, x + 2, bot - 37, 12, 3, '#f0ece2')
+        rect(b, x + 1, bot - 38, 14, 1, '#c4beb0')
+        for (let i = 0; i < 7; i++) rect(b, x + 1 + i * 2, bot - 41 - (i % 3), 3, 2, '#7a5a3a')
+        rect(b, x + 6, bot - 49, 2, 7, '#f6f2ec')
+        rect(b, x + 6, bot - 50, 5, 1, '#e8582e')
+        rect(b, x + 9, bot - 51, 1, 1, '#1c1a20')
+        if (Math.sin(this.t * 1.7) > 0.7) rect(b, x + 5, bot - 48, 1, 4, '#1c1a20')
+        break
+      }
       case 'mersin': {
         // Kızkalesi'nin burcu: dalgaların vurduğu kaya üstünde mazgallı taş kule, tepede kırmızı sancak
         rect(b, x, bot - 4, 16, 4, '#6a5a44')
@@ -2044,6 +2108,18 @@ export class Renderer {
         const surf = Math.floor(this.t * 3) % 4
         rect(b, x - 1 + surf, bot - 2, 3, 1, 'rgba(240,250,255,0.85)')
         rect(b, x + 14 - surf, bot - 3, 3, 1, 'rgba(240,250,255,0.85)')
+        break
+      }
+      case 'karabuk': {
+        // Safranbolu konağı: beyaz sıvalı, koyu kirişli, çıkmalı üst katı ve kiremit çatısıyla
+        rect(b, x - 2, bot - 14, 18, 14, '#ece0c8')
+        rect(b, x - 5, bot - 26, 24, 12, '#d8c4a0')
+        for (let k = 0; k <= 22; k += 6) rect(b, x - 5 + k, bot - 26, 1, 12, '#5a3e28')
+        rect(b, x - 5, bot - 15, 24, 1, '#5a3e28')
+        rect(b, x + 1, bot - 24, 3, 4, '#3a3a4a')
+        rect(b, x + 9, bot - 24, 3, 4, '#3a3a4a')
+        rect(b, x + 5, bot - 8, 4, 8, '#5a3e28')
+        for (let i = 0; i < 6; i++) rect(b, x - 7 + i * 1, bot - 27 - i, 28 - i * 2, 1, i % 2 ? '#a8402a' : '#b94c32')
         break
       }
       case 'zonguldak': {
@@ -2901,13 +2977,17 @@ export class Renderer {
     const pose = code & 7
     // hayalet hız yazmaz: ardışık örneklerden (iki yanın ortalaması, adımlar arasında ara değerlenir)
     const sdt = (g.step ?? 1) / GHOST_HZ
-    const vel = (j: number, o: number) => {
-      const a = Math.max(0, j - 1)
-      const b = Math.min(n - 1, j + 1)
-      return b > a ? (g.data[b * 3 + o] - g.data[a * 3 + o]) / ((b - a) * sdt) : 0
-    }
-    const vx = vel(i, 0) + (vel(i + 1, 0) - vel(i, 0)) * k
-    const vy = vel(i, 1) + (vel(i + 1, 1) - vel(i, 1)) * k
+    const d = g.data
+    const a0 = Math.max(0, i - 1)
+    const b0 = Math.min(n - 1, i + 1)
+    const a1 = i
+    const b1 = Math.min(n - 1, i + 2)
+    const w0 = b0 > a0 ? 1 / ((b0 - a0) * sdt) : 0
+    const w1 = b1 > a1 ? 1 / ((b1 - a1) * sdt) : 0
+    const vx0 = (d[b0 * 3] - d[a0 * 3]) * w0
+    const vy0 = (d[b0 * 3 + 1] - d[a0 * 3 + 1]) * w0
+    const vx = vx0 + ((d[b1 * 3] - d[a1 * 3]) * w1 - vx0) * k
+    const vy = vy0 + ((d[b1 * 3 + 1] - d[a1 * 3 + 1]) * w1 - vy0) * k
     // oyuncuyla aynı pozlar (heroAnim): koşu adımı katedilen yoldan (ayak kaymaz), havada dikey hıza göre, dash eğik ve gergin
     let body: Pose = POSES.idle
     let rot = 0
@@ -2931,8 +3011,12 @@ export class Renderer {
       const cyc = (x * 15) / 8 / PHYS.run
       body = gait(cyc - Math.floor(cyc), Math.min(1.6, Math.abs(vx) / PHYS.run))
     } else {
+      // bekleme pozu: tek paylaşılan nesne (kare başına ayırma yok); heroes her karede boşalır
       const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
-      body = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
+      const idle = this.ghostIdle
+      idle.legs[0][1] = br
+      idle.legs[1][1] = br
+      body = idle
     }
     this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1 || pose === 4, sx, sy, rot, pivot: pose === 4 ? DASH_PIVOT : 0, flow: Math.min(1.3, Math.hypot(vx, vy * 0.6) / PHYS.run) })
   }
@@ -3965,6 +4049,8 @@ export class Renderer {
   /** co-op eşinin karakteri (öbür kılık) */
   partnerLook: Look = 'memo'
   partnerScarf: { color: string; shade: string } | null = null
+  /** eşin kombini (Kılık Dükkânı: her yolcunun kendi kombini) */
+  partnerAcc: Kit = NO_KIT
 
   private anims = new WeakMap<Player, HeroAnim>()
 
@@ -4111,7 +4197,7 @@ export class Renderer {
     if (!q || q.dead) return
     const m = this.heroAnim(q, false)
     const spent = !q.canDash
-    this.heroes.push({ look: this.partnerLook, pose: { ...m.pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2 + m.dx, y: q.y + q.h + m.dy, flip: m.flip, alpha: 1, ghost: false, moving: m.moving, sx: m.kx, sy: m.ky, rot: m.rot, pivot: m.pivot, flow: m.flow, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade })
+    this.heroes.push({ look: this.partnerLook, pose: { ...m.pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2 + m.dx, y: q.y + q.h + m.dy, flip: m.flip, alpha: 1, ghost: false, moving: m.moving, sx: m.kx, sy: m.ky, rot: m.rot, pivot: m.pivot, flow: m.flow, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade, acc: this.partnerAcc })
   }
 
   private drawPlayer(w: World, dt: number) {
@@ -4547,7 +4633,9 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   tokat: 'DENİZLİ',
   denizli: 'ZONGULDAK',
   zonguldak: 'MERSİN',
-  mersin: null,
+  mersin: 'KARABÜK',
+  karabuk: 'AYDIN',
+  aydin: null,
 }
 
 function hexA(hex: string, a: number) {

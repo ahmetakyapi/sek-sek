@@ -1574,6 +1574,41 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     dab(c, -2.1, 3.4, 0.5, 1.2, '#fff0c0')
     dab(c, -1.2, -4.6, 0.8, 0.35, '#fff0c0')
   },
+  // İncir: yaprağın üstünde morarmış damla biçimli bir meyve ve ikiye bölünmüş dilimi (kırmızımsı iç, çekirdek taneleri)
+  aydin: (c) => {
+    poly(c, [-6.6, 5.4, -5.6, 2.2, -3.8, 3.8, -3, 0.8, -1.4, 3.4, 0.2, 2.4, 0.6, 5.8], '#5a9a3e', '#34642a')
+    line(c, [-6, 5, -2.6, 3.6], 0.5, '#9ad070', false)
+    // bütün meyve: sapı yukarıda, altı geniş
+    shape(
+      c,
+      () => {
+        c.moveTo(1.8, -5.2)
+        c.quadraticCurveTo(-1.2, -2.4, -0.6, 1.8)
+        c.quadraticCurveTo(0.6, 5.6, 3.4, 5.6)
+        c.quadraticCurveTo(6.4, 5.4, 6.2, 1.8)
+        c.quadraticCurveTo(6.2, -2.2, 3.2, -5.2)
+      },
+      '#7a4a8c',
+      '#4e2a60',
+    )
+    line(c, [2.6, -5.2, 2.4, -7], 1, '#5a7a30')
+    dab(c, 1.4, -1.4, 0.8, 1.6, 'rgba(230,200,240,0.7)', 0.3)
+    dab(c, 4.4, 3.6, 1.2, 0.6, 'rgba(60,20,80,0.35)')
+    // ikiye bölünmüş dilim: ön yüzde pembe iç, taneler
+    shape(
+      c,
+      () => {
+        c.moveTo(-5.2, 0.6)
+        c.quadraticCurveTo(-3.4, -3.2, -1.2, 0.4)
+        c.quadraticCurveTo(-1.6, 3.8, -3.2, 4)
+        c.quadraticCurveTo(-5.2, 3.6, -5.2, 0.6)
+      },
+      '#a8426a',
+      '#6e2444',
+    )
+    ell(c, -3.2, 1.8, 1.5, 1.8, '#f0a0b8')
+    for (const [x, y] of [[-3.8, 1.4], [-2.6, 1.2], [-3.2, 2.4], [-2.4, 2.6], [-4, 2.6]] as const) dab(c, x, y, 0.28, 0.28, '#f8e0a0')
+  },
   // Cezerye: havuçtan pişen amber renkli iki dilim, üstleri hindistan cevizi tozlu; altında yağlı kâğıt
   mersin: (c) => {
     poly(c, [-6, 4.6, 5.6, 3.2, 6.2, 5.4, -5.4, 6.4], '#f4ead2', '#cdbf9e')
@@ -1590,6 +1625,21 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     piece(-5, -2.2, 6.2, 6.4)
     piece(0.6, -5, 5, 8.6)
     dab(c, -3.6, -1.2, 0.9, 0.4, 'rgba(255,255,255,0.7)', -0.2)
+  },
+  // Safran: mor çiğdem çiçeği, ortasından sarkan kızıl-turuncu üç tel; altında kesekâğıdı gibi küçük bir keten kese
+  karabuk: (c) => {
+    poly(c, [-5.4, 6, 5.4, 6, 4.2, 0.8, -4.2, 0.8], '#e8d8b4', '#b49a6c')
+    poly(c, [-4.6, 1.4, -2, 3, 0, 1.4, 2, 3, 4.6, 1.4, 4.2, 0.8, -4.2, 0.8], '#d4bf92')
+    line(c, [-3.4, 2.4, 3.4, 2.4], 0.6, '#8a6a3e', false)
+    // çiğdem: üç taç yaprağı
+    ell(c, -2.8, -3.6, 1.7, 3.6, '#a064c0', '#6a3a86', -0.5)
+    ell(c, 2.8, -3.6, 1.7, 3.6, '#a064c0', '#6a3a86', 0.5)
+    ell(c, 0, -4.4, 1.8, 3.9, '#b87ad2', '#7c4a9c')
+    dab(c, -0.5, -6.4, 0.6, 1.4, '#e0b8f0')
+    // safran telleri
+    for (const [x, y] of [[-1.6, -2], [0, -1.4], [1.6, -2]] as const) line(c, [x * 0.5, 0.2, x, y - 1.6], 0.9, '#e8451c')
+    dab(c, -0.8, -3.6, 0.4, 0.4, '#ffb03a')
+    dab(c, 0.9, -3.4, 0.4, 0.4, '#ffb03a')
   },
   // Çay: ince belli bardakta tavşan kanı çay, beyaz tabak, kenarda şeker
   rize: (c) => {

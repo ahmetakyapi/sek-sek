@@ -76,6 +76,10 @@ const LOOK: Record<CityKey, Look> = {
   zonguldak: { mat: 'coal', cap: 'grass' },
   // Akdeniz kıyısı: güneşte sararmış kumtaşı katmanları, üstü taş silme
   mersin: { mat: 'strata', cap: 'stone' },
+  // Demir çelik şehri: koyu tuğla örgü, üstü Küre ormanının çimeni
+  karabuk: { mat: 'brick', cap: 'grass' },
+  // Efes: iri kesme mermer bloklar, üstü taş silme
+  aydin: { mat: 'ashlar', cap: 'stone' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 

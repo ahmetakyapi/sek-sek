@@ -33,6 +33,8 @@ export const LIMITS = {
   mapLike: { action: 'begeni', max: 300, windowSec: 60 * 60 },
   // yayın: oyuncu başına günlük sınırın (DAILY_LIMIT) önünde IP başına bir taban (çok hesapla yağdırma)
   mapPublishIp: { action: 'harita-yayin-ip', max: 30, windowSec: 60 * 60 },
+  // yayındaki haritayı güncelleme / silme: oyuncu başına
+  mapEdit: { action: 'harita-duzenle', max: 60, windowSec: 60 * 60 },
 } satisfies Record<string, Limit>
 
 const digest = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 32)

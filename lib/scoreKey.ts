@@ -21,3 +21,13 @@ export const dailyScoreKey = (day: string) => `gunluk:${day}`
 
 /** Mücadele haritasının tablo anahtarı: "mucadele-corum-leblebi" → "mucadele:corum-leblebi" */
 export const challengeScoreKey = (levelId: string) => `mucadele:${levelId.slice('mucadele-'.length)}`
+
+/** Günün Mücadelesi ve Günün Boss'u: "gunluk-m:2026-11-21", "gunluk-b:2026-11-21" (lib/extras.ts dailyMiniKey / dailyBossKey ile aynı) */
+export const DAILY_PARTS = ['gunluk-m', 'gunluk-b'] as const
+
+/** Kurallı Koşu ve Sinir Bozucu: şehir + kural başına tablo ("kural:istanbul:tekcan"); skor süre + cezalar */
+export const ruleScoreKey = (city: string, rule: string) => `kural:${city}:${rule}`
+
+/** Boss Rush: çeşit ("duz", "kabus", "cifte") ve boss sayısı başına tablo; farklı sayıda boss'luk koşular karışmaz */
+export const RUSH_VARIANTS = ['duz', 'kabus', 'cifte'] as const
+export const rushScoreKey = (variant: string, bosses: number) => `bossrush:${variant}:${bosses}`

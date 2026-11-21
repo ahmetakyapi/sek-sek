@@ -68,6 +68,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   // modlar
   { id: 'daily', name: 'Günün Yolcusu', text: 'Bir Günlük Meydan Okuma bitir.', icon: '☀', progress: (s) => [s.meydan ? 1 : 0, 1] },
   { id: 'streak7', name: 'Her Gün Yolda', text: 'Günlük Meydan Okuma’yı yedi gün üst üste oyna.', icon: '☀', progress: feat('streak7') },
+  { id: 'trio', name: 'Günün Üçlüsü', text: 'Bir günde Meydan Okuma, Günün Mücadelesi ve Günün Boss’u üçünü de bitir.', icon: '☀', progress: (s) => [Math.min(1, s.trio?.days ?? 0), 1] },
+  { id: 'trio7', name: 'Üçlü Alışkanlık', text: 'Yedi günde Günün Üçlüsü’nü tamamla.', icon: '☀', progress: (s) => [Math.min(7, s.trio?.days ?? 0), 7] },
   { id: 'rules7', name: 'Kural Ustası', text: 'Yedi farklı kuralda rekor yaz.', icon: '§', progress: (s) => [Math.min(7, new Set(Object.keys(s.rules ?? {}).map((k) => k.split(':')[1])).size), 7] },
   { id: 'rules20', name: 'Kural Kitabı', text: 'Kurallı Koşu’da yirmi rekor yaz.', icon: '§', progress: (s) => [Math.min(20, Object.keys(s.rules ?? {}).length), 20] },
   { id: 'oneLife', name: 'Tek Nefes', text: 'Tek Can kuralını ilk denemede bitir.', icon: '♥', progress: feat('oneLifeFirst') },

@@ -328,6 +328,110 @@ export function mergeDaily(a: DailyMark | null | undefined, b: DailyMark | null 
 /** Seri bugün ya da dün oynandıysa sürer; daha eskiyse kopmuştur (0) */
 export const liveStreak = (m: DailyMark | null | undefined, today: string) => (m && (m.day === today || m.day === shiftDay(today, -1)) ? m.streak : 0)
 
+/* ── Günün Üçlüsü: Meydan Okuma + Günün Mücadelesi + Günün Boss'u ───────────── */
+/**
+ * Her gün üç ayrı iş: günlük meydan okuma (tek hak), günün mücadele kesiti ve günün boss'u (ikisi serbest tekrar, skor
+ * yalnız en iyisi). Üçü de bitince gün "Üçlü" sayılır (`TrioMark.days`, başarım). Skorlar `gunluk-m:<gün>` ve `gunluk-b:<gün>`
+ * anahtarlarıyla skor tablosunda durur; genel sıralamaya girmez. Seçim yalnız tarihe bağlıdır: herkes için aynı.
+ */
+export const dailyMiniKey = (day: string) => `gunluk-m:${day}`
+export const dailyBossKey = (day: string) => `gunluk-b:${day}`
+
+/** Günlük seçimin zinciri: ilk günden bugüne her gün bir öncekinden farklı olsun diye (derinliksiz, tutarlı) ilerler */
+const TRIO_ANCHOR = '2026-11-01'
+const chainCache = new Map<string, number>()
+function chainPick(kind: string, day: string, size: number, avoid: (d: string) => number): number {
+  const key = `${kind}:${size}:${day}`
+  const hit = chainCache.get(key)
+  if (hit !== undefined) return hit
+  let prev = -1
+  let out = hash(`${kind}:${day}`) % size
+  // başlangıç gününden öncesi için de çalışır: zincir o günden başlar
+  const start = day < TRIO_ANCHOR ? day : TRIO_ANCHOR
+  for (let d = start; ; d = shiftDay(d, 1)) {
+    const ck = `${kind}:${size}:${d}`
+    const cached = chainCache.get(ck)
+    if (cached !== undefined) out = cached
+    else {
+      out = hash(`${kind}:${d}`) % size
+      const bad = avoid(d)
+      for (let k = 0; k < size && (out === prev || out === bad); k++) out = (out + 1) % size
+      chainCache.set(ck, out)
+    }
+    prev = out
+    if (d === day) return out
+  }
+}
+
+/** Günün mücadelesi (CHALLENGES kimliği): art arda iki gün aynı kesit gelmez */
+export function dailyMini(day: string): string {
+  const pool = CHALLENGES.map((c) => c.id)
+  return pool[chainPick('gunluk-m', day, pool.length, () => -1)]
+}
+
+/** Günün boss'u (şehir dizini): ne dünkü boss ne de günün meydan okuma şehri olur */
+export function dailyBoss(day: string, levels: LevelDef[]): number {
+  return chainPick('gunluk-b', day, levels.length, (d) => levels.findIndex((l) => l.id === dailyRun(d, levels).levelId))
+}
+
+/** Cihazdaki iz: bugünün iki serbest işi (en iyi süre, ms), tamamlanan Üçlü sayısı ve sonuncusunun günü */
+export interface TrioMark {
+  day: string
+  mini?: number
+  boss?: number
+  days: number
+  last: string
+}
+
+export const emptyTrio = (): TrioMark => ({ day: '', days: 0, last: '' })
+
+/** Bir parça bitti: aynı gün en iyi süre kalır, yeni günde parçalar sıfırlanır; sayaç sürer */
+export function markTrio(m: TrioMark | null | undefined, day: string, part: 'mini' | 'boss', timeMs: number): { mark: TrioMark; best: boolean } {
+  const cur = m ?? emptyTrio()
+  const base: TrioMark = cur.day === day ? cur : { day, days: cur.days, last: cur.last }
+  const old = base[part]
+  const best = old === undefined || timeMs < old
+  return { mark: best ? { ...base, [part]: timeMs } : base, best }
+}
+
+/** Buluttan ya da dışarıdan gelen iz biçime zorlanır (bozuk tip, sayı dışı değer, uydurma gün düşer) */
+export function cleanTrio(x: unknown): TrioMark | null {
+  if (!x || typeof x !== 'object') return null
+  const r = x as Record<string, unknown>
+  const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '')
+  const ms = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v > 0 && v < 3 * 3_600_000 ? v : undefined)
+  const days = typeof r.days === 'number' && Number.isInteger(r.days) ? Math.max(0, Math.min(5000, r.days)) : 0
+  return { day: day(r.day), mini: ms(r.mini), boss: ms(r.boss), days, last: day(r.last) }
+}
+
+/** Üçü de bugün bitti mi (meydan okuma için bugünkü iz) */
+export const trioParts = (m: TrioMark | null | undefined, day: string, meydan: DailyMark | null | undefined) => ({
+  meydan: meydan?.day === day,
+  mini: m?.day === day && m.mini !== undefined,
+  boss: m?.day === day && m.boss !== undefined,
+})
+export const trioCount = (p: ReturnType<typeof trioParts>) => Number(p.meydan) + Number(p.mini) + Number(p.boss)
+
+/** Üçü de bittiyse bugün bir kez sayılır (aynı gün ikinci kez artmaz) */
+export function settleTrio(m: TrioMark | null | undefined, day: string, meydan: DailyMark | null | undefined): TrioMark | null | undefined {
+  if (!m || trioCount(trioParts(m, day, meydan)) < 3 || m.last === day) return m
+  return { ...m, days: m.days + 1, last: day }
+}
+
+/** İki cihazın izi: yeni gün kazanır, aynı günde her parçanın en iyisi; sayaç büyük olanı, son gün yeni olanı */
+export function mergeTrio(a: TrioMark | null | undefined, b: TrioMark | null | undefined): TrioMark | null {
+  if (!a || !b) return a ?? b ?? null
+  const neu = a.day >= b.day ? a : b
+  const min = (x?: number, y?: number) => (x === undefined ? y : y === undefined ? x : Math.min(x, y))
+  const same = a.day === b.day
+  return {
+    day: neu.day,
+    ...(same ? { mini: min(a.mini, b.mini), boss: min(a.boss, b.boss) } : { mini: neu.mini, boss: neu.boss }),
+    days: Math.max(a.days, b.days),
+    last: a.last > b.last ? a.last : b.last,
+  }
+}
+
 /* ── Düello: iki kişi aynı cihazda, aynı şehirde sırayla koşar ─────────────── */
 export interface DuelRun {
   timeMs: number

@@ -296,6 +296,46 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'gull',
     animal: 'turtle',
   },
+  karabuk: {
+    // Karabük: Küre Dağları’nın ormanı, Safranbolu’nun kiremit çatılı ahşap konakları, haddehanenin bacaları; safran moru ve çelik grisi
+    sky: ['#5a6c94', '#b4b8cc', '#f2dcc0'],
+    sun: { x: 0.22, y: 0.3, r: 13, color: '#ffe9bc', glow: 'rgba(255,214,150,0.2)' },
+    far: '#6e7e9c',
+    mid: '#3e5c4a',
+    near: '#33302e',
+    tileTop: '#c8b088',
+    tile: '#9a7a56',
+    tileDark: '#5a4630',
+    tileLight: '#d8c29a',
+    plank: '#7a4e2c',
+    accent: '#8a52a8',
+    water: ['#4a9aa8', '#2a6a7e', '#cde8e8'],
+    spike: ['#3a3040', '#1e1824'],
+    weather: 'dust',
+    enemyGround: 'rat',
+    enemyFly: 'raven',
+    animal: 'cat',
+  },
+  aydin: {
+    // Aydın (Efes): mermer beyazı, Ege mavisi, zeytin yeşili ve incir moru
+    sky: ['#3c82c4', '#8cc8ea', '#f8ecd2'],
+    sun: { x: 0.74, y: 0.24, r: 14, color: '#fff6d2', glow: 'rgba(255,240,190,0.22)' },
+    far: '#a0b4cc',
+    mid: '#6e8c5a',
+    near: '#3c5840',
+    tileTop: '#f0ece2',
+    tile: '#d2ccbe',
+    tileDark: '#8a8476',
+    tileLight: '#f8f6ee',
+    plank: '#a8885a',
+    accent: '#7a4a8c',
+    water: ['#2a8ab4', '#1a5a8a', '#d4eef4'],
+    spike: ['#4a3a4e', '#241a2a'],
+    weather: 'leaves',
+    enemyGround: 'lizard',
+    enemyFly: 'pigeon',
+    animal: 'cat',
+  },
   kayseri: {
     // Erciyes’in karlı silueti, bazalt taş, Selçuklu kırmızısı
     sky: ['#4a5a86', '#a4b0d0', '#f2e8da'],
@@ -1166,6 +1206,10 @@ export function buildLayers(city: CityKey): Layers {
       return zonguldakLayers(s, B)
     case 'mersin':
       return mersinLayers(s, B)
+    case 'karabuk':
+      return karabukLayers(s, B)
+    case 'aydin':
+      return aydinLayers(s, B)
     case 'denizli':
       return {
         far: layer((c) => {
@@ -3372,6 +3416,121 @@ function zonguldakLayers(s: CityStyle, B: number): Layers {
   }
 }
 
+/** Aydın: Efes. Uzakta Panayır Dağı'nın yamacına oyulmuş Büyük Tiyatro ve Selçuk'taki tek Artemis sütunu (tepesinde leylek yuvası),
+ * ortada Celsus Kütüphanesi'nin iki katlı cephesi ve zeytinlik, önde devrik sütun kaideleri, incir ağaçları ve selvi */
+function aydinLayers(s: CityStyle, B: number): Layers {
+  const MARBLE = '#f0ece2'
+  const MARBLE_SH = '#c4beb0'
+  const MARBLE_DK = '#8c8678'
+  // yivli sütun: gövde, sağda gölge, tepede başlık, altta kaide
+  const column = (c: Ctx, x: number, base: number, h: number, w: number) => {
+    rect(c, x - 1, base - 2, w + 2, 2, MARBLE_SH)
+    rect(c, x, base - h, w, h - 2, MARBLE)
+    rect(c, x + w - 1, base - h, 1, h - 2, MARBLE_SH)
+    for (let fx = x + 1; fx < x + w - 1; fx += 2) rect(c, fx, base - h + 2, 1, h - 5, 'rgba(120,112,98,0.25)')
+    rect(c, x - 1, base - h - 2, w + 2, 2, MARBLE)
+    rect(c, x - 2, base - h - 3, w + 4, 1, MARBLE_SH)
+  }
+  return {
+    far: layer((c) => {
+      // Aydın Dağları: mavi-gri sırtlar, ardında daha açık
+      hills(c, '#c4d2e0', B - 176, 36, 2, 9101)
+      hills(c, s.far, B - 140, 26, 3, 9102)
+      // Panayır Dağı yamacına oyulmuş Büyük Tiyatro: yarım daire basamaklar, ortada sahne yapısı
+      const tx = 300
+      const ty = B - 100
+      for (let r = 10; r <= 40; r += 3) {
+        for (let a = 0; a <= 180; a += 2) {
+          const rad = (a * Math.PI) / 180
+          rect(c, tx + Math.cos(rad) * r * 1.5, ty - Math.sin(rad) * r * 0.85, 2, 1, r % 6 === 1 ? MARBLE : MARBLE_SH)
+        }
+      }
+      rect(c, tx - 20, ty, 40, 3, MARBLE_SH)
+      rect(c, tx - 26, ty - 6, 8, 9, MARBLE)
+      rect(c, tx + 18, ty - 6, 8, 9, MARBLE)
+      for (let i = 0; i < 5; i++) rect(c, tx - 14 + i * 7, ty - 5, 2, 7, MARBLE_DK)
+      // Selçuk'taki tek Artemis sütunu: yüksek, tepesinde dal yığınından leylek yuvası ve bir leylek
+      const ax = 110
+      const ab = B - 96
+      column(c, ax, ab, 62, 7)
+      rect(c, ax - 2, ab - 66, 11, 1, MARBLE)
+      for (let i = 0; i < 9; i++) rect(c, ax - 3 + i * 1.3, ab - 69 - (i % 3), 3, 2, '#7a5a3a')
+      rect(c, ax + 1, ab - 76, 2, 7, '#f4f0ea')
+      rect(c, ax + 1, ab - 77, 4, 1, '#e8582e')
+      rect(c, ax + 3, ab - 78, 1, 1, '#1c1a20')
+      // kıyıda Efes ovası: düz, açık yeşil
+      rect(c, 0, B - 78, LAYER_W, B - (B - 78), '#9ab07a')
+    }),
+    mid: layer((c) => {
+      const r = rng(9103)
+      const base = B - 58
+      rect(c, 0, base - 3, LAYER_W, B - base + 3, s.mid)
+      // zeytinlik: gümüş yeşili yuvarlak ağaçlar, gövdeleri çarpık
+      for (let x = 6; x < LAYER_W; x += 17 + Math.floor(r() * 12)) {
+        if (x > 392 && x < 520) continue
+        const y = base + 4 + Math.floor(r() * 8)
+        rect(c, x, y - 4, 2, 8, '#5e4c3a')
+        disc(c, x + 1, y - 8, 7, '#7e9a6a')
+        disc(c, x - 1, y - 10, 4, '#a0b88a')
+        for (let i = 0; i < 3; i++) rect(c, x - 4 + ((i * 5) % 9), y - 9 + ((i * 3) % 5), 1, 1, '#4e6a3e')
+      }
+      // Celsus Kütüphanesi: iki katlı sütunlu cephe, ortada kapılar, üstte alınlıklar
+      const lx = 400
+      const lw = 112
+      const lh = 50
+      rect(c, lx - 6, base - 4, lw + 12, 4, MARBLE_SH)
+      rect(c, lx, base - lh, lw, lh - 4, '#e4dccb')
+      rect(c, lx, base - lh, lw, 1, MARBLE)
+      rect(c, lx + lw - 3, base - lh, 3, lh - 4, MARBLE_SH)
+      // alt kat: sütunlar, üç kapı
+      for (let i = 0; i < 6; i++) column(c, lx + 6 + i * 18, base - 4, 22, 5)
+      for (const dx of [26, 50, 74]) rect(c, lx + dx, base - 24, 8, 20, '#3a3226')
+      rect(c, lx, base - 28, lw, 2, MARBLE)
+      // üst kat: daha ince sütunlar, nişler
+      for (let i = 0; i < 6; i++) column(c, lx + 9 + i * 18, base - 28, 16, 4)
+      for (const dx of [26, 50, 74]) {
+        rect(c, lx + dx, base - 42, 8, 11, '#4e4234')
+        rect(c, lx + dx + 1, base - 43, 6, 1, '#4e4234')
+      }
+      // alınlıklar
+      for (let i = 0; i < 3; i++) {
+        const px = lx + 14 + i * 36
+        for (let k = 0; k < 8; k++) rect(c, px + k, base - 47 - Math.min(k, 7 - k), 20 - k * 2, 1, MARBLE)
+      }
+      // yıkık sütun sırası: Mermer Cadde
+      for (let i = 0; i < 4; i++) column(c, 40 + i * 28, base - 2, 26 - ((i * 7) % 11), 5)
+      rect(c, 0, base + 14, LAYER_W, B - base, s.mid)
+    }),
+    near: layer((c) => {
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      // devrik sütun kütükleri ve kaideler
+      for (const x of [30, 190, 340, 470, 590]) {
+        rect(c, x, base - 8, 26, 8, MARBLE)
+        rect(c, x, base - 8, 26, 1, '#fffcf4')
+        rect(c, x + 22, base - 8, 4, 8, MARBLE_SH)
+        for (let k = 0; k < 4; k++) rect(c, x + 3 + k * 6, base - 7, 1, 6, 'rgba(120,112,98,0.3)')
+        rect(c, x + 28, base - 5, 7, 5, MARBLE)
+        rect(c, x + 28, base - 5, 7, 1, '#fffcf4')
+      }
+      // incir ağaçları: geniş, parçalı yapraklı taç, morarmış meyveler
+      for (const x of [110, 250, 410, 530]) {
+        rect(c, x, base - 16, 3, 16, '#6a5438')
+        rect(c, x - 3, base - 12, 3, 2, '#6a5438')
+        disc(c, x + 1, base - 24, 10, '#4a7a3a')
+        disc(c, x - 6, base - 20, 7, '#5a8a46')
+        disc(c, x + 8, base - 20, 7, '#3e6a30')
+        for (let i = 0; i < 5; i++) rect(c, x - 6 + i * 4, base - 22 + ((i * 3) % 7), 2, 2, i % 2 ? '#6a3a7a' : '#8a5a9a')
+      }
+      // selvi
+      for (const x of [75, 300, 560]) {
+        for (let y = 0; y < 38; y++) rect(c, x - Math.round(Math.sin((y / 38) * Math.PI) * 4), base - y, Math.round(Math.sin((y / 38) * Math.PI) * 8) + 1, 1, '#2e4a34')
+        rect(c, x, base - 2, 2, 2, '#4a3a2a')
+      }
+    }),
+  }
+}
+
 /** Mersin: Toroslar, denizde Kızkalesi, kıyıda Metropol kulesi ve apartmanlar, önde marina: yelkenli direkleri, palmiyeler */
 function mersinLayers(s: CityStyle, B: number): Layers {
   return {
@@ -3474,6 +3633,67 @@ function mersinLayers(s: CityStyle, B: number): Layers {
         rect(c, x, base - 18, 1, 14, '#5a4a3a')
         for (let i = 0; i < 7; i++) rect(c, x - Math.round(i * 1.5), base - 24 + i, Math.round(i * 3) + 1, 1, i % 2 ? '#f4f0ea' : '#e8582e')
       }
+    }),
+  }
+}
+
+/** Karabük: Küre Dağları’nın ormanı, kiremit çatılı ahşap Safranbolu konakları, öndeki haddehanenin bacaları ve dumanı */
+function karabukLayers(s: CityStyle, B: number): Layers {
+  return {
+    far: layer((c) => {
+      // Küre Dağları: mavi-mor sırtlar, ardında daha sisli sıra
+      hills(c, '#8c96b4', B - 150, 36, 2, 4401)
+      hills(c, s.far, B - 118, 28, 3, 4402)
+      // çam ormanı: sırt boyunca koyu üçgenler
+      const r = rng(4403)
+      for (let x = 0; x < LAYER_W; x += 5 + Math.floor(r() * 4)) {
+        const y = B - 88 - Math.floor(r() * 8)
+        for (let i = 0; i < 9; i++) rect(c, x - Math.floor(i / 2), y + i, 1 + i, 1, '#3a5646')
+      }
+    }),
+    mid: layer((c) => {
+      const r = rng(4404)
+      const base = B - 56
+      rect(c, 0, base, LAYER_W, B - base, s.mid)
+      // Safranbolu: çıkmalı ahşap konaklar; beyaz sıva, koyu kirişli çerçeve, kiremit kırmızısı çatı, üst katta çıkma
+      for (let x = 4; x < LAYER_W - 30; x += 34 + Math.floor(r() * 12)) {
+        const w = 26 + Math.floor(r() * 8)
+        const h = 22 + Math.floor(r() * 10)
+        rect(c, x, base - h, w, h, '#ece0c8')
+        rect(c, x - 3, base - h * 0.55 - 6, w + 6, h * 0.55 + 6, '#d8c4a0')
+        for (let k = 0; k <= w; k += 6) rect(c, x + k, base - h, 1, h, '#5a3e28')
+        rect(c, x, base - h * 0.55, w, 1, '#5a3e28')
+        for (let wx = x + 2; wx < x + w - 3; wx += 6) {
+          rect(c, wx, base - h + 5, 3, 4, '#3a3a4a')
+          rect(c, wx, base - h * 0.55 + 4, 3, 4, '#3a3a4a')
+        }
+        // çatı: iki yana inen kiremit
+        for (let i = 0; i < 9; i++) rect(c, x - 4 + i, base - h - 1 - i, w + 8 - i * 2, 1, i % 2 ? '#a8402a' : '#b94c32')
+      }
+      // safran tarlası: mor çizgili tarla şeridi
+      for (let x = 0; x < LAYER_W; x += 7) rect(c, x, base + 14, 3, 5, '#7a4a9a')
+      rect(c, 0, base + 20, LAYER_W, B - base, s.mid)
+    }),
+    near: layer((c) => {
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      // haddehane: tuğla bina, tırtıllı çatı, uzun bacalar ve duman
+      for (const [x, w] of [[40, 70], [330, 90]] as const) {
+        rect(c, x, base - 30, w, 30, '#6a4a3e')
+        rect(c, x, base - 30, w, 2, '#8a6a5a')
+        for (let k = 0; k < w; k += 10) {
+          rect(c, x + k, base - 38, 6, 8, '#8a8f98')
+          rect(c, x + k + 2, base - 22, 4, 10, '#e8a040')
+        }
+      }
+      for (const x of [120, 420]) {
+        rect(c, x, base - 80, 7, 80, '#7a5a4a')
+        rect(c, x - 1, base - 82, 9, 3, '#3a3030')
+        for (let k = 0; k < 14; k++) rect(c, x - 3 + k * 2, base - 92 - k * 5, 6 + k, 3, `rgba(190,190,200,${0.55 - k * 0.035})`)
+      }
+      // vagonlar ve ray
+      rect(c, 0, base - 3, LAYER_W, 2, '#4a4a52')
+      for (let x = 0; x < LAYER_W; x += 6) rect(c, x, base - 1, 2, 2, '#2a2a2e')
     }),
   }
 }

@@ -4,11 +4,11 @@ import { ALL_CHALLENGES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { minScoreMs } from '@/lib/antiCheat'
 import { db } from '@/lib/db'
-import { istanbulDay, shiftDay, tournamentFor, tournamentKey, tournamentWeek } from '@/lib/extras'
+import { DAILY_RULES, dailyBossKey, dailyMiniKey, istanbulDay, ruleFits, shiftDay, tournamentFor, tournamentKey, tournamentWeek } from '@/lib/extras'
 import { nameKey, verifyPlayer } from '@/lib/players'
 import { LIMITS, hit, ipKey, playerKey, tooMany } from '@/lib/rateLimit'
 import { crossSite, crossSiteError } from '@/lib/sameOrigin'
-import { challengeScoreKey, currentKeys, dailyScoreKey, scoreKey, fullScoreKey, TOUR_KEYS } from '@/lib/scoreKey'
+import { challengeScoreKey, currentKeys, dailyScoreKey, ruleScoreKey, rushScoreKey, RUSH_VARIANTS, scoreKey, fullScoreKey, TOUR_KEYS } from '@/lib/scoreKey'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +29,12 @@ const fresh = { 'Cache-Control': 'public, max-age=0, s-maxage=20, stale-while-re
 const dayOk = (day: string) => {
   const today = istanbulDay(new Date())
   return DAY_RE.test(day) && [shiftDay(today, -1), today, shiftDay(today, 1)].includes(day)
+}
+
+/** Kurallı Koşu tablosu: şehir bilinen, kural tanımlı ve o şehirde açılabilir olmalı (prototip anahtarları sayılmaz) */
+const ruleOk = (city: string, rule: string) => {
+  const l = LEVELS.find((x) => x.id === city)
+  return !!l && Object.prototype.hasOwnProperty.call(DAILY_RULES, rule) && ruleFits(rule as keyof typeof DAILY_RULES, l)
 }
 
 /** Turnuvaya bu hafta ve (pazartesi sabahı payı) dünün haftası yazılır */
@@ -62,6 +68,9 @@ async function board(key: string, order: SQL, me: string, limit: number, scope: 
  * GET ?level=gunluk&day=2026-11-14                  → Günlük Meydan Okuma (düşük skor önde)
  * GET ?level=mucadele-<id>                         → mücadele haritası (en iyi süre)
  * GET ?level=turnuva&week=2026-H46                 → Haftalık Turnuva: üç mücadelenin hepsini bitirenler, toplam süre
+ * GET ?level=gunluk-m|gunluk-b&day=2026-11-21     → Günün Mücadelesi / Günün Boss'u (en iyi süre)
+ * GET ?level=kural&city=<şehir>&rule=<kural>        → Kurallı Koşu ve Sinir Bozucu: şehir + kural başına (düşük skor önde)
+ * GET ?level=bossrush&variant=duz|kabus|cifte&n=<boss sayısı> → Boss Rush: aynı sayıda boss'luk koşular (süre)
  * Hepsinde &names=a,b,c: yalnız bu oyuncular (arkadaşlar) ve &me
  * Hepsinde &me=<ad>: oyuncu ilk sıralarda değilse kendi satırı sonda gelir. Yanıt: { scores, total }
  */
@@ -119,6 +128,23 @@ export async function GET(req: NextRequest) {
       const day = q.get('day') ?? istanbulDay(new Date())
       if (!DAY_RE.test(day)) return bad('Geçersiz gün')
       return out(await board(dailyScoreKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20, scope))
+    }
+    if (level === 'gunluk-m' || level === 'gunluk-b') {
+      const day = q.get('day') ?? istanbulDay(new Date())
+      if (!DAY_RE.test(day)) return bad('Geçersiz gün')
+      return out(await board(level === 'gunluk-m' ? dailyMiniKey(day) : dailyBossKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20, scope))
+    }
+    if (level === 'kural') {
+      const city = q.get('city') ?? ''
+      const rule = q.get('rule') ?? ''
+      if (!ruleOk(city, rule)) return bad('Geçersiz kural')
+      return out(await board(ruleScoreKey(city, rule), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
+    }
+    if (level === 'bossrush') {
+      const variant = q.get('variant') ?? ''
+      const n = Number(q.get('n'))
+      if (!(RUSH_VARIANTS as readonly string[]).includes(variant) || !Number.isInteger(n) || n < 1 || n > LEVELS.length) return bad('Geçersiz Boss Rush')
+      return out(await board(rushScoreKey(variant, n), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
     }
     if (level === 'turnuva') {
       const week = q.get('week') ?? tournamentWeek(istanbulDay(new Date()))
@@ -185,6 +211,20 @@ function parseRun(b: Record<string, unknown>): Run | string {
     const day = typeof b.day === 'string' ? b.day : ''
     if (!dayOk(day)) return 'Bu günün meydan okuması kapandı'
     key = dailyScoreKey(day)
+  } else if (level === 'gunluk-m' || level === 'gunluk-b') {
+    const day = typeof b.day === 'string' ? b.day : ''
+    if (!dayOk(day)) return 'Bu günün görevi kapandı'
+    key = level === 'gunluk-m' ? dailyMiniKey(day) : dailyBossKey(day)
+  } else if (level === 'kural') {
+    const city = typeof b.city === 'string' ? b.city : ''
+    const rule = typeof b.rule === 'string' ? b.rule : ''
+    if (!ruleOk(city, rule)) return 'Geçersiz kural'
+    key = ruleScoreKey(city, rule)
+  } else if (level === 'bossrush') {
+    const variant = typeof b.variant === 'string' ? b.variant : ''
+    const n = Number(b.bosses)
+    if (!(RUSH_VARIANTS as readonly string[]).includes(variant) || !Number.isInteger(n) || n < 1 || n > LEVELS.length) return 'Geçersiz Boss Rush'
+    key = rushScoreKey(variant, n)
   } else if (level === 'turnuva') {
     const week = typeof b.week === 'string' ? b.week : ''
     const id = typeof b.challenge === 'string' ? b.challenge : ''
@@ -201,7 +241,7 @@ function parseRun(b: Record<string, unknown>): Run | string {
   else return 'Geçersiz bölüm'
   // tam tur otuz şehir sürer: üst sınır 12 saat
   const maxMs = (TOUR_KEYS as readonly string[]).includes(key) ? 12 * 3_600_000 : 3 * 3_600_000
-  if (!Number.isInteger(timeMs) || timeMs < (key.startsWith('mucadele:') || key.startsWith('turnuva:') ? 3000 : 5000) || timeMs > maxMs) return 'Geçersiz süre'
+  if (!Number.isInteger(timeMs) || timeMs < (key.startsWith('mucadele:') || key.startsWith('turnuva:') || key.startsWith('gunluk-m:') ? 3000 : 5000) || timeMs > maxMs) return 'Geçersiz süre'
   if (!Number.isInteger(deaths) || deaths < 0 || deaths > 9999) return 'Geçersiz düşüş sayısı'
   if (!Number.isInteger(items) || items < 0 || items > 3) return 'Geçersiz hatıra sayısı'
   return { key, timeMs, deaths, items }

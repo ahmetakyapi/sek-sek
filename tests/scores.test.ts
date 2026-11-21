@@ -8,8 +8,8 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CHALLENGES } from '../game/challenges'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { minTimeMs } from '../lib/antiCheat'
-import { dailyRun, istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
+import { BOSS_FLOOR_MS, minScoreMs, minTimeMs } from '../lib/antiCheat'
+import { dailyBoss, dailyRun, istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
 import { parseShare } from '../lib/share'
 
 /**
@@ -61,6 +61,7 @@ function walk(levelId: string, n: number, edit?: (data: number[]) => void) {
   edit?.(data)
   return data
 }
+const ALL_MINI = (day: string) => minScoreMs(`gunluk-m:${day}`)
 const get = async (q: string) => {
   const r = await GET(new NextRequest(`http://x/api/scores?${q}`))
   return (await r.json()) as { scores: Record<string, unknown>[]; total: number }
@@ -153,6 +154,51 @@ describe('skor tablosu', () => {
     expect((await run(P[1], 'gunluk', 80000, 0, 3, { day: today })).status).toBe(200)
     const d = await get(`level=gunluk&day=${today}`)
     expect(d.scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+  })
+
+  it('Günün Mücadelesi ve Günün Boss\'u: yalnız açık günler, düşük süre önde, günlük ve genel tabloya karışmaz', async () => {
+    const today = istanbulDay(new Date())
+    const mini = ALL_MINI(today)
+    expect((await run(P[0], 'gunluk-m', 30000, 0, 0, { day: shiftDay(today, -5) })).status).toBe(400)
+    expect((await run(P[0], 'gunluk-m', mini + 5000, 0, 0, { day: today })).status).toBe(200)
+    expect((await run(P[1], 'gunluk-m', mini + 4000, 1, 0, { day: today })).status).toBe(200)
+    expect((await get(`level=gunluk-m&day=${today}`)).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    // boss: altında fiziksel alt sınır, üstünde kabul
+    expect((await run(P[2], 'gunluk-b', BOSS_FLOOR_MS - 1, 0, 0, { day: today })).status).toBe(422)
+    expect((await run(P[2], 'gunluk-b', 40000, 2, 0, { day: today })).status).toBe(200)
+    expect((await get(`level=gunluk-b&day=${today}`)).scores).toHaveLength(1)
+    expect((await get(`level=gunluk&day=${today}`)).scores.some((r) => r.name === 'Cemre')).toBe(false)
+    expect((await get('level=gunluk-b&day=2026-13-99')).total).toBe(0)
+    expect(dailyBoss(today, LEVELS)).toBeGreaterThanOrEqual(0)
+  })
+
+  it('kural tablosu: şehir + kural başına, bilinmeyen kural ve prototip anahtarı reddedilir', async () => {
+    const floor = minTimeMs(LEVELS.find((l) => l.id === 'istanbul')!)
+    expect((await run(P[0], 'kural', floor + 9000, 1, 3, { city: 'istanbul', rule: 'tekcan' })).status).toBe(200)
+    expect((await run(P[1], 'kural', floor + 4000, 0, 3, { city: 'istanbul', rule: 'tekcan' })).status).toBe(200)
+    expect((await run(P[1], 'kural', floor + 4000, 0, 3, { city: 'istanbul', rule: 'zaman' })).status).toBe(200)
+    expect((await get('level=kural&city=istanbul&rule=tekcan')).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    expect((await get('level=kural&city=istanbul&rule=zaman')).scores).toHaveLength(1)
+    for (const rule of ['yok', '__proto__', 'constructor', 'toString']) {
+      expect((await run(P[0], 'kural', floor + 9000, 0, 3, { city: 'istanbul', rule })).status).toBe(400)
+      expect((await GET(new NextRequest(`http://x/api/scores?level=kural&city=istanbul&rule=${rule}`))).status).toBe(400)
+    }
+    expect((await run(P[0], 'kural', floor - 1, 0, 3, { city: 'istanbul', rule: 'tekcan' })).status).toBe(422)
+    expect((await run(P[0], 'kural', 90000, 0, 3, { city: 'yok', rule: 'tekcan' })).status).toBe(400)
+  })
+
+  it('Boss Rush: çeşit ve boss sayısı başına ayrı tablo; boss başına alt sınır', async () => {
+    expect((await run(P[0], 'bossrush', 100000, 3, 0, { variant: 'duz', bosses: 5 })).status).toBe(200)
+    expect((await run(P[1], 'bossrush', 90000, 1, 0, { variant: 'duz', bosses: 5 })).status).toBe(200)
+    expect((await run(P[1], 'bossrush', 50000, 1, 0, { variant: 'duz', bosses: 3 })).status).toBe(200)
+    expect((await get('level=bossrush&variant=duz&n=5')).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    expect((await get('level=bossrush&variant=duz&n=3')).scores).toHaveLength(1)
+    expect((await get('level=bossrush&variant=kabus&n=5')).scores).toHaveLength(0)
+    expect((await run(P[0], 'bossrush', BOSS_FLOOR_MS * 5 - 1, 0, 0, { variant: 'duz', bosses: 5 })).status).toBe(422)
+    for (const [variant, bosses] of [['yok', 5], ['duz', 0], ['duz', 999], ['duz', 1.5], ['__proto__', 2]] as const) expect((await run(P[0], 'bossrush', 100000, 0, 0, { variant, bosses })).status).toBe(400)
+    // toplu aktarım yeni tabloları yazmaz
+    const b = await post({ playerId: P[2].id, token: P[2].token, batch: [{ level: 'bossrush', variant: 'duz', bosses: 2, timeMs: 100000, deaths: 0, items: 0 }, { level: 'gunluk-b', day: istanbulDay(new Date()), timeMs: 40000, deaths: 0, items: 0 }] })
+    expect(b.j).toMatchObject({ synced: 0 })
   })
 
   it('cihazdaki rekorlar girişte tabloya aktarılır, oynama sayısı artmaz', async () => {

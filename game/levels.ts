@@ -24,6 +24,8 @@ import { road as tokatRoad } from './cities/tokat'
 import { road as denizliRoad } from './cities/denizli'
 import { road as zonguldakRoad } from './cities/zonguldak'
 import { road as mersinRoad } from './cities/mersin'
+import { road as aydinRoad } from './cities/aydin'
+import { road as karabukRoad } from './cities/karabuk'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { medalsFor } from './medals'
@@ -1116,6 +1118,8 @@ const DECOR_CYCLE: Record<string, string> = {
   tokat: 'zlt',
   denizli: 'lzt',
   mersin: 'tlz',
+  aydin: 'ltz',
+  karabuk: 'ltz',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2355,6 +2359,74 @@ export const LEVELS: LevelDef[] = [
       'Tarsus: Kleopatra Kapısı’ndan geç. Şelalenin yarları yüksek: duvardan sekerek tırman.',
     ],
     map: roadMap(mersinRoad),
+  },
+  {
+    id: 'karabuk',
+    city: 'karabuk',
+    name: 'Karabük',
+    nickname: 'Safranbolu',
+    plate: 78,
+    subtitle: 'Konak, Kanyon ve Çelik',
+    difficulty: 'Çok Zor',
+    note: 'Defterin bu sayfası safran sarısı, kenarında kurum lekesi var. Karabük’te çarşının ahşap çatıları, kanyonun cam yolu ve haddehanenin tokmakları bir arada: yol acele ister ama sabırla yürünür. Vuruşları say, kapıları oku.',
+    npcs: [
+      { name: 'Lokumcu Haşim Usta', look: 'usta', text: 'Lokumuma safran tutarım, safranı da Davutobası’ndan getirtirim! Üç tutam safran kayıp: biri Cinci Han’ın çatısında, biri kanyonun sur omzunda, biri de haddehanenin çukurunda kaldı.' },
+      { name: 'Rehber Feyza', look: 'genc', text: 'Tokatlı’daki cam yol çatlak taştan, durana kadar sağlam gelir; koş ve boşlukları atla. Kanyonun iki duvarı üç karo aralıkta: sekerek çıkarsan sur omzuna varırsın.' },
+      { name: 'Mağara Bekçisi Sacide Teyze', look: 'teyze', text: 'Bulak Mencilis’in gölü iki yarım, ortasında bir kaya perde durur; altından dal, nefesin yeter. Gölün ardındaki kayanın öbür yüzünde karanlık bir ağız görürsün: içeride biri bir pul unutmuş.' },
+      { name: 'Dökümcü Mevlüt Usta', look: 'amca', text: 'Türkiye’nin ilk entegre demir çelik tesisi 1939’da burada açıldı evlat; tokmaklar hâlâ ritimle iner. Dökümhane çukurundaki bloklar da öyle: yanıp sönene güvenme, bir önce hamle yap.' },
+    ],
+    medals: [150, 210, 290],
+    quips: ['Tokmak seni yassıttı.', 'Cam yol çatladı.', 'Blok yanıp söndü, sen düştün.', 'Safran lokumun soğudu.'],
+    item: 'Safran',
+    intro: 'Safranbolu Çarşısı’ndan Tokatlı Kanyonu’na, Bulak Mencilis Mağarası’ndan Karabük Demir Çelik’in haddehanesine. Bu yolda çatılar, cam yollar ve tokmaklar var: zamanlamaya güven.',
+    facts: [
+      { title: 'Safranbolu', text: 'Safranbolu’nun ahşap çıkmalı konakları ve Cinci Han’ı eski çarşıyı bugüne taşır. Şehir 1994’te UNESCO Dünya Mirası Listesi’ne girdi; adını da burada yetişen safrandan alır.' },
+      { title: 'Tokatlı Kanyonu', text: 'Safranbolu yakınındaki Tokatlı Kanyonu’nun dik kayalıkları arasında yürüyüş yolu ve cam seyir terasları vardır. Aşağıda dere akar.' },
+      { title: 'Karabük Demir Çelik', text: 'Karabük Demir Çelik, Türkiye’nin ilk entegre demir çelik tesisidir ve 1939’da üretime başladı. Karabük, bu fabrikanın çevresinde büyüdü.' },
+    ],
+    secret: { title: 'Safran', text: 'Safran, dünyanın en pahalı baharatlarından biridir: bir kilosu için yüz binlerce çiçeğin tek tek elle toplanması gerekir. Safranbolu lokumunun rengi ve kokusu buradan gelir.' },
+    hints: [
+      'Safranbolu Çarşısı’na hoş geldin! Çıkmalı konakların çatıları basamak basamak yükselir: çatıdan çatıya zıpla, Cinci Han’ın damına çık.',
+      'Tokatlı Kanyonu: cam yol çatlak taştan, durma, koş! Tek karoluk boşlukları zıpla; sonra iki duvar arasında duvardan duvara sek.',
+      'Bulak Mencilis Mağarası: sarkıtlar tavandan sarkar. Gölet iki yarım: kaya perdenin altından dal, ortada nefes al. Kayanın sağ yüzündeki karanlık ağza bak.',
+      'Karabük Demir Çelik: haddehanenin tokmakları iner. Aralarda dur, vuruşları say, sonra koş.',
+      'Dökümhane çukuru: ritim blokları sırayla belirir. Yanıp sönen blok kaybolmak üzeredir: ondan öbürüne zıpla. Raylı platformu bekle.',
+    ],
+    map: roadMap(karabukRoad),
+  },
+  {
+    id: 'aydin',
+    city: 'aydin',
+    name: 'Aydın',
+    nickname: 'İncir Şehri',
+    plate: 9,
+    subtitle: 'Efes’in Sütunları',
+    difficulty: 'Çok Zor',
+    note: 'Defterin bu sayfası mermer tozuyla kaplı, kenarlarında incir reçeli lekesi. Aydın’da her taşın bir sırası var: sütun sütunun yanına, basamak basamağın ardına gelir. Bu yolda acele etme; önce bak, sonra adım at.',
+    npcs: [
+      { name: 'İncirci Sabiha Hanım', look: 'teyze', text: 'Aydın inciri dalında kurur, tadı dünyada bir tane! Üç incir dizmiştim ipe, rüzgâr kaptı: biri Celsus’un üst katındaki revakta, biri Büyük Tiyatro’nun tepesinde ritim taşlarının üstünde, biri de Didim’de halatla çıkılan kayanın başında kaldı.' },
+      { name: 'Tiyatro Bekçisi Reşat Amca', look: 'amca', text: 'Sahnede fısılda, en üst sıradan duyulur derler; kırk yıldır deniyorum, kimse cevap vermedi! Üstteki ritim taşlarında acele eden düşer: yanıp sönen takımdan öbürüne, tam kaybolurken zıpla.' },
+      { name: 'Rehber Candan', look: 'genc', text: 'Didim’deki Medusa’nın saçları yılan; ona uzun bakma, taş kesersin! Kayanın yüzündeki halata zıplayıp tutun. Çatlak taşlar basınca dağılır, durma; sütunların arasına kemerin altından girilir.' },
+      { name: 'Kazı Ustası Hulusi', look: 'usta', text: 'Nysa’nın tüneli yüzlerce yıldır suyu şehrin altından geçirir. Sandığı duvara dayayıp üstüne çık; duvarın öbür yüzüne inince karanlık bir aralık göreceksin: içeride biri bir pul unutmuş.' },
+    ],
+    medals: [190, 260, 350],
+    quips: ['Mermer kaygan çıktı.', 'Medusa göz kırptı.', 'Sütunların sırası şaştı.', 'Alkış kesildi.'],
+    item: 'İncir',
+    intro: 'Efes’in Mermer Caddesi’nden Celsus Kütüphanesi’ne, Büyük Tiyatro’dan Didim’de Apollon Tapınağı’na, oradan Nysa’nın yer altı tüneline. Taşların arasında sıra bulan geçer.',
+    facts: [
+      { title: 'Celsus Kütüphanesi', text: 'Efes’teki Celsus Kütüphanesi 2. yüzyılın başında Roma valisi Celsus’un anısına yapıldı; iki katlı sütunlu cephesi bugün de ayaktadır. Efes Antik Kenti 2015’te UNESCO Dünya Mirası Listesi’ne girdi.' },
+      { title: 'Büyük Tiyatro', text: 'Efes’in Büyük Tiyatrosu yaklaşık 24.000 kişilik’tir. Akustiği o kadar iyidir ki sahnedeki fısıltının en üst sıraya ulaştığı anlatılır.' },
+      { title: 'Didim', text: 'Didim’deki Apollon Tapınağı antik çağın büyük kehanet merkezlerindendi. Kalıntıları arasında saçları yılan, koca bir Medusa başı kabartması durur.' },
+    ],
+    secret: { title: 'Artemis Tapınağı', text: 'Efes’teki Artemis Tapınağı antik dünyanın yedi harikasından biriydi. MÖ 356’da Herostratus’un çıkardığı yangında yandı; bugün Selçuk’ta yeniden dikilmiş tek bir sütunu ayaktadır.' },
+    hints: [
+      'Aydın’a hoş geldin! Mermer Cadde’de ilerle; dikenli aralığın ardında Celsus Kütüphanesi’nin cephesi başlıyor.',
+      'Celsus Kütüphanesi: alt kat dolu taş, üst kat tek yönlü revak: alttan zıpla, hatıra orada. Sondaki çukur beş karo: zıpla, havada dash at.',
+      'Büyük Tiyatro: basamaklar birer karo yükselir. Tepede ritim blokları iki takım hâlinde belirir ve kaybolur: yanıp sönen takım giderken öbürüne zıpla.',
+      'Didim Apollon Tapınağı: kayanın yüzündeki halata zıplayıp tutun, tırman. Çatlak taşlara oyalanmadan bas; kemerin altından sütunların arasına gir, duvardan duvara sek.',
+      'Nysa’nın tüneli: önce soldaki plakaya bas, kapı açılır; ikinci plaka öbür kapıyı açar. Geniş odada sandığı duvarın dibine it, üstüne çık.',
+    ],
+    map: roadMap(aydinRoad),
   },
 ]
 

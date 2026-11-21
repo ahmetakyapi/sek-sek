@@ -96,6 +96,8 @@ export const maps = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     plays: integer('plays').default(0).notNull(),
     likes: integer('likes').default(0).notNull(),
+    /** sahibi yayındaki haritayı güncelleyince dolar (galeride "Güncellendi" rozeti) */
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
   },
   (t) => [
     uniqueIndex('seksek_maps_code_idx').on(t.code),

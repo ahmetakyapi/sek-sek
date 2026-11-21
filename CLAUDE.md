@@ -49,7 +49,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts, sunucusu app/api/ghosts (skor tablosundan "◌ Yarış")
   challenges.ts  mücadele haritaları: Zor şehirlerin bayrak aralığından her açılışta kesilen kısa parkurlar (madalya `par`dan)
   mirror.ts      Ayna Yolu (Yeni Oyun+): şehir haritası sağdan sola; `LevelDef.mirror` ile platformlar ve zamanlama fazları da aynalanır
-  accessories.ts Kılık Dükkânı aksesuarları (ad, fiyat) ve cüzdan; çizimi heroDraw/portraitDraw, oyunda `renderer.accessory`
+  accessories.ts Kılık Dükkânı aksesuarları (ad, fiyat, `for`: yolcuya özgü), yolcu başına kombin ve cüzdan; çizimi heroDraw/portraitDraw, karaktere özgü parçalar accessoryDraw.ts, oyunda `renderer.accessory`
 components/      React arayüzü: Coop (iki kişi aynı ekranda: CoopSetup (Şehir Yolu / Boss Kapışması), Coop, CoopEnd; tuşlar DUO_KEYS), TitleMenu (ana menü: sıradaki şehrin kartpostalı, yol çizgisi, OYNA / SENİN öbekleri ve ne işe yaradığını yazan kutucuklar; piksel simgeler dosyanın içinde), PhotoMode (Fotoğraf Kipi: moladan; kadraj ok tuşu ya da sürükleyerek, kartpostal çerçeveli PNG), KeyRemap (klavye tuş atama; `game/input.ts` KeyBindings, `save.keys`), MapGallery (/haritalar topluluk galerisi), Tournament (Haftalık Turnuva), Challenges (mücadele listesi, bitiş), Ending (final: harita, son söz, jenerik, Ayna Yolu), Mirror (Ayna Yolu listesi), Shop (Kılık Dükkânı), Album (Defter'de şehir albümü), Editor (Bölüm Düzenleyici, /duzenle; çözücü solve.worker.ts'te), Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, unvan, yol istatistikleri; Müzik Kutusu sekmesi MusicBox: biten şehrin bestesi, boss'u yenilmişse boss teması), Modes (Modlar: Günlük Meydan Okuma, Düello, Boss Rush, Maraton; bitiş ekranları), Race (Yan Yana Yarış: bölünmüş ekran, iki dünya ve iki çizici), ScoreBoard (Skor Tablosu: Genel, Şehirler, Günlük, Koleksiyon), About (artbook), Bestiary, HUD, dokunmatik
 lib/             customLevel (düzenleyicinin harita kodu: doğrulama, RLE + base64url, sürüm 1/2, `customLevel()`), editorKit (düzenleyicinin şablonları, hazır parçaları, dolgu, dikdörtgen, ayna), achievements (başarımlar: çoğu kayıttan hesaplanır, anlık olanlar `save.feats`), storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db, antiCheat (skorun fiziksel alt süresi `minScoreMs` ve hayalet makullüğü `ghostProblem`), rateLimit (`seksek_rate` tablosunda sabit pencere; tablo yoksa geçer), communityMaps (topluluk haritası kuralları: başlık, süzgeç, günlük sınır)
 app/             / oyun (`?yaris=<şehir>~<ad>` yarış daveti, `?ozel=<kod>` özel harita) · /duzenle bölüm düzenleyici · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /sehir/[id] şehir tanıtımı (şehir başına bir sayfa, statik; app/sitemap.ts, app/robots.ts) · /haritalar topluluk galerisi · /skor paylaşım · /skor/kart kartpostal · /api/*
@@ -183,6 +183,24 @@ koş, süre çok oynadıysa `par`ı güncelle. Skoru `mucadele:<id>` anahtarıyl
 saatiyle pazartesi-pazar). Skor `turnuva:<hafta>:<mücadele>`; GET `level=turnuva&week=` üçünü de bitirenleri toplam süreyle
 sıralar. Kapanmış haftaların ilk üçü oyuncu sayfasında kalıcı rozet. Cihazda `save.turnuva` (yalnız bu hafta).
 
+**Günün Üçlüsü (21 Kasım 2026).** Bugün şeridinde üç iş: Günlük Meydan Okuma (tek hak), Günün Mücadelesi (`dailyMini(gün)`: CHALLENGES'tan kesit) ve
+Günün Boss'u (`dailyBoss(gün, LEVELS)`: boss arenası, `rushArena`); ikisi serbest tekrar, skor yalnız en iyi süre. Seçim tarihe bağlı ve zincirlidir
+(art arda iki gün aynı gelmez; boss meydan okuma şehriyle çakışmaz; sunucu ve istemci aynı sonucu bulur). İz `save.trio` (`TrioMark`: bugünün süreleri,
+`days` tamamlanan Üçlü sayısı, `last`; `markTrio` / `settleTrio` / `mergeTrio` / `cleanTrio`, bulutla birleşir); üçü de bitince `trio` / `trio7` başarımı.
+Skorlar aynı tabloda `gunluk-m:<gün>` / `gunluk-b:<gün>` (Skor Tablosu → Günlük → Meydan Okuma / Mücadele / Boss; genel sıralamaya ve toplu aktarıma girmez).
+
+**Her moda sıralama.** Sunucuya giren yeni tablolar: `kural:<şehir>:<kural>` (Kurallı Koşu, Sinir Bozucu, Kovalamaca: serbest koşu bitince gönderilir;
+alt sınır şehrin kendi yolu, kural `ruleOk`: bilinen, `hasOwnProperty`, `ruleFits`) ve `bossrush:<duz|kabus|cifte>:<boss sayısı>` (aynı sayıda boss'luk
+koşular yarışır; alt sınır `BOSS_FLOOR_MS` × boss). Skor Tablosu → Modlar sekmesi (Kurallı Koşu: şehir + kural; Boss Rush: çeşit + boss sayısı). Modlar
+kutucuklarındaki 🏆 çipi ilgili sekmeyi açar (`onBoard`). Sunucuya girmeyenler: Maraton (rastgele şehirler, süreler karşılaştırılamaz), Ayna Yolu (kasıtlı yerel),
+Düello ve Co-op (aynı cihazda iki kişi; rekoru cihazda). Yeni tablo eklerken: `lib/scoreKey.ts` anahtar, `antiCheat.minScoreMs`, `route.ts` parseRun + GET,
+`tests/scores.test.ts`.
+
+**Şehir seçici.** `components/CityPicker.tsx` ortak: arama (ad / plaka, Türkçe harf farkı yok sayılır), zorluk süzgeci, defter sekmesi, son oynananlar
+(`lib/recentCities.ts`, yalnız bu tarayıcıda), rekor rozeti, kilitli ve uymayan şehir soluk, ok tuşlarıyla gezinme. Kurallı Koşu / Sinir Bozucu /
+Kovalamaca (`RuleSetup`) ve Düello kullanır; yeni kurulum ekranı şehir seçecekse `<select>` değil bunu kullan. Modlar'da "Devam Et" şeridi son açılan modu
+hatırlar (`rememberMode`).
+
 **Arkadaşlar.** `save.friends` (yolcu adları, buluta da gider). Skor tablosunda ☆ ile ya da adla eklenir; her tabloya
 `names=a,b` süzgeci verilir (adlar zaten herkese açık, yanıt önbelleklenebilir). "⚔ Beni Geç Bağlantısı" `/?yaris=<şehir>~<ad>`.
 
@@ -243,14 +261,20 @@ görünürken "Bu Sürümde" listesi ve "Modlara Bak" düğmesi çıkar. Yeni ş
 sim'in sağ-sol simetrisi bozulursa (yeni nesne, x'e bağlı faz) `mirror` kipinde de düzelt, sonra `verify-mirror` ve
 `AYNA=1 bossbot` koş. Çözücü Ayna Yolu'nda sola doğru arar (`mx`). Rekor `save.ayna`.
 
-**Kılık Dükkânı.** Bütün kılık tek yerde (`components/Shop.tsx`): baş, yüz ve sırtta birer parça (kombin, `Kit`;
-kayıtta `save.kit`, eski tek `accessory` `kitFor` ile kendi yuvasına geçer) ve atkı rengi (nazar boncuğuyla açılır).
-Tam boy canlı önizleme (dur / koş), önizlemede Uktun / Memo. Para birimi **parça**: hatıra, pul, nazar 1 · yenilen boss 2 ·
-Usta Mührü 3 (`earned`); cüzdan kazanılan eksi alınanların fiyatı (`walletOf`). Fiyatlar oyunun bütün parçasıyla dükkânın
-tamamı alınacak biçimde (`tests/extras.test.ts` bekler). Yeni aksesuar: `ACCESSORIES` (yuva, fiyat) + heroDraw/portraitDraw
-çizimi + föy (`node scripts/art/accessories.cjs`). `seals` verilen aksesuar parayla alınmaz, o kadar Usta Mührüyle açılır
-(Altın Defne Tacı: 10). Yolcu (Uktun / Memo) şehir kartında seçilir; molada değişirse onayla şehrin başına dönülür
-(yalnız düz şehir koşusunda, `plainRun`).
+**Kılık Dükkânı.** Bütün kılık tek yerde (`components/Shop.tsx`), **iki yolcu ayrı ayrı** giydirilir (Uktun ve Memo sekmeleri, "Öbürüne Kopyala"):
+baş, yüz ve sırtta birer parça (kombin, `Kit`; kayıtta `save.kits[yolcu]`) ve atkı rengi (`save.scarfs[yolcu]`, nazar boncuğuyla açılır).
+Eski ortak `kit` / `accessory` / `scarf` ilk yüklemede (`normalizeSave`) iki yolcuya kopyalanır, okuma `kitOf(save, yolcu)` /
+`scarfIdOf(save, yolcu)` ile (geriye düşer; bulut birleşmesi yolcu başına). Parçaların `for` alanı var: `for: 'uktun'|'memo'` yalnız o
+yolcunun dolabında görünür (her yuvada en az üç özel parça), alanı olmayan ortaktır. **Sahiplik yolcuya özgü**: `owned['uktun:fiyonk']`
+(`ownedKey`, `hasAccessory`); düz kimlik (`owned['fes']`) karakter ayrımından önce alınmıştır ve iki yolcuya da açıktır. Para birimi
+**parça**: hatıra, pul, nazar 1 · yenilen boss 2 · Usta Mührü 3 (`earned`); kazanç iki yolcuya da tamdır, her yolcunun cüzdanı kazanç
+eksi kendi dolabında alınanların fiyatıdır (`walletOf(kazanç, owned, yolcu)`). Fiyatlar, bütün oyunun parçasıyla her yolcunun dolabının
+tamamı alınacak biçimde (`tests/extras.test.ts` bekler). Co-op / Düello / Yarış'ta her oyuncu seçtiği karakterin kılığını giyer
+(`Coop` / `Race` `looks`). Yeni aksesuar: `ACCESSORIES` (yuva, fiyat, `for`) + çizim: baş ve yüz parçaları `game/accessoryDraw.ts`
+(`drawHeadItem` / `drawFaceItem`: tek yazım, `HeadFrame` ile hem oyundaki karakter hem portre çizer), sırt parçaları aynı dosyada
+oyun ve portre için ayrı (`drawHeroBack`, `drawPortraitBack`); eski ortak parçalar heroDraw / portraitDraw içinde. Föy:
+`node scripts/art/accessories.cjs`. `seals` verilen aksesuar parayla alınmaz, o kadar Usta Mührüyle açılır (Altın Defne Tacı: 10).
+Yolcu (Uktun / Memo) şehir kartında seçilir; molada değişirse onayla şehrin başına dönülür (yalnız düz şehir koşusunda, `plainRun`).
 
 **Topluluk haritaları.** Düzenleyicide çözücüyle bitirilen harita "Topluluğa Yayınla" ile `seksek_maps` tablosuna gider
 (giriş gerekir, günde 10, başlık süzgeci `lib/communityMaps.ts`); galeri `/haritalar` (Yeni, En Beğenilen, En Çok Oynanan),

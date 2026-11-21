@@ -22,17 +22,24 @@ export interface Challenge {
 }
 
 export const CHALLENGES: Challenge[] = [
-  { id: 'corum-leblebi', level: 'corum', name: 'Kavurma Ocağı', from: 2, to: 3, par: 7 },
-  { id: 'sinop-kale', level: 'sinop', name: 'Kale Burcu', from: 3, to: 4, par: 7.5 },
-  { id: 'ordu-boztepe', level: 'ordu', name: 'Boztepe İnişi', from: 2, to: 3, par: 8 },
+  { id: 'corum-leblebi', level: 'corum', name: 'Kavurma Ocağı', from: 3, to: 4, par: 14.7 },
+  { id: 'sinop-kale', level: 'sinop', name: 'Kale Burcu', from: 2, to: 4, par: 12.5 },
+  { id: 'ordu-boztepe', level: 'ordu', name: 'Boztepe İnişi', from: 4, to: 5, par: 18.3 },
   { id: 'trabzon-sumela', level: 'trabzon', name: 'Sümela Yolu', from: 5, to: 6, par: 16.5 },
-  { id: 'sivas-divrigi', level: 'sivas', name: 'Divriği Kapısı', from: 2, to: 3, par: 8.3 },
+  { id: 'sivas-divrigi', level: 'sivas', name: 'Divriği Kapısı', from: 1, to: 3, par: 16.2 },
   { id: 'van-akdamar', level: 'van', name: 'Akdamar Kıyısı', from: 3, to: 4, par: 10.3 },
   { id: 'erzurum-palandoken', level: 'erzurum', name: 'Palandöken', from: 1, to: 2, par: 13.5 },
-  { id: 'ardahan-cildir', level: 'ardahan', name: 'Çıldır Buzu', from: 1, to: 2, par: 8.3 },
-  { id: 'amasya-kaya', level: 'amasya', name: 'Kral Kaya Mezarları', from: 5, to: 6, par: 6.8 },
-  { id: 'mugla-koy', level: 'mugla', name: 'Koy Rüzgârı', from: 6, to: 7, par: 6.7 },
+  { id: 'ardahan-cildir', level: 'ardahan', name: 'Çıldır Buzu', from: 2, to: 4, par: 25.5 },
+  { id: 'amasya-kaya', level: 'amasya', name: 'Kral Kaya Mezarları', from: 4, to: 5, par: 24.1 },
+  { id: 'mugla-koy', level: 'mugla', name: 'Koy Rüzgârı', from: 4, to: 5, par: 11.4 },
   { id: 'bayburt-coruh', level: 'bayburt', name: 'Çoruh Boğazı', from: 1, to: 2, par: 12.8 },
+  { id: 'artvin-karagol', level: 'artvin', name: 'Karagöl Patikası', from: 3, to: 4, par: 13.1 },
+  { id: 'kars-ani', level: 'kars', name: 'Ani Surları', from: 1, to: 2, par: 11.3 },
+  { id: 'bitlis-nemrut', level: 'bitlis', name: 'Nemrut Krater Gölü', from: 3, to: 4, par: 10.3 },
+  { id: 'agri-ishakpasa', level: 'agri', name: 'İshak Paşa Yamacı', from: 3, to: 4, par: 10.9 },
+  { id: 'tokat-ballica', level: 'tokat', name: 'Ballıca Mağarası', from: 1, to: 2, par: 13.3 },
+  { id: 'denizli-pamukkale', level: 'denizli', name: 'Pamukkale Havuzları', from: 1, to: 2, par: 13.3 },
+  { id: 'zonguldak-galeri', level: 'zonguldak', name: 'Maden Galerisi', from: 2, to: 3, par: 16.3 },
 ]
 
 /** Kesitte yalnız yol kalır: toplananlar, konuşanlar, öteki bayraklar ve final işaretleri boşalır */

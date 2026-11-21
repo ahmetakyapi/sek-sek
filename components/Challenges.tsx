@@ -159,6 +159,8 @@ export interface ChallengeResult {
   relaxed: boolean
   /** turnuva koşusuysa haftası */
   week?: string
+  /** Günün Mücadelesi koşusuysa günü */
+  daily?: string
 }
 
 export function ChallengeEnd({
@@ -189,7 +191,7 @@ export function ChallengeEnd({
     <Overlay dim>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-5 sm:grid sm:max-w-[min(920px,100%)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-6 sm:p-6 short:gap-5 short:py-3">
         <div className="flex min-w-0 flex-col">
-          <p className={`text-[13px] font-bold ${result.best ? 'text-gold' : 'text-accent-2'}`}>{result.best ? t('★ Yeni Rekor') : result.week ? t('Haftalık Turnuva') : t('Mücadele')}</p>
+          <p className={`text-[13px] font-bold ${result.best ? 'text-gold' : 'text-accent-2'}`}>{result.best ? t('★ Yeni Rekor') : result.week ? t('Haftalık Turnuva') : result.daily ? t('Günün Mücadelesi') : t('Mücadele')}</p>
           <h2 className="mt-1 font-display text-3xl leading-tight text-cream short:text-2xl">{t(c.name)}</h2>
           <p className="mt-3 flex items-center gap-3 font-display text-5xl leading-none tabular-nums text-cream short:mt-1.5 short:text-4xl">
             {formatTime(result.timeMs)}
@@ -217,7 +219,7 @@ export function ChallengeEnd({
                 <span className="text-muted">{t('Üç mücadeleyi de bitirince turnuva sıralamasına girersin.')}</span>
               )
             ) : status === 'sent' && rank ? (
-              <strong className="text-gold">{t('Bu mücadelede {rank}. sıradasın.', { rank })}</strong>
+              <strong className="text-gold">{result.daily ? t('Bugünün sıralamasında {rank}. sıradasın.', { rank }) : t('Bu mücadelede {rank}. sıradasın.', { rank })}</strong>
             ) : null}
           </p>
           {/* parkurun kuşbakışı ve madalya hedefleri: hangisine yetiştin, sıradaki ne kadar uzakta */}
@@ -246,14 +248,14 @@ export function ChallengeEnd({
               {ic(t('↺ Yeniden Dene'))}
             </button>
             <button className="pixel-btn justify-center" onClick={onList}>
-              {result.week ? t('Turnuva') : t('Mücadeleler')}
+              {result.week ? t('Turnuva') : result.daily ? t('Modlar') : t('Mücadeleler')}
             </button>
           </div>
         </div>
         <div className="mt-4 flex min-h-0 flex-1 flex-col sm:mt-0">
-          <SectionTitle title={result.week ? t('Bu Haftanın Sıralaması') : t('Sıralama')} />
+          <SectionTitle title={result.week ? t('Bu Haftanın Sıralaması') : result.daily ? t('Bugünün Sıralaması') : t('Sıralama')} />
           <div className="overlay-scroll mt-1 min-h-[120px] flex-1 overflow-y-auto pr-1 sm:max-h-[min(440px,calc(100dvh-140px))]">
-            {result.week ? <Board kind="turnuva" week={result.week} me={player} refresh={status === 'sent' ? 1 : 0} compact /> : <Board kind="city" level={level.id} me={player} refresh={status === 'sent' ? 1 : 0} compact />}
+            {result.week ? <Board kind="turnuva" week={result.week} me={player} refresh={status === 'sent' ? 1 : 0} compact /> : result.daily ? <Board kind="gunluk-m" day={result.daily} me={player} refresh={status === 'sent' ? 1 : 0} compact /> : <Board kind="city" level={level.id} me={player} refresh={status === 'sent' ? 1 : 0} compact />}
           </div>
         </div>
       </div>

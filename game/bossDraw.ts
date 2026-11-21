@@ -2095,6 +2095,60 @@ const PAINT: Record<CityKey, Painter> = {
   },
   // Kızkalesi Yılanı (Kızkalesi efsanesi): hasır meyve sepetinden S çizerek yükselen yeşil yılan, sarı karın,
   // sepette üzüm salkımı ve portakal. Saldırırken boynunu öne atar, yorulunca sepetin kenarına sarkar
+  // Didim Medusası: Apollon Tapınağı'ndaki taş kabartma canlanmış. Yuvarlak mermer madalyon, saç yerine kıvrılan yılanlar:
+  // işarette yılanlar titrer, saldırıda dikilir, yorulunca sarkar; gözler öfkelenince kızarır, yorulunca taş kesilir
+  aydin: (c, _b, mood, t) => {
+    const fury = mad(mood)
+    const limp = beat(mood)
+    const cy = -17
+    const jolt = mood === 'warn' ? Math.sin(t * 38) * 0.5 : 0
+    const stone = limp ? '#cfccc4' : '#e8e2d4'
+    // sütun başlığı biçimli kaide
+    poly(c, [-9, 0, 9, 0, 7, -4, -7, -4], '#cdc6b6', '#8e8676')
+    ell(c, 0, -4.4, 8, 1.4, '#e0dacb', '#a8a090')
+    // yılan saçlar: üst yarım ve iki yanda; her yılan madalyondan çıkıp kıvrılır, ucunda küçük bir baş
+    const N = 11
+    for (let i = 0; i < N; i++) {
+      const a = Math.PI * (0.92 + (i / (N - 1)) * 1.16)
+      const sway = Math.sin(t * (fury ? 7 : 3) + i * 1.7) * (limp ? 0.1 : fury ? 0.42 : 0.26)
+      const reach = (limp ? 5.5 : fury ? 10.5 : 8.5) + (i % 3) * 1.6
+      const pts: number[] = []
+      for (let k = 0; k <= 3; k++) {
+        const r = 9 + (reach * k) / 3
+        let ang = a + sway * (k / 3) * (k % 2 ? 1 : -1.4) + jolt * 0.04 * k
+        if (limp) ang += (a < Math.PI * 1.5 ? -1 : 1) * 0.16 * k
+        pts.push(Math.cos(ang) * r + jolt, cy + Math.sin(ang) * r * 0.9 + (limp ? k * 1.2 : 0))
+      }
+      stroke(c, pts, 2.3, i % 2 ? '#4e9a4a' : '#6ab04e')
+      dab(c, pts[2] + 0.2, pts[3], 0.5, 0.35, '#a8dc78')
+      const hx = pts[6]
+      const hy = pts[7]
+      ell(c, hx, hy, 1.9, 1.5, i % 2 ? '#4e9a4a' : '#6ab04e', '#2e6a30')
+      dab(c, hx + 0.5, hy - 0.4, 0.4, 0.4, fury ? '#ff6a4a' : '#fff6c0')
+      if (fury) stroke(c, [hx + 1.6, hy, hx + 3, hy + 0.2 + Math.sin(t * 30 + i) * 0.5], 0.45, '#e23a4a', false)
+    }
+    // madalyon: mermer yüz, çevresinde kabartma çerçeve
+    ell(c, 0, cy, 12.4, 12.2, '#d8d1c2', '#9a927f')
+    ell(c, 0, cy, 11, 10.8, stone, '#b8b0a0')
+    dab(c, -4, cy - 6.4, 4.2, 1.5, 'rgba(255,255,255,0.55)')
+    // kaşlar, burun, yanaklar
+    if (fury) {
+      stroke(c, [-7, cy - 5.8, -2, cy - 3.6], 1.4, '#6e6658')
+      stroke(c, [7, cy - 5.8, 2, cy - 3.6], 1.4, '#6e6658')
+    }
+    stroke(c, [0, cy - 2, -0.7, cy + 2.4, 1, cy + 3], 0.8, '#a8a090', false)
+    dab(c, -6.2, cy + 2.6, 2, 1.1, limp ? 'rgba(120,120,120,0.2)' : BLUSH)
+    dab(c, 6.2, cy + 2.6, 2, 1.1, limp ? 'rgba(120,120,120,0.2)' : BLUSH)
+    eye(c, -4.2, cy - 1.2, 2.7, mood, t)
+    eye(c, 4.2, cy - 1.2, 2.7, mood, t)
+    mouth(c, 0, cy + 6, 3.2, mood, t)
+    if (mood === 'dizzy') {
+      // taş çatlağı
+      stroke(c, [-8, cy - 6, -6, cy - 3, -7, cy], 0.7, '#7a7264', false)
+      stroke(c, [7, cy + 3, 5, cy + 6, 6, cy + 9], 0.7, '#7a7264', false)
+    }
+    aura(c, mood, t, -9, cy - 4, 3.4, cy + 3, -3.4)
+  },
   mersin: (c, b, mood, t) => {
     const lunge = b.state === 'attack' ? 3 : 0
     const droop = mood === 'dizzy' ? 5 : beat(mood) ? 3 : 0
@@ -2156,6 +2210,46 @@ const PAINT: Record<CityKey, Painter> = {
     }
     ell(c, 0, -9.2, 10.8, 1.3, '#e8c07a', '#a87a3a')
     if (b.state === 'warn' && b.move === 'throw') ell(c, hx + 6, hy - 3, 1.6, 1.6, '#7a3a8a', '#4e2060')
+  },
+  // Hadde Çekici: haddehanenin kızgın demir çekici; çelik gri başlık, kalın tahta sap, kısa çizmeler.
+  // işarette ısınıp kızarır, saldırıda kıvılcım saçar, yorulunca soğuyup griye döner
+  karabuk: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const cold = beat(mood) || mood === 'sleep'
+    const hot = mood === 'warn' || mood === 'angry'
+    const STEEL = cold ? '#9aa4b2' : hot ? '#c0705a' : '#7c8794'
+    const STEEL_SH = cold ? '#6e7886' : hot ? '#8a3a2e' : '#4e5864'
+    c.save()
+    c.scale(0.84, 0.84)
+    if (!air) feet(c, 5, '#3a2e28')
+    const squash = b.state === 'hurt' ? 1.5 : 0
+    // sap: kalın tahta, halkalı
+    blob(c, () => c.roundRect(-3, -19, 6, 17, 1.4), '#a8743e', shade('#6e4622'))
+    for (const y of [-14, -8]) stroke(c, [-3, y, 3, y], 0.6, '#6e4622', false)
+    stroke(c, [-2, -18, -2, -4], 0.4, '#d0a068', false)
+    // başlık: iri çelik blok, perçinli
+    blob(c, () => c.roundRect(-13, -29 + squash, 26, 13 - squash, 2), STEEL, shade(STEEL_SH))
+    blob(c, () => c.roundRect(-14.4, -27.6 + squash, 3.4, 10.2 - squash, 1), STEEL_SH)
+    blob(c, () => c.roundRect(11, -27.6 + squash, 3.4, 10.2 - squash, 1), STEEL_SH)
+    stroke(c, [-11.6, -28 + squash, 11.6, -28 + squash], 0.6, cold ? '#d4dae4' : '#e8c8b8', false)
+    for (const x of [-10, 10]) for (const y of [-26.4, -19]) dab(c, x, y + squash * 0.5, 0.6, 0.6, '#d8dee8')
+    // kızgın yüz alt kenarında kor parıltısı
+    if (!cold) dab(c, 0, -16.6, 9, 0.9, hot ? '#ffb03a' : 'rgba(255,150,60,0.55)')
+    // yüz
+    eye(c, -4.4, -24 + squash * 0.6, 2.6, mood, t)
+    eye(c, 4.4, -24 + squash * 0.6, 2.6, mood, t)
+    dab(c, -8.6, -20.4, 1.4, 0.9, BLUSH)
+    dab(c, 8.6, -20.4, 1.4, 0.9, BLUSH)
+    mouth(c, 0, -20.2 + squash * 0.5, 2.4, mood, t)
+    // saldırıda ve işarette kıvılcımlar
+    if (hot)
+      for (let i = 0; i < 4; i++) {
+        const k = frac(t * 2.4 + i / 4)
+        const a = -0.6 + i * 0.5
+        dab(c, Math.cos(a) * (6 + k * 11) * (i % 2 ? 1 : -1), -22 - Math.sin(Math.abs(a) + 0.6) * k * 12 + k * k * 8, 0.8 * (1 - k), 0.8 * (1 - k), '#ffd84a')
+      }
+    aura(c, mood, t, -11, -29, 7.2, -20.4, -7.2)
+    c.restore()
   },
   // Malatya Kayısısı: turuncu, çilli, tek dişli gülüş; çevresinde bir arı döner
   malatya: (c, b, mood, t) => {

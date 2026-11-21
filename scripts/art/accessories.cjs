@@ -1,6 +1,7 @@
 /**
  * Aksesuar föyü: Kılık Dükkânı'nın her aksesuarı (game/accessories.ts) kendi yuvasında tek başına, ardından birkaç
- * kombin (baş + yüz + sırt); her satır iki kahramanda hareket hâlinde, portrede, telefon boyunda ve sekiz kılıkta.
+ * kombin (baş + yüz + sırt); her satır hareket hâlinde, portrede, telefon boyunda ve sekiz kılıkta. Karaktere özgü
+ * parça (`for`) yalnız o karakterde hareket ve portre gösterir; ortak parça ikisinde.
  * heroDraw.ts ya da portraitDraw.ts'te aksesuar çizimi değişince buna bak.
  *
  *   node scripts/art/accessories.cjs [çıktı.png] [süzgeç]   (varsayılan /tmp/seksek-aksesuar.png)
@@ -40,7 +41,8 @@ const combos = [
   { head: 'hasir', face: 'kayak', back: 'pelerin' },
 ]
 const only = ${JSON.stringify(only)}
-const accs = [...S.ACCESSORIES.map((a) => ({ ...none, [a.slot]: a.id })), ...combos].filter((k) => !only || only.some((id) => Object.values(k).includes(id)))
+const heroOf = (k) => { const ids = Object.values(k); const a = S.ACCESSORIES.find((x) => ids.includes(x.id) && x.for); return a ? a.for : null }
+const accs = [...S.ACCESSORIES.map((a) => ({ ...none, [a.slot]: a.id })), ...combos, { head: 'kelebek', face: 'kedi', back: 'sal' }, { head: 'tac', face: 'kalpli', back: 'ayi' }, { head: 'fiyonk', face: 'pul', back: 'sepet' }, { head: 'bandana', face: 'pilot', back: 'sirtcanta' }, { head: 'kovboy', face: 'tek', back: 'okluk' }, { head: 'asci', face: 'bant', back: 'kalkan' }].filter((k) => !only || only.some((id) => Object.values(k).includes(id)))
 const name = (k) => Object.values(k).filter((v) => v !== 'yok').join(' + ')
 const looks = Object.keys(S.LOOKS)
 const moves = [['uktun', 'bekle', S.POSES.idle, false], ['uktun', 'koş', S.gait(0.25), true], ['uktun', 'zıpla', S.POSES.jump, true], ['uktun', 'dash', S.POSES.dash, true], ['uktun', 'duvar', S.POSES.wall, false],
@@ -57,6 +59,7 @@ accs.forEach((acc, r) => {
   const y0 = r * rowH
   label(name(acc), 10, y0 + 20, 'left')
   moves.forEach(([who, n, p, mv], i) => {
+    if (heroOf(acc) && heroOf(acc) !== who) return
     const x = 120 + cw / 2 + i * cw, y = y0 + 200
     floor(x, y)
     S.drawHero(c, who, p, x, y, 180, false, 0.3 + i * 0.37, { moving: mv, acc })
@@ -64,11 +67,13 @@ accs.forEach((acc, r) => {
   })
   const px = 120 + moves.length * cw
   ;['uktun', 'memo'].forEach((who, k) => {
+    if (heroOf(acc) && heroOf(acc) !== who) return
     c.save(); c.translate(px + k * (portW + 12), y0 + 24); S.drawPortrait(c, who, portW, portH, 0, { still: true, acc }); c.restore()
   })
   // telefon boyu: oyundaki gibi küçük (64 px), sağa ve sola bakan
   const sx = px + 2 * (portW + 12) + 20
   ;[['uktun', false], ['uktun', true], ['memo', false], ['memo', true]].forEach(([who, fl], k) => {
+    if (heroOf(acc) && heroOf(acc) !== who) return
     const x = sx + k * 40, y = y0 + 200
     floor(x, y, 34)
     S.drawHero(c, who, k % 2 ? S.gait(0.5) : S.POSES.idle, x, y, small, fl, 0.3, { moving: k % 2 === 1, acc })

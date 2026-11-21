@@ -21,7 +21,7 @@ import { TournamentHub } from '@/components/Tournament'
 import Ending from '@/components/Ending'
 import MirrorList from '@/components/Mirror'
 import Shop from '@/components/Shop'
-import { ACCESSORIES, earned, kitFor, kitKey, walletOf, type AccessoryId, type Kit } from '@/game/accessories'
+import { ACCESSORIES, earned, kitKey, ownedKey, walletOf, type AccessoryId, type Hero, type HeroLook, type Kit } from '@/game/accessories'
 import { mirrorLevel } from '@/game/mirror'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
@@ -44,13 +44,13 @@ import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, type Scarf, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, type Scarf, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
 import { cityVersion } from '@/lib/mapVersion'
 import { freshAchievements, type Feat } from '@/lib/achievements'
-import { adoptable, clearProgress, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, titleFacts, writeSave, betterRush, parseSaveText, SAVE_KEY, type Player, type Save } from '@/lib/storage'
+import { adoptable, clearProgress, cloudPart, defaultSave, formatTime, loadSave, mergeSaves, nextUnplayed, resumeFor, mapNews, ackMapNews, isRenewed, kitOf, scarfIdOf, titleFacts, writeSave, betterRush, parseSaveText, SAVE_KEY, type Player, type Save } from '@/lib/storage'
 
 /** zorluk rozeti: yeşilden kırmızıya */
 const DIFF_TONE: Record<string, string> = {
@@ -122,6 +122,8 @@ interface Rival {
 interface Rush {
   /** boss: yalnız arenalar · maraton: üç şehir baştan sona · tur / aynaTur: ilk defterin bütün şehirleri (speedrun) */
   kind: 'boss' | 'maraton' | 'tur' | 'aynaTur'
+  /** Günün Boss'u: koşunun günü (tek arena, skor `gunluk-b` tablosuna) */
+  daily?: string
   /** Boss Rush'ın zor çeşidi: kâbus (en yüksek kademe, %30 hızlı) ya da çifte (her arenada iki boss) */
   variant?: RushVariant
   /** çiftede her arenanın ikinci boss'u (LEVELS dizini) */
@@ -136,6 +138,13 @@ const STEP = 1 / 120
 
 /** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
 const RELEASE_NOTES: Record<string, [string, string][]> = {
+  karabuk: [
+    ['İki Yeni Şehir', 'Karabük (Safranbolu) ve Aydın (Efes): ikisi de Çok Zor, kendi bulmaca ve zamanlamalarıyla.'],
+    ['Günün Üçlüsü', 'Günlük Meydan Okuma, Günün Mücadelesi ve Günün Boss’u; her biri ayrı sıralamada.'],
+    ['Yolcuya Özel Kılık', 'Uktun ve Memo ayrı kombin giyer; alınan parça o yolcuya aittir.'],
+    ['Daha Çok Mücadele', 'Yeni ve daha zor mücadeleler, iki yeni Öfke Parkuru.'],
+    ['Düzenleyici ve Topluluk', 'Daha çok hazır parça, harita sihirbazı; yayındaki haritanı aynı bağlantıyla güncelle.'],
+  ],
   mersin: [
     ['Kovalamaca', 'Bir Kangal izini sürüyor: dur, yetişsin. Modlar ekranında kendi kartı var.'],
     ['Co-op’ta Parkur ve Omuz Sekmesi', 'Eşinin başına inerken zıpla, yükseğe sek. Ortak can, kısa ip, zamana karşı.'],
@@ -196,6 +205,8 @@ export default function Game() {
   const challengeRef = useRef<MapChallenge | null>(null)
   /** mücadele turnuva için koşuluyorsa haftası */
   const tournamentRef = useRef<string | null>(null)
+  /** Günün Mücadelesi koşusunun günü (mücadele koşusu bu günün tablosuna yazılır) */
+  const dailyChRef = useRef<string | null>(null)
   /** Ayna Yolu'nda koşulan şehir */
   const aynaRef = useRef<string | null>(null)
   /** düzenleyiciden gelen özel harita (koşu sürerken) */
@@ -266,8 +277,10 @@ export default function Game() {
   const [quiet, setQuiet] = useState(false)
   const [achToast, setAchToast] = useState<{ at: number; name: string; icon: string; more: number } | null>(null)
   const [setTab, setSetTab] = useState<'ayar' | 'tus'>('ayar')
-  const [boardTab, setBoardTab] = useState<'genel' | 'gunluk'>('genel')
-  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: Rush['kind']; variant?: RushVariant } | null>(null)
+  const [boardTab, setBoardTab] = useState<'genel' | 'gunluk' | 'modlar' | 'speedrun'>('genel')
+  /** Skor Tablosu'nun açılış alt seçimi ve (kural tablosu için) kuralı: Modlar kutucuklarındaki Sıralama kısayolları */
+  const [boardSub, setBoardSub] = useState<{ sub: string; rule?: DailyRule }>({ sub: '' })
+  const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: Rush['kind']; variant?: RushVariant; daily?: string } | null>(null)
   /** tam tur sunucuya yazıldıysa sırası (speedrun tablosu) */
   const [tourSent, setTourSent] = useState<string | null>(null)
   const [coarse, setCoarse] = useState(false)
@@ -292,14 +305,20 @@ export default function Game() {
   const hero = CHARACTERS[save.character ?? 'uktun']
   const beaten = LEVELS.filter((l) => save.bosses[l.id]).length
   /** seçilen atkı (al ise karakterin kendi atkısı: null) */
-  const heroScarf = scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)
+  const scarfOfHero = (id: CharacterId) => {
+    const sc = scarfFor(scarfIdOf(save, id))
+    return sc.id === 'al' ? null : sc
+  }
+  const heroScarf = scarfOfHero(hero.id)
+  /** Co-op ve Düello: her oyuncu seçtiği karakterin kendi kılığını giyer */
+  const looks = Object.fromEntries((['uktun', 'memo'] as const).map((id) => [id, { scarf: scarfOfHero(id), kit: kitOf(save, id) }])) as Record<CharacterId, HeroLook>
   const charmCount = LEVELS.filter((l) => save.charms[l.id]).length
   /** Kılık Dükkânı'nın parası (parça): hatıra + pul + nazar 1, yenilen boss 2, Usta Mührü 3 (game/accessories.ts) */
   const ustaCount = Object.values(save.ustalar ?? {}).filter(Boolean).length
   const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
   const bossCount = LEVELS.filter((l) => save.bosses[l.id]).length
-  const wallet = walletOf(earned(foundTotal, bossCount, ustaCount), save.owned)
-  const heroAcc = kitFor(save.kit, save.accessory)
+  const wallet = walletOf(earned(foundTotal, bossCount, ustaCount), save.owned, hero.id)
+  const heroAcc = kitOf(save, hero.id)
   // ?debug (ölçüm ve görsel betikleri): güncelleme notu ekranı kapatmasın
   const mapNotice = quiet ? { renewed: [], added: [] } : mapNews(save)
   const now = new Date()
@@ -313,7 +332,7 @@ export default function Game() {
   /* ── kurulum ─────────────────────────────────────────────── */
   const kitId = kitKey(heroAcc)
   useEffect(() => {
-    if (rendererRef.current) rendererRef.current.accessory = kitFor(save.kit, save.accessory)
+    if (rendererRef.current) rendererRef.current.accessory = kitOf(saveRef.current ?? save, hero.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kitId])
 
@@ -373,7 +392,7 @@ export default function Game() {
     const canvas = canvasRef.current!
     const renderer = new Renderer(canvas)
     renderer.character = CHARACTERS[s.character ?? 'uktun']
-    renderer.accessory = kitFor(s.kit, s.accessory)
+    renderer.accessory = kitOf(s, CHARACTERS[s.character ?? 'uktun'].id)
     const input = new InputManager()
     const sound = new Sound()
     sound.sfxOn = s.sfx
@@ -832,6 +851,42 @@ export default function Game() {
     }
   }, [playerId, pullTry])
 
+  // Hesap tek doğru kaynak: sekme yeniden görününce ve açıkken dakikada bir buluttaki ilerleme çekilip birleştirilir.
+  // Telefonda biten şehir, açık kalmış bilgisayar sekmesinde de (ve tersi) yeniden yüklemeden görünür.
+  useEffect(() => {
+    if (!playerId) return
+    let busy = false
+    const refresh = () => {
+      if (busy || document.visibilityState !== 'visible' || pulledFor.current !== playerId) return
+      busy = true
+      setSave((prev) => {
+        void pullMerge(prev)
+          .then((merged) => {
+            if (!merged) return
+            setSave((cur) => {
+              const next = { ...mergeSaves(adoptable(cur, playerId), merged), owner: playerId }
+              if (JSON.stringify(cloudPart(next)) === JSON.stringify(cloudPart(cur))) return cur
+              writeSave(next)
+              setResumeIdx(resumeFor(next))
+              return next
+            })
+          })
+          .finally(() => {
+            busy = false
+          })
+        return prev
+      })
+    }
+    const id = setInterval(refresh, 60_000)
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [playerId])
+
   // iki sekme açıksa: öbür sekmenin yazdığı kayıt buradakiyle birleşir (ilerleme en iyisi, ayarlar buradaki); yoksa bu
   // sekmenin bir sonraki yazışı öbüründe bitirilen şehri ezerdi. Öbür sekmede ilerleme sıfırlandıysa o kabul edilir.
   useEffect(() => {
@@ -1102,20 +1157,22 @@ export default function Game() {
     }
   }
 
-  // Günlük skor tabloya: bitiş ekranı açıkken ve oyuncu girişliyken bir kez (misafir bitirip sonra giriş yaparsa da)
+  // Günlük skor tabloya: bitiş ekranı açıkken ve oyuncu girişliyken bir kez (misafir bitirip sonra giriş yaparsa da).
+  // Serbest Kurallı Koşu ve Sinir Bozucu: şehir + kural tablosuna
   const dailyPlayer = save.player
   useEffect(() => {
-    if (screen !== 'dailyEnd' || !dailyResult || dailyResult.free || !dailyPlayer || dailySend.status !== 'idle') return
+    if (screen !== 'dailyEnd' || !dailyResult || !dailyPlayer || dailySend.status !== 'idle') return
     const r = dailyResult
     setDailySend({ status: 'sending', rank: null })
-    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: 'gunluk', day: r.run.day, playerId: dailyPlayer.id, token: dailyPlayer.token, timeMs: r.scoreMs, deaths: r.deaths, items: r.found }) })
+    const body = r.free ? { level: 'kural', city: r.run.levelId, rule: r.run.rule } : { level: 'gunluk', day: r.run.day }
+    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, playerId: dailyPlayer.id, token: dailyPlayer.token, timeMs: r.scoreMs, deaths: r.deaths, items: r.found }) })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
       .then((j: { rank?: number }) => setDailySend({ status: 'sent', rank: j.rank ?? null }))
       .catch(() => setDailySend({ status: 'error', rank: null }))
   }, [screen, dailyResult, dailyPlayer, dailySend.status])
 
   /** Mücadele haritası: şehrin en sıkı kesiti; ilerlemeye ve şehir rekoruna dokunmaz */
-  const startChallenge = (c: MapChallenge, week: string | null = null) => {
+  const startChallenge = (c: MapChallenge, week: string | null = null, dailyDay: string | null = null) => {
     soundRef.current?.unlock()
     ui()
     rushRef.current = null
@@ -1123,11 +1180,35 @@ export default function Game() {
     rivalRef.current = null
     challengeRef.current = c
     tournamentRef.current = week
+    dailyChRef.current = dailyDay
     setWeekRank(null)
     setChallengeSend({ status: 'idle', rank: null })
     loadLevel(LEVELS.findIndex((l) => l.id === c.level), 'play')
     beginPlay()
-    setCpToast({ at: Date.now() + 1, text: `${week ? `${t('Turnuva')} · ` : '▲ '}${t(c.name)}` })
+    setCpToast({ at: Date.now() + 1, text: `${week ? `${t('Turnuva')} · ` : dailyDay ? `${t('Günün Mücadelesi')} · ` : '▲ '}${t(c.name)}` })
+  }
+
+  /** Günün Mücadelesi: bugünün kesiti, herkes için aynı; serbest tekrar, skor yalnız en iyisi */
+  const startDailyMini = () => {
+    const c = CHALLENGES.find((x) => x.id === dailyMini(today))
+    if (c) startChallenge(c, null, today)
+  }
+
+  /** Günün Boss'u: bugünün şehrinin boss arenası; serbest tekrar, skor yalnız en iyisi */
+  const startDailyBoss = () => {
+    const idx = dailyBoss(today, LEVELS)
+    soundRef.current?.unlock()
+    ui()
+    modeRef.current = null
+    challengeRef.current = null
+    tournamentRef.current = null
+    dailyChRef.current = null
+    rivalRef.current = null
+    rushRef.current = { kind: 'boss', daily: today, order: [idx], i: 0, timeMs: 0, deaths: 0 }
+    setTourSent(null)
+    loadLevel(idx, 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: `${t('Günün Boss’u')} · ${LEVELS[idx].name}` })
   }
 
   /** Ayna Yolu: şehrin aynalanmış haritası; ilerlemeye dokunmaz, rekoru ayrı */
@@ -1162,17 +1243,18 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: t('Özel Harita') })
   }
 
-  /** Kılık Dükkânı: parça karşılığı aksesuar alır ve kendi yuvasına takar */
-  const buyAccessory = (id: AccessoryId) => {
+  /** Kılık Dükkânı: parça karşılığı aksesuar alır ve o yolcuya takar (alınan parça yalnız o yolcunun olur) */
+  const buyAccessory = (who: Hero, id: AccessoryId) => {
     const item = ACCESSORIES.find((a) => a.id === id)
-    if (!item || item.seals !== undefined || wallet < item.price) return
+    const cur = saveRef.current ?? save
+    if (!item || item.seals !== undefined || (item.for && item.for !== who) || walletOf(earned(foundTotal, bossCount, ustaCount), cur.owned, who) < item.price) return
     ui()
-    persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [id]: true }, kit: { ...kitFor(s.kit, s.accessory), [item.slot]: id }, accessory: undefined }))
+    persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [ownedKey(who, id)]: true }, kits: { ...s.kits, [who]: { ...kitOf(s, who), [item.slot]: id } } }))
   }
-  /** kombini giyer (yuva başına bir parça) */
-  const wearKit = (k: Kit) => {
+  /** kombini yolcuya giydirir (yuva başına bir parça) */
+  const wearKit = (who: Hero, k: Kit) => {
     ui()
-    persist((s) => ({ ...s, kit: { ...k }, accessory: undefined }))
+    persist((s) => ({ ...s, kits: { ...s.kits, [who]: { ...k } } }))
   }
 
   /** Arkadaş listesine ekler ya da çıkarır (skor tablosundaki ☆) */
@@ -1192,7 +1274,7 @@ export default function Game() {
     if (screen !== 'challengeEnd' || !challengeResult || challengeResult.relaxed || !dailyPlayer || challengeSend.status !== 'idle') return
     const r = challengeResult
     setChallengeSend({ status: 'sending', rank: null })
-    const body = r.week ? { level: 'turnuva', week: r.week, challenge: r.id } : { level: `mucadele-${r.id}` }
+    const body = r.week ? { level: 'turnuva', week: r.week, challenge: r.id } : r.daily ? { level: 'gunluk-m', day: r.daily } : { level: `mucadele-${r.id}` }
     fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, playerId: dailyPlayer.id, token: dailyPlayer.token, timeMs: r.timeMs, deaths: r.deaths, items: 0 }) })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
       .then((j: { rank?: number; week?: { total: number; rank: number } | null }) => {
@@ -1209,6 +1291,7 @@ export default function Game() {
     rushRef.current = null
     triesRef.current = 0
     modeRef.current = { kind: 'daily', free: true, run: { day: today, levelId: LEVELS[levelIdx2].id, rule } }
+    setDailySend({ status: 'idle', rank: null })
     loadLevel(levelIdx2, 'play')
     beginPlay()
     setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[rule].name)}: ${t(DAILY_RULES[rule].text)}` })
@@ -1323,24 +1406,36 @@ export default function Game() {
     else if (screen !== 'pause' && screen !== 'photo') snd.playTheme()
   }, [screen, levelIdx, ready])
 
-  // speedrun tam turu bitince (Rahat Mod değilse) skor tablosuna: "tur" ya da "aynatur"
+  // speedrun tam turu, Boss Rush ve Günün Boss'u bitince (Rahat Mod değilse) skor tablosuna
   useEffect(() => {
     setTourSent(null)
     const r = rushResult
     const p = save.player
-    if (!r || r.relaxed || (r.kind !== 'tur' && r.kind !== 'aynaTur') || !p) return
+    if (!r || r.relaxed || !p) return
+    const T = makeT(langRef.current)
+    const body: Record<string, unknown> | null =
+      r.kind === 'tur' || r.kind === 'aynaTur'
+        ? { level: r.kind === 'tur' ? 'tur' : 'aynatur' }
+        : r.kind === 'boss' && r.daily
+          ? { level: 'gunluk-b', day: r.daily }
+          : r.kind === 'boss'
+            ? { level: 'bossrush', variant: r.variant ?? 'duz', bosses: r.bosses }
+            : null
+    if (!body) return
     let live = true
-    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: r.kind === 'tur' ? 'tur' : 'aynatur', playerId: p.id, token: p.token, timeMs: r.timeMs, deaths: r.deaths, items: 0 }) })
+    fetch('/api/scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, playerId: p.id, token: p.token, timeMs: r.timeMs, deaths: r.deaths, items: 0 }) })
       .then((res) => res.json())
       .then((j: { rank?: number; total?: number }) => {
-        if (live && j.rank) setTourSent(makeT(langRef.current)('Speedrun tablosunda {rank}. sıradasın ({total} yolcu).', { rank: j.rank, total: j.total ?? j.rank }))
+        if (!live || !j.rank) return
+        const total = j.total ?? j.rank
+        setTourSent(r.daily ? T('Bugünün boss sıralamasında {rank}. sıradasın ({total} yolcu).', { rank: j.rank, total }) : r.kind === 'boss' ? T('Boss Rush tablosunda {rank}. sıradasın ({total} yolcu).', { rank: j.rank, total }) : T('Speedrun tablosunda {rank}. sıradasın ({total} yolcu).', { rank: j.rank, total }))
       })
       .catch(() => {})
     return () => {
       live = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rushResult])
+  }, [rushResult, save.player?.id])
 
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
@@ -1351,6 +1446,7 @@ export default function Game() {
     rivalRef.current = null
     challengeRef.current = null
     tournamentRef.current = null
+    dailyChRef.current = null
     aynaRef.current = null
     customRef.current = null
     if (modeRef.current) {
@@ -1370,9 +1466,9 @@ export default function Game() {
   // atkı rengi: karakterin kendi atkısı (al) dışındaki seçim çizime bildirilir
   useEffect(() => {
     if (!rendererRef.current) return
-    const sc = scarfFor(save.scarf)
+    const sc = scarfFor(scarfIdOf(save, hero.id))
     rendererRef.current.scarf = sc.id === 'al' ? null : { color: sc.color, shade: sc.shade }
-  }, [save.scarf, ready])
+  }, [save.scarf, save.scarfs, hero.id, ready])
 
   const startJourney = () => {
     soundRef.current?.unlock()
@@ -1482,6 +1578,27 @@ export default function Game() {
     }
     const ch = challengeRef.current
     const week = tournamentRef.current
+    const dayMini = dailyChRef.current
+    if (ch && dayMini && !week) {
+      const relaxed = relaxedRef.current
+      const deaths = w.deaths
+      setSave((prev) => {
+        const old = prev.trio?.day === dayMini ? prev.trio.mini : undefined
+        const { mark, best } = markTrio(prev.trio, dayMini, 'mini', timeMs)
+        setChallengeResult({ id: ch.id, timeMs, deaths, best: best && !relaxed, prev: old, relaxed, daily: dayMini })
+        // günün kesiti mücadelenin kendi rekorunu da tazeler
+        const chBest = !relaxed && (prev.challenges?.[ch.id] === undefined || timeMs < prev.challenges[ch.id])
+        if (relaxed || (!best && !chBest)) return prev
+        const trio = best ? settleTrio(mark, dayMini, prev.meydan) : prev.trio
+        if (trio && trio.days > (prev.trio?.days ?? 0)) queueMicrotask(() => setCpToast({ at: Date.now() + 1, text: makeT(langRef.current)('Günün Üçlüsü tamamlandı!') }))
+        const next = { ...prev, trio, ...(chBest ? { challenges: { ...(prev.challenges ?? {}), [ch.id]: timeMs } } : {}) }
+        writeSave(next)
+        return next
+      })
+      setChallengeSend({ status: 'idle', rank: null })
+      setScreen('challengeEnd')
+      return
+    }
     if (ch && week) {
       const relaxed = relaxedRef.current
       const deaths = w.deaths
@@ -1530,6 +1647,21 @@ export default function Game() {
       rushRef.current = null
       const relaxed = relaxedRef.current
       const total = { timeMs: rush.timeMs, deaths: rush.deaths, bosses: rush.order.length + (rush.pairs?.filter((x) => x >= 0).length ?? 0) }
+      if (rush.daily) {
+        const day = rush.daily
+        setSave((prev) => {
+          const { mark, best } = markTrio(prev.trio, day, 'boss', total.timeMs)
+          setRushResult({ ...total, best: best && !relaxed, relaxed, kind: 'boss', daily: day })
+          if (relaxed || !best) return prev
+          const trio = settleTrio(mark, day, prev.meydan)
+          if (trio && trio.days > (prev.trio?.days ?? 0)) queueMicrotask(() => setCpToast({ at: Date.now() + 1, text: makeT(langRef.current)('Günün Üçlüsü tamamlandı!') }))
+          const next = { ...prev, trio }
+          writeSave(next)
+          return next
+        })
+        setScreen('rushEnd')
+        return
+      }
       const kind = rush.kind
       const variant = rush.variant
       setSave((prev) => {
@@ -1586,13 +1718,16 @@ export default function Game() {
           setDailyResult({ run: mode.run, timeMs, deaths, found, scoreMs, best, mark: { day: mode.run.day, bestMs: best ? scoreMs : old!, streak: 0 }, free: true, tries: triesRef.current + 1 })
           return next
         })
+        setDailySend({ status: 'idle', rank: null })
         setScreen('dailyEnd')
         return
       }
       setSave((prev) => {
         const mark = markDaily(prev.meydan, mode.run.day, scoreMs)
         if (mark.streak >= 7) queueMicrotask(() => addFeat('streak7'))
-        const next = { ...prev, meydan: mark }
+        const trio = settleTrio(prev.trio, mode.run.day, mark)
+        if (trio && trio.days > (prev.trio?.days ?? 0)) queueMicrotask(() => setCpToast({ at: Date.now() + 1, text: makeT(langRef.current)('Günün Üçlüsü tamamlandı!') }))
+        const next = { ...prev, meydan: mark, trio }
         writeSave(next)
         setDailyResult({ run: mode.run, timeMs, deaths, found, scoreMs, best: mark.bestMs === scoreMs, mark, tries: triesRef.current + 1 })
         setDailySend({ status: 'idle', rank: null })
@@ -2146,7 +2281,7 @@ export default function Game() {
               ui()
               if (s === 'character') pickThenPlayRef.current = false
               if (s === 'story') setStoryPage(0)
-              if (s === 'scores') setBoardTab('genel')
+              if (s === 'scores') (setBoardTab('genel'), setBoardSub({ sub: '' }))
               setScreen(s)
             }}
             onMusic={() => toggle('music')}
@@ -2194,7 +2329,7 @@ export default function Game() {
                     className={`group flex min-w-0 flex-col items-center border-2 bg-panel-2 p-2.5 text-left transition-colors duration-150 sm:p-4 short:flex-row short:items-stretch short:gap-3 short:p-2.5 wide:flex-row wide:items-stretch wide:gap-4 hover:border-accent-2 focus-visible:outline-2 focus-visible:outline-gold ${on ? 'border-gold' : 'border-line'}`}
                   >
                     <div className="portrait-frame mx-auto w-full max-w-[150px] shrink-0 sm:w-[220px] sm:max-w-none short:mx-0 short:w-[96px] short:self-center wide:mx-0 wide:w-[190px] wide:self-center">
-                      <Portrait id={id} scarf={heroScarf} accessory={heroAcc} className="block w-full" />
+                      <Portrait id={id} scarf={scarfOfHero(id)} accessory={kitOf(save, id)} className="block w-full" />
                     </div>
                     <div className="mt-2 flex w-full min-w-0 flex-col short:mt-0 wide:mt-0">
                       <p className="flex flex-wrap items-baseline justify-between gap-x-2 font-display text-lg text-cream sm:text-2xl short:text-lg">
@@ -2215,7 +2350,7 @@ export default function Game() {
                 <p className="mt-0.5 text-[13px] leading-snug text-muted">
                   {[
                     ...(['head', 'face', 'back'] as const).map((k) => ACCESSORIES.find((a) => a.id === heroAcc[k])).filter((a) => !!a).map((a) => (lang === 'en' ? a!.nameEn : a!.name)),
-                    lang === 'en' ? scarfFor(save.scarf).nameEn : scarfFor(save.scarf).name,
+                    lang === 'en' ? scarfFor(scarfIdOf(save, hero.id)).nameEn : scarfFor(scarfIdOf(save, hero.id)).name,
                   ].join(' · ')}
                 </p>
               </div>
@@ -2716,7 +2851,7 @@ export default function Game() {
                 {ic(t("← Geri"))}
               </button>
             </div>
-            <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} onDaily={dailyUsed ? undefined : startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} friends={save.friends ?? []} onFriend={toggleFriend} />
+            <ScoreBoard me={save.player?.name ?? ''} startCity={levelIdx} startTab={boardTab} startSub={boardSub.sub} startRule={boardSub.rule} bossCount={beaten} onMini={startDailyMini} onBoss={startDailyBoss} onDaily={dailyUsed ? undefined : startDaily} canRace={(i) => i <= save.unlocked} onRace={startRace} friends={save.friends ?? []} onFriend={toggleFriend} />
           </div>
         </Overlay>
       )}
@@ -2839,7 +2974,11 @@ export default function Game() {
           rushNeeds={RUSH_NEEDS}
           rushBest={save.rush}
           onDaily={startDaily}
-          onDailyBoard={() => (ui(), setBoardTab('gunluk'), setScreen('scores'))}
+          onDailyBoard={() => (ui(), setBoardTab('gunluk'), setBoardSub({ sub: '' }), setScreen('scores'))}
+          trio={save.trio ?? null}
+          onMini={startDailyMini}
+          onBoss={startDailyBoss}
+          onBoard={(tab, sub = '', rule) => (ui(), setBoardTab(tab), setBoardSub({ sub, rule }), setScreen('scores'))}
           onDuel={() => (ui(), setScreen('duelSetup'))}
           onCoop={() => (ui(), setScreen('coopSetup'))}
           onRush={startRush}
@@ -2907,8 +3046,8 @@ export default function Game() {
           status={challengeSend.status}
           rank={challengeSend.rank}
           weekRank={weekRank}
-          onRetry={() => startChallenge(ALL_CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null)}
-          onList={() => setScreen(challengeResult.week ? 'tournament' : RAGE_COURSES.some((c) => c.id === challengeResult.id) ? 'rageCourses' : 'challenges')}
+          onRetry={() => startChallenge(ALL_CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null, challengeResult.daily ?? null)}
+          onList={() => setScreen(challengeResult.daily ? 'modes' : challengeResult.week ? 'tournament' : RAGE_COURSES.some((c) => c.id === challengeResult.id) ? 'rageCourses' : 'challenges')}
           onLogin={() => ((returnRef.current = 'challengeEnd'), setScreen('name'))}
         />
       )}
@@ -2939,6 +3078,7 @@ export default function Game() {
           level={duelLevel(duel.setup)}
           names={duel.setup.names}
           heroes={duel.setup.heroes}
+          looks={looks}
           roundLabel={duel.setup.bestOf === 1 ? t('Tek Tur') : t('{n}. TUR', { n: duel.round + 1 })}
           sound={soundRef.current}
           keys={duoKeys}
@@ -2970,6 +3110,7 @@ export default function Game() {
         <Coop
           key={coop.key}
           plan={coop.plan}
+          looks={looks}
           keys={duoKeys}
           onKeys={(k) => patch({ duoKeys: k })}
           sound={soundRef.current}
@@ -3005,17 +3146,36 @@ export default function Game() {
       {screen === 'rushEnd' && rushResult && (
         <Overlay dim>
           <div className="rise pixel-panel w-full max-w-md p-6 text-center">
-            <p className="text-[14px] font-semibold text-accent-2">{rushResult.best ? t('Yeni Rekor') : rushResult.variant === 'kabus' ? t('Kâbus Boss Rush') : rushResult.variant === 'cifte' ? t('Çifte Boss Rush') : rushResult.kind === 'boss' ? t('Boss Rush') : rushResult.kind === 'tur' ? t('Tam Tur') : rushResult.kind === 'aynaTur' ? t('Ayna Tam Tur') : t('Maraton')}</p>
+            <p className="text-[14px] font-semibold text-accent-2">{rushResult.daily ? (rushResult.best ? t('★ Bugünün En İyisi') : t('Günün Boss’u')) : rushResult.best ? t('Yeni Rekor') : rushResult.variant === 'kabus' ? t('Kâbus Boss Rush') : rushResult.variant === 'cifte' ? t('Çifte Boss Rush') : rushResult.kind === 'boss' ? t('Boss Rush') : rushResult.kind === 'tur' ? t('Tam Tur') : rushResult.kind === 'aynaTur' ? t('Ayna Tam Tur') : t('Maraton')}</p>
             <h2 className="mt-2 font-display text-6xl tabular-nums text-cream">{formatTime(rushResult.timeMs)}</h2>
             <p className="mt-2 text-[13px] text-muted">{rushResult.kind === 'boss' ? t('{n} boss · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths }) : t('{n} şehir · {deaths} düşüş', { n: rushResult.bosses, deaths: rushResult.deaths })}</p>
             {rushResult.relaxed && <p className="mt-2 text-[13px] text-muted">{t("Rahat Mod’da koştun: rekor yazılmadı.")}</p>}
             {!rushResult.best && !rushResult.relaxed && rushResult.variant && save.rushPlus?.[rushResult.variant] && <p className="mt-2 text-[13px] text-muted">{t('Rekor: {time} · {n} boss', { time: formatTime(save.rushPlus[rushResult.variant].timeMs), n: save.rushPlus[rushResult.variant].bosses })}</p>}
             {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'boss' && !rushResult.variant && save.rush && <p className="mt-2 text-[13px] text-muted">{t('Rekor: {time} · {n} boss', { time: formatTime(save.rush.timeMs), n: save.rush.bosses })}</p>}
             {!rushResult.best && !rushResult.relaxed && (rushResult.kind === 'tur' || rushResult.kind === 'aynaTur') && save[rushResult.kind] && <p className="mt-2 text-[13px] text-muted">{t('Rekorun: {time}', { time: formatTime(save[rushResult.kind]!.timeMs) })}</p>}
-            {(rushResult.kind === 'tur' || rushResult.kind === 'aynaTur') && tourSent && <p className="mt-2 text-[13px] text-[#7ad88a]">{tourSent}</p>}
+            {rushResult.kind !== 'maraton' && tourSent && <p className="mt-2 text-[13px] text-[#7ad88a]">{tourSent}</p>}
+            {!rushResult.relaxed && rushResult.kind !== 'maraton' && !save.player && (
+              <p className="mt-2 text-[13px]">
+                <button className="text-gold underline underline-offset-4" onClick={() => ((returnRef.current = 'rushEnd'), setScreen('name'))}>
+                  {t('Sıralamaya girmek için giriş yap')}
+                </button>
+              </p>
+            )}
+            {!rushResult.relaxed && rushResult.kind !== 'maraton' && (
+              <div className="overlay-scroll mt-3 max-h-[min(200px,26dvh)] overflow-y-auto pr-1 text-left short:hidden">
+                <Board
+                  kind={rushResult.kind === 'tur' ? 'tur' : rushResult.kind === 'aynaTur' ? 'aynatur' : rushResult.daily ? 'gunluk-b' : 'bossrush'}
+                  day={rushResult.daily ?? ''}
+                  extra={rushResult.kind === 'boss' && !rushResult.daily ? { variant: rushResult.variant ?? 'duz', n: String(rushResult.bosses) } : undefined}
+                  me={save.player?.name ?? ''}
+                  refresh={tourSent ? 1 : 0}
+                  compact
+                />
+              </div>
+            )}
             {!rushResult.best && !rushResult.relaxed && rushResult.kind === 'maraton' && save.maraton && <p className="mt-2 text-[13px] text-muted">{t('Maraton rekorun: {time}', { time: formatTime(save.maraton.timeMs) })}</p>}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <button className="pixel-btn primary justify-center" onClick={rushResult.kind === 'boss' ? () => startRush(rushResult.variant) : rushResult.kind === 'tur' || rushResult.kind === 'aynaTur' ? () => startTour(rushResult.kind as 'tur' | 'aynaTur') : startMarathon} autoFocus>
+              <button className="pixel-btn primary justify-center" onClick={rushResult.daily ? startDailyBoss : rushResult.kind === 'boss' ? () => startRush(rushResult.variant) : rushResult.kind === 'tur' || rushResult.kind === 'aynaTur' ? () => startTour(rushResult.kind as 'tur' | 'aynaTur') : startMarathon} autoFocus>
                 {ic(t("↺ Yeniden Oyna"))}
               </button>
               <button className="pixel-btn justify-center" onClick={() => setScreen('modes')}>
@@ -3045,14 +3205,13 @@ export default function Game() {
         <Shop
           hero={hero.id}
           onHero={(id) => (ui(), patch({ character: id }))}
-          scarf={heroScarf}
-          scarfId={scarfFor(save.scarf).id}
+          scarfIds={{ uktun: scarfIdOf(save, 'uktun'), memo: scarfIdOf(save, 'memo') }}
           charms={charmCount}
-          onScarf={(id) => (ui(), patch({ scarf: id }))}
+          onScarf={(who, id) => (ui(), persist((s) => ({ ...s, scarfs: { ...s.scarfs, [who]: id } })))}
           owned={save.owned ?? {}}
           seals={ustaCount}
-          kit={heroAcc}
-          wallet={wallet}
+          kits={{ uktun: kitOf(save, 'uktun'), memo: kitOf(save, 'memo') }}
+          earnedTotal={earned(foundTotal, bossCount, ustaCount)}
           parts={{ found: foundTotal, bosses: bossCount, seals: ustaCount }}
           onBuy={buyAccessory}
           onWear={wearKit}
@@ -3257,7 +3416,7 @@ function Complete({
   // telefonda üç bölüm sekmeyle açılır; geniş ekranda üçü yan yana durur
   const [tab, setTab] = useState<'defter' | 'kart' | 'skor'>('defter')
   const shareUrl = () =>
-    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`
+    `${location.origin}/skor?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: scarfIdOf(save, heroId), lang: lng })}`
   const shareText = t('Sek-Sek’te {city} şehrini {time} sürede geçtim ({deaths} düşüş, {found}/3 hatıra). Sen de dene!', { city: level.name, time: formatTime(result.timeMs), deaths: result.deaths, found })
   const share = async () => {
     const url = shareUrl()
@@ -3355,7 +3514,7 @@ function Complete({
           <div className="flex min-w-0 flex-1 basis-full items-center gap-4 short:gap-3">
               <figure className="polaroid relative w-[72px] shrink-0 rotate-[-4deg] max-sm:hidden sm:w-[88px] short:hidden">
                 <span className="tape" />
-                <Portrait id={heroId} scarf={scarfFor(save.scarf).id === 'al' ? null : scarfFor(save.scarf)} className="w-full" />
+                <Portrait id={heroId} scarf={scarfFor(scarfIdOf(save, heroId)).id === 'al' ? null : scarfFor(scarfIdOf(save, heroId))} accessory={kitOf(save, heroId)} className="w-full" />
                 <figcaption className="!text-[13px]">{heroName}</figcaption>
               </figure>
               <div className="min-w-0 flex-1">
@@ -3459,7 +3618,7 @@ function Complete({
             <SectionTitle title={t('Kartpostalın')} note={t('Paylaş, arkadaşını yarışa çağır')} tone="var(--color-accent-2)" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`}
+              src={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: scarfIdOf(save, heroId), lang: lng })}`}
               alt={t('{city} skor kartı', { city: level.name })}
               width={1200}
               height={630}
@@ -3476,7 +3635,7 @@ function Complete({
               <button className="pixel-btn justify-center py-2.5 text-sm" onClick={copy}>
                 {copied ? t('Kopyalandı') : t('Bağlantıyı Kopyala')}
               </button>
-              <a className="pixel-btn justify-center py-2.5 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: save.scarf, lang: lng })}`} download={`sek-sek-${level.id}.png`}>
+              <a className="pixel-btn justify-center py-2.5 text-sm" href={`/skor/kart?${shareQuery({ level: level.id, timeMs: result.timeMs, deaths: result.deaths, items: found, character: heroId, name: player?.name ?? '', scarf: scarfIdOf(save, heroId), lang: lng })}`} download={`sek-sek-${level.id}.png`}>
                 {t('Kartı İndir')}
               </a>
               {player && (

@@ -7,6 +7,7 @@ import { PortraitFace } from '@/components/Portrait'
 import { ItemIcon, Key } from '@/components/HudBits'
 import type { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
+import type { HeroLook } from '@/game/accessories'
 import { PIXEL_BUDGET, Renderer } from '@/game/render'
 import { World } from '@/game/sim'
 import { emptyInput, type Input, type LevelDef } from '@/game/types'
@@ -51,6 +52,7 @@ export default function Race({
   level,
   names,
   heroes,
+  looks,
   roundLabel,
   sound,
   keys,
@@ -61,6 +63,7 @@ export default function Race({
   level: LevelDef
   names: [string, string]
   heroes: [CharacterId, CharacterId]
+  /** her yolcunun Kılık Dükkânı'ndaki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>
   roundLabel: string
   sound: Sound | null
   /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */
@@ -100,6 +103,11 @@ export default function Race({
       const canvas = canvases[k].current!
       const renderer = new Renderer(canvas)
       renderer.character = CHARACTERS[heroes[k]]
+      const look = looks?.[heroes[k]]
+      if (look) {
+        renderer.accessory = look.kit
+        renderer.scarf = look.scarf
+      }
       renderer.lang = lang
       const world = new World(level)
       return { world, renderer, jumpLatch: false, dashLatch: false, padJump: false, padDash: false, doneMs: null }

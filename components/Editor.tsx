@@ -10,8 +10,8 @@ import { LEVELS } from '@/game/levels'
 import { PIXEL_BUDGET } from '@/game/render'
 import type { CityKey, LevelDef } from '@/game/types'
 import { TITLE_MAX, titleProblem } from '@/lib/communityMaps'
-import { BOSS_HP_MAX, BOSS_SPEEDS, MAX_W, MIN_W, NPC_LOOKS, NPC_NAME_MAX, NPC_TEXT_MAX, ROWS, SAMPLE_MAP, SIGN_MAX, SINGLES, customLevel, decodeMap, emptyTexts, encodeMap, textProblem, validateMap, type CustomTexts, type Sym } from '@/lib/customLevel'
-import { STAMPS, TEMPLATES, cut, fillRect, flipRowsV, floodFill, mapNotes, mirrorRect, mirrorRows, norm, placePattern, rotateRows, thumbColors, type Pattern, type Rect } from '@/lib/editorKit'
+import { BOSS_HP_MAX, BOSS_SPEEDS, MAP_DESC_MAX, MAP_TITLE_MAX, MAX_W, MIN_W, NPC_LOOKS, NPC_NAME_MAX, NPC_TEXT_MAX, ROWS, SAMPLE_MAP, SIGN_MAX, SINGLES, customLevel, decodeMap, emptyTexts, encodeMap, textProblem, validateMap, type CustomTexts, type Sym } from '@/lib/customLevel'
+import { NPC_TIPS, SIGN_TIPS, STAMPS, STAMP_CATS, TEMPLATES, autoGround, cut, fillRect, flipRowsV, floodFill, mapNotes, mapStats, mirrorRect, mirrorRows, norm, placePattern, repeatRect, resizeMap, rotateRows, stampCat, stuckHint, thumbColors, wizardMap, type Pattern, type Rect, type StampCat } from '@/lib/editorKit'
 import { LangProvider, useLang, useT, type Lang } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 import EditorPlay, { type PlayTrace } from './EditorPlay'
@@ -141,6 +141,7 @@ const KEY_GROUPS: Array<{ title: string; rows: Array<[string, string]> }> = [
     title: 'Seçim',
     rows: [
       ['Ctrl + C · X · V', 'Kopyala, kes, yapıştır'],
+      ['Ctrl + D', 'Seçimi sağa çoğaltır'],
       ['Ctrl + A', 'Bütün haritayı seçer'],
       ['Shift + H', 'Yatay çevirir'],
       ['Shift + V', 'Dikey çevirir'],
@@ -173,7 +174,20 @@ const GUIDE_KEY = 'seksek:duzenle-rehber'
 const RECENT_MAX = 8
 const DRAFTS_KEY = 'seksek:taslaklar'
 const WORK_KEY = 'seksek:duzenle'
-const HISTORY = 120
+const HISTORY = 300
+/** Sihirbazın boyut seçenekleri (0: şablonun kendi boyu) */
+const WIZ_WIDTHS = [0, 100, 150, 200, 300, 400] as const
+const WIDTH_PRESETS = [60, 100, 150, 200, 300, 400] as const
+
+interface Wizard {
+  step: 0 | 1 | 2 | 3
+  city: CityKey
+  template: string
+  width: number
+  boss: boolean
+}
+/** bu tarayıcıda en son yayınlanan ya da güncellemek için açılan haritanın yayın numarası */
+const PUBLISHED_KEY = 'seksek:duzenle:yayin'
 
 interface Draft {
   id: string
@@ -188,7 +202,8 @@ interface Draft {
 
 /** Topluluğa yayın: giriş yapan oyuncu (çerezden ya da yerel kayıttan), başlık ve sonuç */
 type Author = { id: string; name: string; token?: string }
-type PublishState = { s: 'idle' } | { s: 'sending' } | { s: 'done'; id: number } | { s: 'dup' } | { s: 'error'; msg: string }
+/** yayın sonucu: `updated` yayındaki haritanın güncellendiğini, `link` oynama bağlantısını söyler */
+type PublishState = { s: 'idle' } | { s: 'sending' } | { s: 'done'; id: number; updated: boolean; link: string; copied: boolean } | { s: 'dup' } | { s: 'error'; msg: string }
 
 type SolveState = { s: 'idle' } | { s: 'running' } | ({ s: 'won' } & Extract<SolveReply, { won: true }>) | { s: 'fail'; unsure: boolean; far: { x: number; y: number } } | { s: 'error' }
 
@@ -294,6 +309,11 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   const [clip, setClip] = useState<string[] | null>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   const [tab, setTab] = useState<Tab>('dene')
+  /** Yeni Harita Sihirbazı (null: kapalı), hazır parça kategorisi, yineleme ve boyut girişi */
+  const [wiz, setWiz] = useState<Wizard | null>(null)
+  const [stampCatSel, setStampCatSel] = useState<StampCat | 'hepsi'>('hepsi')
+  const [rep, setRep] = useState({ times: 3, gap: 0 })
+  const [widthInput, setWidthInput] = useState('')
   const [layout, setLayout] = useState<Layout>('wide')
   const layoutRef = useRef(layout)
   layoutRef.current = layout
@@ -309,6 +329,10 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   const [author, setAuthor] = useState<Author | null | undefined>(undefined)
   const [pubTitle, setPubTitle] = useState('')
   const [pub, setPub] = useState<PublishState>({ s: 'idle' })
+  /** güncellenecek yayın (null: yeni harita olarak yayınla) ve oyuncunun yayındaki haritaları */
+  const [target, setTarget] = useState<number | null>(null)
+  const targetRef = useRef<number | null>(null)
+  const [mine, setMine] = useState<Array<{ id: number; title: string }>>([])
   const [hover, setHover] = useState<Cell | null>(null)
   const [cell, setCell] = useState(20)
   const [look, setLook] = useState<Look | null>(null)
@@ -361,7 +385,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   const npcCount = useMemo(() => map.join('').split('n').length - 1, [map])
   const hasBoss = useMemo(() => map.some((r) => r.includes('Q')), [map])
   const usedTexts: CustomTexts = useMemo(
-    () => ({ signs: Array.from({ length: signCount }, (_, k) => texts.signs[k] ?? ''), npcs: Array.from({ length: npcCount }, (_, k) => texts.npcs[k] ?? { name: '', text: '', look: NPC_LOOKS[k % NPC_LOOKS.length] }), ...(hasBoss ? { boss: texts.boss, boss2: texts.boss2, bossTier: texts.bossTier, bossSpeed: texts.bossSpeed, bossHp: texts.bossHp } : {}) }),
+    () => ({ ...(texts.title ? { title: texts.title } : {}), ...(texts.desc ? { desc: texts.desc } : {}), signs: Array.from({ length: signCount }, (_, k) => texts.signs[k] ?? ''), npcs: Array.from({ length: npcCount }, (_, k) => texts.npcs[k] ?? { name: '', text: '', look: NPC_LOOKS[k % NPC_LOOKS.length] }), ...(hasBoss ? { boss: texts.boss, boss2: texts.boss2, bossTier: texts.bossTier, bossSpeed: texts.bossSpeed, bossHp: texts.bossHp } : {}) }),
     [texts, signCount, npcCount, hasBoss],
   )
   const problem = useMemo(() => validateMap(lazy) ?? textProblem(usedTexts), [lazy, usedTexts])
@@ -383,7 +407,12 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     if (prefs?.grid === false) setShowGrid(false)
     if (Array.isArray(prefs?.recent)) setRecent(prefs.recent.filter((x) => TILES.some((tl) => tl.sym === x)).slice(0, RECENT_MAX))
     if (!readStore<boolean>(GUIDE_KEY)) setGuide(true)
-    const kod = new URLSearchParams(window.location.search).get('kod')
+    const params = new URLSearchParams(window.location.search)
+    const yayin = Number(params.get('yayin'))
+    const saved = readStore<{ id?: number }>(PUBLISHED_KEY)?.id
+    if (Number.isInteger(yayin) && yayin > 0) setTarget(yayin)
+    else if (Number.isInteger(saved) && (saved ?? 0) > 0) setTarget(saved ?? null)
+    const kod = params.get('kod')
     if (kod) {
       const r = decodeMap(kod)
       if ('error' in r) setNotice(r.error)
@@ -478,6 +507,28 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     }
   }, [])
 
+  // yayındaki haritalarım: güncellenecek olanı seçmek için (yalnız çözülmüş haritada gerekir)
+  const isSolved = solveState.s === 'won'
+  useEffect(() => {
+    if (!author || !isSolved) return
+    let live = true
+    const headers: Record<string, string> = author.token ? { 'x-seksek-oyuncu': `${author.id}.${author.token}` } : {}
+    fetch('/api/maps?mine=1&sort=yeni', { cache: 'no-store', headers })
+      .then((r) => (r.ok ? (r.json() as Promise<{ maps?: Array<{ id: number; title: string }> }>) : null))
+      .then((j) => {
+        if (!live || !j?.maps) return
+        const list = j.maps.map((m) => ({ id: m.id, title: m.title }))
+        setMine(list)
+        // yerelde saklanan numara artık yoksa (silinmiş ya da başkasının) yeni yayına dön
+        setTarget((cur) => (cur !== null && !list.some((m) => m.id === cur) ? null : cur))
+        setPubTitle((cur) => cur || (list.find((m) => m.id === targetRef.current)?.title ?? ''))
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [author, isSolved, pub.s])
+
   // çalışmayı her değişiklikte sakla: sayfa yenilense de kaybolmasın
   useEffect(() => writeStore(WORK_KEY, { map, city, texts }), [map, city, texts])
 
@@ -530,14 +581,14 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     setSolve({ s: 'idle' })
   }, [])
 
-  const resize = (delta: number) => {
-    const w = Math.max(MIN_W, Math.min(MAX_W, cols + delta))
-    if (w === cols) return
+  const resizeTo = (width: number) => {
     // genişlerken son sütunun zemini uzar; tekil nesneler kopyalanmaz
-    const next = map.map((r) => (w < cols ? r.slice(0, w) : r + (/[#=~I iX^vW%]/.test(r[cols - 1]) ? r[cols - 1] : ' ').repeat(w - cols)))
+    const next = resizeMap(map, width)
+    if (next === map) return
     setSel(null)
     commit(next, map)
   }
+  const resize = (delta: number) => resizeTo(cols + delta)
 
   /** at: kutudaki yatay yer (css piksel); verilmezse ortası */
   const zoom = (dir: 1 | -1, at?: number) => {
@@ -585,6 +636,43 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   const clearSel = useCallback(() => {
     if (!sel) return
     commit(fillRect(mapRef.current, sel, ' '), mapRef.current)
+  }, [sel, commit])
+
+  /** Ctrl+D: seçimi hemen sağına kopyalar, seçim kopyaya geçer (art arda basınca yol uzar) */
+  const dupSel = useCallback(() => {
+    if (!sel) return false
+    const m = mapRef.current
+    const n = norm(sel)
+    const w = n.x1 - n.x0 + 1
+    if (n.x1 + w >= m[0].length) {
+      setNotice('Çoğaltmaya yer yok: önce haritayı genişlet.')
+      return true
+    }
+    commit(repeatRect(m, n, 1, 0), m)
+    setSel({ ...n, x0: n.x0 + w, x1: n.x1 + w })
+    return true
+  }, [sel, commit])
+
+  /** Seçimi `rep.times` kez, aralarında `rep.gap` boş sütunla sağa yineler (sığdığı kadar) */
+  const repeatSel = useCallback(() => {
+    if (!sel) return
+    const m = mapRef.current
+    const n = norm(sel)
+    const w = n.x1 - n.x0 + 1 + rep.gap
+    const fit = Math.floor((m[0].length - 1 - n.x1) / w)
+    const times = Math.min(rep.times, fit)
+    if (times < 1) {
+      setNotice('Yinelemeye yer yok: önce haritayı genişlet.')
+      return
+    }
+    commit(repeatRect(m, n, times, rep.gap), m)
+    if (times < rep.times) setNotice('Haritaya sığdığı kadar yinelendi.')
+  }, [sel, rep, commit])
+
+  /** Seçili alanda sütunları ilk zeminden alta kadar doldurur */
+  const groundSel = useCallback(() => {
+    if (!sel) return
+    commit(autoGround(mapRef.current, sel), mapRef.current)
   }, [sel, commit])
 
   const paste = useCallback(() => {
@@ -688,6 +776,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
         if (k === 'z' && !e.shiftKey) undo()
         else if (k === 'y' || (k === 'z' && e.shiftKey)) redo()
         else if (k === 'c') copySel()
+        else if (k === 'd') dupSel()
         else if (k === 'x') {
           if (copySel()) clearSel()
         } else if (k === 'v') paste()
@@ -1306,23 +1395,47 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     setShare({ url, copied })
   }
 
+  targetRef.current = target
+  /** yalnız oyuncunun gerçekten yayındaki haritası güncellenir */
+  const updateId = target !== null && mine.some((m) => m.id === target) ? target : null
   const titleIssue = pubTitle.trim() ? titleProblem(pubTitle) : null
 
   const publish = async () => {
     if (!code || solveState.s !== 'won' || titleProblem(pubTitle)) return
     setPub({ s: 'sending' })
+    const updating = updateId !== null
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (author?.token) headers['x-seksek-oyuncu'] = `${author.id}.${author.token}`
-      const r = await fetch('/api/maps', { method: 'POST', headers, body: JSON.stringify({ code, title: pubTitle, solved: true }) })
+      const r = await fetch(updating ? `/api/maps/${updateId}` : '/api/maps', { method: updating ? 'PUT' : 'POST', headers, body: JSON.stringify({ code, title: pubTitle, solved: true }) })
       const j = (await r.json().catch(() => ({}))) as { id?: number; error?: string }
-      if (r.ok && j.id) return setPub({ s: 'done', id: j.id })
+      if (r.ok && j.id) {
+        writeStore(PUBLISHED_KEY, { id: j.id })
+        setTarget(j.id)
+        return setPub({ s: 'done', id: j.id, updated: updating, link: `${window.location.origin}/?ozel=${code}`, copied: false })
+      }
       if (r.status === 409) return setPub({ s: 'dup' })
       if (r.status === 401) setAuthor(null)
+      if (updating && (r.status === 403 || r.status === 404)) {
+        setTarget(null)
+        return setPub({ s: 'error', msg: 'Yayındaki harita bulunamadı ya da senin değil; yeni harita olarak yayınlayabilirsin.' })
+      }
       setPub({ s: 'error', msg: r.status === 503 ? 'Topluluk haritaları şu an kapalı.' : (j.error ?? 'Yayınlanamadı, biraz sonra yeniden dene.') })
     } catch {
       setPub({ s: 'error', msg: 'Yayınlanamadı, biraz sonra yeniden dene.' })
     }
+  }
+
+  const copyPublished = async () => {
+    if (pub.s !== 'done') return
+    let copied = false
+    try {
+      await navigator.clipboard.writeText(pub.link)
+      copied = true
+    } catch {
+      copied = false
+    }
+    setPub({ ...pub, copied })
   }
 
   const saveDraft = () => {
@@ -1349,6 +1462,8 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     setDrafts(next)
     writeStore(DRAFTS_KEY, next)
   }
+
+  const stats = useMemo(() => mapStats(lazy), [lazy])
 
   const counts = useMemo(() => {
     const n: Record<string, number> = {}
@@ -1417,6 +1532,8 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     const flags = map.reduce((n, row) => n + Array.from(row.slice(0, x + 1)).filter((ch) => ch === 'F').length, 0)
     return { x, y, flags }
   }, [solveState, map])
+
+  const hint = useMemo(() => (stuck ? stuckHint(map, stuck.x, stuck.y) : null), [stuck, map])
 
   // çözücü takılınca o yere kaydır (çarpı işareti ızgarada kalır)
   useEffect(() => {
@@ -1532,13 +1649,22 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
               </button>
             ))}
           </div>
+          {cat === 'parca' && (
+            <div role="group" aria-label={t('Parça Kategorisi')} className="flex shrink-0 flex-wrap gap-1">
+              {([{ id: 'hepsi' as const, name: 'Hepsi' }, ...STAMP_CATS]).map((x) => (
+                <button key={x.id} type="button" aria-pressed={stampCatSel === x.id} onClick={() => setStampCatSel(x.id)} className={seg(stampCatSel === x.id)}>
+                  {t(x.name)}
+                </button>
+              ))}
+            </div>
+          )}
           <section
             role="tabpanel"
             aria-label={t(CATS.find((x) => x.id === cat)!.name)}
             className={inPanel ? 'grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-1' : 'grid min-h-0 flex-1 content-start gap-1 overflow-y-auto pr-1'}
           >
             {cat === 'parca'
-              ? STAMPS.map((s) => (
+              ? STAMPS.filter((s) => stampCatSel === 'hepsi' || stampCat(s) === stampCatSel).map((s) => (
                   <button
                     key={s.id}
                     type="button"
@@ -1658,6 +1784,11 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                 {t('Göster')}
               </button>
             )}
+            {hint && (
+              <p className="basis-full text-[13px] leading-snug text-cream">
+                <span className="font-display text-gold">{t('Çözücü Önerisi:')}</span> {t(hint.text, hint.vars)}
+              </p>
+            )}
           </div>
         )}
         {!problem && solveState.s === 'error' && <p className="text-accent-2">{t('Çözücü çalışamadı.')}</p>}
@@ -1684,6 +1815,24 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
         {counts.charm ? ` · ${t('Nazar')}` : ''}
         {counts.key ? ` · ${t('Anahtar')}` : ''}
       </p>
+      <section aria-label={t('Harita İstatistiği')} className="grid gap-1 border-2 border-line p-2 text-[13px]">
+        <h2 className="font-display text-[15px] text-cream">{t('Harita İstatistiği')}</h2>
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-muted">
+          {[
+            [t('Genişlik'), t('{n} Sütun', { n: stats.width })],
+            [t('Tehlike'), `${stats.hazards} (${t('{a} diken · {b} çukur · {c} düşman · {d} tuzak', { a: stats.spikes, b: stats.pits, c: stats.enemies, d: stats.traps })})`],
+            [t('Hareketli Parça'), String(stats.movers)],
+            [t('Tabela · Kişi'), `${stats.signs} · ${stats.npcs}`],
+            [t('Boss'), stats.boss ? t('Var') : t('Yok')],
+            [t('Tahmini Süre'), won ? t('~{s} sn (çözücü)', { s: won.seconds.toFixed(0) }) : t('Bitirilebilir mi? ile ölç')],
+          ].map(([k, v]) => (
+            <div key={k} className="col-span-2 flex items-baseline justify-between gap-2">
+              <dt>{k}</dt>
+              <dd className="text-right text-cream">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
       {share && (
         <div className="grid gap-1">
           <p className="text-[13px] text-muted">{share.copied ? t('Bağlantı panoya kopyalandı.') : t('Bağlantıyı seçip kopyala:')}</p>
@@ -1693,9 +1842,22 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
       {!problem && won && (
         <div className="grid gap-2 border-t-2 border-line pt-3">
           <h2 className="font-display text-[18px] text-cream">{t('Topluluğa Yayınla')}</h2>
-          {pub.s === 'done' || pub.s === 'dup' ? (
+          {pub.s === 'done' ? (
+            <div className="grid gap-2 border-2 border-line p-2.5">
+              <p className="text-[14px] text-gold">{pub.updated ? t('Güncellendi! Aynı bağlantı yeni haritayı gösteriyor.') : t('Yayınlandı! Haritan artık galeride.')}</p>
+              <input readOnly value={pub.link} onFocus={(e) => e.currentTarget.select()} className={`w-full ${field} text-[13px]`} aria-label={t('Paylaşım Bağlantısı')} />
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" className="pixel-btn primary px-3 py-1.5 text-sm" onClick={() => void copyPublished()}>
+                  {pub.copied ? t('Kopyalandı ✓') : t('Bağlantıyı Kopyala')}
+                </button>
+                <Link href="/haritalar" className="text-[14px] text-cream underline underline-offset-4">
+                  {t('Topluluk Haritaları')} →
+                </Link>
+              </div>
+            </div>
+          ) : pub.s === 'dup' ? (
             <p className="text-[14px] text-gold">
-              {pub.s === 'done' ? t('Yayınlandı! Haritan artık galeride.') : t('Bu harita zaten yayında.')}{' '}
+              {t('Bu harita zaten yayında.')}{' '}
               <Link href="/haritalar" className="text-cream underline underline-offset-4">
                 {t('Topluluk Haritaları')} →
               </Link>
@@ -1713,9 +1875,31 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                 void publish()
               }}
             >
+              {mine.length > 0 && (
+                <label className="grid gap-1 text-[13px] text-muted">
+                  {t('Yayın Türü')}
+                  <select
+                    value={updateId ?? ''}
+                    onChange={(e) => {
+                      const id = e.target.value ? Number(e.target.value) : null
+                      setTarget(id)
+                      const hit = mine.find((m) => m.id === id)
+                      if (hit && !pubTitle.trim()) setPubTitle(hit.title)
+                    }}
+                    className={`min-w-0 ${field}`}
+                  >
+                    <option value="">{t('Yeni harita olarak yayınla')}</option>
+                    {mine.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {t('Yayındakini güncelle: {title}', { title: m.title })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <input value={pubTitle} onChange={(e) => setPubTitle(e.target.value)} maxLength={TITLE_MAX} placeholder={t('Haritanın adı (3–40 karakter)')} className={`min-w-0 ${field}`} aria-label={t('Harita Başlığı')} />
               <button type="submit" className="pixel-btn primary py-1.5 text-sm" disabled={!author || pub.s === 'sending' || !!titleProblem(pubTitle)}>
-                {pub.s === 'sending' ? t('Yayınlanıyor…') : t('Topluluğa Yayınla')}
+                {pub.s === 'sending' ? (updateId !== null ? t('Güncelleniyor…') : t('Yayınlanıyor…')) : updateId !== null ? t('Yayındakini Güncelle') : t('Topluluğa Yayınla')}
               </button>
               <p className="text-[13px] text-muted">{author ? t('{name} adıyla yayınlanır; herkes galeride görüp oynayabilir.', { name: author.name }) : t('Oturum denetleniyor…')}</p>
               {titleIssue && <p className="text-[13px] text-accent-2">{t(titleIssue)}</p>}
@@ -1814,6 +1998,15 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
 
   const metinTab = (
     <>
+      <h2 className="font-display text-[18px] text-cream">{t('Harita')}</h2>
+      <label className="grid gap-1 text-[13px] text-cream">
+        <span>{t('Haritanın Adı')}</span>
+        <input value={texts.title ?? ''} maxLength={MAP_TITLE_MAX} placeholder={t('“Rüzgârlı Köprü”')} onChange={(e) => setTexts((old) => ({ ...old, title: e.target.value }))} className={`w-full ${field}`} />
+      </label>
+      <label className="grid gap-1 text-[13px] text-cream">
+        <span>{t('Kısa Açıklama')}</span>
+        <textarea value={texts.desc ?? ''} maxLength={MAP_DESC_MAX} rows={2} placeholder={t('Oyunun başında görünür: haritayı bir cümleyle anlat.')} onChange={(e) => setTexts((old) => ({ ...old, desc: e.target.value }))} className={`w-full resize-y ${field}`} />
+      </label>
       <h2 className="font-display text-[18px] text-cream">{t('Metinler')}</h2>
       {signCount === 0 && npcCount === 0 ? (
         <p className="text-[14px] text-muted">{t('Haritaya tabela (?) ya da şehir insanı (n) koyunca sözleri burada yazılır. İkisi de Nesne sekmesinde.')}</p>
@@ -1830,6 +2023,22 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
             onChange={(e) => setTexts((old) => ({ ...old, signs: Array.from({ length: Math.max(old.signs.length, k + 1) }, (_, i) => (i === k ? e.target.value : (old.signs[i] ?? ''))) }))}
             className={`w-full ${field}`}
           />
+          <select
+            value=""
+            aria-label={t('Hazır Öneri')}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v) setTexts((old) => ({ ...old, signs: Array.from({ length: Math.max(old.signs.length, k + 1) }, (_, i) => (i === k ? v : (old.signs[i] ?? ''))) }))
+            }}
+            className={`w-full ${field} py-1 text-[13px] text-muted`}
+          >
+            <option value="">{t('Hazır Öneri Seç…')}</option>
+            {SIGN_TIPS.map((x) => (
+              <option key={x} value={x}>
+                {t(x)}
+              </option>
+            ))}
+          </select>
         </label>
       ))}
       {usedTexts.npcs.map((npc, k) => {
@@ -1848,6 +2057,22 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                 ))}
               </select>
             </div>
+            <select
+              value=""
+              aria-label={t('Hazır Öneri')}
+              onChange={(e) => {
+                const tip = NPC_TIPS[Number(e.target.value)]
+                if (tip) put({ name: tip[0], text: tip[1], look: tip[2] })
+              }}
+              className={`w-full ${field} py-1 text-[13px] text-muted`}
+            >
+              <option value="">{t('Hazır Öneri Seç…')}</option>
+              {NPC_TIPS.map((x, i) => (
+                <option key={x[0]} value={i}>
+                  {t(x[0])}
+                </option>
+              ))}
+            </select>
             <textarea value={npc.text} maxLength={NPC_TEXT_MAX} rows={2} placeholder={t('Sözü: şehri anlat, saklı köşeyi üstü kapalı fısılda.')} onChange={(e) => put({ text: e.target.value })} className={`w-full resize-y ${field}`} aria-label={t('Sözü')} />
           </fieldset>
         )
@@ -1855,17 +2080,165 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
     </>
   )
 
+  const openWizard = () => setWiz((w) => w ?? { step: 0, city, template: 'flat', width: 0, boss: false })
+  const wizTpl = wiz ? (TEMPLATES.find((x) => x.id === wiz.template) ?? TEMPLATES[0]) : TEMPLATES[0]
+  const wizTplWidth = useMemo(() => wizTpl.make()[0].length, [wizTpl])
+  const wizBuild = () => {
+    if (!wiz) return
+    const next = wizardMap({ template: wiz.template, width: wiz.width, boss: wiz.boss })
+    setCity(wiz.city)
+    newMap(() => next)
+    setWiz(null)
+    setNotice('Harita kuruldu: geri al ile eski haline dönebilirsin.')
+  }
+  const WIZ_STEPS = ['Şehir', 'Şablon', 'Boyut', 'Boss']
+
+  const wizard = wiz && (
+    <section aria-label={t('Yeni Harita Sihirbazı')} className="grid gap-2 border-2 border-accent bg-panel-2 p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-[17px] text-cream">{t('Yeni Harita Sihirbazı')}</h2>
+        <button type="button" className="grid size-8 place-items-center text-[18px] text-muted hover:text-cream" onClick={() => setWiz(null)} aria-label={t('Sihirbazı Kapat')}>
+          ×
+        </button>
+      </div>
+      <ol className="flex gap-1 text-[12px]" aria-label={t('Adımlar')}>
+        {WIZ_STEPS.map((n, k) => (
+          <li key={n} aria-current={wiz.step === k ? 'step' : undefined} className={`flex-1 border-b-4 pb-0.5 text-center ${wiz.step === k ? 'border-gold text-cream' : k < wiz.step ? 'border-teal text-muted' : 'border-line text-muted'}`}>
+            {k + 1}. {t(n)}
+          </li>
+        ))}
+      </ol>
+      {wiz.step === 0 && (
+        <>
+          <p className="text-[13px] text-muted">{t('Haritanın görünüşü, müziği ve boss’un varsayılanı bu şehirden gelir.')}</p>
+          <div className="grid max-h-44 grid-cols-2 gap-1 overflow-y-auto pr-1">
+            {LEVELS.map((l) => (
+              <button key={l.id} type="button" aria-pressed={wiz.city === l.city} onClick={() => setWiz({ ...wiz, city: l.city })} className={`flex items-center gap-1.5 border-2 px-1.5 py-1 text-left text-[13px] ${wiz.city === l.city ? 'border-gold bg-panel text-cream' : 'border-line text-muted hover:text-cream'}`}>
+                <span className="size-3 shrink-0 rounded-full border border-line" style={{ background: CITY[l.city]?.sky?.[1] ?? '#555' }} aria-hidden />
+                <span className="truncate">{l.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {wiz.step === 1 && (
+        <div className="grid max-h-52 gap-1 overflow-y-auto pr-1">
+          {TEMPLATES.map((tp) => (
+            <button key={tp.id} type="button" aria-pressed={wiz.template === tp.id} onClick={() => setWiz({ ...wiz, template: tp.id })} className={`border-2 px-2 py-1 text-left ${wiz.template === tp.id ? 'border-gold bg-panel' : 'border-line hover:border-accent'}`}>
+              <span className="block text-[14px] text-cream">{t(tp.name)}</span>
+              <span className="block text-[12px] leading-snug text-muted">{t(tp.desc)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {wiz.step === 2 && (
+        <>
+          <p className="text-[13px] text-muted">{t('Şablon {n} sütun. Daha uzun seçersen yol sağa düz zeminle uzar, aralara bayrak konur, çıkış sona taşınır.', { n: wizTplWidth })}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {WIZ_WIDTHS.filter((v) => v === 0 || v > wizTplWidth).map((v) => (
+              <button key={v} type="button" className={seg(wiz.width === v)} aria-pressed={wiz.width === v} onClick={() => setWiz({ ...wiz, width: v })}>
+                {v === 0 ? t('Kendi Boyu') : t('{n} Sütun', { n: v })}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {wiz.step === 3 && (
+        <>
+          <p className="text-[13px] text-muted">{t('İstersen yolun sonuna boss arenası eklenir: tabela, bayrak, kale duvarları, boss, kapı ve yeni çıkış.')}</p>
+          <div className="flex gap-1.5">
+            {[false, true].map((v) => (
+              <button key={String(v)} type="button" className={seg(wiz.boss === v)} aria-pressed={wiz.boss === v} onClick={() => setWiz({ ...wiz, boss: v })}>
+                {v ? t('Boss Var') : t('Boss Yok')}
+              </button>
+            ))}
+          </div>
+          <p className="border-2 border-line px-2 py-1 text-[13px] text-cream">
+            {t('{city} · {tpl} · {w} · {boss}', { city: LEVELS.find((l) => l.city === wiz.city)?.name ?? '', tpl: t(wizTpl.name), w: wiz.width ? t('{n} Sütun', { n: wiz.width }) : t('Kendi Boyu'), boss: wiz.boss ? t('Boss Var') : t('Boss Yok') })}
+          </p>
+        </>
+      )}
+      <div className="flex justify-between gap-2">
+        <button type="button" className="pixel-btn px-3 py-1 text-[13px]" disabled={wiz.step === 0} onClick={() => setWiz({ ...wiz, step: (wiz.step - 1) as Wizard['step'] })}>
+          ← {t('Geri')}
+        </button>
+        {wiz.step < 3 ? (
+          <button type="button" className="pixel-btn primary px-3 py-1 text-[13px]" onClick={() => setWiz({ ...wiz, step: (wiz.step + 1) as Wizard['step'] })}>
+            {t('İleri')} →
+          </button>
+        ) : (
+          <button type="button" className="pixel-btn primary px-3 py-1 text-[13px]" onClick={wizBuild}>
+            {t('Haritayı Kur')}
+          </button>
+        )}
+      </div>
+    </section>
+  )
+
   const haritaTab = (
     <>
       <h2 className="font-display text-[18px] text-cream">{t('Yeni Harita')}</h2>
       <p className="text-[13px] text-muted">{t('Bir başlangıç seç. Şimdiki harita geri al ile döner; saklamak istersen önce taslak olarak kaydet.')}</p>
-      <div className="grid gap-1.5">
-        {TEMPLATES.map((tp) => (
-          <button key={tp.id} type="button" onClick={() => newMap(tp.make)} className="border-2 border-line bg-panel-2 px-2.5 py-1.5 text-left hover:border-gold">
-            <span className="block font-display text-[15px] text-cream">{t(tp.name)}</span>
-            <span className="block text-[13px] leading-snug text-muted">{t(tp.desc)}</span>
+      {wizard ?? (
+        <button type="button" className="pixel-btn primary justify-self-start py-1.5 text-sm" onClick={openWizard}>
+          ✦ {t('Sihirbazla Başla')}
+        </button>
+      )}
+      <details className="border-2 border-line">
+        <summary className="cursor-pointer px-2 py-1.5 font-display text-[15px] text-cream">{t('Hazır Şablonlar ({n})', { n: TEMPLATES.length })}</summary>
+        <div className="grid gap-1.5 p-1.5">
+          {TEMPLATES.map((tp) => (
+            <button key={tp.id} type="button" onClick={() => newMap(tp.make)} className="border-2 border-line bg-panel-2 px-2.5 py-1.5 text-left hover:border-gold">
+              <span className="block font-display text-[15px] text-cream">{t(tp.name)}</span>
+              <span className="block text-[13px] leading-snug text-muted">{t(tp.desc)}</span>
+            </button>
+          ))}
+        </div>
+      </details>
+      <h2 className="font-display text-[18px] text-cream">{t('Görünüş Şehri')}</h2>
+      <p className="text-[13px] text-muted">{t('Gökyüzü, zemin, canlılar ve müzik seçtiğin şehirden gelir. Haritanın içeriği değişmez.')}</p>
+      <div className="grid grid-cols-2 gap-1">
+        {LEVELS.map((l) => (
+          <button key={l.id} type="button" aria-pressed={city === l.city} onClick={() => setCity(l.city)} className={`flex items-center gap-1.5 border-2 px-1.5 py-1 text-left text-[13px] ${city === l.city ? 'border-gold bg-panel-2 text-cream' : 'border-line text-muted hover:text-cream'}`}>
+            <span className="size-3 shrink-0 rounded-full border border-line" style={{ background: CITY[l.city]?.sky?.[1] ?? '#555' }} aria-hidden />
+            <span className="truncate">{l.name}</span>
           </button>
         ))}
+      </div>
+      <h2 className="font-display text-[18px] text-cream">{t('Harita Boyutu')}</h2>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {WIDTH_PRESETS.map((v) => (
+          <button key={v} type="button" className={seg(cols === v)} aria-pressed={cols === v} onClick={() => resizeTo(v)}>
+            {v}
+          </button>
+        ))}
+        <form
+          className="flex items-center gap-1"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const n = Number(widthInput)
+            if (Number.isInteger(n)) resizeTo(n)
+            setWidthInput('')
+          }}
+        >
+          <input value={widthInput} onChange={(e) => setWidthInput(e.target.value.replace(/\D/g, '').slice(0, 3))} inputMode="numeric" placeholder={String(cols)} className={`w-16 ${field} py-1`} aria-label={t('Sütun Sayısı')} />
+          <button type="submit" className="pixel-btn px-2.5 py-1 text-[13px]" disabled={!widthInput}>
+            {t('Uygula')}
+          </button>
+        </form>
+      </div>
+      <p className="text-[12px] leading-snug text-muted">{t('{min}–{max} sütun. Küçültünce sağdan kesilir, büyütünce zemin uzar.', { min: MIN_W, max: MAX_W })}</p>
+      <h2 className="font-display text-[18px] text-cream">{t('Yineleme')}</h2>
+      <p className="text-[12px] leading-snug text-muted">{t('Seçim aracıyla bir alan seç; Ctrl+D hemen sağına kopyalar, Yinele bu ayarla art arda dizer.')}</p>
+      <div className="flex flex-wrap items-center gap-2 text-[13px] text-cream">
+        <label className="flex items-center gap-1.5">
+          {t('Kopya')}
+          <input type="number" min={1} max={20} value={rep.times} onChange={(e) => setRep((r) => ({ ...r, times: Math.max(1, Math.min(20, Number(e.target.value) || 1)) }))} className={`w-14 ${field} py-1`} />
+        </label>
+        <label className="flex items-center gap-1.5">
+          {t('Boşluk')}
+          <input type="number" min={0} max={20} value={rep.gap} onChange={(e) => setRep((r) => ({ ...r, gap: Math.max(0, Math.min(20, Number(e.target.value) || 0)) }))} className={`w-14 ${field} py-1`} />
+        </label>
       </div>
       <h2 className="font-display text-[18px] text-cream">{t('Taslaklar')}</h2>
       <form
@@ -1931,7 +2304,18 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
           </li>
         ))}
       </ol>
+      <p className="hidden text-[12px] leading-snug text-muted wide:block">{t('Hızlı yol: Sihirbaz şehri, şablonu, boyutu ve boss’u sorup haritayı kurar. Parçalar sekmesinde {n} hazır parça var.', { n: STAMPS.length })}</p>
       <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          className="pixel-btn px-2 py-0.5 text-[13px]"
+          onClick={() => {
+            setTab('harita')
+            openWizard()
+          }}
+        >
+          ✦ {t('Sihirbazla Başla')}
+        </button>
         {!(hasP && hasE) ? (
           <>
             <button type="button" className="pixel-btn px-2 py-0.5 text-[13px]" onClick={() => chooseTile('P')}>
@@ -2016,7 +2400,13 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
         </Link>
         <h1 className="hidden shrink-0 font-display text-xl text-cream 2xl:block">{t('Bölüm Düzenleyici')}</h1>
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5">
-          <button type="button" className={btn} onClick={() => setTab('harita')} title={t('Şablonlar ve taslaklar')} aria-label={t('Yeni Harita')}>
+          <button type="button" className={btn} onClick={() => {
+              setTab('harita')
+              openWizard()
+            }}
+            title={t('Şablonlar ve taslaklar')}
+            aria-label={t('Yeni Harita')}
+          >
             ＋ <span className="max-sm:hidden">{t('Yeni Harita')}</span>
           </button>
           <select value={city} onChange={(e) => setCity(e.target.value as CityKey)} className="shrink-0 border-2 border-line bg-panel-2 px-1.5 py-1 text-[14px] text-cream" aria-label={t('Şehir')} title={t('Şehir: görünüş, müzik ve boss’un varsayılanı')}>
@@ -2175,6 +2565,15 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
                     </button>
                     <button type="button" className="pixel-btn px-2 py-0.5 text-[13px]" onClick={clearSel} title="Delete">
                       {t('Boşalt')}
+                    </button>
+                    <button type="button" className="pixel-btn px-2 py-0.5 text-[13px]" onClick={() => void dupSel()} title="Ctrl+D">
+                      ⧉ {t('Çoğalt')}
+                    </button>
+                    <button type="button" className="pixel-btn px-2 py-0.5 text-[13px]" onClick={repeatSel} title={t('Harita sekmesindeki yineleme ayarıyla sağa yineler.')}>
+                      ↦ {t('Yinele ×{n}', { n: rep.times })}
+                    </button>
+                    <button type="button" className="pixel-btn px-2 py-0.5 text-[13px]" onClick={groundSel} title={t('Seçili alanda ilk zeminden aşağısını doldurur.')}>
+                      ▤ {t('Zemini Doldur')}
                     </button>
                     <button type="button" className="pixel-btn px-2 py-0.5 text-[13px]" onClick={() => setSel(null)} title="Esc">
                       {t('Seçimi Bırak')}

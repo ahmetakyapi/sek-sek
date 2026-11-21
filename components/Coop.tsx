@@ -12,6 +12,7 @@ import { SetupHead } from '@/components/Modes'
 import { medalFor } from '@/components/medal'
 import type { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
+import type { HeroLook } from '@/game/accessories'
 import { LEVELS, bossLevel } from '@/game/levels'
 import { BOSSES } from '@/game/boss'
 import { ALL_CHALLENGES, RAGE_COURSES, challengeLevel } from '@/game/challenges'
@@ -387,7 +388,7 @@ interface CoopHud {
  * Olaylar onları üreten adıma göre oyunculara yazılır (kim düştü, kim hatıra aldı, kim boss'a bastı).
  * İlerlemeye ve şehir rekorlarına dokunmaz.
  */
-export default function Coop({ plan, sound, keys, onKeys, onDone, onQuit }: { plan: CoopPlan; sound: Sound | null; /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */ keys: DuoKeys; onKeys: (k: DuoKeys) => void; onDone: (r: CoopResult) => void; onQuit: () => void }) {
+export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit }: { plan: CoopPlan; /** her yolcunun Kılık Dükkânı'ndaki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>; sound: Sound | null; /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */ keys: DuoKeys; onKeys: (k: DuoKeys) => void; onDone: (r: CoopResult) => void; onQuit: () => void }) {
   const keysRef = useRef(keys)
   keysRef.current = keys
   const t = useT()
@@ -408,6 +409,16 @@ export default function Coop({ plan, sound, keys, onKeys, onDone, onQuit }: { pl
     const renderer = new Renderer(c)
     renderer.character = CHARACTERS[heroes[0]]
     renderer.partnerLook = heroes[1]
+    const l0 = looks?.[heroes[0]]
+    const l1 = looks?.[heroes[1]]
+    if (l0) {
+      renderer.accessory = l0.kit
+      renderer.scarf = l0.scarf
+    }
+    if (l1) {
+      renderer.partnerAcc = l1.kit
+      renderer.partnerScarf = l1.scarf
+    }
     renderer.lang = lang
     const world = new World(level)
     world.enableCoop()
