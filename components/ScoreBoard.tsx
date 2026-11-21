@@ -63,7 +63,7 @@ const stored = {
 }
 
 /** Satırda yolcunun küçük resmi (portre); bilinmiyorsa adın baş harfi */
-function Avatar({ name, hero }: { name: string; hero?: string | null }) {
+export function Avatar({ name, hero }: { name: string; hero?: string | null }) {
   const known = hero === 'uktun' || hero === 'memo'
   return (
     <span aria-hidden className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[15px] text-ink sm:h-10 sm:w-10 sm:text-[18px]" style={{ background: avatarColor(name), boxShadow: '0 0 0 2px rgba(0,0,0,0.35)' }}>

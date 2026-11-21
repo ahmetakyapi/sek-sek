@@ -137,6 +137,17 @@ düşüş (`min_deaths`) ve en çok hatıra (`max_items`) ayrı tutulur, her bit
 sütunda gösterilen değeri de değiştirir. Günlük Meydan Okuma satırları `gunluk:<gün>` anahtarıyla aynı tabloda durur
 (gün İstanbul saatiyle döner). API'ye dokununca `tests/scores.test.ts` koş.
 
+**Şehir kartında skor paneli (21 Kasım 2026).** Şehir kartı (`screen === 'intro'`) kartın durum şeridinde "Lider X · süre · #sıran" çipi ve alt çubukta "🏆 Skorlar" düğmesi taşır; ikisi de `components/CityScores.tsx`
+çekmecesini açar (`introScores`): şehrin ilk 10 yolcusu + oyuncunun kendi satırı (sıra, portre, ad, madalya, süre, düşüş, hatıra; "Sen" vurgulu, ☆ arkadaş), satıra basınca ayrıntı (süre, en az düşüş, en çok hatıra, koşu sayısı,
+yolcu, lidere fark, "Profili Aç" `/oyuncu/<ad>`, "◌ Hayaletiyle Yarış" mevcut `startRace` akışı), "Tüm Sıralama →" Skor Tablosu'nun Şehirler sekmesine o şehirle atlar (`boardTab: 'city'`, `startCity`). Giriş gerekmez.
+Veri mevcut `GET /api/scores?level=<şehir>` (sunucu değişmedi); saf mantık, kısa ömürlü önbellek (20 sn), uçuştaki isteğin paylaşımı ve iptal `lib/cityScores.ts` (`tests/cityScores.test.ts`); `useCityScores` şehir değişince yeniden
+yükler, hata + Tekrar Dene, boş durum "İlk Rekoru Sen Koy". Bayrak başına süre API'de yok (hayalet dosyasında var, listede değil), bu yüzden ayrıntıda gösterilmez. Şehirler listesinde lider bilgisi yok (şehir başına istek ya da yeni toplu uç gerekir).
+
+**Yolcu seçici `HeroPicker` (21 Kasım 2026).** Uktun / Memo seçimi her yerde `components/HeroPicker.tsx`: iki kart (portre, ad, rol), seçili kart tonlu çerçeve + tik, `role="radiogroup"` (←/→/↑/↓ geçer, 1 ve 2 seçer, Tab seçili karta
+durur), altın odak halkası, hedef en az 56 px (alçak ekranda 48), hareketi azalt desteği. Boyutlar: `lg` şehir kartı (geniş ekranda sağ sütunun altı, dar ekranda alt çubuğun üstü; yatay telefonda alt çubukta `sm`),
+`sm` mola (`plainRun` onayı aynen: `setPauseHero`), Mağaza, Düello ve Co-op kurulumunda oyuncu başına (`stack`, `tone` oyuncunun rengi). Yeni yolcu seçeneği gerekirse yalnız buraya yaz. İlk açılıştaki "Karakterini Seç"
+ekranı biyografili kendi büyük kartlarıyla kalır.
+
 **Sıralama ve profil arayüzü.** `components/ScoreBoard.tsx`: yedi sekme (Genel, Şehirler, Günlük, Modlar, Speedrun, Koleksiyon, Arkadaşlar; seçili sekme `seksek:board:tab`te hatırlanır), yolcu araması (`q`, adın parçası) ve sayfalama (`lim`, en çok 100) API'de;
 satırda yolcu portresi (`hero`, `public/portreler`), liderle fark ("lidere +3,2 sn"), yapışkan "Senin Sıran" şeridi (son bakışa göre ▲▼ `seksek:rank:*`, "Kendine Git"), ok tuşlarıyla satır gezintisi. `components/ProfileView.tsx` oyun içi (Defter → Profil, `lib/profile.ts` `profileFromSave`)
 ve herkese açık `/oyuncu/<ad>` sayfasında aynı: kimlik kartı (portre + kombin + atkı), özet şeridi, vitrin (`save.pins`, en çok üç başarım; Defter → Başarımlar'da ☆ ile sabitlenir, bulutla gider), şehir ızgarası (süre, madalya, %100, sıra). Sunucu sayfası şehir satırlarını skor tablosundan, toplananları bulut kaydından alır.
@@ -168,18 +179,18 @@ fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya d
 `--hepsi` bütün şehirleri dener, yavaştır: şehirleri ayrı süreçlerde koş). Haritası değişen şehirde yeniden koş. Kanıt (21 Kasım 2026, `BUDGET=5000`): Ağır Yerçekimi 27/40 şehir, Kısa Dash 39/40 (Malatya yok), Af Yok 40/40; kanıtlanamayanlar kapalı kalır, bütçeyi artırıp yeniden denenebilir. Deprem yalnız görüntüdür
 (`view.quake` → `renderer.quake`, sarsıntı ayarı kapalıysa etkisiz) ve her şehirde açıktır. Önizleme: `rage-quake` (globals.css).
 
-**Modlar ekranı.** Üstte tam genişlikte "Bugün" şeridi: Günlük Meydan Okuma (ekranın tek dolu düğmesi) ve sağ yarısında Haftalık
-Turnuva. Altında tek ızgara (geniş ekranda 4 sütun): on mod + Bölüm Düzenleyici + Topluluk Haritaları. Öbek başlığı yok; aile rengi
-kutucuğun sol şeridinde. Sıra ailelere göre, her ailenin içi açılış sırası / zorluğa göre (geniş ekranda her aile bir satır):
-çivit yol (Kurallı Koşu, Mücadeleler, Ayna Yolu, Speedrun) · kiremit `--color-coral` meydan okuma (Boss Rush, Maraton, Kovalamaca,
-Sinir Bozucu) · turkuaz birlikte (Düello, Co-op; dokunmatikte Co-op klavye ister) · altın üret (Bölüm Düzenleyici, Topluluk Haritaları).
-Sinir Bozucu ve Kurallı Koşu listeleri ekranda kolaydan zora dizilir (`RuleArt.tsx` `FAMILY_ORDER`, `byHeat`; aileler Zemin, Görüş,
-Fizik, Baskı (Kovalamaca + tek can), Karışım). `RULES` dizisinin sırası değişmez: günlük kural onunla seçilir. Her mod bir `ModeTile`: çizim, ad, tek satır açıklama (~30 harf, kesilmesin),
-durum; kutucuğun tamamı modu açar (`href` ile sayfa), öbür yollar başlık satırında küçük `TileChip` (Parkurlar, Kâbus, Çifte, Aynalı).
-Kilitli kutucuk kesik çizgili ve nasıl açılacağını söyler. Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun.
+**Modlar ekranı (21 Kasım 2026, "premium" yenileme).** Üst bölge: başlık + arama + Geri; altında süzgeç çipleri ve aynı satırda tek ince "Sana Önerilen" / Devam Et şeridi (pil biçimli düğmeler;
+neden metni yalnız 2xl'de); altında "Bugün" üç kart: Günlük Meydan Okuma (ana kart: şehir, kural, Oyna / Sıralama, skor ve seri başlık satırında), Günün Üçlüsü (üç adım çipi, Günün Mücadelesi ve Günün Boss'u
+alt alta kompakt satırlar: Oyna + 🏆) ve Haftalık Turnuva (üç parkur satırı). Geniş ve yüksek ekranda (`wide`) bu üst bölge sabittir, yalnız mod ızgarası kendi alanında kayar (alt kenarda hafif solma, `.mode-grid`);
+küçük ekranda hepsi tek kaydırma alanındadır (ızgara orada `shrink-0`: `min-h-0` verme, taşan içerik tıklanamaz olur). Izgara ailelere göre gruplu, her aile ince başlıklı (`TileGroup`: şekil + ad + çizgi, şekil renk körü için ikinci işaret):
+Yol (Kurallı Koşu, Mücadeleler, Ayna Yolu, Speedrun; çivit) · Meydan Okuma (Boss Rush, Maraton, Kovalamaca, Sinir Bozucu; kiremit `--color-coral`) · Birlikte (Düello, Co-op; turkuaz) · Üret (Bölüm Düzenleyici, Topluluk Haritaları; altın) ·
+Keşfet ve Dinlen (Gezgin Turu, Sakin Gezi, Hikâye Gezisi; açık çivit `accent-2`). Gruplar DOM'da bu sırada durur; sayı tuşları `TILE_ORDER` sırasına bağlıdır (DOM sırasına değil). `ModeTile`: aile renginde madalyonlu çizim (`.mode-art`, sol üstte sayı tuşu),
+ad, en çok iki satır açıklama, rozetler (zorluk, kişi, Yeni; ikinci yollar `chips`: Kâbus, Çifte, Parkurlar, Aynalı) ve durum + ince ilerleme çubuğu; başlık satırının sağında yalnız 🏆 (`extra`). Kutucuğun tamamı modu açar (`href` ile sayfa);
+üstüne gelince bir adım yükselir (yalnız transform, hareketi azalt açıksa yerinde). Kilitli kutucuk kesik çizgili, çizimi soluk ve nasıl açılacağını söyler. Derinlik gradyan + iç parıltıyla gelir: `filter`, `backdrop-filter` ve büyük gölge yok.
+Düğme boyu fareyle 36 px, dokunmatikte (`pointer: coarse`) 44 px (`.hit`, `.mode-filter`, `.mode-rec`). Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun.
 Bulma araçları (`lib/modeHints.ts`, saf ve testli: `tests/extras.test.ts` "Modlar ekranı"): üstte arama (ad, açıklama ve `tags`; Türkçe harf farkı yok, `/` odaklar, Esc önce temizler sonra bırakır) ve süzgeç çipleri
 (Hepsi, Solo, Birlikte, Zor, Yeni, Sıralamalı, Açık Olanlar); eşleşmeyen kutucuk gizlenir, hiçbiri kalmazsa "Eşleşen Mod Yok". `MODES` kataloğu her mod için zorluk rozeti (Kolay/Orta/Zor), kişi sayısı,
-sıralama, `isNew` ("Yeni" rozeti: yeni mod gelince `true`, sonraki sürümde kapat) ve `howto` adımlarını tutar; **yeni mod eklerken** `ModeId`, `TILE_ORDER`, `NAME`, `MODES` ve `ModesHub` kutucuğunu birlikte yaz.
+sıralama, `isNew` ("Yeni" rozeti: yeni mod gelince `true`, sonraki sürümde kapat) ve `howto` adımlarını tutar; **yeni mod eklerken** `ModeId`, `TILE_ORDER`, `NAME`, `MODES` ve `ModesHub` kutucuğunu (doğru `TileGroup` içine) birlikte yaz.
 Kutucuk sırası sabit: ilk dokuzu 1-9 tuşlarıyla odaklanır, oklar kutucuklar arasında gezer (`neighbor`), Enter açar; kilitli kutucuk odaklanır ama açılmaz (`aria-disabled`). "Sana Önerilen" (`recommend`: en çok iki mod;
 hiç oynamamışa günlük + Co-op, yeni bitirene Kurallı Koşu, boss yenene Boss Rush, Üçlü yarımsa Üçlü…) Devam Et ile yan yana durur, süzgeç açıkken gizlenir, Devam Et'teki modu önermez; ana menüde Modlar kutucuğu aynı öneriyi
 alt yazıda söyler ve ekran açılana dek "Yeni" yazar. Bir moda ilk girişte kısa "Nasıl Oynanır" kartı (`HowToCard`) bir kez çıkar (`seksek:modeIntro`, yalnız bu tarayıcıda; Geri sayılmaz, "Anladım, Başla" sayılır);

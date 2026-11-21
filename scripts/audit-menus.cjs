@@ -77,6 +77,9 @@ const SCREENS = {
   'foto-kipi': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:Escape', 'Fotoğraf Kipi', 'wait:300']],
   hesap: [SAVE, ['Giriş Yap']],
   'sehir-karti': [SAVE, ['Devam Et']],
+  // şehir kartının skor paneli: liste, açılmış satır (oyuncu girişli: kendi satırı vurgulu, arkadaş yıldızı)
+  'sehir-skorlar': [SAVE, ['Devam Et', 'wait:300', "eval:[...document.querySelectorAll('button')].find((b) => b.textContent.includes('🏆') && b.offsetParent)?.click()", 'wait:400']],
+  'sehir-skorlar-detay': [{ ...SAVE, player: { id: '00000000-0000-4000-8000-000000000001', name: 'Deniz', token: 'x'.repeat(40) }, friends: ['ahmet'] }, ['Devam Et', 'wait:300', "eval:[...document.querySelectorAll('button')].find((b) => b.textContent.includes('🏆') && b.offsetParent)?.click()", 'wait:400', "eval:document.querySelectorAll('[data-row]')[4]?.click()", 'wait:300']],
   mola: [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape']],
   'mola-onay': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'key:m', 'wait:200']],
   'mola-sayim': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'key:Escape', 'wait:350']],

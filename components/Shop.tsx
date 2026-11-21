@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Portrait, { PortraitFace } from '@/components/Portrait'
+import Portrait from '@/components/Portrait'
 import { Overlay, SectionTitle, ic } from '@/components/ui'
 import { HEROES, SLOTS, forHero, hasAccessory, kitFor, kitKey, walletOf, ACCESSORIES, type Accessory, type AccessoryId, type Hero, type Kit, type Slot } from '@/game/accessories'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
+import HeroPicker from '@/components/HeroPicker'
 import { LOOKS, drawHero } from '@/game/heroDraw'
 import { LOOK_AXES, axisDef, hasLook, normalizeLook, optionsFor, type Axis, type LookOption } from '@/game/looks'
 import { demoPose, newDemo, type DemoMode } from '@/game/stance'
@@ -307,20 +308,7 @@ export default function Shop({
                 </button>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:mt-3 short:!mt-0">
-                <div className="grid grid-cols-2 gap-1.5" role="tablist" aria-label={t('Karakter')}>
-                  {HEROES.map((id) => (
-                    <button
-                      key={id}
-                      role="tab"
-                      aria-selected={hero === id}
-                      onClick={() => (setNote(''), onHero(id))}
-                      className={`flex min-w-0 items-center gap-1.5 border-2 px-1.5 py-1 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${hero === id ? 'border-gold bg-gold/10' : 'border-line bg-panel-2 hover:border-accent-2'}`}
-                    >
-                      <PortraitFace id={id} scarf={scarfFor(id)} accessory={drafts[id]} />
-                      <span className="truncate text-[14px] font-semibold text-cream">{CHARACTERS[id].name}</span>
-                    </button>
-                  ))}
-                </div>
+                <HeroPicker size="sm" label={t('Karakter')} value={hero} onChange={(id) => (setNote(''), onHero(id))} scarfOf={scarfFor} kitOf={(id) => drafts[id]} />
                 <ul className="grid gap-1 text-[13px] short:hidden">
                   {SLOTS.map((s) => {
                     const a = ACCESSORIES.find((x) => x.id === draft[s.id])

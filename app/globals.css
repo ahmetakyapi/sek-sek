@@ -241,49 +241,87 @@ input {
   pointer-events: none;
 }
 
-/* Mod kartı: ailesinin rengi (--tone) üstte şerit, çerçevede ve zeminde hafif ton; kilitliyse kesik çizgili ve soluk */
+/* Mod kartı: ailesinin rengi (--tone) üstte ince şerit, çerçevede ve zeminde hafif ton; kilitliyse kesik çizgili ve soluk.
+   Derinlik gradyan ve iç parıltıyla gelir (blur ya da büyük gölge yok). */
 .mode-card {
   position: relative;
-  border: 2px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  border: 2px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border-radius: 10px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--tone) 11%, transparent) 0%, transparent 70%),
-    rgb(14 13 34 / 0.35);
-  box-shadow: inset 0 3px 0 0 var(--tone);
+    linear-gradient(180deg, color-mix(in srgb, var(--tone) 10%, transparent) 0%, transparent 70%),
+    linear-gradient(160deg, rgb(34 31 74 / 0.75) 0%, rgb(14 13 34 / 0.55) 100%);
+  box-shadow:
+    inset 0 3px 0 0 var(--tone),
+    inset 0 4px 0 0 rgb(255 255 255 / 0.12);
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+button.mode-card:hover {
+  border-color: color-mix(in srgb, var(--tone) 80%, transparent);
+}
+button.mode-card:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
 }
 .mode-card.locked {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--tone) 30%, transparent);
   box-shadow: inset 0 3px 0 0 color-mix(in srgb, var(--tone) 35%, transparent);
 }
-/* Modlar ekranının kutucuğu: soldan renkli şerit, hafif ton; üstüne gelince ve odakta ton belirginleşir */
+/* Modlar ekranının kutucuğu: gradyan zemin, iç parıltı, aile renginde madalyonlu çizim; üstüne gelince ve odakta ton belirginleşir
+   ve kutucuk bir adım yükselir (yalnız transform; hareketi azalt açıksa yerinde kalır) */
 .mode-tile {
-  border: 2px solid color-mix(in srgb, var(--tone) 28%, var(--color-line));
+  border: 2px solid color-mix(in srgb, var(--tone) 32%, var(--color-line));
+  border-radius: 10px;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--tone) 14%, transparent) 0%, transparent 55%),
-    rgb(14 13 34 / 0.45);
-  box-shadow: inset 3px 0 0 0 var(--tone);
-  transition: border-color 120ms ease, background-color 120ms ease;
+    linear-gradient(135deg, color-mix(in srgb, var(--tone) 16%, transparent) 0%, transparent 52%),
+    linear-gradient(180deg, rgb(34 31 74 / 0.7) 0%, rgb(14 13 34 / 0.55) 100%);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.09),
+    inset 0 -2px 0 0 rgb(0 0 0 / 0.25);
+  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
 }
 .mode-tile:hover,
 .mode-tile:focus-within {
-  border-color: color-mix(in srgb, var(--tone) 70%, transparent);
-  background-color: color-mix(in srgb, var(--tone) 9%, rgb(14 13 34 / 0.45));
+  border-color: color-mix(in srgb, var(--tone) 75%, transparent);
+  background-color: color-mix(in srgb, var(--tone) 9%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mode-tile:not(.locked):hover {
+    transform: translateY(-2px);
+  }
+  .mode-tile:not(.locked):active {
+    transform: translateY(0) scale(0.99);
+  }
+}
+.mode-art {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent);
+  background:
+    radial-gradient(90% 90% at 30% 20%, color-mix(in srgb, var(--tone) 28%, transparent) 0%, transparent 75%),
+    rgb(14 13 34 / 0.55);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.1);
 }
 .mode-tile > button:first-child:focus-visible {
-  outline: 2px solid var(--tone);
-  outline-offset: 2px;
+  outline: none;
 }
 .mode-tile.locked {
   border-style: dashed;
-  box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--tone) 35%, transparent);
-  background: rgb(14 13 34 / 0.35);
+  border-color: color-mix(in srgb, var(--tone) 30%, var(--color-line));
+  background: rgb(14 13 34 / 0.4);
+  box-shadow: none;
+}
+.mode-tile.locked .mode-art {
+  opacity: 0.6;
+  border-style: dashed;
 }
 .mode-tile.locked:hover {
-  border-color: color-mix(in srgb, var(--tone) 28%, var(--color-line));
+  border-color: color-mix(in srgb, var(--tone) 30%, var(--color-line));
+  background-color: transparent;
 }
 .tile-chip {
   color: var(--tone);
-  border: 2px solid color-mix(in srgb, var(--tone) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  border-radius: 6px;
   background: color-mix(in srgb, var(--tone) 10%, var(--color-panel-2));
 }
 .tile-chip:hover:not(:disabled) {
@@ -291,6 +329,33 @@ input {
 }
 .tile-chip:disabled {
   opacity: 0.45;
+}
+/* Geniş ekranda ızgara kendi alanında kayar: alt kenarda hafif solma kaydırılacağını söyler */
+@media (min-width: 900px) and (min-height: 600px) {
+  .mode-grid {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent);
+  }
+}
+/* Modlar ekranının küçük düğmeleri: fare ile 36 px, dokunmatikte 44 px */
+.pixel-btn.hit,
+.mode-filter,
+.mode-rec {
+  min-height: 36px;
+}
+.pixel-btn.hit-sq {
+  min-width: 36px;
+  padding-inline: 0;
+}
+@media (pointer: coarse) {
+  .pixel-btn.hit,
+  .mode-filter,
+  .mode-rec,
+  .tile-chip {
+    min-height: 44px;
+  }
+  .pixel-btn.hit-sq {
+    min-width: 44px;
+  }
 }
 /* Bölmeli seçici (sıralama ölçütü, süzgeç): ikincil seçim; seçili bölme ton zeminli ve altı çizili, dolu düğme ekranda tek kalır */
 .seg {
@@ -361,8 +426,8 @@ input {
 /* Günlük Meydan Okuma: ekranın öne çıkan kartı */
 .mode-card.today {
   background:
-    radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--tone) 18%, transparent) 0%, transparent 60%),
-    rgb(14 13 34 / 0.5);
+    radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--tone) 20%, transparent) 0%, transparent 60%),
+    linear-gradient(160deg, rgb(34 31 74 / 0.75) 0%, rgb(14 13 34 / 0.55) 100%);
 }
 /* Ailesinin renginde ikincil düğme: koyu zemin, renkli çerçeve ve yazı; dolu düğme ekranda tek kalır */
 .pixel-btn.tone {
@@ -1028,6 +1093,7 @@ blockquote {
 
 /* Modlar ekranı: arama, süzgeç çipleri, rozetler, Sana Önerilen, odak halkası */
 .mode-search {
+  border-radius: 999px;
   border: 2px solid var(--color-line);
   background: rgb(14 13 34 / 0.55);
 }
@@ -1035,8 +1101,8 @@ blockquote {
   border-color: var(--color-accent-2);
 }
 .mode-filter {
-  min-height: 30px;
-  padding: 2px 10px;
+  padding: 2px 12px;
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
   color: var(--color-cream);
@@ -1056,11 +1122,19 @@ blockquote {
   outline-offset: 2px;
 }
 .mode-rec {
+  border-radius: 999px;
   border: 2px solid color-mix(in srgb, var(--color-gold) 55%, transparent);
   background: color-mix(in srgb, var(--color-gold) 9%, rgb(14 13 34 / 0.45));
 }
 .mode-rec:hover {
   border-color: var(--color-gold);
+}
+.mode-rec.cont {
+  border-color: color-mix(in srgb, var(--color-accent-2) 60%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 14%, rgb(14 13 34 / 0.45));
+}
+.mode-rec.cont:hover {
+  border-color: var(--color-accent-2);
 }
 .mode-kbd {
   display: inline-flex;
@@ -1083,6 +1157,7 @@ blockquote {
   }
 }
 .mode-badge {
+  border-radius: 4px;
   padding: 0 6px;
   font-size: 11px;
   font-weight: 700;

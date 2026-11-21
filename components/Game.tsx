@@ -14,6 +14,8 @@ import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
 import Defter, { RUSH_NEEDS } from '@/components/Defter'
 import { recommend } from '@/lib/modeHints'
+import CityScores, { CityScoreChip } from '@/components/CityScores'
+import HeroPicker from '@/components/HeroPicker'
 import ScoreBoard, { Board } from '@/components/ScoreBoard'
 import Race from '@/components/Race'
 import { DNF, DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, duelLevel, duelTerms, type DailyResult, type DuelSetupValue } from '@/components/Modes'
@@ -52,7 +54,7 @@ import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, type Scarf, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -297,7 +299,9 @@ export default function Game() {
   const [quiet, setQuiet] = useState(false)
   const [achToast, setAchToast] = useState<{ at: number; name: string; icon: string; more: number } | null>(null)
   const [setTab, setSetTab] = useState<'ayar' | 'tus'>('ayar')
-  const [boardTab, setBoardTab] = useState<'genel' | 'gunluk' | 'modlar' | 'speedrun'>('genel')
+  const [boardTab, setBoardTab] = useState<'genel' | 'city' | 'gunluk' | 'modlar' | 'speedrun'>('genel')
+  /** şehir kartındaki skor paneli (çekmece) açık mı */
+  const [introScores, setIntroScores] = useState(false)
   /** Skor Tablosu'nun açılış alt seçimi ve (kural tablosu için) kuralı: Modlar kutucuklarındaki Sıralama kısayolları */
   const [boardSub, setBoardSub] = useState<{ sub: string; rule?: DailyRule }>({ sub: '' })
   const [rushResult, setRushResult] = useState<{ timeMs: number; deaths: number; bosses: number; best: boolean; relaxed: boolean; kind: Rush['kind']; variant?: RushVariant; daily?: string } | null>(null)
@@ -778,6 +782,19 @@ export default function Game() {
     window.addEventListener('keydown', on)
     return () => window.removeEventListener('keydown', on)
   }, [])
+
+  // şehir kartındaki skor çekmecesi: Esc kapatır; kart kapanınca çekmece de kapanır
+  useEffect(() => {
+    if (screen !== 'intro') return setIntroScores(false)
+    if (!introScores) return
+    const on = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      setIntroScores(false)
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [screen, introScores])
 
   useEffect(() => {
     if (!toast) return
@@ -2087,6 +2104,13 @@ export default function Game() {
       )}
     </>
   )
+  /** yolcu seçimi: yola çıkmadan hemen değişir (geniş ekranda sağ sütunun altı, dar ekranda alt çubuğun üstü) */
+  const introHero = (
+    <div className="mt-3">
+      <SectionTitle title={t('Yolcu')} note={t('Kimin kılığında koşacaksın?')} tone="var(--color-accent-2)" className="mb-2" />
+      <HeroPicker size="lg" value={hero.id} onChange={(id) => (ui(), patch({ character: id }))} scarfOf={scarfOfHero} kitOf={(id) => kitOf(save, id)} />
+    </div>
+  )
   const introFacts = (
     <>
       <Bestiary level={level} only="creatures" />
@@ -2911,7 +2935,7 @@ export default function Game() {
       {screen === 'intro' && (
         <Overlay>
           <div className="rise pixel-panel w-full max-w-md overflow-clip px-6 wide:max-w-[min(1040px,100%)] wide:px-8">
-            <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={120} short={84} wide={150} />
+            <CityBanner level={level} index={levelIdx} total={LEVELS.length} height={104} short={84} wide={124} />
             <div className="wide:grid wide:grid-cols-[1.1fr_1fr] wide:gap-8">
               <div className="min-w-0">
                 <p className="-mt-1 text-[15px] font-semibold text-cream/80 [@media(max-height:500px)]:hidden">{level.subtitle}</p>
@@ -2940,6 +2964,9 @@ export default function Game() {
                       {k} {v}
                     </span>
                   ))}
+                  <span>
+                    <CityScoreChip level={level.id} me={save.player?.name ?? ''} onOpen={() => (ui(), setIntroScores(true))} />
+                  </span>
                 </div>
                 <p className="mt-3 flex [@media(max-height:500px)]:mt-0 items-center gap-2.5 text-[15px] leading-snug text-cream">
                   <ItemIcon city={level.city} taken size={28} />
@@ -2966,7 +2993,10 @@ export default function Game() {
                   {introGoals}
                 </div>
               </div>
-              <div className="hidden min-w-0 wide:block [&>*:first-child]:mt-0">{introFacts}</div>
+              <div className="hidden min-w-0 wide:block [&>*:first-child]:mt-0">
+                {introFacts}
+                {introHero}
+              </div>
             </div>
             <details className="intro-more mt-3 border-2 [@media(max-height:500px)]:mt-2 border-line bg-ink/40 wide:hidden">
               <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[13px] font-bold text-cream">
@@ -2980,15 +3010,15 @@ export default function Game() {
               </div>
             </details>
             {/* yola çıkmadan yolcuyu seç: bölüm başlamadığı için hemen değişir */}
-            <div className="mt-3 flex items-center justify-between gap-3 [@media(max-height:500px)]:hidden">
-              <span className="text-[14px] font-semibold text-cream/80">{t('Yolcu')}</span>
-              <HeroSwitch value={hero.id} onChange={(id) => (ui(), patch({ character: id }))} scarf={heroScarf} kit={heroAcc} />
-            </div>
+            <div className="wide:hidden [@media(max-height:500px)]:hidden">{introHero}</div>
             <div className="sticky bottom-0 z-10 -mx-6 mt-3 grid grid-cols-[1fr_auto] [@media(max-height:500px)]:grid-cols-[auto_1fr_auto] wide:-mx-8 wide:mt-6 wide:flex wide:justify-end wide:px-8 [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:py-2 gap-3 border-t-2 border-line bg-[#171538]/95 px-6 py-3 [padding-bottom:max(12px,env(safe-area-inset-bottom))]">
               {/* alçak ekranda (yatay telefon) yolcu seçici çubukta */}
               <span className="hidden [@media(max-height:500px)]:block">
-                <HeroSwitch value={hero.id} onChange={(id) => (ui(), patch({ character: id }))} scarf={heroScarf} kit={heroAcc} />
+                <HeroPicker size="sm" className="min-w-max" value={hero.id} onChange={(id) => (ui(), patch({ character: id }))} scarfOf={scarfOfHero} kitOf={(id) => kitOf(save, id)} />
               </span>
+              <button className="pixel-btn justify-center [@media(max-height:500px)]:hidden wide:order-first wide:mr-auto" onClick={() => (ui(), setIntroScores(true))}>
+                {ic(t('🏆 Skorlar'))}
+              </button>
               <button className="pixel-btn primary justify-center py-3 text-lg wide:min-w-[360px]" onClick={beginPlay} autoFocus>
                 {ic(t("▶ Başla"))}
               </button>
@@ -2996,6 +3026,31 @@ export default function Game() {
                 {t("Şehirler")}
               </button>
             </div>
+          </div>
+        </Overlay>
+      )}
+
+      {screen === 'intro' && introScores && (
+        <Overlay dim>
+          <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-lg flex-col p-4 sm:p-6 short:max-w-[min(640px,100%)] short:py-3 wide:max-w-[560px]" role="dialog" aria-label={t('{city} Skorları', { city: level.name })}>
+            <div className="mb-3 flex items-center justify-between gap-3 short:mb-2">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-accent-2">{t('Skorlar')}</p>
+                <h2 className="truncate font-display text-2xl leading-tight text-cream short:text-xl">{displayName(level)}</h2>
+              </div>
+              <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setIntroScores(false)}>
+                {ic(t('← Geri'))}
+              </button>
+            </div>
+            <CityScores
+              level={level}
+              me={save.player?.name ?? ''}
+              friends={save.friends ?? []}
+              onFriend={toggleFriend}
+              canRace={levelIdx <= save.unlocked}
+              onRace={(name) => startRace(levelIdx, name)}
+              onAll={() => (ui(), setIntroScores(false), setBoardTab('city'), setBoardSub({ sub: '' }), setScreen('scores'))}
+            />
           </div>
         </Overlay>
       )}
@@ -3069,20 +3124,19 @@ export default function Game() {
                 {cityCard}
                 {plainRun && (
                   <div className="mt-3 border-2 border-line bg-ink/40 px-3 py-2.5 short:mt-2 short:py-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[14px] font-semibold text-cream/80">{t('Yolcu')}</span>
-                      <HeroSwitch
-                        value={hero.id}
-                        scarf={heroScarf}
-                        kit={heroAcc}
-                        onChange={(id) => {
-                          ui()
-                          // yola çıkılmadıysa hemen değişir; çıkıldıysa onay: şehrin başına dönülür
-                          if (hud.time < 0.05) patch({ character: id })
-                          else setPauseHero(id)
-                        }}
-                      />
-                    </div>
+                    <span className="mb-1.5 block text-[14px] font-semibold text-cream/80 short:hidden">{t('Yolcu')}</span>
+                    <HeroPicker
+                      size="sm"
+                      value={hero.id}
+                      scarfOf={scarfOfHero}
+                      kitOf={(id) => kitOf(save, id)}
+                      onChange={(id) => {
+                        ui()
+                        // yola çıkılmadıysa hemen değişir; çıkıldıysa onay: şehrin başına dönülür
+                        if (hud.time < 0.05) patch({ character: id })
+                        else setPauseHero(id)
+                      }}
+                    />
                     {pauseHero && (
                       <div className="mt-2.5 border-t-2 border-line pt-2.5">
                         <p className="text-[13px] leading-snug text-cream/85">{t('{name} ile devam etmek için şehrin başına dönülür; süre ve düşüş sıfırlanır.', { name: CHARACTERS[pauseHero].name })}</p>
@@ -4088,21 +4142,6 @@ function Seal({ medal, bronze }: { medal: 'altin' | 'gumus' | 'bronz' | null; br
         <span className="font-display text-[17px] leading-none">{look[0]}</span>
         <span className="mt-0.5 text-[12px] font-bold leading-none tracking-[0.02em]">{t("MADALYA")}</span>
       </div>
-    </div>
-  )
-}
-
-/** Yolcu seçici (şehir kartı ve mola): Uktun ya da Memo; küçük portreli bölmeli düğme */
-function HeroSwitch({ value, onChange, scarf, kit }: { value: CharacterId; onChange: (id: CharacterId) => void; scarf: Scarf | null; kit: Kit }) {
-  const t = useT()
-  return (
-    <div className="seg" role="group" aria-label={t('Yolcu')}>
-      {(['uktun', 'memo'] as const).map((id) => (
-        <button key={id} aria-pressed={value === id} onClick={() => value !== id && onChange(id)} className="flex items-center gap-1.5 !px-2.5">
-          <Portrait id={id} scarf={scarf} accessory={kit} className="w-[22px]" />
-          {CHARACTERS[id].name}
-        </button>
-      ))}
     </div>
   )
 }

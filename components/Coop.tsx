@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ItemIcon, Key } from '@/components/HudBits'
+import HeroPicker from '@/components/HeroPicker'
 import Portrait, { PortraitFace } from '@/components/Portrait'
 import { duoHints } from '@/components/Race'
 import type { DuoKeys } from '@/game/input'
@@ -185,29 +186,27 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
             <div className="flex min-h-0 flex-col">
               {/* alçak ekranda (yatay telefon) oyuncu kartları gizlenir: co-op klavye ister, yer seçime kalsın */}
               <div className="short:hidden">
-                <SectionTitle title={t('Yolcular')} note={t('Karta dokun, kılığı değiştir')} tone="var(--color-teal)" />
+                <SectionTitle title={t('Yolcular')} note={t('Her oyuncu kendi yolcusunu seçer')} tone="var(--color-teal)" />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {([0, 1] as const).map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`flex items-center gap-2.5 border-2 bg-ink/30 p-2 text-left transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${k === 0 ? 'border-accent/70' : 'border-gold/70'}`}
-                      onClick={() => set({ heroes: k === 0 ? [heroes[0] === 'uktun' ? 'memo' : 'uktun', heroes[1]] : [heroes[0], heroes[1] === 'uktun' ? 'memo' : 'uktun'] })}
-                      aria-label={t('Kılığı Değiştir')}
-                    >
-                      <Portrait id={heroes[k]} className="w-[44px] shrink-0 max-sm:hidden" />
-                      <span className="min-w-0">
-                        <span className="flex items-baseline gap-2">
-                          <span className="font-display text-[16px] leading-tight text-cream">{CHARACTERS[heroes[k]].short}</span>
-                          <span className={`text-[12px] font-semibold ${k === 0 ? 'text-accent-2' : 'text-gold'}`}>{t('{n}. Oyuncu', { n: k + 1 })}</span>
-                        </span>
-                        <span className="mt-1 flex flex-wrap gap-0.5">
+                    <div key={k} className={`min-w-0 border-2 bg-ink/30 p-2 ${k === 0 ? 'border-accent/70' : 'border-gold/70'}`}>
+                      <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className={`text-[13px] font-semibold ${k === 0 ? 'text-accent-2' : 'text-gold'}`}>{t('{n}. Oyuncu', { n: k + 1 })}</span>
+                        <span className="flex flex-wrap gap-0.5 max-sm:hidden">
                           {duoHints(keys, lng === 'en' ? 'en' : 'tr')[k].flat().map((c) => (
                             <Key key={c}>{c}</Key>
                           ))}
                         </span>
-                      </span>
-                    </button>
+                      </div>
+                      <HeroPicker
+                        size="sm"
+                        stack
+                        label={t('{n}. Oyuncunun Yolcusu', { n: k + 1 })}
+                        tone={k === 0 ? 'var(--color-accent-2)' : 'var(--color-gold)'}
+                        value={heroes[k]}
+                        onChange={(id) => set({ heroes: k === 0 ? [id, heroes[1]] : [heroes[0], id] })}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
