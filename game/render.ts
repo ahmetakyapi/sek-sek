@@ -3028,7 +3028,7 @@ export class Renderer {
       idle.legs[1][1] = br
       body = idle
     }
-    this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, moving: pose === 1 || pose === 4, sx, sy, rot, pivot: pose === 4 ? DASH_PIVOT : 0, flow: Math.min(1.3, Math.hypot(vx, vy * 0.6) / PHYS.run) })
+    this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, scarf: GHOST_SCARF, scarfS: GHOST_SCARF_SHADE, moving: pose === 1 || pose === 4, sx, sy, rot, pivot: pose === 4 ? DASH_PIVOT : 0, flow: Math.min(1.3, Math.hypot(vx, vy * 0.6) / PHYS.run) })
   }
 
   /** İtilebilen sandıklar: tahta kasa, çapraz kuşak; oyundaki öbür vektör çizimlerle aynı mürekkep hat. */
@@ -3986,8 +3986,7 @@ export class Renderer {
     for (const h of this.heroes) {
       c.save()
       c.globalAlpha = h.alpha
-      // hayalet koşu soluk renkli (tek kopya); dash izi filtresiz, çünkü filtre her çizimde pahalı
-      if (h.ghost) c.filter = 'saturate(0.35) brightness(1.25)'
+      // hayalet koşu soluk (saydam, gri atkı): canvas filter hero'nun her çizgisinde ayrı çalışır ve kare kaçırtır, kullanılmaz
       if (h.rot) {
         const px = (h.x - cx) * sc
         const py = (h.y - (h.pivot ?? 0) - cy) * sc
@@ -4630,6 +4629,10 @@ interface Pop {
 
 /** Renkli blokların şehre özgü kılığı: mantık aynı (plaka rengi değiştirir), görüntü şehre göre */
 const SWITCH_SKIN: Partial<Record<CityKey, 'shadow' | 'daynight'>> = { bursa: 'shadow', van: 'daynight' }
+
+/** hayalet atkısı: soluk, gri-mavi (filtre yerine) */
+const GHOST_SCARF = '#aab6cc'
+const GHOST_SCARF_SHADE = '#7f8ca8'
 
 const NEXT_CITY: Record<CityKey, string | null> = {
   istanbul: 'EDİRNE',

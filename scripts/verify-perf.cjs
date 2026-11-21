@@ -6,6 +6,7 @@
  *
  *   npm run build && npx next start -p 3200      (ayrı uçbirimde)
  *   node scripts/verify-perf.cjs [şehir ...] [--port=3200]
+ *   GHOST=1 node scripts/verify-perf.cjs ...   (hayaletli koşu: aynı haritanın ikinci oynayışı)
  */
 const { chromium, devices } = require('playwright')
 
@@ -48,6 +49,14 @@ const SCREENS = [
       await pg.evaluate(() => {
         window.__mk.world().kill = () => {}
       })
+      // GHOST=1: oyuncunun hemen önünde koşan bir hayalet (ikinci kez oynanan haritadaki rekor koşu)
+      if (process.env.GHOST)
+        await pg.evaluate(() => {
+          const w = window.__mk.world()
+          const d = []
+          for (let i = 0; i < 900; i++) d.push(Math.round(w.player.x + 40 + i * 6.5), Math.round(w.player.y), i % 30 < 20 ? 1 : 2)
+          window.__mk.renderer().ghostRun = { hero: 'memo', data: d }
+        })
       await pg.keyboard.down('ArrowRight')
       await pg.waitForTimeout(1000)
       await pg.evaluate(() => (window.__gaps = []))
