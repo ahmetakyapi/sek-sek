@@ -72,7 +72,7 @@ export default function TitleMenu(props: {
   dailyPending: boolean
   /** bugünkü Günün Üçlüsü'nden biten parça sayısı (0-3) */
   trio: number
-  /** Kılık Dükkânı'nda harcanabilir parça */
+  /** Mağaza'da harcanabilir parça */
   wallet: number
   /** Modlar'ın "Sana Önerilen" ilk modu (günlük dışında); yoksa boş */
   modeHint?: ModeId

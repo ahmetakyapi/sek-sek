@@ -1,5 +1,5 @@
 /**
- * Aksesuar föyü: Kılık Dükkânı'nın her aksesuarı (game/accessories.ts) kendi yuvasında tek başına, ardından birkaç
+ * Aksesuar föyü: Mağaza'nın her aksesuarı (game/accessories.ts) kendi yuvasında tek başına, ardından birkaç
  * kombin (baş + yüz + sırt); her satır hareket hâlinde, portrede, telefon boyunda ve sekiz kılıkta. Karaktere özgü
  * parça (`for`) yalnız o karakterde hareket ve portre gösterir; ortak parça ikisinde.
  * heroDraw.ts ya da portraitDraw.ts'te aksesuar çizimi değişince buna bak.

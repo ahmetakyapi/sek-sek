@@ -4,7 +4,10 @@ import { World } from '../game/sim'
 import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK, HEAVY_OK, SHORT_DASH_OK, NO_MERCY_OK, GEZGIN_SIZES, gezginFor, gezginKey, gezginSeed, gezginTotal, dailyBoss, dailyMini, cleanTrio, markTrio, mergeTrio, settleTrio, trioCount, trioParts } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
-import { ACCESSORIES, HEROES, NO_KIT, earned, forHero, kitFor, walletOf } from '../game/accessories'
+import { ACCESSORIES, HEROES, NO_KIT, closetPrice, earned, forHero, kitFor, kitKey, walletOf } from '../game/accessories'
+import { AXES, HAIR_COLORS, HAIR_STYLES, LOOK_AXES, OUTFIT_COLORS, SKIN_TONES, STANCES, hasLook, lookKey, normalizeLook, optionsFor } from '../game/looks'
+import { drawHero, gaitInto, newPose, resolveSkin, LOOKS } from '../game/heroDraw'
+import { idlePose } from '../game/stance'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
 import { defaultSave, mergeSaves, nextUnplayed, resumeFor } from '../lib/storage'
@@ -249,15 +252,16 @@ describe('Ayna Yolu', () => {
   })
 })
 
-describe('Kılık Dükkânı', () => {
+describe('Mağaza', () => {
   it('cüzdan kazanılan parçadan o karakterin aldıklarının fiyatı düşülerek hesaplanır, eksiye inmez', () => {
     expect(walletOf(40, {}, 'uktun')).toBe(40)
     // yolcuya özgü alım yalnız o yolcunun cüzdanını azaltır
-    expect(walletOf(40, { 'uktun:papatya': true, 'uktun:gozluk': true }, 'uktun')).toBe(40 - 10 - 12)
+    const price = (id: string) => ACCESSORIES.find((a) => a.id === id)!.price
+    expect(walletOf(40, { 'uktun:papatya': true, 'uktun:gozluk': true }, 'uktun')).toBe(40 - price('papatya') - price('gozluk'))
     expect(walletOf(40, { 'uktun:papatya': true, 'uktun:gozluk': true }, 'memo')).toBe(40)
     // karakter ayrımından önce alınan (düz kimlik) iki yolcuya da açıktır ve ikisinin cüzdanından düşer
-    expect(walletOf(40, { gozluk: true }, 'uktun')).toBe(28)
-    expect(walletOf(40, { gozluk: true }, 'memo')).toBe(28)
+    expect(walletOf(40, { gozluk: true }, 'uktun')).toBe(40 - price('gozluk'))
+    expect(walletOf(40, { gozluk: true }, 'memo')).toBe(40 - price('gozluk'))
     // başka yolcunun parçası dolapta yoktur: fiyatı düşülmez
     expect(walletOf(40, { papatya: true }, 'memo')).toBe(40)
     expect(walletOf(10, { 'memo:fes': true }, 'memo')).toBe(0)
@@ -267,11 +271,85 @@ describe('Kılık Dükkânı', () => {
     expect(earned(10, 2, 1)).toBe(17)
     const all = earned(LEVELS.length * 5, LEVELS.length, LEVELS.length)
     for (const h of HEROES) {
-      const prices = forHero(h).filter((a) => a.seals === undefined).reduce((a, x) => a + x.price, 0)
+      // dolabın tamamı: aksesuarlar ve ücretli görünüm seçenekleri (saç, renk, desen, ifade, duruş, koşu tarzı)
+      const prices = closetPrice(h)
       expect(all).toBeGreaterThanOrEqual(prices)
       // hepsi alınca oyunun parçasının büyük kısmı harcanmış olur (seçim anlamlı kalsın)
       expect(prices).toBeGreaterThan(all * 0.8)
     }
+  })
+  it('görünüm seçenekleri: her yolcu için saç stili ≥ 5, saç rengi ≥ 8, ten 6, kıyafet rengi ≥ 8, desen ≥ 4, göz rengi ≥ 4, ifade ≥ 4, duruş ve koşu tarzı; temel renkler ücretsiz', () => {
+    for (const h of HEROES) {
+      const n = (a: 'hs' | 'hc' | 'sk' | 'oc' | 'op' | 'ey' | 'ex' | 'st' | 'rs') => optionsFor(h, a).length
+      expect(n('hs')).toBeGreaterThanOrEqual(5)
+      expect(n('hc')).toBeGreaterThanOrEqual(8)
+      expect(Object.keys(SKIN_TONES)).toHaveLength(6)
+      expect(n('oc')).toBeGreaterThanOrEqual(8)
+      expect(n('op')).toBeGreaterThanOrEqual(4)
+      expect(n('ey')).toBeGreaterThanOrEqual(4)
+      expect(n('ex')).toBeGreaterThanOrEqual(4)
+      expect(n('st')).toBeGreaterThanOrEqual(4)
+      expect(n('rs')).toBeGreaterThanOrEqual(4)
+      // her eksenin kendi değeri ücretsiz; her eksende en az bir ücretsiz seçenek daha ya da ücretsiz taban
+      for (const ax of LOOK_AXES) expect(optionsFor(h, ax.id).find((o) => o.id === ax.base)!.price).toBe(0)
+      for (const o of optionsFor(h, 'oc')) expect(o.price).toBe(0)
+      for (const o of optionsFor(h, 'sk')) expect(o.price).toBe(0)
+    }
+    // tanımlı her saç stili ve renk kimliği bir seçenektir, her seçeneğin verisi (stil, renk, ton, desen, duruş) vardır
+    for (const o of optionsFor('uktun', 'hs')) expect(HAIR_STYLES[o.id]).toBeDefined()
+    for (const o of optionsFor('memo', 'hc').filter((x) => x.id !== 'ozgun')) expect(HAIR_COLORS[o.id]).toBeDefined()
+    for (const o of optionsFor('memo', 'oc').filter((x) => x.id !== 'ozgun')) expect(OUTFIT_COLORS[o.id]).toBeDefined()
+    for (const o of optionsFor('memo', 'st')) expect(STANCES[o.id]).toBeDefined()
+    expect(AXES).toHaveLength(LOOK_AXES.length)
+  })
+  it('görünüm: bilinmeyen ya da yolcuya uymayan seçim düşer; sahiplik yolcuya özgüdür; boş görünüm varsayılandır', () => {
+    expect(normalizeLook('uktun', undefined)).toBeUndefined()
+    expect(normalizeLook('uktun', { hs: 'yok-boyle', hc: 'pembe', x: 'y' })).toEqual({ hc: 'pembe' })
+    // Uktun'a özgü örgü Memo'da yok; Memo'ya özgü kazıma Uktun'da yok
+    expect(normalizeLook('memo', { hs: 'orgu' })).toBeUndefined()
+    expect(normalizeLook('uktun', { hs: 'kazima' })).toBeUndefined()
+    // aynı içerik aynı nesne (çizim önbelleği)
+    expect(normalizeLook('uktun', { hs: 'at', hc: 'sari' })).toBe(normalizeLook('uktun', { hc: 'sari', hs: 'at' }))
+    // boş seçim ile yolcunun kendi değeri aynı sayılır: kombin anahtarı değişmez
+    expect(kitKey({ ...NO_KIT, look: normalizeLook('uktun', { hs: 'ozgun', st: 'rahat' }) })).toBe(kitKey(NO_KIT))
+    expect(kitKey({ ...NO_KIT, look: normalizeLook('uktun', { hs: 'at' }) })).not.toBe(kitKey(NO_KIT))
+    // varsayılan görünüm bozulmaz: seçimsiz çizim kılığın kendisi
+    expect(resolveSkin('uktun')).toBe(LOOKS.uktun)
+    expect(resolveSkin('memo', normalizeLook('memo', { hs: 'ozgun' }))).toMatchObject({ hair: LOOKS.memo.hair, coat: LOOKS.memo.coat, skin: LOOKS.memo.skin, front: 'quiff', back: 'none' })
+    expect(resolveSkin('uktun', normalizeLook('uktun', { hs: 'ozgun' }))).toMatchObject({ front: 'fringe', back: 'long' })
+    // sahiplik
+    const o = optionsFor('uktun', 'hs').find((x) => x.id === 'topuz')!
+    expect(hasLook({}, 'uktun', 'hs', o)).toBe(false)
+    expect(hasLook({ [lookKey('uktun', 'hs', 'topuz')]: true }, 'uktun', 'hs', o)).toBe(true)
+    expect(hasLook({ [lookKey('uktun', 'hs', 'topuz')]: true }, 'memo', 'hs', o)).toBe(false)
+    // alınan ücretli seçenek yalnız o yolcunun cüzdanından düşer
+    expect(walletOf(40, { [lookKey('uktun', 'hs', 'topuz')]: true }, 'uktun')).toBe(40 - o.price)
+    expect(walletOf(40, { [lookKey('uktun', 'hs', 'topuz')]: true }, 'memo')).toBe(40)
+  })
+  it('kombin görünümü taşır: kitFor görünümü doğrular, çizim her kombinle hatasız çalışır ve poz tamponları sabit kalır', () => {
+    const k = kitFor('memo', { head: 'melon', face: 'vizor', back: 'jet' }, undefined, { hs: 'topuz', hc: 'mavi', sk: 'esmer', oc: 'mor', op: 'yildiz', ey: 'altin', ex: 'kurnaz', st: 'bagli', rs: 'sportif' })
+    expect(k.look).toMatchObject({ hs: 'topuz', st: 'bagli', rs: 'sportif' })
+    expect(kitFor('uktun', undefined, undefined, { hs: 'kazima' }).look).toBeUndefined()
+    // kaydın boş görünümü: kit yalnız slotlardan ibaret
+    expect(kitFor('uktun', { head: 'fes' }).look).toBeUndefined()
+    // pozlar: tamponlar yeniden kullanılır, değerler sonlu
+    const out = newPose()
+    const legs = out.legs
+    for (const rs of ['normal', 'sportif', 'tirisa', 'omuz', undefined]) {
+      for (let i = 0; i < 16; i++) {
+        gaitInto(out, i / 16, 1, rs)
+        for (const v of [...out.legs.flat(), ...out.arms.flat()]) expect(Number.isFinite(v)).toBe(true)
+      }
+    }
+    for (const st of Object.keys(STANCES)) for (const it of [0, 1, 3.5, 5, 7, 10, 13.2, 15, 20, 33]) {
+      idlePose(out, st, it, it * 0.37)
+      for (const v of [...out.legs.flat(), ...out.arms.flat(), out.head ?? 0, out.gaze ?? 0]) expect(Number.isFinite(v)).toBe(true)
+    }
+    expect(out.legs).toBe(legs)
+    // gait(1) = gait(0) her koşu tarzında (döngü kapanır)
+    for (const rs of ['normal', 'sportif', 'tirisa', 'omuz']) expect(gaitInto(newPose(), 1, 1, rs).legs[0][0]).toBeCloseTo(gaitInto(newPose(), 0, 1, rs).legs[0][0], 6)
+    // tuvalsiz ortam için: yalnız çizici tanımlı
+    expect(typeof drawHero).toBe('function')
   })
   it('her karakterin her yuvada en az üç özel parçası var; ortak parçalar iki dolapta da', () => {
     for (const h of HEROES)

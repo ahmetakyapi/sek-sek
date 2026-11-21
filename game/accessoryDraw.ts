@@ -1,5 +1,5 @@
 /**
- * Karaktere özgü Kılık Dükkânı parçalarının çizimi (game/accessories.ts: `for`). Baş ve yüz parçaları tek yerde çizilir,
+ * Karaktere özgü Mağaza parçalarının çizimi (game/accessories.ts: `for`). Baş ve yüz parçaları tek yerde çizilir,
  * hem oyundaki karakter (heroDraw) hem vesikalık (portraitDraw) çağırır: parça "baş çerçevesi"ne (`HeadFrame`) göre
  * yazılır; çerçeve her çizicide gözün, ağzın, çenenin ve alnın yerini söyler (oyundaki karakter profilden, portre
  * önden bakar). Koordinatlar karakter birimidir (karakter 100 birim boyunda, göz hattı sıfır); çerçeve onları kendi
@@ -45,7 +45,7 @@ export interface Anim {
 }
 
 /** çerçeveyle çalışan küçük çizim takımı */
-function kit(c: CanvasRenderingContext2D, H: HeadFrame) {
+export function kit(c: CanvasRenderingContext2D, H: HeadFrame) {
   const x = (a: number) => H.cx + a * H.sx
   const y = (b: number) => H.cy + b * H.sy
   const k = (H.sx + H.sy) / 2
@@ -311,6 +311,93 @@ export function drawHeadItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
       blob(c, band, '#f2ece0', { color: '#cfc8ba', dx: 0, dy: 1.4 })
       return true
     }
+    case 'kedikulak':
+    case 'tavsan': {
+      // kulaklı saç bandı: bant başın tepesinden geçer; kedi kulakları sivri ve içi pembe, tavşan kulakları uzun ve sarkık (koşarken savrulur)
+      const P = H.f > 4
+      const rabbit = id === 'tavsan'
+      const col = rabbit ? '#f6eef0' : '#3a3446'
+      const colS = rabbit ? '#d8c8d0' : '#22202c'
+      const inner = '#ff9fbd'
+      const crown = H.crown
+      const by = top - (P ? 6 : 3.4)
+      const xs = P ? [-9, 1.5] : [-8.2, 8.2]
+      const sw2 = sway * 0.8 - an.hair * 2.4
+      g.st(P ? [-13.4, top + 5, -11, top - 2.6, -4, top - 8.2, 5.4, top - 7.8, 11.2, top - 2.4] : [-13.4, top + 3.6, -11, top - 3.4, 0, top - 6.4, 11, top - 3.4, 13.4, top + 3.6], 2.2, rabbit ? '#ff8fb4' : '#e0566a')
+      xs.forEach((x, i) => {
+        const far = P && i === 1
+        const k = far ? 0.88 : 1
+        if (rabbit) {
+          // uzun kulak: tabandan yukarı doğru, ucu geriye sarkık
+          const h = 14.5 * crown * k
+          const lean = (P ? -0.14 : i ? 0.2 : -0.2) + sw2 * 0.05
+          const tipX = x + Math.sin(lean) * h - (P ? 3.2 : 0) + sw2 * 0.9
+          const tipY = by - Math.cos(lean) * h
+          blob(c, () => {
+            g.m(x - 3.2 * k, by + 1)
+            g.bz(x - 5 * k, by - h * 0.5, tipX - 3 * k, tipY + 3, tipX, tipY)
+            g.bz(tipX + 3.6 * k, tipY + 3, x + 5 * k, by - h * 0.4, x + 3.2 * k, by + 1)
+          }, col, { color: colS, dx: -1.2, dy: -0.4 })
+          g.fine(x - 0.4, by - 2, (x + tipX) / 2 - 0.4, by - h * 0.5, tipX - 0.4, tipY + 3.4, 1.7, inner)
+        } else {
+          const h = 8.2 * crown * k
+          blob(c, () => {
+            g.m(x - 4.4 * k, by + 1)
+            g.l(x - 3.6 * k + sway * 0.2, by - h)
+            g.l(x + 4 * k, by - 1)
+          }, col, { color: colS, dx: -1.4, dy: -0.6 })
+          blob(c, () => {
+            g.m(x - 2.6 * k, by)
+            g.l(x - 2.2 * k + sway * 0.15, by - h * 0.62)
+            g.l(x + 2.4 * k, by - 0.6)
+          }, inner)
+        }
+      })
+      return true
+    }
+    case 'melon': {
+      // melon şapka: yuvarlak tepe, dar kenar, koyu kırmızı bant
+      const cx = mid
+      const by = top + 1.6
+      const R = 11.4
+      const H2 = 16 * (0.6 + 0.4 * H.crown)
+      blob(c, () => {
+        g.m(cx - R, by)
+        g.bz(cx - R - 1.4, by - H2 * 0.9, cx + R + 1.4, by - H2 * 0.9, cx + R, by)
+      }, '#58546a', { color: '#34303f', dx: -3, dy: -1.6 })
+      g.fine(cx - R + 2.6, by - H2 * 0.5, cx - R + 3.8, by - H2 * 0.84, cx - 1, by - H2 * 0.92, 1.7, 'rgba(255,255,255,0.28)')
+      blob(c, () => {
+        g.m(cx - R - 0.4, by - 0.4)
+        g.q(cx, by - 4.2, cx + R + 0.4, by - 0.4)
+        g.l(cx + R + 0.2, by - 3)
+        g.q(cx, by - 6.6, cx - R - 0.2, by - 3)
+      }, '#a8324a', { color: '#781f34', dx: 0, dy: 1 })
+      blob(c, () => g.ell(cx + (H.f > 4 ? 1.4 : 0), by + 0.6, R + 3.8, 2.7), '#2c2a34', { color: '#18161e', dx: -2, dy: 1 })
+      return true
+    }
+    case 'kask': {
+      // mühendis kaskı: sarı kubbe, ortada sırt çıkıntısı, öne uzanan siper ve alında küçük fener
+      const cx = mid
+      const by = top + 1.4
+      const R = 11.8
+      const H2 = 12.4 * H.crown
+      blob(c, () => {
+        g.m(cx - R, by)
+        g.bz(cx - R - 0.8, by - H2 * 1.1, cx + R + 0.8, by - H2 * 1.1, cx + R, by)
+        g.q(cx, by + 2.4, cx - R, by)
+      }, '#f4c01e', { color: '#c8920e', dx: -3, dy: -1.4 })
+      blob(c, () => {
+        g.m(cx - 2.4, by - H2 * 0.82)
+        g.l(cx + 2.4, by - H2 * 0.82)
+        g.l(cx + 2.2, by + 0.6)
+        g.l(cx - 2.2, by + 0.6)
+      }, '#ffd84a', { color: '#d9a418', dx: -1, dy: 0 })
+      g.fine(cx - R + 2.4, by - H2 * 0.4, cx - R + 3.2, by - H2 * 0.8, cx - 4.4, by - H2 * 0.92, 1.6, 'rgba(255,255,255,0.45)')
+      // siper: profilde öne, portrede alna doğru
+      blob(c, () => g.ell(cx + (H.f > 4 ? 4.2 : 0), by + 1.4, R + 2.4, 2.3), '#e0aa14', { color: '#b88408', dx: -1.6, dy: 1 })
+      blob(c, () => g.ell(cx + (H.f > 4 ? 8 : 0), by - 4.6, 2.2, 1.8), '#f6f2e6', { color: '#cfc8b0', dx: -0.6, dy: 0.4 })
+      return true
+    }
   }
   return false
 }
@@ -452,6 +539,37 @@ export function drawFaceItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
       g.fine(a - 3.4, 0.6, a - 3.2, -3, a - 0.8, -4, 1, 'rgba(255,255,255,0.28)')
       return true
     }
+    case 'yildizgoz': {
+      // yıldız camlı gözlük: altın sarısı çerçeve, camda pembe ışık
+      const r1 = 5.4
+      const r2 = farR(5.4) + 0.6
+      g.st([near + r1 * 0.5, -0.6, (near + far) / 2, -1.6, far - r2 * 0.5, -0.8], 0.9, '#d9a020')
+      g.st([near - r1 * 0.9, -1.8, near - r1 - 6.4, -2.6], 0.9, '#d9a020')
+      blob(c, () => starPath(g, near, 0.8, r1, 0.1), '#ffe36a', { color: '#e0b020', dx: -1.2, dy: -0.8 })
+      blob(c, () => starPath(g, far, 0.8, r2, 0.1), '#ffe36a', { color: '#e0b020', dx: -1.2, dy: -0.8 })
+      blob(c, () => starPath(g, near, 0.8, r1 * 0.5, 0.1), 'rgba(255,170,205,0.7)')
+      blob(c, () => starPath(g, far, 0.8, r2 * 0.5, 0.1), 'rgba(255,170,205,0.7)')
+      g.dot(near - 1.8, -1.4, 0.7, GLOSS)
+      return true
+    }
+    case 'vizor': {
+      // siber vizör: gözleri saran koyu şerit, ortasında parlayan turkuaz tarama çizgisi (zamanla gezinir)
+      const x0 = near - 6.2
+      const x1 = far + (H.fw < 1 ? 3.4 : 6.4)
+      blob(c, () => {
+        g.m(x0, -3.4)
+        g.q((x0 + x1) / 2, -5.4, x1, -3.6)
+        g.l(x1 + 0.4, 3.6)
+        g.q((x0 + x1) / 2, 5.4, x0 - 0.4, 3.8)
+      }, '#262a3c', { color: '#14172a', dx: -1.6, dy: -1.2 })
+      const sc = 0.5 + 0.5 * Math.sin(an.t * 1.6)
+      const sx = x0 + (x1 - x0) * (0.12 + 0.76 * sc)
+      g.st([x0 + 1.2, 0.2, x1 - 1.2, 0.4], 1.5, 'rgba(70,240,230,0.55)', false)
+      g.st([sx - 3, 0.2, sx + 3, 0.3], 1.9, '#b8fff6', false)
+      g.fine(x0 + 1.4, -2.6, (x0 + x1) / 2, -3.8, x1 - 2, -2.4, 0.9, 'rgba(255,255,255,0.28)')
+      g.st([x0 - 0.4, -1.4, x0 - 6.4, -2.2], 1, '#262a3c')
+      return true
+    }
   }
   return false
 }
@@ -459,6 +577,59 @@ export function drawFaceItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
 /** oyundaki karakterin sırt parçası: gövdeden önce çizilir (heroDraw: tx, ty gövde, sw sallanma) */
 export function drawHeroBack(c: CanvasRenderingContext2D, id: AccessoryId, tx: number, ty: number, t: number, sw: number, flow: number, lift: number): boolean {
   switch (id) {
+    case 'kanat': {
+      // melek kanadı: omuz kürek kemiğinden çıkar, yukarı ve geriye süzülür; koşarken çırpar, dururken hafif nefes alır
+      const flap = Math.sin(t * (flow > 0.5 ? 15 : 2.2)) * (flow > 0.5 ? 0.2 : 0.06) - lift * 0.18
+      for (const near of [false, true]) {
+        c.save()
+        c.translate(tx - 8.4, ty - 19)
+        c.rotate(-0.4 + flap + (near ? 0.22 : 0))
+        const k = near ? 1.3 : 1.1
+        c.scale(k, k)
+        const wing = () => {
+          c.moveTo(0, 0)
+          c.bezierCurveTo(-4, -12, -14, -26, -26, -27)
+          c.quadraticCurveTo(-22, -22, -24, -17.6)
+          c.quadraticCurveTo(-19, -16.4, -21, -11.4)
+          c.quadraticCurveTo(-15, -10.8, -16, -6.2)
+          c.quadraticCurveTo(-10, -6.2, -8.4, -1.4)
+          c.quadraticCurveTo(-4, 0, 0, 0)
+        }
+        blob(c, wing, near ? '#fdfbf4' : '#e7e3f0', { color: near ? '#cbd0e6' : '#b7bad2', dx: -2.2, dy: -1 })
+        stroke(c, [-3, -3, -10, -12, -19, -21.6], 0.9, near ? '#cbd0e6' : '#b7bad2', false)
+        stroke(c, [-2.2, -2.4, -8, -6.4, -14.4, -9], 0.8, near ? '#cbd0e6' : '#b7bad2', false)
+        c.restore()
+      }
+      return true
+    }
+    case 'jet': {
+      // jet sırt çantası: iki gümüş tüp, kırmızı üst ve alt kapak; hızlandıkça alevi uzar (saate bağlı titreşim)
+      c.save()
+      c.translate(tx - 10, ty - 15)
+      c.rotate(sw * 0.02)
+      const flame = Math.max(0, flow - 0.15) * (7 + Math.sin(t * 34) * 2.2 + Math.sin(t * 21) * 1.4)
+      for (const x of [-5.6, 1.6]) {
+        if (flame > 0.6) {
+          blob(c, () => {
+            c.moveTo(x - 2.2, 22.6)
+            c.quadraticCurveTo(x - 2.4, 22.6 + flame * 0.6, x + 0.4, 23.4 + flame * 1.5)
+            c.quadraticCurveTo(x + 2.4, 22.6 + flame * 0.6, x + 2.6, 22.6)
+          }, '#ff9a2e', { color: '#e0561c', dx: -0.6, dy: -0.4 })
+          blob(c, () => {
+            c.moveTo(x - 1, 22.6)
+            c.quadraticCurveTo(x - 0.8, 22.6 + flame * 0.4, x + 0.4, 23 + flame * 0.8)
+            c.quadraticCurveTo(x + 1.6, 22.6 + flame * 0.4, x + 1.6, 22.6)
+          }, '#ffe97a')
+        }
+        blob(c, () => c.roundRect(x - 3.2, -5, 6.8, 28, 3.2), '#c9d0dc', { color: '#8a94a8', dx: -2.2, dy: 0 })
+        blob(c, () => c.roundRect(x - 3.4, -6, 7.2, 4.4, 2), '#d8403a', { color: '#a42a2a', dx: -1.4, dy: 0 })
+        blob(c, () => c.roundRect(x - 3, 19, 6.4, 4.2, 1.6), '#4a4e60', { color: '#2e3144', dx: -1, dy: 0 })
+        stroke(c, [x - 1.6, -1, x - 1.8, 16], 0.8, 'rgba(255,255,255,0.6)', false)
+      }
+      stroke(c, [-4.4, 4, 0.6, 4], 1.2, '#4a4e60', false)
+      c.restore()
+      return true
+    }
     case 'sirtcanta': {
       c.save()
       c.translate(tx - 9, ty - 25)
@@ -656,6 +827,9 @@ export function drawHeroBack(c: CanvasRenderingContext2D, id: AccessoryId, tx: n
 /** sırt parçalarının askısı ve öne taşan kısmı: gövdeden sonra çizilir */
 export function drawHeroBackFront(c: CanvasRenderingContext2D, id: AccessoryId, tx: number, ty: number): boolean {
   switch (id) {
+    case 'jet':
+      stroke(c, [tx - 9.4, ty - 23, tx - 6.4, ty - 26, tx - 2, ty - 22, tx + 8.4, ty - 6], 1.9, '#4a4e60')
+      return true
     case 'sirtcanta':
       stroke(c, [tx - 9, ty - 23, tx - 7.4, ty - 21, tx - 3.4, ty - 24, tx - 2, ty - 15], 2.4, '#4a3a5a')
       stroke(c, [tx - 4.4, ty - 23.6, tx - 3, ty - 20], 0.7, 'rgba(255,255,255,0.4)', false)
@@ -690,6 +864,38 @@ export function drawHeroBackFront(c: CanvasRenderingContext2D, id: AccessoryId, 
 /** portrede sırt parçası: omuzlardan önce çizilir, saç ve baş onun üstündedir */
 export function drawPortraitBack(c: CanvasRenderingContext2D, id: AccessoryId): boolean {
   switch (id) {
+    case 'kanat': {
+      // iki kanat omuzların iki yanından yukarı açılır
+      for (const side of [-1, 1]) {
+        c.save()
+        c.translate(side < 0 ? 27 : 77, 100)
+        c.scale(side, 1)
+        const wing = () => {
+          c.moveTo(0, 0)
+          c.bezierCurveTo(-2, -22, -8, -46, -18, -58)
+          c.quadraticCurveTo(-17, -48, -21, -42)
+          c.quadraticCurveTo(-22, -34, -26, -29)
+          c.quadraticCurveTo(-24, -22, -28, -16)
+          c.quadraticCurveTo(-22, -12, -22, -6)
+          c.quadraticCurveTo(-12, -6, 0, 0)
+        }
+        blob(c, wing, side < 0 ? '#fdfbf4' : '#e7e3f0', { color: side < 0 ? '#cbd0e6' : '#b7bad2', dx: -3, dy: -1.4 })
+        stroke(c, [-2, -6, -8, -26, -15, -50], 1.2, '#b7bad2', false)
+        stroke(c, [-3, -4, -12, -14, -22, -22], 1, '#b7bad2', false)
+        c.restore()
+      }
+      return true
+    }
+    case 'jet': {
+      for (const x of [3, 15]) {
+        blob(c, () => c.roundRect(x, 84, 11, 46, 5), '#c9d0dc', { color: '#8a94a8', dx: -3, dy: 0 })
+        blob(c, () => c.roundRect(x - 0.4, 80, 11.8, 7, 3.2), '#d8403a', { color: '#a42a2a', dx: -2, dy: 0 })
+        stroke(c, [x + 3, 90, x + 2.6, 118], 1.3, 'rgba(255,255,255,0.6)', false)
+      }
+      stroke(c, [8, 96, 22, 96], 1.8, '#4a4e60', false)
+      return true
+    }
+
     case 'sirtcanta': {
       const bag = () => {
         c.moveTo(-3, 124)
@@ -839,6 +1045,10 @@ export function drawPortraitBack(c: CanvasRenderingContext2D, id: AccessoryId): 
 /** portrede omuzların üstüne binen kısım (askı ve öne düşen uçlar) */
 export function drawPortraitBackFront(c: CanvasRenderingContext2D, id: AccessoryId): boolean {
   switch (id) {
+    case 'jet':
+      stroke(c, [21, 92.4, 27, 90.2, 32, 95, 37, 124], 3.4, '#4a4e60')
+      stroke(c, [81, 92.4, 75, 90.2, 70, 95, 65, 124], 3.4, '#4a4e60')
+      return true
     case 'sirtcanta':
       stroke(c, [21, 92, 27, 89.6, 32, 95, 37, 124], 3.6, '#4a3a5a')
       stroke(c, [81, 92, 75, 89.6, 70, 95, 65, 124], 3.6, '#4a3a5a')

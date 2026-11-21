@@ -7,7 +7,9 @@
  */
 import { COVERS_HEAD, NO_KIT, ON_HEAD, type AccessoryId, type Kit } from './accessories'
 import { PORTRAIT_HEAD, drawFaceItem, drawHeadItem, drawPortraitBack, drawPortraitBackFront } from './accessoryDraw'
-import { INK, LOOKS, blob, setInkWidth, stroke, type Look } from './heroDraw'
+import { INK, LOOKS, blob, drawPattern, resolveSkin, setInkWidth, stroke, type Look } from './heroDraw'
+import { drawHairBack, drawHairTop } from './hairDraw'
+import type { Expr, Front } from './looks'
 
 type Skin = (typeof LOOKS)[Look]
 type Ctx = CanvasRenderingContext2D
@@ -35,7 +37,7 @@ export interface PortraitOpts {
   /** oyuncunun seçtiği atkı (lib/extras.ts SCARVES): renk ve gölgesi */
   scarf?: string
   scarfS?: string
-  /** Kılık Dükkânı kombini (game/accessories.ts): baş, yüz, sırt; başa takılan kılığın şapkasının yerine geçer */
+  /** Mağaza kombini (game/accessories.ts): baş, yüz, sırt; başa takılan kılığın şapkasının yerine geçer */
   acc?: Kit
   /** yalnız yüz: kare çerçeveye kaştan çeneye kırpılır (gösterge pulu) */
   face?: boolean
@@ -214,6 +216,7 @@ function shoulders(c: Ctx, look: Look, s: Skin) {
     c.bezierCurveTo(88, 94, 97, 102, 98, 124)
   }
   blob(c, path, s.coat, { color: s.coatS, dx: -4.5, dy: -1.5 })
+  if (s.pat && s.patC) drawPattern(c, s.pat, s.patC, 3, 89, 95, 40, 2.2, () => (path(), c.lineTo(98, 130), c.lineTo(3, 130)))
   rim(c, path, RIM, -1.7, 0.5)
   // omuz ışığı ve kol dikişi
   curve(c, 9, 109, 12, 98.5, 28, 94.5, 2, s.coatL)
@@ -468,8 +471,14 @@ function ear(c: Ctx, s: Skin, x = 27.4) {
  * Göz: iki tonlu iris (koyu halka, altta ışık alan yarım ay), göz bebeği, iki ışık noktası, kalın üst kirpik çizgisi,
  * kapak kıvrımı ve alt kapak gölgesi. lashes: dış uçtaki kirpik sayısı; out: dış ucun yönü (-1 sol, 1 sağ).
  */
-function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut: boolean, lashes: number, gx: number, out: -1 | 1 = -1) {
+function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut: boolean, lashes: number, gx: number, out: -1 | 1 = -1, ex: Expr = 'ozgun') {
   const ox = x + out * rx
+  if (ex === 'sevecen' && !shut) {
+    // gülen göz: kapalı, yukarı kavisli
+    curve(c, x - rx - 0.4, y + 1.8, x, y - 5.4, x + rx + 0.4, y + 1.8, 2, INK)
+    for (let i = 0; i < lashes; i++) curve(c, ox - out * i * 1.4, y + 1.4 + i * 0.5, ox + out * (1 - i * 0.9), y + 0.6 + i * 0.5, ox + out * (1.9 - i * 1.2), y - 0.4 + i * 0.4, 0.7, INK)
+    return
+  }
   if (shut) {
     curve(c, x - rx, y + 0.4, x, y + 3, x + rx, y + 0.2, 1.4, INK)
     for (let i = 0; i < lashes; i++) curve(c, ox - out * i * 1.4, y + 0.5 + i * 0.5, ox + out * (1 - i * 0.9), y + 1.2 + i * 0.5, ox + out * (1.7 - i * 1.2), y + 2.2 + i * 0.4, 0.7, INK)
@@ -529,6 +538,18 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   c.globalAlpha = 1
   // alt kirpik çizgisinin dış ucu: bakışı çerçeveler
   curve(c, ox, y + 0.3, ox - out * rx * 0.12, y + ry * 0.62, ox - out * rx * 0.42, y + ry * 0.86, 0.75, INK)
+  // uykulu ve kurnaz bakış: üst kapak gözün yarısına (kurnazda üçte birine) iner
+  if (ex === 'uykulu' || ex === 'kurnaz') {
+    const ly = y - ry + ry * 2 * (ex === 'uykulu' ? 0.5 : 0.3)
+    c.save()
+    c.beginPath()
+    c.ellipse(x, y, rx + 0.8, ry + 0.8, 0, 0, Math.PI * 2)
+    c.clip()
+    c.fillStyle = s.skin
+    c.fillRect(x - rx - 3, y - ry - 6, rx * 2 + 6, ly - (y - ry - 6))
+    c.restore()
+    curve(c, x - rx - 0.6, ly + 0.4, x, ly + 1.8, x + rx + 0.6, ly + 0.2, 1.5 * boost, INK)
+  }
 }
 
 /** kaş: iç ucu dolgun, dış ucu incelen dolu bir fırça izi; th kalınlık */
@@ -546,7 +567,7 @@ function brow(c: Ctx, x0: number, y0: number, cx: number, cy: number, x1: number
   c.stroke()
 }
 
-function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
+function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean, ex: Expr = 'ozgun') {
   const old = look === 'amca' || look === 'ozan' || look === 'teyze'
   // yanaklar: kadında allık, erkekte elmacığın altında hafif bir sıcaklık
   if (fem) {
@@ -557,14 +578,16 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
     soft(c, 69.4, 64.8, 2.6, 1.8, s.blush)
   }
   // gözler: yüzün ortasında, badem biçimli; yakın göz iri, uzak göz dönük yüzde biraz dar
-  const ry = fem ? 4.9 : 4.3
+  const ry = (fem ? 4.9 : 4.3) * (ex === 'saskin' ? 1.14 : ex === 'neseli' ? 1.06 : 1)
   // iki göz aynı boyda, aralarında bir göz genişliği; irisler aynı noktaya (kameraya) bakar
-  eye(c, s, 45.4, 54.6, 4.5, ry, shut, look === 'uktun' ? 3 : fem ? 1 : 0, 0.3)
-  eye(c, s, 63.4, 54.4, 4.3, ry, shut, look === 'uktun' ? 2 : 0, 0.3, 1)
+  eye(c, s, 45.4, 54.6, 4.5, ry, shut, look === 'uktun' ? 3 : fem ? 1 : 0, 0.3, -1, ex)
+  eye(c, s, 63.4, 54.4, 4.3, ry, shut, look === 'uktun' ? 2 : 0, 0.3, 1, ex)
   // kaşlar: gözün üstünde, yukarı kavisli (dostça); iç uç (buruna yakın) dolgun
   const th = look === 'uktun' ? 1.2 : fem ? 1 : look === 'memo' ? 1.7 : look === 'genc' ? 1.15 : 2.1
-  brow(c, 51.8, 45.6, 45.4, 41.2, 38, 46.4, th, s.brow)
-  brow(c, 59.2, 45.3, 64.2, 41.1, 69.8, 45.6, th, s.brow)
+  // ifade kaşı oynatır: [yakın kaş yukarı, uzak kaş yukarı, yakın kaş iç ucu aşağı]
+  const [bl, br, inner] = ex === 'saskin' ? [-2.8, -2.8, 0] : ex === 'neseli' ? [-1.6, -1.6, 0] : ex === 'sevecen' ? [-1.2, -1.2, 0] : ex === 'uykulu' ? [2, 2, 0] : ex === 'kurnaz' ? [0.6, -3, 2.6] : [0, 0, 0]
+  brow(c, 51.8, 45.6 + bl + inner, 45.4, 41.2 + bl + inner * 0.2, 38, 46.4 + bl, th, s.brow)
+  brow(c, 59.2, 45.3 + br, 64.2, 41.1 + br, 69.8, 45.6 + br, th, s.brow)
   if (th > 1.5) {
     // kalın kaşta kıllar: uca doğru yatan kısa teller
     c.beginPath()
@@ -627,7 +650,37 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean) {
   }
 }
 
-function mouth(c: Ctx, look: Look, s: Skin) {
+function mouth(c: Ctx, look: Look, s: Skin, ex: Expr = 'ozgun') {
+  // ifadeli ağızlar (yolcu görünümü): yüzün alt yarısı kılığa göre biraz aşağıda durur
+  if (ex !== 'ozgun' && ex !== 'neseli') {
+    const dy = look === 'uktun' ? 0 : 3
+    const lip = s.beard ? '#f0c4a8' : '#8e3a3c'
+    if (ex === 'saskin') {
+      ell(c, 56.4, 75.6 + dy, 3.1, 3.9, '#7a2230')
+      ell(c, 56.4, 77.8 + dy, 2.2, 1.5, '#e8707a')
+      c.beginPath()
+      c.ellipse(56.4, 75.6 + dy, 3.1, 3.9, 0, 0, Math.PI * 2)
+      c.strokeStyle = INK
+      c.lineWidth = 1.2 * boost
+      c.stroke()
+    } else if (ex === 'uykulu') {
+      curve(c, 51.4, 74.4 + dy, 56.4, 76.2 + dy, 61.4, 73.8 + dy, 1.5, lip)
+    } else if (ex === 'kurnaz') {
+      curve(c, 49.6, 75 + dy, 57, 78.4 + dy, 64.6, 70.6 + dy, 1.7, lip)
+      curve(c, 64.6, 70.6 + dy, 66.4, 71.6 + dy, 65.8, 73.8 + dy, 0.9, s.skinS)
+    } else {
+      // sevecen: geniş, yumuşak, kapalı gülüş
+      c.beginPath()
+      c.moveTo(50, 72.2 + dy)
+      c.quadraticCurveTo(56.6, 80.4 + dy, 63.6, 71.4 + dy)
+      c.quadraticCurveTo(57, 76.4 + dy, 50, 72.2 + dy)
+      c.fillStyle = look === 'uktun' ? '#e07a7e' : 'rgba(196,104,88,0.6)'
+      c.fill()
+      curve(c, 48.8, 71.4 + dy, 56.6, 79 + dy, 64.8, 70.4 + dy, 1.4, lip)
+    }
+    return
+  }
+  if (ex === 'neseli' && look !== 'uktun') return mouth(c, 'uktun', s)
   if (look === 'uktun') {
     // içten gülüş: aralık dudakların arasında dişler; üst dudak ince, alt dudak dolgun ve ışıklı
     const open = () => {
@@ -1313,7 +1366,7 @@ function propFront(c: Ctx, s: Skin) {
   }
 }
 
-// ── Kılık Dükkânı aksesuarları (game/accessories.ts) ─────────────────────
+// ── Mağaza aksesuarları (game/accessories.ts) ─────────────────────
 
 /** papatya: sekiz beyaz yaprak, sarı göbek */
 function daisy(c: Ctx, x: number, y: number, r: number, rot: number) {
@@ -1794,7 +1847,9 @@ function frame(s: Skin, acc: AccessoryId): [number, number, number] {
   if (acc === 'bere') return [1.0, 52, -6]
   if (acc === 'hasir') return [0.94, 53, 0]
   if (acc === 'kulaklik') return [1.04, 52, 6]
-  if (s.long) return [1.07, 50.5, 11.5]
+  if (s.back === 'bun') return [1.0, 52, 1]
+  if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob') return [1.05, 51.5, 9]
+  if (s.fringe) return [1.07, 50.5, 11.5]
   if (s.hat === 'toque') return [0.98, 52, -5.5]
   if (s.hat === 'kalpak') return [1.04, 52, 5]
   if (s.hat === 'kasket') return [1.06, 55, 8.5]
@@ -1802,15 +1857,66 @@ function frame(s: Skin, acc: AccessoryId): [number, number, number] {
   return [1.07, 52, 8]
 }
 
+/** ön saç biçimi: Mağaza stili ya da kılığın kendi saçı (kılık başına eski seçim) */
+function frontOfPortrait(look: Look, s: Skin): Front | 'parted' {
+  if (s.front) return s.front
+  if (s.fringe) return 'fringe'
+  if (look === 'memo') return 'quiff'
+  if (s.hat === 'yazma') return 'parted'
+  if (look === 'genc') return 'curly'
+  return 'short'
+}
+
+/** kazıma: kafatasına oturan ince saç; alın çizgisi kısa saçınkini izler */
+function buzzHair(c: Ctx, s: Skin, skull: () => void) {
+  c.save()
+  c.beginPath()
+  skull()
+  c.clip()
+  c.beginPath()
+  c.moveTo(20, 62)
+  c.lineTo(20, 8)
+  c.lineTo(86, 8)
+  c.lineTo(80, 50)
+  c.quadraticCurveTo(76.2, 41.5, 71, 37.6)
+  c.quadraticCurveTo(64, 40.2, 57.4, 35.6)
+  c.quadraticCurveTo(49, 40.6, 40.6, 37)
+  c.quadraticCurveTo(34.2, 40.4, 33, 47.6)
+  c.lineTo(33, 61.5)
+  c.quadraticCurveTo(29.6, 61.4, 20, 59)
+  c.closePath()
+  c.fillStyle = s.hairS
+  c.fill()
+  ell(c, 50, 27, 25, 11, s.hair, -0.1)
+  c.beginPath()
+  for (let i = 0; i < 46; i++) {
+    const x = 28 + ((i * 11) % 52)
+    const y = 22 + ((i * 7) % 18)
+    c.moveTo(x, y)
+    c.lineTo(x + 0.6, y + 1.5)
+  }
+  c.strokeStyle = s.hairL
+  c.lineWidth = 0.6 * boost
+  c.lineCap = 'round'
+  c.stroke()
+  c.restore()
+  curve(c, 77.4, 49.5, 76.2, 41.5, 71, 37.6, 0.9, s.hairS)
+  c.beginPath()
+  skull()
+  c.closePath()
+  c.strokeStyle = INK
+  c.lineWidth = FACE_INKW * boost
+  c.stroke()
+}
+
 /**
  * Portreyi (w x h) kutusuna çizer: kutuyu doldurur, taban ortalanır. t: saniye (nefes, saç, göz kırpma).
  * Fon dahil bütün kutu boyanır; çerçeveyi çağıran çizer.
  */
 export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number, opts: PortraitOpts = {}) {
-  const s0 = LOOKS[look]
   const kit = opts.acc ?? NO_KIT
   const acc = kit.head
-  const s1: Skin = opts.scarf ? { ...s0, scarf: opts.scarf, scarfS: opts.scarfS ?? s0.scarfS } : s0
+  const s1: Skin = resolveSkin(look, kit.look, opts.scarf, opts.scarfS)
   // başa takılan aksesuar kılığın şapkasının yerine geçer (yazma kalır, başlık üstüne oturur)
   const s: Skin = ON_HEAD.has(acc) && s1.hat && s1.hat !== 'yazma' ? { ...s1, hat: undefined } : s1
   const live = !opts.still
@@ -1844,7 +1950,10 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   }
   ink(MID_INKW)
 
-  const fem = !!s.long || s.hat === 'yazma'
+  const fem = !!s.fem || s.hat === 'yazma'
+  const front = frontOfPortrait(look, s)
+  const ex: Expr = s.expr ?? 'ozgun'
+  const hairAn = { t, moving: false, hair: sway * 0.3, lift: 0 }
   // baş ve boyun: omuzların yarısı kadar oynar, çok hafif yana eğilir
   const head = () => {
     c.translate(52, 92 + breath * 0.5)
@@ -1862,11 +1971,16 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     ink(MID_INKW)
     c.restore()
   }
-  // uzun saç omuzların arkasına düşer
-  if (s.long) {
+  // uzun saç omuzların arkasına düşer; Mağaza saçları (at kuyruğu, örgü, küt kesim) da başın arkasında
+  if (s.back === 'long') {
     c.save()
     head()
     longHairBack(c, s, sway)
+    c.restore()
+  } else if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob') {
+    c.save()
+    head()
+    drawHairBack(c, s.back, PORTRAIT_HEAD, hairAn, s)
     c.restore()
   }
 
@@ -1923,10 +2037,10 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     c.save()
     c.translate(d * 0.3, d)
     c.beginPath()
-    if (s.long) fringePath(c)
-    else if (look === 'memo') memoTopPath(c)
-    else if (s.hat === 'yazma') partedHairPath(c)
-    else if (look === 'genc') curlyHairPath(c)
+    if (front === 'fringe') fringePath(c)
+    else if (front === 'quiff') memoTopPath(c)
+    else if (front === 'parted') partedHairPath(c)
+    else if (front === 'curly') curlyHairPath(c)
     else shortHairPath(c)
     c.fill()
     c.restore()
@@ -1936,19 +2050,17 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   ink(FACE_INKW)
   rim(c, skull, FACE_RIM, -1.3, 0.3)
   ink(MID_INKW)
-  face(c, look, s, shut, fem)
+  face(c, look, s, shut, fem, ex)
   if (s.beard) beard(c, s, look === 'ozan')
   if (s.trim) trimmedBeard(c, s)
-  mouth(c, look, s)
+  mouth(c, look, s, ex)
   if (s.mustache && !s.beard) mustache(c, s)
-  if (s.long) longHairFront(c, s)
-  else if (s.hat === 'yazma') partedHair(c, s)
-  else if (look === 'genc') curlyHair(c, s)
-  else if (look === 'memo') {
-    // kulak favorinin arkasında kalır
-    ear(c, s, 26.6)
-    memoHair(c, s)
-  }
+  if (look === 'memo') ear(c, s, 26.6)
+  if (front === 'fringe') longHairFront(c, s)
+  else if (front === 'parted') partedHair(c, s)
+  else if (front === 'curly') curlyHair(c, s)
+  else if (front === 'quiff') memoHair(c, s)
+  else if (front === 'buzz') buzzHair(c, s, skull)
   else shortHair(c, s)
   if (s.hat === 'yazma') {
     if (kit.face === 'gozluk') glasses(c)
@@ -1970,10 +2082,11 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     if (kit.face === 'gunes') shades(c)
     if (kit.face === 'kayak') goggles(c)
     drawFaceItem(c, kit.face, PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
+    drawHairTop(c, s.back ?? 'none', PORTRAIT_HEAD, hairAn, s, COVERS_HEAD.has(acc) || (!!s.hat && !ON_HEAD.has(acc)))
     hat(c, s)
     if (ON_HEAD.has(acc)) {
       c.save()
-      if (s.long && COVERS_HEAD.has(acc)) c.translate(0, -2)
+      if (s.fringe && COVERS_HEAD.has(acc)) c.translate(0, -2)
       if (!drawHeadItem(c, acc, PORTRAIT_HEAD, { t, moving: false, hair: sway * 0.25, lift: 0 })) headAcc(c, acc, sway)
       c.restore()
     }

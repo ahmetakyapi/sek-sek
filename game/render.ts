@@ -4,7 +4,8 @@ import { drawChaseDog, drawEnemy, drawFriend, drawKeepsake, drawThing } from './
 import { CHARACTERS, type CharacterDef } from './characters'
 import type { Boss } from './boss'
 import { drawBoss } from './bossDraw'
-import { INK, LOOKS, POSES, airPose, climbPose, drawHero, gait, handPos, lerpPose, swimStroke, type Look, type Pose } from './heroDraw'
+import { INK, LOOKS, POSES, airPoseInto, climbPose, copyPose, drawHero, gaitInto, handPos, lerpPoseInto, newPose, swimStroke, type Look, type Pose } from './heroDraw'
+import { idlePose, landInto } from './stance'
 import { NO_KIT, type Kit } from './accessories'
 import { TerrainHD } from './terrainDraw'
 import { cb, cbc, type CbMode } from './colorBlind'
@@ -98,11 +99,12 @@ export class Renderer {
   character: CharacterDef = CHARACTERS.uktun
   /** oyuncunun seçtiği atkı rengi (yoksa karakterin kendi atkısı) */
   scarf: { color: string; shade: string } | null = null
-  /** Kılık Dükkânı'ndan takılan aksesuar (game/accessories.ts) */
+  /** Mağaza'dan takılan aksesuar (game/accessories.ts) */
   accessory: Kit = NO_KIT
   /** en iyi koşunun hayaleti (yoksa null) */
   ghostRun: GhostRun | null = null
-  private ghostIdle: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], 0], [POSES.idle.legs[1][0], 0]] }
+  /** hayaletin poz tamponu: oyuncuyla aynı poz kodu (heroDraw gaitInto / airPoseInto, stance idlePose), kare başına ayırma yok */
+  private ghostPose: Pose = newPose()
   /** ekran sarsıntısı çarpanı: 0 = kapalı (ayarlar ya da "hareketi azalt") */
   /** boss'u çizilen şehir (özel haritada başka şehrin boss'u olabilir) */
   bossCity: CityKey = 'istanbul'
@@ -149,7 +151,6 @@ export class Renderer {
   private wallChain = 0
   /** havadaki en yüksek düşüş hızı: sert inişte toz ve sarsıntı */
   private airVy = 0
-  private idleT = 0
   /** boss’un uyandığı an: adı kısa süre yazılır */
   private bossWoke = -99
   /** boss'un konuşma balonu: ne dedi, ne zaman */
@@ -3035,20 +3036,18 @@ export class Renderer {
       sx = 1.14
       sy = 0.9
     } else if (pose === 2 || pose === 3) {
-      body = airPose(vy, this.t)
-      const up = Math.max(0, Math.min(1, -vy / PHYS.jumpV)) * 0.09
+      body = airPoseInto(this.ghostPose, vy, this.t)
+      const up = Math.max(0, Math.min(1, -vy / PHYS.jumpV)) * 0.14
       sx = 1 - up * 0.75
       sy = 1 + up
     } else if (pose === 1) {
       const cyc = (x * 15) / 8 / PHYS.run
-      body = gait(cyc - Math.floor(cyc), Math.min(1.6, Math.abs(vx) / PHYS.run))
+      body = gaitInto(this.ghostPose, cyc - Math.floor(cyc), Math.min(1.6, Math.abs(vx) / PHYS.run))
     } else {
-      // bekleme pozu: tek paylaşılan nesne (kare başına ayırma yok); heroes her karede boşalır
-      const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
-      const idle = this.ghostIdle
-      idle.legs[0][1] = br
-      idle.legs[1][1] = br
-      body = idle
+      // bekleme pozu: oyuncuyla aynı kod; kıpırdamadan geçen süre kayıttan geriye sayılır (en çok 12 sn)
+      let still = 0
+      for (let j = i; j > 0 && still < 12 * GHOST_HZ / (g.step ?? 1) && (g.data[j * 3 + 2] & 7) === 0; j--) still++
+      body = idlePose(this.ghostPose, undefined, (still * (g.step ?? 1)) / GHOST_HZ, this.t)
     }
     this.heroes.push({ look: g.hero === 'memo' ? 'memo' : 'uktun', pose: body, x: x + 6, y: y + 14, flip: code >= 8, alpha, ghost: true, scarf: GHOST_SCARF, scarfS: GHOST_SCARF_SHADE, moving: pose === 1 || pose === 4, sx, sy, rot, pivot: pose === 4 ? DASH_PIVOT : 0, flow: Math.min(1.3, Math.hypot(vx, vy * 0.6) / PHYS.run) })
   }
@@ -4108,7 +4107,7 @@ export class Renderer {
   /** co-op eşinin karakteri (öbür kılık) */
   partnerLook: Look = 'memo'
   partnerScarf: { color: string; shade: string } | null = null
-  /** eşin kombini (Kılık Dükkânı: her yolcunun kendi kombini) */
+  /** eşin kombini (Mağaza: her yolcunun kendi kombini) */
   partnerAcc: Kit = NO_KIT
 
   private anims = new WeakMap<Player, HeroAnim>()
@@ -4123,7 +4122,7 @@ export class Renderer {
   private heroAnim(p: Player, self: boolean) {
     let a = this.anims.get(p)
     if (!a) {
-      a = { flow: 0, lift: 0, hair: 0, ang: 0, angV: 0, cvx: 0, px: p.x, rec: 0, recPose: POSES.dash, recRot: 0, recK: [1, 1], airMax: 0, hard: 0.5, grounded: p.grounded }
+      a = { flow: 0, lift: 0, hair: 0, ang: 0, angV: 0, cvx: 0, px: p.x, rec: 0, recPose: POSES.dash, recRot: 0, recK: [1, 1], airMax: 0, hard: 0.5, grounded: p.grounded, out: newPose(), tmp: newPose(), idleT: 0, landT: 9 }
       this.anims.set(p, a)
     }
     const dt = Math.min(0.1, this.frameDt)
@@ -4135,7 +4134,12 @@ export class Renderer {
     else if (!a.grounded) {
       a.hard = Math.max(0.45, Math.min(1, (a.airMax - 60) / 220))
       a.airMax = 0
+      a.landT = 0
     }
+    if (p.grounded) a.landT += dt
+    // bekleme süresi: yerde, duran ve dash atmayan oyuncu için
+    a.idleT = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0 ? a.idleT + dt : 0
+    const look = (self ? this.accessory : this.partnerAcc).look
     a.grounded = p.grounded
     // teleferikte ilerleme hızı konumdan (teleferik vx yazmaz)
     a.cvx += ((dt > 0 ? (p.x - a.px) / dt : 0) - a.cvx) * ease(0.06)
@@ -4199,12 +4203,13 @@ export class Renderer {
         flip = p.wallDir < 0
         dx = -p.wallDir * 2.5
       } else {
-        pose = airPose(p.vy, this.t)
-        // yükselişte incelip uzar, hızlı düşüşte hafifçe uzar
-        const up = Math.max(0, Math.min(1, -p.vy / PHYS.jumpV)) * 0.09
-        const down = Math.max(0, Math.min(1, (p.vy - 150) / 150)) * 0.05
-        kx = 1 - (up + down) * 0.75
-        ky = 1 + up + down
+        pose = airPoseInto(a.out, p.vy, this.t)
+        // yükselişte incelip uzar (kalkışta en çok), hızlı düşüşte hafifçe uzar; tepede (asılı an) yuvarlaklaşır
+        const up = Math.max(0, Math.min(1, -p.vy / PHYS.jumpV)) * 0.14
+        const down = Math.max(0, Math.min(1, (p.vy - 150) / 150)) * 0.07
+        const apex = Math.max(0, 1 - Math.abs(p.vy) / 110)
+        kx = 1 - (up + down) * 0.75 + 0.05 * apex
+        ky = 1 + up + down - 0.04 * apex
       }
     } else {
       const speed = Math.abs(p.vx)
@@ -4213,29 +4218,24 @@ export class Renderer {
         pose = POSES.brake
         flip = p.vx < 0
         brake = true
-      } else if (speed > 8) pose = gait(((p.runTime * 15) / 8) % 1, Math.min(1.6, speed / PHYS.run))
-      else if (self && this.idleT > 5 && (this.idleT - 5) % 7 < 1.6) {
-        const wv = Math.sin(this.idleT * 13) * 22
-        pose = { ...POSES.wave, arms: [POSES.wave.arms[0], [POSES.wave.arms[1][0], POSES.wave.arms[1][1] + wv]] }
-      } else {
-        // nefes: dizler hafifçe esner, gövde iner kalkar
-        const br = 2 + 5 * (0.5 + 0.5 * Math.sin(this.t * 2.6))
-        pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]] }
+      } else if (speed > 8) pose = gaitInto(a.out, ((p.runTime * 15) / 8) % 1, Math.min(1.6, speed / PHYS.run), look?.rs)
+      else {
+        // bekleme: seçili duruş, nefes, göz kırpma ve bir süre kıpırdamayınca küçük hareketler (bakınma, ayak oynatma, esneme, el sallama)
+        pose = idlePose(a.out, look?.st, a.idleT, this.t + (self ? 0 : 1.9))
       }
-      if (p.landTimer > 0 && !brake) {
-        // iniş: dizler çöker, sertlikle derinleşir; esneme hacmi korur
-        const k = Math.min(1, p.landTimer / 0.12)
-        const d = k * k * (3 - 2 * k) * a.hard
-        pose = lerpPose(pose, POSES.land, d)
-        kx = 1 + 0.2 * d
-        ky = 1 - 0.16 * d
+      if (a.landT < 0.4 && !brake) {
+        // iniş: dizler çöker, sertlikle derinleşir, sonra sönümlü yay gibi hafifçe uzar (squash ve stretch; hacim korunur)
+        const sq = Math.exp(-a.landT / 0.08) * Math.cos((a.landT * Math.PI * 2) / 0.26) * a.hard
+        if (sq > 0) pose = landInto(a.tmp, pose, sq)
+        kx = 1 + 0.2 * sq
+        ky = 1 - 0.16 * sq
       }
     }
     // dash bitti: gövde birkaç kare içinde dikilir, dönüş ve esneme söner
     if (!dashing) a.rec = Math.max(0, a.rec - dt)
     if (!dashing && !hold && a.rec > 0) {
       const k = (a.rec / DASH_RECOVER) ** 2
-      pose = lerpPose(pose, a.recPose, k)
+      pose = lerpPoseInto(a.tmp, pose, a.recPose, k)
       rot += a.recRot * k
       pivot = DASH_PIVOT
       kx += (a.recK[0] - 1) * k
@@ -4245,7 +4245,11 @@ export class Renderer {
     a.flow += (flowT - a.flow) * ease(flowT > a.flow ? 0.05 : 0.22)
     a.lift += ((pose.lift ?? 0) - a.lift) * ease(0.09)
     a.hair += ((pose.hair ?? 0) - a.hair) * ease(0.07)
-    pose = { ...pose, lift: a.lift, hair: a.hair }
+    // sonuç, bu oyuncuya ait tampona yazılır (kare başına nesne ayrılmaz; dash izi kendi kopyasını alır)
+    if (pose !== a.out) copyPose(a.out, pose)
+    a.out.lift = a.lift
+    a.out.hair = a.hair
+    pose = a.out
     const moving = hold ? hold.moving : Math.abs(p.vx) > 40 || !p.grounded
     return { pose, rot, pivot, dx, dy, flip, kx, ky, moving, flow: a.flow, brake }
   }
@@ -4255,8 +4259,9 @@ export class Renderer {
     const q = w.partner
     if (!q || q.dead) return
     const m = this.heroAnim(q, false)
+    if ((this.t + 1.7) % 3.4 < 0.12) m.pose.blink = true
     const spent = !q.canDash
-    this.heroes.push({ look: this.partnerLook, pose: { ...m.pose, blink: (this.t + 1.7) % 3.4 < 0.12 }, x: q.x + q.w / 2 + m.dx, y: q.y + q.h + m.dy, flip: m.flip, alpha: 1, ghost: false, moving: m.moving, sx: m.kx, sy: m.ky, rot: m.rot, pivot: m.pivot, flow: m.flow, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade, acc: this.partnerAcc })
+    this.heroes.push({ look: this.partnerLook, pose: m.pose, x: q.x + q.w / 2 + m.dx, y: q.y + q.h + m.dy, flip: m.flip, alpha: 1, ghost: false, moving: m.moving, sx: m.kx, sy: m.ky, rot: m.rot, pivot: m.pivot, flow: m.flow, scarf: spent ? '#7f8ca8' : this.partnerScarf?.color, scarfS: spent ? '#5a6680' : this.partnerScarf?.shade, acc: this.partnerAcc })
   }
 
   private drawPlayer(w: World, dt: number) {
@@ -4266,16 +4271,14 @@ export class Renderer {
     // 60 Hz'de de 120 Hz'de de aynı iz, üst üste yığılmaz ve çizim yükü sabit kalır
     for (const g of this.ghosts) g.life -= dt
     this.ghosts = this.ghosts.filter((g) => g.life > 0)
-    // uzun bekleyince el sallar; sert iniş için düşüş hızı izlenir
-    const still = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0
-    this.idleT = still ? this.idleT + dt : 0
+    // sert iniş için düşüş hızı izlenir (bekleme süresi heroAnim'de: duruşun canlı hareketleri onunla başlar)
     if (!p.grounded) this.airVy = Math.max(this.airVy, p.vy)
     // poz bir kez, iz bırakılmadan önce hesaplanır: iz kopyası karakterle aynı pozda ve dönüşte kalır
     const m = p.dead ? null : this.heroAnim(p, true)
     if (m && p.dashTime > 0) {
       const last = this.ghosts[this.ghosts.length - 1]
       if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= GHOST_GAP) {
-        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: m.flip, pose: m.pose, rot: m.rot })
+        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: m.flip, pose: copyPose(newPose(), m.pose), rot: m.rot })
         if (this.ghosts.length > GHOST_MAX) this.ghosts.shift()
       }
     }
@@ -4315,7 +4318,9 @@ export class Renderer {
     } else this.nitroAt = null
     if (!m) return
 
-    const pose: Pose = { ...m.pose, blink: this.t % 3.4 < 0.12 }
+    // göz kırpma: oyuncunun kendi saati (bekleme pozu zaten kırpar; koşarken de ara sıra)
+    const pose = m.pose
+    if (this.t % 3.4 < 0.12) pose.blink = true
     const footX = p.x + p.w / 2
     const footY = p.y + p.h
     // dash hakkı bitince atkı soluklaşır: ne zaman yeniden dash atabileceğin görünür
@@ -4633,6 +4638,12 @@ interface HeroAnim {
   airMax: number
   hard: number
   grounded: boolean
+  /** kare başına ayırmamak için poz tamponları: sonuç ve ara karışım */
+  out: Pose
+  tmp: Pose
+  /** kıpırdamadan geçen süre (bekleme duruşunun canlı hareketleri) ve inişten beri geçen süre (sönümlü yay) */
+  idleT: number
+  landT: number
 }
 
 /** dash'in ardından gövdenin toparlanma süresi (sn) */

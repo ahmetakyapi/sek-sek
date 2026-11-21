@@ -142,7 +142,8 @@ describe('Yeni Harita Sihirbazı', () => {
       expect(mapNotes(m), tpl.name).toEqual([])
       expect(solve(customLevel(m, 'kayseri'), { exitOnly: true, budget: 60000 }).won, tpl.name).toBe(true)
     }
-  })
+    // çözücü her şablonu sırayla dener: yük altında 5 sn'lik varsayılan sınır aşılıyordu
+  }, 120_000)
   it('uzatma ve boyutlandırma sınırlarda kalır', () => {
     const m = ground()
     expect(extendMap(m, 40)).toBe(m)

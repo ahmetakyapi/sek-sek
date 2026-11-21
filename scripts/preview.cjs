@@ -25,6 +25,8 @@ const port = val('port', '3100')
   const pg = await ctx.newPage()
   pg.on('pageerror', (e) => console.log('SAYFA HATASI:', e.message))
   const save = { character: has('memo') ? 'memo' : 'uktun', skippedName: true, seenStory: true, mapVersion: 999, migrated: true, accountVersion: 2, sfx: false, music: false, keyHints: false, unlocked: 99, lang: has('en') ? 'en' : 'tr' }
+  // KAYIT='{"looks":{...}}': kayda ek alan (ör. Mağaza görünümü)
+  Object.assign(save, JSON.parse(process.env.KAYIT || '{}'))
   await pg.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
   await pg.goto(`http://localhost:${port}/?debug&sehir=${city}`)
   await pg.waitForTimeout(3000)

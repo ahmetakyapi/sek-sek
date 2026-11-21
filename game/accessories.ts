@@ -1,5 +1,5 @@
 /**
- * Kılık Dükkânı: her karaktere (Uktun ya da Memo) ayrı ayrı üç yuvada birer parça takılır: baş, yüz ve sırt (kombin).
+ * Mağaza: her karaktere (Uktun ya da Memo) ayrı ayrı üç yuvada birer parça takılır: baş, yüz ve sırt (kombin).
  * Parçalar ya karaktere özgüdür (`for`) ya ortaktır; alınan parça yalnız o karaktere açılır. Para birimi "parça"dır
  * (`walletOf`): yolda bulunan her hatıra, gizli pul ve nazar boncuğu 1, yenilen her boss 2, her Usta Mührü 3 parça;
  * kazanç iki karakter için de tamdır, harcama karakterin kendi dolabından düşer. Fiyatlar, bütün oyunun parçasıyla
@@ -9,6 +9,8 @@
  * Yer: başa takılanlar kılığın kendi şapkasının (kasket, kalfa, kalpak) yerine geçer; yazma örtüdür, kalır ve
  * başlık onun üstüne oturur. Gözlükler yüzde, sırttakiler gövdenin arkasında durur.
  */
+import { lookPrice, normalizeLook, lookKeyOf, type LookPrefs } from './looks'
+
 export type AccessoryId =
   | 'yok'
   // ortak
@@ -35,6 +37,10 @@ export type AccessoryId =
   | 'ayi'
   | 'sal'
   | 'sepet'
+  | 'kedikulak'
+  | 'tavsan'
+  | 'yildizgoz'
+  | 'kanat'
   // Memo'ya özgü
   | 'bandana'
   | 'kovboy'
@@ -45,6 +51,10 @@ export type AccessoryId =
   | 'sirtcanta'
   | 'okluk'
   | 'kalkan'
+  | 'melon'
+  | 'kask'
+  | 'vizor'
+  | 'jet'
 
 /** kombini ayrı ayrı kurulan iki yolcu */
 export type Hero = 'uktun' | 'memo'
@@ -76,39 +86,47 @@ export interface Accessory {
  */
 export const ACCESSORIES: Accessory[] = [
   // baş
-  { id: 'papatya', slot: 'head', name: 'Papatya Tacı', nameEn: 'Daisy Crown', price: 10, for: 'uktun' },
-  { id: 'lale', slot: 'head', name: 'Lale Tokası', nameEn: 'Tulip Clip', price: 10, for: 'uktun' },
-  { id: 'kelebek', slot: 'head', name: 'Kelebek Tokası', nameEn: 'Butterfly Clip', price: 14, for: 'uktun' },
-  { id: 'fiyonk', slot: 'head', name: 'Puantiyeli Fiyonk', nameEn: 'Polka-Dot Bow', price: 14, for: 'uktun' },
-  { id: 'tac', slot: 'head', name: 'Altın Taç', nameEn: 'Golden Tiara', price: 22, for: 'uktun' },
-  { id: 'bandana', slot: 'head', name: 'Kırmızı Bandana', nameEn: 'Red Bandana', price: 14, for: 'memo' },
-  { id: 'asci', slot: 'head', name: 'Aşçı Başlığı', nameEn: 'Chef Hat', price: 18, for: 'memo' },
-  { id: 'kovboy', slot: 'head', name: 'Kovboy Şapkası', nameEn: 'Cowboy Hat', price: 24, for: 'memo' },
-  { id: 'bere', slot: 'head', name: 'Ponponlu Bere', nameEn: 'Bobble Hat', price: 16 },
-  { id: 'kulaklik', slot: 'head', name: 'Kulaklık', nameEn: 'Headphones', price: 16 },
-  { id: 'hasir', slot: 'head', name: 'Hasır Şapka', nameEn: 'Straw Hat', price: 18 },
-  { id: 'fes', slot: 'head', name: 'Fes', nameEn: 'Fez', price: 28 },
+  { id: 'papatya', slot: 'head', name: 'Papatya Tacı', nameEn: 'Daisy Crown', price: 7, for: 'uktun' },
+  { id: 'lale', slot: 'head', name: 'Lale Tokası', nameEn: 'Tulip Clip', price: 7, for: 'uktun' },
+  { id: 'kelebek', slot: 'head', name: 'Kelebek Tokası', nameEn: 'Butterfly Clip', price: 10, for: 'uktun' },
+  { id: 'fiyonk', slot: 'head', name: 'Puantiyeli Fiyonk', nameEn: 'Polka-Dot Bow', price: 10, for: 'uktun' },
+  { id: 'tac', slot: 'head', name: 'Altın Taç', nameEn: 'Golden Tiara', price: 15, for: 'uktun' },
+  { id: 'kedikulak', slot: 'head', name: 'Kedi Kulağı Bandı', nameEn: 'Cat-Ear Headband', price: 10, for: 'uktun' },
+  { id: 'tavsan', slot: 'head', name: 'Tavşan Kulağı Bandı', nameEn: 'Bunny-Ear Headband', price: 11, for: 'uktun' },
+  { id: 'bandana', slot: 'head', name: 'Kırmızı Bandana', nameEn: 'Red Bandana', price: 10, for: 'memo' },
+  { id: 'asci', slot: 'head', name: 'Aşçı Başlığı', nameEn: 'Chef Hat', price: 13, for: 'memo' },
+  { id: 'kovboy', slot: 'head', name: 'Kovboy Şapkası', nameEn: 'Cowboy Hat', price: 17, for: 'memo' },
+  { id: 'melon', slot: 'head', name: 'Melon Şapka', nameEn: 'Bowler Hat', price: 14, for: 'memo' },
+  { id: 'kask', slot: 'head', name: 'Mühendis Kaskı', nameEn: 'Hard Hat', price: 12, for: 'memo' },
+  { id: 'bere', slot: 'head', name: 'Ponponlu Bere', nameEn: 'Bobble Hat', price: 11 },
+  { id: 'kulaklik', slot: 'head', name: 'Kulaklık', nameEn: 'Headphones', price: 11 },
+  { id: 'hasir', slot: 'head', name: 'Hasır Şapka', nameEn: 'Straw Hat', price: 13 },
+  { id: 'fes', slot: 'head', name: 'Fes', nameEn: 'Fez', price: 20 },
   { id: 'defne', slot: 'head', name: 'Altın Defne Tacı', nameEn: 'Golden Laurel', price: 0, seals: 10 },
   // yüz
-  { id: 'pul', slot: 'face', name: 'Yıldız Yüz Pulu', nameEn: 'Star Face Sticker', price: 8, for: 'uktun' },
-  { id: 'kedi', slot: 'face', name: 'Kedi Gözlüğü', nameEn: 'Cat-Eye Glasses', price: 14, for: 'uktun' },
-  { id: 'kalpli', slot: 'face', name: 'Kalpli Gözlük', nameEn: 'Heart Sunglasses', price: 16, for: 'uktun' },
-  { id: 'bant', slot: 'face', name: 'Korsan Göz Bandı', nameEn: 'Eye Patch', price: 14, for: 'memo' },
-  { id: 'tek', slot: 'face', name: 'Tek Gözlük', nameEn: 'Monocle', price: 16, for: 'memo' },
-  { id: 'pilot', slot: 'face', name: 'Pilot Gözlüğü', nameEn: 'Aviator Shades', price: 18, for: 'memo' },
-  { id: 'gozluk', slot: 'face', name: 'Yuvarlak Gözlük', nameEn: 'Round Glasses', price: 12 },
-  { id: 'gunes', slot: 'face', name: 'Güneş Gözlüğü', nameEn: 'Sunglasses', price: 14 },
-  { id: 'kayak', slot: 'face', name: 'Kayak Gözlüğü', nameEn: 'Ski Goggles', price: 16 },
+  { id: 'pul', slot: 'face', name: 'Yıldız Yüz Pulu', nameEn: 'Star Face Sticker', price: 6, for: 'uktun' },
+  { id: 'kedi', slot: 'face', name: 'Kedi Gözlüğü', nameEn: 'Cat-Eye Glasses', price: 10, for: 'uktun' },
+  { id: 'kalpli', slot: 'face', name: 'Kalpli Gözlük', nameEn: 'Heart Sunglasses', price: 11, for: 'uktun' },
+  { id: 'yildizgoz', slot: 'face', name: 'Yıldız Gözlük', nameEn: 'Star Glasses', price: 12, for: 'uktun' },
+  { id: 'bant', slot: 'face', name: 'Korsan Göz Bandı', nameEn: 'Eye Patch', price: 10, for: 'memo' },
+  { id: 'tek', slot: 'face', name: 'Tek Gözlük', nameEn: 'Monocle', price: 11, for: 'memo' },
+  { id: 'pilot', slot: 'face', name: 'Pilot Gözlüğü', nameEn: 'Aviator Shades', price: 13, for: 'memo' },
+  { id: 'vizor', slot: 'face', name: 'Siber Vizör', nameEn: 'Cyber Visor', price: 14, for: 'memo' },
+  { id: 'gozluk', slot: 'face', name: 'Yuvarlak Gözlük', nameEn: 'Round Glasses', price: 8 },
+  { id: 'gunes', slot: 'face', name: 'Güneş Gözlüğü', nameEn: 'Sunglasses', price: 10 },
+  { id: 'kayak', slot: 'face', name: 'Kayak Gözlüğü', nameEn: 'Ski Goggles', price: 11 },
   // sırt
-  { id: 'sepet', slot: 'back', name: 'Çiçek Sepeti', nameEn: 'Flower Basket', price: 20, for: 'uktun' },
-  { id: 'sal', slot: 'back', name: 'Kilim Şal', nameEn: 'Kilim Shawl', price: 20, for: 'uktun' },
-  { id: 'ayi', slot: 'back', name: 'Ayıcık Çanta', nameEn: 'Teddy Backpack', price: 22, for: 'uktun' },
-  { id: 'okluk', slot: 'back', name: 'Okluk', nameEn: 'Quiver', price: 18, for: 'memo' },
-  { id: 'kalkan', slot: 'back', name: 'Yuvarlak Kalkan', nameEn: 'Round Shield', price: 22, for: 'memo' },
-  { id: 'sirtcanta', slot: 'back', name: 'Sırt Çantası', nameEn: 'Backpack', price: 24, for: 'memo' },
-  { id: 'heybe', slot: 'back', name: 'Kilim Heybe', nameEn: 'Kilim Saddlebag', price: 22 },
-  { id: 'saz', slot: 'back', name: 'Sırtta Bağlama', nameEn: 'Bağlama on the Back', price: 22 },
-  { id: 'pelerin', slot: 'back', name: 'Pelerin', nameEn: 'Cape', price: 26 },
+  { id: 'sepet', slot: 'back', name: 'Çiçek Sepeti', nameEn: 'Flower Basket', price: 14, for: 'uktun' },
+  { id: 'sal', slot: 'back', name: 'Kilim Şal', nameEn: 'Kilim Shawl', price: 14, for: 'uktun' },
+  { id: 'ayi', slot: 'back', name: 'Ayıcık Çanta', nameEn: 'Teddy Backpack', price: 15, for: 'uktun' },
+  { id: 'kanat', slot: 'back', name: 'Melek Kanadı', nameEn: 'Angel Wings', price: 18, for: 'uktun' },
+  { id: 'okluk', slot: 'back', name: 'Okluk', nameEn: 'Quiver', price: 13, for: 'memo' },
+  { id: 'kalkan', slot: 'back', name: 'Yuvarlak Kalkan', nameEn: 'Round Shield', price: 15, for: 'memo' },
+  { id: 'sirtcanta', slot: 'back', name: 'Sırt Çantası', nameEn: 'Backpack', price: 17, for: 'memo' },
+  { id: 'jet', slot: 'back', name: 'Jet Sırt Çantası', nameEn: 'Jetpack', price: 18, for: 'memo' },
+  { id: 'heybe', slot: 'back', name: 'Kilim Heybe', nameEn: 'Kilim Saddlebag', price: 15 },
+  { id: 'saz', slot: 'back', name: 'Sırtta Bağlama', nameEn: 'Bağlama on the Back', price: 15 },
+  { id: 'pelerin', slot: 'back', name: 'Pelerin', nameEn: 'Cape', price: 18 },
 ]
 
 /** yolcunun dükkânında görünen parçalar: ortaklar ve kendine özgüler */
@@ -125,12 +143,14 @@ export interface Kit {
   head: AccessoryId
   face: AccessoryId
   back: AccessoryId
+  /** Mağaza görünümü (saç, ten, kıyafet, göz, ifade, duruş, koşu tarzı): kombinle birlikte her çizime gider; yoksa yolcunun kendi görünümü */
+  look?: LookPrefs
 }
 
 export const NO_KIT: Kit = { head: 'yok', face: 'yok', back: 'yok' }
 
 /** başı örten başlıklar: altında saç kısa kesim gibi görünür (uzun ve kıvırcık saç kendi hâlinde kalır) */
-export const COVERS_HEAD: ReadonlySet<AccessoryId> = new Set(['fes', 'bere', 'hasir', 'bandana', 'kovboy', 'asci'])
+export const COVERS_HEAD: ReadonlySet<AccessoryId> = new Set(['fes', 'bere', 'hasir', 'bandana', 'kovboy', 'asci', 'melon', 'kask'])
 
 /** başa takılan her şey (taç, toka, kulaklık dahil): kılığın şapkasının yerine geçer */
 export const ON_HEAD: ReadonlySet<AccessoryId> = new Set(ACCESSORIES.filter((a) => a.slot === 'head').map((a) => a.id))
@@ -141,14 +161,19 @@ const inSlot = (hero: Hero, slot: Slot, id: unknown): AccessoryId => (forHero(he
  * Yolcunun kayıttaki kombini: yeni kayıtta `kits[hero]`, eskisinde ortak `kit` ya da tek `accessory` (o, kendi yuvasına
  * yerleşir). Bilinmeyen, yanlış yuvadaki ya da başka yolcuya özgü kimlik boş sayılır.
  */
-export function kitFor(hero: Hero, kit: Partial<Record<Slot, string>> | undefined, legacy?: string): Kit {
-  if (kit) return { head: inSlot(hero, 'head', kit.head), face: inSlot(hero, 'face', kit.face), back: inSlot(hero, 'back', kit.back) }
-  const old = forHero(hero).find((a) => a.id === legacy)
-  return old ? { ...NO_KIT, [old.slot]: old.id } : NO_KIT
+export function kitFor(hero: Hero, kit: Partial<Record<Slot, string>> | undefined, legacy?: string, look?: unknown): Kit {
+  const lk = normalizeLook(hero, look)
+  const base: Kit = kit
+    ? { head: inSlot(hero, 'head', kit.head), face: inSlot(hero, 'face', kit.face), back: inSlot(hero, 'back', kit.back) }
+    : (() => {
+        const old = forHero(hero).find((a) => a.id === legacy)
+        return old ? { ...NO_KIT, [old.slot]: old.id } : NO_KIT
+      })()
+  return lk ? { ...base, look: lk } : base
 }
 
 /** kombinin portre ve önbellek anahtarı */
-export const kitKey = (k: Kit) => `${k.head}.${k.face}.${k.back}`
+export const kitKey = (k: Kit) => `${k.head}.${k.face}.${k.back}` + (lookKeyOf(k.look) ? `|${lookKeyOf(k.look)}` : '')
 
 /** Kazanılan parça: hatıra + pul + nazar (1), yenilen boss (2), Usta Mührü (3) */
 export const earned = (found: number, bosses: number, seals: number) => found + bosses * 2 + seals * 3
@@ -157,6 +182,12 @@ export const earned = (found: number, bosses: number, seals: number) => found + 
 export const ownedKey = (hero: Hero, id: AccessoryId) => `${hero}:${id}`
 export const hasAccessory = (owned: Record<string, boolean> | undefined, hero: Hero, id: AccessoryId) => !!owned?.[ownedKey(hero, id)] || !!owned?.[id]
 
-/** yolcunun cüzdanı: kazanılan parça eksi o yolcunun dolabında alınanların fiyatı (hiç eksiye düşmez); kazanç iki yolcuya da tamdır */
+/**
+ * yolcunun cüzdanı: kazanılan parça eksi o yolcunun dolabında alınanların fiyatı (aksesuar ve görünüm seçenekleri;
+ * hiç eksiye düşmez); kazanç iki yolcuya da tamdır
+ */
 export const walletOf = (earnedTotal: number, owned: Record<string, boolean> | undefined, hero: Hero) =>
-  Math.max(0, earnedTotal - forHero(hero).reduce((a, x) => a + (hasAccessory(owned, hero, x.id) ? x.price : 0), 0))
+  Math.max(0, earnedTotal - forHero(hero).reduce((a, x) => a + (hasAccessory(owned, hero, x.id) ? x.price : 0), 0) - lookPrice(hero, owned ?? {}))
+
+/** yolcunun dolabının (ücretli aksesuar + ücretli görünüm seçenekleri) toplam fiyatı: denge testi bunu bütün oyunun parçasıyla karşılaştırır */
+export const closetPrice = (hero: Hero) => forHero(hero).filter((a) => a.seals === undefined).reduce((a, x) => a + x.price, 0) + lookPrice(hero)

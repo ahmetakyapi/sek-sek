@@ -69,7 +69,7 @@ export default function Race({
   level: LevelDef
   names: [string, string]
   heroes: [CharacterId, CharacterId]
-  /** her yolcunun Kılık Dükkânı'ndaki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>
+  /** her yolcunun Mağaza'daki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>
   roundLabel: string
   /** Tek Can şartı: ilk düşüşte o oyuncunun turu biter */
   oneLife?: boolean

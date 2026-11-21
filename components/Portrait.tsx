@@ -54,7 +54,7 @@ function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null,
 
 /**
  * Büst portre (64:76). `id` oynanan karakter ya da şehir insanı kılığıdır; `scarf` verilirse oyuncunun seçtiği
- * atkı rengi, `accessory` verilirse Kılık Dükkânı kombini giydirilir. Tuval çizilene dek (ve betiksiz)
+ * atkı rengi, `accessory` verilirse Mağaza kombini giydirilir. Tuval çizilene dek (ve betiksiz)
  * public/portreler'deki hazır kare görünür (aksesuarlı ya da atkılı portrede görünmez: hazır kare aksesuarsızdır).
  */
 export default function Portrait({ id, className = '', scarf, accessory }: { id: Look; className?: string; scarf?: ScarfColor | null; accessory?: Kit }) {

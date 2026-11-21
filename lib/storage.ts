@@ -1,4 +1,5 @@
 import { HEROES, kitFor, type Hero } from '@/game/accessories'
+import { normalizeLook, type LookPrefs } from '@/game/looks'
 import { LEVELS } from '@/game/levels'
 import { emptyStats, liveStreak, mergeDaily, mergeStats, mergeTournament, mergeTrio, cleanTrio, type DailyMark, type TitleFacts, type TournamentMark, type TrioMark, type TravelStats } from './extras'
 import { cityVersion, legacyVersion } from './mapVersion'
@@ -166,7 +167,7 @@ export interface Save {
   gezgin?: Record<string, number>
   /** Hikâye Gezisi: şehir insanının adı → bit alanı (lib/storyRules.ts: sorulan sorular, defter sayfası, tanışıldı) */
   story?: StoryLog
-  /** kılık dükkânında alınan aksesuarlar: "uktun:fiyonk" (yolcuya özgü); düz kimlik ("fes") karakter ayrımından önce alınmış, iki yolcuya da açık */
+  /** mağazada alınan aksesuarlar: "uktun:fiyonk" (yolcuya özgü); düz kimlik ("fes") karakter ayrımından önce alınmış, iki yolcuya da açık */
   owned?: Record<string, boolean>
   /** eski kayıtta takılı tek aksesuar (yeni kayıtta `kit`; kitFor ikisini de okur) */
   accessory?: string
@@ -174,6 +175,8 @@ export interface Save {
   kit?: { head?: string; face?: string; back?: string }
   /** karakter başına takılı kombin: yuva başına bir aksesuar (baş, yüz, sırt) */
   kits?: Partial<Record<Hero, { head?: string; face?: string; back?: string }>>
+  /** karakter başına Mağaza görünümü: saç stili ve rengi, ten, kıyafet rengi ve deseni, göz, ifade, duruş, koşu tarzı (game/looks.ts); boş = karakterin kendi görünümü */
+  looks?: Partial<Record<Hero, LookPrefs>>
   /** final sahnesi görüldü mü */
   sawEnding?: boolean
   /** mücadele haritalarının en iyi süreleri (ms), mücadele kimliğiyle */
@@ -307,13 +310,24 @@ export function normalizeSave(parsed: Partial<Save>): Save {
 }
 
 /** karakterin takılı kombini */
-export const kitOf = (s: Pick<Save, 'kits' | 'kit' | 'accessory'>, hero: Hero) => kitFor(hero, s.kits?.[hero] ?? s.kit, s.accessory)
+export const kitOf = (s: Pick<Save, 'kits' | 'kit' | 'accessory'> & { looks?: Save['looks'] }, hero: Hero) => kitFor(hero, s.kits?.[hero] ?? s.kit, s.accessory, s.looks?.[hero])
 
 /** karakterin atkı rengi kimliği ('al': kendi atkısı) */
 export const scarfIdOf = (s: Pick<Save, 'scarf' | 'scarfs'>, hero: Hero) => s.scarfs?.[hero] ?? s.scarf
 
+/** karakter başına görünüm birleşmesi: bu cihazın seçimi eksen eksen önce gelir, yoksa bulutunki (biri öbürünü ezmez) */
+const mergeLooks = (local: Save['looks'], cloud: Save['looks']): Save['looks'] => {
+  if (!local && !cloud) return undefined
+  const out: NonNullable<Save['looks']> = {}
+  for (const h of HEROES) {
+    const m = normalizeLook(h, { ...cloud?.[h], ...local?.[h] })
+    if (m) out[h] = m
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'pins', 'friends', 'turnuva', 'ayna', 'gezgin', 'owned', 'accessory', 'kit', 'kits', 'scarfs', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus', 'trio', 'story'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'pins', 'friends', 'turnuva', 'ayna', 'gezgin', 'owned', 'accessory', 'kit', 'kits', 'looks', 'scarfs', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus', 'trio', 'story'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -374,6 +388,7 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     // karakter başına: bu cihazın seçimi önce, yoksa bulutunki
     kits: local.kits || cloud.kits ? { ...cloud.kits, ...local.kits } : undefined,
     scarfs: local.scarfs || cloud.scarfs ? { ...cloud.scarfs, ...local.scarfs } : undefined,
+    looks: mergeLooks(local.looks, cloud.looks),
     sawEnding: local.sawEnding || cloud.sawEnding,
     ustalar: { ...cloud.ustalar, ...local.ustalar },
     coop: Object.fromEntries([...Object.entries(cloud.coop ?? {}), ...Object.entries(local.coop ?? {})].map(([k, v]) => [k, Math.min(v, cloud.coop?.[k] ?? v, local.coop?.[k] ?? v)])),
@@ -435,7 +450,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, trio: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, pins: undefined, turnuva: null, ayna: {}, gezgin: {}, story: undefined, sawEnding: false, owned: {}, accessory: undefined, kit: undefined, kits: undefined, scarfs: undefined })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, trio: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, pins: undefined, turnuva: null, ayna: {}, gezgin: {}, story: undefined, sawEnding: false, owned: {}, accessory: undefined, kit: undefined, kits: undefined, looks: undefined, scarfs: undefined })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {
@@ -519,6 +534,17 @@ const flags = (x: unknown) => (isObj(x) ? Object.fromEntries(Object.entries(x).f
  * Dışarıdan gelen kaydın (bulut PUT gövdesi) ilerleme alanlarını beklenen biçime zorlar: bozuk tipli bir kayıt
  * veritabanına yazılıp bütün oyuncuların okuduğu sorguları (koleksiyon sıralaması) düşüremesin.
  */
+/** bulut gövdesindeki görünüm: yalnız bilinen eksenler ve seçenekler, kısa dizgiler; bozuk tip düşer */
+function cleanLooks(x: unknown): Save['looks'] {
+  if (!isObj(x)) return undefined
+  const out: NonNullable<Save['looks']> = {}
+  for (const h of HEROES) {
+    const v = normalizeLook(h, x[h])
+    if (v) out[h] = v
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
 export function cleanIncoming(raw: Record<string, unknown>): Partial<Save> {
   const best: Record<string, Best> = {}
   if (isObj(raw.best))
@@ -527,5 +553,5 @@ export function cleanIncoming(raw: Record<string, unknown>): Partial<Save> {
       const items = b.items as unknown[]
       best[id] = { ...(b as unknown as Best), items: [0, 1, 2].map((i) => items[i] === true) }
     }
-  return { ...(raw as Partial<Save>), trio: cleanTrio(raw.trio), story: cleanStory(raw.story), best, stamps: flags(raw.stamps), charms: flags(raw.charms), bosses: flags(raw.bosses), unlocked: Number.isInteger(raw.unlocked) ? Math.max(0, Math.min(LEVELS.length - 1, raw.unlocked as number)) : 0 }
+  return { ...(raw as Partial<Save>), looks: cleanLooks(raw.looks), trio: cleanTrio(raw.trio), story: cleanStory(raw.story), best, stamps: flags(raw.stamps), charms: flags(raw.charms), bosses: flags(raw.bosses), unlocked: Number.isInteger(raw.unlocked) ? Math.max(0, Math.min(LEVELS.length - 1, raw.unlocked as number)) : 0 }
 }

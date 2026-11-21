@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { cityVersion } from '../lib/mapVersion'
-import { kitOf, scarfIdOf, MAP_VERSION, ackMapNews, cleanIncoming, cloudPart, defaultSave, isRenewed, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
+import { kitOf, scarfIdOf, MAP_VERSION, ackMapNews, cleanIncoming, clearProgress, cloudPart, defaultSave, isRenewed, mapNews, mergeSaves, normalizeSave, type Save } from '../lib/storage'
 
 const save = (p: Partial<Save>): Save => ({ ...defaultSave(), ...p })
 
@@ -162,5 +162,41 @@ describe('şehir başına harita sürümü', () => {
     expect(cloudPart(a).story).toEqual({ 'Simitçi Hasan Amca': 17 })
     expect(mergeSaves(a, b).story).toEqual({ 'Simitçi Hasan Amca': 19, 'Cazgır Şaban Dayı': 16 })
     expect(cleanIncoming({ story: { x: 1, y: 'bozuk' } }).story).toEqual({ x: 1 })
+  })
+})
+
+describe('karakter başına görünüm (saç, ten, kıyafet, ifade, duruş)', () => {
+  it('eski kayıtta görünüm yoktur: kombin aynen çalışır, varsayılan görünüm bozulmaz', () => {
+    const old = normalizeSave({ kits: { uktun: { head: 'fes' } }, owned: { 'uktun:fes': true } })
+    expect(old.looks).toBeUndefined()
+    expect(kitOf(old, 'uktun')).toEqual({ head: 'fes', face: 'yok', back: 'yok' })
+    expect(kitOf(old, 'uktun').look).toBeUndefined()
+    expect(cloudPart(old).looks).toBeUndefined()
+  })
+  it('kitOf görünümü kombinle birlikte verir; bilinmeyen seçim düşer', () => {
+    const s = save({ looks: { uktun: { hs: 'orgu', hc: 'mavi' }, memo: { hs: 'orgu', hc: 'siyah' } } })
+    expect(kitOf(s, 'uktun').look).toEqual({ hs: 'orgu', hc: 'mavi' })
+    // örgü Uktun'a özgü: Memo'da düşer
+    expect(kitOf(s, 'memo').look).toEqual({ hc: 'siyah' })
+  })
+  it('bulut birleşmesi yolcu başına ve eksen başına: biri öbürünü ezmez, bu cihazın seçimi önce gelir, açık "kendi" seçimi eskiyi ezer', () => {
+    const local = save({ looks: { uktun: { hs: 'at', st: 'bel' } }, owned: { 'uktun:hs:at': true } })
+    const cloud = save({ looks: { uktun: { hs: 'topuz', hc: 'pembe' }, memo: { oc: 'mor' } }, owned: { 'memo:hs:kazima': true } })
+    const m = mergeSaves(local, cloud)
+    expect(m.looks?.uktun).toEqual({ hs: 'at', hc: 'pembe', st: 'bel' })
+    expect(m.looks?.memo).toEqual({ oc: 'mor' })
+    expect(m.owned).toEqual({ 'uktun:hs:at': true, 'memo:hs:kazima': true })
+    // saçı yeniden kendi saçına çeviren cihaz, bulutun eski seçimini ezer
+    const back = mergeSaves(save({ looks: { uktun: { hs: 'ozgun' } } }), cloud)
+    expect(back.looks?.uktun).toMatchObject({ hs: 'ozgun', hc: 'pembe' })
+    expect(mergeSaves(save({}), save({})).looks).toBeUndefined()
+    expect(cloudPart(m).looks).toEqual(m.looks)
+  })
+  it('bozuk bulut gövdesi temizlenir; sıfırlamada görünüm silinir; kayıt boyutu şişmez', () => {
+    expect(cleanIncoming({ looks: 'x' }).looks).toBeUndefined()
+    expect(cleanIncoming({ looks: { uktun: { hs: 5, hc: 'pembe', zz: 'y' }, __proto__: { x: 1 }, memo: null } }).looks).toEqual({ uktun: { hc: 'pembe' } })
+    const s = save({ looks: { uktun: { hs: 'at', hc: 'mavi', sk: 'bal', oc: 'mor', op: 'yildiz', ey: 'yesil', ex: 'neseli', st: 'bel', rs: 'tirisa' }, memo: { hs: 'topuz', hc: 'siyah', sk: 'esmer', oc: 'krem', op: 'ekose', ey: 'altin', ex: 'kurnaz', st: 'bagli', rs: 'omuz' } } })
+    expect(JSON.stringify(cloudPart(s).looks).length).toBeLessThan(400)
+    expect(clearProgress(s).looks).toBeUndefined()
   })
 })

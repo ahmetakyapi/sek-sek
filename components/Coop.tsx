@@ -362,7 +362,7 @@ interface CoopHud {
  * Olaylar onları üreten adıma göre oyunculara yazılır (kim düştü, kim hatıra aldı, kim boss'a bastı).
  * İlerlemeye ve şehir rekorlarına dokunmaz.
  */
-export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit }: { plan: CoopPlan; /** her yolcunun Kılık Dükkânı'ndaki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>; sound: Sound | null; /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */ keys: DuoKeys; onKeys: (k: DuoKeys) => void; onDone: (r: CoopResult) => void; onQuit: () => void }) {
+export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit }: { plan: CoopPlan; /** her yolcunun Mağaza'daki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>; sound: Sound | null; /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */ keys: DuoKeys; onKeys: (k: DuoKeys) => void; onDone: (r: CoopResult) => void; onQuit: () => void }) {
   const keysRef = useRef(keys)
   keysRef.current = keys
   const t = useT()

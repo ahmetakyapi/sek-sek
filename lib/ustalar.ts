@@ -3,7 +3,7 @@ import type { LevelDef } from '@/game/types'
 
 /**
  * Şehir ustaları: her şehrin ilk şehir insanı (esnaf) küçük bir görev verir; görev koşunun sonucundan doğrulanır,
- * haritayı değiştirmez. Görev yapılınca Usta Mührü kazanılır (save.ustalar); mühürler Kılık Dükkânı'nda para sayılır.
+ * haritayı değiştirmez. Görev yapılınca Usta Mührü kazanılır (save.ustalar); mühürler Mağaza'da para sayılır.
  * Görev türü şehrin sırasından döner: her türden yedişer şehir, art arda iki şehirde aynı görev olmaz.
  */
 export type UstaTask = 'items' | 'nodeath' | 'gold' | 'secrets' | 'cleanBoss'

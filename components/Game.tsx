@@ -26,6 +26,7 @@ import { ASK_BIT, GIFT_BIT, MET_BIT, mark as markStory } from '@/lib/storyRules'
 import Ending from '@/components/Ending'
 import MirrorList from '@/components/Mirror'
 import Shop from '@/components/Shop'
+import { lookKey, normalizeLook, optionsFor, type Axis } from '@/game/looks'
 import { ACCESSORIES, earned, kitKey, ownedKey, walletOf, type AccessoryId, type Hero, type HeroLook, type Kit } from '@/game/accessories'
 import { mirrorLevel } from '@/game/mirror'
 import { customLevel, decodeMap } from '@/lib/customLevel'
@@ -332,7 +333,7 @@ export default function Game() {
   /** Co-op ve Düello: her oyuncu seçtiği karakterin kendi kılığını giyer */
   const looks = Object.fromEntries((['uktun', 'memo'] as const).map((id) => [id, { scarf: scarfOfHero(id), kit: kitOf(save, id) }])) as Record<CharacterId, HeroLook>
   const charmCount = LEVELS.filter((l) => save.charms[l.id]).length
-  /** Kılık Dükkânı'nın parası (parça): hatıra + pul + nazar 1, yenilen boss 2, Usta Mührü 3 (game/accessories.ts) */
+  /** Mağaza'nın parası (parça): hatıra + pul + nazar 1, yenilen boss 2, Usta Mührü 3 (game/accessories.ts) */
   const ustaCount = Object.values(save.ustalar ?? {}).filter(Boolean).length
   const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
   const bossCount = LEVELS.filter((l) => save.bosses[l.id]).length
@@ -1389,7 +1390,7 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: t('Özel Harita') })
   }
 
-  /** Kılık Dükkânı: parça karşılığı aksesuar alır ve o yolcuya takar (alınan parça yalnız o yolcunun olur) */
+  /** Mağaza: parça karşılığı aksesuar alır ve o yolcuya takar (alınan parça yalnız o yolcunun olur) */
   const buyAccessory = (who: Hero, id: AccessoryId) => {
     const item = ACCESSORIES.find((a) => a.id === id)
     const cur = saveRef.current ?? save
@@ -1397,10 +1398,18 @@ export default function Game() {
     ui()
     persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [ownedKey(who, id)]: true }, kits: { ...s.kits, [who]: { ...kitOf(s, who), [item.slot]: id } } }))
   }
-  /** kombini yolcuya giydirir (yuva başına bir parça) */
+  /** kombini yolcuya giydirir (yuva başına bir parça) ve görünümünü (saç, ten, kıyafet, ifade, duruş) kaydeder */
   const wearKit = (who: Hero, k: Kit) => {
     ui()
-    persist((s) => ({ ...s, kits: { ...s.kits, [who]: { ...k } } }))
+    persist((s) => ({ ...s, kits: { ...s.kits, [who]: { head: k.head, face: k.face, back: k.back } }, looks: { ...s.looks, [who]: k.look } }))
+  }
+  /** Mağaza: ücretli görünüm seçeneğini (saç stili, renk, desen, duruş…) alır ve o yolcuya takar */
+  const buyLook = (who: Hero, axis: Axis, id: string) => {
+    const o = optionsFor(who, axis).find((x) => x.id === id)
+    const cur = saveRef.current ?? save
+    if (!o || o.price <= 0 || walletOf(earned(foundTotal, bossCount, ustaCount), cur.owned, who) < o.price) return
+    ui()
+    persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [lookKey(who, axis, id)]: true }, looks: { ...s.looks, [who]: normalizeLook(who, { ...s.looks?.[who], [axis]: id }) } }))
   }
 
   /** Arkadaş listesine ekler ya da çıkarır (skor tablosundaki ☆) */
@@ -2357,7 +2366,7 @@ export default function Game() {
 
       {screen === 'play' && (
         <>
-          <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
+          <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} kit={heroAcc} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
             label={modeLabel}
             penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' && duel ? (d: number, f: number) => d * duelTerms(duel.setup).penalty * 1000 - f * duelTerms(duel.setup).itemBonus * 1000 : undefined}
             onPause={() => setScreen('pause')} />
@@ -2638,7 +2647,7 @@ export default function Game() {
                 )
               })}
             </div>
-            {/* kılık: takılı kombin ve atkı tek satırda; seçimi Kılık Dükkânı'nda (baş, yüz, sırt, atkı) */}
+            {/* kılık: takılı kombin ve atkı tek satırda; seçimi Mağaza'da (baş, yüz, sırt, atkı) */}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-2 border-line bg-ink/40 px-3 py-2.5 short:mt-2 short:py-2">
               <div className="min-w-0">
                 <SectionTitle title={t('Kılık')} tone="var(--color-gold)" />
@@ -2650,7 +2659,7 @@ export default function Game() {
                 </p>
               </div>
               <button className="pixel-btn primary shrink-0 px-4" onClick={() => (ui(), setScreen('shop'))}>
-                {t('Kılık Dükkânı · {n} Parça', { n: wallet })}
+                {t('Mağaza · {n} Parça', { n: wallet })}
               </button>
             </div>
           </div>
@@ -3542,6 +3551,7 @@ export default function Game() {
           earnedTotal={earned(foundTotal, bossCount, ustaCount)}
           parts={{ found: foundTotal, bosses: bossCount, seals: ustaCount }}
           onBuy={buyAccessory}
+          onBuyLook={buyLook}
           onWear={wearKit}
           onBack={() => setScreen('character')}
         />
@@ -3648,7 +3658,7 @@ function Notebook({ page }: { page: number }) {
 
 const GOAL_TEXT: Record<Goal, string> = { square: 'Meydana Git', boss: 'Boss’u Yen', exit: 'Çıkışa Git' }
 
-function Hud({ level, hud, hero, scarf, showGoal, penaltyFor, label, onPause }: { scarf: { color: string; shade: string } | null; level: (typeof LEVELS)[number]; hud: HudState; hero: CharacterId; showGoal: boolean; /** modlarda süreye eklenen ceza (ms) */ penaltyFor?: (deaths: number, found: number) => number; /** şehir adının altındaki satır (mod adı); yoksa zorluk */ label?: string; onPause: () => void }) {
+function Hud({ level, hud, hero, scarf, kit, showGoal, penaltyFor, label, onPause }: { kit: Kit; scarf: { color: string; shade: string } | null; level: (typeof LEVELS)[number]; hud: HudState; hero: CharacterId; showGoal: boolean; /** modlarda süreye eklenen ceza (ms) */ penaltyFor?: (deaths: number, found: number) => number; /** şehir adının altındaki satır (mod adı); yoksa zorluk */ label?: string; onPause: () => void }) {
   const t = useT()
   const lng = useLang()
   const shown = hud.time * 1000
@@ -3662,7 +3672,7 @@ function Hud({ level, hud, hero, scarf, showGoal, penaltyFor, label, onPause }: 
     >
       <div className="flex min-w-0 items-center gap-2.5 bg-ink/80 py-1.5 pl-1.5 pr-2.5 [box-shadow:0_0_0_2px_rgba(61,53,80,0.8)]">
         <span className="hidden min-[400px]:block">
-          <PortraitFace id={hero} scarf={scarf} />
+          <PortraitFace id={hero} scarf={scarf} accessory={kit} />
         </span>
         <span className="plate text-[15px] sm:text-lg">
           <span>{String(level.plate).padStart(2, "0")}</span>

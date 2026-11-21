@@ -41,7 +41,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
   (boss arenası, ritim köprüsü, tokmak koridoru…), şablonlar; kendi tabela ve şehir insanı sözlerin, 38 boss'tan istediğin.
   Çözücüyle sına, bağlantıyla paylaş, topluluğa yayınla.
 - **Şehir Ustaları.** Her şehrin esnafı küçük bir görev verir (düşmeden bitir, altın madalya, gizli köşeler…); usta mührü
-  Kılık Dükkânı’nda para sayılır.
+  Mağaza’nda para sayılır.
 - **Güncelleme hiçbir şeyi silmez.** Bir şehrin haritası yenilense de rekorun, hatıraların ve sıralaman durur; hangi
   şehirlerin yenilendiği açılışta listelenir, listede "Yenilendi" rozetiyle görünür.
 
