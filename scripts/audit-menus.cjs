@@ -20,6 +20,9 @@ const SAVE = { character: 'uktun', seenStory: true, tutorial: false, unlocked: 1
 /** bütün şehirlerin kimlikleri (oyunun kendisinden): final ve Ayna Yolu için hepsi bitmiş yolcu */
 const LEVEL_IDS = JSON.parse(require('node:child_process').execSync(`npx tsx -e "import { LEVELS } from './game/levels'; console.log(JSON.stringify(LEVELS.map((l) => l.id)))"`, { encoding: 'utf8' }))
 const ALL = { ...SAVE, unlocked: 99, best: Object.fromEntries(LEVEL_IDS.map((id, i) => [id, { timeMs: 60000 + i * 1000, deaths: 1, items: [true, true, true] }])), sawEnding: true }
+const STORY = { ...SAVE, story: { 'Simitçi Hasan Amca': 31, 'İskele Görevlisi Selin': 19, 'Cazgır Şaban Dayı': 17, 'Sabuncu Müzeyyen Hanım': 23, 'Kozacı Feride Teyze': 31, 'Hayalî Sabri Usta': 16 } }
+/** oyuncuyu ilk şehir insanının yanına götür */
+const TO_NPC = "eval:(()=>{const w=window.__mk.world();const n=w.npcs[0];w.player.x=n.x+2;w.player.y=n.y+16-w.player.h;w.player.vx=0;w.player.vy=0})()"
 const NEWS = { ...SAVE, best: { ...best, izmir: { ...best.izmir, v: 'eski' } }, seen: IDS.filter((id) => id !== 'kayseri') }
 
 const FINISH = "eval:(()=>{const w=window.__mk.world();w.started=true;w.time=73.4;w.deaths=2;if(w.pickups[0])w.pickups[0].taken=true;w.complete=true;w.events.push({type:'complete'})})()"
@@ -62,8 +65,14 @@ const SCREENS = {
   kovalamaca: [SAVE, ['Modlar', 'Kovalamaca']],
   'gezgin-turu': [SAVE, ['Modlar', 'Gezgin Turu']],
   'sakin-gezi': [SAVE, ['Modlar', 'Sakin Gezi']],
+  'hikaye-kur': [STORY, ['Modlar', 'Hikâye Gezisi']],
+  'hikaye-konus': [STORY, ['Modlar', 'Hikâye Gezisi', '▶ Geziye Başla', 'wait:900', TO_NPC, 'wait:500', 'key:e', 'wait:2600']],
+  'hikaye-tanisma': [null, ['Modlar', 'Hikâye Gezisi', '▶ Geziye Başla', 'wait:900', TO_NPC, 'wait:500', 'key:e', 'wait:2600', 'key:1', 'wait:2800']],
+  'hikaye-defter': [STORY, ['Defter', 'tab:Tanıştık']],
+  'hikaye-defter-bos': [null, ['Defter', 'tab:Tanıştık']],
   'sinir-bozucu': [SAVE, ['Modlar', 'Sinir Bozucu']],
   ayarlar: [SAVE, ['Ayarlar']],
+  'ayarlar-renk-korlugu': [{ ...SAVE, colorBlind: 'kirmizi-yesil' }, ['Ayarlar']],
   'ayarlar-tuslar': [SAVE, ['Ayarlar', 'opt:tab:Kontroller']],
   'foto-kipi': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:Escape', 'Fotoğraf Kipi', 'wait:300']],
   hesap: [SAVE, ['Giriş Yap']],
@@ -97,7 +106,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
     for (const [name, [save, steps, query]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: w < 800 })
       // her modun "nasıl oynanır" kartı görülmüş sayılır (yalnız kartın kendi ekranı hariç): menü adımları kartta takılmasın
-      if (name !== 'modlar-nasil') await ctx.addInitScript(() => localStorage.setItem('seksek:modeIntro', JSON.stringify(['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm'])))
+      if (name !== 'modlar-nasil') await ctx.addInitScript(() => localStorage.setItem('seksek:modeIntro', JSON.stringify(['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'story'])))
       if (save) await ctx.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
       const page = await ctx.newPage()
       await page.route('**/api/scores**', (r) => (r.request().method() === 'POST' ? r.fulfill({ json: { ok: true, first: true, improved: true, better: { time: true, deaths: true, items: true }, bestMs: 73400, rank: 3, total: 11 } }) : r.fulfill({ json: { scores: rows(), total: 11 } })))

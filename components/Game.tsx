@@ -20,6 +20,9 @@ import { DNF, DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, duelL
 import { ChallengeEnd, ChallengeList, type ChallengeResult } from '@/components/Challenges'
 import { TournamentHub } from '@/components/Tournament'
 import { CalmSetup, GezginHub } from '@/components/FunModes'
+import { StorySetup, StoryTalk, TalkPrompt, npcKey } from '@/components/StoryMode'
+import { talkOf } from '@/game/stories'
+import { ASK_BIT, GIFT_BIT, MET_BIT, mark as markStory } from '@/lib/storyRules'
 import Ending from '@/components/Ending'
 import MirrorList from '@/components/Mirror'
 import Shop from '@/components/Shop'
@@ -41,6 +44,8 @@ import { BOSSES } from '@/game/boss'
 import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
 import { LEVELS, rushArena, type RushVariant, FIRST_BOOK } from '@/game/levels'
 import { Renderer } from '@/game/render'
+import type { CbMode } from '@/game/colorBlind'
+import CbPreview from '@/components/CbPreview'
 import { World } from '@/game/sim'
 import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
@@ -82,7 +87,7 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'gezgin' | 'calmSetup' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
+type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'gezgin' | 'calmSetup' | 'storySetup' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
@@ -258,6 +263,9 @@ export default function Game() {
   const idleRef = useRef(0)
   const [hint, setHint] = useState<string | null>(null)
   const [npc, setNpc] = useState<number>(-1)
+  /** Hikâye Gezisi: konuşulan şehir insanı (-1: konuşma yok); konuşurken dünya donar */
+  const [talkNpc, setTalkNpc] = useState<number>(-1)
+  const talkRef = useRef(-1)
   const [toast, setToast] = useState<(Fact & { item: string; key: number }) | null>(null)
   const [quip, setQuip] = useState<{ text: string; key: number } | null>(null)
   /** boss uyandı, henüz vurulmadı: nasıl yenileceği üç adımda görünür */
@@ -469,6 +477,12 @@ export default function Game() {
       const w = worldRef.current
       if (!w) return
       const sc = screenRef.current
+      if (sc === 'play' && talkRef.current >= 0) {
+        // Hikâye Gezisi: konuşurken fizik akmaz, yalnız çizim (kişiler nefes alır)
+        acc = 0
+        renderer.render(w, dt, 1)
+        return
+      }
       if (sc === 'play') {
         // vuruş anı donması: ezmede kısa bir duraksama hissi
         if (freezeRef.current > 0) {
@@ -682,7 +696,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'gezgin' || sc === 'calmSetup' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'gezgin' || sc === 'calmSetup' || sc === 'storySetup' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else if (sc === 'photo') {
@@ -799,6 +813,52 @@ export default function Game() {
     })
   }, [])
   const patch = useCallback((part: Partial<Save>) => persist((s) => ({ ...s, ...part })), [persist])
+
+  // Hikâye Gezisi: konuşma açılır (E / Enter, dokunma, oyun kolunda LB-RB), kapanır; kayıt her seferinde en güncel hâlinden türer
+  const closeTalk = useCallback(() => {
+    talkRef.current = -1
+    setTalkNpc(-1)
+  }, [])
+  const storyBits = useCallback(
+    (bits: number) => {
+      const key = npcKey(LEVELS[levelRef.current].id, talkRef.current)
+      if (key && talkOf(key)) persist((s) => ({ ...s, story: markStory(s.story, key, bits) }))
+    },
+    [persist],
+  )
+  const meetNpc = useCallback(() => storyBits(MET_BIT), [storyBits])
+  const askNpc = useCallback((i: number) => storyBits(ASK_BIT[i]), [storyBits])
+  const giftNpc = useCallback(() => storyBits(GIFT_BIT), [storyBits])
+  useEffect(() => {
+    const open = () => {
+      const w = worldRef.current
+      if (screenRef.current !== 'play' || !customRef.current?.story || !w || talkRef.current >= 0 || w.nearNpc < 0 || w.player.dead) return
+      talkRef.current = w.nearNpc
+      setTalkNpc(w.nearNpc)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.code === 'KeyE' || e.code === 'Enter' || e.code === 'NumpadEnter') && !e.repeat && !e.ctrlKey && !e.metaKey) open()
+    }
+    let down = false
+    let raf = 0
+    const poll = () => {
+      raf = requestAnimationFrame(poll)
+      if (screenRef.current !== 'play' || !customRef.current?.story) return
+      const p = navigator.getGamepads?.().find((g) => g?.connected)
+      const now = !!(p?.buttons[4]?.pressed || p?.buttons[5]?.pressed)
+      if (now && !down) open()
+      down = now
+    }
+    window.addEventListener('keydown', onKey)
+    raf = requestAnimationFrame(poll)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      cancelAnimationFrame(raf)
+    }
+  }, [])
+  useEffect(() => {
+    if (screen !== 'play' && screen !== 'pause') closeTalk()
+  }, [screen, closeTalk])
 
   // Hesap: yerel depo silinmişse (Safari 7 gün kullanılmayan sitenin deposunu siler) giriş oturum çerezinden geri gelir
   useEffect(() => {
@@ -1255,6 +1315,25 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: `${t('Sakin Gezi')} · ${LEVELS[idx].name}` })
   }
 
+  /** Hikâye Gezisi: Sakin Gezi yolu (düşüş sayılmaz, süre ve rekor yok) + şehir insanlarıyla konuşma */
+  const startStory = (idx: number) => {
+    soundRef.current?.unlock()
+    ui()
+    rushRef.current = null
+    modeRef.current = null
+    rivalRef.current = null
+    challengeRef.current = null
+    tournamentRef.current = null
+    aynaRef.current = null
+    gezginRef.current = null
+    talkRef.current = -1
+    setTalkNpc(-1)
+    customRef.current = { ...LEVELS[idx], calm: true, story: true }
+    loadLevel(idx, 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: `${t('Hikâye Gezisi')} · ${LEVELS[idx].name}` })
+  }
+
   /** Günün Mücadelesi: bugünün kesiti, herkes için aynı; serbest tekrar, skor yalnız en iyisi */
   const startDailyMini = () => {
     const c = CHALLENGES.find((x) => x.id === dailyMini(today))
@@ -1508,7 +1587,7 @@ export default function Game() {
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
     // menü ekranlarının hepsi: yarım kalan mod bir sonraki normal koşuya taşınmasın
-    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'gezgin', 'calmSetup', 'invite', 'shop', 'mirror'].includes(screen)) return
+    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'gezgin', 'calmSetup', 'storySetup', 'invite', 'shop', 'mirror'].includes(screen)) return
     flushStats()
     rushRef.current = null
     rivalRef.current = null
@@ -1624,9 +1703,10 @@ export default function Game() {
     const timeMs = Math.round(w.time * 1000)
     flushStats(1)
     if (customRef.current?.calm) {
-      // Sakin Gezi bitti: hiçbir şey yazılmaz
+      // Sakin Gezi ve Hikâye Gezisi bitti: ilerlemeye, rekora ve deftere hiçbir şey yazılmaz (hikâye kaydı konuşurken yazılmıştır)
+      const story = !!customRef.current.story
       customRef.current = null
-      setCpToast({ at: Date.now() + 1, text: t('Şehri gezdin. Sakin Gezi bitti.') })
+      setCpToast({ at: Date.now() + 1, text: story ? t('Şehri gezdin. Hikâye Gezisi bitti.') : t('Şehri gezdin. Sakin Gezi bitti.') })
       setScreen('modes')
       return
     }
@@ -1909,8 +1989,10 @@ export default function Game() {
     const r = rendererRef.current
     if (!r) return
     const who = npc >= 0 ? level.npcs[npc] : null
-    r.dialog = who ? { kind: 'npc', name: who.name, text: who.text } : hint ? { kind: 'sign', text: hint } : null
-  }, [npc, hint, level])
+    // Hikâye Gezisi'nde kişinin sözü baloncukta değil konuşma panelinde; konuşurken tabela da susar
+    const story = !!customRef.current?.story
+    r.dialog = talkNpc >= 0 ? null : who && !story ? { kind: 'npc', name: who.name, text: who.text } : hint ? { kind: 'sign', text: hint } : null
+  }, [npc, hint, level, talkNpc])
 
   // ses ayarı tek kaynaktan: kayıt hangi yoldan değişirse değişsin (düğme, bulut, giriş, sıfırlama) ses onu izler
   useEffect(() => {
@@ -1937,12 +2019,17 @@ export default function Game() {
     if (!r) return
     r.ghostAlpha = save.ghostAlpha ?? 0.46
     r.dashMeter = !!save.dashMeter
+    r.colorBlind = save.colorBlind ?? 'yok'
     const z = save.camZoom ?? 1
     if (r.userZoom !== z) {
       r.userZoom = z
       window.dispatchEvent(new Event('resize'))
     }
-  }, [save.ghostAlpha, save.dashMeter, save.camZoom, ready])
+  }, [save.ghostAlpha, save.dashMeter, save.camZoom, save.colorBlind, ready])
+  // renk körü paleti: arayüz renkleri CSS değişkenleriyle (globals.css `data-cb`), tuval renderer.colorBlind ile
+  useEffect(() => {
+    document.documentElement.dataset.cb = save.colorBlind ?? 'yok'
+  }, [save.colorBlind])
   useEffect(() => {
     setHapticScale(save.hapticPower ?? 1)
   }, [save.hapticPower])
@@ -2066,6 +2153,10 @@ export default function Game() {
       <div className="border-2 border-line bg-ink/30 px-2 py-2 [&>div]:flex-wrap [&>div]:pb-0">
         <Choice label={t('Titreşim Yoğunluğu')} value={save.hapticPower ?? 1} options={[{ v: 0, label: t('Kapalı') }, { v: 0.5, label: t('Hafif') }, { v: 1, label: t('Normal') }]} onChange={(v) => patch({ hapticPower: v })} />
       </div>
+      <div className="border-2 border-line bg-ink/30 px-2 py-2 [&>div]:flex-wrap [&>div]:pb-0">
+        <Choice<CbMode> label={t('Renk Körü Paleti')} value={save.colorBlind ?? 'yok'} options={[{ v: 'yok', label: t('Kapalı') }, { v: 'kirmizi-yesil', label: t('Kırmızı-Yeşil') }, { v: 'mavi-sari', label: t('Mavi-Sarı') }]} onChange={(v) => patch({ colorBlind: v })} />
+        <CbPreview mode={save.colorBlind ?? 'yok'} />
+      </div>
       <Toggle label={t('Dash Göstergesi')} hint={t('Karakterin üstünde dash hakkı: dolu halka hazır, boş halka bekliyor.')} on={!!save.dashMeter} onChange={() => patch({ dashMeter: !save.dashMeter })} />
       <Toggle label={t('Basılı Tut Zıplama')} hint={t('Zıplama tuşunu basılı tutunca yere her inişte yeniden zıplarsın.')} on={!!save.holdJump} onChange={() => patch({ holdJump: !save.holdJump })} />
       <Toggle label={t('Büyük Yazı')} hint={t('Arayüzdeki yazılar büyür.')} on={!!save.bigText} onChange={() => patch({ bigText: !save.bigText })} />
@@ -2166,7 +2257,7 @@ export default function Game() {
 
 
   /** HUD ve Mola'daki mod başlığı */
-  const modeLabel = modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('Düello')} · ${duel.setup.names[duel.turn]}` : customRef.current ? (customRef.current.calm ? t('Sakin Gezi') : t('Özel Harita')) : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined
+  const modeLabel = modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('Düello')} · ${duel.setup.names[duel.turn]}` : customRef.current ? (customRef.current.story ? t('Hikâye Gezisi') : customRef.current.calm ? t('Sakin Gezi') : t('Özel Harita')) : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined
 
   /** Mola eylemleri */
   const pauseRetry = () => {
@@ -2340,6 +2431,17 @@ export default function Game() {
               </div>
             </div>
           )}
+          {customRef.current?.story && talkNpc < 0 && npc >= 0 && level.npcs[npc] && (
+            <TalkPrompt
+              name={level.npcs[npc].name}
+              touch={showTouch}
+              onTalk={() => {
+                talkRef.current = npc
+                setTalkNpc(npc)
+              }}
+            />
+          )}
+          {customRef.current?.story && talkNpc >= 0 && <StoryTalk key={`${levelIdx}:${talkNpc}`} level={LEVELS[levelIdx]} npc={talkNpc} hero={save.character ?? 'uktun'} mask={save.story?.[npcKey(LEVELS[levelIdx].id, talkNpc)] ?? 0} onMeet={meetNpc} onAsk={askNpc} onGift={giftNpc} onClose={closeTalk} />}
           {showTouch && inputRef.current && <TouchControls input={inputRef.current} big={save.controlSize === 'buyuk'} canDash={hud.canDash} focus={tutStep === 'walk' ? 'stick' : tutStep === 'jump' ? 'jump' : tutStep === 'dash' ? 'dash' : null} />}
           {!showTouch && save.keyHints && !save.tutorial && <KeyHints canDash={hud.canDash} idle={hud.idle} keys={normalizeKeys(save.keys)} />}
         </>
@@ -3176,7 +3278,7 @@ export default function Game() {
         </Overlay>
       )}
 
-      {screen === 'notebook' && <Defter save={save} today={today} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => patch({ music: true })} onPins={(pins) => patch({ pins })} />}
+      {screen === 'notebook' && <Defter save={save} today={today} hero={save.character ?? 'uktun'} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => patch({ music: true })} onPins={(pins) => patch({ pins })} />}
 
       {screen === 'modes' && (
         <ModesHub
@@ -3214,6 +3316,8 @@ export default function Game() {
           onTournament={() => (ui(), setScreen('tournament'))}
           onGezgin={() => (ui(), setScreen('gezgin'))}
           onCalm={() => (ui(), setScreen('calmSetup'))}
+          onStory={() => (ui(), setScreen('storySetup'))}
+          storyMet={Object.values(save.story ?? {}).filter((m) => (m & MET_BIT) !== 0).length}
           onMirror={() => (ui(), setScreen('mirror'))}
           mirrorOpen={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])}
           mirrorDone={Object.keys(save.ayna ?? {}).length}
@@ -3230,6 +3334,7 @@ export default function Game() {
       {screen === 'rageCourses' && <ChallengeList rage best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
       {screen === 'gezgin' && <GezginHub best={save.challenges} totals={save.gezgin} onStart={startGezgin} onBack={() => setScreen('modes')} />}
       {screen === 'calmSetup' && <CalmSetup startLevel={levelIdx} open={save.unlocked} onStart={startCalm} onBack={() => setScreen('modes')} />}
+      {screen === 'storySetup' && <StorySetup startLevel={levelIdx} open={save.unlocked} story={save.story} onStart={startStory} onBack={() => setScreen('modes')} />}
       {screen === 'tournament' && <TournamentHub mark={save.turnuva} player={save.player?.name ?? ''} friends={save.friends ?? []} onStart={(c) => startChallenge(c, tournamentWeek(today))} onBack={() => setScreen('modes')} />}
       {screen === 'invite' && invite && (
         <Overlay dim>

@@ -7,6 +7,7 @@
  *   npm run build && npx next start -p 3200      (ayrı uçbirimde)
  *   node scripts/verify-perf.cjs [şehir ...] [--port=3200]
  *   GHOST=1 node scripts/verify-perf.cjs ...   (hayaletli koşu: aynı haritanın ikinci oynayışı)
+ *   CB=kirmizi-yesil node scripts/verify-perf.cjs ...   (renk körü paleti açık: kare bütçesi aynı kalmalı)
  */
 const { chromium, devices } = require('playwright')
 
@@ -27,7 +28,7 @@ const SCREENS = [
       const ctx = await b.newContext(opt)
       const pg = await ctx.newPage()
       pg.on('pageerror', (e) => console.log('SAYFA HATASI:', e.message))
-      const save = { character: 'uktun', skippedName: true, seenStory: true, tutorial: false, mapVersion: 999, migrated: true, accountVersion: 2, sfx: false, music: false, keyHints: true, unlocked: 99, lang: 'tr', accessory: process.env.ACC ?? 'hasir', owned: { [process.env.ACC ?? 'hasir']: true } }
+      const save = { character: 'uktun', skippedName: true, seenStory: true, tutorial: false, mapVersion: 999, migrated: true, accountVersion: 2, sfx: false, music: false, keyHints: true, unlocked: 99, lang: 'tr', ...(process.env.CB ? { colorBlind: process.env.CB } : {}), accessory: process.env.ACC ?? 'hasir', owned: { [process.env.ACC ?? 'hasir']: true } }
       await pg.addInitScript((s) => {
         localStorage.setItem('seksek:v1', JSON.stringify(s))
         window.__gaps = []

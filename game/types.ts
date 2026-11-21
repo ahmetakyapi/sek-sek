@@ -59,6 +59,8 @@ export interface LevelDef {
   bossBoost?: { tier: 1 | 2 | 3; speed: number; hp?: number }
   /** Sakin Gezi: düşüş sayılmaz ve bekletmez (kısa bir soluktan sonra son bayrakta doğulur); skor ve rekor yazılmaz */
   calm?: boolean
+  /** Hikâye Gezisi: Sakin Gezi gibi (calm ile birlikte) ama şehir insanlarıyla konuşulur; hikâye ilerlemesi ayrı (save.story) */
+  story?: boolean
   /** Ağır Yerçekimi (zor mod): yerçekimi daha güçlü (HEAVY.gravity): atlayış kısalır, düşüş hızlanır */
   heavy?: boolean
   /** Kısa Dash (zor mod): dash süresi kısalır (SHORT_DASH.time) */

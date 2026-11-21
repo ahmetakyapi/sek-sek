@@ -84,6 +84,8 @@ export function ModesHub({
   onTournament,
   onGezgin,
   onCalm,
+  onStory,
+  storyMet,
   tournament,
   onMirror,
   mirrorOpen,
@@ -141,6 +143,9 @@ export function ModesHub({
   onTournament: () => void
   onGezgin: () => void
   onCalm: () => void
+  onStory: () => void
+  /** Hikâye Gezisi'nde tanışılan kişi sayısı */
+  storyMet: number
   tournament: TournamentMark | null
   onMirror: () => void
   /** otuz şehir bitti mi (Ayna Yolu açık) */
@@ -222,6 +227,7 @@ export function ModesHub({
     coop: true,
     gezgin: true,
     calm: true,
+    story: true,
     editor: true,
     community: true,
   }
@@ -249,6 +255,7 @@ export function ModesHub({
     coop: go('coop', onCoop),
     gezgin: onGezgin,
     calm: onCalm,
+    story: onStory,
     editor: () => (window.location.href = '/duzenle'),
     community: () => (window.location.href = '/haritalar'),
   }
@@ -316,6 +323,7 @@ export function ModesHub({
     coop: t('İki yolcu tek klavyede birlikte ilerler.'),
     gezgin: t('Tohumdan çıkan kesitleri koş, toplamını yaz.'),
     calm: t('Süresiz, düşüşsüz gez; fotoğraf çek.'),
+    story: t('Şehir insanlarıyla konuş, cevap ver, tanış.'),
     editor: t('Kendi bölümünü ve boss’unu çiz, paylaş.'),
     community: t('Başka yolcuların çizdiği yolları oyna ve beğen.'),
   }
@@ -745,6 +753,18 @@ export function ModesHub({
                 status={t('Skor yok, acele yok')}
                 onClick={() => activate('calm')}
                 art={<span className="font-display text-[24px] leading-none text-teal">☾</span>}
+              />
+            )}
+            {vis('story') && (
+              <ModeTile
+                id="story"
+                num={undefined}
+                tone="var(--color-teal)"
+                title={t('Hikâye Gezisi')}
+                desc={tileDesc.story}
+                status={storyMet > 0 ? t('{n} kişiyle tanıştın', { n: storyMet }) : t('Süre yok, tanış')}
+                onClick={() => activate('story')}
+                art={<span className="font-display text-[26px] leading-none text-teal">❝</span>}
               />
             )}
             {vis('editor') && (

@@ -155,4 +155,12 @@ describe('şehir başına harita sürümü', () => {
     expect(c.unlocked).toBeLessThan(100)
     expect(cleanIncoming({ best: null }).best).toEqual({})
   })
+
+  it('Hikâye Gezisi kaydı buluta gider ve bitler birleşir', () => {
+    const a = { ...defaultSave(), story: { 'Simitçi Hasan Amca': 17 } }
+    const b = { ...defaultSave(), story: { 'Simitçi Hasan Amca': 2, 'Cazgır Şaban Dayı': 16 } }
+    expect(cloudPart(a).story).toEqual({ 'Simitçi Hasan Amca': 17 })
+    expect(mergeSaves(a, b).story).toEqual({ 'Simitçi Hasan Amca': 19, 'Cazgır Şaban Dayı': 16 })
+    expect(cleanIncoming({ story: { x: 1, y: 'bozuk' } }).story).toEqual({ x: 1 })
+  })
 })

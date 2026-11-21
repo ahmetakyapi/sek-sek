@@ -1,8 +1,10 @@
 import { medalFor } from '@/components/medal'
 import { CHALLENGES, RAGE_COURSES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
+import { STORY_KEYS } from '@/game/stories'
 import { RAGE_RULES, emptyStats, type RageRule } from './extras'
 import type { Save } from './storage'
+import { storyStats } from './storyRules'
 
 /**
  * Başarımlar: yolculuğun kilometre taşları. Çoğu kayıttan hesaplanır (şehir, hatıra, pul, nazar, boss, madalya, mod
@@ -40,6 +42,8 @@ const rageBestCity = (s: Save) => Math.max(0, ...Object.values(rageKeys(s).reduc
 const chased = (s: Save) => Object.keys(s.rules ?? {}).filter((k) => k.endsWith(':kovala')).length
 const courses = (s: Save) => RAGE_COURSES.filter((c) => s.challenges?.[c.id]).length
 const N = LEVELS.length
+/** Hikâye Gezisi: yalnız bugün haritada olan kişiler sayılır */
+const story = (s: Save) => storyStats(s.story, (k) => STORY_KEYS.includes(k))
 
 export const ACHIEVEMENTS: Achievement[] = [
   // yolculuk
@@ -82,6 +86,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ghost', name: 'Hayalet Avcısı', text: 'Skor tablosundan bir yolcunun hayaletini geç.', icon: '◌', progress: feat('ghostBeaten') },
   { id: 'challenge3', name: 'Mücadeleci', text: 'Üç mücadele haritasını bitir.', icon: '▲', progress: (s) => [Math.min(3, chals(s)), 3] },
   { id: 'challengeAll', name: 'Hepsi Bitti', text: 'Bütün mücadele haritalarını bitir.', icon: '▲', progress: (s) => [chals(s), CHALLENGES.length] },
+  // Hikâye Gezisi
+  { id: 'storyFirst', name: 'Selam Verdim', text: 'Hikâye Gezisi’nde bir şehir insanıyla tanış.', icon: '❝', progress: (s) => [Math.min(1, story(s).met), 1] },
+  { id: 'story10', name: 'Tanıdık Yüzler', text: 'On kişiyle tanış.', icon: '❝', progress: (s) => [Math.min(10, story(s).met), 10] },
+  { id: 'storyStar', name: 'Gönül Dostu', text: 'Bir şehir insanına üç sorunun hepsini sor ve defter sayfasını al.', icon: '★', progress: (s) => [Math.min(1, story(s).full), 1] },
+  { id: 'storyAll', name: 'Her Kapı Açık', text: 'Hikâye Gezisi’ndeki bütün kişilerle üç yıldıza ulaş.', icon: '★', progress: (s) => [story(s).full, STORY_KEYS.length] },
   // Sinir Bozucu: modlar ve Öfke Parkurları
   { id: 'rage1', name: 'Sabrın Sınavı', text: 'Bir Sinir Bozucu modu bitir.', icon: '✸', progress: (s) => [Math.min(1, rageKeys(s).length), 1] },
   { id: 'rage25', name: 'Öfke Kontrolü', text: 'Yirmi beş Sinir Bozucu rekoru yaz.', icon: '✸', progress: (s) => [Math.min(25, rageKeys(s).length), 25] },

@@ -42,10 +42,11 @@ export const displayName = (l: LevelDef) => (l.nickname ? `${l.name} (${l.nickna
 export { medalFor, type Medal } from '@/components/medal'
 import type { Medal } from '@/components/medal'
 
-const MEDAL: Record<Medal, { label: string; color: string; ring: string }> = {
-  altin: { label: 'Altın', color: '#ffcc66', ring: '#b8862a' },
-  gumus: { label: 'Gümüş', color: '#d7dde6', ring: '#8f99a8' },
-  bronz: { label: 'Bronz', color: '#d08a52', ring: '#8a5530' },
+/** `mark`: renk körü paletinde rozetin içinde görünen sıra rakamı (globals.css `.cb-mark`) */
+const MEDAL: Record<Medal, { label: string; color: string; ring: string; mark: string }> = {
+  altin: { label: 'Altın', color: '#ffcc66', ring: '#b8862a', mark: '1' },
+  gumus: { label: 'Gümüş', color: '#d7dde6', ring: '#8f99a8', mark: '2' },
+  bronz: { label: 'Bronz', color: '#d08a52', ring: '#8a5530', mark: '3' },
 }
 
 export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?: 'sm' | 'lg' }) {
@@ -57,6 +58,7 @@ export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?:
     <span className="inline-flex items-center gap-1.5" title={t('{m} Madalya', { m: t(m.label) })}>
       <span className={`inline-flex items-center justify-center rounded-full border-2 font-bold text-ink ${d}`} style={{ background: m.color, borderColor: m.ring }}>
         {size === 'lg' ? '★' : ''}
+        <i className="cb-mark" aria-hidden>{m.mark}</i>
       </span>
       {size === 'lg' && <span className="font-display text-base text-cream">{t('{m} Madalya', { m: t(m.label) })}</span>}
     </span>

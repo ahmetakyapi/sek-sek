@@ -10,6 +10,7 @@
  * durur. Her karonun rastgeleliği konumundan türetilir: parça sınırlarında doku kesilmez.
  */
 import { CITY } from './art'
+import { cb, cbSpike } from './colorBlind'
 import { BLOCK_A, BLOCK_B, CRUMBLE, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, SWIM, TURRET, WATER, WET, type World } from './sim'
 import { T, type CityKey } from './types'
 
@@ -959,7 +960,7 @@ export class TerrainHD {
         const x = tx * T
         const y = ty * T
         if (t === ONEWAY) this.plank(c, x, y, w.tile(tx - 1, ty) !== ONEWAY, w.tile(tx + 1, ty) !== ONEWAY, s.plank, tx)
-        else if ((t === SPIKE_UP || t === SPIKE_DOWN) && !this.hideSpikes) this.spikes(c, x, y, t === SPIKE_UP, s.spike, tx)
+        else if ((t === SPIKE_UP || t === SPIKE_DOWN) && !this.hideSpikes) this.spikes(c, x, y, t === SPIKE_UP, cbSpike(s.spike), tx)
         else if (t === TURRET) {
           c.fillStyle = s.tileDark
           c.strokeStyle = INK
@@ -1621,6 +1622,13 @@ export class TerrainHD {
       c.closePath()
       c.fillStyle = col[0]
       c.fill()
+      // renk körü: her dikenin ucuna açık nokta (renkten bağımsız ikinci işaret)
+      if (cb.mode !== 'yok') {
+        c.beginPath()
+        c.arc(sx + 4 + lean, up ? y + 9.4 : y + 6.6, 0.9, 0, Math.PI * 2)
+        c.fillStyle = '#fff8e0'
+        c.fill()
+      }
     }
   }
 }

@@ -6,6 +6,7 @@
  * Ruh hâli boss’larla aynı okunur: titreme + ünlem (işaret), çatık kaş (saldırı), sarmal göz + yıldız (sersem).
  */
 import { INK, blob, setInkWidth, stroke } from './heroDraw'
+import { cbHalo, cbHaloScale, cbc } from './colorBlind'
 import type { Enemy, EnemyKind } from './sim'
 import type { CityKey } from './types'
 
@@ -30,8 +31,8 @@ function shape(c: Ctx, build: () => void, fill: string, sh?: string) {
     c.beginPath()
     build()
     c.closePath()
-    c.strokeStyle = HALO
-    c.lineWidth = INKW + haloW * 2
+    c.strokeStyle = cbHalo(HALO)
+    c.lineWidth = INKW + haloW * 2 * cbHaloScale()
     c.stroke()
     return
   }
@@ -61,8 +62,8 @@ function line(c: Ctx, pts: number[], w: number, color: string, ink = true) {
     c.beginPath()
     c.moveTo(pts[0], pts[1])
     for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1])
-    c.strokeStyle = HALO
-    c.lineWidth = w + INKW + haloW * 2
+    c.strokeStyle = cbHalo(HALO)
+    c.lineWidth = w + INKW + haloW * 2 * cbHaloScale()
     c.stroke()
     return
   }
@@ -201,7 +202,7 @@ function bang(c: Ctx, y: number, t: number) {
   c.lineJoin = 'round'
   c.strokeStyle = INK
   c.lineWidth = 0.9
-  c.fillStyle = '#ff4a3a'
+  c.fillStyle = cbc('#ff4a3a')
   c.beginPath()
   c.moveTo(-1.2, -6.4)
   c.lineTo(1.2, -6.4)

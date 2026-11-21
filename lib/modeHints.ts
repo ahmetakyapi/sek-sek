@@ -3,7 +3,7 @@
  * oklarla gezinti. Metinler Türkçe anahtardır; arayüz `t()` ile çevirir.
  */
 
-export type ModeId = 'daily' | 'trio' | 'tournament' | 'rules' | 'challenges' | 'mirror' | 'tour' | 'rush' | 'marathon' | 'chase' | 'rage' | 'duel' | 'coop' | 'gezgin' | 'calm' | 'editor' | 'community'
+export type ModeId = 'daily' | 'trio' | 'tournament' | 'rules' | 'challenges' | 'mirror' | 'tour' | 'rush' | 'marathon' | 'chase' | 'rage' | 'duel' | 'coop' | 'gezgin' | 'calm' | 'story' | 'editor' | 'community'
 
 export interface ModeMeta {
   id: ModeId
@@ -23,7 +23,7 @@ export interface ModeMeta {
 
 /** Kutucuk sırası (ızgaradaki sıra): ilk dokuzu sayı tuşlarıyla açılır */
 export type TileId = Exclude<ModeId, 'daily' | 'trio' | 'tournament'>
-export const TILE_ORDER: TileId[] = ['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'editor', 'community']
+export const TILE_ORDER: TileId[] = ['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'story', 'editor', 'community']
 
 /** Modun görünen adı (Türkçe anahtar; arayüz t() ile çevirir) */
 export const NAME: Record<ModeId, string> = {
@@ -42,6 +42,7 @@ export const NAME: Record<ModeId, string> = {
   coop: 'Co-op',
   gezgin: 'Gezgin Turu',
   calm: 'Sakin Gezi',
+  story: 'Hikâye Gezisi',
   editor: 'Bölüm Düzenleyici',
   community: 'Topluluk Haritaları',
 }
@@ -157,6 +158,15 @@ export const MODES: Record<ModeId, ModeMeta> = {
     isNew: true,
     tags: 'sakin gezi keşif rahat fotoğraf ölümsüz calm explore relax',
     howto: ['Bir şehir seç ve acele etmeden gez.', 'Düşüş sayılmaz, skor ve rekor yazılmaz.', 'Molada Fotoğraf Kipi ile kartpostal çek.'],
+  },
+  story: {
+    id: 'story',
+    heat: 1,
+    players: 1,
+    ranked: false,
+    isNew: true,
+    tags: 'hikaye hikâye gezi tanış konuş diyalog karakter sohbet şehir insanı story talk dialogue meet characters',
+    howto: ['Bir şehir seç; süre yok, düşüşün sayılmaz.', 'Bir şehir insanına yaklaşınca E ya da Enter’a bas (dokunmatikte “Konuş”), cevabını seç.', 'Üç soruyla üç yıldız topla; yıldızlar Defter → Tanıştıklarım’da durur.'],
   },
   editor: { id: 'editor', heat: 1, players: 1, ranked: false, isNew: false, tags: 'düzenleyici harita yap çiz editor', howto: [] },
   community: { id: 'community', heat: 1, players: 1, ranked: false, isNew: false, tags: 'topluluk harita galeri community', howto: [] },

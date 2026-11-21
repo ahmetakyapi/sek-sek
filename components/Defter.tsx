@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import Album from '@/components/Album'
+import MetView from '@/components/StoryMode'
 import MusicBox from '@/components/MusicBox'
+import type { Hero } from '@/game/stories'
 import ProfileView from '@/components/ProfileView'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
@@ -23,7 +25,7 @@ export const RUSH_NEEDS = 3
  * Yol Defteri: yolculukta toplanan her şey tek sayfada. Üstte toplamlar tek şeritte; sekmeler şehirler (üç hatıra,
  * gizli pul, nazar boncuğu, meydanın boss’u), albüm, başarımlar (üstünde yol sayaçları, görevler, Günlük ve Boss Rush) ve müzik.
  */
-export default function Defter({ save, today, sound, onClose, onModes, onMusicOn, onPins }: { save: Save; today: string; sound: Sound | null; onClose: () => void; onModes: () => void; onMusicOn: () => void; onPins?: (pins: string[]) => void }) {
+export default function Defter({ save, today, hero, sound, onClose, onModes, onMusicOn, onPins }: { save: Save; today: string; hero: Hero; sound: Sound | null; onClose: () => void; onModes: () => void; onMusicOn: () => void; onPins?: (pins: string[]) => void }) {
   const t = useT()
   const lang = useLang()
   const n = LEVELS.length
@@ -33,7 +35,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
   const bosses = LEVELS.filter((l) => save.bosses[l.id]).length
   const scarves = SCARVES.filter((s) => charms >= s.need).length
   const stats = save.stats ?? emptyStats()
-  const [tab, setTab] = useState<'profil' | 'sehir' | 'album' | 'basarim' | 'muzik'>('profil')
+  const [tab, setTab] = useState<'profil' | 'sehir' | 'album' | 'basarim' | 'tanis' | 'muzik'>('profil')
   const who = save.player?.name || save.name || t('Gezgin')
   const profile = useMemo(() => profileFromSave(save, today, { name: who }), [save, today, who])
   const got = ACHIEVEMENTS.filter((a) => isEarned(a, save)).length
@@ -56,7 +58,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
     [t('Ezilen Düşman'), stats.stomps.toLocaleString(lang)],
     [t('Yolda Geçen Süre'), hours],
   ]
-  const compact = tab === 'album' || tab === 'muzik' || tab === 'profil'
+  const compact = tab === 'album' || tab === 'muzik' || tab === 'profil' || tab === 'tanis'
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1100px,100%)]">
@@ -105,6 +107,13 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
                 </>,
               ],
               [
+                'tanis',
+                <>
+                  <span className="max-sm:hidden">{t('Tanıştıklarım')}</span>
+                  <span className="sm:hidden">{t('Tanıştık')}</span>
+                </>,
+              ],
+              [
                 'muzik',
                 <>
                   <span className="max-sm:hidden">{t('Müzik Kutusu')}</span>
@@ -137,6 +146,8 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
           </div>
         ) : tab === 'album' ? (
           <Album save={save} />
+        ) : tab === 'tanis' ? (
+          <MetView story={save.story} hero={hero} />
         ) : tab === 'muzik' ? (
           <MusicBox save={save} sound={sound} onMusicOn={onMusicOn} />
         ) : tab === 'basarim' ? (

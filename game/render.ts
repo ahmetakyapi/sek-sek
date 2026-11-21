@@ -7,6 +7,7 @@ import { drawBoss } from './bossDraw'
 import { INK, LOOKS, POSES, airPose, climbPose, drawHero, gait, handPos, lerpPose, swimStroke, type Look, type Pose } from './heroDraw'
 import { NO_KIT, type Kit } from './accessories'
 import { TerrainHD } from './terrainDraw'
+import { cb, cbc, type CbMode } from './colorBlind'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
@@ -113,6 +114,16 @@ export class Renderer {
   ghostAlpha = 0.46
   /** Kolaylık: karakterin üstünde dash hakkı halkası */
   dashMeter = false
+  /** Kolaylık: renk körü paleti (yalnız çizim; `game/colorBlind.ts`) */
+  get colorBlind(): CbMode {
+    return cb.mode
+  }
+  set colorBlind(m: CbMode) {
+    if (cb.mode === m) return
+    cb.mode = m
+    // zemin önbelleği (diken rengi) yeniden kurulur
+    this.terrain = null
+  }
   /** Kolaylık: kamera yakınlığı çarpanı (Dar Kadraj'ın `zoom`uyla çarpılır) */
   userZoom = 1
   /** Deprem (zor mod): kadraj hiç durmadan sarsılır (sarsıntı ayarı kapalıysa etkisiz) */
@@ -731,8 +742,8 @@ export class Renderer {
       const x = Math.round(m.x)
       const y = Math.round(m.y)
       for (let k = -3; k <= 3; k++) {
-        rect(f, x + k, y + k, 1, 1, '#e5484d')
-        rect(f, x + k, y - k, 1, 1, '#e5484d')
+        rect(f, x + k, y + k, 1, 1, cbc('#e5484d'))
+        rect(f, x + k, y - k, 1, 1, cbc('#e5484d'))
       }
     }
     f.restore()
@@ -2588,8 +2599,8 @@ export class Renderer {
           const solid = t === BLOCK_A ? !w.switchOn : w.switchOn
           const skin = SWITCH_SKIN[this.city]
           // gölge oyunu: perde rengi ve siyah suret · gece-gündüz: güneş taşı ve ay taşı
-          const col = skin === 'shadow' ? (t === BLOCK_A ? '#f0dca8' : '#3a2a44') : skin === 'daynight' ? (t === BLOCK_A ? '#f2c14e' : '#8ab4e8') : t === BLOCK_A ? '#e8794a' : '#4aa8e0'
-          const inner = skin === 'shadow' ? (t === BLOCK_A ? '#c8ac6c' : '#1e1426') : skin === 'daynight' ? (t === BLOCK_A ? '#c8922a' : '#4a6ea8') : t === BLOCK_A ? '#c8582a' : '#2a7ab0'
+          const col = skin === 'shadow' ? (t === BLOCK_A ? '#f0dca8' : '#3a2a44') : skin === 'daynight' ? (t === BLOCK_A ? '#f2c14e' : '#8ab4e8') : cbc(t === BLOCK_A ? '#e8794a' : '#4aa8e0')
+          const inner = skin === 'shadow' ? (t === BLOCK_A ? '#c8ac6c' : '#1e1426') : skin === 'daynight' ? (t === BLOCK_A ? '#c8922a' : '#4a6ea8') : cbc(t === BLOCK_A ? '#c8582a' : '#2a7ab0')
           if (solid) {
             rect(b, x, y, T, T, col)
             rect(b, x + 1, y + 1, T - 2, T - 2, inner)
@@ -2606,8 +2617,17 @@ export class Renderer {
               rect(b, x + T - 1, y + i, 1, 2, col)
             }
           }
+          // renk körü: renge ek ikinci işaret, A bloğu daire, B bloğu üçgen (açıkken dolu, kapalıyken soluk)
+          if (cb.mode !== 'yok' && !skin) this.drawBlockMark(b, x, y, t === BLOCK_A, solid)
         }
       }
+  }
+
+  /** renk körü: blok türünü renksiz gösteren simge (A: daire, B: üçgen) */
+  private drawBlockMark(b: Ctx, x: number, y: number, isA: boolean, solid: boolean) {
+    const col = solid ? '#14121f' : 'rgba(255,255,255,0.55)'
+    if (isA) disc(b, x + 8, y + 8, 2, col)
+    else for (let r = 0; r < 4; r++) rect(b, x + 8 - r, y + 6 + r, 1 + r * 2, 1, col)
   }
 
   private drawCrumbles(b: Ctx, w: World, cx: number, cy: number) {
@@ -2684,6 +2704,8 @@ export class Renderer {
         else rect(b, x, y + 12, T, 4, 'rgba(8,14,36,0.06)')
         // öldüren su yüzülen sudan ayrı okunsun: daha koyu ve bulanık, yüzeyinde sivri köpük dişleri (girilmez)
         if (kind === WATER) rect(b, x, y + (surface ? 6 : 0), T, T - (surface ? 6 : 0), `rgba(10,8,28,${Math.min(0.55, 0.28 + depth * 0.1).toFixed(2)})`)
+        // renk körü: öldüren su dikey çizgili (yüzülen suyla renkten bağımsız ayrılır)
+        if (kind === WATER && cb.mode !== 'yok') for (let i = 1; i < T; i += 4) rect(b, x + i, y + (surface ? 6 : 0), 1, T - (surface ? 6 : 0), 'rgba(255,236,190,0.3)')
         if (surface && kind === WATER) {
           const off = Math.floor(this.t * 5)
           for (let i = 0; i < 16; i++) {
@@ -2836,7 +2858,7 @@ export class Renderer {
     if (w.warp) this.drawExit(b, w.warp, true)
     // basınç plakaları
     for (const pl of w.plates) {
-      rect(b, pl.x, pl.y + (pl.pressed ? 2 : 0), pl.w, pl.pressed ? 2 : 4, w.switchOn ? '#4aa8e0' : '#e8794a')
+      rect(b, pl.x, pl.y + (pl.pressed ? 2 : 0), pl.w, pl.pressed ? 2 : 4, cbc(w.switchOn ? '#4aa8e0' : '#e8794a'))
       rect(b, pl.x - 1, pl.y + 3, pl.w + 2, 1, '#2a2438')
     }
     // ok tuzağı yükleniyor: atıştan hemen önce yarık kızarır
@@ -2844,7 +2866,7 @@ export class Renderer {
       if (tr.timer < 0.5) {
         const a = 1 - tr.timer / 0.5
         b.globalAlpha = 0.4 + a * 0.6
-        rect(b, tr.tx * T + 3, tr.ty * T + 6, 10, 3, '#ff4a3a')
+        rect(b, tr.tx * T + 3, tr.ty * T + 6, 10, 3, cbc('#ff4a3a'))
         disc(b, tr.tx * T + (tr.dir > 0 ? 15 : 1), tr.ty * T + 7, 2 + Math.round(a * 2), 'rgba(255,90,60,0.5)')
         b.globalAlpha = 1
       }
@@ -2872,7 +2894,7 @@ export class Renderer {
       rect(b, x - 1, y, 8, 3, '#1a1220')
       rect(b, x, y + 1, 6, 1, '#f4e6c0')
       rect(b, f > 0 ? x + 5 : x - 1, y - 1, 2, 5, '#1a1220')
-      rect(b, f > 0 ? x + 6 : x - 1, y, 1, 3, '#e5484d')
+      rect(b, f > 0 ? x + 6 : x - 1, y, 1, 3, cbc('#e5484d'))
       rect(b, f > 0 ? x : x + 5, y, 1, 3, '#c8553d')
     }
   }
@@ -3651,7 +3673,7 @@ export class Renderer {
       const ex = left ? r + 4 * sc : W - r - 4 * sc
       const ey = Math.max(r + 40 * sc, Math.min(this.canvas.height - r - 8 * sc, sy - 8 * sc))
       c.save()
-      c.fillStyle = near > 0.6 ? '#e5534b' : near > 0.3 ? '#e8a33d' : '#f4f0e6'
+      c.fillStyle = near > 0.6 ? cbc('#e5534b') : near > 0.3 ? cbc('#e8a33d') : '#f4f0e6'
       c.strokeStyle = '#1b1530'
       c.lineWidth = 1.5 * sc
       c.beginPath()
@@ -3761,14 +3783,14 @@ export class Renderer {
       const by = top - sc * 20.5
       c.fillStyle = '#22161f'
       c.fillRect(bx - sc * 0.6, by - sc * 0.6, bw + sc * 1.2, bh + sc * 1.2)
-      c.fillStyle = k > 0.5 ? '#ffd36a' : k > 0.25 ? '#ff9a4a' : '#ff5a4a'
+      c.fillStyle = k > 0.5 ? '#ffd36a' : k > 0.25 ? cbc('#ff9a4a') : cbc('#ff5a4a')
       c.fillRect(bx, by, bw * k, bh)
       c.font = `700 ${Math.round(sc * 6)}px ${this.popFont()}`
       c.textAlign = 'left'
       c.lineWidth = Math.max(2, sc * 1)
       const sec = left.toFixed(1)
       c.strokeText(sec, bx + bw + sc * 2, by + bh / 2)
-      c.fillStyle = k > 0.25 ? '#ffd36a' : '#ff5a4a'
+      c.fillStyle = k > 0.25 ? '#ffd36a' : cbc('#ff5a4a')
       c.fillText(sec, bx + bw + sc * 2, by + bh / 2)
       c.restore()
     }
@@ -3931,7 +3953,7 @@ export class Renderer {
       c.stroke()
       const inner = (bw - sc) * frac
       if (inner > 0.5) {
-        c.fillStyle = warn ? (blink ? '#ffb0a4' : '#ff5f52') : frac < 0.6 ? '#ffd36a' : '#8fe8ff'
+        c.fillStyle = warn ? (blink ? cbc('#ffb0a4') : cbc('#ff5f52')) : frac < 0.6 ? '#ffd36a' : '#8fe8ff'
         c.beginPath()
         c.roundRect(x0 + r * 2 + sc * 0.2, -bh / 2 + sc * 0.9, inner, bh - sc * 1.8, (bh - sc * 1.8) / 2)
         c.fill()
@@ -3939,7 +3961,7 @@ export class Renderer {
       // kabarcık simgesi: son saniyelerde içinde kalan saniye
       c.beginPath()
       c.arc(x0 + r, 0, r, 0, Math.PI * 2)
-      c.fillStyle = warn ? (blink ? '#ffd4cc' : '#ff8a7c') : '#cdf3ff'
+      c.fillStyle = warn ? (blink ? cbc('#ffd4cc') : cbc('#ff8a7c')) : '#cdf3ff'
       c.fill()
       c.stroke()
       if (warn) {

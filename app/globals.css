@@ -1420,3 +1420,17 @@ blockquote {
     min-height: 40px;
   }
 }
+
+/* Renk körü paleti (Ayarlar → Kolaylıklar, `data-cb` Game.tsx'ten): arayüzde kırmızı-yeşil ve mavi-sarı karışan
+   yerler güvenli renge geçer, renge ek ikinci işaret çıkar. Tuval renkleri game/colorBlind.ts'te. */
+.cb-mark { display: none; font-style: normal; }
+:root[data-cb='kirmizi-yesil'] .cb-mark,
+:root[data-cb='mavi-sari'] .cb-mark { display: inline; font-size: 10px; line-height: 1; font-weight: 800; }
+:root[data-cb='kirmizi-yesil'] {
+  --color-coral: #ffb454;
+  --color-teal: #56b4e9;
+}
+:root[data-cb='mavi-sari'] {
+  --color-teal: #00d6a0;
+  --color-gold: #ffd9a0;
+}
