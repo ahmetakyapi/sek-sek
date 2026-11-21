@@ -251,11 +251,11 @@ describe('skor tablosu', () => {
   })
 
   it('mücadele haritası kendi tablosunda; genel sıralamaya ve toplu aktarıma girmez', async () => {
-    expect((await run(P[0], 'mucadele-corum-leblebi', 9000, 1, 0)).status).toBe(200)
-    expect((await run(P[1], 'mucadele-corum-leblebi', 8000, 0, 0)).status).toBe(200)
+    expect((await run(P[0], 'mucadele-corum-leblebi-2', 9000, 1, 0)).status).toBe(200)
+    expect((await run(P[1], 'mucadele-corum-leblebi-2', 8000, 0, 0)).status).toBe(200)
     expect((await run(P[1], 'mucadele-yok', 8000, 0, 0)).status).toBe(400)
-    expect((await get('level=mucadele-corum-leblebi')).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
-    const r = await post({ playerId: P[0].id, token: P[0].token, batch: [{ level: 'mucadele-corum-leblebi', timeMs: 4000, deaths: 0, items: 0 }] })
+    expect((await get('level=mucadele-corum-leblebi-2')).scores.map((r) => r.name)).toEqual(['Bora', 'Ayşe'])
+    const r = await post({ playerId: P[0].id, token: P[0].token, batch: [{ level: 'mucadele-corum-leblebi-2', timeMs: 4000, deaths: 0, items: 0 }] })
     expect(r.j).toMatchObject({ synced: 0 })
     expect((await get('level=genel')).scores.find((x) => x.name === 'Bora')).toMatchObject({ cities: 2 })
   })

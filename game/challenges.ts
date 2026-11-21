@@ -22,16 +22,16 @@ export interface Challenge {
 }
 
 export const CHALLENGES: Challenge[] = [
-  { id: 'corum-leblebi', level: 'corum', name: 'Kavurma Ocağı', from: 3, to: 4, par: 14.7 },
-  { id: 'sinop-kale', level: 'sinop', name: 'Kale Burcu', from: 2, to: 4, par: 12.5 },
-  { id: 'ordu-boztepe', level: 'ordu', name: 'Boztepe İnişi', from: 4, to: 5, par: 18.3 },
+  { id: 'corum-leblebi-2', level: 'corum', name: 'Kavurma Ocağı', from: 3, to: 4, par: 14.7 },
+  { id: 'sinop-kale-2', level: 'sinop', name: 'Kale Burcu', from: 2, to: 4, par: 12.5 },
+  { id: 'ordu-boztepe-2', level: 'ordu', name: 'Boztepe İnişi', from: 4, to: 5, par: 18.3 },
   { id: 'trabzon-sumela', level: 'trabzon', name: 'Sümela Yolu', from: 5, to: 6, par: 16.5 },
-  { id: 'sivas-divrigi', level: 'sivas', name: 'Divriği Kapısı', from: 1, to: 3, par: 16.2 },
+  { id: 'sivas-divrigi-2', level: 'sivas', name: 'Divriği Kapısı', from: 1, to: 3, par: 16.2 },
   { id: 'van-akdamar', level: 'van', name: 'Akdamar Kıyısı', from: 3, to: 4, par: 10.3 },
   { id: 'erzurum-palandoken', level: 'erzurum', name: 'Palandöken', from: 1, to: 2, par: 13.5 },
-  { id: 'ardahan-cildir', level: 'ardahan', name: 'Çıldır Buzu', from: 2, to: 4, par: 25.5 },
-  { id: 'amasya-kaya', level: 'amasya', name: 'Kral Kaya Mezarları', from: 4, to: 5, par: 24.1 },
-  { id: 'mugla-koy', level: 'mugla', name: 'Koy Rüzgârı', from: 4, to: 5, par: 11.4 },
+  { id: 'ardahan-cildir-2', level: 'ardahan', name: 'Çıldır Buzu', from: 2, to: 4, par: 25.5 },
+  { id: 'amasya-kaya-2', level: 'amasya', name: 'Kral Kaya Mezarları', from: 4, to: 5, par: 24.1 },
+  { id: 'mugla-koy-2', level: 'mugla', name: 'Koy Rüzgârı', from: 4, to: 5, par: 11.4 },
   { id: 'bayburt-coruh', level: 'bayburt', name: 'Çoruh Boğazı', from: 1, to: 2, par: 12.8 },
   { id: 'artvin-karagol', level: 'artvin', name: 'Karagöl Patikası', from: 3, to: 4, par: 13.1 },
   { id: 'kars-ani', level: 'kars', name: 'Ani Surları', from: 1, to: 2, par: 11.3 },

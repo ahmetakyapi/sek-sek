@@ -52,7 +52,7 @@ describe('hile önleme: alt süre sınırı', () => {
 
 describe('hile önleme: hayalet', () => {
   // çözücünün gerçek fizikle koştuğu yol, oyundaki gibi kaydedilir
-  const c = CHALLENGES.find((x) => x.id === 'corum-leblebi')!
+  const c = CHALLENGES.find((x) => x.id === 'corum-leblebi-2')!
   const level = challengeLevel(c)
   const real = (() => {
     const r = solve(level, { exitOnly: true, budget: 12000, trace: true })

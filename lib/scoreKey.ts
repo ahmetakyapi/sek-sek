@@ -19,7 +19,7 @@ export type TourKey = (typeof TOUR_KEYS)[number]
 /** Günlük Meydan Okuma'nın tablo anahtarı: "gunluk:2026-11-14" */
 export const dailyScoreKey = (day: string) => `gunluk:${day}`
 
-/** Mücadele haritasının tablo anahtarı: "mucadele-corum-leblebi" → "mucadele:corum-leblebi" */
+/** Mücadele haritasının tablo anahtarı: "mucadele-corum-leblebi-2" → "mucadele:corum-leblebi-2" */
 export const challengeScoreKey = (levelId: string) => `mucadele:${levelId.slice('mucadele-'.length)}`
 
 /** Günün Mücadelesi ve Günün Boss'u: "gunluk-m:2026-11-21", "gunluk-b:2026-11-21" (lib/extras.ts dailyMiniKey / dailyBossKey ile aynı) */
