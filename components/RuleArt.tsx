@@ -48,6 +48,10 @@ export const RULE_ART: Record<DailyRule, { family: RuleFamily; heat: 1 | 2 | 3 |
   kaos: { family: 'karisim', heat: 5 },
   korkabus: { family: 'karisim', heat: 5 },
   kovala: { family: 'baski', heat: 3 },
+  agir: { family: 'fizik', heat: 3 },
+  kisadash: { family: 'fizik', heat: 3 },
+  afyok: { family: 'fizik', heat: 4 },
+  deprem: { family: 'zemin', heat: 2 },
 }
 
 const HEART = 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'
@@ -170,6 +174,38 @@ function glyph(rule: DailyRule) {
           <path d="M4 4l16 16" />
         </>
       )
+    case 'agir':
+      // ağırlık: aşağı çeken kütle ve ok
+      return (
+        <>
+          <path d="M7 9h10l2.5 11h-15z" fill="currentColor" fillOpacity=".25" />
+          <path d="M9.5 9a2.5 2.5 0 1 1 5 0M12 12.5v4M10 14.8l2 2 2-2" />
+        </>
+      )
+    case 'kisadash':
+      return (
+        <>
+          <path d="M3 12h6M3 8.5h3M3 15.5h3" />
+          <path d="M12 12h3.5M14 9l3 3-3 3" />
+          <path d="M19.5 7v10" strokeDasharray="1.8 2" />
+        </>
+      )
+    case 'afyok':
+      // kenar ve boşluk: zıplama hakkı kalmadı
+      return (
+        <>
+          <path d="M3 10h8v2H3z" fill="currentColor" fillOpacity=".3" />
+          <path d="M11 11c3 0 6 3 8 9M16 15l3 5-5-.5" />
+          <path d="M16 4l4 4M20 4l-4 4" />
+        </>
+      )
+    case 'deprem':
+      return (
+        <>
+          <path d="M2.5 14l3-4 3 8 3-12 3 12 3-8 3 4" />
+          <path d="M3 21h18" />
+        </>
+      )
     case 'ceza':
       return (
         <>
@@ -243,6 +279,9 @@ export function rulePerks(rule: DailyRule): Array<{ icon: DailyRule; text: strin
   if (d.swapKeys) out.push({ icon: 'ters', text: 'Ters Tuşlar' })
   if (d.lowGravity) out.push({ icon: 'ay', text: 'Az Yerçekimi' })
   if (d.storm) out.push({ icon: 'firtina', text: 'Dönen Rüzgâr' })
+  if (d.heavy) out.push({ icon: 'agir', text: 'Ağır Yerçekimi' })
+  if (d.shortDash) out.push({ icon: 'kisadash', text: 'Kısa Dash' })
+  if (d.noMercy) out.push({ icon: 'afyok', text: 'Zıplama Payı Yok' })
   if (d.chase) out.push({ icon: 'kovala', text: 'Kangal Kovalar' })
   if (v.dark) out.push({ icon: 'karanlik', text: 'Karanlık' })
   if (v.flipY) out.push({ icon: 'basasagi', text: 'Ters Ekran' })
@@ -250,6 +289,7 @@ export function rulePerks(rule: DailyRule): Array<{ icon: DailyRule; text: strin
   if (v.hiddenSpikes) out.push({ icon: 'gorunmez', text: 'Gizli Diken' })
   if (v.ghostGround) out.push({ icon: 'hayalet', text: 'Sisli Zemin' })
   if (v.zoom) out.push({ icon: 'dar', text: 'Yakın Kamera' })
+  if (v.quake) out.push({ icon: 'deprem', text: 'Sarsılan Kadraj' })
   if (d.perDeath) out.push({ icon: 'ceza', text: 'Düşüş +{n} sn', vars: { n: d.perDeath } })
   if (d.perMissing) out.push({ icon: 'hatira', text: 'Eksik Hatıra +{n} sn', vars: { n: d.perMissing } })
   return out

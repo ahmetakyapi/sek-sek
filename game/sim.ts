@@ -50,6 +50,12 @@ export const NITRO = { time: 3, speed: 1.55, recharge: 4 }
 export const AIR = { max: 6, warn: 2.5 }
 /** Ay Yerçekimi (zor mod): oyuncunun yerçekimi ve en büyük düşüş hızı bu oranlarla çarpılır */
 export const MOON = { gravity: 0.55, fall: 0.6 }
+/** Ağır Yerçekimi (zor mod): yerçekimi bu kadar katıdır (zıplama ~%20 alçalır, düşüş hızı değişmez) */
+export const HEAVY = { gravity: 1.25 }
+/** Kısa Dash (zor mod): dash süresi bu oranla çarpılır (kat edilen yol aynı oranda kısalır) */
+export const SHORT_DASH = { time: 0.7 }
+/** Af Yok (zor mod): kenardan düştükten sonra zıplama payı yok, zıplama tamponu bir adım (sn) */
+export const NO_MERCY = { coyote: 0, buffer: 0.02 }
 /** Fırtına (zor mod): rüzgâr sin(süre × freq) ile yön değiştirir (~4,5 sn'de bir döner) */
 export const STORM = { freq: 0.7 }
 /**
@@ -122,6 +128,28 @@ export interface Chaser {
 
 /** omuz sekmesinin gücü (zıplama hızına oran): tam zıplamadan yüksek, yaydan alçak */
 export const SHOULDER_BOOST = 1.2
+/** Eşi Fırlat: alttaki de aynı anda zıplarsa üsttekinin sekişi (çarpan) */
+export const THROW_BOOST = 1.6
+/** Kurtarma: düşen eşin balonunun ömrü (sn) ve değme mesafesi (px) */
+export const RESCUE_TIME = 3
+export const RESCUE_REACH = 28
+/** Co-op işaretleri: ekranda kalma süresi (sn) */
+export const PING_LIFE = 2.5
+export type PingKind = 'here' | 'wait' | 'danger' | 'nice'
+export const PING_KINDS: readonly PingKind[] = ['here', 'wait', 'danger', 'nice']
+export interface Ping {
+  who: 0 | 1
+  kind: PingKind
+  /** kalan ömür (sn) */
+  t: number
+}
+/** düşen eşin kurtarma balonu: son sağlam yeri, kalan süre */
+export interface Downed {
+  who: 0 | 1
+  x: number
+  y: number
+  t: number
+}
 
 /** haritanın üstünde oyuncunun çıkabildiği gök payı (karo); üstü tavandır. Kamera da bu kadar yukarıyı gösterir. */
 export const SKY_ROWS = 4
@@ -446,6 +474,13 @@ export class World {
    * partnerinin yanında doğar, dünya sıfırlanmaz. Yalnız oyuncu (player) düşünce bölüm bayraktan yeniden kurulur.
    */
   partner: Player | null = null
+  /** co-op Kurtarma kuralı: düşen eş birkaç saniye balonda bekler, öbürü değerse kalkar (bayrağa dönülmez) */
+  rescue = false
+  downed: Downed | null = null
+  /** co-op işaretleri: oyuncu başına en çok bir tane */
+  pings: Ping[] = []
+  /** her oyuncunun en son yerde durduğu nokta (balonun yeri) */
+  private lastSafe: { x: number; y: number }[] = [{ x: 0, y: 0 }, { x: 0, y: 0 }]
   private partnerPrevDown = false
   windNow = 0
   nearSign = -1
@@ -1239,8 +1274,8 @@ export class World {
     const wasGrounded = p.grounded
 
     // zamanlayıcılar
-    p.coyote = p.grounded ? PHYS.coyote : Math.max(0, p.coyote - dt)
-    p.buffer = input.jumpPressed ? PHYS.buffer : Math.max(0, p.buffer - dt)
+    p.coyote = p.grounded ? (this.level.noMercy ? NO_MERCY.coyote : PHYS.coyote) : Math.max(0, p.coyote - dt)
+    p.buffer = input.jumpPressed ? (this.level.noMercy ? NO_MERCY.buffer : PHYS.buffer) : Math.max(0, p.buffer - dt)
     p.wallLock = Math.max(0, p.wallLock - dt)
     p.dropTimer = Math.max(0, p.dropTimer - dt)
     p.landTimer = Math.max(0, p.landTimer - dt)
@@ -1295,7 +1330,7 @@ export class World {
       if (dx === 0 && dy === 0) dx = p.facing
       const len = Math.hypot(dx, dy)
       p.dashDir = [dx / len, dy / len]
-      p.dashTime = PHYS.dashTime
+      p.dashTime = PHYS.dashTime * (this.level.shortDash ? SHORT_DASH.time : 1)
       p.canDash = false
       p.grounded = false
       p.onPlatform = null
@@ -1336,6 +1371,7 @@ export class World {
       if (p.vy < 0 && !input.jump && !p.swim) g *= PHYS.lowJumpMul
       const moon = this.level.lowGravity && !p.swim
       if (moon) g *= MOON.gravity
+      if (this.level.heavy && !p.swim) g *= HEAVY.gravity
       p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1), p.vy + g * dt)
       if (p.swim) {
         p.canDash = true
@@ -2156,8 +2192,8 @@ export class World {
     const p = this.player
     if (p.dead || this.complete) return
     p.dead = true
-    p.deadTimer = 0.7
-    this.deaths++
+    p.deadTimer = this.level.calm ? 0.3 : 0.7
+    if (!this.level.calm) this.deaths++
     this.events.push({ type: 'death', x: p.x + p.w / 2, y: p.y + p.h / 2 })
   }
 
@@ -2179,6 +2215,58 @@ export class World {
    * hareket, çarpışma, toplama, tehlike, bayrak, boss'a basma ve çıkış kodu iki oyuncu için de aynıdır.
    */
   stepPartner(dt: number, input: Input) {
+    this.stepPartnerCore(dt, input)
+    this.updateCoop(dt)
+  }
+
+  /** Co-op işareti: oyuncu başına bir tane, öncekinin yerini alır */
+  ping(who: 0 | 1, kind: PingKind) {
+    if (!this.partner) return
+    this.pings = this.pings.filter((x) => x.who !== who)
+    this.pings.push({ who, kind, t: PING_LIFE })
+    this.events.push({ type: 'ping', kind, who })
+  }
+
+  /** Eş dünyasının adım sonu işleri: işaret ömrü, son sağlam yer, kurtarma balonu */
+  private updateCoop(dt: number) {
+    const q = this.partner
+    if (!q) return
+    if (this.pings.length) {
+      for (const x of this.pings) x.t -= dt
+      this.pings = this.pings.filter((x) => x.t > 0)
+    }
+    const bodies = [this.player, q]
+    bodies.forEach((b, i) => {
+      if (!b.dead && b.grounded && !b.hang) this.lastSafe[i] = { x: b.x + b.w / 2, y: b.y + b.h / 2 }
+    })
+    if (!this.rescue || this.complete) {
+      this.downed = null
+      return
+    }
+    const [a, b] = bodies
+    if (a.dead === b.dead) {
+      // ikisi de ayakta ya da ikisi de düşmüş: balon yok, bölüm bayraktan kurulur
+      this.downed = null
+      return
+    }
+    const who: 0 | 1 = a.dead ? 0 : 1
+    const body = bodies[who]
+    const savior = bodies[1 - who]
+    if (!this.downed || this.downed.who !== who) {
+      // yeni düşen: balon son sağlam yerinde belirir, bayrağa dönmek için RESCUE_TIME bekler
+      this.downed = { who, x: this.lastSafe[who].x, y: this.lastSafe[who].y, t: RESCUE_TIME }
+      body.deadTimer = RESCUE_TIME
+    }
+    const d = this.downed
+    d.t = Math.max(0, body.deadTimer)
+    if (Math.abs(savior.x + savior.w / 2 - d.x) < RESCUE_REACH && Math.abs(savior.y + savior.h / 2 - d.y) < RESCUE_REACH + 6) {
+      Object.assign(body, this.freshPlayer(savior.x + (this.boxHitsSolid(savior.x - 10, savior.y, PW, PH) ? 10 : -10), savior.y), { dead: false, deadTimer: 0 })
+      this.downed = null
+      this.events.push({ type: 'rescue', x: d.x, y: d.y, partner: who === 1 })
+    }
+  }
+
+  private stepPartnerCore(dt: number, input: Input) {
     const q = this.partner
     if (!q || this.complete) return
     // hareketli platform eşi de taşır (updatePlatforms yalnız oyuncuyu taşır)
@@ -2230,8 +2318,10 @@ export class World {
     if (Math.abs(top.x + top.w / 2 - (base.x + base.w / 2)) > (top.w + base.w) / 2 - 2) return
     if (prevFeet > base.y + 3 || feet < base.y) return
     const strong = top.buffer > 0
+    // alttaki de zıplıyorsa ya da zıplama basılıysa: fırlatma
+    const thrown = base.buffer > 0 || base.vy < -PHYS.jumpV * 0.5
     top.y = base.y - top.h
-    top.vy = -PHYS.jumpV * (strong ? SHOULDER_BOOST : 0.5)
+    top.vy = -PHYS.jumpV * (strong ? (thrown ? THROW_BOOST : SHOULDER_BOOST) : thrown ? 0.9 : 0.5)
     // zıplamadan inen yana kayar: başın üstünde durmadan sekip durmaz
     if (!strong) top.vx = (Math.sign(top.x - base.x) || top.facing) * 70
     top.buffer = 0
@@ -2240,7 +2330,7 @@ export class World {
     top.coyote = 0
     top.canDash = true
     top.dashTime = 0
-    this.events.push({ type: 'shoulder', x: top.x + top.w / 2, y: base.y, partner: top === this.partner })
+    this.events.push({ type: 'shoulder', x: top.x + top.w / 2, y: base.y, partner: top === this.partner, ...(thrown ? { thrown: true } : {}) })
   }
 
   respawn() {

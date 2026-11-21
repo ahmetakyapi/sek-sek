@@ -7,8 +7,11 @@ import Portrait from '@/components/Portrait'
 import type { CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
 import type { CityKey, LevelDef } from '@/game/types'
-import { useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { getSync, subscribeSync } from '@/lib/cloud'
 import { useLang, useT } from '@/lib/i18n'
+import { NAME, type ModeId } from '@/lib/modeHints'
+import { seenIntros } from '@/lib/recentCities'
 
 const ONES = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz']
 const TENS = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan']
@@ -67,6 +70,12 @@ export default function TitleMenu(props: {
   charms: number
   daily: TitleDaily | null
   dailyPending: boolean
+  /** bugünkü Günün Üçlüsü'nden biten parça sayısı (0-3) */
+  trio: number
+  /** Kılık Dükkânı'nda harcanabilir parça */
+  wallet: number
+  /** Modlar'ın "Sana Önerilen" ilk modu (günlük dışında); yoksa boş */
+  modeHint?: ModeId
   music: boolean
   player: { name: string; title: string } | null
   hasProgress: boolean
@@ -80,6 +89,12 @@ export default function TitleMenu(props: {
   langSwitch: React.ReactNode
 }) {
   const t = useT()
+  const root = useRef<HTMLDivElement>(null)
+  useMenuNav(root)
+  const sync = useSyncExternalStore(subscribeSync, getSync, () => 'idle' as const)
+  // Modlar ekranı yenilendi: açılana dek menüde "Yeni" yazar (yalnız bu tarayıcıda)
+  const [modesNew, setModesNew] = useState(false)
+  useEffect(() => setModesNew(!seenIntros().includes('hub-v2')), [])
   const lang = useLang()
   const total = LEVELS.length
   // yol çizgisinden seçilen durak (null: sıradaki); kartpostal ve düğme onu gösterir
@@ -94,7 +109,7 @@ export default function TitleMenu(props: {
   const plate = String(level.plate).padStart(2, '0')
 
   return (
-    <div className="rise relative w-full max-w-md md:max-w-[880px] short:max-w-[min(820px,100%)]">
+    <div ref={root} className="rise relative w-full max-w-md md:max-w-[880px] short:max-w-[min(820px,100%)]">
       {/* karakterin fotoğrafı: yalnız geniş ekranda, panelin sol kenarına iliştirilmiş */}
       <div className="pointer-events-none absolute -left-[150px] top-[46%] z-20 hidden w-[180px] -translate-y-1/2 lg:block [@media(max-height:640px)]:!hidden">
         {props.character ? (
@@ -133,7 +148,7 @@ export default function TitleMenu(props: {
 
           <div className="postcard relative h-[150px] overflow-hidden tight:h-[124px] sm:h-[180px] md:h-auto md:min-h-[230px] md:flex-1 short:h-[106px] short:flex-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/sehirler/${level.id}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_62%]" />
+            <img src={`/sehirler/${level.id}.webp`} alt="" className="postcard-drift absolute inset-0 h-full w-full object-cover object-[50%_62%]" />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(14_13_34/0.55)_0%,transparent_32%,transparent_48%,rgb(14_13_34/0.92)_100%)]" />
             <p className="absolute left-3 top-3 flex items-center gap-1.5 bg-ink/75 px-2 py-1 text-[12px] font-bold tracking-[0.16em] text-gold backdrop-blur-[2px]">
               <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent" />
@@ -169,7 +184,7 @@ export default function TitleMenu(props: {
                 </span>
               </span>
             </div>
-            <div className="flex gap-[3px]" role="group" aria-label={t('{n}/{m} Şehir Bitti', { n: done, m: total })}>
+            <div data-nonav className="flex gap-[3px]" role="group" aria-label={t('{n}/{m} Şehir Bitti', { n: done, m: total })}>
               {LEVELS.map((l, i) => {
                 const open = !props.fresh && i <= props.unlocked
                 const on = i === shown
@@ -192,7 +207,7 @@ export default function TitleMenu(props: {
             </div>
           </div>
 
-          <button className="pixel-btn primary cta mt-3 w-full justify-center py-3.5 text-[17px] tight:mt-2.5 tight:py-3 short:mt-2 short:py-2.5 short:text-base" onClick={() => (pick !== null ? props.onCity(pick) : props.onStart())} autoFocus>
+          <button className="pixel-btn primary cta mt-3 w-full justify-center py-3.5 text-[17px] tight:mt-2.5 tight:py-3 short:mt-2 short:py-2.5 short:text-base" onClick={() => (pick !== null ? props.onCity(pick) : props.onStart())} autoFocus data-primary>
             <span aria-hidden>▶</span>
             {allDone ? t('{city} Şehrinde Oyna', { city: level.name }) : pick !== null ? t('{city} Şehrine Git', { city: level.name }) : started ? t('Devam Et: {city}', { city: level.name }) : t('Yolculuğa Başla')}
           </button>
@@ -238,9 +253,10 @@ export default function TitleMenu(props: {
               <Tile
                 icon="modes"
                 label={t('Modlar')}
-                sub={props.dailyPending ? t('Günlük bekliyor') : t('Co-op, Turnuva, Öfke…')}
+                sub={props.dailyPending ? t('Günlük bekliyor') : props.trio < 3 && props.daily ? t('Günün Üçlüsü {n}/3', { n: props.trio }) : props.modeHint ? t('Sana Önerilen: {mode}', { mode: t(NAME[props.modeHint]) }) : t('Co-op, Turnuva, Öfke…')}
                 tone="gold"
-                dot={props.dailyPending ? t('Bugünün meydan okuması seni bekliyor') : undefined}
+                badge={modesNew ? t('Yeni') : undefined}
+                dot={props.dailyPending ? t('Bugünün meydan okuması seni bekliyor') : props.trio < 3 && props.daily ? t('Günün Üçlüsü seni bekliyor') : undefined}
                 onClick={() => props.onScreen('modes')}
             />
               <Tile icon="trophy" label={t('Skorlar')} sub={t('Sıralaman ve rekorlar')} onClick={() => props.onScreen('scores')} />
@@ -249,7 +265,7 @@ export default function TitleMenu(props: {
             <Group label={t('Senin')} />
             <div className="grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
               <Tile icon="book" label={t('Defter')} sub={t('{n} hatıra', { n: props.found })} onClick={() => props.onScreen('notebook')} />
-              <Tile icon="hero" label={t('Karakter')} sub={t('Kılık, atkı, dükkân')} onClick={() => props.onScreen('character')} />
+              <Tile icon="hero" label={t('Karakter')} sub={t('Kılık, atkı, dükkân')} badge={props.wallet > 0 ? t('{n} Parça', { n: props.wallet }) : undefined} onClick={() => props.onScreen('character')} />
             </div>
           </div>
           <div className="mt-2 grid grid-cols-4 gap-1.5 max-sm:mt-1.5 short:mt-1.5">
@@ -269,15 +285,17 @@ export default function TitleMenu(props: {
                   <span className="block truncate text-[13px] font-semibold text-cream">{props.player.name}</span>
                   <span className="block truncate text-[12px] text-gold">{props.player.title}</span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1 text-[12px] text-[#7ad88a]">
-                  <span aria-hidden>☁</span>
-                  <span className="hidden sm:inline">{t('İlerleme Hesabında')}</span>
+                <span className={`flex shrink-0 items-center gap-1 text-[12px] ${sync === 'offline' ? 'text-accent-2' : sync === 'pending' ? 'text-gold' : 'text-[#7ad88a]'}`} role="status">
+                  <span aria-hidden className={sync === 'pending' ? 'pulse-dot' : ''}>{sync === 'offline' ? '⚠' : '☁'}</span>
+                  <span className="hidden sm:inline">{sync === 'pending' ? t('Eşitleniyor…') : sync === 'offline' ? t('Çevrimdışı: Sonra Eşitlenir') : t('Eşitlendi')}</span>
+                  <span className="sr-only sm:hidden">{sync === 'pending' ? t('Eşitleniyor…') : sync === 'offline' ? t('Çevrimdışı: Sonra Eşitlenir') : t('Eşitlendi')}</span>
                 </span>
               </button>
             ) : (
               <div className="flex items-center justify-between gap-3 bg-[#2a2236] px-3 py-2 [box-shadow:inset_0_0_0_2px_#d9a441]">
                 <span className="min-w-0 text-[13px] font-semibold leading-snug text-cream sm:text-[13px]">
-                  <span className="text-gold">☁</span> {props.hasProgress ? t('Misafirsin: ilerlemen bu tarayıcıda') : t('Hesabınla her cihazdan devam et')}
+                  <span className="text-gold">☁</span> {props.hasProgress ? t('Giriş Yap, İlerlemen Güvende') : t('Hesabınla her cihazdan devam et')}
+                  {props.hasProgress && <span className="block text-[12px] font-normal text-muted max-sm:hidden">{t('Şimdilik yalnız bu tarayıcıda duruyor.')}</span>}
                 </span>
                 <button className="pixel-btn primary shrink-0 whitespace-nowrap px-3 py-1.5 text-[13px]" onClick={() => props.onScreen('name')}>
                   {t('Giriş Yap')}
@@ -307,14 +325,17 @@ function Group({ label }: { label: string }) {
   )
 }
 
-function Tile({ icon, label, sub, onClick, tone, dot }: { icon: IconName; label: string; sub: string; onClick: () => void; tone?: 'gold'; dot?: string }) {
+function Tile({ icon, label, sub, onClick, tone, dot, badge }: { icon: IconName; label: string; sub: string; onClick: () => void; tone?: 'gold'; dot?: string; /** köşede küçük "Yeni" yazısı */ badge?: string }) {
   return (
     <button className={`menu-tile group relative flex min-h-[56px] items-center gap-2.5 px-2.5 py-2 text-left max-sm:min-h-[40px] max-sm:py-1 tight:min-h-[42px] tight:py-1 short:min-h-[40px] short:py-1 ${tone === 'gold' ? 'modes-tile' : ''}`} onClick={onClick}>
       <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center max-sm:h-7 max-sm:w-7 short:h-7 short:w-7">
         <PxIcon name={icon} className="h-5 w-5 max-sm:h-4 max-sm:w-4 short:h-4 short:w-4" />
       </span>
       <span className="min-w-0 flex-1 leading-tight">
-        <span className="block font-display text-[16px] text-cream short:text-[14px]">{label}</span>
+        <span className="flex items-center gap-1.5 font-display text-[16px] text-cream short:text-[14px]">
+          {label}
+          {badge && <span className="mode-badge new whitespace-nowrap max-sm:hidden short:hidden">{badge}</span>}
+        </span>
         <span className={`block truncate text-[12px] max-sm:hidden short:hidden ${dot ? 'font-semibold text-accent-2' : 'text-muted'}`}>{sub}</span>
       </span>
       {dot && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={dot} />}
@@ -342,4 +363,73 @@ function Count({ label, n, m }: { label: string; n: number; m: number }) {
       {label} <strong className="text-cream">{n}</strong>/{m}
     </span>
   )
+}
+
+/**
+ * Menü gezintisi: ok tuşları ve oyun kolunun yön tuşu/çubuğu odağı geometriye göre en yakın düğmeye taşır; Enter/Boşluk
+ * ve kolun A düğmesi odaktakini tıklar. Yol çizgisi (`data-nonav`) gezintiden çıkar: Sekme ile ulaşılır.
+ */
+function useMenuNav(root: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = root.current
+    if (!el) return
+    const items = () => [...el.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')].filter((b) => !b.closest('[data-nonav]') && b.offsetParent !== null)
+    const move = (dx: number, dy: number) => {
+      const list = items()
+      const cur = document.activeElement as HTMLElement | null
+      if (!cur || !list.includes(cur)) return (list.find((b) => b.hasAttribute('data-primary')) ?? list[0])?.focus(), true
+      const a = cur.getBoundingClientRect()
+      const ax = a.left + a.width / 2
+      const ay = a.top + a.height / 2
+      let best: HTMLElement | null = null
+      let bestScore = Infinity
+      for (const b of list) {
+        if (b === cur) continue
+        const r = b.getBoundingClientRect()
+        const vx = r.left + r.width / 2 - ax
+        const vy = r.top + r.height / 2 - ay
+        const along = vx * dx + vy * dy
+        if (along <= 4) continue
+        const across = Math.abs(dx ? vy : vx)
+        const score = along + across * 2.2
+        if (score < bestScore) {
+          bestScore = score
+          best = b
+        }
+      }
+      best?.focus()
+      return !!best
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return
+      const d = ({ ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] } as Record<string, [number, number]>)[e.key]
+      if (!d) return
+      if (move(d[0], d[1])) e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    // oyun kolu: yön tuşu ya da sol çubuk gezer, A tıklar; basılı tutunca yavaşça tekrarlar
+    let raf = 0
+    let held = 0
+    let prevA = false
+    const poll = (now: number) => {
+      raf = requestAnimationFrame(poll)
+      const pad = (navigator.getGamepads?.() ?? []).find((g) => g?.connected)
+      if (!pad) return
+      const b = (i: number) => !!pad.buttons[i]?.pressed
+      const dx = b(15) || pad.axes[0] > 0.6 ? 1 : b(14) || pad.axes[0] < -0.6 ? -1 : 0
+      const dy = b(13) || pad.axes[1] > 0.6 ? 1 : b(12) || pad.axes[1] < -0.6 ? -1 : 0
+      if ((dx || dy) && now - held > 230) {
+        held = now
+        move(dx, dy)
+      } else if (!dx && !dy) held = 0
+      const a = b(0)
+      if (a && !prevA) (document.activeElement as HTMLElement | null)?.click()
+      prevA = a
+    }
+    raf = requestAnimationFrame(poll)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      cancelAnimationFrame(raf)
+    }
+  }, [root])
 }

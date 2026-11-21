@@ -20,9 +20,11 @@ import { BossFigure } from '@/components/Figures'
 import { CourseScene } from '@/components/MapThumb'
 import { Renderer } from '@/game/render'
 import { World } from '@/game/sim'
-import { emptyInput, type GameEvent, type Input, type LevelDef } from '@/game/types'
+import { emptyInput, type Input, type LevelDef } from '@/game/types'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
+import { PING_KEYS, PING_TEXT, coopAwards, credit, emptyShare, legTimes, pingFromKey, type CoopShare } from '@/lib/coopRules'
+import { RESCUE_TIME, type PingKind } from '@/game/sim'
 
 const STEP = 1 / 120
 
@@ -60,6 +62,8 @@ export interface CoopPlan {
   lives: CoopLives
   shortRope: boolean
   clock: boolean
+  /** Kurtarma: düşen eş 3 sn balonda bekler, öbürü değince kalkar (yoksa açık sayılır; rekoru ayrı tutulur) */
+  rescue?: boolean
 }
 
 /** Co-op'un bölümü: şehir yolu, mücadele parkuru ya da seçilen boss'ların arenası */
@@ -76,9 +80,11 @@ export function coopLevel(plan: CoopPlan): LevelDef {
 
 /** Co-op rekorunun anahtarı (save.coop): kip + şehir ya da parkur ya da boss'lar ve zorluk */
 export function coopKey(plan: CoopPlan): string {
-  if (plan.mode === 'parkur') return `parkur:${plan.course}`
-  if (plan.mode === 'boss') return `boss:${LEVELS[plan.boss.a].id}${plan.boss.b !== null ? `+${LEVELS[plan.boss.b].id}` : ''}:${plan.boss.diff}`
-  return `yol:${LEVELS[plan.level].id}`
+  // Kurtarma kolaylaştırır: eski (kurtarmasız) rekorlar anahtarını korur, kurtarmalı koşunun rekoru ayrıdır
+  const tail = plan.rescue === false ? '' : ':kurtar'
+  if (plan.mode === 'parkur') return `parkur:${plan.course}${tail}`
+  if (plan.mode === 'boss') return `boss:${LEVELS[plan.boss.a].id}${plan.boss.b !== null ? `+${LEVELS[plan.boss.b].id}` : ''}:${plan.boss.diff}${tail}`
+  return `yol:${LEVELS[plan.level].id}${tail}`
 }
 
 /** Zamana Karşı'nın sınırı (sn): şehir ve parkurda gümüş madalya, boss'ta boss başına 75 sn (zorluk kısaltır) */
@@ -88,52 +94,18 @@ export function coopLimit(plan: CoopPlan, level: LevelDef): number | null {
   return level.medals[1]
 }
 
-/** bir oyuncunun koşudaki payı: kim ne yaptı */
-export interface CoopShare {
-  deaths: number
-  items: number
-  stomps: number
-  hits: number
-  boosts: number
-  dashes: number
-}
-const emptyShare = (): CoopShare => ({ deaths: 0, items: 0, stomps: 0, hits: 0, boosts: 0, dashes: 0 })
+export type { CoopShare }
+export { coopAwards }
 
 export interface CoopResult {
   timeMs: number
   deaths: number
   items: number
   share: [CoopShare, CoopShare]
+  /** bayrakların birikimli süreleri (ms), sırayla */
+  splits?: number[]
   /** yolculuk yarıda bitti: canlar tükendi ya da süre doldu */
   failed?: 'lives' | 'time'
-}
-
-/** olayı paya yazar: olayı kimin adımı ürettiyse onun */
-function credit(s: CoopShare, e: GameEvent) {
-  if (e.type === 'death') s.deaths++
-  else if (e.type === 'collect' || e.type === 'stamp' || e.type === 'charm') s.items++
-  else if (e.type === 'stomp') s.stomps++
-  else if (e.type === 'bossHit' || e.type === 'bossDown') s.hits++
-  else if (e.type === 'shoulder') s.boosts++
-  else if (e.type === 'dash') s.dashes++
-}
-
-/** Bitiş ekranının unvanları: her biri bir oyuncuya, eşitlikte verilmez */
-export function coopAwards(share: [CoopShare, CoopShare]): { who: 0 | 1; name: string }[] {
-  const out: { who: 0 | 1; name: string }[] = []
-  const most = (f: (s: CoopShare) => number, name: string, low = false) => {
-    const a = f(share[0])
-    const b = f(share[1])
-    if (a === b || (!low && Math.max(a, b) === 0)) return
-    out.push({ who: (low ? a < b : a > b) ? 0 : 1, name })
-  }
-  most((s) => s.hits, 'Boss Ezici')
-  most((s) => s.items, 'Hatıra Avcısı')
-  most((s) => s.boosts, 'Omuz Ustası')
-  most((s) => s.stomps, 'Düşman Kovucu')
-  most((s) => s.deaths, 'Sağlam Ayak', true)
-  most((s) => s.dashes, 'Dash Ustası')
-  return out
 }
 
 /** Co-op kurulumu: Şehir Yolu, Boss Kapışması ya da Parkur; iki kılık ve kurallar. Tuşlar oyuncunun ataması ya da iki oyun kolu. */
@@ -153,6 +125,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
         lives: 0,
         shortRope: false,
         clock: false,
+        rescue: true,
       },
   )
   const set = (p: Partial<CoopPlan>) => setPlan((x) => ({ ...x, ...p }))
@@ -337,7 +310,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
           {/* kurallar: isteğe bağlı zorluk; ortak can, kısa ip, zamana karşı */}
           <section className="mt-4 shrink-0 short:mt-3">
             <SectionTitle title={t('Kurallar')} note={t('İsteğe bağlı, ikinize birden')} tone="var(--color-accent)" />
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 wide:grid-cols-4">
               <div className="opt-card flex flex-col px-3 py-2.5" role="group" aria-label={t('Ortak Can')}>
                 <span className="text-[14px] font-semibold leading-tight text-cream">{t('Ortak Can')}</span>
                 <span className="mt-0.5 text-[13px] leading-snug text-muted">{plan.lives ? t('Düşüşler bitince yolculuk biter') : t('Sınırsız: istediğiniz kadar düşün')}</span>
@@ -350,6 +323,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
                 </div>
               </div>
               <CardToggles.Provider value>
+                <Toggle label={t('Kurtarma')} on={plan.rescue !== false} onChange={() => set({ rescue: plan.rescue === false })} hint={t('Düşen eş {s} sn balonda bekler: yanına gidip kaldırın, bayrağa dönmeyin.', { s: RESCUE_TIME })} />
                 <Toggle label={t('Kısa İp')} on={plan.shortRope} onChange={() => set({ shortRope: !plan.shortRope })} hint={t('Yarım ekrandan fazla uzaklaşamazsınız; geride kalan öne ışınlanır.')} />
                 <Toggle label={t('Zamana Karşı')} on={plan.clock} onChange={() => set({ clock: !plan.clock })} hint={limit ? t('{s} saniye içinde bitirin, yoksa yolculuk biter.', { s: limit }) : t('Süre sınırı yok.')} />
               </CardToggles.Provider>
@@ -363,7 +337,7 @@ export function CoopSetup({ unlocked, finished, initial, hero, canPlay, keys, be
               ? t('Co-op için klavye ya da iki oyun kolu gerekir.')
               : mode === 'boss'
                 ? `${recordLine ? `${recordLine} · ` : ''}${boss.b !== null ? t('İki boss aynı arenada: biri dinlenirken öbürü saldırır. İkisi de düşünce kapı açılır.') : t('Bir boss, iki kahraman. İkinci boss için 2. yuvaya dokun.')}`
-                : t('Biri ötekinin başına inerken zıplarsa omuzdan sekip yükseğe çıkar.')}
+                : t('Eşinin başına inerken zıpla: omuzdan seker. O da zıplarsa seni fırlatır.')}
           </p>
           {!canPlay && <p className="hidden text-[13px] text-accent-2 short:block">{t('Co-op için klavye ya da iki oyun kolu gerekir.')}</p>}
           <button className="pixel-btn primary justify-center py-2.5 text-base short:py-2 wide:w-[320px] wide:shrink-0" disabled={!canPlay || !ready} onClick={() => onStart(startPlan)} autoFocus>
@@ -397,7 +371,11 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
   const heroes = plan.heroes
   const limit = coopLimit(plan, level)
   const canvas = useRef<HTMLCanvasElement>(null)
-  const phase = useRef<'count' | 'run' | 'pause' | 'over'>('count')
+  const phase = useRef<'ready' | 'count' | 'run' | 'pause' | 'over'>('ready')
+  // hazır ol: ikisi de zıplama tuşuna (ya da oyun kolunda A'ya) basınca geri sayım başlar
+  const readyRef = useRef<[boolean, boolean]>([false, false])
+  const [ready, setReady] = useState<[boolean, boolean]>([false, false])
+  const overlay = useRef<HTMLCanvasElement>(null)
   const [count, setCount] = useState(3)
   const [paused, setPaused] = useState(false)
   const [hud, setHud] = useState<CoopHud>({ time: 0, deaths: 0, items: [false, false, false], share: [0, 0] })
@@ -421,8 +399,19 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
     }
     renderer.lang = lang
     const world = new World(level)
+    world.rescue = plan.rescue !== false
     world.enableCoop()
     const share: [CoopShare, CoopShare] = [emptyShare(), emptyShare()]
+    const splits: number[] = []
+    const setReadyOf = (i: 0 | 1) => {
+      if (phase.current !== 'ready' || readyRef.current[i]) return
+      readyRef.current = i === 0 ? [true, readyRef.current[1]] : [readyRef.current[0], true]
+      setReady(readyRef.current)
+      sound?.sfx('collect')
+    }
+    const ping = (who: 0 | 1, kind: PingKind) => {
+      if (phase.current === 'run') world.ping(who, kind)
+    }
     /** geride kalan, ipin boyunu aşınca öne ışınlanır (görünür alanın oranı) */
     const tether = plan.shortRope ? 0.45 : 0.8
     const fit = () => {
@@ -434,8 +423,8 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
 
     const keys = new Set<string>()
     const latch = [
-      { jump: false, dash: false, padJump: false, padDash: false },
-      { jump: false, dash: false, padJump: false, padDash: false },
+      { jump: false, dash: false, padJump: false, padDash: false, padL: false, padR: false },
+      { jump: false, dash: false, padJump: false, padDash: false, padL: false, padR: false },
     ]
     const togglePause = () => {
       if (phase.current === 'run') {
@@ -452,6 +441,14 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
       keys.add(k)
       if (e.repeat) return
       if (k === 'Escape' || k === 'KeyP') togglePause()
+      if (phase.current === 'ready') {
+        // hazır ol: zıplama ya da dash tuşu
+        ;([0, 1] as const).forEach((i) => {
+          if (keysRef.current[i].jump.includes(k) || keysRef.current[i].dash.includes(k)) setReadyOf(i)
+        })
+      }
+      const pg = pingFromKey(k, keysRef.current)
+      if (pg) ping(pg.who, pg.kind)
       latch.forEach((s, i) => {
         if (keysRef.current[i].jump.includes(k)) s.jump = true
         if (keysRef.current[i].dash.includes(k)) s.dash = true
@@ -495,6 +492,14 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
         const pj = !!(p.buttons[0]?.pressed || p.buttons[3]?.pressed)
         const pd = !!(p.buttons[2]?.pressed || p.buttons[1]?.pressed || p.buttons[7]?.pressed)
         if (p.buttons[9]?.pressed && phase.current === 'run') togglePause()
+        if (pj && phase.current === 'ready') setReadyOf(i as 0 | 1)
+        // oyun kolunda işaretler: LB Burada, RB Dikkat
+        const pl = !!p.buttons[4]?.pressed
+        const pr = !!p.buttons[5]?.pressed
+        if (pl && !s.padL) ping(i as 0 | 1, 'here')
+        if (pr && !s.padR) ping(i as 0 | 1, 'danger')
+        s.padL = pl
+        s.padR = pr
         if (pj) inp.jump = true
         if (pj && !s.padJump) s.jump = true
         if (pd && !s.padDash) s.dash = true
@@ -511,7 +516,7 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
     const end = (failed?: 'lives' | 'time') => {
       if (phase.current === 'over') return
       phase.current = 'over'
-      doneRef.current({ timeMs: Math.round(world.time * 1000), deaths: world.deaths, items: world.pickups.filter((x) => x.taken).length, share, failed })
+      doneRef.current({ timeMs: Math.round(world.time * 1000), deaths: world.deaths, items: world.pickups.filter((x) => x.taken).length, share, splits, failed })
     }
 
     sound?.setMusic(level.city)
@@ -521,11 +526,107 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
     let hudTimer = 0
     let countLeft = 3.2
     let shown = ''
+    const p0 = world.player
+    const q0 = world.partner!
+    let prevPos: number[][] = [[p0.x, p0.y], [q0.x, q0.y]]
+    const names = [heroes[0] === heroes[1] ? t('{n}. Oyuncu', { n: 1 }) : CHARACTERS[heroes[0]].short, heroes[0] === heroes[1] ? t('{n}. Oyuncu', { n: 2 }) : CHARACTERS[heroes[1]].short]
+    const tone = ['#7b87ff', '#ffcc66']
+    const pingTone: Record<PingKind, string> = { here: '#5ad6c6', wait: '#ffcc66', danger: '#ff9a7a', nice: '#b4bcff' }
+    const pingText = (k: PingKind) => t(PING_TEXT[k])
+    /** başın üstü: renkli ad etiketi, ayağın altı: renkli halka, işaret balonu, düşen eşin kurtarma balonu */
+    const drawTags = () => {
+      const o = overlay.current
+      if (!o) return
+      const w = c.clientWidth
+      const h = c.clientHeight
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      if (o.width !== Math.round(w * dpr) || o.height !== Math.round(h * dpr)) {
+        o.width = Math.round(w * dpr)
+        o.height = Math.round(h * dpr)
+      }
+      const g = o.getContext('2d')
+      if (!g) return
+      g.setTransform(dpr, 0, 0, dpr, 0, 0)
+      g.clearRect(0, 0, w, h)
+      const kx = w / Math.max(1, renderer.viewW - 1)
+      const alpha = phase.current === 'run' ? Math.min(1, acc / STEP) : 1
+      const bodies = [world.player, world.partner!]
+      const tags: { x: number; y: number; i: number }[] = []
+      bodies.forEach((b, i) => {
+        if (b.dead) return
+        const pp = prevPos[i]
+        const x = (pp[0] + (b.x - pp[0]) * alpha + b.w / 2 - renderer.camX) * kx
+        const feet = (pp[1] + (b.y - pp[1]) * alpha + b.h - renderer.camY) * kx
+        g.strokeStyle = tone[i]
+        g.globalAlpha = 0.85
+        g.lineWidth = 2
+        g.beginPath()
+        g.ellipse(x, feet - 1, 9 * kx * 0.6, 3 * kx * 0.6, 0, 0, Math.PI * 2)
+        g.stroke()
+        g.globalAlpha = 1
+        tags.push({ x, y: feet - 26 * kx - 6, i })
+      })
+      // iki etiket üst üste biniyorsa ikincisi yukarı kayar
+      if (tags.length === 2 && Math.abs(tags[0].x - tags[1].x) < 70 && Math.abs(tags[0].y - tags[1].y) < 20) tags[1].y -= 20
+      g.font = '700 12px Figtree, system-ui, sans-serif'
+      g.textAlign = 'center'
+      g.textBaseline = 'middle'
+      const pill = (x: number, y: number, text: string, col: string, pointer: boolean) => {
+        const tw = g.measureText(text).width + 14
+        g.fillStyle = 'rgba(14,13,34,0.88)'
+        g.strokeStyle = col
+        g.lineWidth = 2
+        g.beginPath()
+        g.rect(x - tw / 2, y - 9, tw, 18)
+        g.fill()
+        g.stroke()
+        if (pointer) {
+          g.fillStyle = col
+          g.beginPath()
+          g.moveTo(x - 4, y + 10)
+          g.lineTo(x + 4, y + 10)
+          g.lineTo(x, y + 15)
+          g.fill()
+        }
+        g.fillStyle = '#f3f1ff'
+        g.fillText(text, x, y + 0.5)
+      }
+      for (const tg of tags) {
+        pill(tg.x, tg.y, names[tg.i], tone[tg.i], true)
+        const pg = world.pings.find((x) => x.who === tg.i)
+        if (pg) {
+          g.globalAlpha = Math.min(1, pg.t * 2)
+          pill(tg.x, tg.y - 26 - (1 - Math.min(1, (2.5 - pg.t) * 6)) * 6, pingText(pg.kind), pingTone[pg.kind], false)
+          g.globalAlpha = 1
+        }
+      }
+      const d = world.downed
+      if (d) {
+        const x = (d.x - renderer.camX) * kx
+        const y = (d.y - renderer.camY) * kx - 10 - Math.sin(performance.now() / 260) * 3
+        g.fillStyle = 'rgba(140,200,255,0.28)'
+        g.strokeStyle = tone[d.who]
+        g.lineWidth = 3
+        g.beginPath()
+        g.arc(x, y, 18, 0, Math.PI * 2)
+        g.fill()
+        g.stroke()
+        g.strokeStyle = '#f3f1ff'
+        g.beginPath()
+        g.arc(x, y, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, d.t / RESCUE_TIME))
+        g.stroke()
+        pill(x, y - 32, `${names[d.who]}: ${t('Kurtar!')}`, tone[d.who], false)
+      }
+    }
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000))
       last = now
       const ph = phase.current
+      if (ph === 'ready' && readyRef.current[0] && readyRef.current[1]) {
+        phase.current = 'count'
+        countLeft = 3.2
+      }
       if (ph === 'count') {
         countLeft -= dt
         setCount(Math.max(0, Math.ceil(countLeft)))
@@ -547,13 +648,15 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
             const strip = (i: Input) => (first ? i : { ...i, jumpPressed: false, dashPressed: false })
             // olayları adımlarına göre oyunculara yaz: step 1. oyuncunun, stepPartner 2. oyuncunun
             const n0 = world.events.length
+            prevPos = [[p0.x, p0.y], [q0.x, q0.y]]
             world.step(STEP, strip(inputs[0]))
             const n1 = world.events.length
             world.stepPartner(STEP, strip(inputs[1]))
             for (let k = n0; k < world.events.length; k++) {
               const e = world.events[k]
               // omuz sekmesi ikisinin de adımından sonra denetlenir: olay sekenin kim olduğunu taşır
-              credit(share[e.type === 'shoulder' ? (e.partner ? 1 : 0) : k < n1 ? 0 : 1], e)
+              credit(share, k < n1 ? 0 : 1, e)
+              if (e.type === 'checkpoint') splits.push(Math.round(world.time * 1000))
             }
             first = false
             acc -= STEP
@@ -563,7 +666,7 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
         const q = world.partner!
         for (const e of world.events) {
           renderer.handle(e, world)
-          sound?.sfx(e.type)
+          sound?.sfx(e.type === 'rescue' ? 'checkpoint' : e.type === 'ping' ? 'switch' : e.type)
           // bölüm bayraktan yeniden kuruldu ya da meydan kapısından geçildi: eş de oraya
           if (e.type === 'respawn') world.bringPartner()
           if (e.type === 'warp') {
@@ -595,6 +698,7 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
         }
       } else acc = 0
       renderer.render(world, dt, ph === 'run' ? acc / STEP : 1)
+      drawTags()
     }
     raf = requestAnimationFrame(frame)
     return () => {
@@ -612,6 +716,8 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
   return (
     <div className="absolute inset-0 z-30 bg-ink">
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" aria-label={t('Oyun Alanı')} />
+      {/* başın üstündeki ad etiketleri, işaret balonları ve kurtarma balonu */}
+      <canvas ref={overlay} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden />
       <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-2 bg-ink/85 py-1 pl-1 pr-2.5 [box-shadow:0_0_0_2px_#37337a]">
         <PortraitFace id={heroes[0]} />
         <PortraitFace id={heroes[1]} />
@@ -634,7 +740,64 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
         <p className="bg-ink/85 px-2.5 py-1 font-display text-2xl tabular-nums text-cream [box-shadow:0_0_0_2px_#37337a]">{formatTime((hud.time * 1000) | 0)}</p>
         {left !== null && <p className={`bg-ink/85 px-2 py-0.5 text-[13px] font-bold tabular-nums [box-shadow:0_0_0_2px_#37337a] ${left < 10 ? 'text-coral' : 'text-muted'}`}>⏳ {formatTime((left * 1000) | 0).slice(0, -2)}</p>}
       </div>
-      {count > 0 && (
+      {!ready[0] || !ready[1] ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/70 p-4">
+          <div className="pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-xl overflow-y-auto p-5 text-center short:max-w-[min(820px,100%)] short:p-3">
+            <h2 className="font-display text-3xl leading-tight text-cream short:text-2xl">{t('Hazır mısınız?')}</h2>
+            <p className="mt-1 text-[14px] text-muted">{level.name}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 short:mt-2">
+              {([0, 1] as const).map((k) => (
+                <div key={k} className={`flex flex-col items-center gap-1 border-2 bg-ink/30 p-2 ${ready[k] ? 'border-teal' : k === 0 ? 'border-accent/70' : 'border-gold/70'}`}>
+                  <PortraitFace id={heroes[k]} />
+                  <span className={`text-[13px] font-bold ${k === 0 ? 'text-accent-2' : 'text-gold'}`}>{heroes[0] === heroes[1] ? t('{n}. Oyuncu', { n: k + 1 }) : CHARACTERS[heroes[k]].short}</span>
+                  <span className="flex flex-wrap justify-center gap-0.5">
+                    {duoHints(keys, lang === 'en' ? 'en' : 'tr')[k].flat().map((c) => (
+                      <Key key={c}>{c}</Key>
+                    ))}
+                  </span>
+                  <span className={`text-[13px] font-semibold ${ready[k] ? 'text-teal' : 'text-muted'}`}>{ready[k] ? t('✓ Hazır') : t('Zıpla tuşuna bas')}</span>
+                </div>
+              ))}
+            </div>
+            {/* kısa kural kartları */}
+            <ul className="mt-3 grid gap-1 text-left text-[13px] leading-snug text-cream/90 sm:grid-cols-2 short:hidden">
+              <li>
+                <strong className="text-teal">{t('Omuz Sekmesi')}</strong> · {t('Eşinin başına inerken zıpla.')}
+              </li>
+              <li>
+                <strong className="text-teal">{t('Eşi Fırlat')}</strong> · {t('Altındaki de zıplarsa daha yükseğe çıkarsın.')}
+              </li>
+              {plan.rescue !== false && (
+                <li>
+                  <strong className="text-teal">{t('Kurtarma')}</strong> · {t('Düşen eşin balonuna değ, {s} sn içinde.', { s: RESCUE_TIME })}
+                </li>
+              )}
+              {plan.lives > 0 && (
+                <li>
+                  <strong className="text-coral">{t('Ortak Can')}</strong> · ♥ {plan.lives}
+                </li>
+              )}
+              {plan.shortRope && (
+                <li>
+                  <strong className="text-coral">{t('Kısa İp')}</strong> · {t('Uzaklaşma.')}
+                </li>
+              )}
+              {limit && (
+                <li>
+                  <strong className="text-coral">{t('Zamana Karşı')}</strong> · {formatTime(limit * 1000).slice(0, -2)}
+                </li>
+              )}
+              <li className="sm:col-span-2">
+                <strong className="text-teal">{t('İşaretler')}</strong> · {PING_KEYS.map((ks, i) => `${i + 1}. ${ks.map((k) => k.replace('Digit', '')).join(' ')}`).join(' / ')} {t('(Burada, Bekle, Dikkat, Aferin)')}
+              </li>
+            </ul>
+            <button className="pixel-btn primary mt-3 w-full justify-center" onClick={() => ((readyRef.current = [true, true]), setReady([true, true]))}>
+              {ic(t('▶ Hazırız'))}
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {count > 0 && ready[0] && ready[1] && (
         <>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <p key={count} className="rise font-display text-[120px] leading-none text-cream [text-shadow:0_8px_0_#0e0d22]">
@@ -656,7 +819,7 @@ export default function Coop({ plan, looks, sound, keys, onKeys, onDone, onQuit 
           </div>
         </>
       )}
-      {!paused && count === 0 && (
+      {!paused && count === 0 && ready[0] && ready[1] && (
         <button
           className="pixel-btn absolute left-1/2 top-2 h-9 w-9 -translate-x-1/2 justify-center p-0 text-[13px]"
           aria-label={t('Mola')}
@@ -709,17 +872,21 @@ export function CoopEnd({ plan, result, best, newBest, onAgain, onSetup, onMenu 
   const { boss, heroes } = plan
   const failed = result.failed
   const medal = !failed && plan.mode !== 'boss' ? medalFor(level, result.timeMs) : null
-  const awards = coopAwards(result.share)
+  const awards = coopAwards(result.share, failed)
   const rows: [string, (s: CoopShare) => number][] = [
     [t('Hatıra ve Hazine'), (s) => s.items],
     [t('Boss’a Basış'), (s) => s.hits],
     [t('Ezilen Düşman'), (s) => s.stomps],
     [t('Omuz Sekmesi'), (s) => s.boosts],
+    [t('Fırlatma'), (s) => s.throws],
+    [t('Kurtarma'), (s) => s.rescues],
+    [t('İşaret'), (s) => s.pings],
     [t('Düşüş'), (s) => s.deaths],
   ]
   const shownRows = rows.filter(([, f]) => f(result.share[0]) + f(result.share[1]) > 0)
   // oyuncunun adı: kılığın adı; ikisi aynı kılıktaysa numarası
-  const hasStats = awards.length > 0 || shownRows.length > 0
+  const legs = plan.mode === 'boss' || !result.splits?.length || failed ? [] : legTimes(result.splits, result.timeMs)
+  const hasStats = awards.length > 0 || shownRows.length > 0 || legs.length > 1
   const who = (k: 0 | 1) => (heroes[0] === heroes[1] ? t('{n}. Oyuncu', { n: k + 1 }) : CHARACTERS[heroes[k]].short)
   return (
     <Overlay dim>
@@ -746,14 +913,17 @@ export function CoopEnd({ plan, result, best, newBest, onAgain, onSetup, onMenu 
           {failed ? (
             <p className="mt-1.5 text-[14px] text-cream/85">{failed === 'lives' ? t('Ortak canlar tükendi. Yavaş ve birlikte: biri öndeyken öteki yolu izlesin.') : t('Süre bitti. Bir dahaki sefere omuz sekmesiyle kestirmeleri deneyin.')}</p>
           ) : newBest || best !== undefined ? (
-            <p className={`mt-1.5 text-[14px] ${newBest ? 'font-bold text-gold' : 'text-muted'}`}>{newBest ? t('İkilinin yeni rekoru!') : t('İkilinin rekoru: {time}', { time: formatTime(best!) })}</p>
+            <p className={`mt-1.5 text-[14px] ${newBest ? 'font-bold text-gold' : 'text-muted'}`}>
+              {newBest ? t('İkilinin yeni rekoru!') : t('İkilinin rekoru: {time}', { time: formatTime(best!) })}
+              {best !== undefined && ` · ${result.timeMs <= best ? '−' : '+'}${(Math.abs(result.timeMs - best) / 1000).toFixed(1)} ${t('sn')}`}
+            </p>
           ) : null}
           <div className="mt-4 grid grid-cols-3 gap-2 short:mt-3">
             <button className="pixel-btn primary justify-center" onClick={onAgain} autoFocus>
-              {ic(t('↺ Yeniden'))}
+              {ic(t('↺ Tekrar'))}
             </button>
             <button className="pixel-btn justify-center" onClick={onSetup}>
-              {t('Ayarlar')}
+              {plan.mode === 'boss' ? t('Başka Arena') : plan.mode === 'parkur' ? t('Başka Parkur') : t('Başka Şehir')}
             </button>
             <button className="pixel-btn justify-center" onClick={onMenu}>
               {t('Modlar')}
@@ -766,12 +936,24 @@ export function CoopEnd({ plan, result, best, newBest, onAgain, onSetup, onMenu 
               <SectionTitle title={t('Unvanlar')} note={t('Yolun hatırası')} tone="var(--color-gold)" />
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {awards.map((a) => (
-                  <span key={a.name} className={`border-2 bg-ink/30 px-2 py-1 text-[13px] text-cream ${a.who === 0 ? 'border-accent/70' : 'border-gold/70'}`}>
-                    {who(a.who)} · <strong className="font-display">{t(a.name)}</strong>
+                  <span key={a.name} className={`border-2 bg-ink/30 px-2 py-1 text-[13px] text-cream ${a.who === 0 ? 'border-accent/70' : a.who === 1 ? 'border-gold/70' : 'border-teal/70'}`}>
+                    {a.who === 2 ? t('İkili') : who(a.who)} · <strong className="font-display">{t(a.name)}</strong>
                   </span>
                 ))}
               </div>
             </>
+          )}
+          {legs.length > 1 && (
+            <div className={awards.length ? 'mt-4' : ''}>
+              <SectionTitle title={t('Bayrak Süreleri')} tone="var(--color-accent)" />
+              <ol className="mt-2 flex flex-wrap gap-1.5 text-[13px] tabular-nums">
+                {legs.map((ms, i) => (
+                  <li key={i} className="border-2 border-line bg-ink/30 px-2 py-0.5 text-cream">
+                    <span className="text-muted">{i === legs.length - 1 ? t('Son') : i + 1}</span> {formatTime(ms)}
+                  </li>
+                ))}
+              </ol>
+            </div>
           )}
           {shownRows.length > 0 && (
             <table className={`w-full text-[14px] tabular-nums ${awards.length ? 'mt-4' : ''}`}>

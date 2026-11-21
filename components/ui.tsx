@@ -4,7 +4,7 @@ import { useT } from '@/lib/i18n'
 import { useEffect, useRef } from 'react'
 import type { LevelDef } from '@/game/types'
 
-export function Overlay({ children, dim = false }: { children: React.ReactNode; dim?: boolean }) {
+export function Overlay({ children, dim = false, blur = false }: { children: React.ReactNode; dim?: boolean; /** arkadaki oyun hafif bulanır (Mola) */ blur?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   // her ekran en üstten açılır
   useEffect(() => {
@@ -13,7 +13,7 @@ export function Overlay({ children, dim = false }: { children: React.ReactNode; 
   return (
     <div
       ref={ref}
-      className={`overlay-scroll absolute inset-0 z-20 flex overflow-y-auto p-4 ${dim ? 'bg-ink/60' : 'bg-ink/35'}`}
+      className={`overlay-scroll absolute inset-0 z-20 flex overflow-y-auto p-4 ${dim ? 'bg-ink/60' : 'bg-ink/35'} ${blur ? 'backdrop-blur-[3px]' : ''}`}
       // kayan katman çentiğin altından başlar: iOS Safari durum çubuğunun altına giren kayan içeriği bulanıklaştırıyordu
       style={{ top: 'env(safe-area-inset-top)', paddingTop: '16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
     >
@@ -66,9 +66,16 @@ export function MedalBadge({ medal, size = 'sm' }: { medal: Medal | null; size?:
 type Rumble = { playEffect?: (type: 'dual-rumble', p: { duration: number; strongMagnitude: number; weakMagnitude: number; startDelay?: number }) => Promise<unknown> }
 
 /** Telefonda titreşim, bağlı oyun kolunda gürleme (aynı desen: titreş, dur, titreş…) */
-export function haptic(ms: number | number[]) {
+let hapticScale = 1
+/** Kolaylık: titreşim yoğunluğu (0 = kapalı, 0.5, 1); Game.tsx kayıttan ayarlar */
+export const setHapticScale = (v: number) => {
+  hapticScale = v
+}
+export function haptic(ms0: number | number[]) {
   try {
-    if (typeof navigator === 'undefined') return
+    if (typeof navigator === 'undefined' || hapticScale <= 0) return
+    // yoğunluk: titreşim süreleri (çift indisler) oranlanır, aralar aynı kalır
+    const ms = Array.isArray(ms0) ? ms0.map((d, i) => (i % 2 === 0 ? Math.max(5, Math.round(d * hapticScale)) : d)) : Math.max(5, Math.round(ms0 * hapticScale))
     if ('vibrate' in navigator) navigator.vibrate(ms)
     const pads = navigator.getGamepads ? navigator.getGamepads() : []
     const parts = Array.isArray(ms) ? ms : [ms]

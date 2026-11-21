@@ -1,18 +1,18 @@
 /**
- * Zor mod kanıtı: Kaygan Dünya (her zemin buz), Çöken Dünya (basılan yüzey çöker), Ay Yerçekimi ve Fırtına fiziği değiştirir. Bu modlar ve
+ * Zor mod kanıtı: Kaygan Dünya (her zemin buz), Çöken Dünya (basılan yüzey çöker), Ay Yerçekimi, Fırtına, Ağır Yerçekimi, Kısa Dash ve Af Yok fiziği değiştirir. Bu modlar ve
  * onları içeren birleşimler (Kâbus, Son Nefes) yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır (lib/extras.ts).
  * Bu betik o şehirlerin çıkışına o fizikle varılabildiğini çözücüyle kanıtlar.
- * Kullanım: npx tsx scripts/verify-rage.ts <kaygan|coken|ay|firtina> [şehir ...]   (biri FAIL ise çıkış kodu 1)
- *           npx tsx scripts/verify-rage.ts <kaygan|coken|ay|firtina> --hepsi     (listeye bakmadan bütün şehirleri dener)
+ * Kullanım: npx tsx scripts/verify-rage.ts <kaygan|coken|ay|firtina|agir|kisadash|afyok> [şehir ...]   (biri FAIL ise çıkış kodu 1)
+ *           npx tsx scripts/verify-rage.ts <kaygan|coken|ay|firtina|agir|kisadash|afyok> --hepsi     (listeye bakmadan bütün şehirleri dener)
  */
 import { LEVELS } from '../game/levels'
-import { CRUMBLE_OK, MOON_OK, SLIPPERY_OK, STORM_OK, ruleLevel } from '../lib/extras'
+import { CRUMBLE_OK, HEAVY_OK, MOON_OK, NO_MERCY_OK, SHORT_DASH_OK, SLIPPERY_OK, STORM_OK, ruleLevel } from '../lib/extras'
 import { solve } from './solver'
 
-const LISTS = { kaygan: SLIPPERY_OK, coken: CRUMBLE_OK, ay: MOON_OK, firtina: STORM_OK } as const
+const LISTS = { kaygan: SLIPPERY_OK, coken: CRUMBLE_OK, ay: MOON_OK, firtina: STORM_OK, agir: HEAVY_OK, kisadash: SHORT_DASH_OK, afyok: NO_MERCY_OK } as const
 const [kind, ...rest] = process.argv.slice(2) as [keyof typeof LISTS, ...string[]]
 if (!(kind in LISTS)) {
-  console.log('kullanım: verify-rage.ts <kaygan|coken|ay|firtina> [şehir ...] [--hepsi]')
+  console.log('kullanım: verify-rage.ts <kaygan|coken|ay|firtina|agir|kisadash|afyok> [şehir ...] [--hepsi]')
   process.exit(2)
 }
 const all = rest.includes('--hepsi')

@@ -44,14 +44,14 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
   portraitDraw.ts vesikalık portreler (vektör, heroDraw fırçalarıyla; sekiz kılık, atkı rengi parametreli). Sunucu kartı için public/portreler/<kılık>.png: `node scripts/art/portraits.cjs` (çizim ya da LOOKS değişince yeniden üret)
   audio.ts       WebAudio: rahatlatıcı arka plan müziği çalgıları (Rhodes benzeri piyano `keys`, alt bas `sub`, yumuşak davul `kick`/`rim`/`hat`, ney, kanun Karplus-Strong, dem), swing, çalgı başına stereo ve yankı, ana sınırlayıcı; boss'ta sıklaşan ama sakin ritim (`setIntense`), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında, kısık
-  music.ts       besteler veri olarak: jenerik (Hicaz ezgisi, köksüz dokuzlu akorlar, giriş + A-B-A-B) ve şehir müzikleri (4/4, 70-84 BPM şehrin tempo değerinden; form giriş (bir kez) → A piyano → A′ ney + davul → B karşıtlık (güçlüde pedal bas) → A″ soru-cevap → nefes, 36 ölçülük döngü; ses yürütmeli yedili akorlar `voiceLead`, makama göre kadans, ney süslemeleri, kanun tremolosu; şehirden tohumlanan sabit beste)
+  music.ts       besteler veri olarak: jenerik (Hicaz ezgisi, köksüz dokuzlu akorlar, giriş + A-B-A-B) ve şehir müzikleri (4/4, 70-84 BPM şehrin tempo değerinden; form giriş (bir kez) → A piyano → A′ ney + davul → B karşıtlık (güçlüde pedal bas) → A″ soru-cevap → nefes → C köprü → A4 → B′ → nefes, 64 ölçülük döngü; ses yürütmeli yedili akorlar `voiceLead`, makama göre kadans, ney süslemeleri, kanun tremolosu; şehirden tohumlanan sabit beste)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts, sunucusu app/api/ghosts (skor tablosundan "◌ Yarış")
   challenges.ts  mücadele haritaları: Zor şehirlerin bayrak aralığından her açılışta kesilen kısa parkurlar (madalya `par`dan)
   mirror.ts      Ayna Yolu (Yeni Oyun+): şehir haritası sağdan sola; `LevelDef.mirror` ile platformlar ve zamanlama fazları da aynalanır
   accessories.ts Kılık Dükkânı aksesuarları (ad, fiyat, `for`: yolcuya özgü), yolcu başına kombin ve cüzdan; çizimi heroDraw/portraitDraw, karaktere özgü parçalar accessoryDraw.ts, oyunda `renderer.accessory`
 components/      React arayüzü: Coop (iki kişi aynı ekranda: CoopSetup (Şehir Yolu / Boss Kapışması), Coop, CoopEnd; tuşlar DUO_KEYS), TitleMenu (ana menü: sıradaki şehrin kartpostalı, yol çizgisi, OYNA / SENİN öbekleri ve ne işe yaradığını yazan kutucuklar; piksel simgeler dosyanın içinde), PhotoMode (Fotoğraf Kipi: moladan; kadraj ok tuşu ya da sürükleyerek, kartpostal çerçeveli PNG), KeyRemap (klavye tuş atama; `game/input.ts` KeyBindings, `save.keys`), MapGallery (/haritalar topluluk galerisi), Tournament (Haftalık Turnuva), Challenges (mücadele listesi, bitiş), Ending (final: harita, son söz, jenerik, Ayna Yolu), Mirror (Ayna Yolu listesi), Shop (Kılık Dükkânı), Album (Defter'de şehir albümü), Editor (Bölüm Düzenleyici, /duzenle; çözücü solve.worker.ts'te), Game (bütün ekranlar; ilk oynayışta adım adım rehber, save.tutorial), Defter (toplananlar, rozetler, unvan, yol istatistikleri; Müzik Kutusu sekmesi MusicBox: biten şehrin bestesi, boss'u yenilmişse boss teması), Modes (Modlar: Günlük Meydan Okuma, Düello, Boss Rush, Maraton; bitiş ekranları), Race (Yan Yana Yarış: bölünmüş ekran, iki dünya ve iki çizici), ScoreBoard (Skor Tablosu: Genel, Şehirler, Günlük, Koleksiyon), About (artbook), Bestiary, HUD, dokunmatik
-lib/             customLevel (düzenleyicinin harita kodu: doğrulama, RLE + base64url, sürüm 1/2, `customLevel()`), editorKit (düzenleyicinin şablonları, hazır parçaları, dolgu, dikdörtgen, ayna), achievements (başarımlar: çoğu kayıttan hesaplanır, anlık olanlar `save.feats`), storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db, antiCheat (skorun fiziksel alt süresi `minScoreMs` ve hayalet makullüğü `ghostProblem`), rateLimit (`seksek_rate` tablosunda sabit pencere; tablo yoksa geçer), communityMaps (topluluk haritası kuralları: başlık, süzgeç, günlük sınır)
+lib/             customLevel (düzenleyicinin harita kodu: doğrulama, RLE + base64url, sürüm 1/2, `customLevel()`), editorKit (düzenleyicinin şablonları, hazır parçaları, dolgu, dikdörtgen, ayna), achievements (başarımlar: çoğu kayıttan hesaplanır, anlık olanlar `save.feats`), storage (kayıt, şehir sırası sürümü, güncelleme notu), mapVersion (şehir başına harita sürümü: haritanın özeti; yalnız "yenilendi" bilgisi için), extras (atkı renkleri, Günün Şehri, Haftanın Görevi, Günlük Meydan Okuma kuralları ve skoru, Düello sonucu, unvan, yol istatistikleri), scoreKey (skor satırının kalıcı anahtarı), players (hesap: scrypt şifre + cihaz oturumu; sunucunun koyduğu 400 günlük HttpOnly çerez `seksek_oturum`), cloud (bulut kaydı: giriş yapan oyuncunun ilerlemesi `seksek_saves` tablosunda; yerelle birleşir, hiçbir ilerleme kaybolmaz), i18n + ui.en (TR/EN), share, db, antiCheat (skorun fiziksel alt süresi `minScoreMs` ve hayalet makullüğü `ghostProblem`), modeHints (Modlar ekranı: katalog, arama, süzgeç, öneri, gezinti), rateLimit (`seksek_rate` tablosunda sabit pencere; tablo yoksa geçer), communityMaps (topluluk haritası kuralları: başlık, süzgeç, günlük sınır)
 app/             / oyun (`?yaris=<şehir>~<ad>` yarış daveti, `?ozel=<kod>` özel harita) · /duzenle bölüm düzenleyici · /hakkinda tanıtım · /oyuncu/[ad] kullanıcı sayfası · /sehir/[id] şehir tanıtımı (şehir başına bir sayfa, statik; app/sitemap.ts, app/robots.ts) · /haritalar topluluk galerisi · /skor paylaşım · /skor/kart kartpostal · /api/*
 scripts/         verify-all.sh (tam zincir, paralel), preview.cjs (oyun içi ekran görüntüsü), verify-levels (çözücü, solver.ts), verify-chase (Kovalamaca: köpek ısırmadan biter mi), verify-rush (Kâbus ve Çifte Boss Rush arenaları), verify-prelude (tek meydan yolunu saniyeler içinde dener), verify-respawn (her bayraktan yeniden doğunca çıkışa varılıyor mu), bossbot (boss’u gerçek fizikle yenen bot), verify-enemies (düşmanlar ve oklar açıkken bölümü insan paylı zamanlamayla oynayan bot; tam ve zayıf oyuncu), verify-frames (tarayıcıda 3x çözünürlükte dash hızında kayarken zemin hücresi hazır mı; kasma kanıtı), verify-perf (üretim derlemesinde gerçek oynanışta kare kaçırma; performans kanıtı), verify-items (zayıf oyuncu her toplanabilir şeyi alır ve aldığı yerden çıkışa varır: kapan yok), audit-reach (her toplanabilir şey görünür bir dayanağın zıplama menzilinde), audit-difficulty (zayıf oyuncu testi + tehlike yoğunluğu), audit-menus (her menü dört ekran boyutunda tek bakışta sığıyor mu), audit-clearance (1 karo yüksekliğinde yürünen alçak koridor var mı), verify-rules (Dash’siz kuralının çıktığı şehirler dash atmadan bitiyor mu), verify-challenges (mücadele haritaları çözücüyle bitiyor mu; madalya için en hızlı süreyi yazdırır), audio-render (sesi dinlemeden kanıtla: jenerik, şehirler, boss, mola ve efektler WAV; sessiz, NaN ya da patlayan parça FAIL), verify-mirror (Ayna Yolu: aynalı harita çözücüyle bitiyor mu; `AYNA=1 npx tsx scripts/bossbot.ts` aynalı arenada boss), migrate, art/ (portre üreteci ve föyü portraits.cjs, çizim föyü sheet.cjs, zemin föyü ve hücre çizim süresi terrain.cjs (`--olc`), şehir görselleri banners.cjs, README görselleri readme.cjs (docs/img; görünüm değişince yeniden üret), ikon, favicon ve paylaşım görseli icons.cjs (çizimi emblem.ts; `--og` paylaşım görseli, `--foy` föy; Uktun'un çizimi değişince yeniden üret), harita üreteçleri, sync)
 tests/           scores.test.ts (skor API'si bellekte gerçek Postgres ile: göçler, ölçüt başına güncelleme, filtreler, günlük tablo), cloud.test.ts (bulut birleşmesi, şehir başına sürüm, güncelleme notu), sim.test.ts (fizik, mekanik, final), camera.test.ts (60-240 Hz'de aynı kamera, titremesiz dash), perf.test.ts (tuval piksel bütçesi), bubble.test.ts (baloncuk karakterin üstüne binmez), boss.test.ts (boss kuralları; her boss’u bot ve zayıf oyuncu botu yener), extras.test.ts (görevler, atkılar, Boss Rush arenaları), music.test.ts (besteler), input.test.ts (tuş atama), antiCheat.test.ts (her şehrin çözücü süresi alt sınırın en az 2 katı; sahte hayaletler reddedilir), maps.test.ts (topluluk haritaları API'si), customLevel.test.ts + editorKit.test.ts (harita kodu, şablonlar, hazır parçalar)
@@ -136,6 +136,10 @@ düşüş (`min_deaths`) ve en çok hatıra (`max_items`) ayrı tutulur, her bit
 sütunda gösterilen değeri de değiştirir. Günlük Meydan Okuma satırları `gunluk:<gün>` anahtarıyla aynı tabloda durur
 (gün İstanbul saatiyle döner). API'ye dokununca `tests/scores.test.ts` koş.
 
+**Sıralama ve profil arayüzü.** `components/ScoreBoard.tsx`: yedi sekme (Genel, Şehirler, Günlük, Modlar, Speedrun, Koleksiyon, Arkadaşlar; seçili sekme `seksek:board:tab`te hatırlanır), yolcu araması (`q`, adın parçası) ve sayfalama (`lim`, en çok 100) API'de;
+satırda yolcu portresi (`hero`, `public/portreler`), liderle fark ("lidere +3,2 sn"), yapışkan "Senin Sıran" şeridi (son bakışa göre ▲▼ `seksek:rank:*`, "Kendine Git"), ok tuşlarıyla satır gezintisi. `components/ProfileView.tsx` oyun içi (Defter → Profil, `lib/profile.ts` `profileFromSave`)
+ve herkese açık `/oyuncu/<ad>` sayfasında aynı: kimlik kartı (portre + kombin + atkı), özet şeridi, vitrin (`save.pins`, en çok üç başarım; Defter → Başarımlar'da ☆ ile sabitlenir, bulutla gider), şehir ızgarası (süre, madalya, %100, sıra). Sunucu sayfası şehir satırlarını skor tablosundan, toplananları bulut kaydından alır.
+
 **Günlük Meydan Okuma: tek hak.** Başlayınca `save.dailyTry` bugünün günü olur (bulutla birleşir); o gün bir daha
 başlanmaz, yarıda bırakmak da hakkı bitirir. Koşu içinde "Baştan Başla", Tek Can düşüşü ve süre sınırı şehrin başına
 döndürür ama süre ve düşüş sürer (`restartKeep`, oyun döngüsünde `ranked`). Serbest Kurallı Koşu ve Sinir Bozucu bundan muaf.
@@ -150,12 +154,18 @@ değişince yeniden koş). Kurallı Koşu yalnız bitirilmiş şehirlerde açıl
 ve zorluğu (1-5 alev); "ne değişir" rozetleri kural tanımından türer (`rulePerks`). Seçim ekranında canlı önizleme
 (`CourseScene` + kuralın görünüşü). Yeni kural eklersen RULE_ART'a ve `glyph`'e yaz.
 
-**Sinir Bozucu modlar.** `lib/extras.ts` RAGE_RULES (on iki: Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Kâbus, Son Nefes, Karanlık Yol, Baş Aşağı, Ayna Ekran, Turbo, Gece Yarısı, Kaos; görüntü modları `view`: karanlık `renderer.dark`, ters ekran tuvalin CSS dönüşümü, menüde sıfırlanır):
+**Sinir Bozucu modlar.** `lib/extras.ts` RAGE_RULES (yirmi üç: Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Kâbus, Son Nefes, Karanlık Yol, Baş Aşağı, Ayna Ekran, Turbo, Gece Yarısı, Kaos, Ay Yerçekimi, Fırtına, Görünmez Dikenler, Hayalet Zemin, Dar Kadraj, Kör Kâbus, Kovalamaca ve yeniler: Ağır Yerçekimi, Kısa Dash, Af Yok, Deprem; görüntü modları `view`: karanlık `renderer.dark`, ters ekran tuvalin CSS dönüşümü, menüde sıfırlanır):
 Kurallı Koşu altyapısında (`save.rules`, rekor şehir + mod başına), günlüğe çıkmaz (RULES'ta yoklar). Fizik `ruleLevel()` ile
 bölüme yazılır: `LevelDef.slippery` (her zemin buz), `crumbleAll` (üstü boş her katı yüzey çatlak taş; başlangıç, bayrak, çıkış
 ve boss arenası sağlam); Ters Tuşlar girdide (`swapPhase`, 9 sn'lik turun son 4 sn'si, öncesinde uyarı). Kaygan ve çöken
 fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya da harita değişikliğinde
 `npx tsx scripts/verify-rage.ts <kaygan|coken> <şehir>` koş ve listeye yaz. Renk ailesi kiremit (`--color-coral`).
+
+**Yeni fizik kuralları (21 Kasım 2026).** `LevelDef.heavy` (Ağır Yerçekimi: yerçekimi ×1,25, `HEAVY`), `shortDash` (Kısa Dash: dash süresi ×0,7, `SHORT_DASH`),
+`noMercy` (Af Yok: coyote 0, zıplama tamponu 0,02 sn, `NO_MERCY`); üçü `ruleLevel` ile bölüme yazılır ve yalnız `HEAVY_OK` / `SHORT_DASH_OK` /
+`NO_MERCY_OK` şehirlerinde açılır: listeye şehir yazmadan önce `npx tsx scripts/verify-rage.ts <agir|kisadash|afyok> <şehir>` (çözücü çıkışa varmalı;
+`--hepsi` bütün şehirleri dener, yavaştır: şehirleri ayrı süreçlerde koş). Haritası değişen şehirde yeniden koş. Kanıt (21 Kasım 2026, `BUDGET=5000`): Ağır Yerçekimi 27/40 şehir, Kısa Dash 39/40 (Malatya yok), Af Yok 40/40; kanıtlanamayanlar kapalı kalır, bütçeyi artırıp yeniden denenebilir. Deprem yalnız görüntüdür
+(`view.quake` → `renderer.quake`, sarsıntı ayarı kapalıysa etkisiz) ve her şehirde açıktır. Önizleme: `rage-quake` (globals.css).
 
 **Modlar ekranı.** Üstte tam genişlikte "Bugün" şeridi: Günlük Meydan Okuma (ekranın tek dolu düğmesi) ve sağ yarısında Haftalık
 Turnuva. Altında tek ızgara (geniş ekranda 4 sütun): on mod + Bölüm Düzenleyici + Topluluk Haritaları. Öbek başlığı yok; aile rengi
@@ -166,6 +176,13 @@ Sinir Bozucu ve Kurallı Koşu listeleri ekranda kolaydan zora dizilir (`RuleArt
 Fizik, Baskı (Kovalamaca + tek can), Karışım). `RULES` dizisinin sırası değişmez: günlük kural onunla seçilir. Her mod bir `ModeTile`: çizim, ad, tek satır açıklama (~30 harf, kesilmesin),
 durum; kutucuğun tamamı modu açar (`href` ile sayfa), öbür yollar başlık satırında küçük `TileChip` (Parkurlar, Kâbus, Çifte, Aynalı).
 Kilitli kutucuk kesik çizgili ve nasıl açılacağını söyler. Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun.
+Bulma araçları (`lib/modeHints.ts`, saf ve testli: `tests/extras.test.ts` "Modlar ekranı"): üstte arama (ad, açıklama ve `tags`; Türkçe harf farkı yok, `/` odaklar, Esc önce temizler sonra bırakır) ve süzgeç çipleri
+(Hepsi, Solo, Birlikte, Zor, Yeni, Sıralamalı, Açık Olanlar); eşleşmeyen kutucuk gizlenir, hiçbiri kalmazsa "Eşleşen Mod Yok". `MODES` kataloğu her mod için zorluk rozeti (Kolay/Orta/Zor), kişi sayısı,
+sıralama, `isNew` ("Yeni" rozeti: yeni mod gelince `true`, sonraki sürümde kapat) ve `howto` adımlarını tutar; **yeni mod eklerken** `ModeId`, `TILE_ORDER`, `NAME`, `MODES` ve `ModesHub` kutucuğunu birlikte yaz.
+Kutucuk sırası sabit: ilk dokuzu 1-9 tuşlarıyla odaklanır, oklar kutucuklar arasında gezer (`neighbor`), Enter açar; kilitli kutucuk odaklanır ama açılmaz (`aria-disabled`). "Sana Önerilen" (`recommend`: en çok iki mod;
+hiç oynamamışa günlük + Co-op, yeni bitirene Kurallı Koşu, boss yenene Boss Rush, Üçlü yarımsa Üçlü…) Devam Et ile yan yana durur, süzgeç açıkken gizlenir, Devam Et'teki modu önermez; ana menüde Modlar kutucuğu aynı öneriyi
+alt yazıda söyler ve ekran açılana dek "Yeni" yazar. Bir moda ilk girişte kısa "Nasıl Oynanır" kartı (`HowToCard`) bir kez çıkar (`seksek:modeIntro`, yalnız bu tarayıcıda; Geri sayılmaz, "Anladım, Başla" sayılır);
+`audit-menus` o anahtarı önceden doldurur (yalnız `modlar-nasil` ekranı boş açar).
 
 **Öfke Parkurları.** `game/rageCourses.ts` RAGE_COURSES: elle çizilmiş uzun, çok zor parkurlar (mücadele altyapısı: `Challenge.map`,
 madalya `par`dan, skor `mucadele:<id>`, ALL_CHALLENGES ile aranır; turnuvaya girmez). Modlar → Sinir Bozucu → Parkurlar.
@@ -226,6 +243,19 @@ ilk kişisi esnaf olsun (usta o).
 Yarış molasında `DuoRemap`), varsayılan `DEFAULT_DUO`: solda WASD + Sol Shift, sağda ok tuşları + Enter; her oyuncunun tek dash
 tuşu (Sağ Shift kimsede yok: bazı klavyelerde iki Shift karışıyor, biri ötekini dash attırıyordu). Boşluk varsayılanda kimsede yok (tek kişilikte dash Boşluk, alışkanlıkla basılınca öbürünü atıyordu); bir
 tuş tek oyuncunun tek eylemi, atanan tuş öbüründen alınır (takas) (`tests/input.test.ts`). Molada değişen tuş hemen uyar (`keysRef`).
+**Co-op işbirliği (21 Kasım 2026).** Eş kuralları `sim.ts`te, iki oyuncuya aynı: **Kurtarma** (`World.rescue`, `RESCUE_TIME` 3 sn, `updateCoop`):
+biri düşünce öbürü ayaktaysa bölüm bayraktan kurulmaz, düşen son sağlam yerinde (`lastSafe`) balonda bekler (`World.downed`), öbürü balona
+değerse kurtarıcının yanında kalkar (`rescue` olayı), süre dolarsa eskisi gibi bayraktan kurulur; ikisi birden düşerse balon yok. Kurtarma
+kolaylaştırdığı için rekoru ayrıdır (`coopKey` sonu `:kurtar`, kapalıyken eski anahtar). **Eşi Fırlat** (`shoulder`, `THROW_BOOST` 1,6): inen
+omuz sekmesinde alttaki de zıplıyorsa (`buffer` ya da yukarı hız) sekiş yükselir, olay `thrown` taşır. **İşaretler** (`World.ping`, `PING_LIFE`):
+1. oyuncu 1-4, 2. oyuncu 7-0 (Burada, Bekle, Dikkat, Aferin; `lib/coopRules.ts` `pingFromKey`, oyuncunun hareket tuşu olan rakam işaret
+sayılmaz), oyun kolunda LB / RB. Saf kurallar (pay, `credit`, `coopAwards` kişisel ve ikili unvanlar, `legTimes`) `lib/coopRules.ts`te,
+testi `tests/coop.test.ts` ve `tests/mechanics.test.ts` "co-op: Kurtarma, Fırlatma, işaret". `Coop.tsx`: önce **Hazır mısınız?** (ikisi de
+zıpla/dash tuşuna ya da oyun kolunda A'ya basar, kural kartları ve işaret tuşları orada), sonra geri sayım; başın üstünde renkli ad etiketi,
+ayakta halka, işaret balonu ve kurtarma balonu üstteki ikinci tuvalde (`drawTags`, kamera `camX/viewW` ile izdüşüm). Bitişte bayrak süreleri,
+rekora fark, ikili unvanlar, "Tekrar" / "Başka Şehir". Sunucu sıralaması yok (iki yolcu tek cihazda, tek hesap kimliği yok; düello ve Co-op
+"Her moda sıralama" dışında kalır). Sim'e eş kuralı eklersen `updateCoop`a yaz.
+
 Boss Kapışması (`CoopSetup` kipi): seçilen boss'un arenası (`coopLevel`), isteğe bağlı ikinci boss `LevelDef.bossOf2`
 (`World.boss2`: kapı ikisi de düşünce açılır) ve zorluk `bossBoost` (kademe + hız; Normal, Öfkeli, Kâbus). Kamera ikisinin ortasına
 bakar; uzaklık görünür alanın %80'ini aşınca geride kalan öne ışınlanır. Düşmanlar ve boss'un nişanı yalnız oyuncuyu izler.
@@ -239,7 +269,8 @@ takılıysa 2. oyuncunun olur. Sim'e oyuncuya özel yeni durum eklersen eşin de
 (`tests/mechanics.test.ts` "co-op eşi", "omuz sekmesi").
 
 **Düello.** `DuelSetupValue`: tur 1/3/5 (`duelResult` yarısından fazlasını alan), şehir ya da parkur (`course`, `duelLevel`),
-şartlar `terms` (`DuelTerms`: düşüş cezası 0/5/10, Hatıra Avı −5 sn, oyuncu başına avantaj); skor `duelScoreWith`. Eski
+şartlar `terms` (`DuelTerms`: düşüş cezası 0/5/10, Hatıra Avı −5 sn, oyuncu başına avantaj); skor `duelScoreWith`; **Tek Can** (`terms.oneLife`, yalnız Yan Yana Yarış: ilk düşüşte o oyuncunun turu biter, bitiremedi sayılır);
+Yan Yana Yarış bayrak sürelerini tutar (`DuelRun.splits`), bitişte "Bayrak Bayrak" (`legDuel`). Eski
 kurulumlar şartsız gelir (`duelTerms`: sırayla 5 sn ceza, yan yana cezasız).
 
 **Boss Rush çeşitleri.** `rushArena` (levels.ts) + `rushPlan` (extras): Kâbus (kademe 3, %30 hızlı), Çifte (boss'lar ikişer
@@ -308,10 +339,16 @@ sınırlıdır (429 + Retry-After); göç `0008_seksek_rate`. Yeni sunucu ucu k�
   `npx next start` ile oyunu, /duzenle ve /haritalar'ı açıp konsolda CSP ihlali olmadığına bak.
 - Kanıt: `tests/scores.test.ts` ve `tests/maps.test.ts` "güvenlik" blokları (403, ad taklidi, hız sınırları, __proto__).
 
+**Gezgin Turu ve Sakin Gezi (21 Kasım 2026).** `components/FunModes.tsx`. Gezgin Turu: `lib/extras.ts` `gezginFor(tohum, 3|4|5)` her tohumdan aynı
+kesit dizisini çıkarır (Mücadeleler'den, aynı şehirden ikisi yok); kesitler `startChallenge` yoluyla koşulur (`gezginRef`), hepsi bitince toplam
+`save.gezgin[gezginKey]` rekoru olur (bulutla birleşir, küçük olan kazanır). Sunucu sıralaması yok (kesitlerin kendi sıralaması var). Sakin Gezi:
+`LevelDef.calm` + `customRef` yolu: düşüş sayılmaz (`kill()` 0,3 sn sonra son bayrakta doğurur), ilerlemeye, rekora ve deftere dokunmaz, çıkışta
+Modlar'a dönülür. İkisi `lib/modeHints.ts` kataloğunda (`gezgin`, `calm`) ve `scripts/audit-menus.cjs` SCREENS'te.
+
 **Ayarlar ve erişilebilirlik.** Efekt ve müzik ses düzeyi (`sfxVol`, `musicVol`), Ekran Sarsıntısı (`shake`; tanımsızsa
 işletim sisteminin "hareketi azalt" tercihi, çizimde `renderer.shakeScale`), Ara Süreler (`splits`; rekor koşunun bayrak
 süreleri `splitTimes`, harita sürümüyle), Rahat Mod hızı (`relaxedSpeed` %60-90), tuş atama (`keys`; Esc, P, R sabit).
-Oyun kolu titreşimi `haptic()` içinde (`vibrationActuator`). Tuş ipuçları ve rehber atanan tuşu gösterir.
+Oyun kolu titreşimi `haptic()` içinde (`vibrationActuator`). **Kolaylıklar** (Ayarlar → Kolaylıklar, cihaz ayarı: buluta gitmez, fizik değişmez): hayalet görünürlüğü (`ghostAlpha`), kamera yakınlığı (`camZoom` → `renderer.userZoom`), sarsıntı şiddeti (`shakePower`), titreşim yoğunluğu (`hapticPower` → `setHapticScale`), Dash Göstergesi (`dashMeter`), Basılı Tut Zıplama (`holdJump`: yalnız girdi, yere inişte `jumpPressed`), Büyük Yazı (`bigText`, panel `zoom`). Renk körü paleti henüz yok. Tuş ipuçları ve rehber atanan tuşu gösterir.
 
 **Bölüm Düzenleyici.** `/duzenle`: harita kodu `lib/customLevel.ts` (simge ve şehir sırası kodun parçası: yalnız sona ekle).
 Sürüm 3 kod metin bölümü taşır: tabela (`?`) ve şehir insanı (`n`) sözleri ve boss seçimi (`Q`, hangi şehrin boss'u: `LevelDef.bossOf`);

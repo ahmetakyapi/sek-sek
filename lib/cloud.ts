@@ -40,13 +40,14 @@ export async function pullMerge(local: Save): Promise<Save | null> {
   if (!local.player) return null
   try {
     const r = await fetch('/api/players/save', { cache: 'no-store', headers: auth(local.player) })
-    if (!r.ok) return null
+    if (!r.ok) return setSync('offline'), null
     const j = (await r.json()) as { data: Partial<Save> | null }
+    setSync('ok')
     // asıl kayıt veritabanı: yereldeki başka bir hesabın ilerlemesi karışmaz (misafirinki hesaba aktarılır)
     const mine = adoptable(local, local.player.id)
     return j.data ? mergeSaves(mine, normalizeSave({ ...j.data, accountVersion: 2 })) : mine
   } catch {
-    return null
+    return setSync('offline'), null
   }
 }
 
@@ -56,16 +57,17 @@ export async function pullMerge(local: Save): Promise<Save | null> {
  */
 export async function pushSave(s: Save, tries = 0): Promise<boolean> {
   if (!s.player) return false
+  setSync('pending')
   const body = JSON.stringify({ data: cloudPart(s) })
   try {
     const r = await fetch('/api/players/save', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...auth(s.player) }, body, keepalive: body.length < 60_000 })
-    if (r.ok) return true
+    if (r.ok) return setSync('ok'), true
     // oturum kapanmış ya da kayıt geçersiz: yeniden denemek düzeltmez
-    if (r.status === 401 || r.status === 400 || r.status === 413) return false
+    if (r.status === 401 || r.status === 400 || r.status === 413) return setSync('offline'), false
   } catch {
     /* ağ yok: yeniden denenir */
   }
-  if (tries >= 3 || typeof window === 'undefined') return false
+  if (tries >= 3 || typeof window === 'undefined') return setSync('offline'), false
   await new Promise((res) => setTimeout(res, [3000, 10000, 30000][tries]))
   return pushSave(s, tries + 1)
 }
@@ -112,3 +114,15 @@ export async function uploadGhost(p: Player, level: string, timeMs: number, g: G
     /* bir sonraki rekorda yeniden denenir */
   }
 }
+
+/** Bulut eşitleme durumu (ana menüdeki küçük gösterge): bekliyor → eşitlendi, ağ yoksa ya da gönderim bittiyse çevrimdışı */
+export type SyncState = 'idle' | 'pending' | 'ok' | 'offline'
+let syncState: SyncState = 'idle'
+const syncListeners = new Set<() => void>()
+function setSync(s: SyncState) {
+  if (s === syncState) return
+  syncState = s
+  syncListeners.forEach((f) => f())
+}
+export const subscribeSync = (f: () => void) => (syncListeners.add(f), () => void syncListeners.delete(f))
+export const getSync = () => syncState

@@ -1,21 +1,24 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { and, eq, inArray, sql } from 'drizzle-orm'
+import ProfileActions from '@/components/ProfileActions'
+import ProfileView from '@/components/ProfileView'
 import SiteHeader from '@/components/SiteHeader'
 import { medalFor } from '@/components/medal'
 import { LEVELS } from '@/game/levels'
 import { db } from '@/lib/db'
 import { findByName } from '@/lib/players'
+import { bestCity, profileFromSave, showcase, type ProfileCity, type ProfileData } from '@/lib/profile'
 import { currentKeys, scoreCity } from '@/lib/scoreKey'
-import { scores } from '@/lib/schema'
-import { formatTime } from '@/lib/storage'
-import { istanbulDay, tournamentWeek } from '@/lib/extras'
+import { saves, scores } from '@/lib/schema'
+import { shareQuery } from '@/lib/share'
+import { defaultSave, normalizeSave, type Save } from '@/lib/storage'
+import { emptyStats, istanbulDay, tournamentWeek, travelerTitle } from '@/lib/extras'
 
 export const dynamic = 'force-dynamic'
 
 type Props = { params: Promise<{ ad: string }> }
-
-const MEDAL = { altin: ['Altın', '#e3a92c'], gumus: ['Gümüş', '#c9d0da'], bronz: ['Bronz', '#c97a44'] } as const
 
 /** Bozuk yüzde kodlaması ("%E0") sayfayı 500'e düşürmesin; ad en çok 32 karakter okunur */
 const adOf = (ad: string) => {
@@ -26,7 +29,7 @@ const adOf = (ad: string) => {
   }
 }
 
-async function load(ad: string) {
+async function load(ad: string): Promise<ProfileData | null> {
   const name = adOf(ad)
   const player = await findByName(name).catch(() => null)
   if (!player) return null
@@ -42,6 +45,20 @@ async function load(ad: string) {
     })
     .from(scores)
     .where(and(eq(scores.playerId, player.id), inArray(scores.level, currentKeys())))
+  // hesaba kayıtlı defter: yolcu, kombin, atkı, pul, nazar, boss, başarım, vitrin (yoksa yalnız skorlardan çıkarılır)
+  const raw = await db()
+    .select({ data: saves.data })
+    .from(saves)
+    .where(eq(saves.playerId, player.id))
+    .limit(1)
+    .then((r) => r[0]?.data as Partial<Save> | undefined)
+    .catch(() => undefined)
+  let save: Save = defaultSave()
+  try {
+    if (raw && typeof raw === 'object') save = normalizeSave(raw)
+  } catch {
+    save = defaultSave()
+  }
   // Haftalık Turnuva kürsüleri: kapanmış haftalarda üçü de bitirenler arasında ilk üç (kalıcı rozet)
   const week = tournamentWeek(istanbulDay(new Date()))
   const podium = await db()
@@ -53,8 +70,37 @@ async function load(ad: string) {
     )
     .then((r) => Object.fromEntries((r.rows as { rank: number; n: number }[]).map((x) => [x.rank, x.n])) as Record<number, number>)
     .catch(() => ({}) as Record<number, number>)
-  // yalnız şehirlerin bugünkü haritalarının skorları sayılır
-  return { player, podium, byLevel: new Map(rows.map((r) => [scoreCity(r.level), r])) }
+
+  const base = profileFromSave(save, istanbulDay(new Date()), { name: player.name, since: player.createdAt.toISOString() })
+  // şehir satırları herkese açık skor tablosundan (süre, sıra, oynanma); toplananlar kayıttan
+  const cities: Record<string, ProfileCity> = {}
+  for (const r of rows) {
+    const l = LEVELS.find((x) => x.id === scoreCity(r.level))
+    if (!l) continue
+    const flags = base.cities[l.id]
+    cities[l.id] = {
+      id: l.id,
+      timeMs: r.timeMs,
+      deaths: Number(r.deaths),
+      items: Math.max(Number(r.items), flags?.items ?? 0),
+      plays: r.plays,
+      rank: Number(r.rank),
+      medal: medalFor(l, r.timeMs),
+      full: !!flags?.full,
+      stamp: !!flags?.stamp,
+      charm: !!flags?.charm,
+      boss: !!flags?.boss,
+    }
+  }
+  const list = Object.values(cities)
+  const totals = { ...base.totals, keeps: Math.max(base.totals.keeps, list.reduce((a, c) => a + c.items, 0)), golds: list.filter((c) => c.medal === 'altin').length }
+  const stats = save.stats ?? emptyStats()
+  const title = travelerTitle({ cities: list.length, totalCities: LEVELS.length, golds: totals.golds, keeps: totals.keeps, charms: totals.charms, bosses: totals.bosses, streak: base.streak, stats })
+  const recent = [...rows]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 5)
+    .flatMap((r) => (LEVELS.some((l) => l.id === scoreCity(r.level)) ? [{ id: scoreCity(r.level), timeMs: r.timeMs, at: r.createdAt.toISOString() }] : []))
+  return { ...base, cities, totals, title, podium, recent, pins: showcase(base.earned, save.pins) }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -65,88 +111,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OyuncuPage({ params }: Props) {
   const data = await load((await params).ad)
   if (!data) notFound()
-  const { player, podium, byLevel } = data
-  const done = LEVELS.filter((l) => byLevel.has(l.id))
-  const totalTime = done.reduce((a, l) => a + byLevel.get(l.id)!.timeMs, 0)
-  const totalDeaths = done.reduce((a, l) => a + byLevel.get(l.id)!.deaths, 0)
-  const totalItems = done.reduce((a, l) => a + byLevel.get(l.id)!.items, 0)
-  const golds = done.filter((l) => medalFor(l, byLevel.get(l.id)!.timeMs) === 'altin').length
-  const since = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(player.createdAt)
-  const stats: [string, string][] = [
-    ['Şehir', `${done.length}/${LEVELS.length}`],
-    ['Toplam Süre', done.length ? formatTime(totalTime) : '—'],
-    ['Düşüş', String(totalDeaths)],
-    ['Hatıra', `${totalItems}/${LEVELS.length * 3}`],
-    ['Altın Madalya', String(golds)],
-  ]
-
+  const best = bestCity(data)
+  const level = best && LEVELS.find((l) => l.id === best.id)
+  // skor kartı: en iyi sıradaki şehrin koşusu (kart bağlantısı adı ve atkıyı taşır)
+  const cardQuery = best ? shareQuery({ level: best.id, timeMs: best.timeMs, deaths: best.deaths, items: best.items, character: data.hero, name: data.name, scarf: data.scarf }) : null
   return (
     <div className="landing min-h-dvh bg-ink text-cream">
-      <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 pb-10 pt-6 sm:pt-10" style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}>
-        <p className="text-[14px] font-semibold text-accent-2">Yolcu Defteri</p>
-        <h1 className="mt-1 break-words font-display text-4xl leading-tight text-cream sm:text-5xl">{player.name}</h1>
-        <p className="mt-1 text-[15px] text-muted">{since} tarihinden beri yolda.</p>
-        {[1, 2, 3].some((r) => podium[r]) && (
-          <p className="mt-3 flex flex-wrap gap-2" aria-label="Haftalık Turnuva kürsüleri">
-            {([1, 2, 3] as const).map((r) =>
-              podium[r] ? (
-                <span key={r} className="border-2 px-2.5 py-1 text-[13px] font-bold" style={{ borderColor: ['#e3a92c', '#c9d0da', '#c97a44'][r - 1], color: ['#e3a92c', '#c9d0da', '#c97a44'][r - 1] }}>
-                  {['🥇', '🥈', '🥉'][r - 1]} Turnuva {['Birincisi', 'İkincisi', 'Üçüncüsü'][r - 1]}{podium[r] > 1 ? ` × ${podium[r]}` : ''}
-                </span>
-              ) : null,
-            )}
-          </p>
-        )}
-
-        {/* özet: telefonda 3 + 2, geniş ekranda tek sıra; kutular sade, sayı önde */}
-        <dl className="mt-5 grid grid-cols-6 gap-2 sm:mt-7 sm:grid-cols-5">
-          {stats.map(([k, v], i) => (
-            <div key={k} className={`flex flex-col-reverse border-2 border-line bg-panel-2/40 px-3 py-2.5 sm:col-span-1 ${i < 3 ? 'col-span-2' : 'col-span-3'}`}>
-              <dt className="mt-1.5 text-[12px] leading-tight text-muted">{k}</dt>
-              <dd className="font-display text-xl leading-none tabular-nums text-cream sm:text-2xl">{v}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <h2 className="mt-8 font-display text-2xl text-cream sm:mt-10 sm:text-3xl">Şehir Şehir</h2>
-        <p className="mt-1 text-[14px] text-muted">En iyi süre, en az düşüş ve en çok hatıra; sıra, şehrin bütün yolcuları arasında süreye göre.</p>
-        <ol className="mt-3 grid gap-1.5 sm:mt-4 sm:gap-2">
-          {LEVELS.map((l) => {
-            const r = byLevel.get(l.id)
-            const medal = r ? medalFor(l, r.timeMs) : null
-            return (
-              <li key={l.id} className={`grid grid-cols-[2.6rem_minmax(0,1fr)_auto] items-center gap-2.5 border-2 px-2.5 py-2 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3 sm:py-2.5 ${r ? 'border-line bg-panel-2/50' : 'border-line/50 opacity-60'}`}>
-                <span className="plate justify-self-start text-[13px] sm:text-[15px]">
-                  <span>{String(l.plate).padStart(2, '0')}</span>
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate font-display text-[17px] leading-tight text-cream sm:text-lg">{l.name}</span>
-                  <span className="mt-0.5 block text-[12px] leading-snug text-muted">
-                    {r ? (
-                      <>
-                        ✕{r.deaths} düşüş · {r.items}/3 hatıra · {r.plays} kez ·{' '}
-                        {/* sıra ve madalya birlikte kırılır: satır "·" ile başlamasın */}
-                        <span className="whitespace-nowrap">
-                          {r.rank}. sırada
-                          {medal && (
-                            <>
-                              {' · '}
-                              <span style={{ color: MEDAL[medal][1] }}>{MEDAL[medal][0]}</span>
-                            </>
-                          )}
-                        </span>
-                      </>
-                    ) : (
-                      'Henüz geçilmedi'
-                    )}
-                  </span>
-                </span>
-                <span className="font-display text-lg tabular-nums text-cream sm:text-xl">{r ? formatTime(r.timeMs) : '—'}</span>
-              </li>
-            )
-          })}
-        </ol>
+      <SiteHeader>
+        <Link href="/siralama" className="hidden hover:text-cream sm:block">
+          Sıralama
+        </Link>
+      </SiteHeader>
+      <main className="mx-auto max-w-5xl px-4 pb-10 pt-5 sm:pt-8" style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}>
+        <nav className="mb-3 text-[14px]">
+          <Link href="/siralama" className="text-accent-2 underline-offset-4 hover:underline">
+            ← Sıralamaya Dön
+          </Link>
+        </nav>
+        <ProfileView data={data} headingLevel={1} actions={<ProfileActions name={data.name} raceCity={level ? level.id : null} cardQuery={cardQuery} />} />
       </main>
     </div>
   )

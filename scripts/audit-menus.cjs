@@ -30,13 +30,28 @@ const SCREENS = {
   'guncelleme-notu': [NEWS, []],
   sehirler: [SAVE, ['Şehirler']],
   defter: [SAVE, ['Defter']],
+  'defter-profil-yeni': [null, ['Defter']],
+  'defter-profil-tam': [ALL, ['Defter']],
+  'defter-sehirler': [SAVE, ['Defter', 'tab:Şehirler']],
   karakter: [SAVE, ['Karakter']],
   modlar: [SAVE, ['Modlar']],
+  'modlar-yeni-oyuncu': [null, ['Modlar']],
+  'modlar-ara': [SAVE, ['Modlar', 'key:/', 'type:kangal']],
+  'modlar-ara-yok': [SAVE, ['Modlar', 'key:/', 'type:zzzz']],
+  'modlar-suzgec': [SAVE, ['Modlar', 'Birlikte']],
+  'modlar-nasil': [SAVE, ['Modlar', 'Mücadeleler', 'wait:300']],
   'kural-sec': [SAVE, ['Modlar', 'Kurallı Koşu']],
   'duello-kur': [SAVE, ['Modlar', 'Düello']],
   'duello-sira': [SAVE, ['Modlar', 'Düello', 'Sırayla', 'Düelloyu Başlat']],
+  // Yan Yana dokunmatikte kapalıdır: açık olduğu boyutlarda seçilir
+  'duello-yan': [SAVE, ['Modlar', 'Düello', "eval:[...document.querySelectorAll('button:not([disabled])')].find((b) => /Yan Yana/.test(b.textContent))?.click()"]],
   skorlar: [SAVE, ['Skorlar']],
   'skorlar-sehir': [SAVE, ['Skorlar', 'tab:Şehirler']],
+  // girişli yolcu: "Senin Sıran" şeridi, arkadaşlar sekmesi, yolcu araması
+  'skorlar-ben': [{ ...SAVE, player: { id: '00000000-0000-4000-8000-000000000001', name: 'Deniz', token: 'x'.repeat(40) }, friends: ['ahmet', 'esra'] }, ['Skorlar', 'tab:Şehirler']],
+  'skorlar-arkadaslar': [{ ...SAVE, player: { id: '00000000-0000-4000-8000-000000000001', name: 'Deniz', token: 'x'.repeat(40) }, friends: ['ahmet', 'esra'] }, ['Skorlar', 'tab:Arkadaşlar']],
+  'skorlar-arkadas-yok': [{ ...SAVE, friends: [] }, ['Skorlar', 'tab:Arkadaşlar']],
+  'skorlar-ara': [SAVE, ['Skorlar', 'tab:Şehirler', "eval:document.querySelector('.sb-search input').focus()", 'type:Del', 'wait:600']],
   'skorlar-gunluk': [SAVE, ['Skorlar', 'tab:Günlük']],
   'skorlar-speedrun': [SAVE, ['Skorlar', 'tab:Speedrun']],
   'skorlar-modlar': [SAVE, ['Skorlar', 'tab:Modlar']],
@@ -45,6 +60,8 @@ const SCREENS = {
   'coop-boss': [SAVE, ['Modlar', 'Co-op', 'tab:Boss Kapışması']],
   'coop-parkur': [SAVE, ['Modlar', 'Co-op', 'tab:Parkur']],
   kovalamaca: [SAVE, ['Modlar', 'Kovalamaca']],
+  'gezgin-turu': [SAVE, ['Modlar', 'Gezgin Turu']],
+  'sakin-gezi': [SAVE, ['Modlar', 'Sakin Gezi']],
   'sinir-bozucu': [SAVE, ['Modlar', 'Sinir Bozucu']],
   ayarlar: [SAVE, ['Ayarlar']],
   'ayarlar-tuslar': [SAVE, ['Ayarlar', 'opt:tab:Kontroller']],
@@ -52,6 +69,9 @@ const SCREENS = {
   hesap: [SAVE, ['Giriş Yap']],
   'sehir-karti': [SAVE, ['Devam Et']],
   mola: [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape']],
+  'mola-onay': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'key:m', 'wait:200']],
+  'mola-sayim': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'key:Escape', 'wait:350']],
+  'mola-mod': [SAVE, ['Modlar', '▶ Oyna', 'wait:600', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300']],
   'mola-tuslar': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'opt:⚙ Ayarlar', 'Tuşları Değiştir']],
   'bolum-sonu': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:900']],
   'gunluk-sonu': [SAVE, ['Modlar', '▶ Oyna', 'wait:600', FINISH, 'wait:900']],
@@ -68,7 +88,7 @@ const SCREENS = {
   'yaris-daveti': [SAVE, [], '?yaris=konya~ahmet'],
 }
 
-const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'Elif Su', 'Mert', 'Zeynep', 'Baran', 'Ada'].map((name, i) => ({ name, timeMs: 52000 + i * 4300, deaths: i % 7, items: 3 - (i % 3), minDeaths: i % 5, maxItems: 3, plays: 1 + (i % 6), cities: 28 - i * 2, keeps: 84 - i * 6, stamps: 28 - i * 2, charms: 20 - i, bosses: 28 - i * 2, found: 132 - i * 9, rank: i + 1, total: 11, me: false }))
+const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'Elif Su', 'Mert', 'Zeynep', 'Baran', 'Ada'].map((name, i) => ({ name, timeMs: 52000 + i * 4300, deaths: i % 7, items: 3 - (i % 3), minDeaths: i % 5, maxItems: 3, plays: 1 + (i % 6), cities: 28 - i * 2, keeps: 84 - i * 6, stamps: 28 - i * 2, charms: 20 - i, bosses: 28 - i * 2, found: 132 - i * 9, rank: i + 1, total: 11, me: name === 'Deniz', hero: i % 2 ? 'memo' : 'uktun' }))
 
 ;(async () => {
   const browser = await chromium.launch()
@@ -76,6 +96,8 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
   for (const [size, [w, h]] of Object.entries(SIZES)) {
     for (const [name, [save, steps, query]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: w < 800 })
+      // her modun "nasıl oynanır" kartı görülmüş sayılır (yalnız kartın kendi ekranı hariç): menü adımları kartta takılmasın
+      if (name !== 'modlar-nasil') await ctx.addInitScript(() => localStorage.setItem('seksek:modeIntro', JSON.stringify(['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm'])))
       if (save) await ctx.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
       const page = await ctx.newPage()
       await page.route('**/api/scores**', (r) => (r.request().method() === 'POST' ? r.fulfill({ json: { ok: true, first: true, improved: true, better: { time: true, deaths: true, items: true }, bestMs: 73400, rank: 3, total: 11 } }) : r.fulfill({ json: { scores: rows(), total: 11 } })))
@@ -87,6 +109,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
         await page.waitForTimeout(500)
         for (const st of steps) {
           if (st.startsWith('key:')) await page.keyboard.press(st.slice(4))
+          else if (st.startsWith('type:')) await page.keyboard.type(st.slice(5))
           else if (st.startsWith('wait:')) await page.waitForTimeout(Number(st.slice(5)))
           else if (st.startsWith('eval:')) await page.evaluate(st.slice(5))
           // opt: yalnız bazı boyutlarda olan adım (ör. geniş ekranda sekme yok, iki sütun yan yana): yoksa geçilir

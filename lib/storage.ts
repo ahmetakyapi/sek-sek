@@ -94,6 +94,22 @@ export interface Save {
   musicVol?: number
   /** ekran sarsıntısı: tanımsızsa işletim sisteminin "hareketi azalt" tercihine uyar */
   shake?: boolean
+  /** Kolaylıklar (cihaz ayarı, buluta gitmez; fizik değişmez, yalnız yardım ve çizim): hayalet koşunun görünürlüğü (0.25 / 0.46 / 0.8) */
+  ghostAlpha?: number
+  /** karakterin üstünde dash hakkını gösteren halka */
+  dashMeter?: boolean
+  /** kamera yakınlığı çarpanı (0.85 / 1 / 1.15) */
+  camZoom?: number
+  /** ekran sarsıntısı şiddeti (0.5 / 1); sarsıntı kapalıysa etkisizdir */
+  shakePower?: number
+  /** titreşim yoğunluğu (0 = kapalı, 0.5, 1) */
+  hapticPower?: number
+  /** zıplama tuşu basılı tutulunca yere her inişte yeniden zıplanır */
+  holdJump?: boolean
+  /** menülerde ve arayüzde daha büyük yazı */
+  bigText?: boolean
+  /** moladan dönerken 3-2-1 geri sayım; tanımsız: açık */
+  countdown?: boolean
   /** bayraklarda rekor koşuya göre ara süre (+/-) */
   splits?: boolean
   /** rekor koşunun bayrak süreleri (ms): şehir → harita sürümü + süreler */
@@ -133,6 +149,8 @@ export interface Save {
   feats?: Record<string, boolean>
   /** bildirimi gösterilmiş başarımlar */
   ach?: Record<string, boolean>
+  /** profilde vitrine sabitlenen başarımlar (en çok üç, kimlik) */
+  pins?: string[]
   /** Kurallı Koşu rekorları: ruleKey(şehir, harita sürümü, kural) → en iyi skor (ms) */
   rules?: Record<string, number>
   /** arkadaşlar: yolcu adları (skor tablosunda ☆ ile eklenir) */
@@ -141,6 +159,8 @@ export interface Save {
   turnuva?: TournamentMark | null
   /** Ayna Yolu (Yeni Oyun+) rekorları (ms), şehir kimliğiyle */
   ayna?: Record<string, number>
+  /** Gezgin Turu: tohum + kesit sayısı → bütün kesitlerin en iyi sürelerinin toplamı (ms) */
+  gezgin?: Record<string, number>
   /** kılık dükkânında alınan aksesuarlar: "uktun:fiyonk" (yolcuya özgü); düz kimlik ("fes") karakter ayrımından önce alınmış, iki yolcuya da açık */
   owned?: Record<string, boolean>
   /** eski kayıtta takılı tek aksesuar (yeni kayıtta `kit`; kitFor ikisini de okur) */
@@ -288,7 +308,7 @@ export const kitOf = (s: Pick<Save, 'kits' | 'kit' | 'accessory'>, hero: Hero) =
 export const scarfIdOf = (s: Pick<Save, 'scarf' | 'scarfs'>, hero: Hero) => s.scarfs?.[hero] ?? s.scarf
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'friends', 'turnuva', 'ayna', 'owned', 'accessory', 'kit', 'kits', 'scarfs', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus', 'trio'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'pins', 'friends', 'turnuva', 'ayna', 'gezgin', 'owned', 'accessory', 'kit', 'kits', 'scarfs', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus', 'trio'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -336,10 +356,12 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     ach: { ...cloud.ach, ...local.ach },
     rules: Object.fromEntries([...Object.entries(cloud.rules ?? {}), ...Object.entries(local.rules ?? {})].map(([k, v]) => [k, Math.min(v, cloud.rules?.[k] ?? v, local.rules?.[k] ?? v)])),
     challenges: Object.fromEntries([...Object.entries(cloud.challenges ?? {}), ...Object.entries(local.challenges ?? {})].map(([k, v]) => [k, Math.min(v, cloud.challenges?.[k] ?? v, local.challenges?.[k] ?? v)])),
+    gezgin: Object.fromEntries([...Object.entries(cloud.gezgin ?? {}), ...Object.entries(local.gezgin ?? {})].map(([k, v]) => [k, Math.min(v, cloud.gezgin?.[k] ?? v, local.gezgin?.[k] ?? v)])),
     ayna: Object.fromEntries([...Object.entries(cloud.ayna ?? {}), ...Object.entries(local.ayna ?? {})].map(([k, v]) => [k, Math.min(v, cloud.ayna?.[k] ?? v, local.ayna?.[k] ?? v)])),
     turnuva: mergeTournament(local.turnuva, cloud.turnuva),
     // arkadaş listesinden çıkarılan biri buluttan geri gelmesin: bu cihazın listesi önce gelir
     friends: local.friends ?? cloud.friends,
+    pins: local.pins ?? cloud.pins,
     owned: { ...cloud.owned, ...local.owned },
     accessory: local.accessory ?? cloud.accessory,
     kit: local.kit ?? cloud.kit,
@@ -407,7 +429,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, trio: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, turnuva: null, ayna: {}, sawEnding: false, owned: {}, accessory: undefined, kit: undefined, kits: undefined, scarfs: undefined })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, trio: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, pins: undefined, turnuva: null, ayna: {}, gezgin: {}, sawEnding: false, owned: {}, accessory: undefined, kit: undefined, kits: undefined, scarfs: undefined })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {

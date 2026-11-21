@@ -147,6 +147,24 @@ describe('skor tablosu', () => {
     expect((await get('level=koleksiyon')).scores[0]).toMatchObject({ name: 'Cemre', found: 5 })
   })
 
+  it('yolcu araması ve sayfalama: ad parçası eşleşenleri getirir, kendi satırı eşleşmese de gelir; lim büyür, 100 aşılmaz; satırda kılık', async () => {
+    const f = await get('level=ankara&q=hızlı1')
+    expect(f.scores.map((r) => r.name)).toEqual(['hızlı1', 'hızlı10', 'hızlı11'])
+    // % ve _ özel karakter değil, düz harf sayılır
+    expect((await get('level=ankara&q=%25')).scores).toHaveLength(0)
+    const withMe = await get('level=ankara&q=hızlı11&me=CEMRE')
+    expect(withMe.scores.map((r) => r.name)).toEqual(['hızlı11', 'Cemre'])
+    expect((await get('level=ankara')).scores).toHaveLength(10)
+    expect((await get('level=ankara&lim=14')).scores).toHaveLength(14)
+    expect((await get('level=ankara&lim=100000')).scores.length).toBeLessThanOrEqual(100)
+    expect((await get('level=ankara&lim=abc')).scores).toHaveLength(10)
+    // koleksiyon kaydı olan oyuncunun satırında yolcu (portre) bilgisi gelir
+    await pg.query(`update seksek_saves set data = data || '{"character":"memo"}'::jsonb where player_id = $1`, [P[2].id])
+    expect((await get('level=ankara&q=cemre')).scores[0]).toMatchObject({ name: 'Cemre', hero: 'memo' })
+    expect((await get('level=genel&q=cemre')).scores[0]).toMatchObject({ name: 'Cemre', hero: 'memo' })
+    expect((await get('level=koleksiyon&q=cemre')).scores[0]).toMatchObject({ hero: 'memo' })
+  })
+
   it('günlük tabloya yalnız açık günler yazılır, cezalı skor önde düşük olan', async () => {
     const today = istanbulDay(new Date())
     expect((await run(P[0], 'gunluk', 90000, 0, 3, { day: shiftDay(today, -5) })).status).toBe(400)

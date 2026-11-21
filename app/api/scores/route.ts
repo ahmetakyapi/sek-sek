@@ -47,17 +47,27 @@ const weekOk = (week: string) => {
 const MIN_DEATHS = sql`coalesce(s.min_deaths, s.deaths)`
 const MAX_ITEMS = sql`coalesce(s.max_items, s.items)`
 
+/** Bir tabloda en çok bu kadar satır döner (sayfalama: `lim` 100'e dek büyür; arama: eşleşenler) */
+const LIST_MAX = 100
+
+/**
+ * Satır süzgeci: arama (`q`, adın bir parçası) varsa eşleşenler, yoksa ilk `limit` sıra; oyuncunun kendi satırı her zaman gelir.
+ * Arama değeri hep parametredir (LIKE değil position: % ve _ özel sayılmaz).
+ */
+const pick = (limit: number, find: string, me: string) => (find ? sql`(position(${find}::text in name_key) > 0 or name_key = ${me})` : sql`(rank <= ${limit} or name_key = ${me})`)
+
 /** Bir şehrin (ya da günün) sıralaması: ilk `limit` satır + istenen oyuncunun satırı, sırasıyla */
-async function board(key: string, order: SQL, me: string, limit: number, scope: SQL = sql`true`) {
+async function board(key: string, order: SQL, me: string, limit: number, scope: SQL = sql`true`, find = '') {
   const r = await db().execute(sql`
     with t as (
       select p.name, p.name_key, s.time_ms as "timeMs", s.deaths, s.items, ${MIN_DEATHS}::int as "minDeaths",
              ${MAX_ITEMS}::int as "maxItems", s.plays,
+             (select v.data->>'character' from seksek_saves v where v.player_id = s.player_id) as hero,
              row_number() over (order by ${order})::int as rank, count(*) over ()::int as total
       from seksek_scores s join seksek_players p on p.id = s.player_id
       where s.level = ${key} and ${scope})
-    select name, "timeMs", deaths, items, "minDeaths", "maxItems", plays, rank, total, name_key = ${me} as me
-    from t where rank <= ${limit} or name_key = ${me} order by rank`)
+    select name, "timeMs", deaths, items, "minDeaths", "maxItems", plays, hero, rank, total, name_key = ${me} as me
+    from t where ${pick(limit, find, me)} order by rank limit ${LIST_MAX}`)
   return r.rows
 }
 
@@ -72,6 +82,7 @@ async function board(key: string, order: SQL, me: string, limit: number, scope: 
  * GET ?level=kural&city=<şehir>&rule=<kural>        → Kurallı Koşu ve Sinir Bozucu: şehir + kural başına (düşük skor önde)
  * GET ?level=bossrush&variant=duz|kabus|cifte&n=<boss sayısı> → Boss Rush: aynı sayıda boss'luk koşular (süre)
  * Hepsinde &names=a,b,c: yalnız bu oyuncular (arkadaşlar) ve &me
+ * Hepsinde &lim=<n>: ilk n sıra (varsayılandan büyük, en çok 100: "Daha Fazla"), &q=<ad parçası>: yolcu araması; satırlarda `hero` (Uktun / Memo)
  * Hepsinde &me=<ad>: oyuncu ilk sıralarda değilse kendi satırı sonda gelir. Yanıt: { scores, total }
  */
 export async function GET(req: NextRequest) {
@@ -81,6 +92,10 @@ export async function GET(req: NextRequest) {
   const me = nameKey((q.get('me') ?? '').slice(0, 32))
   // arkadaş süzgeci: verilen adlar ve oyuncunun kendisi (adlar zaten herkese açık; yanıt önbelleklenebilir)
   const names = (q.get('names') ?? '').split(',').map((n) => nameKey(n.trim().slice(0, 32))).filter(Boolean).slice(0, 50)
+  // sayfalama (`lim`: ilk kaç sıra, 100'e dek) ve yolcu araması (`q`: adın bir parçası, en çok 16 harf)
+  const asked = Number(q.get('lim'))
+  const lim = (def: number) => (Number.isInteger(asked) && asked > def ? Math.min(LIST_MAX, asked) : def)
+  const find = nameKey((q.get('q') ?? '').trim().slice(0, 16))
   const scope = names.length ? sql`p.name_key in ${[...names, me || names[0]]}` : sql`true`
   const out = (rows: Record<string, unknown>[]) => NextResponse.json({ scores: rows, total: Number(rows[0]?.total ?? 0) }, { headers: fresh })
   try {
@@ -94,13 +109,14 @@ export async function GET(req: NextRequest) {
       const r = await db().execute(sql`
         with agg as (
           select p.name, p.name_key, count(*)::int as cities, sum(s.time_ms)::int as "timeMs",
-                 sum(${MIN_DEATHS})::int as deaths, sum(${MAX_ITEMS})::int as items, sum(s.plays)::int as plays
+                 sum(${MIN_DEATHS})::int as deaths, sum(${MAX_ITEMS})::int as items, sum(s.plays)::int as plays,
+                 (select v.data->>'character' from seksek_saves v where v.player_id = p.id) as hero
           from seksek_scores s join seksek_players p on p.id = s.player_id
           where s.level in ${currentKeys()} and ${scope}
           group by p.id, p.name, p.name_key),
         t as (select *, row_number() over (order by ${order})::int as rank, count(*) over ()::int as total from agg)
-        select name, cities, "timeMs", deaths, items, plays, rank, total, name_key = ${me} as me
-        from t where rank <= 20 or name_key = ${me} order by rank`)
+        select name, cities, "timeMs", deaths, items, plays, hero, rank, total, name_key = ${me} as me
+        from t where ${pick(lim(20), find, me)} order by rank limit ${LIST_MAX}`)
       return out(r.rows)
     }
     if (level === 'koleksiyon') {
@@ -109,7 +125,7 @@ export async function GET(req: NextRequest) {
       const obj = (k: string) => sql`case when jsonb_typeof(v.data->${k}) = 'object' then v.data->${k} else '{}'::jsonb end`
       const r = await db().execute(sql`
         with c as (
-          select p.name, p.name_key,
+          select p.name, p.name_key, v.data->>'character' as hero,
             (select count(*) from jsonb_each(${obj('best')}) b,
                     jsonb_array_elements(case when jsonb_typeof(b.value->'items') = 'array' then b.value->'items' else '[]'::jsonb end) i
               where b.key in ${ids} and i = 'true'::jsonb)::int as keeps,
@@ -120,31 +136,31 @@ export async function GET(req: NextRequest) {
         t as (select *, keeps + stamps + charms as total_found,
                 row_number() over (order by keeps + stamps + charms desc, bosses desc, name_key asc)::int as rank, count(*) over ()::int as total
               from c where keeps + stamps + charms + bosses > 0)
-        select name, keeps, stamps, charms, bosses, total_found as found, rank, total, name_key = ${me} as me
-        from t where rank <= 20 or name_key = ${me} order by rank`)
+        select name, keeps, stamps, charms, bosses, total_found as found, hero, rank, total, name_key = ${me} as me
+        from t where ${pick(lim(20), find, me)} order by rank limit ${LIST_MAX}`)
       return out(r.rows)
     }
     if (level === 'gunluk') {
       const day = q.get('day') ?? istanbulDay(new Date())
       if (!DAY_RE.test(day)) return bad('Geçersiz gün')
-      return out(await board(dailyScoreKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20, scope))
+      return out(await board(dailyScoreKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(20), scope, find))
     }
     if (level === 'gunluk-m' || level === 'gunluk-b') {
       const day = q.get('day') ?? istanbulDay(new Date())
       if (!DAY_RE.test(day)) return bad('Geçersiz gün')
-      return out(await board(level === 'gunluk-m' ? dailyMiniKey(day) : dailyBossKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20, scope))
+      return out(await board(level === 'gunluk-m' ? dailyMiniKey(day) : dailyBossKey(day), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(20), scope, find))
     }
     if (level === 'kural') {
       const city = q.get('city') ?? ''
       const rule = q.get('rule') ?? ''
       if (!ruleOk(city, rule)) return bad('Geçersiz kural')
-      return out(await board(ruleScoreKey(city, rule), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
+      return out(await board(ruleScoreKey(city, rule), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(10), scope, find))
     }
     if (level === 'bossrush') {
       const variant = q.get('variant') ?? ''
       const n = Number(q.get('n'))
       if (!(RUSH_VARIANTS as readonly string[]).includes(variant) || !Number.isInteger(n) || n < 1 || n > LEVELS.length) return bad('Geçersiz Boss Rush')
-      return out(await board(rushScoreKey(variant, n), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
+      return out(await board(rushScoreKey(variant, n), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(10), scope, find))
     }
     if (level === 'turnuva') {
       const week = q.get('week') ?? tournamentWeek(istanbulDay(new Date()))
@@ -152,24 +168,25 @@ export async function GET(req: NextRequest) {
       const keys = tournamentFor(week).map((id) => tournamentKey(week, id))
       const r = await db().execute(sql`
         with agg as (
-          select p.name, p.name_key, sum(s.time_ms)::int as "timeMs", sum(s.deaths)::int as deaths, count(*)::int as n
+          select p.name, p.name_key, sum(s.time_ms)::int as "timeMs", sum(s.deaths)::int as deaths, count(*)::int as n,
+                 (select v.data->>'character' from seksek_saves v where v.player_id = p.id) as hero
           from seksek_scores s join seksek_players p on p.id = s.player_id
           where s.level in ${keys} and ${scope}
           group by p.id, p.name, p.name_key),
         t as (select *, row_number() over (order by "timeMs" asc, deaths asc, name_key asc)::int as rank, count(*) over ()::int as total
               from agg where n = ${keys.length})
-        select name, "timeMs", deaths, rank, total, name_key = ${me} as me
-        from t where rank <= 20 or name_key = ${me} order by rank`)
+        select name, "timeMs", deaths, hero, rank, total, name_key = ${me} as me
+        from t where ${pick(lim(20), find, me)} order by rank limit ${LIST_MAX}`)
       return out(r.rows)
     }
     // speedrun: %100 şehir koşusu (city=) ve tam turlar
     if (level === 'yuzde') {
       const city = q.get('city') ?? ''
       if (!LEVEL_IDS.has(city)) return bad('Geçersiz bölüm')
-      return out(await board(fullScoreKey(city), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
+      return out(await board(fullScoreKey(city), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(10), scope, find))
     }
-    if ((TOUR_KEYS as readonly string[]).includes(level)) return out(await board(level, sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 20, scope))
-    if (CHALLENGE_IDS.has(level)) return out(await board(challengeScoreKey(level), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, 10, scope))
+    if ((TOUR_KEYS as readonly string[]).includes(level)) return out(await board(level, sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(20), scope, find))
+    if (CHALLENGE_IDS.has(level)) return out(await board(challengeScoreKey(level), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(10), scope, find))
     if (!LEVEL_IDS.has(level)) return bad('Geçersiz bölüm')
     const order =
       sort === 'deaths'
@@ -177,7 +194,7 @@ export async function GET(req: NextRequest) {
         : sort === 'items'
           ? sql`${MAX_ITEMS} desc, s.time_ms asc, s.created_at asc`
           : sql`s.time_ms asc, s.deaths asc, s.created_at asc`
-    return out(await board(scoreKey(level), order, me, 10, scope))
+    return out(await board(scoreKey(level), order, me, lim(10), scope, find))
   } catch {
     return bad('Skorlar şu an alınamıyor', 503)
   }

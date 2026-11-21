@@ -7,13 +7,14 @@ import type { CityKey } from './types'
  *   fırça davul → A ney, kanun uzun notalara cevap verir → B herkes, kanun tremolosu; sonra A'ya döner.
  * - Oyun (şehir başına): şehrin makamında, adından tohumlanmış sabit bir beste. Giriş (bir kez) → A (piyano ezgisi) →
  *   A' (ney, motif bir derece yukarıdan sekvensle gelişir) → B (karşıtlık: uzun ney perdeleri, kanun arpeji, güçlü
- *   üstünde pedal bas) → A'' (ney sorar, kanun cevaplar) → nefes (ince doku) → A'ya döner. Cümleler sekiz ölçüdür:
+ *   üstünde pedal bas) → A'' (ney sorar, kanun cevaplar) → nefes (ince doku) → C (köprü, arpej) → A4 (motif başka
+ *   ritimle, karşı ezgi) → B' → nefes → A'ya döner (64 ölçülük döngü, ~3 dk). Cümleler sekiz ölçüdür:
  *   ilk yarı güçlüde asılı kalır, ikinci yarı makamın karar akoruyla durakta biter. Akorlar en yakın çevrimle yürür,
  *   kararda dörtlü geciktirme üçlüye çözülür. Tempo şehrin usulünden (70-84 BPM), bas ve kanun usulün vurgularına basar.
  *   Defter'deki Müzik Kutusu bunları dinletir.
  */
 
-export type Inst = 'ney' | 'kanun' | 'keys' | 'pad' | 'sub' | 'kick' | 'rim' | 'hat'
+export type Inst = 'ney' | 'kanun' | 'keys' | 'pad' | 'sub' | 'kick' | 'rim' | 'hat' | 'tom'
 
 export interface NoteEvent {
   /** başladığı adım */
@@ -215,6 +216,17 @@ const TITLE_B: Bar[] = [
   [[76, 3], [74, 1], [73, 2], [70, 1], [73, 1]],
   [[69, 6], [R, 2]],
 ]
+// C (köprü): A ve B'den ayrı bir kemer: yukarıdan başlar, basamak basamak iner, A7'de (Hicaz rengi) durur
+const TITLE_C: Bar[] = [
+  [[77, 3], [74, 1], [72, 2], [70, 2]],
+  [[69, 2], [72, 2], [77, 3], [76, 1]],
+  [[76, 3], [74, 1], [72, 2], [67, 2]],
+  [[74, 2], [72, 1], [69, 1], [65, 2], [69, 2]],
+  [[74, 4], [77, 2], [79, 2]],
+  [[79, 2], [77, 2], [74, 2], [70, 1], [74, 1]],
+  [[73, 3], [76, 1], [77, 2], [73, 2]],
+  [[76, 2], [73, 2], [69, 4]],
+]
 // ölçü başına akor: bas kökü ve köksüz yedili/dokuzlu renk (Rhodes'ta sıcak, açık)
 const CHORD: Record<string, { root: number; tones: number[] }> = {
   Dm: { root: 50, tones: [53, 57, 60, 64] }, // Rem9: Fa La Do Mi
@@ -226,7 +238,11 @@ const CHORD: Record<string, { root: number; tones: number[] }> = {
 }
 const TITLE_CHORDS_A = ['Dm', 'Bb', 'C', 'Dm', 'Dm', 'Gm', 'A', 'Dm']
 const TITLE_CHORDS_B = ['F', 'C', 'Dm', 'Bb', 'Gm', 'C', 'A', 'A']
+const TITLE_CHORDS_C = ['Bb', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A', 'A']
 const TITLE_INTRO = ['Dm', 'Bb', 'Gm', 'A']
+// nefes: ezgisiz dört ölçü (kırık akor, dem); ilki C'ye, ikincisi başa döner
+const TITLE_BREATH_1 = ['Dm', 'Gm', 'Bb', 'A']
+const TITLE_BREATH_2 = ['Bb', 'Gm', 'F', 'A']
 
 /** bas yürüyüşü: bir sonraki köke yarım ya da tam sesle yaklaşan, şimdiki akorun içinde kalan geçiş notası */
 function approach(next: number, chordPcs: Set<number>) {
@@ -290,33 +306,48 @@ function titleSong(): Song {
   bar = TITLE_INTRO.length
   const loop = bar * BAR
 
-  const plan: { mel: Bar[]; ch: string[]; lead: 'keys' | 'ney'; drums: boolean; answer: boolean; arp: boolean }[] = [
-    { mel: TITLE_A, ch: TITLE_CHORDS_A, lead: 'keys', drums: false, answer: false, arp: false },
-    { mel: TITLE_B, ch: TITLE_CHORDS_B, lead: 'ney', drums: true, answer: false, arp: true },
-    { mel: TITLE_A, ch: TITLE_CHORDS_A, lead: 'ney', drums: true, answer: true, arp: false },
-    { mel: TITLE_B, ch: TITLE_CHORDS_B, lead: 'ney', drums: true, answer: true, arp: true },
+  // form: A B A B · nefes · C A' B' · nefes (64 ölçü, ~3 dk): bölüm sırası ve ezgi rengi değişir, yorgunluk azalır.
+  // dyn: bölümün genel gücü (seyrek bölümler kısık), lead: ezgiyi kim söyler (both: piyano üstte, ney altta)
+  const plan: { mel: Bar[]; ch: string[]; lead: 'keys' | 'ney' | 'both'; drums: boolean; answer: boolean; arp: boolean; dyn: number }[] = [
+    { mel: TITLE_A, ch: TITLE_CHORDS_A, lead: 'keys', drums: false, answer: false, arp: false, dyn: 0.9 },
+    { mel: TITLE_B, ch: TITLE_CHORDS_B, lead: 'ney', drums: true, answer: false, arp: true, dyn: 1 },
+    { mel: TITLE_A, ch: TITLE_CHORDS_A, lead: 'ney', drums: true, answer: true, arp: false, dyn: 1 },
+    { mel: TITLE_B, ch: TITLE_CHORDS_B, lead: 'ney', drums: true, answer: true, arp: true, dyn: 1 },
+    { mel: [], ch: TITLE_BREATH_1, lead: 'keys', drums: false, answer: false, arp: false, dyn: 0.75 },
+    { mel: TITLE_C, ch: TITLE_CHORDS_C, lead: 'keys', drums: false, answer: true, arp: true, dyn: 0.85 },
+    { mel: TITLE_A, ch: TITLE_CHORDS_A, lead: 'both', drums: true, answer: true, arp: false, dyn: 0.95 },
+    { mel: TITLE_B, ch: TITLE_CHORDS_B, lead: 'ney', drums: true, answer: true, arp: true, dyn: 1 },
+    { mel: [], ch: TITLE_BREATH_2, lead: 'keys', drums: false, answer: false, arp: false, dyn: 0.7 },
   ]
   plan.forEach((sec, si) => {
     const nextSec = plan[(si + 1) % plan.length]
-    sec.mel.forEach((m, i) => {
+    const bars = sec.ch.length
+    const breath = sec.mel.length === 0
+    for (let i = 0; i < bars; i++) {
+      const m = sec.mel[i]
       const at0 = (bar + i) * BAR
-      const arc = ARC[i]
+      const arc = (bars === 8 ? ARC[i] : 1) * sec.dyn
       const next = sec.ch[i + 1] ?? nextSec.ch[0]
-      comp(sec.ch[i], at0, sec.lead === 'keys' ? 'soft' : 'full', next, arc)
-      if (sec.drums) drums(at0, i === sec.mel.length - 1, arc * (si === 1 && i < 2 ? 0.7 : 1))
+      comp(sec.ch[i], at0, breath ? 'arp' : sec.lead === 'keys' ? 'soft' : 'full', next, breath ? 0.8 * sec.dyn : arc)
+      if (sec.drums) drums(at0, i === bars - 1, arc * (si === 1 && i < 2 ? 0.7 : 1))
+      if (breath) {
+        // nefes: kanun son ölçüde başın ilk notasını uzaktan anar
+        if (i === bars - 1) ev.push({ at: at0 + 1, dur: 6, inst: 'kanun', midi: [si === 4 ? 81 : 74], vol: 0.02, trem: true })
+        continue
+      }
       // ezgi: cümle başında ve uzun notada ney alttan kayarak girer
       let s = at0
       let prev: number | null = null
       for (const [n, d] of m) {
         if (n !== null) {
-          if (sec.lead === 'keys') ev.push({ at: s, dur: d, inst: 'keys', midi: [n + 12], vol: 0.075 * arc * human() })
-          else {
+          if (sec.lead !== 'ney') ev.push({ at: s, dur: d, inst: 'keys', midi: [n + 12], vol: (sec.lead === 'both' ? 0.062 : 0.075) * arc * human() })
+          if (sec.lead !== 'keys') {
             const from = prev === null || d >= 3 ? n - ([5, 10, 1].includes(n % 12) ? 1 : 2) : undefined
-            ev.push({ at: s, dur: d, inst: 'ney', midi: [n], vol: 0.085 * arc * human(), from })
+            ev.push({ at: s, dur: d, inst: 'ney', midi: [n], vol: (sec.lead === 'both' ? 0.07 : 0.085) * arc * human(), from })
           }
           // kanun uzun notalara bir oktav yukarıdan, iki sekizlik sonra cevap verir; cümle sonunda tremolo
           if (sec.answer && d >= 3 && s + 2 < at0 + BAR) {
-            const last = i === sec.mel.length - 1 || i === 3
+            const last = i === bars - 1 || i === 3
             ev.push({ at: s + 2, dur: last ? d - 2 : 1, inst: 'kanun', midi: [n + 12], vol: last ? 0.022 : 0.035, trem: last })
           }
         }
@@ -328,8 +359,8 @@ function titleSong(): Song {
         const v = voiceLead(null, CHORD[sec.ch[i]].tones, 62, 86)
         ;[0, 1, 2, 3].forEach((k, j) => ev.push({ at: at0 + j, dur: 1, inst: 'kanun', midi: [v[k]], vol: 0.018 + j * 0.003 }))
       }
-    })
-    bar += sec.mel.length
+    }
+    bar += bars
   })
   const step = 60 / 76 / 2
   return song('title', step, bar * BAR, ev, [], 0.16, loop, step * 1.5)
@@ -368,7 +399,12 @@ interface Note {
  * Şehir müziği. 4/4, on altılık ızgara, swing. Form ve armoni dosyanın başında; ezgi dizinin derecelerinde kurulur:
  * iki ölçülük hücreler bir başlangıçtan hedefe kemer çizerek yürür, güçlü vuruşta ve uzun notada akor tonuna oturur.
  * Cümle: motif (soru) → cevap güçlüde asılı → motif → karar durakta. A'' ney ile kanun arasında soru-cevaptır.
+ * Uzun form (68 ölçü: 4 giriş + 64 döngü): A · A' · B · A'' · nefes · C (köprü: yukarıdan inen yeni kemer, arpej) · A4 (motif
+ * başka ritimle, üçüncü cümle iki derece yukarıda, kanun üçlü aşağıdan eşlik eder) · B' (uzun hava başka ritimle, kanun
+ * oktav yukarıdan ikiler) · nefes (motifin başı uzatılarak anılır). Bölümlerin gücü (`DYN`) değişir: seyrek bölümler kısık.
  */
+const DYN: Record<string, number> = { giris: 1, A: 0.92, A2: 1, B: 1, A3: 1, nefes: 0.8, C: 0.88, A4: 1.02, B2: 0.97, nefes2: 0.7 }
+
 function citySong(city: CityKey, m: Makam): Song {
   const rand = rng(city)
   const pick = <T,>(xs: T[]) => xs[Math.floor(rand() * xs.length)]
@@ -384,13 +420,20 @@ function citySong(city: CityKey, m: Makam): Song {
   const A2 = pick([[0, 3, pre, 0], [0, 5, pre, 0], [0, 2, pre, 0]])
   const PA = [...A1, ...A2]
   const PB = pick([[5, 3, 4, 0, 5, 3, guclu, guclu], [3, 4, 5, 0, 3, 4, guclu, guclu], [2, 5, 3, 0, 2, 5, guclu, guclu]])
-  const sections: { k: 'giris' | 'A' | 'A2' | 'B' | 'A3' | 'nefes'; prog: number[] }[] = [
+  // köprü: ana akorlardan uzakta (altıncı, dördüncü derece) başlar, güçlüde asılı biter ve A'ya çözülür
+  const PC = pick([[5, 3, 2, 4, 5, 3, guclu, guclu], [3, 5, 2, 4, 3, 5, pre, guclu], [4, 2, 5, 3, 4, 2, guclu, guclu]])
+  type Kind = 'giris' | 'A' | 'A2' | 'B' | 'A3' | 'nefes' | 'C' | 'A4' | 'B2' | 'nefes2'
+  const sections: { k: Kind; prog: number[] }[] = [
     { k: 'giris', prog: [0, A1[1], 0, guclu] },
     { k: 'A', prog: PA },
     { k: 'A2', prog: PA },
     { k: 'B', prog: PB },
     { k: 'A3', prog: PA },
     { k: 'nefes', prog: [0, A1[1], pre, 0] },
+    { k: 'C', prog: PC },
+    { k: 'A4', prog: PA },
+    { k: 'B2', prog: PB },
+    { k: 'nefes2', prog: [A1[1], 3, pre, 0] },
   ]
   // usulün vurguları on altılık ölçüye yayılır (ör. 2+2+3 → 0, 5, 9): bas ve kanun aksak bir salınımla basar
   const total = m.meter.reduce((a, b) => a + b, 0)
@@ -435,26 +478,44 @@ function citySong(city: CityKey, m: Makam): Song {
   const shift = (ns: Note[], by: number, at: number) => ns.map((n) => ({ ...n, at: n.at + at, d: n.d + by }))
   const r1 = pick(RHYTHMS)
   const r2 = pick(RHYTHMS.filter((r) => r !== r1))
+  // köprü ve dördüncü anlatım başka ritimle gelir: aynı motif, başka nefes
+  const rest = RHYTHMS.filter((r) => r !== r1 && r !== r2)
+  const rc = pick(rest)
+  const rv = pick(rest.filter((r) => r !== rc))
   const s1 = MO + pick([0, 2, 4])
   const hang = MO + guclu
   const c1 = cell(s1, snap(hang, A1[1]), r1, A1.slice(0, 2), pick([1, 2]))
   const c2 = cell(hang + pick([1, 2]), hang, r2, A1.slice(2, 4), 1)
   const c4 = cell(hang + 1, MO, CADENCE, A2.slice(2, 4), pick([0, 1]))
   // A': motif üçüncü hücrede bir derece yukarıdan döner (sekvens), güçlü vuruşları yine akora oturur
-  const develop = (by: number) => c1.map((n, i) => ({ ...n, d: i === c1.length - 1 || n.at % 8 === 0 ? snap(n.d + by, A2[n.at < BAR ? 0 : 1]) : n.d + by }))
+  const develop = (by: number, src = c1) => src.map((n, i) => ({ ...n, d: i === src.length - 1 || n.at % 8 === 0 ? snap(n.d + by, A2[n.at < BAR ? 0 : 1]) : n.d + by }))
   const c3 = develop(0)
   const c3seq = develop(1)
   const lineA = [...c1, ...shift(c2, 0, 2 * BAR), ...shift(c3, 0, 4 * BAR), ...shift(c4, 0, 6 * BAR)]
   const lineA2 = [...c1, ...shift(c2, 0, 2 * BAR), ...shift(c3seq, 0, 4 * BAR), ...shift(c4, 0, 6 * BAR)]
+  // A4: motif başka ritimle ve bir derece yüksekten başlar, üçüncü cümle iki derece yukarıda (doruk), karar aynı
+  const cv1 = cell(s1 + 1, snap(hang + 1, A1[1]), rv, A1.slice(0, 2), 1)
+  const cv3 = develop(2, cv1)
+  const lineA4 = [...cv1, ...shift(c2, 0, 2 * BAR), ...shift(cv3, 0, 4 * BAR), ...shift(c4, 0, 6 * BAR)]
   // B: uzun hava; her iki ölçüde bir derece inen sekvens, sonunda güçlüde asılı kalır
+  const longLine = (rl: number[], top: number) =>
+    [0, 1, 2, 3].flatMap((k) => {
+      const st = top - k
+      const en = k === 3 ? hang : st - 1
+      return shift(cell(st, en, rl, PB.slice(2 * k, 2 * k + 2), 1), 0, 2 * k * BAR)
+    })
   const rl = pick(LONG)
-  const topB = hang + 2
-  const lineB = [0, 1, 2, 3].flatMap((k) => {
-    const st = topB - k
+  const lineB = longLine(rl, hang + 2)
+  const lineB2 = longLine(pick(LONG.filter((r) => r !== rl)), hang + 3)
+  // C: yukarıdan basamak basamak iner, her hücre bir öncekinden bir derece alçaktan başlar (kemer)
+  const lineC = [0, 1, 2, 3].flatMap((k) => {
+    const st = hang + 3 - k
     const en = k === 3 ? hang : st - 1
-    return shift(cell(st, en, rl, PB.slice(2 * k, 2 * k + 2), 1), 0, 2 * k * BAR)
+    return shift(cell(st, en, rc, PC.slice(2 * k, 2 * k + 2), 1), 0, 2 * k * BAR)
   })
   const midiOf = (d: number) => deg(m, d)
+  /** piyano ezgiyi bir oktav yukarıdan çalar; çok tizse yerinde bırakılır */
+  const keysOf = (d: number) => (midiOf(d) + 12 > 88 ? midiOf(d) : midiOf(d) + 12)
   const kanunOf = (d: number) => {
     let n = deg(m, d + 7)
     while (n > 88) n -= 12
@@ -470,6 +531,20 @@ function citySong(city: CityKey, m: Makam): Song {
       prevEnd = n.at + n.dur
     }
   }
+  /** geçiş notaları: bölümün ilk notasından önceki boşlukta, ona basamakla yaklaşan iki kısık piyano notası */
+  const pickup = (ns: Note[], at0: number, vol: number) => {
+    const f = ns[0]
+    if (f.at < 3) return
+    ;[2, 1].forEach((back) => ev.push({ at: at0 + f.at - back, dur: 1, inst: 'keys', midi: [keysOf(f.d - back)], vol: vol * (back === 2 ? 0.8 : 1) * human() }))
+  }
+  /** uzun notalara üçlü aşağıdan ve gecikmeli eşlik eden karşı ezgi (kanun, tek çekiş) */
+  const counter = (ns: Note[], at0: number, vol: number) => {
+    for (const n of ns) if (n.dur >= 6 && n.at % BAR < 12) ev.push({ at: at0 + n.at + 3, dur: 1, inst: 'kanun', midi: [kanunOf(n.d - 2)], vol: vol * human() })
+  }
+  /** uzun notanın ortasında kanun oktav yukarıdan tek çekişle ikiler */
+  const hold = (ns: Note[], at0: number, vol: number) => {
+    for (const n of ns) if (n.dur >= 8) ev.push({ at: at0 + n.at + 3, dur: 1, inst: 'kanun', midi: [kanunOf(n.d)], vol: vol * human() })
+  }
 
   // ── doku ──
   let prevV: number[] | null = null
@@ -481,15 +556,17 @@ function citySong(city: CityKey, m: Makam): Song {
   let bar = 0
   let loop = 0
   sections.forEach((sec, si) => {
-    const nextSec = sections[(si + 1) % sections.length]
-    const drums = sec.k === 'A2' || sec.k === 'B' || sec.k === 'A3'
+    const nextSec = sections[si + 1] ?? sections[1]
+    const drums = sec.k === 'A2' || sec.k === 'B' || sec.k === 'A3' || sec.k === 'A4' || sec.k === 'B2'
+    const isB = sec.k === 'B' || sec.k === 'B2'
+    const dyn = DYN[sec.k]
     sec.prog.forEach((c, i) => {
       const at0 = (bar + i) * BAR
-      const arc = sec.prog.length === 8 ? ARC[i] : 1
+      const arc = (sec.prog.length === 8 ? ARC[i] : 1) * dyn
       const next = sec.prog[i + 1] ?? nextSec.prog[0]
       const lastBar = i === sec.prog.length - 1
       // kararda dörtlü geciktirme: akor üçlüsü yerine dörtlüyle gelir, ölçü ortasında çözülür
-      const sus = (sec.k !== 'giris' && i === 7 && c === 0) || (sec.k === 'B' && i === 7)
+      const sus = (sec.k !== 'giris' && i === 7 && c === 0) || (isB && i === 7)
       const v = voiceLead(prevV, chordTones(c))
       const vs = sus ? voiceLead(v, chordTones(c, true)) : v
       prevV = v
@@ -502,12 +579,15 @@ function citySong(city: CityKey, m: Makam): Song {
           ev.push({ at: at0, dur: BAR, inst: 'sub', midi: [bassOf(lastBar ? c : 0)], vol: 0.07 + i * 0.012 })
           break
         }
-        case 'nefes': {
-          key(0, 16, vs, 0.085)
+        case 'nefes':
+        case 'nefes2': {
+          // nefes: ince doku. Piyano tek uzun akor, bas pedal; ikinci nefeste kırık akor yalnız ortada, davul yok
+          key(0, 16, vs, sec.k === 'nefes' ? 0.085 : 0.07)
           if (sus) key(8, 8, v, 0.06)
-          if (i % 2 === 1) key(10, 6, [v[3] + 12 > 88 ? v[3] : v[3] + 12], 0.045)
-          ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2]], vol: 0.03 })
-          ev.push({ at: at0, dur: 14, inst: 'sub', midi: [bassOf(c)], vol: 0.1 })
+          if (sec.k === 'nefes' && i % 2 === 1) key(10, 6, [v[3] + 12 > 88 ? v[3] : v[3] + 12], 0.045)
+          if (sec.k === 'nefes2' && i >= 1) [0, 1, 2, 3].forEach((k, j) => key(4 + j * 2, 4, [v[k]], 0.032 - j * 0.004))
+          ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2]], vol: sec.k === 'nefes' ? 0.03 : 0.026 })
+          ev.push({ at: at0, dur: 14, inst: 'sub', midi: [bassOf(c)], vol: sec.k === 'nefes' ? 0.1 : 0.075 })
           break
         }
         case 'A': {
@@ -519,7 +599,18 @@ function citySong(city: CityKey, m: Makam): Song {
           ev.push({ at: at0 + 8, dur: 6, inst: 'sub', midi: [bassOf(c)], vol: 0.07 * arc })
           break
         }
-        case 'B': {
+        case 'C': {
+          // köprü: piyano akoru bir kez basar, ardından kırık akor (arpej) usulün sekizliklerinde akar; bas ve dem hafif
+          key(0, 10, vs, 0.06)
+          const kv = voiceLead(null, chordTones(c), 58, 82)
+          ;[0, 1, 2, 3, 2, 1].forEach((k, j) => key(4 + j * 2, 4, [kv[k]], 0.034 + (j % 3 === 0 ? 0.006 : 0)))
+          ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2], v[3]], vol: 0.034 })
+          ev.push({ at: at0, dur: 10, inst: 'sub', midi: [bassOf(c)], vol: 0.09 * arc })
+          ev.push({ at: at0 + 12, dur: 3, inst: 'sub', midi: [bassOf(c)], vol: 0.06 * arc })
+          break
+        }
+        case 'B':
+        case 'B2': {
           // karşıtlık: 3+3+2 vuruşlu akorlar, ikinci yarıda bas güçlüde pedal (gerilim, A'ya dönüşte çözülür)
           key(0, 6, vs, 0.085)
           key(6, 5, (sus ? v : vs).slice(1), 0.06)
@@ -540,32 +631,32 @@ function citySong(city: CityKey, m: Makam): Song {
           break
         }
         default: {
-          // A' ve A'': tam doku; akor başta, "ve"de iç sesler; bas kök, beşli ve bir sonraki köke geçiş notası
+          // A', A'' ve A4: tam doku; akor başta, "ve"de iç sesler; bas kök, beşli ve bir sonraki köke geçiş notası
           key(0, 7, vs, 0.1)
           key(7, 6, (sus ? v : vs).slice(1), 0.065)
-          ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2]], vol: sec.k === 'A3' ? 0.036 : 0.03 })
+          ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2]], vol: sec.k === 'A3' || sec.k === 'A4' ? 0.036 : 0.03 })
           const root = bassOf(c)
           ev.push({ at: at0, dur: 6, inst: 'sub', midi: [root], vol: 0.16 * arc })
           ev.push({ at: at0 + 10, dur: 3, inst: 'sub', midi: [bassOf(c + 4)], vol: 0.1 * arc })
           if (next !== c) ev.push({ at: at0 + 14, dur: 2, inst: 'sub', midi: [bassOf(next + (next > c ? -1 : 1))], vol: 0.08 * arc })
         }
       }
-      // A'nın son ölçüsünde kenar vuruşu davulun girişini haber verir
-      if (sec.k === 'A' && lastBar) for (const [a, vol] of [[13, 0.03], [14, 0.045], [15, 0.06]]) ev.push({ at: at0 + a, dur: 1, inst: 'rim', midi: [], vol })
+      // A'nın ve köprünün son ölçüsünde kenar vuruşu davulun girişini haber verir
+      if ((sec.k === 'A' || sec.k === 'C') && lastBar) for (const [a, vol] of [[13, 0.03], [14, 0.045], [15, 0.06]]) ev.push({ at: at0 + a, dur: 1, inst: 'rim', midi: [], vol })
       if (drums) {
         // fırça davul: bölüm sonunda küçük bir dolgu bir sonraki bölümü haber verir; B'de bas davul usule basar
-        const fill = lastBar && nextSec.k !== 'nefes'
-        const kicks = sec.k === 'B' ? accents : [0, 10]
+        const fill = lastBar && !nextSec.k.startsWith('nefes')
+        const kicks = isB ? accents : [0, 10]
         kicks.forEach((a, j) => ev.push({ at: at0 + a, dur: 1, inst: 'kick', midi: [], vol: (j ? 0.15 : 0.24) * arc }))
         ev.push({ at: at0 + 4, dur: 1, inst: 'rim', midi: [], vol: 0.085 * arc })
         ev.push({ at: at0 + 12, dur: 1, inst: 'rim', midi: [], vol: 0.085 * arc })
-        if (sec.k === 'A3' && i % 2) ev.push({ at: at0 + 7, dur: 1, inst: 'rim', midi: [], vol: 0.03 })
+        if ((sec.k === 'A3' || sec.k === 'A4') && i % 2) ev.push({ at: at0 + 7, dur: 1, inst: 'rim', midi: [], vol: 0.03 })
         if (fill) {
           ev.push({ at: at0 + 14, dur: 1, inst: 'rim', midi: [], vol: 0.055 })
           ev.push({ at: at0 + 15, dur: 1, inst: 'rim', midi: [], vol: 0.07 })
         }
         for (let k = 0; k < (fill ? 12 : BAR); k++) {
-          if (k % 2 && sec.k !== 'B') continue
+          if (k % 2 && !isB) continue
           const v = k % 4 === 0 ? 0.03 : k % 2 === 0 ? 0.02 : 0.011
           // A'nın ilk ölçülerinde zil yavaşça girer
           const enter = sec.k === 'A2' && i < 2 ? 0.55 + i * 0.25 : 1
@@ -575,10 +666,12 @@ function citySong(city: CityKey, m: Makam): Song {
     })
     const at = bar * BAR
     if (sec.k === 'A') {
-      for (const n of lineA) ev.push({ at: at + n.at, dur: n.dur, inst: 'keys', midi: [midiOf(n.d) + 12 > 88 ? midiOf(n.d) : midiOf(n.d) + 12], vol: 0.06 * ARC[Math.floor(n.at / BAR)] * human() })
-    } else if (sec.k === 'A2') ney(lineA2, at, 0.088)
-    else if (sec.k === 'B') {
+      for (const n of lineA) ev.push({ at: at + n.at, dur: n.dur, inst: 'keys', midi: [keysOf(n.d)], vol: 0.06 * ARC[Math.floor(n.at / BAR)] * dyn * human() })
+    } else if (sec.k === 'A2') {
+      ney(lineA2, at, 0.088)
+    } else if (sec.k === 'B') {
       ney(lineB, at, 0.08)
+      pickup(lineB, at, 0.03)
       const fin = lineB[lineB.length - 1]
       ev.push({ at: at + fin.at + 2, dur: Math.max(2, fin.dur - 2), inst: 'kanun', midi: [kanunOf(fin.d)], vol: 0.024, trem: true })
     } else if (sec.k === 'A3') {
@@ -589,6 +682,29 @@ function citySong(city: CityKey, m: Makam): Song {
       ney(shift(c4, 0, 6 * BAR), at, 0.088)
       const fin = c4[c4.length - 1]
       ev.push({ at: at + 6 * BAR + fin.at + 4, dur: fin.dur - 4, inst: 'kanun', midi: [kanunOf(fin.d)], vol: 0.022, trem: true })
+    } else if (sec.k === 'C') {
+      // köprü: piyano söyler (bir oktav yukarıda, yumuşak), ikinci yarıda ney alttan katılır, kanun uzun notaları ikiler
+      for (const n of lineC) ev.push({ at: at + n.at, dur: n.dur, inst: 'keys', midi: [keysOf(n.d)], vol: 0.058 * ARC[Math.floor(n.at / BAR)] * dyn * human() })
+      ney(lineC.filter((n) => n.at >= 4 * BAR), at, 0.07)
+      hold(lineC, at, 0.028)
+      pickup(lineC, at, 0.028)
+    } else if (sec.k === 'A4') {
+      // dördüncü anlatım: ney başka ritimle söyler, piyano oktav yukarıdan yumuşakça ikiler, kanun üçlü aşağıdan karşı ezgi
+      ney(lineA4, at, 0.09)
+      for (const n of lineA4) if (n.dur >= 4) ev.push({ at: at + n.at, dur: n.dur, inst: 'keys', midi: [keysOf(n.d)], vol: 0.04 * ARC[Math.floor(n.at / BAR)] * human() })
+      counter(lineA4, at, 0.026)
+      pickup(lineA4, at, 0.03)
+      const fin = c4[c4.length - 1]
+      ev.push({ at: at + 6 * BAR + fin.at + 4, dur: fin.dur - 4, inst: 'kanun', midi: [kanunOf(fin.d)], vol: 0.022, trem: true })
+    } else if (sec.k === 'B2') {
+      ney(lineB2, at, 0.078)
+      hold(lineB2, at, 0.034)
+      pickup(lineB2, at, 0.03)
+      const fin = lineB2[lineB2.length - 1]
+      ev.push({ at: at + fin.at + 2, dur: Math.max(2, fin.dur - 2), inst: 'kanun', midi: [kanunOf(fin.d)], vol: 0.024, trem: true })
+    } else if (sec.k === 'nefes2') {
+      // motifin başı uzatılarak (iki katı yavaş) anılır: dinlenirken ezgi akılda kalsın
+      for (const n of c1.slice(0, 4)) ev.push({ at: at + 2 * BAR + Math.round(n.at * 1.5), dur: Math.min(12, n.dur * 2), inst: 'keys', midi: [keysOf(n.d)], vol: 0.04 * human() })
     }
     bar += sec.prog.length
     if (sec.k === 'giris') loop = bar * BAR

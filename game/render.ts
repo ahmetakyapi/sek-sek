@@ -109,6 +109,14 @@ export class Renderer {
   /** Van gölünün canavarının dolaştığı su yüzeyleri (dünya pikseli) */
   private lakeRuns: { x0: number; x1: number; y: number }[] = []
   shakeScale = 1
+  /** Kolaylık: hayalet koşunun görünürlüğü (0.25 soluk, 0.46 normal, 0.8 belirgin) */
+  ghostAlpha = 0.46
+  /** Kolaylık: karakterin üstünde dash hakkı halkası */
+  dashMeter = false
+  /** Kolaylık: kamera yakınlığı çarpanı (Dar Kadraj'ın `zoom`uyla çarpılır) */
+  userZoom = 1
+  /** Deprem (zor mod): kadraj hiç durmadan sarsılır (sarsıntı ayarı kapalıysa etkisiz) */
+  quake = false
   /** Karanlık Yol (zor mod): karakterin çevresindeki küçük ışığın ötesi karanlık */
   dark = false
   /** Görünmez Dikenler (zor mod): dikenler zemin önbelleğine çizilmez */
@@ -163,7 +171,7 @@ export class Renderer {
     // dikeyde ~13 tile genişlik, yatayda ~15 tile yükseklik
     const target = portrait ? Math.min(devW / (13 * T), devH / (20 * T)) : Math.min(devW / (20 * T), devH / (13 * T))
     // yatayda en yakın tam sayı: karakter masaüstünde de okunur kalsın
-    this.scale = Math.max(1, portrait ? Math.floor(target * this.zoom) : Math.round(target * this.zoom))
+    this.scale = Math.max(1, portrait ? Math.floor(target * this.zoom * this.userZoom) : Math.round(target * this.zoom * this.userZoom))
     // bir piksel fazla: kamera kesirli kayarken kenarda boşluk kalmasın
     this.viewW = Math.ceil(devW / this.scale) + 1
     this.viewH = Math.ceil(devH / this.scale) + 1
@@ -598,6 +606,7 @@ export class Renderer {
       this.camY = this.cam.y
     }
     this.shake = Math.max(0, this.shake - dt * 18)
+    if (this.quake) this.shake = Math.max(this.shake, 2.2)
     // küçük ekranda büyütme oranı yüksek: aynı sarsıntı ekranda daha büyük görünür, orana göre küçülür
     const small = Math.min(1, this.viewW / 420)
     let [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * small)
@@ -761,6 +770,7 @@ export class Renderer {
     this.drawBossHD(w, hdX, hdY)
     if (w.chaser) this.drawChaserHD(w, hdX, hdY, alpha)
     this.drawHeroes(hdX, hdY)
+    if (this.dashMeter) this.drawDashMeter(w, hdX, hdY)
     this.drawBreath(w, hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
     if (this.dark) this.drawDarkness(w, hdX, hdY)
@@ -2972,7 +2982,7 @@ export class Renderer {
     const y = g.data[i * 3 + 1] + (g.data[i * 3 + 4] - g.data[i * 3 + 1]) * k
     // oyuncuyla üst üste binince silikleşir, göz yormasın
     const near = Math.hypot(x - w.player.x, y - w.player.y)
-    const alpha = near < 10 ? 0.15 : 0.46
+    const alpha = near < 10 ? Math.min(0.15, this.ghostAlpha) : this.ghostAlpha
     const code = g.data[i * 3 + 2]
     const pose = code & 7
     // hayalet hız yazmaz: ardışık örneklerden (iki yanın ortalaması, adımlar arasında ara değerlenir)
@@ -3863,6 +3873,34 @@ export class Renderer {
    * kızarır, yanıp söner, kabarcığın içinde kalan saniye yazar ve ekranın kenarı koyu maviyle nabız gibi atar.
    * Altı küçük boncuk telefonda okunmuyordu: boğulma "neden öldüm" diye şaşırtıyordu.
    */
+  /** Kolaylık: dash hakkı halkası: hak varken dolu turkuaz, yokken içi boş soluk; renge ek olarak biçimle de ayrışır */
+  private drawDashMeter(w: World, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    for (const p of [w.player, w.partner]) {
+      if (!p || p.dead || p.dashTime > 0) continue
+      const x = (p.x + p.w / 2 - cx) * sc
+      const y = (p.y - 7 - cy) * sc
+      const r = 2.1 * sc
+      c.save()
+      c.lineWidth = Math.max(1.5, sc * 0.7)
+      c.strokeStyle = '#120f1a'
+      c.beginPath()
+      c.arc(x, y, r + c.lineWidth * 0.5, 0, Math.PI * 2)
+      c.stroke()
+      c.beginPath()
+      c.arc(x, y, r, 0, Math.PI * 2)
+      if (p.canDash) {
+        c.fillStyle = '#7fe8d6'
+        c.fill()
+      } else {
+        c.strokeStyle = 'rgba(160,172,196,0.85)'
+        c.stroke()
+      }
+      c.restore()
+    }
+  }
+
   private drawBreath(w: World, cx: number, cy: number) {
     const c = this.ctx
     const sc = this.scale

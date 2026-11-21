@@ -127,7 +127,7 @@ export const completes = (ch: Challenge, level: LevelDef, run: RunStats) => !run
  */
 export type DailyRule = 'ceza' | 'hiz' | 'hatira' | 'tekcan' | 'bayraksiz' | 'zaman' | 'dashsiz' | RageRule
 /** Sinir bozucu (zor) modlar: Kurallı Koşu altyapısında, günlüğe çıkmaz */
-export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos' | 'ay' | 'firtina' | 'gorunmez' | 'hayalet' | 'dar' | 'korkabus' | 'kovala'
+export type RageRule = 'cehennem' | 'kaygan' | 'ters' | 'coken' | 'kabus' | 'sonnefes' | 'karanlik' | 'basasagi' | 'aynaekran' | 'turbo' | 'geceyarisi' | 'kaos' | 'ay' | 'firtina' | 'gorunmez' | 'hayalet' | 'dar' | 'korkabus' | 'kovala' | 'agir' | 'kisadash' | 'afyok' | 'deprem'
 
 export interface DailyRuleDef {
   name: string
@@ -156,10 +156,16 @@ export interface DailyRuleDef {
   lowGravity?: boolean
   /** Fırtına: güçlü rüzgâr yön değiştirir (LevelDef.storm + wind) */
   storm?: boolean
+  /** Ağır Yerçekimi: yerçekimi katıdır (LevelDef.heavy; HEAVY_OK şehirlerinde) */
+  heavy?: boolean
+  /** Kısa Dash: dash kısalır (LevelDef.shortDash; SHORT_DASH_OK şehirlerinde) */
+  shortDash?: boolean
+  /** Af Yok: kenardan sonra zıplama payı ve tampon yok (LevelDef.noMercy; NO_MERCY_OK şehirlerinde) */
+  noMercy?: boolean
   /** Kovalamaca: oyuncunun izini süren bir Kangal (LevelDef.chaser; CHASE_NO şehirlerinde kapalı) */
   chase?: boolean
   /** yalnız görüntüyü değiştirir (fizik aynı, her şehirde bitirilebilir): karanlık, baş aşağı, ayna */
-  view?: { dark?: boolean; flipX?: boolean; flipY?: boolean; hiddenSpikes?: boolean; ghostGround?: boolean; zoom?: number }
+  view?: { dark?: boolean; flipX?: boolean; flipY?: boolean; hiddenSpikes?: boolean; ghostGround?: boolean; zoom?: number; quake?: boolean }
 }
 
 /**
@@ -197,11 +203,15 @@ export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
   dar: { name: 'Dar Kadraj', text: 'Kamera iyice yaklaşır: önünü az görürsün, atlayışı tahminle yaparsın. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { zoom: 1.7 } },
   korkabus: { name: 'Kör Kâbus', text: 'Görünmez dikenler, karanlık ve tek can. Dayanabilen yok gibi.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true, view: { hiddenSpikes: true, dark: true } },
   kovala: { name: 'Kovalamaca', text: 'Bir Kangal izini sürüyor: koştukça aranı açarsın, durursan yetişir. Yakalanırsan bayraktan. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, chase: true },
+  agir: { name: 'Ağır Yerçekimi', text: 'Yerçekimi güçlendi: atlayışlar kısalır, yere daha çabuk inersin. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, heavy: true },
+  kisadash: { name: 'Kısa Dash', text: 'Dash yarı yarıya kısaldı: her dash’i yerini hesaplayarak at. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, shortDash: true },
+  afyok: { name: 'Af Yok', text: 'Kenardan düştüğün anda zıplama hakkın biter, erken basılan zıplama da sayılmaz: tuşa tam zamanında bas. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, noMercy: true },
+  deprem: { name: 'Deprem', text: 'Yer hiç durmadan sarsılır: kadraj titrer, atlayışlar aynı kalır. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 0, view: { quake: true } },
   kaos: { name: 'Kaos', text: 'Baş aşağı ekran, ters tuşlar ve kaygan zemin bir arada. Her düşüş 5 saniye.', speed: 1, perDeath: 5, perMissing: 0, slippery: true, swapKeys: true, view: { flipY: true } },
 }
 
 /** Sinir bozucu modların sırası (Modlar → Sinir Bozucu). Günlük Meydan Okuma bunları seçmez (RULES'ta yoklar). */
-export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos', 'ay', 'firtina', 'gorunmez', 'hayalet', 'dar', 'korkabus', 'kovala']
+export const RAGE_RULES: RageRule[] = ['cehennem', 'kaygan', 'ters', 'coken', 'kabus', 'sonnefes', 'karanlik', 'basasagi', 'aynaekran', 'turbo', 'geceyarisi', 'kaos', 'ay', 'firtina', 'gorunmez', 'hayalet', 'dar', 'korkabus', 'kovala', 'agir', 'kisadash', 'afyok', 'deprem']
 
 /** Ters Tuşlar: her 9 sn'lik turun son 4 sn'si ters; dönmeden 1,5 sn önce uyarılır. Saat dünyanın süresidir (her Hz'de aynı). */
 export const SWAP = { cycle: 9, flipped: 4, warn: 1.5 }
@@ -214,8 +224,8 @@ export function swapPhase(time: number): { flipped: boolean; warn: boolean } {
 /** Zor modun bölüme yazdığı fizik değişiklikleri (harita aynı; zemin kayar ya da çöker) */
 export function ruleLevel(rule: DailyRule, level: LevelDef): LevelDef {
   const r = DAILY_RULES[rule]
-  if (!r.slippery && !r.crumbleAll && !r.lowGravity && !r.storm && !r.chase) return level
-  return { ...level, chaser: r.chase || undefined, slippery: r.slippery || undefined, crumbleAll: r.crumbleAll || undefined, lowGravity: r.lowGravity || undefined, storm: r.storm || undefined, wind: r.storm ? STORM_WIND : level.wind }
+  if (!r.slippery && !r.crumbleAll && !r.lowGravity && !r.storm && !r.chase && !r.heavy && !r.shortDash && !r.noMercy) return level
+  return { ...level, chaser: r.chase || undefined, slippery: r.slippery || undefined, crumbleAll: r.crumbleAll || undefined, lowGravity: r.lowGravity || undefined, heavy: r.heavy || undefined, shortDash: r.shortDash || undefined, noMercy: r.noMercy || undefined, storm: r.storm || undefined, wind: r.storm ? STORM_WIND : level.wind }
 }
 
 /**
@@ -243,6 +253,10 @@ export const CRUMBLE_OK: string[] = RAGE_PROVEN
 /** Ordu'da Ay Yerçekimi'yle çıkışa varılamıyor (çözücü, 16 Kasım 2026): orada açılmaz */
 export const MOON_OK: string[] = RAGE_PROVEN.filter((id) => id !== 'ordu')
 export const STORM_OK: string[] = RAGE_PROVEN
+/** Ağır Yerçekimi, Kısa Dash ve Af Yok fiziğiyle çıkışa varılabildiği çözücüyle kanıtlanmış şehirler (`verify-rage.ts <agir|kisadash|afyok> --hepsi`) */
+export const HEAVY_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'konya', 'nevsehir', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'malatya', 'trabzon', 'sivas', 'ardahan', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'giresun', 'denizli', 'zonguldak']
+export const SHORT_DASH_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin']
+export const NO_MERCY_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin']
 
 /** Kural bu şehirde oynanabilir mi: Dash’siz, kaygan ve çöken fizik yalnız kanıtlanmış şehirlerde */
 export const ruleFits = (rule: DailyRule, level: LevelDef) => {
@@ -252,6 +266,9 @@ export const ruleFits = (rule: DailyRule, level: LevelDef) => {
   if (r.crumbleAll && !CRUMBLE_OK.includes(level.id)) return false
   if (r.lowGravity && !MOON_OK.includes(level.id)) return false
   if (r.storm && !STORM_OK.includes(level.id)) return false
+  if (r.heavy && !HEAVY_OK.includes(level.id)) return false
+  if (r.shortDash && !SHORT_DASH_OK.includes(level.id)) return false
+  if (r.noMercy && !NO_MERCY_OK.includes(level.id)) return false
   if (r.chase && !chaseFits(level.id)) return false
   return true
 }
@@ -439,6 +456,8 @@ export interface DuelRun {
   score: number
   /** toplanan hatıra (Hatıra Avı şartında skordan düşer) */
   items?: number
+  /** bayrakların birikimli süreleri (ms); yan yana yarışta tutulur */
+  splits?: number[]
 }
 
 /**
@@ -449,6 +468,8 @@ export interface DuelTerms {
   penalty: 0 | 5 | 10
   itemBonus: 0 | 5
   handicap: [number, number]
+  /** Tek Can (yalnız Yan Yana Yarış): ilk düşüşte o oyuncunun turu biter, bitiremedi sayılır */
+  oneLife?: boolean
 }
 export const DUEL_PENALTIES = [0, 5, 10] as const
 export const DUEL_HANDICAPS = [0, 3, 5, 10] as const
@@ -490,6 +511,21 @@ export function duelResult(rounds: DuelRounds, bestOf: 1 | 3 | 5): { over: boole
   if (done.length < bestOf + 2) return { over: false, winner: null }
   const sum = (k: 0 | 1) => done.reduce((a, r) => a + r[k]!.score, 0)
   return { over: true, winner: w[0] !== w[1] ? (w[0] > w[1] ? 0 : 1) : sum(0) === sum(1) ? -1 : sum(0) < sum(1) ? 0 : 1 }
+}
+
+/**
+ * Bayrak bayrak karşılaştırma: iki koşunun birikimli bayrak sürelerinden her aralığı kimin daha kısa geçtiği.
+ * Her aralık için { a, b } (ms) ve kazanan (0, 1, eşitse -1); bayrak sayıları farklıysa ortak olanlar.
+ */
+export function legDuel(a: number[], b: number[]): { a: number; b: number; winner: 0 | 1 | -1 }[] {
+  const n = Math.min(a.length, b.length)
+  const out: { a: number; b: number; winner: 0 | 1 | -1 }[] = []
+  for (let i = 0; i < n; i++) {
+    const la = a[i] - (i ? a[i - 1] : 0)
+    const lb = b[i] - (i ? b[i - 1] : 0)
+    out.push({ a: la, b: lb, winner: la === lb ? -1 : la < lb ? 0 : 1 })
+  }
+  return out
 }
 
 /** turu kim açar: sırayla (ilk turu birinci oyuncu) */
@@ -576,6 +612,32 @@ export function tournamentFor(week: string): Challenge3 {
   return out as Challenge3
 }
 type Challenge3 = [string, string, string]
+
+/**
+ * Gezgin Turu: tohumdan (yazılı bir söz) her seferinde aynı kesit dizisi çıkar; bir arkadaşa tohumu söylemek yeter.
+ * Kesitler Mücadeleler'den gelir ve aynı şehirden ikisi aynı tura düşmez. Toplam, kesitlerin en iyi sürelerinin toplamıdır.
+ */
+export const GEZGIN_SIZES = [3, 4, 5] as const
+/** tohum: boşluksuz, büyük harf (Türkçe harfler İngilizceye çevrilir), en çok 12 karakter */
+export const gezginSeed = (raw: string) =>
+  raw
+    .toLocaleUpperCase('tr')
+    .replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '')
+    .slice(0, 12)
+export function gezginFor(seed: string, size: number): string[] {
+  const s = gezginSeed(seed) || 'YOL'
+  const n = Math.min(size, new Set(CHALLENGES.map((c) => c.level)).size)
+  const out: string[] = []
+  for (let i = 0; out.length < n && i < 500; i++) {
+    const c = CHALLENGES[hash(`gezgin:${s}:${i}`) % CHALLENGES.length]
+    if (!out.some((o) => CHALLENGES.find((x) => x.id === o)!.level === c.level)) out.push(c.id)
+  }
+  return out
+}
+/** cihazdaki rekorun anahtarı: tohum ve kesit sayısı */
+export const gezginKey = (seed: string, size: number) => `${gezginSeed(seed) || 'YOL'}:${size}`
+/** bütün kesitler bitmişse toplam süre (ms), yoksa null */
+export const gezginTotal = (ids: string[], best: Record<string, number> | undefined) => (ids.length && ids.every((id) => best?.[id] !== undefined) ? ids.reduce((a, id) => a + best![id], 0) : null)
 /** turnuva skorunun tablo anahtarı */
 export const tournamentKey = (week: string, id: string) => `turnuva:${week}:${id}`
 /** cihazdaki turnuva kaydı: yalnız bu haftanınki tutulur */

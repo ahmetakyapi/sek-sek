@@ -1,8 +1,9 @@
 /**
  * Sesi dinlemeden kanıtla: oyunun ses motoru tarayıcıda çevrimdışı ses bağlamıyla (OfflineAudioContext, sahte saat)
- * çalınır; jenerik, iki şehrin başı, bir şehrin bütün döngüsü, boss dövüşü (kabarıp sönen), molada boğukluk ve bütün efektler WAV olarak yazılır. Her parça için tepe,
- * RMS ve NaN ölçülür: sessiz kalan, NaN üreten ya da patlayan (tepe ≥ 0,98) parça FAIL. TEL=1 yalnız tel akordu için
- * tek notalar üretir. Kullanım: sunucu açıkken  PORT=3000 node scripts/audio-render.cjs [klasör]
+ * çalınır; jenerik (başı ve bütün formu), iki şehrin başı, bir şehrin bütün döngüsü, boss dövüşü (kabarıp sönen), molada boğukluk ve bütün efektler WAV olarak yazılır. Her parça için tepe,
+ * RMS ve NaN ölçülür: sessiz kalan, NaN üreten, patlayan (tepe ≥ 0,98) ya da aşırı yüksek parça FAIL. Ayrıntılı çözümleme (LUFS, frekans dengesi,
+ * tekrar): python3 scripts/audio-render-analiz.py <klasör>. TEL=1 yalnız tel akordu için
+ * tek notalar üretir; ONLY=ad,ad yalnız o parçaları. Kullanım: sunucu açıkken  PORT=3000 node scripts/audio-render.cjs [klasör]
  */
 const { chromium } = require('playwright')
 const fs = require('fs')
@@ -17,19 +18,22 @@ const CLIPS = process.env.TEL ? [
   ['tel-saz-50', 2, `s.musicOn=false; s.pluckSfx(50, 0.8, 0.05, 'saz')`],
 ] : [
   ['jenerik', 24, `s.playTheme()`],
+  // jeneriğin bütün formu: giriş + 64 ölçülük döngü (A B A B · nefes · C A B · nefes); tekrar yorgunluğu analizi için
+  ['jenerik-dongu', 224, `s.playTheme()`],
   ['istanbul', 50, `s.setMusic('istanbul')`],
   ['trabzon', 18, `s.setMusic('trabzon')`],
-  // bütün döngü: giriş, A, A', B, A'', nefes ve A'ya dönüş (tremolo, yankı, geciktirmeler)
-  ['van-dongu', 136, `s.setMusic('van')`],
+  // bütün döngü: giriş, A, A', B, A'', nefes, C, A4, B', nefes ve A'ya dönüş (tremolo, yankı, geciktirmeler)
+  ['van-dongu', 250, `s.setMusic('van')`],
   // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
   ['erzurum-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
-  ['efektler', 17, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown']; names.forEach((n,i)=>setAt(0.5+i*0.7,()=>s.sfx(n)))`],
+  ['efektler', 38, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown','grab','swim','ui','key','pet','crystal','warp','perfect','nitro','switch','breath','drown','beat','shoot']; names.forEach((n,i)=>setAt(0.5+i,()=>s.sfx(n)))`],
 ]
 ;(async () => {
   let bad = 0
   const b = await chromium.launch()
-  for (const [name, sec, setup] of CLIPS) {
+  // ONLY=istanbul,efektler yalnız adı geçen parçaları üretir
+  for (const [name, sec, setup] of CLIPS.filter(([n]) => !process.env.ONLY || process.env.ONLY.split(',').includes(n))) {
     const ctx = await b.newContext()
     await ctx.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), SAVE)
     await ctx.addInitScript((sec) => {
@@ -55,11 +59,28 @@ const CLIPS = process.env.TEL ? [
       const timers = []
       const setAt = (t, fn) => timers.push([t, fn])
       eval(setup)
-      for (let t = 0; t < sec; t += 0.05) {
-        window.__fakeTime(t)
-        for (const [at, fn] of timers.filter(([at]) => at <= t && at > t - 0.05)) fn()
-        s.schedule()
+      // gerçek zamanlıdaki gibi: nota zamanlaması ses saatinin 0,3 sn önünden gider. Hepsini baştan zamanlamak binlerce
+      // düğümü birden grafiğe koyar (uzun parçada tarayıcı sessiz kalır); bu yüzden her 0,1 sn'de çevrimdışı bağlam
+      // durdurulur, o ana kadarki notalar zamanlanır, sürdürülür
+      const off = window.__off
+      const STEP = 0.1
+      const realSuspend = OfflineAudioContext.prototype.suspend
+      const realResume = OfflineAudioContext.prototype.resume
+      const fire = (from, to) => { for (const [at, fn] of timers.filter(([at]) => at >= from - 1e-6 && at < to - 1e-6)) fn() }
+      window.__fakeTime(0)
+      fire(0, STEP)
+      s.schedule()
+      const pump = (t) => {
+        if (t >= sec) return
+        realSuspend.call(off, t).then(() => {
+          window.__fakeTime(t)
+          fire(t, t + STEP)
+          s.schedule()
+          pump(t + STEP)
+          realResume.call(off)
+        })
       }
+      pump(STEP)
       const buf = await window.__off.startRendering()
       const L = buf.getChannelData(0), R = buf.getChannelData(1)
       let peak = 0, sum = 0, nan = 0
@@ -74,7 +95,7 @@ const CLIPS = process.env.TEL ? [
       return { peak, rms: Math.sqrt(sum / n), nan, wav: btoa(bin) }
     }, { setup, sec })
     fs.writeFileSync(`${dir}/${name}.wav`, Buffer.from(res.wav, 'base64'))
-    const ok = !res.nan && res.peak < 0.98 && res.rms > 0.003
+    const ok = !res.nan && res.peak < 0.98 && res.rms > 0.008 && res.rms < 0.25
     if (!ok) bad++
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name.padEnd(14)} tepe ${res.peak.toFixed(3)}  rms ${res.rms.toFixed(4)}  nan ${res.nan}`)
     await ctx.close()

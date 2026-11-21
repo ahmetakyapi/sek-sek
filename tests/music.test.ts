@@ -64,10 +64,39 @@ describe('müzik', () => {
     expect(a.events.length / (a.length / 16)).toBeLessThanOrEqual(30)
   })
 
-  it('jenerik: giriş bir kez çalar, tema A-B-A-B döner, en yakın çevrimle akar', () => {
+  it.each(LEVELS.map((l) => [l.city] as const))('%s: uzun form (64 ölçülük döngü), tekrar yorgunluğu yok, seyrek bölümler var', (city) => {
+    const a = cityTheme(city)
+    const BAR = 16
+    const first = a.loop / BAR
+    const bars = a.length / BAR
+    // döngü en az 64 ölçü (~3 dk): iki kez dinleyen bile aynı bölümü art arda duymaz
+    expect(bars - first).toBeGreaterThanOrEqual(64)
+    const ney = (b: number) =>
+      a.events
+        .filter((e) => e.inst === 'ney' && e.at >= b * BAR && e.at < (b + 1) * BAR)
+        .map((e) => `${e.at - b * BAR}:${e.midi[0]}`)
+        .join(',')
+    const sigs = Array.from({ length: bars - first }, (_, i) => ney(first + i))
+    const melodic = sigs.filter(Boolean)
+    // ezgili ölçülerin yarıdan fazlası birbirinden farklı (motif tekrarında ritim ve perde değişir)
+    expect(new Set(melodic).size / melodic.length).toBeGreaterThan(0.5)
+    // motif A' ile dördüncü anlatımda (A4) başka ritim ya da perdeyle gelir
+    expect([12, 13].map(ney).join('|')).not.toBe([48, 49].map(ney).join('|'))
+    // nefes: ezgisiz (yalnız piyano, dem, bas) en az 16 ölçü ve gücü medyanın %75'inin altında kalan en az 12 ölçü
+    expect(sigs.filter((x) => !x).length).toBeGreaterThanOrEqual(16)
+    const energy = Array.from({ length: bars - first }, (_, i) =>
+      a.events.filter((e) => e.at >= (first + i) * BAR && e.at < (first + i + 1) * BAR).reduce((t, e) => t + e.vol * (e.inst === 'hat' ? 0.3 : 1), 0),
+    )
+    const med = [...energy].sort((x, y) => x - y)[Math.floor(energy.length / 2)]
+    expect(energy.filter((x) => x < med * 0.75).length).toBeGreaterThanOrEqual(12)
+    // hiçbir olay patlatmaz: en güçlü nota payı bellidir (karışım audio.ts'te dengelenir)
+    expect(Math.max(...a.events.map((e) => e.vol))).toBeLessThanOrEqual(0.3)
+  })
+
+  it('jenerik: giriş bir kez çalar, 64 ölçülük döngü A-B-A-B · nefes · C-A-B · nefes akar', () => {
     const s = titleTheme()
     expect(s.loop).toBe(4 * 8)
-    expect(s.length).toBe(36 * 8)
+    expect(s.length).toBe((4 + 64) * 8)
     expect(s.events.filter((e) => e.inst === 'kanun' && e.trem).length).toBeGreaterThan(0)
     expect(s.events.length / (s.length / 8)).toBeLessThanOrEqual(30)
   })
@@ -89,5 +118,16 @@ describe('oyun efektleri', () => {
     expect(body).not.toMatch(/'square'|'sawtooth'/)
     // aynı efekt art arda üst üste binmez
     expect(body).toMatch(/lastSfx/)
+    expect(body).toMatch(/< 0\.06/)
+  })
+
+  it('ses motoru: hiçbir çalgıda kare ya da testere dalga yok; ana çıkışta sınırlayıcı ve yüksek geçiren var', () => {
+    const src = readFileSync('game/audio.ts', 'utf8')
+    expect(src).not.toMatch(/\.type = '(square|sawtooth)'/)
+    expect(src).toMatch(/createDynamicsCompressor/)
+    expect(src).toMatch(/type = 'highpass'/)
+    // müzik efektin altında: efekt payı müzikten yüksek tanımlı
+    const sfxTrim = Number(/SFX_TRIM = ([\d.]+)/.exec(src)![1])
+    expect(sfxTrim).toBeGreaterThan(1)
   })
 })

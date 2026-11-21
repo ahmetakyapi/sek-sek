@@ -13,11 +13,13 @@ import { ItemIcon, Key, KeyHints, ThingIcon, TutorialHint, type TutorialStep } f
 import About from '@/components/About'
 import Bestiary from '@/components/Bestiary'
 import Defter, { RUSH_NEEDS } from '@/components/Defter'
+import { recommend } from '@/lib/modeHints'
 import ScoreBoard, { Board } from '@/components/ScoreBoard'
 import Race from '@/components/Race'
 import { DNF, DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, duelLevel, duelTerms, type DailyResult, type DuelSetupValue } from '@/components/Modes'
 import { ChallengeEnd, ChallengeList, type ChallengeResult } from '@/components/Challenges'
 import { TournamentHub } from '@/components/Tournament'
+import { CalmSetup, GezginHub } from '@/components/FunModes'
 import Ending from '@/components/Ending'
 import MirrorList from '@/components/Mirror'
 import Shop from '@/components/Shop'
@@ -26,7 +28,7 @@ import { mirrorLevel } from '@/game/mirror'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
 import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
-import { MedalBadge, SectionTitle, Overlay, displayName, haptic, ic, medalFor } from '@/components/ui'
+import { MedalBadge, SectionTitle, Overlay, displayName, haptic, ic, medalFor, setHapticScale } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
 import { InputManager, normalizeDuo, normalizeKeys } from '@/game/input'
@@ -44,7 +46,7 @@ import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, type Scarf, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, type Scarf, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -80,7 +82,7 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
+type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'gezgin' | 'calmSetup' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
@@ -211,6 +213,8 @@ export default function Game() {
   const aynaRef = useRef<string | null>(null)
   /** düzenleyiciden gelen özel harita (koşu sürerken) */
   const customRef = useRef<LevelDef | null>(null)
+  /** Gezgin Turu'ndan koşulan kesit: tohum anahtarı ve o turun kesitleri (toplam rekoru için) */
+  const gezginRef = useRef<{ key: string; ids: string[] } | null>(null)
   /** Ters Tuşlar: son gösterilen uyarı (aynı uyarı her karede yinelenmesin) */
   const swapCueRef = useRef<'flip' | 'fix' | null>(null)
   /** bu koşuda biriken sayaçlar: bölüm bitince ya da bırakılınca kayda eklenir */
@@ -272,6 +276,13 @@ export default function Game() {
   const [challengeSend, setChallengeSend] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null }>({ status: 'idle', rank: null })
   const [dailySend, setDailySend] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null }>({ status: 'idle', rank: null })
   const [pauseSet, setPauseSet] = useState(false)
+  /** Mola'dan dönerken 3-2-1 geri sayım (null: sayım yok); sayım sırasında ekran 'pause' kalır, fizik akmaz */
+  const [resumeN, setResumeN] = useState<number | null>(null)
+  /** Ana Menü / Şehirler'e çıkmadan önce onay (koşu kaybolur) */
+  const [exitAsk, setExitAsk] = useState<null | 'title' | 'map'>(null)
+  const resumeNRef = useRef<number | null>(null)
+  const exitAskRef = useRef<null | 'title' | 'map'>(null)
+  const resumeRef = useRef<() => void>(() => {})
   /** molada yolcu değiştirme onayı bekleyen karakter (yola çıkılmışsa şehrin başına dönülür) */
   const [pauseHero, setPauseHero] = useState<CharacterId | null>(null)
   const [quiet, setQuiet] = useState(false)
@@ -474,6 +485,8 @@ export default function Game() {
           if (mode?.kind === 'daily' && DAILY_RULES[mode.run.rule].noDash) inp.dashPressed = false
           // Ters Tuşlar: turun ters kısmında sağ ile sol yer değiştirir (saat dünyanın süresi; uyarı aşağıda)
           if (mode?.kind === 'daily' && DAILY_RULES[mode.run.rule].swapKeys && swapPhase(w.time).flipped) [inp.left, inp.right] = [inp.right, inp.left]
+          // Kolaylık "Basılı Tut Zıplama": tuş basılıyken yere her inişte yeniden zıplanır (yalnız girdi; fizik aynı)
+          if (saveRef.current?.holdJump && inp.jump && w.player.grounded && !w.player.dead && !w.player.swim) inp.jumpPressed = true
           const rest = { ...inp, jumpPressed: false, dashPressed: false }
           let first = true
           while (acc >= STEP) {
@@ -669,7 +682,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'gezgin' || sc === 'calmSetup' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else if (sc === 'photo') {
@@ -719,7 +732,7 @@ export default function Game() {
     if (!input) return
     input.onPause = () => {
       if (screenRef.current === 'play') setScreen('pause')
-      else if (screenRef.current === 'pause') setScreen('play')
+      else if (screenRef.current === 'pause') resumeRef.current()
       else if (screenRef.current === 'photo') closePhoto()
     }
     input.onRetry = () => {
@@ -991,6 +1004,7 @@ export default function Game() {
         r0.dark = !!view?.dark
         r0.hiddenSpikes = !!view?.hiddenSpikes
         r0.ghostGround = !!view?.ghostGround
+        r0.quake = !!view?.quake
         // kadraj değişince tuval yeniden ölçülür (Dar Kadraj)
         if (r0.zoom !== (view?.zoom ?? 1)) {
           r0.zoom = view?.zoom ?? 1
@@ -1135,6 +1149,34 @@ export default function Game() {
   }, [screen])
   /** düz şehir koşusu (mod, parkur, Boss Rush, ayna, özel harita değil): molada yolcu burada değişebilir, baştan yükleme şehri yükler */
   const plainRun = !modeRef.current && !rushRef.current && !challengeRef.current && !aynaRef.current && !customRef.current
+  resumeNRef.current = resumeN
+  exitAskRef.current = exitAsk
+  /** Mola'dan devam: Esc / Devam Et. Sayım sürerken ya da çıkış onayı açıkken Esc yalnız onları kapatır */
+  const resume = () => {
+    if (screenRef.current !== 'pause') return
+    if (exitAskRef.current) return setExitAsk(null)
+    if (resumeNRef.current !== null) return setResumeN(null)
+    // yola çıkılmamışsa (süre işlemiyor) sayıya gerek yok
+    if (saveRef.current?.countdown === false || (worldRef.current?.time ?? 0) < 0.05) return setScreen('play')
+    setResumeN(3)
+  }
+  resumeRef.current = resume
+  useEffect(() => {
+    if (resumeN === null) return
+    if (resumeN <= 0) {
+      setResumeN(null)
+      setScreen('play')
+      return
+    }
+    const id = setTimeout(() => setResumeN((n) => (n === null ? null : n - 1)), 650)
+    return () => clearTimeout(id)
+  }, [resumeN, setScreen])
+  useEffect(() => {
+    if (screen !== 'pause') {
+      setResumeN(null)
+      setExitAsk(null)
+    }
+  }, [screen])
   /** günlükte "Baştan Başla": şehrin başına döner, süre ve düşüş sürer (tek hak) */
   const restartKeep = () => {
     const w = worldRef.current
@@ -1181,11 +1223,36 @@ export default function Game() {
     challengeRef.current = c
     tournamentRef.current = week
     dailyChRef.current = dailyDay
+    gezginRef.current = null
     setWeekRank(null)
     setChallengeSend({ status: 'idle', rank: null })
     loadLevel(LEVELS.findIndex((l) => l.id === c.level), 'play')
     beginPlay()
     setCpToast({ at: Date.now() + 1, text: `${week ? `${t('Turnuva')} · ` : dailyDay ? `${t('Günün Mücadelesi')} · ` : '▲ '}${t(c.name)}` })
+  }
+
+  /** Gezgin Turu: tohumun kesitlerinden birini koşar; bitince toplam (hepsi bittiyse) tohum rekoru olarak yazılır */
+  const startGezgin = (c: MapChallenge, seed: string, size: number) => {
+    startChallenge(c)
+    gezginRef.current = { key: gezginKey(seed, size), ids: gezginFor(seed, size) }
+    setCpToast({ at: Date.now() + 1, text: `${t('Gezgin Turu')} · ${t(c.name)}` })
+  }
+
+  /** Sakin Gezi: şehri düşüşsüz, süresiz gez; özel harita yolunu kullanır (ilerlemeye, rekora, deftere dokunmaz) */
+  const startCalm = (idx: number) => {
+    soundRef.current?.unlock()
+    ui()
+    rushRef.current = null
+    modeRef.current = null
+    rivalRef.current = null
+    challengeRef.current = null
+    tournamentRef.current = null
+    aynaRef.current = null
+    gezginRef.current = null
+    customRef.current = { ...LEVELS[idx], calm: true }
+    loadLevel(idx, 'play')
+    beginPlay()
+    setCpToast({ at: Date.now() + 1, text: `${t('Sakin Gezi')} · ${LEVELS[idx].name}` })
   }
 
   /** Günün Mücadelesi: bugünün kesiti, herkes için aynı; serbest tekrar, skor yalnız en iyisi */
@@ -1305,6 +1372,7 @@ export default function Game() {
       r0.dark = false
       r0.hiddenSpikes = false
       r0.ghostGround = false
+      r0.quake = false
       if (r0.zoom !== 1) {
         r0.zoom = 1
         window.dispatchEvent(new Event('resize'))
@@ -1440,7 +1508,7 @@ export default function Game() {
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
     // menü ekranlarının hepsi: yarım kalan mod bir sonraki normal koşuya taşınmasın
-    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'invite', 'shop', 'mirror'].includes(screen)) return
+    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'gezgin', 'calmSetup', 'invite', 'shop', 'mirror'].includes(screen)) return
     flushStats()
     rushRef.current = null
     rivalRef.current = null
@@ -1555,6 +1623,13 @@ export default function Game() {
     const idx = levelRef.current
     const timeMs = Math.round(w.time * 1000)
     flushStats(1)
+    if (customRef.current?.calm) {
+      // Sakin Gezi bitti: hiçbir şey yazılmaz
+      customRef.current = null
+      setCpToast({ at: Date.now() + 1, text: t('Şehri gezdin. Sakin Gezi bitti.') })
+      setScreen('modes')
+      return
+    }
     if (customRef.current) {
       setCustomResult({ timeMs, deaths: w.deaths, found: w.pickups.filter((p) => p.taken).length, stamp: w.stampBox ? w.stampTaken : null, charm: w.charmBox ? w.charmTaken : null })
       setScreen('customEnd')
@@ -1625,7 +1700,13 @@ export default function Game() {
         const best = !relaxed && (old === undefined || timeMs < old)
         setChallengeResult({ id: ch.id, timeMs, deaths, best, prev: old, relaxed })
         if (!best) return prev
-        const next = { ...prev, challenges: { ...(prev.challenges ?? {}), [ch.id]: timeMs } }
+        let next = { ...prev, challenges: { ...(prev.challenges ?? {}), [ch.id]: timeMs } }
+        // Gezgin Turu: turun bütün kesitleri bittiyse toplam, tohumun rekorudur
+        const gz = gezginRef.current
+        if (gz?.ids.includes(ch.id)) {
+          const sum = gezginTotal(gz.ids, next.challenges)
+          if (sum !== null && (prev.gezgin?.[gz.key] === undefined || sum < prev.gezgin[gz.key])) next = { ...next, gezgin: { ...(prev.gezgin ?? {}), [gz.key]: sum } }
+        }
         writeSave(next)
         return next
       })
@@ -1848,8 +1929,26 @@ export default function Game() {
     const r = rendererRef.current
     if (!r) return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    r.shakeScale = (save.shake ?? !reduce) ? 1 : 0
-  }, [save.shake, ready])
+    r.shakeScale = (save.shake ?? !reduce) ? (save.shakePower ?? 1) : 0
+  }, [save.shake, save.shakePower, ready])
+  // Kolaylıklar (cihaz ayarı): hayalet görünürlüğü, dash halkası, kamera yakınlığı, titreşim, büyük yazı
+  useEffect(() => {
+    const r = rendererRef.current
+    if (!r) return
+    r.ghostAlpha = save.ghostAlpha ?? 0.46
+    r.dashMeter = !!save.dashMeter
+    const z = save.camZoom ?? 1
+    if (r.userZoom !== z) {
+      r.userZoom = z
+      window.dispatchEvent(new Event('resize'))
+    }
+  }, [save.ghostAlpha, save.dashMeter, save.camZoom, ready])
+  useEffect(() => {
+    setHapticScale(save.hapticPower ?? 1)
+  }, [save.hapticPower])
+  useEffect(() => {
+    document.documentElement.dataset.bigText = save.bigText ? 'on' : 'off'
+  }, [save.bigText])
 
   const fullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen()
@@ -1943,6 +2042,7 @@ export default function Game() {
   const gameSet = (
     <>
       <Toggle label={t('Hayalet Koşu')} hint={t('Bitirdiğin şehirde en iyi koşunun hayaleti yanında koşar.')} on={save.ghost} onChange={() => patch({ ghost: !save.ghost })} />
+      <Toggle label={t('Devam Ederken Geri Sayım')} hint={t('Moladan dönerken 3-2-1 sayılır; sayım sırasında oyun akmaz.')} on={save.countdown !== false} onChange={() => patch({ countdown: save.countdown === false })} />
       <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekor koşuna göre kaç saniye önde ya da geride olduğun')} on={save.splits !== false} onChange={() => patch({ splits: save.splits === false })} />
       <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır.')} on={save.shake ?? !reduceMotion} onChange={() => patch({ shake: !(save.shake ?? !reduceMotion) })} />
       <div>
@@ -1951,11 +2051,32 @@ export default function Game() {
       </div>
     </>
   )
+  // Kolaylıklar: cihaz ayarı, fizik değişmez (yalnız yardım ve çizim)
+  const assistSet = (
+    <>
+      <div className="border-2 border-line bg-ink/30 px-2 py-2 [&>div]:flex-wrap [&>div]:pb-0">
+        <Choice label={t('Hayalet Görünürlüğü')} value={save.ghostAlpha ?? 0.46} options={[{ v: 0.25, label: t('Soluk') }, { v: 0.46, label: t('Normal') }, { v: 0.8, label: t('Belirgin') }]} onChange={(v) => patch({ ghostAlpha: v })} />
+      </div>
+      <div className="border-2 border-line bg-ink/30 px-2 py-2 [&>div]:flex-wrap [&>div]:pb-0">
+        <Choice label={t('Kamera Yakınlığı')} value={save.camZoom ?? 1} options={[{ v: 0.85, label: t('Uzak') }, { v: 1, label: t('Normal') }, { v: 1.15, label: t('Yakın') }]} onChange={(v) => patch({ camZoom: v })} />
+      </div>
+      <div className="border-2 border-line bg-ink/30 px-2 py-2 [&>div]:flex-wrap [&>div]:pb-0">
+        <Choice label={t('Sarsıntı Şiddeti')} value={save.shakePower ?? 1} options={[{ v: 0.5, label: t('Hafif') }, { v: 1, label: t('Normal') }]} onChange={(v) => patch({ shakePower: v })} />
+      </div>
+      <div className="border-2 border-line bg-ink/30 px-2 py-2 [&>div]:flex-wrap [&>div]:pb-0">
+        <Choice label={t('Titreşim Yoğunluğu')} value={save.hapticPower ?? 1} options={[{ v: 0, label: t('Kapalı') }, { v: 0.5, label: t('Hafif') }, { v: 1, label: t('Normal') }]} onChange={(v) => patch({ hapticPower: v })} />
+      </div>
+      <Toggle label={t('Dash Göstergesi')} hint={t('Karakterin üstünde dash hakkı: dolu halka hazır, boş halka bekliyor.')} on={!!save.dashMeter} onChange={() => patch({ dashMeter: !save.dashMeter })} />
+      <Toggle label={t('Basılı Tut Zıplama')} hint={t('Zıplama tuşunu basılı tutunca yere her inişte yeniden zıplarsın.')} on={!!save.holdJump} onChange={() => patch({ holdJump: !save.holdJump })} />
+      <Toggle label={t('Büyük Yazı')} hint={t('Arayüzdeki yazılar büyür.')} on={!!save.bigText} onChange={() => patch({ bigText: !save.bigText })} />
+    </>
+  )
   const settingsList = (
     <div className="mt-1 grid divide-y-2 divide-line/60 short:grid-cols-2 short:gap-x-4 short:divide-y-0">
       {soundSet}
       {controlSet}
       {gameSet}
+      {assistSet}
     </div>
   )
   /**
@@ -1973,6 +2094,10 @@ export default function Game() {
         <section>
           <SectionTitle title={t('Oynanış')} note={t('Koşunun akışı ve kolaylıklar')} tone="var(--color-gold)" />
           <div className="mt-2 grid grid-cols-2 gap-2">{gameSet}</div>
+        </section>
+        <section>
+          <SectionTitle title={t('Kolaylıklar')} note={t('Yardım ve çizim; fizik aynı kalır')} tone="var(--color-teal)" />
+          <div className="mt-2 grid grid-cols-2 gap-2">{assistSet}</div>
         </section>
         <section>
           <SectionTitle title={t('Ekran ve Kontroller')} note={t('Dokunmatik ve görünüm')} tone="var(--color-accent)" />
@@ -2040,6 +2165,61 @@ export default function Game() {
 
 
 
+  /** HUD ve Mola'daki mod başlığı */
+  const modeLabel = modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('Düello')} · ${duel.setup.names[duel.turn]}` : customRef.current ? (customRef.current.calm ? t('Sakin Gezi') : t('Özel Harita')) : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined
+
+  /** Mola eylemleri */
+  const pauseRetry = () => {
+    worldRef.current?.retryFromCheckpoint()
+    setScreen('play')
+  }
+  const pauseRestart = () => (rankedDaily ? restartKeep() : loadLevel(levelIdx, 'play'))
+  /** koşu sürüyorsa (süre işlemiş) çıkmadan önce onay ister */
+  const leaveRun = (to: 'title' | 'map') => (hud.time > 0.05 ? setExitAsk(to) : setScreen(to))
+  const toggleGhost = () => {
+    const on = !save.ghost
+    patch({ ghost: on })
+    // açılınca hayalet hemen yüklenir (tanımlı ve haritası eskimemişse)
+    if (on && plainRun && rendererRef.current && !saveRef.current?.best[level.id]?.stale) rendererRef.current.ghostRun = loadGhost(level.id)
+  }
+  // Mola kısayolları (R, S, M, F, G; Esc ve Shift + R oyun girdisinde): yazı alanındayken ve tuş atarken dokunmaz
+  const pauseActs = useRef({ retry: pauseRetry, leave: leaveRun, photo: openPhoto, ghost: toggleGhost, plain: plainRun })
+  pauseActs.current = { retry: pauseRetry, leave: leaveRun, photo: openPhoto, ghost: toggleGhost, plain: plainRun }
+  useEffect(() => {
+    if (screen !== 'pause' || pauseKeys || resumeN !== null) return
+    const on = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+      const el = e.target as HTMLElement | null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      const a = pauseActs.current
+      if (e.code === 'KeyR') a.retry()
+      else if (e.code === 'KeyM') a.leave('title')
+      else if (e.code === 'KeyS') a.leave('map')
+      else if (e.code === 'KeyF') a.photo()
+      else if (e.code === 'KeyG' && a.plain) a.ghost()
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [screen, pauseKeys, resumeN])
+  // Mola'daki mod bilgisi: kural, kalan süre, deneme
+  const modeRule = modeRef.current?.kind === 'daily' ? DAILY_RULES[modeRef.current.run.rule] : null
+  const modeLimit = modeRef.current?.kind === 'daily' ? ruleLimit(modeRef.current.run.rule, level) : null
+  const modeCard = modeLabel ? (
+    <div className="mt-3 border-2 border-accent/60 bg-accent/10 px-3 py-2 short:mt-2 short:py-1.5">
+      <p className="text-[12px] font-bold tracking-[0.12em] text-accent-2">{t('Mod').toLocaleUpperCase(lang)}</p>
+      <p className="text-[14px] font-semibold leading-snug text-cream">{modeLabel}</p>
+      {modeRule && <p className="mt-0.5 text-[13px] leading-snug text-cream/85">{t(modeRule.text)}</p>}
+      {rankedDaily && <p className="mt-0.5 text-[13px] leading-snug text-gold">{t('Tek hak: baştan başlasan da süre ve düşüş sürer, çıkarsan koşun biter.')}</p>}
+      {modeRef.current?.kind === 'duel' && <p className="mt-0.5 text-[13px] leading-snug text-cream/85">{t('Düello: skor süre artı düşüş başına 5 saniye.')}</p>}
+      <p className="mt-1 flex flex-wrap gap-x-3 text-[13px] tabular-nums text-muted">
+        {modeLimit ? <span>{t('Kalan')} <strong className="text-cream">{formatTime(Math.max(0, modeLimit - hud.time) * 1000).slice(0, -2)}</strong></span> : null}
+        {modeRule?.oneLife ? <span>{t('Tek Can')} · {t('{n}. deneme', { n: triesRef.current + 1 })}</span> : <span>{t('Düşüş')} <strong className="text-cream">{hud.deaths}</strong></span>}
+      </p>
+    </div>
+  ) : null
+
   // Mola'daki şehir özeti: bu şehirde neler bulundu, rekor ve sıradaki madalya hedefi
   const cityBest = save.best[level.id]
   const cityMedal = cityBest && !cityBest.stale ? medalFor(level, cityBest.timeMs) : null
@@ -2059,7 +2239,7 @@ export default function Game() {
           <BossFigure city={level.city} className={`h-8 w-9 ${save.bosses[level.id] ? '' : 'opacity-40 brightness-0'}`} />
         </span>
       </div>
-      <p className="mt-2 flex flex-wrap items-center gap-x-2 text-[13px] text-muted">
+      <p className={`mt-2 flex flex-wrap items-center gap-x-2 text-[13px] text-muted ${modeLabel ? 'hidden' : ''}`}>
         {cityBest && !cityBest.stale ? (
           <>
             <span className="flex items-center gap-1.5">
@@ -2076,11 +2256,6 @@ export default function Game() {
           <span>{t('Henüz rekorun yok. Bronz {b} sn, gümüş {g} sn, altın {a} sn.', { b: level.medals[2], g: level.medals[1], a: level.medals[0] })}</span>
         )}
       </p>
-      {modeRef.current && (
-        <p className="mt-1.5 text-[13px] leading-snug text-accent-2">
-          {modeRef.current.kind === 'daily' ? `${t('Günlük Meydan Okuma')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}: ${t(DAILY_RULES[modeRef.current.run.rule].text)}` : t('Düello: skor süre artı düşüş başına 5 saniye.')}
-        </p>
-      )}
     </div>
   )
 
@@ -2092,7 +2267,7 @@ export default function Game() {
       {screen === 'play' && (
         <>
           <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
-            label={modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('Düello')} · ${duel.setup.names[duel.turn]}` : customRef.current ? t('Özel Harita') : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined}
+            label={modeLabel}
             penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' && duel ? (d: number, f: number) => d * duelTerms(duel.setup).penalty * 1000 - f * duelTerms(duel.setup).itemBonus * 1000 : undefined}
             onPause={() => setScreen('pause')} />
           {titleCard > 0 && hud.time < 0.05 && (
@@ -2267,6 +2442,24 @@ export default function Game() {
             charms={Object.values(save.charms ?? {}).filter(Boolean).length}
             daily={isFresh(save) ? null : { level: dailyLevel, rule: t(DAILY_RULES[daily.rule].name), doneMs: save.meydan?.day === today ? formatTime(save.meydan.bestMs) : null, used: dailyUsed, streak: liveStreak(save.meydan, today) }}
             dailyPending={!isFresh(save) && !dailyUsed}
+            trio={trioCount(trioParts(save.trio, today, save.meydan))}
+            wallet={wallet}
+            modeHint={
+              isFresh(save)
+                ? undefined
+                : recommend({
+                    cities: Object.keys(save.best).length,
+                    ruleRecords: Object.keys(save.rules ?? {}).filter((k) => !RAGE_RULES.includes(k.split(':')[1] as RageRule)).length,
+                    bossesBeaten: beaten,
+                    rushNeeds: RUSH_NEEDS,
+                    rushPlayed: !!save.rush,
+                    dailyUsed,
+                    trioDone: trioCount(trioParts(save.trio, today, save.meydan)),
+                    mirrorOpen: LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id]),
+                    mirrorDone: Object.keys(save.ayna ?? {}).length,
+                    challengeDone: CHALLENGES.filter((c) => save.challenges?.[c.id]).length,
+                  }).find((r) => r.id !== 'daily')?.id
+            }
             music={save.music}
             player={save.player ? { name: save.player.name, title: t(travelerTitle(titleFacts(save, today))) } : null}
             hasProgress={save.unlocked > 0 || Object.keys(save.best).length > 0}
@@ -2698,8 +2891,17 @@ export default function Game() {
 
       {screen === 'photo' && <PhotoMode canvas={canvasRef.current} renderer={rendererRef.current} level={level} onClose={closePhoto} />}
 
-      {screen === 'pause' && (
-        <Overlay dim>
+      {screen === 'pause' && resumeN !== null && (
+        <div className="absolute inset-0 z-20 grid place-items-center bg-ink/30 backdrop-blur-[2px]" role="status" aria-live="assertive">
+          <div className="text-center">
+            <p key={resumeN} className="count-pop font-display text-[min(32vw,200px)] leading-none text-cream [text-shadow:0_6px_0_#0e0d22]">{Math.max(resumeN, 1)}</p>
+            <p className="mt-2 bg-ink/70 px-3 py-1 text-[14px] font-semibold text-cream">{t('Hazır Ol · Esc: Molaya Dön')}</p>
+          </div>
+        </div>
+      )}
+
+      {screen === 'pause' && resumeN === null && (
+        <Overlay dim blur>
           <div className="rise pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-md overflow-x-clip overflow-y-auto px-6 pb-5 short:max-w-[min(820px,100%)] short:pb-3 wide:max-w-[min(900px,100%)] wide:px-8 wide:pb-7">
             <CityBanner level={level} eyebrow={t('Mola')} height={110} short={64} />
             {/* geniş ekranda ve yatay telefonda: solda süre ve eylemler, sağda ayarlar (kaydırmadan) */}
@@ -2718,35 +2920,41 @@ export default function Game() {
                     </div>
                   ))}
                 </div>
-                <button className="pixel-btn primary mt-4 w-full justify-center py-3 text-lg short:mt-2.5 short:py-2" onClick={() => setScreen('play')} autoFocus>
+                <button className="pixel-btn primary mt-4 w-full justify-center py-3 text-lg short:mt-2.5 short:py-2" onClick={resume} autoFocus>
                   {ic(t("▶ Devam Et"))}
+                  <span className="ml-2 text-[12px] font-normal opacity-80 [@media(pointer:coarse)]:hidden">Esc</span>
                 </button>
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 short:mt-2.5 short:grid-cols-4 short:gap-2">
-                  <button
-                    className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]"
-                    onClick={() => {
-                      worldRef.current?.retryFromCheckpoint()
-                      setScreen('play')
-                    }}
-                  >
-                    <span className="text-lg leading-none">⚑</span>
-                    {t("Checkpoint’e Dön")}
-                  </button>
-                  <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => (rankedDaily ? restartKeep() : loadLevel(levelIdx, 'play'))}>
-                    <span className="text-lg leading-none">↺</span>
-                    {t("Baştan Başla")}
-                    <span className="text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">Shift + R</span>
-                  </button>
-                  <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => setScreen('map')}>
-                    <span className="text-lg leading-none">⌖</span>
-                    {t("Şehirler")}
-                  </button>
-                  <button className="pixel-btn flex-col justify-center gap-1 px-1 py-2.5 text-[13px]" onClick={() => setScreen('title')}>
-                    <span className="text-lg leading-none">⌂</span>
-                    {t('Ana Menü')}
-                  </button>
-                </div>
-                {rankedDaily && <p className="mt-2.5 border-2 border-gold/50 bg-gold/10 px-2.5 py-1.5 text-[13px] leading-snug text-cream">{t('Günlük Meydan Okuma’nın tek hakkı var: baştan başlasan da süre ve düşüş sürer, çıkarsan bugünkü koşun biter.')}</p>}
+                {exitAsk ? (
+                  <div className="mt-3 border-2 border-accent bg-ink/50 px-3 py-3 short:mt-2 short:py-2" role="alertdialog" aria-label={t('Çıkış Onayı')}>
+                    <p className="text-[14px] leading-snug text-cream">{exitAsk === 'title' ? t('Ana Menü’ye dönersen bu koşu kaybolur.') : t('Şehirler’e dönersen bu koşu kaybolur.')}</p>
+                    <div className="mt-2.5 grid grid-cols-2 gap-2">
+                      <button className="pixel-btn primary min-h-[44px] justify-center text-[14px]" onClick={() => setScreen(exitAsk)} autoFocus>
+                        {exitAsk === 'title' ? t('Evet, Ana Menü') : t('Evet, Şehirler')}
+                      </button>
+                      <button className="pixel-btn min-h-[44px] justify-center text-[14px]" onClick={() => setExitAsk(null)}>
+                        {t('Vazgeç')} <span className="ml-1 text-[12px] font-normal text-muted [@media(pointer:coarse)]:hidden">Esc</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 short:mt-2.5 short:grid-cols-4 short:gap-2">
+                    {(
+                      [
+                        ['⚑', t('Checkpoint’e Dön'), 'R', pauseRetry],
+                        ['↺', t('Baştan Başla'), 'Shift + R', pauseRestart],
+                        ['⌖', t('Şehirler'), 'S', () => leaveRun('map')],
+                        ['⌂', t('Ana Menü'), 'M', () => leaveRun('title')],
+                      ] as const
+                    ).map(([icon, label, key, act]) => (
+                      <button key={label} className="pixel-btn min-h-[56px] flex-col justify-center gap-0.5 px-1 py-2 text-[13px] short:min-h-[48px]" onClick={act}>
+                        <span className="text-lg leading-none" aria-hidden>{icon}</span>
+                        {label}
+                        <span className="text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">{key}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {modeCard}
                 {cityCard}
                 {plainRun && (
                   <div className="mt-3 border-2 border-line bg-ink/40 px-3 py-2.5 short:mt-2 short:py-2">
@@ -2788,10 +2996,15 @@ export default function Game() {
                   </div>
                 )}
                 <div className="mt-3 flex gap-2 short:mt-2">
-                  <button className="pixel-btn flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
-                    {ic(t('◉ Fotoğraf Kipi'))}
+                  <button className="pixel-btn min-h-[44px] flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
+                    {ic(t('◉ Fotoğraf Kipi'))} <span className="ml-1 text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">F</span>
                   </button>
-                  <button className="pixel-btn flex-1 justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
+                  {plainRun && (
+                    <button className="pixel-btn min-h-[44px] flex-1 justify-center py-2 text-[13px]" aria-pressed={save.ghost} onClick={toggleGhost}>
+                      {save.ghost ? t('◌ Hayalet: Açık') : t('◌ Hayalet: Kapalı')} <span className="ml-1 text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">G</span>
+                    </button>
+                  )}
+                  <button className="pixel-btn min-h-[44px] flex-1 justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
                     {ic(t('⚙ Ayarlar'))}
                   </button>
                 </div>
@@ -2963,7 +3176,7 @@ export default function Game() {
         </Overlay>
       )}
 
-      {screen === 'notebook' && <Defter save={save} today={today} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => patch({ music: true })} />}
+      {screen === 'notebook' && <Defter save={save} today={today} sound={soundRef.current} onClose={() => setScreen('title')} onModes={() => setScreen('modes')} onMusicOn={() => patch({ music: true })} onPins={(pins) => patch({ pins })} />}
 
       {screen === 'modes' && (
         <ModesHub
@@ -2999,12 +3212,15 @@ export default function Game() {
           rulesOpen={Object.keys(save.best).length > 0}
           onChallenges={() => (ui(), setScreen('challenges'))}
           onTournament={() => (ui(), setScreen('tournament'))}
+          onGezgin={() => (ui(), setScreen('gezgin'))}
+          onCalm={() => (ui(), setScreen('calmSetup'))}
           onMirror={() => (ui(), setScreen('mirror'))}
           mirrorOpen={LEVELS.slice(0, FIRST_BOOK).every((l) => save.best[l.id])}
           mirrorDone={Object.keys(save.ayna ?? {}).length}
           onTour={startTour}
           tourBest={save.tur ?? null}
           aynaTourBest={save.aynaTur ?? null}
+          citiesDone={Object.keys(save.best).length}
           tournament={save.turnuva ?? null}
           challengeDone={CHALLENGES.filter((c) => save.challenges?.[c.id]).length}
           onBack={() => setScreen('title')}
@@ -3012,6 +3228,8 @@ export default function Game() {
       )}
       {screen === 'challenges' && <ChallengeList best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
       {screen === 'rageCourses' && <ChallengeList rage best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
+      {screen === 'gezgin' && <GezginHub best={save.challenges} totals={save.gezgin} onStart={startGezgin} onBack={() => setScreen('modes')} />}
+      {screen === 'calmSetup' && <CalmSetup startLevel={levelIdx} open={save.unlocked} onStart={startCalm} onBack={() => setScreen('modes')} />}
       {screen === 'tournament' && <TournamentHub mark={save.turnuva} player={save.player?.name ?? ''} friends={save.friends ?? []} onStart={(c) => startChallenge(c, tournamentWeek(today))} onBack={() => setScreen('modes')} />}
       {screen === 'invite' && invite && (
         <Overlay dim>
@@ -3046,8 +3264,12 @@ export default function Game() {
           status={challengeSend.status}
           rank={challengeSend.rank}
           weekRank={weekRank}
-          onRetry={() => startChallenge(ALL_CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null, challengeResult.daily ?? null)}
-          onList={() => setScreen(challengeResult.daily ? 'modes' : challengeResult.week ? 'tournament' : RAGE_COURSES.some((c) => c.id === challengeResult.id) ? 'rageCourses' : 'challenges')}
+          onRetry={() => {
+            const gz = gezginRef.current?.ids.includes(challengeResult.id) ? gezginRef.current : null
+            startChallenge(ALL_CHALLENGES.find((c) => c.id === challengeResult.id)!, challengeResult.week ?? null, challengeResult.daily ?? null)
+            gezginRef.current = gz
+          }}
+          onList={() => setScreen(gezginRef.current?.ids.includes(challengeResult.id) ? 'gezgin' : challengeResult.daily ? 'modes' : challengeResult.week ? 'tournament' : RAGE_COURSES.some((c) => c.id === challengeResult.id) ? 'rageCourses' : 'challenges')}
           onLogin={() => ((returnRef.current = 'challengeEnd'), setScreen('name'))}
         />
       )}
@@ -3080,6 +3302,7 @@ export default function Game() {
           heroes={duel.setup.heroes}
           looks={looks}
           roundLabel={duel.setup.bestOf === 1 ? t('Tek Tur') : t('{n}. TUR', { n: duel.round + 1 })}
+          oneLife={!!duelTerms(duel.setup).oneLife}
           sound={soundRef.current}
           keys={duoKeys}
           onKeys={(k) => patch({ duoKeys: k })}

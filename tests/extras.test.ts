@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK, dailyBoss, dailyMini, cleanTrio, markTrio, mergeTrio, settleTrio, trioCount, trioParts } from '../lib/extras'
+import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK, HEAVY_OK, SHORT_DASH_OK, NO_MERCY_OK, GEZGIN_SIZES, gezginFor, gezginKey, gezginSeed, gezginTotal, dailyBoss, dailyMini, cleanTrio, markTrio, mergeTrio, settleTrio, trioCount, trioParts } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
 import { ACCESSORIES, HEROES, NO_KIT, earned, forHero, kitFor, walletOf } from '../game/accessories'
 import { CHALLENGES, challengeLevel } from '../game/challenges'
 import { ACHIEVEMENTS, freshAchievements, isEarned } from '../lib/achievements'
-import { defaultSave, nextUnplayed, resumeFor } from '../lib/storage'
+import { defaultSave, mergeSaves, nextUnplayed, resumeFor } from '../lib/storage'
 import { ustaDone, ustaTask } from '../lib/ustalar'
+import { MODES, NAME, TILE_ORDER, matchesQuery, modeForDigit, neighbor, passesFilter, recommend, type ModeFilter, type ModeId } from '../lib/modeHints'
 
 describe('günün şehri ve haftanın görevi', () => {
   it('aynı gün aynı görev, açılmamış şehir çıkmaz', () => {
@@ -336,7 +337,11 @@ describe('sinir bozucu modlar', () => {
     expect(ruleLevel('ay', lv).lowGravity).toBe(true)
     expect(ruleLevel('firtina', lv).storm).toBe(true)
     expect(ruleLevel('firtina', lv).wind).toBeGreaterThan(0)
-    expect(RAGE_RULES.length).toBe(19)
+    expect(ruleLevel('agir', lv).heavy).toBe(true)
+    expect(ruleLevel('kisadash', lv).shortDash).toBe(true)
+    expect(ruleLevel('afyok', lv).noMercy).toBe(true)
+    expect(ruleLevel('deprem', lv)).toBe(lv)
+    expect(RAGE_RULES.length).toBe(23)
   })
   it('kaygan ve çöken modlar yalnız kanıtlanmış şehirlerde açılır', () => {
     for (const lv of LEVELS) {
@@ -350,8 +355,59 @@ describe('sinir bozucu modlar', () => {
       expect(ruleFits('kaos', lv)).toBe(SLIPPERY_OK.includes(lv.id))
       expect(ruleFits('ay', lv)).toBe(MOON_OK.includes(lv.id))
       expect(ruleFits('firtina', lv)).toBe(STORM_OK.includes(lv.id))
-      for (const r of ['gorunmez', 'hayalet', 'dar', 'korkabus'] as const) expect(ruleFits(r, lv)).toBe(true)
+      for (const r of ['gorunmez', 'hayalet', 'dar', 'korkabus', 'deprem'] as const) expect(ruleFits(r, lv)).toBe(true)
+      expect(ruleFits('agir', lv)).toBe(HEAVY_OK.includes(lv.id))
+      expect(ruleFits('kisadash', lv)).toBe(SHORT_DASH_OK.includes(lv.id))
+      expect(ruleFits('afyok', lv)).toBe(NO_MERCY_OK.includes(lv.id))
     }
+    // kanıtlı listeler gerçek şehirlerden oluşur
+    for (const id of [...HEAVY_OK, ...SHORT_DASH_OK, ...NO_MERCY_OK]) expect(LEVELS.some((l) => l.id === id)).toBe(true)
+  })
+  it('yeni fizik kuralları sim\'de gerçekten fark yaratır', () => {
+    const lv = LEVELS[0]
+    const jumpApex = (level: typeof lv) => {
+      const w = new World(level)
+      const idle = { left: false, right: false, up: false, down: false, jump: false, jumpPressed: false, dash: false, dashPressed: false } as never
+      for (let i = 0; i < 240; i++) w.step(1 / 120, idle)
+      const y0 = w.player.y
+      let top = y0
+      w.step(1 / 120, { ...(idle as object), jump: true, jumpPressed: true } as never)
+      for (let i = 0; i < 160; i++) {
+        w.step(1 / 120, { ...(idle as object), jump: true } as never)
+        top = Math.min(top, w.player.y)
+      }
+      return y0 - top
+    }
+    expect(jumpApex(ruleLevel('agir', lv))).toBeLessThan(jumpApex(lv) - 4)
+  })
+  it('Gezgin Turu: tohum aynı kesitleri verir, şehirler tekrar etmez', () => {
+    expect(gezginFor('yol', 4)).toEqual(gezginFor('YOL', 4))
+    expect(gezginSeed(' ağ ac!! ')).toBe('AĞAC')
+    for (const seed of ['YOL', 'ABCDE', '20261121', 'ÇAY']) {
+      for (const n of GEZGIN_SIZES) {
+        const ids = gezginFor(seed, n)
+        expect(ids.length).toBe(n)
+        expect(new Set(ids.map((id) => CHALLENGES.find((c) => c.id === id)!.level)).size).toBe(n)
+      }
+    }
+    expect(gezginFor('A', 3)).not.toEqual(gezginFor('B', 3))
+    expect(gezginKey('yol', 4)).toBe('YOL:4')
+    const ids = gezginFor('YOL', 3)
+    expect(gezginTotal(ids, { [ids[0]]: 1000, [ids[1]]: 2000 })).toBeNull()
+    expect(gezginTotal(ids, { [ids[0]]: 1000, [ids[1]]: 2000, [ids[2]]: 3000 })).toBe(6000)
+  })
+  it('Gezgin Turu rekoru bulutla birleşir: küçük olan kalır', () => {
+    const a = { ...defaultSave(), gezgin: { 'YOL:4': 90000, 'AB:3': 50000 } }
+    const b = { ...defaultSave(), gezgin: { 'YOL:4': 80000 } }
+    expect(mergeSaves(a, b).gezgin).toEqual({ 'YOL:4': 80000, 'AB:3': 50000 })
+  })
+  it('Sakin Gezi: düşüş sayılmaz', () => {
+    const w = new World({ ...LEVELS[0], calm: true })
+    w.kill()
+    expect(w.deaths).toBe(0)
+    const n = new World(LEVELS[0])
+    n.kill()
+    expect(n.deaths).toBe(1)
   })
 })
 
@@ -417,5 +473,82 @@ describe('Günün Üçlüsü', () => {
   it('bozuk iz biçime zorlanır', () => {
     expect(cleanTrio('x')).toBeNull()
     expect(cleanTrio({ day: 5, mini: -1, boss: 'a', days: 1e9, last: '2026-11-21' })).toEqual({ day: '', mini: undefined, boss: undefined, days: 5000, last: '2026-11-21' })
+  })
+})
+
+describe('Modlar ekranı: arama, süzgeç, öneri, gezinti', () => {
+  const base = { cities: 0, ruleRecords: 0, bossesBeaten: 0, rushNeeds: 3, rushPlayed: false, dailyUsed: false, trioDone: 0, mirrorOpen: false, mirrorDone: 0, challengeDone: 0 }
+
+  it('aramada Türkçe harf farkı ve büyük küçük harf yok sayılır', () => {
+    expect(matchesQuery('mucadele', ['Mücadeleler'])).toBe(true)
+    expect(matchesQuery('KANGAL', ['Kovalamaca', 'Kangal izini sürer'])).toBe(true)
+    expect(matchesQuery('ıspanak', ['İspanak'])).toBe(true)
+    expect(matchesQuery('iki kisi', ['Co-op', 'iki yolcu', '2 Kişi'])).toBe(true)
+    expect(matchesQuery('boss yok', ['Boss Rush'])).toBe(false)
+    expect(matchesQuery('   ', ['x'])).toBe(true)
+  })
+
+  it('süzgeçler kataloğa uyar', () => {
+    const ids = Object.keys(MODES) as ModeId[]
+    const by = (f: ModeFilter) => ids.filter((id) => passesFilter(f, id, true))
+    expect(by('all')).toHaveLength(ids.length)
+    expect(by('together').sort()).toEqual(['coop', 'duel'])
+    expect(by('solo').length + by('together').length).toBe(ids.length)
+    expect(by('hard').every((id) => MODES[id].heat === 3)).toBe(true)
+    expect(by('new')).toContain('trio')
+    expect(by('ranked')).toContain('rush')
+    expect(by('ranked')).not.toContain('duel')
+    expect(passesFilter('open', 'rush', false)).toBe(false)
+    expect(passesFilter('open', 'rush', true)).toBe(true)
+  })
+
+  it('her ızgara kutucuğunun kaydı ve (sayfa açmayanın) nasıl oynanır adımı var; sayı tuşları ilk dokuzu açar', () => {
+    for (const id of TILE_ORDER) {
+      expect(MODES[id]).toBeDefined()
+      expect(NAME[id]).toBeTruthy()
+      if (id !== 'editor' && id !== 'community') expect(MODES[id].howto.length).toBeGreaterThanOrEqual(2)
+    }
+    expect(modeForDigit('1')).toBe(TILE_ORDER[0])
+    expect(modeForDigit('9')).toBe(TILE_ORDER[8])
+    expect(modeForDigit('0')).toBeNull()
+    expect(modeForDigit('a')).toBeNull()
+    expect(modeForDigit('12')).toBeNull()
+  })
+
+  it('öneri: hiç oynamamışa günlük ve Co-op, yeni bitirene Kurallı Koşu, boss yenene Boss Rush', () => {
+    expect(recommend(base).map((r) => r.id)).toEqual(['daily', 'coop'])
+    expect(recommend({ ...base, cities: 1, dailyUsed: true, trioDone: 1 }).map((r) => r.id)).toEqual(['trio', 'rules'])
+    expect(recommend({ ...base, cities: 2, dailyUsed: true, trioDone: 3 })[0].id).toBe('rules')
+    expect(recommend({ ...base, cities: 8, dailyUsed: true, trioDone: 3, bossesBeaten: 4, ruleRecords: 2 })[0].id).toBe('rush')
+    expect(recommend({ ...base, cities: 8, dailyUsed: false })[0].id).toBe('daily')
+    expect(recommend({ ...base, cities: 30, dailyUsed: true, trioDone: 3, ruleRecords: 1, bossesBeaten: 9, rushPlayed: true, mirrorOpen: true })[0].id).toBe('mirror')
+  })
+
+  it('öneri en çok ikidir, tekrarsızdır ve Devam Et\'teki modu önermez', () => {
+    for (let c = 0; c <= 40; c += 5) {
+      for (const dailyUsed of [false, true]) {
+        for (const trioDone of [0, 1, 3]) {
+          const r = recommend({ ...base, cities: c, dailyUsed, trioDone, bossesBeaten: c, last: 'rules' })
+          expect(r.length).toBeLessThanOrEqual(2)
+          expect(new Set(r.map((x) => x.id)).size).toBe(r.length)
+          expect(r.some((x) => x.id === 'rules')).toBe(false)
+        }
+      }
+    }
+    expect(recommend({ ...base, cities: 1, dailyUsed: true, trioDone: 3 }).length).toBeGreaterThan(0)
+  })
+
+  it('oklarla gezinti: 4 sütunlu ızgarada sağ-sol bir adım, aşağı-yukarı alttaki satırın en yakını', () => {
+    const boxes = Array.from({ length: 10 }, (_, i) => ({ x: (i % 4) * 100, y: Math.floor(i / 4) * 80, w: 90, h: 70 }))
+    expect(neighbor(boxes, 5, 'right')).toBe(6)
+    expect(neighbor(boxes, 0, 'left')).toBe(0)
+    expect(neighbor(boxes, 9, 'right')).toBe(9)
+    expect(neighbor(boxes, 1, 'down')).toBe(5)
+    expect(neighbor(boxes, 5, 'up')).toBe(1)
+    expect(neighbor(boxes, 3, 'down')).toBe(7)
+    expect(neighbor(boxes, 3, 'up')).toBe(3)
+    // son satırda eksik sütun: en yakın dolu kutucuk
+    expect(neighbor(boxes, 7, 'down')).toBe(9)
+    expect(neighbor(boxes, 0, 'down')).toBe(4)
   })
 })

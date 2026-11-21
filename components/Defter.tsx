@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Album from '@/components/Album'
 import MusicBox from '@/components/MusicBox'
+import ProfileView from '@/components/ProfileView'
 import { BossFigure } from '@/components/Figures'
 import { ItemIcon, ThingIcon } from '@/components/HudBits'
 import { MedalBadge, Overlay, SectionTitle, displayName, medalFor, ic } from '@/components/ui'
@@ -12,6 +13,7 @@ import { LEVELS } from '@/game/levels'
 import { SCARVES, emptyStats, liveStreak, travelerTitle } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { ACHIEVEMENTS, isEarned } from '@/lib/achievements'
+import { profileFromSave } from '@/lib/profile'
 import { formatTime, titleFacts, type Save } from '@/lib/storage'
 
 /** Boss Rush’ın açılması için yenilmesi gereken boss sayısı */
@@ -21,7 +23,7 @@ export const RUSH_NEEDS = 3
  * Yol Defteri: yolculukta toplanan her şey tek sayfada. Üstte toplamlar tek şeritte; sekmeler şehirler (üç hatıra,
  * gizli pul, nazar boncuğu, meydanın boss’u), albüm, başarımlar (üstünde yol sayaçları, görevler, Günlük ve Boss Rush) ve müzik.
  */
-export default function Defter({ save, today, sound, onClose, onModes, onMusicOn }: { save: Save; today: string; sound: Sound | null; onClose: () => void; onModes: () => void; onMusicOn: () => void }) {
+export default function Defter({ save, today, sound, onClose, onModes, onMusicOn, onPins }: { save: Save; today: string; sound: Sound | null; onClose: () => void; onModes: () => void; onMusicOn: () => void; onPins?: (pins: string[]) => void }) {
   const t = useT()
   const lang = useLang()
   const n = LEVELS.length
@@ -31,7 +33,9 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
   const bosses = LEVELS.filter((l) => save.bosses[l.id]).length
   const scarves = SCARVES.filter((s) => charms >= s.need).length
   const stats = save.stats ?? emptyStats()
-  const [tab, setTab] = useState<'sehir' | 'album' | 'basarim' | 'muzik'>('sehir')
+  const [tab, setTab] = useState<'profil' | 'sehir' | 'album' | 'basarim' | 'muzik'>('profil')
+  const who = save.player?.name || save.name || t('Gezgin')
+  const profile = useMemo(() => profileFromSave(save, today, { name: who }), [save, today, who])
   const got = ACHIEVEMENTS.filter((a) => isEarned(a, save)).length
   const streak = liveStreak(save.meydan, today)
   const mins = Math.round(stats.playMs / 60000)
@@ -52,7 +56,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
     [t('Ezilen Düşman'), stats.stomps.toLocaleString(lang)],
     [t('Yolda Geçen Süre'), hours],
   ]
-  const compact = tab === 'album' || tab === 'muzik'
+  const compact = tab === 'album' || tab === 'muzik' || tab === 'profil'
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:py-3 wide:max-w-[min(1100px,100%)]">
@@ -72,7 +76,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
         </div>
 
         {/* toplamlar tek şeritte; albüm ve müzik açıkken telefonda sayfaya yer bırakır */}
-        <dl className={`mt-4 grid grid-cols-3 gap-[2px] border-2 border-line bg-line/70 sm:grid-cols-6 short:mt-2 short:grid-cols-6 ${compact ? 'max-sm:hidden short:hidden' : ''}`}>
+        <dl className={`mt-4 grid grid-cols-3 gap-[2px] border-2 border-line bg-line/70 sm:grid-cols-6 short:mt-2 short:grid-cols-6 ${tab === 'profil' ? 'hidden' : compact ? 'max-sm:hidden short:hidden' : ''}`}>
           {totals.map(([k, v, max]) => (
             <div key={k} className="min-w-0 bg-panel px-2 py-2 text-center short:py-1">
               <dd className={`font-display text-lg leading-none tabular-nums short:text-base ${v === max ? 'text-gold' : 'text-cream'}`}>
@@ -90,6 +94,7 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
         <div className="seg seg-tabs mt-3 shrink-0 short:mt-2" role="tablist">
           {(
             [
+              ['profil', t('Profil')],
               ['sehir', t('Şehirler')],
               ['album', t('Albüm')],
               [
@@ -114,7 +119,23 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
           ))}
         </div>
 
-        {tab === 'album' ? (
+        {tab === 'profil' ? (
+          <div className="mt-2 flex min-h-0 flex-1 flex-col">
+            <ProfileView
+              fit
+              data={profile}
+              actions={
+                save.player ? (
+                  <a href={`/oyuncu/${encodeURIComponent(save.player.name)}`} target="_blank" rel="noreferrer" className="pixel-btn inline-flex items-center px-3 text-[14px]">
+                    {t('Herkese Açık Profilim')} ↗
+                  </a>
+                ) : (
+                  <p className="text-[13px] leading-snug text-muted max-sm:hidden">{t('Hesap açınca profilin herkese açılır ve sıralamada görünür.')}</p>
+                )
+              }
+            />
+          </div>
+        ) : tab === 'album' ? (
           <Album save={save} />
         ) : tab === 'muzik' ? (
           <MusicBox save={save} sound={sound} onMusicOn={onMusicOn} />
@@ -171,6 +192,18 @@ export default function Defter({ save, today, sound, onClose, onModes, onMusicOn
                       </span>
                     )}
                   </span>
+                  {done && onPins && (
+                    <button
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center text-[20px] leading-none ${profile.pins.includes(a.id) ? 'text-gold' : 'text-muted hover:text-cream'}`}
+                      aria-pressed={profile.pins.includes(a.id)}
+                      aria-label={profile.pins.includes(a.id) ? t('{name} Vitrinden Kaldır', { name: t(a.name) }) : t('{name} Vitrine Sabitle', { name: t(a.name) })}
+                      title={profile.pins.includes(a.id) ? t('Vitrinden Kaldır') : profile.pins.length >= 3 ? t('Vitrin dolu: önce birini kaldır') : t('Profil vitrinine sabitle')}
+                      disabled={!profile.pins.includes(a.id) && profile.pins.length >= 3}
+                      onClick={() => onPins(profile.pins.includes(a.id) ? profile.pins.filter((x) => x !== a.id) : [...profile.pins, a.id])}
+                    >
+                      {profile.pins.includes(a.id) ? '★' : '☆'}
+                    </button>
+                  )}
                 </li>
               )
             })}

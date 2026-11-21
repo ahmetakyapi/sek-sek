@@ -34,6 +34,10 @@ interface Side {
   padDash: boolean
   /** bitirdiği an (ms); bitmediyse null */
   doneMs: number | null
+  /** Tek Can: düştü, turu bitirdi sayılmaz */
+  out: boolean
+  /** bayrakların birikimli süreleri (ms) */
+  splits: number[]
 }
 
 interface Hud {
@@ -41,6 +45,7 @@ interface Hud {
   deaths: number
   items: boolean[]
   done: number | null
+  out: boolean
 }
 
 /**
@@ -54,6 +59,7 @@ export default function Race({
   heroes,
   looks,
   roundLabel,
+  oneLife,
   sound,
   keys,
   onKeys,
@@ -65,6 +71,8 @@ export default function Race({
   heroes: [CharacterId, CharacterId]
   /** her yolcunun Kılık Dükkânı'ndaki atkısı ve kombini: her oyuncu seçtiği karakterin kılığını giyer */ looks?: Partial<Record<CharacterId, HeroLook>>
   roundLabel: string
+  /** Tek Can şartı: ilk düşüşte o oyuncunun turu biter */
+  oneLife?: boolean
   sound: Sound | null
   /** iki oyuncunun tuşları (save.duoKeys); molada değişirse hemen uyar */
   keys: DuoKeys
@@ -82,8 +90,8 @@ export default function Race({
   const [count, setCount] = useState(3)
   const [paused, setPaused] = useState(false)
   const [huds, setHuds] = useState<Hud[]>([
-    { time: 0, deaths: 0, items: [false, false, false], done: null },
-    { time: 0, deaths: 0, items: [false, false, false], done: null },
+    { time: 0, deaths: 0, items: [false, false, false], done: null, out: false },
+    { time: 0, deaths: 0, items: [false, false, false], done: null, out: false },
   ])
   const doneRef = useRef(onDone)
   doneRef.current = onDone
@@ -93,7 +101,7 @@ export default function Race({
     phase.current = 'over'
     const runs = sides.current.map((s) => {
       const timeMs = s.doneMs ?? Math.round(s.world.time * 1000)
-      return { timeMs, deaths: s.world.deaths, items: s.world.pickups.filter((p) => p.taken).length, score: s.doneMs ?? DNF }
+      return { timeMs, deaths: s.world.deaths, items: s.world.pickups.filter((p) => p.taken).length, score: s.doneMs ?? DNF, splits: s.splits }
     }) as [DuelRun, DuelRun]
     doneRef.current(runs)
   }
@@ -110,7 +118,7 @@ export default function Race({
       }
       renderer.lang = lang
       const world = new World(level)
-      return { world, renderer, jumpLatch: false, dashLatch: false, padJump: false, padDash: false, doneMs: null }
+      return { world, renderer, jumpLatch: false, dashLatch: false, padJump: false, padDash: false, doneMs: null, out: false, splits: [] }
     })
     const fit = () => {
       sides.current.forEach((s, k) => {
@@ -223,7 +231,7 @@ export default function Race({
           let first = true
           while (acc >= STEP) {
             sides.current.forEach((s, i) => {
-              if (s.doneMs !== null) return
+              if (s.doneMs !== null || s.out) return
               s.renderer.capture(s.world)
               s.world.step(STEP, first ? inputs[i] : { ...inputs[i], jumpPressed: false, dashPressed: false })
             })
@@ -236,17 +244,19 @@ export default function Race({
             s.renderer.handle(e, s.world)
             sound?.sfx(e.type)
             if (e.type === 'complete' && s.doneMs === null) s.doneMs = Math.round(s.world.time * 1000)
+            if (e.type === 'checkpoint' && s.doneMs === null) s.splits.push(Math.round(s.world.time * 1000))
+            if (e.type === 'death' && oneLife && s.doneMs === null) s.out = true
           }
           s.world.events.length = 0
         }
         hudTimer += dt
         if (hudTimer > 0.1) {
           hudTimer = 0
-          setHuds(sides.current.map((s) => ({ time: s.world.time, deaths: s.world.deaths, items: s.world.pickups.map((p) => p.taken), done: s.doneMs })))
+          setHuds(sides.current.map((s) => ({ time: s.world.time, deaths: s.world.deaths, items: s.world.pickups.map((p) => p.taken), done: s.doneMs, out: s.out })))
         }
-        if (sides.current.every((s) => s.doneMs !== null)) finish()
+        if (sides.current.every((s) => s.doneMs !== null || s.out)) finish()
       } else acc = 0
-      for (const s of sides.current) s.renderer.render(s.world, dt, ph === 'run' && s.doneMs === null ? acc / STEP : 1)
+      for (const s of sides.current) s.renderer.render(s.world, dt, ph === 'run' && s.doneMs === null && !s.out ? acc / STEP : 1)
     }
     raf = requestAnimationFrame(frame)
     return () => {
@@ -261,6 +271,7 @@ export default function Race({
   }, [])
 
   const someoneDone = huds.some((h) => h.done !== null)
+  const someoneOut = huds.some((h) => h.out)
   const hints = duoHints(keys, lang === 'en' ? 'en' : 'tr')
   return (
     <div className="absolute inset-0 z-30 grid grid-cols-2 bg-ink portrait:grid-cols-1 portrait:grid-rows-2">
@@ -290,6 +301,12 @@ export default function Race({
                   {label}
                 </span>
               ))}
+            </div>
+          )}
+          {huds[k].out && huds[k].done === null && (
+            <div className="rise pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-ink/55">
+              <p className="font-display text-3xl text-coral [text-shadow:0_2px_0_#0e0d22]">{t('Düştün')}</p>
+              <p className="mt-1 text-[14px] text-cream">{t('Tek Can: bu tur bitti.')}</p>
             </div>
           )}
           {huds[k].done !== null && (
@@ -328,7 +345,7 @@ export default function Race({
         </button>
       )}
 
-      {someoneDone && !paused && (
+      {(someoneDone || someoneOut) && !paused && !huds.every((h) => h.done !== null || h.out) && (
         <button className="pixel-btn absolute bottom-10 left-1/2 -translate-x-1/2 px-4 py-2 text-[13px]" onClick={finish}>
           {t('Turu Bitir (Öteki Bitiremedi)')}
         </button>

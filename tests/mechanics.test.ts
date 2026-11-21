@@ -626,3 +626,143 @@ describe('gelgit (Mersin)', () => {
     expect(w.tile(5, 3)).toBe(EMPTY)
   })
 })
+
+describe('co-op: Kurtarma, Fırlatma, işaret', () => {
+  const tick = (w: World, secs: number, a: Partial<Input> = {}, b: Partial<Input> = {}, hook?: () => void) => {
+    for (let i = 0; i < Math.round(secs * 120); i++) {
+      w.step(1 / 120, { ...emptyInput(), ...a })
+      w.stepPartner(1 / 120, { ...emptyInput(), ...b })
+      hook?.()
+      if (w.events.some((e) => e.type === 'respawn')) w.bringPartner()
+    }
+  }
+  const pit = ['               ', ' P             ', '######^^^#######', '###############']
+
+  it('Kurtarma kapalıyken düşen eş eskisi gibi bayrağa döner (balon yok)', () => {
+    const w = mk(pit)
+    w.enableCoop()
+    w.started = true
+    tick(w, 1.2, {}, { right: true })
+    expect(w.partner!.dead).toBe(true)
+    expect(w.downed).toBeNull()
+  })
+
+  it('Kurtarma açıkken düşen eş balonda bekler; öbürü değince kalkar, bayrağa dönülmez, düşüş sayılır', () => {
+    const w = mk(pit)
+    w.rescue = true
+    w.enableCoop()
+    w.started = true
+    // oyuncu çukurun solunda durur, eş çukura yürür
+    tick(w, 1.2, {}, { right: true })
+    expect(w.partner!.dead).toBe(true)
+    expect(w.downed?.who).toBe(1)
+    expect(w.deaths + 1).toBeGreaterThan(0)
+    // balon son sağlam yerde, oyuncunun yanında (uzak değil): oyuncu bekler ama değmez, süre dolmadan kalkış olmaz
+    const spot = w.downed!.x
+    const sx = w.spawn.x
+    // oyuncuyu balonun yanına götür
+    w.player.x = spot - 40
+    let at: { dead: boolean; downed: unknown; gap: number } | null = null
+    tick(w, 1, { right: true }, {}, () => {
+      if (!at && w.events.some((e) => e.type === 'rescue')) at = { dead: w.partner!.dead, downed: w.downed, gap: Math.abs(w.partner!.x - w.player.x) }
+      w.events.length = 0
+    })
+    expect(at).not.toBeNull()
+    // kalkış anında: eş ayakta, balon yok, bayrağa dönülmedi (eş kurtarıcının yanında)
+    expect(at!.dead).toBe(false)
+    expect(at!.downed).toBeNull()
+    expect(at!.gap).toBeLessThan(24)
+    expect(sx).toBeLessThan(spot)
+  })
+
+  it('Kurtarma: süre dolarsa (3 sn) eskisi gibi bayraktan kurulur', () => {
+    const w = mk(pit)
+    w.rescue = true
+    w.enableCoop()
+    w.started = true
+    tick(w, 1.2, {}, { right: true })
+    expect(w.downed).not.toBeNull()
+    // oyuncu uzakta kalır (kıpırdamaz: balona 60 px'ten yakın değil)
+    w.player.x = 20 * T
+    const x0 = w.player.x
+    void x0
+    let respawned = false
+    tick(w, 3.4, {}, {}, () => {
+      if (w.events.some((e) => e.type === 'respawn')) respawned = true
+    })
+    expect(respawned).toBe(true)
+    expect(w.partner!.dead).toBe(false)
+  })
+
+  it('Kurtarma: oyuncu (1.) düşünce eş kurtarabilir', () => {
+    const w = mk(pit)
+    w.rescue = true
+    w.enableCoop()
+    w.started = true
+    tick(w, 1.2, { right: true })
+    expect(w.player.dead).toBe(true)
+    expect(w.downed?.who).toBe(0)
+    w.partner!.x = w.downed!.x - 40
+    w.partner!.y = w.downed!.y - 6
+    let rescued = false
+    tick(w, 1, {}, { right: true }, () => {
+      if (w.events.some((e) => e.type === 'rescue' && !e.partner)) rescued = true
+      w.events.length = 0
+    })
+    expect(rescued).toBe(true)
+    expect(w.player.dead).toBe(false)
+  })
+
+  it('ikisi de düşerse balon yok, bölüm bayraktan kurulur', () => {
+    const w = mk(['             ', ' P           ', '###^^^^^^^^^#', '#############'])
+    w.rescue = true
+    w.enableCoop()
+    w.started = true
+    tick(w, 0.8, { right: true }, { right: true })
+    expect(w.player.dead && w.partner!.dead).toBe(true)
+    expect(w.downed).toBeNull()
+  })
+
+  it('Eşi Fırlat: alttaki de zıplıyorsa üsttekinin sekişi omuz sekmesinden yüksek', () => {
+    const tall = ['            ', '            ', '            ', '            ', '            ', '            ', '            ', ' P          ', '############']
+    const run = (baseJumps: boolean) => {
+      const w = mk(tall)
+      w.enableCoop()
+      w.started = true
+      tick(w, 0.3)
+      w.player.x = w.partner!.x
+      w.player.y = w.partner!.y - 30
+      w.player.vy = 60
+      let top = w.player.y
+      let thrown = false
+      for (let i = 0; i < 180; i++) {
+        w.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i % 10 === 0 })
+        // alttaki, üsttekinin başına inmesine bir iki adım kala zıplar
+        const near = w.player.vy > 0 && w.partner!.y - (w.player.y + w.player.h) < 5
+        w.stepPartner(1 / 120, { ...emptyInput(), jump: baseJumps && near, jumpPressed: baseJumps && near })
+        if (w.events.some((e) => e.type === 'shoulder' && e.thrown)) thrown = true
+        w.events.length = 0
+        top = Math.min(top, w.player.y)
+      }
+      return { top, thrown }
+    }
+    const plain = run(false)
+    const thrown = run(true)
+    expect(plain.thrown).toBe(false)
+    expect(thrown.thrown).toBe(true)
+    expect(thrown.top).toBeLessThan(plain.top - 6)
+  })
+
+  it('işaret: oyuncu başına bir tane, önceki yerini alır, 2,5 sn sonra söner', () => {
+    const w = mk(['            ', ' P          ', '############'])
+    w.enableCoop()
+    w.started = true
+    w.ping(0, 'here')
+    w.ping(0, 'danger')
+    w.ping(1, 'nice')
+    expect(w.pings.map((x) => `${x.who}${x.kind}`).sort()).toEqual(['0danger', '1nice'])
+    expect(w.events.filter((e) => e.type === 'ping')).toHaveLength(3)
+    tick(w, 2.6)
+    expect(w.pings).toHaveLength(0)
+  })
+})

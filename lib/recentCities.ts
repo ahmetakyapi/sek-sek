@@ -46,3 +46,23 @@ export function rememberMode(m: LastMode) {
     /* depo yok */
   }
 }
+
+/** "Nasıl oynanır" kartı görülen modlar (Modlar ekranı; bir mod için bir kez, yalnız bu tarayıcıda) */
+const INTRO_KEY = 'seksek:modeIntro'
+
+export function seenIntros(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(INTRO_KEY) ?? '[]')
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function markIntroSeen(id: string) {
+  try {
+    localStorage.setItem(INTRO_KEY, JSON.stringify([...new Set([...seenIntros(), id])]))
+  } catch {
+    /* depo yok */
+  }
+}

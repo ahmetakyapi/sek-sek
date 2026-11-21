@@ -57,6 +57,14 @@ export interface LevelDef {
   /** Co-op Boss Kapışması ve Bölüm Düzenleyici zorluğu: boss'lar en az bu kademede, bu hız çarpanıyla ve `hp` kadar fazla canla
    *  dövüşür (kural aynı: işaret, saldırı, yorgunluk, bas) */
   bossBoost?: { tier: 1 | 2 | 3; speed: number; hp?: number }
+  /** Sakin Gezi: düşüş sayılmaz ve bekletmez (kısa bir soluktan sonra son bayrakta doğulur); skor ve rekor yazılmaz */
+  calm?: boolean
+  /** Ağır Yerçekimi (zor mod): yerçekimi daha güçlü (HEAVY.gravity): atlayış kısalır, düşüş hızlanır */
+  heavy?: boolean
+  /** Kısa Dash (zor mod): dash süresi kısalır (SHORT_DASH.time) */
+  shortDash?: boolean
+  /** Af Yok (zor mod): kenardan sonra zıplama payı (coyote) yok, zıplama tamponu çok kısa (NO_MERCY) */
+  noMercy?: boolean
   /** Fırtına (zor mod): rüzgâr (wind) birkaç saniyede bir yön değiştirir: önce arkadan, sonra karşıdan eser */
   storm?: boolean
   /** Ayna Yolu: harita sağdan sola çevrilmiş (game/mirror.ts); hareketli platformlar da ayna fazında başlar */
@@ -130,6 +138,10 @@ export type GameEvent =
   /** Kovalamaca: Kangal yetişti */
   | { type: 'bite'; x: number; y: number }
   /** co-op: biri ötekinin omzundan sekti */
-  | { type: 'shoulder'; x: number; y: number; /** seken eş mi (2. oyuncu) */ partner: boolean }
+  | { type: 'shoulder'; x: number; y: number; /** seken eş mi (2. oyuncu) */ partner: boolean; /** alttaki de zıpladı: fırlatma */ thrown?: boolean }
+  /** co-op: düşen eş kurtarıldı (partner: kurtarılan 2. oyuncu mu) */
+  | { type: 'rescue'; x: number; y: number; partner: boolean }
+  /** co-op: biri işaret verdi (who: 0 birinci, 1 ikinci oyuncu) */
+  | { type: 'ping'; kind: 'here' | 'wait' | 'danger' | 'nice'; who: 0 | 1 }
   /** dost bir hayvanı sevdin */
   | { type: 'pet'; x: number; y: number }
