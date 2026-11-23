@@ -329,10 +329,11 @@ export default function TitleMenu(props: {
                 </button>
               </div>
             )}
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-x-3 tabular-nums tight:hidden">
+            {/* yer yetmezse (uzun dil, büyük sayılar) dil düğmesi alt satıra iner: hiçbir şey üst üste binmez */}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] tabular-nums tight:hidden">
                 <Count label={t('Hatıra')} n={props.found} m={total * 3} />
-                <Count label={t('Gizli Pul')} n={props.stamps} m={total} />
+                <Count label={t('Pul')} n={props.stamps} m={total} />
                 <Count label={t('Nazar')} n={props.charms} m={total} />
               </span>
               {props.langSwitch}

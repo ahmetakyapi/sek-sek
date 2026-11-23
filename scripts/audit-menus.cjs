@@ -30,6 +30,8 @@ const FINISH = "eval:(()=>{const w=window.__mk.world();w.started=true;w.time=73.
 const SCREENS = {
   'ana-menu': [SAVE, []],
   'ana-menu-yeni': [null, []],
+  // dolu kayıt, giriş yapmış yolcu, İngilizce: uzun etiketler ve büyük sayılarla alt şerit taşmasın
+  'ana-menu-en': [{ ...ALL, stamps: Object.fromEntries(LEVEL_IDS.map((id) => [id, true])), charms: Object.fromEntries(LEVEL_IDS.map((id) => [id, true])), lang: 'en', player: { id: 'x', name: 'ahmet', token: 't' } }, []],
   'guncelleme-notu': [NEWS, []],
   sehirler: [SAVE, ['Şehirler']],
   defter: [SAVE, ['Defter']],

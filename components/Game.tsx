@@ -2634,12 +2634,12 @@ export default function Game() {
             }}
             onMusic={() => toggle('music')}
             langSwitch={
-              <span className="flex shrink-0 items-center gap-1" role="group" aria-label={t('Dil')}>
+              <span className="flex shrink-0 items-center gap-0.5" role="group" aria-label={t('Dil')}>
                 {(['tr', 'en'] as const).map((l) => (
                   <button
                     key={l}
                     aria-pressed={lang === l}
-                    className={`min-h-[30px] min-w-[38px] px-2 py-1 text-[13px] font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`}
+                    className={`min-h-[30px] min-w-[34px] px-1.5 py-1 text-[13px] font-bold tracking-wider ${lang === l ? 'bg-gold text-ink' : 'text-muted hover:text-cream'}`}
                     onClick={() => (ui(), patch({ lang: l }))}
                   >
                     {l.toUpperCase()}
