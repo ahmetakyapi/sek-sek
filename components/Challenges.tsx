@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
 import { CourseScene } from '@/components/MapThumb'
 import { RankTag } from '@/components/RankTag'
+import { useTilt } from '@/components/useTilt'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, SectionTitle, displayName, ic } from '@/components/ui'
@@ -121,6 +122,7 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
   const lv = localize(LEVELS.find((l) => l.id === c.level)!, lng)
   const level = challengeLevel(c)
   const m = level.medals
+  const tilt = useTilt()
   // haritadan kısa bilgiler: uzunluk, bayrak, tehlike ve zamanlamalı engeller (sağ sütun liste kadar dolu, dengeli)
   const all = level.map.join('')
   const n = (re: RegExp) => (all.match(re) ?? []).length
@@ -138,7 +140,9 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
         <p className="min-w-0 font-display text-xl leading-tight text-cream">{t(c.name)}</p>
         <p className="shrink-0 text-[13px] text-muted">{displayName(lv)}</p>
       </div>
-      <CourseScene map={level.map} city={lv.city} className="mt-2 h-[clamp(72px,18vh,160px)] max-sm:h-20 short:h-14" />
+      <div {...tilt} className="tilt relative mt-2 overflow-hidden rounded-[4px]">
+        <CourseScene map={level.map} city={lv.city} className="h-[clamp(72px,18vh,160px)] max-sm:h-20 short:h-14" />
+      </div>
       <dl className="mt-2 grid grid-cols-6 gap-[2px] border-2 border-line bg-line/70 text-center max-sm:hidden short:hidden">
         {facts.map(([k, v]) => (
           <div key={k} className="min-w-0 bg-panel px-1 py-1">
@@ -147,7 +151,8 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
           </div>
         ))}
       </dl>
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] tabular-nums text-cream/85">
+      <MedalTrack medals={m} best={best} />
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] tabular-nums text-cream/85">
         {(
           [
             ['altin', m[0], t('Altın')],
@@ -172,6 +177,33 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
         ) : null}
       </div>
     </section>
+  )
+}
+
+/**
+ * Madalya çizgisi: soldan sağa süre (0 → bronzun biraz ötesi); altın, gümüş, bronz işaretleri ve oyuncunun rekoru.
+ * Sıradaki madalyaya ne kadar kaldığını yazar. Rekor yoksa yalnız hedefler görünür.
+ */
+function MedalTrack({ medals, best }: { medals: [number, number, number]; best?: number }) {
+  const t = useT()
+  const max = medals[2] * 1.15
+  const at = (sec: number) => `${Math.min(100, (sec / max) * 100).toFixed(1)}%`
+  const s = best ? best / 1000 : null
+  // alınan madalya: 0 altın, 1 gümüş, 2 bronz, 3 yok; hedef bir üstteki madalyanın süresi
+  const got = s === null ? null : ([0, 1, 2].find((k) => s <= medals[k]) ?? 3)
+  const goal = got === null || got === 0 ? null : medals[got - 1]
+  return (
+    <div className="mt-2.5" aria-label={t('Madalya Çizgisi')}>
+      <div className="medal-track relative h-2 rounded-full">
+        {(['altin', 'gumus', 'bronz'] as const).map((k, i) => (
+          <span key={k} className={`medal-tick ${k}`} style={{ left: at(medals[i]) }} aria-hidden />
+        ))}
+        {s !== null && <span className="medal-me" style={{ left: at(s) }} aria-hidden />}
+      </div>
+      <p className="mt-1.5 text-[12px] tabular-nums text-muted">
+        {s === null ? t('Rekorun yok: önce bronzu hedefle.') : got === 0 ? <span className="font-semibold text-gold">{t('Altın senin: şimdi sıralamaya oyna.')}</span> : goal !== null ? t('Sıradaki madalyaya {s} sn', { s: (s - goal).toFixed(1).replace('.', ',') }) : null}
+      </p>
+    </div>
   )
 }
 

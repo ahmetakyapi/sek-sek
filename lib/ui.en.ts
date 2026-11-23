@@ -2294,6 +2294,11 @@ export const UI_EN: Record<string, string> = {
   'Hierapolis Basamakları': 'Hierapolis Steps',
   // Şehirler ekranı: özet şeridi ve süzgeç (components/CityList.tsx, lib/cityFilter.ts)
   'Eksik Hatıra': 'Missing Keepsakes',
+  'İlk Üç': 'Top Three',
+  'Madalya Çizgisi': 'Medal Line',
+  'Rekorun yok: önce bronzu hedefle.': 'No record yet: aim for bronze first.',
+  'Altın senin: şimdi sıralamaya oyna.': 'Gold is yours: now play for the leaderboard.',
+  'Sıradaki madalyaya {s} sn': '{s} s to the next medal',
   'Altın Yok': 'No Gold',
   'Lider Değilim': 'Not Leading',
   'Yolun Özeti': 'Journey Summary',

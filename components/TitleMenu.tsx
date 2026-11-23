@@ -4,6 +4,7 @@ import { ic } from '@/components/ui'
 import { ItemIcon } from '@/components/HudBits'
 import { HeroFigure } from '@/components/Figures'
 import Portrait from '@/components/Portrait'
+import { useTilt } from '@/components/useTilt'
 import type { Kit } from '@/game/accessories'
 import type { CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
@@ -417,35 +418,6 @@ function HopTitle() {
       </span>
     </>
   )
-}
-
-/**
- * Kartpostalın eğilmesi: imlecin kart içindeki konumu `--rx` / `--ry` (derece) ve parlamanın yeri `--sx` / `--sy` olur;
- * React durumu değil, doğrudan stil değişkeni (yeniden çizim yok). Yalnız ince imleçte ve hareketi azalt kapalıyken.
- */
-function useTilt() {
-  const ok = useRef(false)
-  useEffect(() => {
-    ok.current = window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  }, [])
-  return {
-    onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
-      if (!ok.current) return
-      const el = e.currentTarget
-      const r = el.getBoundingClientRect()
-      const x = (e.clientX - r.left) / r.width
-      const y = (e.clientY - r.top) / r.height
-      el.style.setProperty('--ry', `${((x - 0.5) * 7).toFixed(2)}deg`)
-      el.style.setProperty('--rx', `${((0.5 - y) * 6).toFixed(2)}deg`)
-      el.style.setProperty('--sx', `${(x * 100).toFixed(1)}%`)
-      el.style.setProperty('--sy', `${(y * 100).toFixed(1)}%`)
-    },
-    onPointerLeave: (e: React.PointerEvent<HTMLElement>) => {
-      const el = e.currentTarget
-      el.style.setProperty('--rx', '0deg')
-      el.style.setProperty('--ry', '0deg')
-    },
-  }
 }
 
 /**

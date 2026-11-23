@@ -130,7 +130,10 @@ export function Board({
   const [limit, setLimit] = useState(0)
   const [more, setMore] = useState(false)
   const [prevRank, setPrevRank] = useState<number | null>(null)
-  const meRow = useRef<HTMLLIElement>(null)
+  const meRow = useRef<HTMLElement | null>(null)
+  const setMe = (el: HTMLElement | null) => {
+    meRow.current = el
+  }
   const list = useRef<HTMLOListElement>(null)
   const nameList = names?.join(',') ?? ''
   const extraKey = JSON.stringify(extra ?? {})
@@ -280,6 +283,9 @@ export function Board({
   const canMore = !search && shown < rows[0].total && Math.max(asked, shown) < MAX_LIST
   const strip = !compact && !search && (!!me || !!mine)
   const delta = mine && prevRank !== null ? prevRank - mine.rank : 0
+  // podyum yalnız geniş tabloda, aramasız ve ilk üç tam doluysa
+  const top3 = [1, 2, 3].map((k) => rows.find((r) => r.rank === k)).filter((r): r is Row => !!r)
+  const podiumOn = !compact && !search && top3.length === 3
 
   return (
     <>
@@ -307,6 +313,51 @@ export function Board({
           )}
         </div>
       )}
+      {/* podyum: ilk üç (ikinci, birinci, üçüncü sırayla); dar ve alçak ekranda gizli, orada ilk üç listede kalır */}
+      {podiumOn && (
+        <div className="sb-podium mt-7 grid grid-cols-3 items-end gap-2 max-sm:hidden short:hidden" role="list" aria-label={t('İlk Üç')}>
+          {[1, 0, 2].map((k) => {
+            const r = top3[k]
+            const [big] = cells(r)
+            return (
+              <div key={r.name} role="listitem" ref={r.me ? setMe : undefined} className={`sb-step flex min-w-0 flex-col items-center px-2 text-center ${r.me ? 'me' : ''}`} style={{ ['--podium' as string]: PODIUM[k], ['--h' as string]: ['72px', '54px', '44px'][k], animationDelay: `${[120, 0, 220][k]}ms` }}>
+                <span className="relative">
+                  <span className="sb-crown" aria-hidden>
+                    {k === 0 ? '♛' : ''}
+                  </span>
+                  <span className="block scale-[1.25]">
+                    <Avatar name={r.name} hero={r.hero} />
+                  </span>
+                </span>
+                <a data-nav href={`/oyuncu/${encodeURIComponent(r.name)}`} className="sb-link mt-2.5 max-w-full truncate text-[15px] font-semibold leading-tight text-cream underline-offset-4 hover:underline">
+                  {r.name}
+                </a>
+                <span className="mt-1 whitespace-nowrap font-display text-[20px] leading-none text-cream">{big}</span>
+                {race && !r.me && (
+                  <button
+                    className="pixel-btn mt-1.5 min-h-[32px] px-2.5 py-0.5 text-[12px]"
+                    disabled={!!racing}
+                    aria-label={t('{name} ile Yarış', { name: r.name })}
+                    title={t('Hayaletiyle yan yana koş')}
+                    onClick={async () => {
+                      setRacing(r.name)
+                      const err = await race(r.name)
+                      setRacing('')
+                      setRaceMsg(err ? { name: r.name, text: err } : null)
+                    }}
+                  >
+                    {racing === r.name ? '…' : <>◌&nbsp;{t('Yarış')}</>}
+                  </button>
+                )}
+                {raceMsg?.name === r.name && <span className="mt-1 text-[12px] text-muted">{raceMsg.text}</span>}
+                <span className="sb-plinth mt-2 flex w-full items-start justify-center pt-1.5 font-display text-[20px] text-ink" aria-label={t(PODIUM_NAME[k])}>
+                  {k + 1}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
       <ol ref={list} onKeyDown={navigate} className={`${strip ? 'mt-1' : 'mt-2'} grid tabular-nums ${compact ? 'gap-1 text-[14px]' : 'gap-1.5 text-[15px]'}`}>
         {rows.map((r, i) => {
           const gap = i > 0 && r.rank > rows[i - 1].rank + 1
@@ -316,7 +367,7 @@ export function Board({
           const podium = r.rank <= 3 ? PODIUM[r.rank - 1] : null
           const behind = gapText(r)
           return (
-            <li key={`${r.name}-${r.rank}`} ref={r.me ? meRow : undefined} className={`sb-row ${gap ? 'mt-2 border-t-2 border-dashed border-line/70 pt-2' : ''}`} style={{ animationDelay: `${Math.min(i, 8) * 28}ms` }}>
+            <li key={`${r.name}-${r.rank}`} ref={r.me && !(podiumOn && r.rank <= 3) ? setMe : undefined} className={`sb-row ${gap ? 'mt-2 border-t-2 border-dashed border-line/70 pt-2' : ''} ${podiumOn && r.rank <= 3 ? 'sm:hidden short:block' : ''}`} style={{ animationDelay: `${Math.min(i, 8) * 28}ms` }}>
               <div
                 className={`grid items-center gap-x-2 border-l-4 px-2.5 ${compact ? 'grid-cols-[2.25rem_minmax(0,1fr)_auto]' : 'grid-cols-[2rem_minmax(0,1fr)_auto] sm:grid-cols-[2.25rem_2.5rem_minmax(0,1fr)_auto] sm:gap-x-2.5 short:grid-cols-[2.25rem_minmax(0,1fr)_auto]'} ${compact ? 'py-1.5' : 'py-2 sm:py-2.5 short:py-1.5'} ${r.me ? 'bg-accent/20 outline outline-2 outline-accent/60' : podium ? 'bg-panel-2/80' : i % 2 ? 'bg-panel-2/25' : 'bg-panel-2/55'}`}
                 style={{ borderLeftColor: podium ?? 'transparent' }}
