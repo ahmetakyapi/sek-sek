@@ -1704,7 +1704,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   ]
 
   const playBtn = (cls: string, label = true) => (
-    <button type="button" className={`pixel-btn primary ${cls}`} onClick={() => play()} disabled={!hasP} title={hasP ? `${t('Burada, düzenleyiciden çıkmadan oyna')} (Enter)` : t('Önce bir başlangıç (P) koy.')}>
+    <button type="button" className={`pixel-btn primary cta ${cls}`} onClick={() => play()} disabled={!hasP} title={hasP ? `${t('Burada, düzenleyiciden çıkmadan oyna')} (Enter)` : t('Önce bir başlangıç (P) koy.')}>
       ▶{label && <span> {t('Oyna')}</span>}
     </button>
   )
@@ -2282,7 +2282,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   )
 
   const btn = 'pixel-btn shrink-0 px-2.5 py-1 text-sm'
-  const sep = <span className="h-6 w-0.5 shrink-0 bg-line" aria-hidden />
+  const sep = <span className="h-5 w-px shrink-0 bg-gradient-to-b from-transparent via-line to-transparent" aria-hidden />
 
   const play$ = playing && <EditorPlay level={playing} onExit={endPlay} />
 
@@ -2392,13 +2392,17 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
   )
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-ink text-cream">
-      {/* üst çubuk: geri, başlık, harita araçları (dar ekranda yana kayar), dene ve oyna */}
-      <header className="flex shrink-0 items-center gap-2 border-b-2 border-line px-2 py-1.5">
+    <div className="ed-shell flex h-dvh flex-col overflow-hidden text-cream">
+      {/* üst çubuk: geri, amblem + başlık, harita araçları (dar ekranda yana kayar), dene ve oyna */}
+      <header className="ed-top flex shrink-0 items-center gap-2 px-2 py-1.5">
         <Link href="/" className="pixel-btn back-btn shrink-0 px-2.5 py-1 text-sm" aria-label={t('Oyuna Dön')}>
           ← <span className="hidden wide:inline">{t('Oyuna Dön')}</span>
         </Link>
-        <h1 className="hidden shrink-0 font-display text-xl text-cream 2xl:block">{t('Bölüm Düzenleyici')}</h1>
+        <span className="hidden shrink-0 items-center gap-2 sm:flex">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-emblem.png" width={30} height={30} alt="" className="drop-shadow-[0_2px_0_#0e0d22]" />
+          <h1 className="hidden font-display text-xl leading-none text-cream [text-shadow:0_2px_0_#0e0d22] 2xl:block">{t('Bölüm Düzenleyici')}</h1>
+        </span>
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5">
           <button type="button" className={btn} onClick={() => {
               setTab('harita')
@@ -2486,14 +2490,14 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
       <main
         className={`relative grid min-h-0 flex-1 gap-2 p-2 ${layout === 'wide' ? 'grid-cols-[15rem_minmax(0,1fr)_20rem]' : layout === 'side' ? 'grid-cols-[minmax(0,1fr)_17rem]' : 'grid-rows-[minmax(0,1.3fr)_minmax(0,1fr)]'}`}
       >
-        {layout === 'wide' && <aside className="flex min-h-0 min-w-0 flex-col gap-2">{palette(false)}</aside>}
+        {layout === 'wide' && <aside className="ed-panel flex min-h-0 min-w-0 flex-col gap-2 p-2 [--tone:var(--color-gold)]">{palette(false)}</aside>}
 
         <div className="flex min-h-0 min-w-0 flex-col gap-1.5">
           {/* ızgara: kutuya sığar; kaydırma kutusu tam genişlikte, tuvaller yalnız görünen bölgeyi çizer */}
           <div ref={fitBox} className="relative min-h-0 flex-1">
-            <div className="absolute inset-x-0 top-0 flex max-h-full flex-col gap-1.5">
+            <div className="absolute inset-x-0 top-0 flex h-full max-h-full flex-col gap-1.5">
               <div className="relative flex min-h-0 flex-col">
-                <div ref={scroller} className={`min-h-0 overflow-auto border-2 bg-panel ${picking ? 'border-teal' : 'border-line'}`} onScroll={(e) => setScrollX(e.currentTarget.scrollLeft)}>
+                <div ref={scroller} className={`ed-canvas min-h-0 overflow-auto border-2 bg-panel ${picking ? 'border-teal' : 'border-line'}`} onScroll={(e) => setScrollX(e.currentTarget.scrollLeft)}>
                   <div style={{ width: cols * cell, height: ROWS * cell }}>
                     <div className="sticky left-0" style={{ width: viewW || '100%', height: ROWS * cell }}>
                       <canvas ref={canvas} className="absolute inset-0 block" style={{ width: viewW || '100%', height: ROWS * cell }} aria-hidden />
@@ -2517,7 +2521,8 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
               </div>
 
               {/* durum satırı: seçili karo ve son kullanılanlar, sonra seçim ve parça düğmeleri, yoksa imleçteki karo ya da haritanın ilk sorunu */}
-              <div ref={status} className="flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[13px]">
+              {/* durum satırı ve şerit sütunun dibine yaslanır: orta sütun soldaki ve sağdaki panellerle aynı yerde biter */}
+              <div ref={status} className="mt-auto flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap text-[13px]">
                 <span role="group" aria-label={t('Son Kullanılanlar')} className="flex shrink-0 items-center gap-1">
                   {recent.map((sym) => {
                     const def = TILES.find((x) => x.sym === sym)
@@ -2625,7 +2630,7 @@ function Body({ setLang }: { setLang: (l: Lang) => void }) {
         </div>
 
         {/* sekmeli panel: içerik kendi alanında kayar */}
-        <section className="flex min-h-0 min-w-0 flex-col border-2 border-line bg-panel">
+        <section className="ed-panel flex min-h-0 min-w-0 flex-col overflow-hidden [--tone:var(--color-accent-2)]">
           <div role="tablist" aria-label={t('Panel')} className="flex shrink-0 overflow-x-auto border-b-2 border-line">
             {TABS.map((x) => (
               <button

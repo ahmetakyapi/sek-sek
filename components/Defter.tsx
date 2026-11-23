@@ -182,7 +182,7 @@ export default function Defter({ save, today, hero, sound, onClose, onModes, onM
               </div>
             </section>
             <SectionTitle className="mt-4" title={t('Başarımlar')} note={t('{n}/{m} açıldı', { n: got, m: ACHIEVEMENTS.length })} />
-          <ul className="mt-2 grid grid-cols-1 content-start gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="stagger mt-2 grid grid-cols-1 content-start gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ACHIEVEMENTS.map((a) => {
               const [now, goal] = a.progress(save)
               const done = now >= goal
@@ -221,7 +221,7 @@ export default function Defter({ save, today, hero, sound, onClose, onModes, onM
           </ul>
           </div>
         ) : (
-        <ul className="overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 wide:grid-cols-4">
+        <ul className="stagger overlay-scroll mt-2 grid min-h-[120px] grid-cols-1 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 wide:grid-cols-4">
           {LEVELS.map((l, i) => {
             const locked = i > save.unlocked
             const best = save.best[l.id]

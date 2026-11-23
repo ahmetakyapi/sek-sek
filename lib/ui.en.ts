@@ -2295,6 +2295,7 @@ export const UI_EN: Record<string, string> = {
   // Şehirler ekranı: özet şeridi ve süzgeç (components/CityList.tsx, lib/cityFilter.ts)
   'Eksik Hatıra': 'Missing Keepsakes',
   'İlk Üç': 'Top Three',
+  'Tuşlar Ayarlar’dan değişir': 'Change keys in Settings',
   'Madalya Çizgisi': 'Medal Line',
   'Rekorun yok: önce bronzu hedefle.': 'No record yet: aim for bronze first.',
   'Altın senin: şimdi sıralamaya oyna.': 'Gold is yours: now play for the leaderboard.',
