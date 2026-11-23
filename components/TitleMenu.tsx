@@ -330,7 +330,7 @@ export default function TitleMenu(props: {
               </div>
             )}
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="flex items-center gap-3 tabular-nums tight:hidden">
+              <span className="flex min-w-0 items-center gap-x-2.5 overflow-hidden tabular-nums tight:hidden">
                 <Count label={t('Hatıra')} n={props.found} m={total * 3} />
                 <Count label={t('Gizli Pul')} n={props.stamps} m={total} />
                 <Count label={t('Nazar')} n={props.charms} m={total} />
@@ -362,7 +362,8 @@ function Tile({ icon, label, sub, onClick, tone, dot, badge }: { icon: IconName;
       <span className="min-w-0 flex-1 leading-tight transition-[padding] duration-200 group-hover:pr-4 max-sm:group-hover:pr-0 short:group-hover:pr-0">
         <span className="flex items-center gap-1.5 font-display text-[16px] text-cream short:text-[14px]">
           {label}
-          {badge && <span className="mode-badge new whitespace-nowrap max-sm:hidden short:hidden">{badge}</span>}
+          {/* rozet kutucuğun köşesinde etiket: adın yanına sığmadığında kutucuğu taşırmaz */}
+          {badge && <span className="mode-badge new tile-badge whitespace-nowrap max-sm:hidden short:hidden">{badge}</span>}
         </span>
         <span className={`block truncate text-[12px] max-sm:hidden short:hidden ${dot ? 'font-semibold text-accent-2' : 'text-muted'}`}>{sub}</span>
       </span>
@@ -393,7 +394,7 @@ function Count({ label, n, m }: { label: string; n: number; m: number }) {
   const f = m ? Math.min(1, n / m) : 0
   return (
     <span className="flex items-center gap-1.5">
-      <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 -rotate-90 max-md:hidden short:hidden" aria-hidden>
+      <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 -rotate-90 max-xl:hidden short:hidden" aria-hidden>
         <circle cx="10" cy="10" r="8" fill="none" stroke="var(--color-line)" strokeWidth="3" />
         <circle className="ring-fill" cx="10" cy="10" r="8" fill="none" stroke={f >= 1 ? 'var(--color-gold)' : 'var(--color-accent-2)'} strokeWidth="3" strokeLinecap="round" pathLength={100} strokeDasharray={`${Math.max(f * 100, f ? 2 : 0)} 100`} />
       </svg>

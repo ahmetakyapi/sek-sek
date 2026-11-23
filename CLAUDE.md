@@ -518,9 +518,11 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 - **Geri düğmesi** `pixel-btn back-btn` + `data-back`: turkuaz, en az 44 px, klavyeli cihazda "Esc" ipucu; menülerde Esc
   ekrandaki son görünen `data-back` düğmesine basar (Game.tsx; oyun, mola, fotoğraf, Co-op, yarışta Esc moladır).
   Yeni ekranın Geri düğmesine ikisini de ver. Alt gezinme (← Ayarlar, ← Mola) yalnız `back-btn`.
-- **Menülerde sayfa kaymaz.** Her ekran masaüstünde (1280×720, 1512×860) ve telefonda (dikey 390×664, yatay 750×342) tek bakışta
-  sığar. Uzun liste (şehirler, defter, skor, bölüm sonu) panelin içinde kendi alanında kayar; panel ekran boyunu geçmez.
-  Kanıtı `node scripts/audit-menus.cjs` (sunucu açıkken, `PORT=`): her menü dört boyutta açılır, taşan hücre FAIL verir;
+- **Menülerde sayfa kaymaz, panelden taşma olmaz.** Her ekran masaüstünde (1280×720, 1512×860), ara boyda (1024×640: 900-1023 piksel
+  genişlik "wide" sayılır ama `lg` değildir; Modlar orada iki sütun) ve telefonda (dikey 390×664, yatay 750×342) tek bakışta sığar;
+  hiçbir düğme, rozet ya da yazı panelin yan kenarından taşmaz (denetim bunu da ölçer, kayan kabın içi sayılmaz). Rozet ada sığmıyorsa
+  köşede etiket olur (`.tile-badge`); 700 pikselden alçak geniş ekranda ikincil bilgi gizlenir (`wide:[@media(max-height:700px)]:hidden`). Uzun liste (şehirler, defter, skor, bölüm sonu) panelin içinde kendi alanında kayar; panel ekran boyunu geçmez.
+  Kanıtı `node scripts/audit-menus.cjs` (sunucu açıkken, `PORT=`; `ONLY=` ekran, `SIZE=orta,dikey` boyut süzer): her menü beş boyutta açılır, taşan hücre FAIL verir;
   yeni ekran eklersen betikteki SCREENS listesine yaz.
   Düzen değişkenleri `app/globals.css`te: `wide` (geniş ve yüksek), `short` (alçak, yatay telefon), `side` (ikisinde de yan yana).
 - Düğme durumu bayrakla birlikte saklanır, ölünce o hale dönülür; meydan kapısından geçince sıfırlanır. Bulmacayı buna göre kur.

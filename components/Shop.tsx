@@ -301,7 +301,7 @@ export default function Shop({
           {/* sol: canlı önizleme, karakter, deneme kombini ve eylem; altta parçanın nereden geldiği */}
           <div className="mode-card flex min-h-0 flex-col p-3 [--tone:var(--color-gold)] max-sm:p-2.5">
             <div className="flex gap-3 sm:flex-col short:!flex-row">
-              <div className="relative h-[150px] w-[120px] shrink-0 overflow-hidden border-2 border-line bg-[radial-gradient(ellipse_at_50%_35%,#3a3478,#1a1838)] sm:h-[230px] sm:w-full short:!h-[120px] short:!w-[96px]">
+              <div className="relative h-[150px] w-[120px] shrink-0 overflow-hidden border-2 border-line bg-[radial-gradient(ellipse_at_50%_35%,#3a3478,#1a1838)] sm:h-[clamp(140px,calc(100dvh-480px),230px)] sm:w-full short:!h-[120px] short:!w-[96px]">
                 <HeroPreview hero={hero} kit={draft} scarf={scarf.id === 'al' ? null : scarf} mode={mode} />
                 <button className="absolute bottom-1 right-1 border-2 border-line bg-ink/70 px-1.5 py-0.5 text-[12px] font-semibold text-cream" onClick={() => setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length])} title={t('Önizleme: Döngü, Dur, Koş, Zıpla')}>
                   {t(MODE_NAME[mode])}
@@ -352,7 +352,7 @@ export default function Shop({
                 </div>
               ))}
             </dl>
-            <p className="mt-1.5 text-[12px] leading-snug text-muted max-sm:hidden short:hidden">{t('Parça yolda kazanılır: hatıra, gizli pul ve nazar boncuğu 1, yendiğin her boss 2, her Usta Mührü 3 parça.')}</p>
+            <p className="mt-1.5 text-[12px] leading-snug text-muted max-sm:hidden short:hidden [@media(max-height:700px)]:hidden">{t('Parça yolda kazanılır: hatıra, gizli pul ve nazar boncuğu 1, yendiğin her boss 2, her Usta Mührü 3 parça.')}</p>
           </div>
 
           {/* sağ: sekmeler (Kılık: baş, yüz, sırt, atkı · Görünüm: saç, ten, kıyafet, ifade, duruş) ve seçenekler */}

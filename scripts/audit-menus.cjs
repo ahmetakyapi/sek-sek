@@ -3,14 +3,14 @@
  * ölçülür (Overlay kabında scrollHeight - clientHeight; uzun listeler panelin içinde kendi alanında kayar, o sayılmaz).
  *
  * Kullanım: geliştirme ya da üretim sunucusu açıkken  node scripts/audit-menus.cjs [--goster klasör]
- *   PORT=3000 (varsayılan), ONLY=<ad parçası> yalnız o ekranlar. --goster verilirse her hücrenin ekran görüntüsü klasöre yazılır.
+ *   PORT=3000 (varsayılan), ONLY=<ad parçası> yalnız o ekranlar, SIZE=orta,dikey yalnız o boyutlar. --goster verilirse her hücrenin ekran görüntüsü klasöre yazılır.
  * Skor API'si yakalanır ve örnek satırlar döner (veritabanı gerekmez). Kayan hücre varsa çıkış kodu 1.
  */
 const { chromium } = require('playwright')
 
 const PORT = process.env.PORT || 3000
 const shotDir = process.argv.includes('--goster') ? process.argv[process.argv.indexOf('--goster') + 1] : null
-const SIZES = { masaustu: [1280, 720], genis: [1512, 860], dikey: [390, 664], yatay: [750, 342] }
+const SIZES = { masaustu: [1280, 720], genis: [1512, 860], orta: [1024, 640], dikey: [390, 664], yatay: [750, 342] }
 /** Okuma sayfası olarak tasarlanan ekranlar (bilerek kayar) */
 const TOLERANCE = 2
 
@@ -113,7 +113,8 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
 ;(async () => {
   const browser = await chromium.launch()
   const bad = []
-  for (const [size, [w, h]] of Object.entries(SIZES)) {
+  // SIZE=orta,dikey: yalnız bu boyutlar (uzun koşuyu bölmek için)
+  for (const [size, [w, h]] of Object.entries(SIZES).filter(([n]) => !process.env.SIZE || process.env.SIZE.split(',').includes(n))) {
     for (const [name, [save, steps, query]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: w < 800 })
       // her modun "nasıl oynanır" kartı görülmüş sayılır (yalnız kartın kendi ekranı hariç): menü adımları kartta takılmasın
@@ -150,6 +151,27 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
         const o = Math.max(0, ...els.map((e) => e.scrollHeight - e.clientHeight), document.documentElement.scrollWidth - window.innerWidth)
         return o
       })
+      // panelin kenarından yatayda taşan öğe (rozet, dil düğmesi, uzun yazı): kayan ya da kırpan bir kabın içindekiler sayılmaz
+      const spill = await page.evaluate(() => {
+        const bad = []
+        for (const panel of document.querySelectorAll('.pixel-panel')) {
+          const pr = panel.getBoundingClientRect()
+          if (!pr.width) continue
+          for (const el of panel.querySelectorAll('button, a, input, select, .mode-badge, h1, h2, h3, p')) {
+            const r = el.getBoundingClientRect()
+            if (!r.width || !r.height) continue
+            let clipped = false
+            for (let a = el.parentElement; a && a !== panel; a = a.parentElement) {
+              const cs = getComputedStyle(a)
+              if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') { clipped = true; break }
+            }
+            if (clipped) continue
+            if (r.right > pr.right + 2 || r.left < pr.left - 2) bad.push((el.textContent || el.tagName).trim().slice(0, 24))
+          }
+        }
+        return bad
+      })
+      if (spill.length) note += ` (panelden taşan: ${spill.slice(0, 3).join(' | ')})`
       if (shotDir) await page.screenshot({ path: `${shotDir}/${name}-${size}.png` })
       const ok = over <= TOLERANCE && !note
       console.log(`${ok ? 'OK  ' : 'FAIL'} ${name.padEnd(16)} ${size.padEnd(9)} taşma:${over}px${note}`)

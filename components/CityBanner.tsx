@@ -9,7 +9,7 @@ export default function CityBanner({ level, index, total, eyebrow, height = 120,
   return (
     // short: yatay telefonda (alçak ekranda) daha basık şerit; giriş kartı kaydırmadan sığsın
     <div
-      className="relative -mx-6 -mt-[calc(14px+1.25rem)] mb-4 wide:-mx-8 h-[var(--bh)] overflow-hidden [@media(max-height:500px)]:mb-2 [@media(max-height:500px)]:h-[var(--bh-short)] wide:h-[var(--bh-wide)]"
+      className="relative -mx-6 -mt-[calc(14px+1.25rem)] mb-4 wide:-mx-8 h-[var(--bh)] overflow-hidden [@media(max-height:500px)]:mb-2 [@media(max-height:500px)]:h-[var(--bh-short)] wide:h-[var(--bh-wide)] wide:[@media(max-height:700px)]:h-[var(--bh)]"
       style={{ '--bh': `${height}px`, '--bh-short': `${short ?? height}px`, '--bh-wide': `${wide ?? height}px` } as React.CSSProperties}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

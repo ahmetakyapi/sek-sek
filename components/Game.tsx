@@ -2135,7 +2135,8 @@ export default function Game() {
           <p className="mt-0.5 text-[13px] leading-snug text-muted">{t('İşaretini bekle, yorulunca üstüne bas.')}</p>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+      {/* alçak geniş ekranda (700 px altı) gizli: madalya süreleri bölüm sonunda ve skor çekmecesinde de var */}
+      <div className="mt-4 grid grid-cols-3 gap-2 text-center wide:[@media(max-height:700px)]:hidden">
         {(['altin', 'gumus', 'bronz'] as const).map((m, k) => (
           <div key={m} className="border-2 border-line bg-ink/40 px-1 py-2">
             <p className="flex items-center justify-center gap-1.5 font-display text-lg leading-none text-cream">
@@ -2633,7 +2634,7 @@ export default function Game() {
             }}
             onMusic={() => toggle('music')}
             langSwitch={
-              <span className="flex items-center gap-1" role="group" aria-label={t('Dil')}>
+              <span className="flex shrink-0 items-center gap-1" role="group" aria-label={t('Dil')}>
                 {(['tr', 'en'] as const).map((l) => (
                   <button
                     key={l}
@@ -3070,7 +3071,8 @@ export default function Game() {
                   )
                 })()}
                 <div className="mt-4 hidden wide:flex wide:flex-1 wide:flex-col">
-                  {introAbout}
+                  {/* alçak geniş ekranda (700 px altı) defter notu gizlenir: sütunlar sığar, Kontroller yine dipte */}
+                  <div className="[@media(max-height:700px)]:hidden">{introAbout}</div>
                   {/* sağdaki "Yolcu" öbeğinin eşi: başlıklı kutu, iki sütunun dibi aynı hizada */}
                   <div className="wide:mt-auto">
                     <SectionTitle title={t('Kontroller')} note={t('Tuşlar Ayarlar’dan değişir')} tone="var(--color-accent-2)" className="mt-3" />

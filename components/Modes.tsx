@@ -418,7 +418,7 @@ export function ModesHub({
               )}
             </div>
             {/* Bugün: üç kart. Günlük Meydan Okuma ana kart, Günün Üçlüsü ve Haftalık Turnuva yanında */}
-            <section hidden={!stripShown} className="grid gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+            <section hidden={!stripShown} className="stagger grid gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1fr)] wide:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
               <div className="mode-card today flex min-w-0 flex-col justify-between gap-2 p-3 short:p-2.5 [--tone:var(--color-gold)]">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441,0_0_0_5px_rgba(217,164,65,0.15)]">
@@ -444,7 +444,7 @@ export function ModesHub({
                   </span>
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <button className="pixel-btn primary hit justify-center px-6" onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed}>
+                  <button className={`pixel-btn primary hit justify-center px-6 ${dailyUsed ? '' : 'cta'}`} onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed}>
                     {dailyUsed ? t('Yarın Yeni Şehir') : ic(t('▶ Oyna'))}
                   </button>
                   <button className="pixel-btn hit justify-center px-3" onClick={onDailyBoard}>
@@ -534,9 +534,9 @@ export function ModesHub({
           {/* Bütün modlar ailelere göre, her ailenin içi açılış sırasına / zorluğa göre; ızgara kendi alanında kayar. Aile rengi kutucuğun
               çiziminde ve başlığında, ailenin şekli de başlıkta (renk körü için ikinci işaret): çivit yol · kiremit meydan okuma ·
               turkuaz birlikte · açık çivit keşfet ve dinlen · altın üret. */}
-          <div ref={gridRef} onKeyDown={onGridKey} className="overlay-scroll mode-grid mt-3 grid shrink-0 content-start gap-x-2 gap-y-3 pb-1 wide:mt-2.5 wide:min-h-0 wide:shrink wide:flex-1 wide:grid-cols-4 wide:overflow-y-auto short:mt-2">
+          <div ref={gridRef} onKeyDown={onGridKey} className="overlay-scroll mode-grid mt-3 grid shrink-0 content-start gap-x-2 gap-y-3 pb-1 wide:mt-2.5 wide:min-h-0 wide:shrink wide:flex-1 wide:grid-cols-2 lg:wide:grid-cols-4 wide:overflow-y-auto short:mt-2">
             {vis('rules') || vis('challenges') || vis('mirror') || vis('tour') ? (
-              <TileGroup label={t('Yol')} glyph="◆" tone="var(--color-accent)" className="wide:col-span-4" cols="wide:grid-cols-4">
+              <TileGroup label={t('Yol')} glyph="◆" tone="var(--color-accent)" className="wide:col-span-2 lg:wide:col-span-4" cols="wide:grid-cols-2 lg:wide:grid-cols-4">
                 {vis('rules') && (
                   <ModeTile
                     id="rules"
@@ -608,7 +608,7 @@ export function ModesHub({
               </TileGroup>
             ) : null}
             {vis('rush') || vis('marathon') || vis('chase') || vis('rage') ? (
-              <TileGroup label={t('Meydan Okuma')} glyph="▲" tone="var(--color-coral)" className="wide:col-span-4" cols="wide:grid-cols-4">
+              <TileGroup label={t('Meydan Okuma')} glyph="▲" tone="var(--color-coral)" className="wide:col-span-2 lg:wide:col-span-4" cols="wide:grid-cols-2 lg:wide:grid-cols-4">
                 {vis('rush') && (
                   <ModeTile
                     id="rush"
@@ -699,7 +699,7 @@ export function ModesHub({
               </TileGroup>
             ) : null}
             {vis('duel') || vis('coop') ? (
-              <TileGroup label={t('Birlikte')} glyph="●●" tone="var(--color-teal)" className="wide:col-span-2" cols="wide:grid-cols-2">
+              <TileGroup label={t('Birlikte')} glyph="●●" tone="var(--color-teal)" className="wide:col-span-1 lg:wide:col-span-2" cols="wide:grid-cols-1 lg:wide:grid-cols-2">
                 {vis('duel') && (
                   <ModeTile
                     id="duel"
@@ -736,7 +736,7 @@ export function ModesHub({
               </TileGroup>
             ) : null}
             {vis('editor') || vis('community') ? (
-              <TileGroup label={t('Üret')} glyph="✎" tone="var(--color-gold)" className="wide:col-span-2" cols="wide:grid-cols-2">
+              <TileGroup label={t('Üret')} glyph="✎" tone="var(--color-gold)" className="wide:col-span-1 lg:wide:col-span-2" cols="wide:grid-cols-1 lg:wide:grid-cols-2">
                 {vis('editor') && (
                   <ModeTile
                     id="editor"
@@ -762,7 +762,7 @@ export function ModesHub({
               </TileGroup>
             ) : null}
             {vis('gezgin') || vis('calm') || vis('story') ? (
-              <TileGroup label={t('Keşfet ve Dinlen')} glyph="☾" tone="var(--color-accent-2)" className="wide:col-span-4" cols="wide:grid-cols-4">
+              <TileGroup label={t('Keşfet ve Dinlen')} glyph="☾" tone="var(--color-accent-2)" className="wide:col-span-2 lg:wide:col-span-4" cols="wide:grid-cols-2 lg:wide:grid-cols-4">
                 {vis('gezgin') && (
                   <ModeTile
                     id="gezgin"
