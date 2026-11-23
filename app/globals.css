@@ -1598,3 +1598,103 @@ blockquote {
   .stagger > :nth-child(13) { animation-delay: 364ms; }
   .stagger > :nth-child(14) { animation-delay: 392ms; }
 }
+
+/* ── Ana menü, premium katman (23 Kasım 2026) ─────────────────────────────────────────────────────────────
+   Hepsi transform / opacity / gradyan: filtre, blur ve büyük gölge yok. Hareketi azalt açıksa durur. */
+.hop-title {
+  display: inline-block;
+  white-space: nowrap;
+}
+.hop-title > span {
+  display: inline-block;
+}
+@keyframes hop-in {
+  0% { opacity: 0; transform: translateY(-26px) scaleY(1.1); }
+  55% { opacity: 1; transform: translateY(2px) scaleY(0.9) scaleX(1.06); }
+  75% { transform: translateY(-4px); }
+  100% { transform: none; }
+}
+@keyframes hop {
+  0%, 100% { transform: none; }
+  35% { transform: translateY(-9px) rotate(-4deg); }
+  60% { transform: translateY(1px) scaleY(0.92); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hop-title > span {
+    animation: hop-in 620ms cubic-bezier(0.25, 0.8, 0.3, 1) backwards;
+    animation-delay: calc(120ms + var(--i) * 60ms);
+  }
+  .hop-title:hover > span {
+    animation: hop 460ms ease-in-out;
+    animation-delay: calc(var(--i) * 55ms);
+  }
+}
+/* kartpostal: imlece göre hafif eğilme ve gezinen parlama */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .tilt {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    will-change: transform;
+  }
+  .tilt::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--sx, 50%) var(--sy, 0%), rgb(255 240 210 / 0.18), transparent 46%);
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+  .tilt:hover::after {
+    opacity: 1;
+  }
+}
+/* kutucuk: simge seker, sağdan ok kayarak gelir */
+.tile-go {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  translate: -6px -50%;
+  font-weight: 700;
+  color: var(--color-gold);
+  opacity: 0;
+  transition: opacity 180ms ease, translate 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.menu-tile:hover .tile-go,
+.menu-tile:focus-visible .tile-go {
+  opacity: 1;
+  translate: 0 -50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .menu-tile .tile-icon svg {
+    transition: transform 260ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .menu-tile:hover .tile-icon svg {
+    transform: translateY(-2px) rotate(-8deg) scale(1.08);
+  }
+}
+/* ana düğme: üstünden ara ara ışık geçer */
+.cta {
+  position: relative;
+  overflow: hidden;
+}
+@keyframes cta-shine {
+  0%, 62% { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.24) 48%, transparent 66%);
+    animation: cta-shine 5.2s ease-in-out 1.4s infinite;
+  }
+  .ring-fill {
+    animation: ring-in 900ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms backwards;
+  }
+}
+@keyframes ring-in {
+  from { stroke-dasharray: 0 100; }
+}

@@ -102,6 +102,9 @@ export default function TitleMenu(props: {
   const total = LEVELS.length
   // yol çizgisinden seçilen durak (null: sıradaki); kartpostal ve düğme onu gösterir
   const [pick, setPick] = useState<number | null>(null)
+  // yol çizgisinde üstüne gelinen durak (başlıkta adı görünür)
+  const [peek, setPeek] = useState<number | null>(null)
+  const tilt = useTilt()
   const shown = pick ?? props.resume
   const level = LEVELS[shown]
   const done = LEVELS.filter((l) => props.best[l.id]).length
@@ -144,12 +147,14 @@ export default function TitleMenu(props: {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-emblem.png" width={44} height={44} alt="" className="drop-shadow-[0_3px_0_#0e0d22] short:h-9 short:w-9" />
             <div className="min-w-0">
-              <h1 className="font-display text-[34px] leading-none text-cream [text-shadow:0_3px_0_#0e0d22] short:text-[28px]">Sek-Sek</h1>
+              <h1 className="font-display text-[34px] leading-none text-cream [text-shadow:0_3px_0_#0e0d22] short:text-[28px]">
+                <HopTitle />
+              </h1>
               <p className="truncate text-[13px] text-muted short:hidden tight:hidden">{t('Gezgin’in yarım kalmış defterini tamamla.')}</p>
             </div>
           </header>
 
-          <div className="postcard relative h-[150px] overflow-hidden tight:h-[124px] sm:h-[180px] md:h-auto md:min-h-[230px] md:flex-1 short:h-[106px] short:flex-none">
+          <div {...tilt} className="postcard tilt relative h-[150px] overflow-hidden tight:h-[124px] sm:h-[180px] md:h-auto md:min-h-[230px] md:flex-1 short:h-[106px] short:flex-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/sehirler/${level.id}.webp`} alt="" className="postcard-drift absolute inset-0 h-full w-full object-cover object-[50%_62%]" />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(14_13_34/0.55)_0%,transparent_32%,transparent_48%,rgb(14_13_34/0.92)_100%)]" />
@@ -174,7 +179,19 @@ export default function TitleMenu(props: {
           {/* yol çizgisi: bitenler altın, sıradaki turuncu; açık bir durağa dokununca kartpostal o şehri gösterir */}
           <div className="mt-3 short:mt-2">
             <div className="mb-1.5 flex items-baseline justify-between text-[12px] font-bold tracking-[0.14em] text-muted">
-              <span>{allDone ? up(t('Hepsi Bitti: Bir Şehir Seç')) : up(t('Yolculuk'))}</span>
+              {/* durağın üstüne gelince başlıkta o şehrin adı ve plakası */}
+              <span className="min-w-0 truncate" aria-live="polite">
+                {peek !== null ? (
+                  <span className="text-cream">
+                    {up(LEVELS[peek].name)} <span className="text-gold">{String(LEVELS[peek].plate).padStart(2, '0')}</span>
+                    {props.best[LEVELS[peek].id] ? <span className="text-[#7ad88a]"> ✓</span> : null}
+                  </span>
+                ) : allDone ? (
+                  up(t('Hepsi Bitti: Bir Şehir Seç'))
+                ) : (
+                  up(t('Yolculuk'))
+                )}
+              </span>
               <span className="flex items-baseline gap-2 tabular-nums tracking-normal text-cream">
                 {pick !== null && !allDone && (
                   <button className="text-[12px] font-semibold text-accent-2 underline-offset-2 hover:underline" onClick={() => setPick(null)}>
@@ -201,6 +218,10 @@ export default function TitleMenu(props: {
                     aria-label={open ? l.name : `${l.name} (${t('Kilitli')})`}
                     aria-pressed={on}
                     onClick={() => setPick(i === props.resume && !allDone ? null : i)}
+                    onPointerEnter={() => setPeek(i)}
+                    onPointerLeave={() => setPeek((p) => (p === i ? null : p))}
+                    onFocus={() => setPeek(i)}
+                    onBlur={() => setPeek((p) => (p === i ? null : p))}
                     className="group relative flex h-5 flex-1 items-center disabled:cursor-not-allowed"
                   >
                     <span className={`block w-full transition-[height] ${color} ${on ? 'h-3.5 shadow-[0_0_0_2px_#f3f1ff]' : 'h-2 group-hover:h-3 group-enabled:group-hover:brightness-125'}`} />
@@ -222,7 +243,9 @@ export default function TitleMenu(props: {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-emblem.png" width={60} height={60} alt="" className="drop-shadow-[0_3px_0_#0e0d22]" />
             <div className="min-w-0">
-              <h1 className="font-display text-[52px] leading-[0.9] text-cream [text-shadow:0_4px_0_#0e0d22]">Sek-Sek</h1>
+              <h1 className="font-display text-[52px] leading-[0.9] text-cream [text-shadow:0_4px_0_#0e0d22]">
+                <HopTitle />
+              </h1>
               <p className="mt-1.5 text-[14px] leading-snug text-cream/85">{t('Gezgin’in yarım kalmış defterini tamamla.')}</p>
               <p className="text-[13px] leading-snug text-muted">{lang === 'en' ? `${total} cities. ${total * 3} keepsakes. One journey.` : `${trCount(total)} şehir. ${trCount(total * 3)} hatıra. Tek yolculuk.`}</p>
             </div>
@@ -330,16 +353,20 @@ function Group({ label }: { label: string }) {
 
 function Tile({ icon, label, sub, onClick, tone, dot, badge }: { icon: IconName; label: string; sub: string; onClick: () => void; tone?: 'gold'; dot?: string; /** köşede küçük "Yeni" yazısı */ badge?: string }) {
   return (
-    <button className={`menu-tile group relative flex min-h-[56px] items-center gap-2.5 px-2.5 py-2 text-left max-sm:min-h-[40px] max-sm:py-1 tight:min-h-[42px] tight:py-1 short:min-h-[40px] short:py-1 ${tone === 'gold' ? 'modes-tile' : ''}`} onClick={onClick}>
+    <button className={`menu-tile group relative flex min-h-[56px] items-center gap-2.5 py-2 px-2.5 text-left short:gap-1.5 short:px-1.5 max-sm:min-h-[40px] max-sm:py-1 tight:min-h-[42px] tight:py-1 short:min-h-[40px] short:py-1 ${tone === 'gold' ? 'modes-tile' : ''}`} onClick={onClick}>
       <span className="tile-icon flex h-9 w-9 shrink-0 items-center justify-center max-sm:h-7 max-sm:w-7 short:h-7 short:w-7">
         <PxIcon name={icon} className="h-5 w-5 max-sm:h-4 max-sm:w-4 short:h-4 short:w-4" />
       </span>
-      <span className="min-w-0 flex-1 leading-tight">
+      {/* üstüne gelince sağdan ok kayar: yazı ona yer açar (yalnız o an) */}
+      <span className="min-w-0 flex-1 leading-tight transition-[padding] duration-200 group-hover:pr-4 max-sm:group-hover:pr-0 short:group-hover:pr-0">
         <span className="flex items-center gap-1.5 font-display text-[16px] text-cream short:text-[14px]">
           {label}
           {badge && <span className="mode-badge new whitespace-nowrap max-sm:hidden short:hidden">{badge}</span>}
         </span>
         <span className={`block truncate text-[12px] max-sm:hidden short:hidden ${dot ? 'font-semibold text-accent-2' : 'text-muted'}`}>{sub}</span>
+      </span>
+      <span aria-hidden className="tile-go max-sm:hidden short:hidden">
+        →
       </span>
       {dot && <span className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-accent shadow-[0_0_0_2px_#0e0d22]" aria-label={dot} />}
     </button>
@@ -360,12 +387,65 @@ function Chip({ icon, label, aria, onClick, off, plain }: { icon: IconName; labe
   )
 }
 
+/** Sayaç: küçük ilerleme halkası + sayı (halka dolu oranı gösterir; hareketi azalt açık değilse açılışta dolar) */
 function Count({ label, n, m }: { label: string; n: number; m: number }) {
+  const f = m ? Math.min(1, n / m) : 0
   return (
-    <span>
-      {label} <strong className="text-cream">{n}</strong>/{m}
+    <span className="flex items-center gap-1.5">
+      <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 -rotate-90 max-md:hidden short:hidden" aria-hidden>
+        <circle cx="10" cy="10" r="8" fill="none" stroke="var(--color-line)" strokeWidth="3" />
+        <circle className="ring-fill" cx="10" cy="10" r="8" fill="none" stroke={f >= 1 ? 'var(--color-gold)' : 'var(--color-accent-2)'} strokeWidth="3" strokeLinecap="round" pathLength={100} strokeDasharray={`${Math.max(f * 100, f ? 2 : 0)} 100`} />
+      </svg>
+      <span className="whitespace-nowrap">
+        {label} <strong className="text-cream">{n}</strong>/{m}
+      </span>
     </span>
   )
+}
+
+/** "Sek-Sek": harfler açılışta sırayla seker, üstüne gelince yeniden sek sek zıplar (CSS .hop-title; hareketi azalt açıksa durur) */
+function HopTitle() {
+  return (
+    <>
+      <span className="sr-only">Sek-Sek</span>
+      <span className="hop-title" aria-hidden>
+        {'Sek-Sek'.split('').map((ch, i) => (
+          <span key={i} style={{ ['--i' as string]: i }}>
+            {ch}
+          </span>
+        ))}
+      </span>
+    </>
+  )
+}
+
+/**
+ * Kartpostalın eğilmesi: imlecin kart içindeki konumu `--rx` / `--ry` (derece) ve parlamanın yeri `--sx` / `--sy` olur;
+ * React durumu değil, doğrudan stil değişkeni (yeniden çizim yok). Yalnız ince imleçte ve hareketi azalt kapalıyken.
+ */
+function useTilt() {
+  const ok = useRef(false)
+  useEffect(() => {
+    ok.current = window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }, [])
+  return {
+    onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+      if (!ok.current) return
+      const el = e.currentTarget
+      const r = el.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width
+      const y = (e.clientY - r.top) / r.height
+      el.style.setProperty('--ry', `${((x - 0.5) * 7).toFixed(2)}deg`)
+      el.style.setProperty('--rx', `${((0.5 - y) * 6).toFixed(2)}deg`)
+      el.style.setProperty('--sx', `${(x * 100).toFixed(1)}%`)
+      el.style.setProperty('--sy', `${(y * 100).toFixed(1)}%`)
+    },
+    onPointerLeave: (e: React.PointerEvent<HTMLElement>) => {
+      const el = e.currentTarget
+      el.style.setProperty('--rx', '0deg')
+      el.style.setProperty('--ry', '0deg')
+    },
+  }
 }
 
 /**
