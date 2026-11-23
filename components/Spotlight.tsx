@@ -16,7 +16,7 @@ export default function Spotlight() {
       raf = 0
       const e = ev
       if (!e) return
-      const el = (e.target as Element | null)?.closest?.('.mode-tile, .mode-card, .menu-tile') as HTMLElement | null
+      const el = (e.target as Element | null)?.closest?.('.mode-tile, .mode-card, .menu-tile, .city-row') as HTMLElement | null
       if (!el) return
       const r = el.getBoundingClientRect()
       el.style.setProperty('--mx', `${Math.round(e.clientX - r.left)}px`)

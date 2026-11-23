@@ -2292,6 +2292,12 @@ export const UI_EN: Record<string, string> = {
   'Usta Parkurları': 'Master Courses',
   '🔒 Kilitli': '🔒 Locked',
   'Hierapolis Basamakları': 'Hierapolis Steps',
+  // Şehirler ekranı: özet şeridi ve süzgeç (components/CityList.tsx, lib/cityFilter.ts)
+  'Eksik Hatıra': 'Missing Keepsakes',
+  'Altın Yok': 'No Gold',
+  'Lider Değilim': 'Not Leading',
+  'Yolun Özeti': 'Journey Summary',
+  'Bu süzgece uyan şehir yok.': 'No city matches this filter.',
   'Kozlu Maden Ocağı': 'Kozlu Coal Mine',
   'Sinop Kalesi Rıhtımı': 'Sinop Fortress Quay',
   'Tarihi Cezaevi': 'The Old Prison',

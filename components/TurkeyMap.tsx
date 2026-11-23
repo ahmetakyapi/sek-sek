@@ -413,7 +413,7 @@ const WIDE = makeGeo(1, 24.6, 30.6)
  * `detail` verilirse şehrin üstüne gelince (ya da klavyeyle odaklanınca) haritanın üstünde süzülen kart açılır: kartın
  * içini çağıran doldurur (rekor, madalya, sıra). Üstüne gelinen şehrin geliş ve gidiş yolu da seçili şehirdeki gibi öne çıkar.
  */
-export default function TurkeyMap({ unlocked, selected, onSelect, detail }: { unlocked: number; selected: number; onSelect?: (i: number) => void; detail?: (i: number) => React.ReactNode }) {
+export default function TurkeyMap({ unlocked, selected, onSelect, detail, peek = null }: { unlocked: number; selected: number; onSelect?: (i: number) => void; detail?: (i: number) => React.ReactNode; /** dışarıdan öne çıkarılan şehir (listede üstüne gelinen): yolları ve düğümü vurgulanır, kart açılmaz */ peek?: number | null }) {
   const lang = useLang()
   const words = SEAS[lang]
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
@@ -422,7 +422,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect, detail }: { un
   const [width, setWidth] = useState(W)
   // üstüne gelinen ya da odaklanan şehir (kart ve öne çıkan yollar); yoksa seçili şehir
   const [hover, setHover] = useState<number | null>(null)
-  const focus = hover ?? selected
+  const focus = hover ?? peek ?? selected
 
   useEffect(() => {
     const el = wrap.current
@@ -616,6 +616,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect, detail }: { un
           const { x, y } = nodes[i]
           const locked = i > unlocked
           const on = i === selected
+          const lit = peek === i && !on
           const done = !!onSelect && i < unlocked
           // sıradaki (açık ama bitmemiş en ileri şehir): seçili olmasa da nabız gibi atan altın halkayla öne çıkar
           const next = !!onSelect && i === unlocked
@@ -631,6 +632,7 @@ export default function TurkeyMap({ unlocked, selected, onSelect, detail }: { un
                   <circle cx={x} cy={y} r={rr + 3.4 * u} fill="none" stroke="var(--tm-ink)" strokeWidth={ink * 0.8} strokeDasharray={`${2.2 * ink} ${2.2 * ink}`} />
                 </>
               )}
+              {lit && <circle className="tm-pulse" cx={x} cy={y} r={rr + 3 * u} fill="none" stroke="var(--tm-route)" strokeWidth={ink * 1.6} />}
               {next && !on && (
                 <>
                   <circle className="tm-pulse" cx={x} cy={y} r={rr + 2.6 * u} fill="none" stroke="var(--tm-gold)" strokeWidth={ink * 2} />
@@ -682,9 +684,10 @@ export default function TurkeyMap({ unlocked, selected, onSelect, detail }: { un
               aria-disabled={locked}
               aria-pressed={on}
               onClick={(e) => pick(e, i)}
-              onPointerEnter={() => setHover(i)}
+              // kart yalnız fareyle ve klavye odağıyla açılır: dokunmada pointerleave gelmez, kart açık kalırdı
+              onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(i)}
               onPointerLeave={() => setHover((h) => (h === i ? null : h))}
-              onFocus={() => setHover(i)}
+              onFocus={(e) => e.currentTarget.matches(':focus-visible') && setHover(i)}
               onBlur={() => setHover((h) => (h === i ? null : h))}
               onKeyDown={(e) => {
                 if (locked || (e.key !== 'Enter' && e.key !== ' ')) return

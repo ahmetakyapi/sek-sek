@@ -37,6 +37,7 @@ import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } 
 import { POINTS, runPoints } from '@/lib/points'
 import { useListRanks } from '@/lib/listRanks'
 import { RankTag } from '@/components/RankTag'
+import { CITY_FILTERS, CityStats, cityMatches, type CityFilter } from '@/components/CityList'
 import { MedalBadge, SectionTitle, Overlay, displayName, haptic, ic, medalFor, setHapticScale } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
@@ -348,6 +349,10 @@ export default function Game() {
   const heroAcc = kitOf(save, hero.id)
   // Şehirler listesinde her şehrin lideri ve oyuncunun sırası (tek istek, liste açıkken)
   const cityRanks = useListRanks('sehir', save.player?.name ?? '', screen === 'map')
+  // Şehirler listesi: arama, "tekrar oynamaya değer" süzgeci ve haritayla bağlı vurgu (listede üstüne gelinen şehir)
+  const [cityQuery, setCityQuery] = useState('')
+  const [cityFilter, setCityFilter] = useState<CityFilter>('all')
+  const [cityPeek, setCityPeek] = useState<number | null>(null)
   // ?debug (ölçüm ve görsel betikleri): güncelleme notu ekranı kapatmasın
   const mapNotice = quiet ? { renewed: [], added: [] } : mapNews(save)
   const now = new Date()
@@ -2854,6 +2859,8 @@ export default function Game() {
           <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-2xl flex-col p-4 sm:p-6 short:py-3 side:max-w-[min(1440px,100%)]">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-3xl text-cream short:text-2xl">{t("Şehirler")}</h2>
+              {/* yolun özeti bir bakışta: geçilen, altın, hatıra, lider olunan şehir */}
+              <CityStats save={save} ranks={cityRanks} />
               <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={() => setScreen('title')}>
                 {ic(t("← Geri"))}
               </button>
@@ -2881,6 +2888,7 @@ export default function Game() {
                   <TurkeyMap
                     unlocked={save.unlocked}
                     selected={levelIdx}
+                    peek={cityPeek}
                     onSelect={(i) => loadLevel(i)}
                     detail={(i) => {
                       const l = LEVELS[i]
@@ -2910,19 +2918,41 @@ export default function Game() {
                 </div>
               </div>
               <div className="relative mt-4 side:mt-0 side:flex side:min-h-[160px] side:flex-1 side:flex-col">
-                <div className="mb-2 flex items-baseline justify-between gap-3 px-0.5 short:hidden">
-                  <span className="text-[14px] font-semibold text-gold">{t('Bütün Şehirler')}</span>
-                  <span className="text-[13px] text-muted tabular-nums">{t('{n}/{total} Geçildi', { n: LEVELS.filter((l) => save.best[l.id]).length, total: LEVELS.length })}</span>
+                {/* arama ve süzgeç: tekrar oynamaya değer şehirleri bulmak için (eksik hatıra, altın yok, lider değilim) */}
+                <div className="mb-2 flex flex-col gap-1.5 short:hidden">
+                  <input
+                    type="search"
+                    value={cityQuery}
+                    onChange={(e) => setCityQuery(e.target.value)}
+                    placeholder={t('Şehir ara (ad ya da plaka)')}
+                    aria-label={t('Şehir ara (ad ya da plaka)')}
+                    className="city-search w-full px-3 py-1.5 text-[14px] text-cream placeholder:text-muted"
+                  />
+                  <div className="strip-fade -mx-1 flex gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:[mask-image:none]" role="group" aria-label={t('Süzgeç')}>
+                    {CITY_FILTERS.map(([k, label]) => (
+                      <button key={k} type="button" className="mode-filter shrink-0 whitespace-nowrap" aria-pressed={cityFilter === k} onClick={() => setCityFilter(k)}>
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="side:relative side:min-h-[120px] side:flex-1">
-                <ul className="overlay-scroll grid grid-cols-1 content-start gap-2.5 sm:grid-cols-2 side:absolute side:inset-0 side:grid-cols-1 side:overflow-y-auto side:pr-1">
+                <ul className="stagger overlay-scroll grid grid-cols-1 content-start gap-2.5 sm:grid-cols-2 side:absolute side:inset-0 side:grid-cols-1 side:overflow-y-auto side:pr-1" onPointerLeave={() => setCityPeek(null)}>
                   {LEVELS.map((l, i) => {
                     const locked = i > save.unlocked
                     const best = save.best[l.id]
                     const found = best?.items.filter(Boolean).length ?? 0
+                    if (!cityMatches(l, i, { query: cityQuery, filter: cityFilter, unlocked: save.unlocked, best, rank: cityRanks[l.id], player: !!save.player })) return null
                     return (
                       <li key={l.id}>
-                        <button className="pixel-btn w-full items-stretch gap-0 overflow-hidden p-0 text-left" disabled={locked} onClick={() => loadLevel(i)}>
+                        <button
+                          className="city-row pixel-btn w-full items-stretch gap-0 overflow-hidden p-0 text-left"
+                          disabled={locked}
+                          onClick={() => loadLevel(i)}
+                          onPointerEnter={(e) => e.pointerType === 'mouse' && setCityPeek(locked ? null : i)}
+                          onFocus={(e) => e.currentTarget.matches(':focus-visible') && setCityPeek(locked ? null : i)}
+                          onBlur={() => setCityPeek(null)}
+                        >
                           <span className="relative w-[92px] short:w-[60px] shrink-0 overflow-hidden">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={`/sehirler/${l.id}.webp`} alt="" className={`h-full w-full object-cover ${locked ? 'opacity-30 grayscale' : ''}`} style={{ imageRendering: 'pixelated' }} />
@@ -2954,9 +2984,13 @@ export default function Game() {
                             <span className="flex shrink-0 flex-col items-end gap-1 text-[12px] text-muted">
                               {locked ? <span className="flex items-center gap-1">🔒 {t('Kilitli')}</span> : best && !best.stale ? <span className="font-semibold text-cream">{formatTime(best.timeMs)}</span> : best ? t('Yeni Yol') : <span className="font-bold text-accent-2">{t('Oynanmadı')}</span>}
                               {best && (
-                                <span className="flex items-center gap-1.5">
+                                <span className="flex items-center gap-1.5" aria-label={t('{n}/3 hatıra', { n: found })}>
                                   {!best.stale && <MedalBadge medal={medalFor(l, best.timeMs)} />}
-                                  {found}/3
+                                  <span className="flex gap-[3px]" aria-hidden>
+                                    {best.items.map((got, k) => (
+                                      <span key={k} className={`h-2 w-2 rotate-45 ${got ? 'bg-gold' : 'border border-line bg-ink/60'}`} />
+                                    ))}
+                                  </span>
                                 </span>
                               )}
                               {!locked && <RankTag rank={cityRanks[l.id]} />}
@@ -2966,6 +3000,9 @@ export default function Game() {
                       </li>
                     )
                   })}
+                  {LEVELS.every((l, i) => !cityMatches(l, i, { query: cityQuery, filter: cityFilter, unlocked: save.unlocked, best: save.best[l.id], rank: cityRanks[l.id], player: !!save.player })) && (
+                    <li className="border-2 border-dashed border-line px-3 py-4 text-center text-[13px] text-muted sm:col-span-2 side:col-span-1">{t('Bu süzgece uyan şehir yok.')}</li>
+                  )}
                 </ul>
                 </div>
               </div>

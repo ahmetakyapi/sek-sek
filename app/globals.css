@@ -1550,13 +1550,15 @@ blockquote {
    içeriğinin altında durur (isolation + z-index -1); yalnız gradyan ve opacity: filtre, blur, büyük gölge yok. */
 .mode-tile,
 .mode-card,
-.menu-tile {
+.menu-tile,
+.city-row {
   position: relative;
   isolation: isolate;
 }
 .mode-tile::before,
 .mode-card::before,
-.menu-tile::before {
+.menu-tile::before,
+.city-row::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -1570,7 +1572,8 @@ blockquote {
 @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .mode-tile:not(.locked):hover::before,
   .mode-card:hover::before,
-  .menu-tile:hover::before {
+  .menu-tile:hover::before,
+  .city-row:not(:disabled):hover::before {
     opacity: 1;
   }
 }
@@ -1697,4 +1700,21 @@ blockquote {
 }
 @keyframes ring-in {
   from { stroke-dasharray: 0 100; }
+}
+/* Şehirler ekranı: arama kutusu ve özet şeridi */
+.city-search {
+  background: rgb(14 13 34 / 0.6);
+  border: 2px solid var(--color-line);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 140ms ease;
+}
+.city-search:focus-visible {
+  border-color: var(--color-gold);
+}
+.city-stats {
+  padding: 6px 4px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(34 31 74 / 0.7), rgb(14 13 34 / 0.45));
+  box-shadow: inset 0 0 0 2px var(--color-line);
 }
