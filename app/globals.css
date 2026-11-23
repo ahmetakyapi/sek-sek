@@ -1694,12 +1694,6 @@ blockquote {
     background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.24) 48%, transparent 66%);
     animation: cta-shine 5.2s ease-in-out 1.4s infinite;
   }
-  .ring-fill {
-    animation: ring-in 900ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms backwards;
-  }
-}
-@keyframes ring-in {
-  from { stroke-dasharray: 0 100; }
 }
 /* Şehirler ekranı: arama kutusu ve özet şeridi */
 .city-search {

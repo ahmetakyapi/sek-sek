@@ -117,8 +117,8 @@ export default function TitleMenu(props: {
 
   return (
     <div ref={root} className="rise relative w-full max-w-md md:max-w-[880px] short:max-w-[min(820px,100%)]">
-      {/* karakterin fotoğrafı: yalnız geniş ekranda, panelin sol kenarına iliştirilmiş */}
-      <div className="pointer-events-none absolute -left-[150px] top-[46%] z-20 hidden w-[180px] -translate-y-1/2 lg:block [@media(max-height:640px)]:!hidden">
+      {/* karakterin fotoğrafı: panelin sol kenarına iliştirilmiş; yalnız yanında yeri olan ekranda (1220 px+, yoksa ekranın dışına taşar) */}
+      <div className="pointer-events-none absolute -left-[150px] top-[46%] z-20 hidden w-[180px] -translate-y-1/2 [@media(min-width:1220px)]:block [@media(max-height:640px)]:!hidden">
         {props.character ? (
           <figure className="polaroid relative rotate-[-5deg]">
             <span className="tape" />
@@ -330,7 +330,7 @@ export default function TitleMenu(props: {
               </div>
             )}
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-x-2.5 overflow-hidden tabular-nums tight:hidden">
+              <span className="flex min-w-0 items-center gap-x-3 tabular-nums tight:hidden">
                 <Count label={t('Hatıra')} n={props.found} m={total * 3} />
                 <Count label={t('Gizli Pul')} n={props.stamps} m={total} />
                 <Count label={t('Nazar')} n={props.charms} m={total} />
@@ -389,18 +389,11 @@ function Chip({ icon, label, aria, onClick, off, plain }: { icon: IconName; labe
   )
 }
 
-/** Sayaç: küçük ilerleme halkası + sayı (halka dolu oranı gösterir; hareketi azalt açık değilse açılışta dolar) */
+/** Sayaç: tamamlanınca altın (halka yok: panel her ekranda aynı genişlikte, büyük sayılarla sığmıyordu) */
 function Count({ label, n, m }: { label: string; n: number; m: number }) {
-  const f = m ? Math.min(1, n / m) : 0
   return (
-    <span className="flex items-center gap-1.5">
-      <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 -rotate-90 max-xl:hidden short:hidden" aria-hidden>
-        <circle cx="10" cy="10" r="8" fill="none" stroke="var(--color-line)" strokeWidth="3" />
-        <circle className="ring-fill" cx="10" cy="10" r="8" fill="none" stroke={f >= 1 ? 'var(--color-gold)' : 'var(--color-accent-2)'} strokeWidth="3" strokeLinecap="round" pathLength={100} strokeDasharray={`${Math.max(f * 100, f ? 2 : 0)} 100`} />
-      </svg>
-      <span className="whitespace-nowrap">
-        {label} <strong className="text-cream">{n}</strong>/{m}
-      </span>
+    <span className="whitespace-nowrap">
+      {label} <strong className={n >= m && m > 0 ? 'text-gold' : 'text-cream'}>{n}</strong>/{m}
     </span>
   )
 }

@@ -169,6 +169,11 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
             if (r.right > pr.right + 2 || r.left < pr.left - 2) bad.push((el.textContent || el.tagName).trim().slice(0, 24))
           }
         }
+        // panel ve yanına iliştirilen fotoğraf ekranın yan kenarından taşmaz
+        for (const el of document.querySelectorAll('.pixel-panel, .polaroid')) {
+          const r = el.getBoundingClientRect()
+          if (r.width && getComputedStyle(el).visibility !== 'hidden' && (r.left < -2 || r.right > innerWidth + 2)) bad.push(`ekrandan: ${el.className.split(' ')[0]}`)
+        }
         return bad
       })
       if (spill.length) note += ` (panelden taşan: ${spill.slice(0, 3).join(' | ')})`
