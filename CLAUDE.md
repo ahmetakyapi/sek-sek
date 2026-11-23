@@ -587,6 +587,15 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
 - CI (`.github/workflows/ci.yml`): typecheck, test, build; 40 şehrin her biri için verify-levels → verify-respawn → bossbot.
   Yeni şehir eklenince matrise yaz.
 
+## Yayın boyutu (kalıcı kural, 23 Kasım 2026)
+
+Vercel fonksiyonları küçük kalır: `/skor/kart` 80 MB'tı (sharp'ın glibc + musl + wasm kitaplıkları ~47 MB, README görselleri, 10 MB şehir
+sahnesi), şimdi ~9 MB; bütün fonksiyonların tekil dosyaları ~17 MB. `next.config.ts` `outputFileTracingExcludes`: sharp ve `@img`, `docs/`,
+`scripts/`, `tests/`, `.claude/`, `tsconfig.tsbuildinfo` hiçbir fonksiyona girmez; kart kaynak kodu ve `public/sehirler`i almaz (dosya okuyan tek
+yer `app/skor/kart/route.tsx`: `assets/` + `public/portreler`). `assets/cities/*.png` 256 renkli paletli PNG'dir (`banners.cjs` öyle yazar).
+Sunucuda dosya okuyan yeni bir yer ya da ağır paket eklersen ölç: `npm run build` sonra `.next/server/**/*.nft.json` dosyalarının boyutu
+(betik: her nft dosyasındaki `files` yollarının boyutunu topla); bir fonksiyon 15 MB'ı geçmesin.
+
 ## Yayın
 
 `main`e push → Vercel otomatik derler (proje `sek-sek`). Push’tan sonra dağıtımın READY olduğunu ve

@@ -40,6 +40,9 @@ const save = { character: 'uktun', skippedName: true, seenStory: true, mapVersio
     // kartlar webp olarak sunulur
     execFileSync('python3', ['-c', `from PIL import Image; im=Image.open('public/sehirler/${id}.png').convert('RGB'); im.save('public/sehirler/${id}.webp', quality=86, method=6)`], { cwd: root })
     fs.unlinkSync(path.join(root, `public/sehirler/${id}.png`))
+    // kartpostal sahnesi skor kartı fonksiyonuyla Vercel'e gider: 256 renkli paletli PNG (piksel sanatında gözle fark yok, ~5 kat küçük)
+    const card = path.join(root, `assets/cities/${id}.png`)
+    fs.writeFileSync(card, await require('sharp')(card).removeAlpha().png({ palette: true, quality: 95, effort: 10, compressionLevel: 9, dither: 0.6 }).toBuffer())
     console.log('ok', id)
   }
   await b.close()

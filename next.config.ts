@@ -29,6 +29,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // skor kartı görseli fontları, amblemi ve portreyi dosyadan okur
   outputFileTracingIncludes: { '/skor/kart': ['./assets/**', './public/portreler/**'] },
+  // Vercel fonksiyonları küçük kalsın (23 Kasım 2026: /skor/kart 80 MB'tı). sharp Next'in isteğe bağlı görsel kütüphanesi:
+  // görsel iyileştirmesi Vercel'de, skor kartı next/og (resvg) ile çizilir, hiçbir fonksiyon sharp'ı çağırmaz. README görselleri,
+  // betikler ve testler sunucuda okunmaz; dinamik `readFile(join(process.cwd(), …))` izleyiciye bunları da katıyordu.
+  outputFileTracingExcludes: {
+    '*': ['node_modules/@img/**', 'node_modules/sharp/**', 'docs/**', 'scripts/**', 'tests/**', '.claude/**', 'README.md', 'AGENTS.md', 'CLAUDE.md', 'tsconfig.tsbuildinfo'],
+    // kart yalnız assets/ ve public/portreler okur (tek dosya okuyan yer); kaynak kod derlenmiş hâliyle .next/server'dadır
+    '/skor/kart': ['public/sehirler/**', 'app/**', 'components/**', 'game/**', 'lib/**', 'drizzle/**'],
+  },
   async headers() {
     return [
       // şehir görselleri ve portreler: adı sabit, içeriği seyrek değişir; bir gün önbellek, arka planda tazeleme
