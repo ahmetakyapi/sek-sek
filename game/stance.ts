@@ -4,9 +4,9 @@
  * (`newPose`), kare başına nesne ayırmaz. Her şey saate (`t`) ve hareketsiz kalma süresine (`idleT`) bağlıdır:
  * kare hızından bağımsızdır, rastgelelik yok.
  *
- * Bekleme duruşları (game/looks.ts STANCES): rahat, eller belde, kollar bağlı, eller cepte, etrafa bakınır, esneyip durur.
- * Birkaç saniye hareketsiz kalınca duruşa göre sırayla küçük hareketler başlar: etrafa bakınma, ayak oynatma,
- * esneme, el sallama. Sürekli olanlar: nefes (heroDraw), göz kırpma, saç ve atkının hafif salınımı.
+ * Bekleme duruşları (game/looks.ts STANCES): rahat, eller belde, kollar bağlı, eller cepte, etrafa bakınır, esneyip durur,
+ * düşünceli (el çenede), sek sek (yerinde seker). Birkaç saniye hareketsiz kalınca duruşa göre sırayla küçük hareketler
+ * başlar: etrafa bakınma, ayak oynatma, esneme, el sallama, tek ayak sekme. Sürekli olanlar: nefes (heroDraw), göz kırpma, saç ve atkının hafif salınımı.
  */
 import { STANCES, type IdleMove } from './looks'
 import { POSES, airPoseInto, gaitInto, lerpPoseInto, newPose, type Pose } from './heroDraw'
@@ -23,10 +23,12 @@ const BASE: Record<string, { legs: [[number, number], [number, number]]; arms: [
   bagli: { legs: [[-4, 3], [9, 6]], arms: [[30, -95], [42, -100]] },
   // eller cepte: dirsekler hafif geride, eller kalça cebinde
   cep: { legs: [[-5, 3], [6, 3]], arms: [[-10, 34], [-14, 40]] },
+  // düşünceli: yakın elin üstünde çene, uzak kol karnın önünden yakın dirseği tutar
+  cene: { legs: [[-4, 3], [8, 5]], arms: [[24, -88], [80, 205]] },
 }
 
 /** hareketlerin süresi (sn) ve ardışık hareketler arasındaki boşluk */
-const DUR: Record<IdleMove, number> = { bak: 3.4, tik: 3.2, esne: 3.4, sal: 1.9 }
+const DUR: Record<IdleMove, number> = { bak: 3.4, tik: 3.2, esne: 3.4, sal: 1.9, sek: 2.4 }
 const SLOT = 6.6
 /** hareketsiz kaldıktan bu kadar sonra ilk hareket */
 const FIRST = 3
@@ -54,15 +56,16 @@ export function idlePose(out: Pose, stance: string | undefined, idleT: number, t
   out.arms[1][0] = b.arms[1][0]
   out.arms[1][1] = b.arms[1][1]
   out.lean = 0
-  out.tilt = def.base === 'bagli' ? 0.015 : 0
+  out.tilt = def.base === 'bagli' ? 0.015 : def.base === 'cene' ? 0.03 : 0
   out.bob = 0
   // hafif esinti: saç ve atkı dururken de oynar
   out.hair = 0.1 + 0.08 * Math.sin(t * 1.3)
   out.lift = 0.06 * Math.sin(t * 0.9 + 0.5)
   out.ground = true
   out.reach = 1
-  out.head = 0
-  out.gaze = 0
+  // düşünceli: baş hafif kalkık, gözler yukarı-ileri
+  out.head = def.base === 'cene' ? -0.05 : 0
+  out.gaze = def.base === 'cene' ? 0.5 : 0
   out.mouth = undefined
   out.mood = undefined
   // göz kırpma: ~3,6 sn'de bir, ara sıra çift
@@ -110,6 +113,22 @@ export function idlePose(out: Pose, stance: string | undefined, idleT: number, t
       out.reach = 1 + 0.1 * e
       if (e > 0.3) out.blink = true
       if (e > 0.62) out.mouth = 'yawn'
+      break
+    }
+    case 'sek': {
+      // sek sek: yakın ayak bükülüp kalkar, öbür ayakla üç kez yerinde sekilir; kollar dengede yana açılır
+      const hop = Math.max(0, Math.sin(PI2 * 3 * u))
+      out.legs[1][0] = lerp(out.legs[1][0], 26, env)
+      out.legs[1][1] = lerp(out.legs[1][1], 74, env)
+      out.legs[0][1] += 10 * hop * env
+      out.bob = -4.2 * hop * env
+      out.arms[0][0] = lerp(out.arms[0][0], -34, env)
+      out.arms[0][1] = lerp(out.arms[0][1], -10, env)
+      out.arms[1][0] = lerp(out.arms[1][0], 40, env)
+      out.arms[1][1] = lerp(out.arms[1][1], 70, env)
+      out.hair = 0.1 + 0.5 * hop * env
+      out.lift = -0.4 * hop * env
+      if (env > 0.3) out.mood = 'happy'
       break
     }
     case 'sal': {

@@ -54,10 +54,10 @@ export interface AxisDef {
 }
 
 /** ── saç ───────────────────────────────────────────────────────────────────────────── */
-/** ön saç biçimleri: fringe (Uktun'un taranmış perçemi), quiff (Memo'nun kabarığı), short, curly, buzz */
-export type Front = 'fringe' | 'quiff' | 'short' | 'curly' | 'buzz'
-/** arka saç: omuza dökülen (long), at kuyruğu (tail), tepe topuzu (bun), örgü (braid), kısa kare (bob) */
-export type Back = 'none' | 'long' | 'tail' | 'bun' | 'braid' | 'bob'
+/** ön saç biçimleri: fringe (Uktun'un taranmış perçemi), quiff (Memo'nun kabarığı), short, curly, buzz, messy (dağınık kısa), side (yan tarama) */
+export type Front = 'fringe' | 'quiff' | 'short' | 'curly' | 'buzz' | 'messy' | 'side'
+/** arka saç: omuza dökülen (long), at kuyruğu (tail), tepe topuzu (bun), örgü (braid), kısa kare (bob), iki yandan örgü (pigtails) */
+export type Back = 'none' | 'long' | 'tail' | 'bun' | 'braid' | 'bob' | 'pigtails'
 export interface HairStyle {
   /** boşsa yolcunun kendi ön saçı */
   front?: Front
@@ -73,6 +73,9 @@ export const HAIR_STYLES: Record<string, HairStyle> = {
   orgu: { back: 'braid' },
   bob: { back: 'bob' },
   uzun: { back: 'long' },
+  ikiorgu: { back: 'pigtails' },
+  daginik: { front: 'messy', back: 'none' },
+  yantarama: { front: 'side', back: 'none' },
 }
 /** yolcunun kendi saçı: Uktun'da omuza dökülen perçemli saç, Memo'da kabarık kısa saç */
 export const OWN_HAIR: Record<Hero, { front: Front; back: Back }> = { uktun: { front: 'fringe', back: 'long' }, memo: { front: 'quiff', back: 'none' } }
@@ -88,6 +91,10 @@ export const HAIR_COLORS: Record<string, string> = {
   pembe: '#e47aa8',
   mavi: '#4a78d8',
   nane: '#4fbf9a',
+  bal: '#c8883a',
+  bordo: '#7a2436',
+  lila: '#a68ad8',
+  platin: '#ece4cc',
 }
 
 export interface Tone {
@@ -115,6 +122,10 @@ export const OUTFIT_COLORS: Record<string, string> = {
   pembe: '#e87aa6',
   antrasit: '#4a4c5e',
   krem: '#e8dcc0',
+  bordo: '#8e2c3e',
+  lacivert: '#2e3c74',
+  zeytin: '#7a8a3e',
+  lila: '#b49ad8',
 }
 
 export const EYE_COLORS: Record<string, string> = {
@@ -125,18 +136,21 @@ export const EYE_COLORS: Record<string, string> = {
   gri: '#7a8898',
   mor: '#8a5ac0',
   altin: '#d8a830',
+  bal: '#b8782a',
+  turkuaz: '#2aa8b4',
+  kehribar: '#d4862a',
 }
 
 /** ifade: göz açıklığı (lid), bakış, ağız ve kaşın ruh hâli */
-export type Expr = 'ozgun' | 'neseli' | 'uykulu' | 'saskin' | 'kurnaz' | 'sevecen'
-export const EXPRESSIONS: readonly Expr[] = ['ozgun', 'neseli', 'uykulu', 'saskin', 'kurnaz', 'sevecen']
+export type Expr = 'ozgun' | 'neseli' | 'uykulu' | 'saskin' | 'kurnaz' | 'sevecen' | 'kahkaha' | 'utangac'
+export const EXPRESSIONS: readonly Expr[] = ['ozgun', 'neseli', 'uykulu', 'saskin', 'kurnaz', 'sevecen', 'kahkaha', 'utangac']
 
-export type Pattern = 'duz' | 'cizgili' | 'ekose' | 'yildiz' | 'puantiyeli' | 'zigzag'
+export type Pattern = 'duz' | 'cizgili' | 'ekose' | 'yildiz' | 'puantiyeli' | 'zigzag' | 'cini' | 'kareli' | 'dalga'
 
 /** bekleme duruşu: taban poz ve ara sıra yapılan küçük hareketler (yalnız dururken; sıra `idleMove`te) */
-export type IdleMove = 'bak' | 'tik' | 'esne' | 'sal'
+export type IdleMove = 'bak' | 'tik' | 'esne' | 'sal' | 'sek'
 export interface StanceDef {
-  base: 'rahat' | 'bel' | 'bagli' | 'cep'
+  base: 'rahat' | 'bel' | 'bagli' | 'cep' | 'cene'
   /** hareketsiz kalınca sırayla yapılanlar */
   moves: readonly IdleMove[]
 }
@@ -147,10 +161,12 @@ export const STANCES: Record<string, StanceDef> = {
   cep: { base: 'cep', moves: ['tik', 'esne'] },
   bakinir: { base: 'rahat', moves: ['bak', 'bak', 'tik'] },
   esner: { base: 'rahat', moves: ['esne', 'esne', 'tik'] },
+  dusunur: { base: 'cene', moves: ['bak', 'tik'] },
+  sekip: { base: 'rahat', moves: ['sek', 'sal', 'sek', 'bak'] },
 }
 
 /** koşu tarzı: adım, diz, kol ve gövde ayarları (heroDraw `gaitInto`) */
-export const RUN_STYLES = ['normal', 'sportif', 'tirisa', 'omuz'] as const
+export const RUN_STYLES = ['normal', 'sportif', 'tirisa', 'omuz', 'ninja'] as const
 export type RunStyle = (typeof RUN_STYLES)[number]
 
 const opt = (id: string, name: string, nameEn: string, price = 0, extra: Partial<LookOption> = {}): LookOption => ({ id, name, nameEn, price, ...extra })
@@ -172,6 +188,9 @@ export const LOOK_AXES: AxisDef[] = [
       opt('orgu', 'Örgü', 'Braid', 5, { for: 'uktun' }),
       opt('kazima', 'Kazıma', 'Buzz Cut', 2, { for: 'memo' }),
       opt('uzun', 'Omuz Saçı', 'Shoulder-Length', 5, { for: 'memo' }),
+      opt('daginik', 'Dağınık Kısa', 'Messy Crop', 3),
+      opt('ikiorgu', 'İki Yandan Örgü', 'Twin Braids', 5, { for: 'uktun' }),
+      opt('yantarama', 'Yan Tarama', 'Side Part', 4, { for: 'memo' }),
     ],
   },
   {
@@ -190,6 +209,10 @@ export const LOOK_AXES: AxisDef[] = [
       opt('pembe', 'Pembe', 'Pink', 3),
       opt('mavi', 'Mavi', 'Blue', 3),
       opt('nane', 'Nane', 'Mint', 3),
+      opt('bal', 'Bal', 'Honey'),
+      opt('bordo', 'Bordo', 'Burgundy', 2),
+      opt('lila', 'Lila', 'Lilac', 3),
+      opt('platin', 'Platin', 'Platinum', 3),
     ].map((o) => (HAIR_COLORS[o.id] ? { ...o, swatch: HAIR_COLORS[o.id] } : o)),
   },
   {
@@ -207,7 +230,7 @@ export const LOOK_AXES: AxisDef[] = [
     options: [
       opt('ozgun', 'Kendi Rengi', 'Original'),
       ...Object.keys(OUTFIT_COLORS).map((k, i) =>
-        opt(k, ['Kırmızı', 'Turuncu', 'Hardal', 'Yeşil', 'Turkuaz', 'Mavi', 'Mor', 'Pembe', 'Antrasit', 'Krem'][i], ['Red', 'Orange', 'Mustard', 'Green', 'Teal', 'Blue', 'Purple', 'Pink', 'Charcoal', 'Cream'][i], 0, { swatch: OUTFIT_COLORS[k] }),
+        opt(k, ['Kırmızı', 'Turuncu', 'Hardal', 'Yeşil', 'Turkuaz', 'Mavi', 'Mor', 'Pembe', 'Antrasit', 'Krem', 'Bordo', 'Lacivert', 'Zeytin', 'Lila'][i], ['Red', 'Orange', 'Mustard', 'Green', 'Teal', 'Blue', 'Purple', 'Pink', 'Charcoal', 'Cream', 'Burgundy', 'Navy', 'Olive', 'Lilac'][i], 0, { swatch: OUTFIT_COLORS[k] }),
       ),
     ],
   },
@@ -216,7 +239,7 @@ export const LOOK_AXES: AxisDef[] = [
     name: 'Kıyafet Deseni',
     nameEn: 'Outfit Pattern',
     base: 'duz',
-    options: [opt('duz', 'Düz', 'Plain'), opt('cizgili', 'Çizgili', 'Striped'), opt('puantiyeli', 'Puantiyeli', 'Polka Dot', 2), opt('ekose', 'Ekose', 'Plaid', 3), opt('yildiz', 'Yıldızlı', 'Starry', 4), opt('zigzag', 'Zigzag', 'Zigzag', 4)],
+    options: [opt('duz', 'Düz', 'Plain'), opt('cizgili', 'Çizgili', 'Striped'), opt('puantiyeli', 'Puantiyeli', 'Polka Dot', 2), opt('ekose', 'Ekose', 'Plaid', 3), opt('yildiz', 'Yıldızlı', 'Starry', 4), opt('zigzag', 'Zigzag', 'Zigzag', 4), opt('kareli', 'Kareli', 'Checkered', 3), opt('dalga', 'Dalga', 'Waves', 3), opt('cini', 'Çini', 'Tile Motif', 5)],
   },
   {
     id: 'ey',
@@ -225,7 +248,7 @@ export const LOOK_AXES: AxisDef[] = [
     base: 'ozgun',
     options: [
       opt('ozgun', 'Kendi Gözü', 'Natural'),
-      ...Object.keys(EYE_COLORS).map((k, i) => opt(k, ['Kahve', 'Ela', 'Yeşil', 'Mavi', 'Gri', 'Mor', 'Altın'][i], ['Brown', 'Hazel', 'Green', 'Blue', 'Gray', 'Violet', 'Gold'][i], k === 'mor' || k === 'altin' ? 2 : 0, { swatch: EYE_COLORS[k] })),
+      ...Object.keys(EYE_COLORS).map((k, i) => opt(k, ['Kahve', 'Ela', 'Yeşil', 'Mavi', 'Gri', 'Mor', 'Altın', 'Bal', 'Turkuaz', 'Kehribar'][i], ['Brown', 'Hazel', 'Green', 'Blue', 'Gray', 'Violet', 'Gold', 'Honey', 'Turquoise', 'Amber'][i], k === 'mor' || k === 'altin' || k === 'turkuaz' || k === 'kehribar' ? 2 : 0, { swatch: EYE_COLORS[k] })),
     ],
   },
   {
@@ -233,21 +256,21 @@ export const LOOK_AXES: AxisDef[] = [
     name: 'Yüz İfadesi',
     nameEn: 'Expression',
     base: 'ozgun',
-    options: [opt('ozgun', 'Her Zamanki', 'Usual'), opt('neseli', 'Neşeli', 'Cheerful'), opt('uykulu', 'Uykulu', 'Sleepy'), opt('saskin', 'Şaşkın', 'Surprised', 2), opt('kurnaz', 'Kurnaz', 'Sly', 2), opt('sevecen', 'Sevecen', 'Gentle', 2)],
+    options: [opt('ozgun', 'Her Zamanki', 'Usual'), opt('neseli', 'Neşeli', 'Cheerful'), opt('uykulu', 'Uykulu', 'Sleepy'), opt('saskin', 'Şaşkın', 'Surprised', 2), opt('kurnaz', 'Kurnaz', 'Sly', 2), opt('sevecen', 'Sevecen', 'Gentle', 2), opt('kahkaha', 'Kahkaha', 'Laughing', 2), opt('utangac', 'Utangaç', 'Shy', 2)],
   },
   {
     id: 'st',
     name: 'Bekleme Duruşu',
     nameEn: 'Idle Stance',
     base: 'rahat',
-    options: [opt('rahat', 'Rahat', 'Relaxed'), opt('bel', 'Eller Belde', 'Hands on Hips'), opt('bagli', 'Kollar Bağlı', 'Arms Crossed', 3), opt('cep', 'Eller Cepte', 'Hands in Pockets', 3), opt('bakinir', 'Etrafa Bakınır', 'Looks Around', 3), opt('esner', 'Esneyip Durur', 'Stretches', 4)],
+    options: [opt('rahat', 'Rahat', 'Relaxed'), opt('bel', 'Eller Belde', 'Hands on Hips'), opt('bagli', 'Kollar Bağlı', 'Arms Crossed', 3), opt('cep', 'Eller Cepte', 'Hands in Pockets', 3), opt('bakinir', 'Etrafa Bakınır', 'Looks Around', 3), opt('esner', 'Esneyip Durur', 'Stretches', 4), opt('dusunur', 'Düşünceli', 'Thinker', 3), opt('sekip', 'Sek Sek', 'Hopscotch', 4)],
   },
   {
     id: 'rs',
     name: 'Koşu Tarzı',
     nameEn: 'Run Style',
     base: 'normal',
-    options: [opt('normal', 'Normal', 'Normal'), opt('sportif', 'Sportif', 'Sporty', 3), opt('tirisa', 'Tırıs', 'Trot', 3), opt('omuz', 'Tek Omuz', 'One Shoulder', 4)],
+    options: [opt('normal', 'Normal', 'Normal'), opt('sportif', 'Sportif', 'Sporty', 3), opt('tirisa', 'Tırıs', 'Trot', 3), opt('omuz', 'Tek Omuz', 'One Shoulder', 4), opt('ninja', 'Ninja Koşusu', 'Ninja Run', 4)],
   },
 ]
 

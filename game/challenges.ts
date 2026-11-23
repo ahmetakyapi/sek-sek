@@ -1,4 +1,5 @@
 import { LEVELS } from './levels'
+import { MASTER_COURSES } from './puzzles'
 import { RAGE_COURSES } from './rageCourses'
 import type { LevelDef } from './types'
 
@@ -15,26 +16,31 @@ export interface Challenge {
   name: string
   from: number
   to: number
-  /** çözücünün en hızlı süresi (sn, verify-challenges yazdırır): madalyalar buna göre */
+  /** çözücünün süresi (sn, verify-challenges yazdırır). Çözücü kaba adımlarla koşar: usta oyuncu bunun ~%70'inde biter */
   par: number
+  /**
+   * altın süre (sn): ölçülmüş usta koşusunun %8 üstü, yukarı yuvarlanır (23 Kasım 2026). Yoksa `par`dan tahmin
+   * (`goldOf`). Gümüş ve bronz altından türer; yeni bir usta koşusu ölçülünce buraya yaz.
+   */
+  gold?: number
   /** elle çizilmiş harita (Öfke Parkurları, game/rageCourses.ts): varsa şehirden kesilmez, `level` yalnız görünüşü verir */
   map?: string[]
 }
 
 export const CHALLENGES: Challenge[] = [
-  { id: 'corum-leblebi-2', level: 'corum', name: 'Kavurma Ocağı', from: 3, to: 4, par: 14.7 },
-  { id: 'sinop-kale-2', level: 'sinop', name: 'Kale Burcu', from: 2, to: 4, par: 12.5 },
-  { id: 'ordu-boztepe-2', level: 'ordu', name: 'Boztepe İnişi', from: 4, to: 5, par: 18.3 },
-  { id: 'trabzon-sumela', level: 'trabzon', name: 'Sümela Yolu', from: 5, to: 6, par: 16.5 },
-  { id: 'sivas-divrigi-2', level: 'sivas', name: 'Divriği Kapısı', from: 1, to: 3, par: 16.2 },
-  { id: 'van-akdamar', level: 'van', name: 'Akdamar Kıyısı', from: 3, to: 4, par: 10.3 },
-  { id: 'erzurum-palandoken', level: 'erzurum', name: 'Palandöken', from: 1, to: 2, par: 13.5 },
-  { id: 'ardahan-cildir-2', level: 'ardahan', name: 'Çıldır Buzu', from: 2, to: 4, par: 25.5 },
-  { id: 'amasya-kaya-2', level: 'amasya', name: 'Kral Kaya Mezarları', from: 4, to: 5, par: 24.1 },
-  { id: 'mugla-koy-2', level: 'mugla', name: 'Koy Rüzgârı', from: 4, to: 5, par: 11.4 },
-  { id: 'bayburt-coruh', level: 'bayburt', name: 'Çoruh Boğazı', from: 1, to: 2, par: 12.8 },
-  { id: 'artvin-karagol', level: 'artvin', name: 'Karagöl Patikası', from: 3, to: 4, par: 13.1 },
-  { id: 'kars-ani', level: 'kars', name: 'Ani Surları', from: 1, to: 2, par: 11.3 },
+  { id: 'corum-leblebi-2', level: 'corum', name: 'Kavurma Ocağı', from: 3, to: 4, par: 14.7, gold: 12 },
+  { id: 'sinop-kale-2', level: 'sinop', name: 'Kale Burcu', from: 2, to: 4, par: 12.5, gold: 12 },
+  { id: 'ordu-boztepe-2', level: 'ordu', name: 'Boztepe İnişi', from: 4, to: 5, par: 18.3, gold: 14 },
+  { id: 'trabzon-sumela', level: 'trabzon', name: 'Sümela Yolu', from: 5, to: 6, par: 16.5, gold: 9 },
+  { id: 'sivas-divrigi-2', level: 'sivas', name: 'Divriği Kapısı', from: 1, to: 3, par: 16.2, gold: 16 },
+  { id: 'van-akdamar', level: 'van', name: 'Akdamar Kıyısı', from: 3, to: 4, par: 10.3, gold: 9 },
+  { id: 'erzurum-palandoken', level: 'erzurum', name: 'Palandöken', from: 1, to: 2, par: 13.5, gold: 10 },
+  { id: 'ardahan-cildir-2', level: 'ardahan', name: 'Çıldır Buzu', from: 2, to: 4, par: 25.5, gold: 26 },
+  { id: 'amasya-kaya-2', level: 'amasya', name: 'Kral Kaya Mezarları', from: 4, to: 5, par: 24.1, gold: 14 },
+  { id: 'mugla-koy-2', level: 'mugla', name: 'Koy Rüzgârı', from: 4, to: 5, par: 11.4, gold: 8 },
+  { id: 'bayburt-coruh', level: 'bayburt', name: 'Çoruh Boğazı', from: 1, to: 2, par: 12.8, gold: 9 },
+  { id: 'artvin-karagol', level: 'artvin', name: 'Karagöl Patikası', from: 3, to: 4, par: 13.1, gold: 11 },
+  { id: 'kars-ani', level: 'kars', name: 'Ani Surları', from: 1, to: 2, par: 11.3, gold: 8 },
   { id: 'bitlis-nemrut', level: 'bitlis', name: 'Nemrut Krater Gölü', from: 3, to: 4, par: 10.3 },
   { id: 'agri-ishakpasa', level: 'agri', name: 'İshak Paşa Yamacı', from: 3, to: 4, par: 10.9 },
   { id: 'tokat-ballica', level: 'tokat', name: 'Ballıca Mağarası', from: 1, to: 2, par: 13.3 },
@@ -46,15 +52,22 @@ export const CHALLENGES: Challenge[] = [
 const STRIP = /[PEFC$!n?@&QGK]/g
 
 /** Bütün mücadeleler: şehirden kesilenler ve Öfke Parkurları (kimlikle arama, skor ve hile önleme bunu kullanır) */
-export const ALL_CHALLENGES: Challenge[] = [...CHALLENGES, ...RAGE_COURSES]
-export { RAGE_COURSES }
+export const ALL_CHALLENGES: Challenge[] = [...CHALLENGES, ...MASTER_COURSES, ...RAGE_COURSES]
+export { MASTER_COURSES, RAGE_COURSES }
+
+/** altın süre: ölçülmüş usta koşusu varsa o, yoksa çözücünün süresinden (kesit ve Usta Parkuru ×0,85; uzun Öfke Parkuru kendi süresi) */
+export const goldOf = (c: Challenge) => c.gold ?? Math.ceil(c.par * (c.map && !c.id.startsWith('usta-') ? 1 : 0.85))
+
+/** madalyalar (altın, gümüş, bronz; sn): gümüş altının 1,5 katı, bronz 2,2 katı */
+export function challengeMedals(c: Challenge): [number, number, number] {
+  const g = goldOf(c)
+  return [g, Math.ceil(g * 1.5), Math.ceil(g * 2.2)]
+}
 
 export function challengeLevel(c: Challenge): LevelDef {
   const l = LEVELS.find((x) => x.id === c.level)!
-  if (c.map) {
-    const medals: [number, number, number] = [Math.ceil(c.par * 1.5 + 3), Math.ceil(c.par * 2.2 + 6), Math.ceil(c.par * 3.2 + 10)]
-    return { ...l, id: `mucadele-${c.id}`, name: c.name, map: [...c.map], medals, hints: [], npcs: [], finaleAt: undefined, wind: undefined }
-  }
+  const medals = challengeMedals(c)
+  if (c.map) return { ...l, id: `mucadele-${c.id}`, name: c.name, map: [...c.map], medals, hints: [], npcs: [], finaleAt: undefined, wind: undefined }
   const door = Math.min(...l.map.map((r) => (r.includes('@') ? r.indexOf('@') : Infinity)))
   const flags: [number, number][] = []
   for (let x = 0; x < door; x++)
@@ -71,7 +84,5 @@ export function challengeLevel(c: Challenge): LevelDef {
     if (y === end[1]) row[end[0] - x0] = 'E'
     return row.join('')
   })
-  // çözücü kusursuz koşar; altın onun bir buçuk katı, bronz üç katı
-  const medals: [number, number, number] = [Math.ceil(c.par * 1.5 + 2), Math.ceil(c.par * 2 + 4), Math.ceil(c.par * 3 + 6)]
   return { ...l, id: `mucadele-${c.id}`, name: c.name, map, medals, hints: [], npcs: [], finaleAt: undefined }
 }

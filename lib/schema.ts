@@ -54,6 +54,8 @@ export const scores = pgTable(
     /** bütün koşulardaki en az düşüş ve en çok hatıra (en iyi süreli koşudan bağımsız) ve bitiriş sayısı */
     minDeaths: integer('min_deaths'),
     maxItems: integer('max_items'),
+    /** şehir koşularında bütün koşuların en yüksek puanı (lib/points.ts); öteki tablolarda boş */
+    maxPoints: integer('max_points'),
     plays: integer('plays').default(1).notNull(),
     playerId: uuid('player_id').references(() => players.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

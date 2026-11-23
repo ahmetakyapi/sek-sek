@@ -11,12 +11,12 @@ import { CityPicker } from '@/components/CityPicker'
 import { CourseScene } from '@/components/MapThumb'
 import { FAMILIES, FAMILY_ORDER, Heat, RULE_ART, RuleIcon, byHeat, rulePerks } from '@/components/RuleArt'
 import { type CharacterId } from '@/game/characters'
-import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel } from '@/game/challenges'
+import { ALL_CHALLENGES, CHALLENGES, MASTER_COURSES, RAGE_COURSES, challengeLevel } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
 import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
 import type { LevelDef } from '@/game/types'
-import { DAILY_RULES, RAGE_RULES, RULES, dailyBoss, dailyMini, trioCount, trioParts, type TrioMark, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark, DUEL_HANDICAPS, DUEL_PENALTIES, legDuel, duelResult, duelWins, liveStreak, type DuelTerms, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
+import { DAILY_RULES, extraMissing, RAGE_RULES, RULES, dailyBoss, dailyMini, trioCount, trioParts, type TrioMark, tournamentFor, tournamentTotal, tournamentWeek, type TournamentMark, DUEL_HANDICAPS, DUEL_PENALTIES, legDuel, duelResult, duelWins, liveStreak, type DuelTerms, roundWinner, ruleFits, ruleKey, ruleLimit, type DailyMark, type DailyRule, type DailyRun, type DuelRounds } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 import { lastMode, markIntroSeen, rememberCity, rememberMode, seenIntros, type LastMode } from '@/lib/recentCities'
@@ -387,31 +387,33 @@ export function ModesHub({
                   </button>
                 ))}
               </div>
-              {/* Devam Et ve Sana Önerilen: tek ince şerit, yalnız süzgeç ve arama yokken */}
+              {/* Devam Et ve Sana Önerilen: tek ince şerit, yalnız süzgeç ve arama yokken; kartlar eşit genişlikte, aynı hizada */}
               {!filtering && (cont || recs.length > 0) && (
-                <div className="flex min-w-0 flex-1 basis-[240px] flex-wrap items-center gap-1.5 wide:justify-end">
-                  {cont && (
-                    <button className="mode-rec cont flex min-w-0 items-center gap-1.5 px-2.5 text-left text-[13px] font-bold text-cream" onClick={cont.fn}>
-                      <span aria-hidden className="text-accent-2">
-                        ▶
-                      </span>
-                      <span className="truncate">
-                        {t('Devam Et')}: {cont.name}
-                      </span>
-                    </button>
-                  )}
-                  {recs.length > 0 && <span className="text-[12px] font-bold text-gold max-sm:hidden">{t('Sana Önerilen')}</span>}
-                  {recs.map((r) => (
-                    <button key={r.id} className="mode-rec flex min-w-0 items-center gap-1.5 px-2.5 text-left text-[13px] text-cream/85" onClick={() => activate(r.id)} title={`${t('Sana Önerilen')}: ${modeName[r.id]} · ${t(r.why, { n: trioN })}`}>
-                      <span aria-hidden className="text-gold">
-                        ★
-                      </span>
-                      <span className="truncate">
-                        <strong className="text-cream">{modeName[r.id]}</strong>
-                        <span className="max-2xl:hidden"> · {t(r.why, { n: trioN })}</span>
-                      </span>
-                    </button>
-                  ))}
+                <div className="flex min-w-0 flex-1 basis-[240px] items-center gap-2">
+                  {recs.length > 0 && <span className="shrink-0 text-[12px] font-bold text-gold max-sm:hidden">{t('Sana Önerilen')}</span>}
+                  <div className="grid min-w-0 flex-1 gap-1.5" style={{ gridTemplateColumns: `repeat(${(cont ? 1 : 0) + recs.length}, minmax(0, 1fr))` }}>
+                    {cont && (
+                      <button className="mode-rec cont flex min-w-0 items-center gap-1.5 px-2.5 text-left text-[13px] font-bold text-cream" onClick={cont.fn}>
+                        <span aria-hidden className="text-accent-2">
+                          ▶
+                        </span>
+                        <span className="truncate">
+                          {t('Devam Et')}: {cont.name}
+                        </span>
+                      </button>
+                    )}
+                    {recs.map((r) => (
+                      <button key={r.id} className="mode-rec flex min-w-0 items-center gap-1.5 px-2.5 text-left text-[13px] text-cream/85" onClick={() => activate(r.id)} title={`${t('Sana Önerilen')}: ${modeName[r.id]} · ${t(r.why, { n: trioN })}`}>
+                        <span aria-hidden className="text-gold">
+                          ★
+                        </span>
+                        <span className="truncate">
+                          <strong className="text-cream">{modeName[r.id]}</strong>
+                          <span className="max-2xl:hidden"> · {t(r.why, { n: trioN })}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -438,6 +440,7 @@ export function ModesHub({
                   </span>
                   <span className="line-clamp-2">
                     <strong className="text-accent-2">{t(rule.name)}:</strong> {t(rule.text)}
+                    {extraMissing(daily.rule, daily.day) > 0 && <span className="text-gold"> {t('Eksik her hatıra +{s} sn.', { s: extraMissing(daily.rule, daily.day) })}</span>}
                   </span>
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
@@ -531,7 +534,7 @@ export function ModesHub({
           {/* Bütün modlar ailelere göre, her ailenin içi açılış sırasına / zorluğa göre; ızgara kendi alanında kayar. Aile rengi kutucuğun
               çiziminde ve başlığında, ailenin şekli de başlıkta (renk körü için ikinci işaret): çivit yol · kiremit meydan okuma ·
               turkuaz birlikte · açık çivit keşfet ve dinlen · altın üret. */}
-          <div ref={gridRef} onKeyDown={onGridKey} className="overlay-scroll mode-grid mt-3 grid shrink-0 content-start gap-x-4 gap-y-3 pb-1 wide:mt-2.5 wide:min-h-0 wide:shrink wide:flex-1 wide:grid-cols-4 wide:overflow-y-auto short:mt-2">
+          <div ref={gridRef} onKeyDown={onGridKey} className="overlay-scroll mode-grid mt-3 grid shrink-0 content-start gap-x-2 gap-y-3 pb-1 wide:mt-2.5 wide:min-h-0 wide:shrink wide:flex-1 wide:grid-cols-4 wide:overflow-y-auto short:mt-2">
             {vis('rules') || vis('challenges') || vis('mirror') || vis('tour') ? (
               <TileGroup label={t('Yol')} glyph="◆" tone="var(--color-accent)" className="wide:col-span-4" cols="wide:grid-cols-4">
                 {vis('rules') && (
@@ -561,8 +564,8 @@ export function ModesHub({
                     tone="var(--color-accent)"
                     title={t('Mücadeleler')}
                     desc={tileDesc.challenges}
-                    status={t('{n}/{m} bitti', { n: challengeDone, m: CHALLENGES.length })}
-                    progress={challengeDone / CHALLENGES.length}
+                    status={t('{n}/{m} bitti', { n: challengeDone, m: CHALLENGES.length + MASTER_COURSES.length })}
+                    progress={challengeDone / (CHALLENGES.length + MASTER_COURSES.length)}
                     onClick={() => activate('challenges')}
                     art={<span className="font-display text-[28px] leading-none text-accent-2">▲</span>}
                   />
@@ -835,7 +838,7 @@ function TileGroup({ label, glyph, tone, className = '', cols, children }: { lab
         <span className="font-display text-[15px] tracking-wide text-cream">{label}</span>
         <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-[var(--tone)] to-transparent opacity-45" />
       </h3>
-      <div className={`grid gap-2 sm:grid-cols-2 ${cols}`}>{children}</div>
+      <div className={`stagger grid gap-2 sm:grid-cols-2 ${cols}`}>{children}</div>
     </section>
   )
 }

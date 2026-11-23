@@ -101,6 +101,8 @@ const SCREENS = {
   'dukkan-durus': [SAVE, ['Karakter', 'Mağaza', 'tab:Duruş']],
   'dukkan-atki': [SAVE, ['Karakter', 'Mağaza', 'tab:Atkı']],
   'ayna-yolu': [ALL, ['Modlar', 'Ayna Yolu']],
+  mucadeleler: [ALL, ['Modlar', 'Mücadeleler']],
+  'ofke-parkurlari': [ALL, ['Modlar', 'Parkurlar']],
   // final ilk kez: Bayburt'u bitiren, finali henüz görmemiş yolcu (görmüş olan Bayburt'tan sonra Rize'ye geçer)
   final: [{ ...ALL, sawEnding: false }, ['Şehrinde Oyna', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1200', '▶ Defteri Kapat', 'wait:600'], '?sehir=bayburt'],
   'yaris-daveti': [SAVE, [], '?yaris=konya~ahmet'],

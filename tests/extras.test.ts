@@ -108,9 +108,14 @@ describe('Günlük Meydan Okuma', () => {
     }
   })
   it('skor süreye cezaları ekler', () => {
-    expect(dailyScore('ceza', 60000, 2, 0)).toBe(60000 + 16000)
-    expect(dailyScore('hatira', 60000, 1, 1)).toBe(60000 + 3000 + 40000)
-    expect(dailyScore('hiz', 60000, 0, 3)).toBe(60000)
+    expect(dailyScore('ceza', 60000, 2, 0, '2026-11-20')).toBe(60000 + 16000)
+    expect(dailyScore('hatira', 60000, 1, 1, '2026-11-20')).toBe(60000 + 3000 + 40000)
+    expect(dailyScore('hiz', 60000, 0, 3, '2026-11-20')).toBe(60000)
+    // 24 Kasım'dan sonra eksik her hatıra her kuralda sayılır; Hatıra Avı kendi cezasıyla kalır
+    expect(dailyScore('ceza', 60000, 2, 0, '2026-11-24')).toBe(60000 + 16000 + 15000)
+    expect(dailyScore('hiz', 60000, 0, 3, '2026-11-25')).toBe(60000)
+    expect(dailyScore('tekcan', 50000, 0, 1, '2026-11-25')).toBe(50000 + 10000)
+    expect(dailyScore('hatira', 60000, 1, 1, '2026-11-25')).toBe(60000 + 3000 + 40000)
   })
   it('seri dün oynandıysa artar, gün atlanınca sıfırdan başlar', () => {
     let m = markDaily(null, '2026-11-10', 90000)
@@ -163,8 +168,8 @@ describe('kurallar', () => {
     const l = LEVELS[0]
     expect(ruleLimit('zaman', l)).toBe(l.medals[2])
     expect(ruleLimit('ceza', l)).toBeNull()
-    expect(dailyScore('tekcan', 50000, 0, 0)).toBe(50000)
-    expect(dailyScore('bayraksiz', 50000, 4, 1)).toBe(50000)
+    expect(dailyScore('tekcan', 50000, 0, 0, '2026-11-20')).toBe(50000)
+    expect(dailyScore('bayraksiz', 50000, 4, 1, '2026-11-20')).toBe(50000)
   })
 })
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { kitKey, type Kit } from '@/game/accessories'
 import { BOSSES, makeBoss } from '@/game/boss'
 import { drawBoss } from '@/game/bossDraw'
 import { drawChaseDog } from '@/game/enemyDraw'
@@ -38,9 +39,9 @@ function useCanvasLoop(draw: (c: CanvasRenderingContext2D, w: number, h: number,
 
 /**
  * Oyundaki çizgiyle canlı karakter: gün batımı fonunda nefes alır, göz kırpar, ara sıra el sallar.
- * Menülerde oynanan karakterin kendisi görünür (oyunla aynı çizim işlevi).
+ * Menülerde oynanan karakterin kendisi görünür (oyunla aynı çizim işlevi); `kit` verilirse Mağaza kombini ve görünümüyle.
  */
-export function HeroFigure({ look, scarf, className = '' }: { look: Look; scarf?: { color: string; shade: string } | null; className?: string }) {
+export function HeroFigure({ look, scarf, kit, className = '' }: { look: Look; scarf?: { color: string; shade: string } | null; kit?: Kit; className?: string }) {
   const ref = useCanvasLoop(
     (c, w, h, t) => {
       const g = c.createLinearGradient(0, 0, 0, h)
@@ -71,9 +72,9 @@ export function HeroFigure({ look, scarf, className = '' }: { look: Look; scarf?
       const pose: Pose = waving
         ? { ...POSES.wave, arms: [POSES.wave.arms[0], [POSES.wave.arms[1][0], POSES.wave.arms[1][1] + Math.sin(t * 13) * 22]], blink: false }
         : { ...idle, legs: [[idle.legs[0][0], br], [idle.legs[1][0], br]], blink: t % 3.6 < 0.12 }
-      drawHero(c, look, pose, w * 0.46, h * 0.91, h * 0.78, false, t, { moving: false, scarf: scarf?.color, scarfS: scarf?.shade })
+      drawHero(c, look, pose, w * 0.46, h * 0.91, h * 0.78, false, t, { moving: false, scarf: scarf?.color, scarfS: scarf?.shade, acc: kit })
     },
-    [look, scarf?.color],
+    [look, scarf?.color, kit ? kitKey(kit) : ''],
   )
   return <canvas ref={ref} className={className} aria-hidden />
 }

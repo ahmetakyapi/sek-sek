@@ -1,0 +1,120 @@
+import type { Challenge } from '../challenges'
+
+/**
+ * Usta Parkurları: zamanlama ağırlıklı elle çizilmiş mücadeleler (ayrıntı game/puzzles/index.ts). Her parkur bir
+ * zamanlama fikrini önce güvenli yerde öğretir, dikenin üstünde sıkıştırır, sonda iki mekaniği birleştirir.
+ * Kanıt: `npx tsx scripts/verify-challenges.ts <id>` (`par` onun süresi).
+ */
+export const TIMING_COURSES: Challenge[] = [
+  // ritim blokları ({ }): dibi güvenli çukurda vuruşu öğren, dikenin üstünde iniş çıkışlı taşlarda sına; her vuruşta iki karo
+  // yukarı çıkan merdiven, dikenli tavanın altında her vuruşta iki taş (ikili adım); sonda çatlak taş (X) + ritim + dash:
+  // çatlak köprüye ancak karşıdaki taş belirince bas, beklenecek yer yok
+  {
+    id: 'usta-ritim-hierapolis',
+    level: 'denizli',
+    name: 'Hierapolis Basamakları',
+    from: 0,
+    to: 0,
+    par: 29.7,
+    map: [
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                                      ##########################                                          ',
+      '                                                                                     }}  #####        ##########################                                          ',
+      '                                                                                         #####        ##########################                                          ',
+      '                                                                                 {{      #####        vvvvvvvvvvvvvvvvvvvvvvvvvv                                          ',
+      '                                                                                         #####                                                                        E   ',
+      '                                                       }}  ####              }}          #####                                                               }}  #########',
+      '                                                           ####                          #####                                                                   #########',
+      '                                      }}           {{      ####          {{              #####                                                          XXX      #########',
+      '  P                         F                              ####   F                      #####   F                                F                              #########',
+      '########  {{{  }}}  {{{  #######  {{      {{   }}          ############                  #############  {{  {{  }}  }}  {{  {{  ######XXXX  }}}    {{{           #########',
+      '########                 #######^^^^^^^^^^^^^^^^^^^^^^^^^^^############^^^^^^^^^^^^^^^^^^#############^^^^^^^^^^^^^^^^^^^^^^^^^^######^^^^^^^^^^^^^^^^^^^^^^^^^^^#########',
+      '##########################################################################################################################################################################',
+      '##########################################################################################################################################################################',
+    ],
+  },
+  // raylı vagonlar (M): güvenli çukurda tek vagon, galeride yerden atlanan ok; dikenin üstünde üç vagonluk zincir (eşit
+  // aralık, ters faz: alçak-yüksek-alçak, buluşma anında atla); sonda vagon → ok yağan bekleme rafı → vagon ve ok altında
+  // çatlak köprü (durmak yok, oku koşarken atla)
+  {
+    id: 'usta-ray-kozlu',
+    level: 'zonguldak',
+    name: 'Kozlu Maden Ocağı',
+    from: 0,
+    to: 0,
+    par: 22.1,
+    map: [
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                                         ',
+      '                                                                                                                F                        ',
+      '                                                     |        MMM|                               |        MMM########                    ',
+      '                                                                          F                 >                ########                 E  ',
+      '                                            ###MMM        | |MMM        ######MMM           ######           ########            ########',
+      '  P                     F    #              <##                         ######              ######           ########            <#######',
+      '########MMM          ##########################                         ######              ######           ##########XXXXXXXXXX########',
+      '########             ##########################^^^^^^^^^^^^^^^^^^^^^^^^^######^^^^^^^^^^^^^^######^^^^^^^^^^^##########^^^^^^^^^^########',
+      '#########################################################################################################################################',
+      '#########################################################################################################################################',
+    ],
+  },
+  // gelgit (A, dar havuzlar): dibi taş havuzda alçakta yürü, yüksekte yüz; dibi dikenli havuz yalnız yüksek suda geçilir,
+  // iki havuz arasında taşta bir gelgit bekle; surun altındaki tünelin dibi dikenli (yüksek suda dal, su çekilmeden çık);
+  // sonda alçak suda ritim taşlarında (gelgit + ritim) vuruşla bekle, su yükselince karşıya yüz
+  {
+    id: 'usta-gelgit-sinop',
+    level: 'sinop',
+    name: 'Sinop Kalesi Rıhtımı',
+    from: 0,
+    to: 0,
+    par: 25.8,
+    map: [
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '                                                                       ######                                               ',
+      '  P                F                                           F       ######       F            {{  }}                E    ',
+      '########AAAAAAAA########AAAAAAAAA#####AAAAAAAAAA##AAAAAAAAAA########AAA######AAA##########AAAAAAAAAAAAAAAAAAAA##############',
+      '########AAAAAAAA########AAAAAAAAA#####AAAAAAAAAA##AAAAAAAAAA########AAAAAAAAAAAA##########AAAAAAAAAAAAAAAAAAAA##############',
+      '########################AAAAAAAAA#####AAAAAAAAAA##AAAAAAAAAA########AAAAAAAAAAAA##########AAAAAAAAAAAAAAAAAAAA##############',
+      '########################^^^^^^^^^#####^^^^^^^^^^##^^^^^^^^^^########^^^^^^^^^^^^##########^^^^^^^^^^^^^^^^^^^^##############',
+    ],
+  },
+]

@@ -398,6 +398,131 @@ export function drawHeadItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
       blob(c, () => g.ell(cx + (H.f > 4 ? 8 : 0), by - 4.6, 2.2, 1.8), '#f6f2e6', { color: '#cfc8b0', dx: -0.6, dy: 0.4 })
       return true
     }
+    case 'takke': {
+      // nakışlı takke: başın tepesine oturan alçak kubbe; koyu yeşil keçe, altın zikzak kenar, tepede düğme
+      const cx = mid
+      const by = top + 1
+      const R = 12.4
+      const H2 = 11 * (0.6 + 0.4 * H.crown)
+      const dome = () => {
+        g.m(cx - R, by)
+        g.bz(cx - R - 0.4, by - H2 * 1.25, cx + R + 0.4, by - H2 * 1.25, cx + R, by)
+        g.q(cx, by + 2.2, cx - R, by)
+      }
+      blob(c, dome, '#2f6f62', { color: '#1d4a40', dx: -3, dy: -1.4 })
+      c.save()
+      c.beginPath()
+      dome()
+      c.closePath()
+      c.clip()
+      // kenar bandı: altın zikzak ve noktalar; kubbede dört yapraklı nakış
+      const zy = by - 2.6
+      const pts: number[] = []
+      for (let i = 0; i <= 12; i++) pts.push(cx - R + (i * 2 * R) / 12, zy + (i % 2 ? -1.3 : 0.6) + Math.abs(i - 6) * 0.12)
+      g.st(pts, 0.9, '#f0c24e', false)
+      for (const a of [-7, 0, 7]) {
+        const fy = by - H2 * 0.6 - (a ? 0 : 0.8)
+        for (let i = 0; i < 4; i++) {
+          const ang = (i * Math.PI) / 2 + 0.4
+          g.dot(cx + a + Math.cos(ang) * 1.2, fy + Math.sin(ang) * 1.2, 0.75, '#f0c24e')
+        }
+        g.dot(cx + a, fy, 0.6, '#e04a44')
+      }
+      c.restore()
+      g.fine(cx - R + 2.6, by - H2 * 0.5, cx - R + 4.2, by - H2 * 0.9, cx - 2, by - H2 * 0.98, 1.4, 'rgba(255,255,255,0.3)')
+      blob(c, () => g.ell(cx, by - H2 * 0.95, 1.5, 1.1), '#f0c24e', { color: '#b8862a', dx: -0.5, dy: -0.4 })
+      return true
+    }
+    case 'oya': {
+      // oyalı saç bandı: başın üstünden geçen krem bant; önünde iğne oyasından küçük çiçekler ve yapraklar
+      const P = H.f > 4
+      const band = P ? [-13.4, top + 5, -11, top - 2.6, -4, top - 8.2, 5.4, top - 7.8, 11.2, top - 2.4] : [-13.4, top + 3.6, -11, top - 3.4, 0, top - 6.4, 11, top - 3.4, 13.4, top + 3.6]
+      g.st(band, 2.4, '#f6eedc')
+      g.st(band, 0.7, '#d8c8a8', false)
+      // çiçekler bandın üstünde (profilde öne doğru dizilir), yolun yarısı noktalarında
+      const at = (u: number): [number, number] => {
+        const n = band.length / 2 - 1
+        const f = Math.min(n - 1e-6, u * n)
+        const i = Math.floor(f)
+        const k = f - i
+        return [band[i * 2] + (band[i * 2 + 2] - band[i * 2]) * k, band[i * 2 + 1] + (band[i * 2 + 3] - band[i * 2 + 1]) * k]
+      }
+      const cols = ['#e04a5a', '#f4c64e', '#8a5ac0', '#e04a5a', '#f08a3a']
+      const us = P ? [0.3, 0.46, 0.62, 0.78, 0.93] : [0.12, 0.31, 0.5, 0.69, 0.88]
+      us.forEach((u, j) => {
+        const [fx, fy] = at(u)
+        const r = j % 2 ? 1.3 : 1.6
+        // iki yaprak: çiçeğin iki yanında
+        blob(c, () => g.ell(fx - r * 1.3, fy + r * 0.5, r * 0.9, r * 0.45, 0.5), '#4f9a4a')
+        blob(c, () => {
+          for (let i = 0; i < 5; i++) {
+            const a = (i * Math.PI * 2) / 5 - Math.PI / 2
+            g.m(fx + Math.cos(a) * r * 1.5, fy + Math.sin(a) * r)
+            g.ell(fx + Math.cos(a) * r * 0.8, fy + Math.sin(a) * r * 0.8, r * 0.7, r * 0.7)
+          }
+        }, cols[j])
+        g.dot(fx, fy, r * 0.42, '#fff4c2')
+      })
+      return true
+    }
+    case 'kasket': {
+      // tüvit kasket: yumuşak, öne yatık tepe; kısa siper; tepede düğme; balıksırtı doku
+      const col = '#7a6e60'
+      const dark = '#4e463c'
+      const lite = '#a2968a'
+      const P = H.f > 4
+      const by = top + 1.4
+      const hh = 0.6 + 0.4 * H.crown
+      const crown = P
+        ? () => {
+            g.m(-13.4, by + 2.4)
+            g.bz(-15.4, by - 8 * hh, -4, by - 12 * hh, 6.4, by - 10 * hh)
+            g.bz(13.6, by - 8.6 * hh, 18.4, by - 4.4 * hh, 17.6, by - 0.6)
+            g.q(4, by + 1.4, -13.4, by + 2.4)
+          }
+        : () => {
+            g.m(-14.6, by + 1.6)
+            g.bz(-18, by - 9 * hh, -7, by - 13.4 * hh, 2, by - 12.6 * hh)
+            g.bz(12, by - 12 * hh, 18.4, by - 7.4 * hh, 14.8, by + 1.4)
+            g.q(0, by - 1.4, -14.6, by + 1.6)
+          }
+      if (!P) blob(c, () => g.ell(0, by + 1.6, 13.6, 3.2), dark, { color: '#2e2a24', dx: 0, dy: 1 })
+      blob(c, crown, col, { color: dark, dx: -3, dy: -1.4 })
+      c.save()
+      c.beginPath()
+      crown()
+      c.closePath()
+      c.clip()
+      // balıksırtı: kısa eğik çizgi çiftleri
+      c.beginPath()
+      for (let x = -16; x < 18; x += 3.2)
+        for (let y = by - 14; y < by + 2; y += 2.6) {
+          const d = Math.round((x + 16) / 3.2) % 2 ? 1 : -1
+          c.moveTo(g.x(x), g.y(y))
+          c.lineTo(g.x(x + 1.4), g.y(y + d * 1.1))
+        }
+      c.strokeStyle = 'rgba(40,32,26,0.28)'
+      c.lineWidth = 0.6 * g.k
+      c.stroke()
+      c.restore()
+      g.fine(P ? -11 : -12, by - 3, P ? -9.6 : -11, by - 8 * hh, P ? -3 : -4, by - 10.6 * hh, 1.6, lite)
+      if (P) {
+        blob(c, () => {
+          g.m(10.4, by - 0.6)
+          g.q(18.4, by - 2, 22, by + 1.4)
+          g.q(17.4, by + 3.4, 9.6, by + 2)
+        }, dark, { color: '#2e2a24', dx: 0, dy: 1 })
+        g.fine(-11.6, by + 0.6, -2, by - 1.4, 12.6, by - 1.2, 0.8, dark)
+      } else {
+        blob(c, () => {
+          g.m(-11.6, by + 0.8)
+          g.q(0, by - 1.6, 11.6, by + 0.8)
+          g.q(0, by + 6.4, -11.6, by + 0.8)
+        }, dark, { color: '#2e2a24', dx: 0, dy: 1.2 })
+      }
+      blob(c, () => g.ell(P ? 3 : 1, by - (P ? 10.4 : 12.6) * hh, 1.4, 1), dark)
+      return true
+    }
   }
   return false
 }
@@ -570,8 +695,113 @@ export function drawFaceItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
       g.st([x0 - 0.4, -1.4, x0 - 6.4, -2.2], 1, '#262a3c')
       return true
     }
+    case 'cil': {
+      // çiller: burun köprüsünde ve iki yanakta seyrek noktalar (uzak yanak dar)
+      const near0: [number, number][] = [[-3.2, 5.4], [-1.6, 6.6], [-0.2, 5.2], [-2.4, 4], [-4.4, 6.6], [1.2, 6.2]]
+      const far0: [number, number][] = [[1.4, 5.2], [3, 6.4], [0.2, 6.6], [2.4, 4]]
+      for (const [a, b] of near0) g.dot(near + a, b, 0.5, 'rgba(150,78,44,0.62)')
+      for (const [a, b] of far0) g.dot(far + a * H.fw, b, 0.45, 'rgba(150,78,44,0.55)')
+      return true
+    }
+    case 'nazar': {
+      // yanağa yapıştırılmış nazar boncuğu: lacivert, beyaz, açık mavi halka ve siyah göz; sol üstte parıltı
+      const P = H.fw < 1
+      const a = P ? near - 2 : near - 2.6
+      const b = P ? 7.2 : 6.4
+      const r = P ? 2.1 : 2.7
+      blob(c, () => g.ell(a, b, r, r), '#1f4fa8', { color: '#163a80', dx: -0.6, dy: -0.6 })
+      blob(c, () => g.ell(a, b, r * 0.65, r * 0.65), '#fbf8f0')
+      g.dot(a, b, r * 0.4, '#62b4ec')
+      g.dot(a, b, r * 0.2, '#14101a')
+      g.dot(a - r * 0.45, b - r * 0.48, r * 0.18, GLOSS)
+      return true
+    }
+    case 'biyik': {
+      // burma bıyık: burnun altından iki yana kalın lob, uçları yukarı kıvrılır; profilde uzak lob dar
+      const P = H.f > 4
+      const cx = H.mx
+      const b = P ? H.mouth - 1.4 : H.mouth + 0.8
+      const col = '#3e2a20'
+      const lobe = (side: number, w: number) => {
+        g.m(cx, b - 0.8)
+        g.q(cx + side * w * 0.45, b - 2.2, cx + side * w * 0.78, b - 0.4)
+        g.q(cx + side * w * 0.95, b + 0.4, cx + side * w * 1.02, b - 1.6)
+        g.q(cx + side * w * 1.05, b - 3, cx + side * w * 0.9, b - 3.2)
+        g.q(cx + side * w * 1.22, b - 3.6, cx + side * w * 1.22, b - 1.4)
+        g.q(cx + side * w * 1.1, b + 2.2, cx + side * w * 0.5, b + 1.6)
+        g.q(cx + side * w * 0.2, b + 1.4, cx, b + 0.8)
+      }
+      const sides: [number, number][] = P ? [[1, 3], [-1, 5]] : [[-1, 6.6], [1, 6.6]]
+      for (const [side, w] of sides) blob(c, () => lobe(side, w), col, { color: '#24180f', dx: 0, dy: 1 })
+      g.fine(cx - (P ? 4 : 5.4), b - 1, cx - 2, b - 1.6, cx - 0.6, b - 0.8, 0.8, 'rgba(255,220,190,0.35)')
+      return true
+    }
   }
   return false
+}
+
+/** simit: susamlı halka (ortası boş); (a, b) merkez, rx / ry yarıçap, rot dönüş */
+function simitRing(c: CanvasRenderingContext2D, a: number, b: number, rx: number, ry: number, rot: number) {
+  const path = () => {
+    c.beginPath()
+    c.ellipse(a, b, rx, ry, rot, 0, TAU)
+    c.ellipse(a, b, rx * 0.42, ry * 0.36, rot, 0, TAU, true)
+  }
+  path()
+  c.strokeStyle = INK
+  c.lineWidth = 2.2
+  c.lineJoin = 'round'
+  c.stroke()
+  c.fillStyle = '#c47a34'
+  c.fill()
+  // üst yüzde açık kızarmış ton ve susam
+  c.save()
+  path()
+  c.clip()
+  c.beginPath()
+  c.ellipse(a - Math.cos(rot) * rx * 0.08, b - ry * 0.3, rx * 0.9, ry * 0.6, rot, 0, TAU)
+  c.fillStyle = '#dc9a4c'
+  c.fill()
+  c.fillStyle = '#fbefd0'
+  for (let i = 0; i < 9; i++) {
+    const t = (i / 9) * TAU + 0.3
+    const r = 0.72 + (i % 3) * 0.06
+    c.beginPath()
+    c.ellipse(a + Math.cos(t + rot) * rx * r, b + Math.sin(t) * ry * r, Math.max(0.5, rx * 0.07), Math.max(0.3, ry * 0.08), t, 0, TAU)
+    c.fill()
+  }
+  c.restore()
+}
+
+/** uçurtma: dörde bölünmüş baklava, çapraz çıtalar; (0, 0) merkez, w / h yarı genişlik ve yarı boy */
+function kiteBody(c: CanvasRenderingContext2D, w: number, h: number) {
+  const outline = () => {
+    c.moveTo(0, -h)
+    c.lineTo(w, -h * 0.25)
+    c.lineTo(0, h)
+    c.lineTo(-w, -h * 0.25)
+  }
+  blob(c, outline, '#f4c64e', { color: '#d09a2a', dx: -1.6, dy: -0.6 })
+  // karşılıklı iki çeyrek kırmızı
+  c.beginPath()
+  c.moveTo(0, -h)
+  c.lineTo(w, -h * 0.25)
+  c.lineTo(0, -h * 0.25)
+  c.closePath()
+  c.moveTo(0, -h * 0.25)
+  c.lineTo(-w, -h * 0.25)
+  c.lineTo(0, h)
+  c.closePath()
+  c.fillStyle = '#e04a3e'
+  c.fill()
+  stroke(c, [0, -h, 0, h], 0.8, '#7a5230', false)
+  stroke(c, [-w, -h * 0.25, w, -h * 0.25], 0.8, '#7a5230', false)
+  c.beginPath()
+  outline()
+  c.closePath()
+  c.strokeStyle = INK
+  c.lineWidth = 1.4
+  c.stroke()
 }
 
 /** oyundaki karakterin sırt parçası: gövdeden önce çizilir (heroDraw: tx, ty gövde, sw sallanma) */
@@ -790,6 +1020,52 @@ export function drawHeroBack(c: CanvasRenderingContext2D, id: AccessoryId, tx: n
       for (let i = 0; i < 4; i++) stroke(c, [lx + i * 3.2, ly + w, lx + i * 3.2 - 0.6, ly + 3.4 + w], 0.8, '#f4e6c8', false)
       return true
     }
+    case 'simit': {
+      // simit sırığı: belden omzun arkasına uzanan çubuk, üst yarısına dizilmiş dört simit; adımla hafifçe sallanır
+      c.save()
+      // uzun saçın arkasından görünsün diye geriye yatık: simitler sırtın gerisinde durur
+      c.translate(tx - 4, ty)
+      c.rotate(-0.66 + sw * 0.02)
+      stroke(c, [0, 4, 0, -50], 1.8, '#9a6a3a')
+      stroke(c, [-0.5, -48, -0.5, 0], 0.6, 'rgba(255,220,170,0.5)', false)
+      for (let i = 0; i < 4; i++) simitRing(c, 0, -45 + i * 5.4, 5.4, 2.6, 0)
+      c.restore()
+      return true
+    }
+    case 'ucurtma': {
+      // uçurtma: sırta bağlı baklava; kuyruğu fiyonklarla geriye dalgalanır (koşarken çırpınır)
+      const f = Math.max(0, Math.min(1.4, flow))
+      // sırttaki bağdan kısa ip: uçurtma omzun gerisinde, uzun saçın arkasından görünür
+      stroke(c, [tx - 8, ty - 16, tx - 14, ty - 14, tx - 20, ty - 12], 0.7, '#3a2a30', false)
+      c.save()
+      c.translate(tx - 23, ty - 24)
+      c.rotate(-0.42 + sw * 0.03)
+      // kuyruk: alt uçtan geriye ve aşağı
+      const pts: number[] = []
+      const bows: [number, number][] = []
+      for (let i = 0; i <= 10; i++) {
+        const u = i / 10
+        const x = -u * (6 + f * 14) - lift * 2 * u
+        const y = 12 + u * (18 - f * 8) + Math.sin(t * (f > 0.5 ? 12 : 2.4) - u * 6) * (1 + f * 1.6) * u
+        pts.push(x, y)
+        if (i === 3 || i === 6 || i === 9) bows.push([x, y])
+      }
+      stroke(c, pts, 0.7, '#3a2a30', false)
+      for (const [x, y] of bows) {
+        blob(c, () => {
+          c.moveTo(x, y)
+          c.lineTo(x - 2.4, y - 1.6)
+          c.lineTo(x - 2.4, y + 1.6)
+          c.closePath()
+          c.moveTo(x, y)
+          c.lineTo(x + 2.4, y - 1.6)
+          c.lineTo(x + 2.4, y + 1.6)
+        }, '#4aa8d8')
+      }
+      kiteBody(c, 7.4, 12)
+      c.restore()
+      return true
+    }
     case 'ayi': {
       // ayıcık çanta: sırtta yuvarlak peluş, iki kulağı omzun arkasından görünür
       c.save()
@@ -854,6 +1130,9 @@ export function drawHeroBackFront(c: CanvasRenderingContext2D, id: AccessoryId, 
       return true
     case 'ayi':
       stroke(c, [tx - 9.6, ty - 20, tx - 8, ty - 21.8, tx - 3.6, ty - 26, tx + 1, ty - 22, tx + 9, ty - 7], 2, '#7e4c24')
+      return true
+    case 'ucurtma':
+      stroke(c, [tx - 9.6, ty - 15, tx - 8.4, ty - 21.6, tx - 4, ty - 26.4, tx + 1, ty - 22, tx + 8.8, ty - 7], 1.4, '#e8e0d0')
       return true
   }
   return false
@@ -1013,6 +1292,46 @@ export function drawPortraitBack(c: CanvasRenderingContext2D, id: AccessoryId): 
       stroke(c, [18, 116, 52, 108, 84, 116], 1.2, '#2c4a7a', false)
       return true
     }
+    case 'simit': {
+      // simit sırığı: sol omzun arkasından başın yanına yükselen çubuk, üstünde dizili simitler
+      c.save()
+      c.translate(20, 130)
+      c.rotate(-0.24)
+      stroke(c, [0, 0, 0, -86], 2.6, '#9a6a3a')
+      for (let i = 0; i < 4; i++) simitRing(c, 0, -80 + i * 10.4, 10, 4.6, 0)
+      c.restore()
+      return true
+    }
+    case 'ucurtma': {
+      // uçurtma: sol omzun arkasında, başın yanında; kuyruğu fiyonklarla aşağı kıvrılır
+      c.save()
+      c.translate(13, 74)
+      c.rotate(-0.3)
+      const pts: number[] = []
+      const bows: [number, number][] = []
+      for (let i = 0; i <= 10; i++) {
+        const u = i / 10
+        const x = -u * 8 + Math.sin(u * 5) * 4
+        const y = 22 + u * 40
+        pts.push(x, y)
+        if (i === 3 || i === 6 || i === 9) bows.push([x, y])
+      }
+      stroke(c, pts, 1, '#3a2a30', false)
+      for (const [x, y] of bows) {
+        blob(c, () => {
+          c.moveTo(x, y)
+          c.lineTo(x - 4, y - 2.6)
+          c.lineTo(x - 4, y + 2.6)
+          c.closePath()
+          c.moveTo(x, y)
+          c.lineTo(x + 4, y - 2.6)
+          c.lineTo(x + 4, y + 2.6)
+        }, '#4aa8d8')
+      }
+      kiteBody(c, 14, 22)
+      c.restore()
+      return true
+    }
     case 'ayi': {
       const fur = '#b57a42'
       const shade = '#7e4c24'
@@ -1065,6 +1384,9 @@ export function drawPortraitBackFront(c: CanvasRenderingContext2D, id: Accessory
     case 'ayi':
       stroke(c, [21, 92.4, 27, 90.2, 32, 95, 37, 124], 3.6, '#7e4c24')
       stroke(c, [81, 92.4, 75, 90.2, 70, 95, 65, 124], 3.6, '#7e4c24')
+      return true
+    case 'ucurtma':
+      stroke(c, [21, 92.4, 27, 90.2, 32, 95, 37, 124], 2.4, '#e8e0d0')
       return true
     case 'sal':
       stroke(c, [32, 90, 35, 104, 36, 124], 6, '#c8486e')

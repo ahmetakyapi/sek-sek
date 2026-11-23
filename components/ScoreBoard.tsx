@@ -6,7 +6,7 @@ import { MedalBadge, SectionTitle, displayName, medalFor, ic } from '@/component
 import { CHALLENGES } from '@/game/challenges'
 import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
-import { DAILY_RULES, RAGE_RULES, RULES, dailyBoss, dailyMini, dailyRun, istanbulDay, ruleFits, shiftDay, type DailyRule } from '@/lib/extras'
+import { DAILY_RULES, RAGE_RULES, RULES, extraMissing, dailyBoss, dailyMini, dailyRun, istanbulDay, ruleFits, shiftDay, type DailyRule } from '@/lib/extras'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { formatTime } from '@/lib/storage'
 
@@ -32,9 +32,11 @@ interface Row {
   charms?: number
   bosses?: number
   found?: number
+  /** şehir koşusunun en yüksek puanı (lib/points.ts); genelde şehirlerin toplamı */
+  points?: number | null
 }
 
-const n = (x: number | undefined) => x ?? 0
+const n = (x: number | null | undefined) => x ?? 0
 /** kürsü renkleri: altın, gümüş, bronz */
 const PODIUM = ['#ffcc66', '#d7dde6', '#d08a52']
 const PODIUM_NAME = ['Birinci Sıra', 'İkinci Sıra', 'Üçüncü Sıra']
@@ -225,6 +227,7 @@ export function Board({
       ]
     if (kind === 'genel') {
       const sub = [plural(n(r.cities), t('şehir'), 'cities'), plural(n(r.items), t('hatıra'), 'keepsakes'), `✕${n(r.deaths)}`, formatTime(n(r.timeMs))]
+      if (sort === 'points') return [<>{n(r.points).toLocaleString(lng === 'en' ? 'en-US' : 'tr-TR')}<span className="ml-1 text-[12px] text-muted">{t('puan')}</span></>, sub.join(' · ')]
       if (sort === 'items') return [<>{n(r.items)}<span className="ml-0.5 text-[13px] text-muted">/{LEVELS.length * 3}</span></>, sub.filter((_, i) => i !== 1).join(' · ')]
       if (sort === 'deaths') return [<>✕{n(r.deaths)}</>, sub.filter((_, i) => i !== 2).join(' · ')]
       return [<>{n(r.cities)}<span className="ml-0.5 text-[13px] text-muted">/{LEVELS.length}</span></>, sub.filter((_, i) => i !== 0).join(' · ')]
@@ -236,6 +239,7 @@ export function Board({
     if (kind === 'gunluk') return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
     // mücadele haritasında hatıra yok: süre ve düşüş
     if (level.startsWith('mucadele-')) return [formatTime(n(r.timeMs)), `✕${n(r.deaths)}${plays}`]
+    if (sort === 'points') return [<>{n(r.points).toLocaleString(lng === 'en' ? 'en-US' : 'tr-TR')}<span className="ml-1 text-[12px] text-muted">{t('puan')}</span></>, `${formatTime(n(r.timeMs))} · ${n(r.maxItems)}/3 · ✕${n(r.minDeaths)}${plays}`]
     if (sort === 'deaths') return [<>✕{n(r.minDeaths)}</>, `${formatTime(n(r.timeMs))} · ${n(r.maxItems)}/3${plays}`]
     if (sort === 'items') return [<>{n(r.maxItems)}<span className="ml-0.5 text-[13px] text-muted">/3</span><span className="ml-2 text-[15px] text-cream/80">{formatTime(n(r.timeMs))}</span></>, `✕${n(r.minDeaths)}${plays}`]
     return [formatTime(n(r.timeMs)), `✕${n(r.deaths)} · ${n(r.items)}/3${plays}`]
@@ -511,12 +515,12 @@ export default function ScoreBoard({
     setTab(tabs[to][0])
     requestAnimationFrame(() => tabBar.current?.querySelectorAll<HTMLElement>('[role="tab"]')[to]?.focus())
   }
-  const generalSorts: [string, string][] = [['', t('Bitirilen Şehir')], ['items', t('Hatıra')], ['deaths', t('En Az Düşüş')]]
+  const generalSorts: [string, string][] = [['', t('Bitirilen Şehir')], ['points', t('Puan')], ['items', t('Hatıra')], ['deaths', t('En Az Düşüş')]]
   const sorts: [string, string][] =
     tab === 'genel' || tab === 'arkadaslar'
       ? generalSorts
       : tab === 'city'
-        ? [['', t('Süre')], ['deaths', t('En Az Düşüş')], ['items', t('Hatıra')]]
+        ? [['', t('Süre')], ['points', t('Puan')], ['deaths', t('En Az Düşüş')], ['items', t('Hatıra')]]
         : tab === 'speedrun'
           ? [['', '%100'], ['tur', t('Tam Tur')], ['aynatur', t('Ayna Tam Tur')]]
           : tab === 'gunluk'
@@ -538,13 +542,17 @@ export default function ScoreBoard({
   const note =
     tab === 'genel' || tab === 'arkadaslar'
       ? (tab === 'arkadaslar' ? t('Yalnız arkadaşların ve sen. ') : '') +
-        (sort === 'items'
+        (sort === 'points'
+          ? t('Şehirlerdeki en yüksek puanların toplamı: süre, hatıra ve temiz koşu birlikte sayılır.')
+          : sort === 'items'
           ? t('Bütün şehirlerde bulunan en çok hatıra. Eşitlikte çok şehir bitiren önde.')
           : sort === 'deaths'
             ? t('Önce bitirilen şehir sayısı, sonra şehirlerdeki en az düşüşlerin toplamı.')
             : t('Önce bitirilen şehir sayısı, sonra en iyi sürelerin toplamı.'))
       : tab === 'city'
-        ? sort === 'deaths'
+        ? sort === 'points'
+          ? t('Her yolcunun bu şehirdeki en yüksek puanı: altın süreye yakınlık, her hatıra 250, düşmeden bitirmek 150.')
+          : sort === 'deaths'
           ? t('Her yolcunun bu şehirdeki en az düşüşlü koşusu.')
           : sort === 'items'
             ? t('Her yolcunun bu şehirde bulduğu en çok hatıra; eşitlikte hızlı olan önde.')
@@ -659,7 +667,7 @@ export default function ScoreBoard({
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-bold text-gold">{day === today ? t('Bugün') : t('Dün')} · {sort === 'm' ? t('Günün Mücadelesi') : sort === 'b' ? t('Günün Boss’u') : t(dRule.name)}</p>
             <p className="truncate font-display text-lg leading-tight text-cream">{sort === 'm' ? `${t(miniC.name)} · ${miniLv.name}` : sort === 'b' ? `${lng === 'en' ? bossDef.nameEn : bossDef.name} · ${bossLv.name}` : displayName(dailyLevel)}</p>
-            <p className="text-[13px] leading-snug text-muted short:hidden">{sort === 'm' ? t('Kısa ve sert kesit: en hızlı varan önde.') : sort === 'b' ? t('Boss’un üç işaretini oku, yorulunca üstüne bas.') : t(dRule.text)}</p>
+            <p className="text-[13px] leading-snug text-muted short:hidden">{sort === 'm' ? t('Kısa ve sert kesit: en hızlı varan önde.') : sort === 'b' ? t('Boss’un üç işaretini oku, yorulunca üstüne bas.') : `${t(dRule.text)}${extraMissing(daily.rule, day) ? ` ${t('Eksik her hatıra +{s} sn.', { s: extraMissing(daily.rule, day) })}` : ''}`}</p>
           </div>
           <div className="flex shrink-0 flex-col gap-1.5">
             {day === today && (sort === 'm' ? onMini : sort === 'b' ? onBoss : onDaily) ? (

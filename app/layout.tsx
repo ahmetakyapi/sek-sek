@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Figtree, Grandstander } from 'next/font/google'
 import PwaRegister from '@/components/PwaRegister'
+import Spotlight from '@/components/Spotlight'
 import Telemetry from '@/components/Telemetry'
 import './globals.css'
 
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="status-cover" aria-hidden />
         {children}
         <PwaRegister />
+        <Spotlight />
         <Telemetry />
       </body>
     </html>

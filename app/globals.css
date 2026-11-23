@@ -685,8 +685,43 @@ button.mode-card:focus-visible {
   transform-origin: center;
   animation: tm-pulse 1.8s ease-out infinite;
 }
+/* öne çıkan yol çizilerek belirir (pathLength 1) */
+@keyframes tm-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.tm-draw {
+  stroke-dashoffset: 0;
+  animation: tm-draw 0.55s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+/* şehrin üstüne gelince süzülen kart: kâğıt etiket, mürekkep hat, tek kademe gölge (filtre yok) */
+.tmap {
+  position: relative;
+}
+.tm-card {
+  position: absolute;
+  z-index: 5;
+  width: 184px;
+  padding: 8px 10px 9px;
+  translate: -50% calc(-100% - 18px);
+  background: #fbf3df;
+  color: var(--tm-ink);
+  border: 2px solid var(--tm-ink);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 rgb(42 31 24 / 0.55);
+  pointer-events: none;
+  animation: tm-card-in 0.16s ease-out both;
+}
+.tm-card.below {
+  translate: -50% 18px;
+}
+@keyframes tm-card-in {
+  from { opacity: 0; scale: 0.94; }
+  to { opacity: 1; scale: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
   .tm-pulse { animation: none; opacity: 0; }
+  .tm-draw, .tm-card { animation: none; }
 }
 
 @keyframes title-card {
@@ -1508,4 +1543,58 @@ blockquote {
 :root[data-cb='mavi-sari'] {
   --color-teal: #00d6a0;
   --color-gold: #ffd9a0;
+}
+
+/* ── Premium hareket katmanı (23 Kasım 2026) ──────────────────────────────────────────────────────────────
+   Işık: imleci izleyen yumuşak parıltı (components/Spotlight.tsx değişkeni yazar). Kartın kendi zemininin üstünde,
+   içeriğinin altında durur (isolation + z-index -1); yalnız gradyan ve opacity: filtre, blur, büyük gölge yok. */
+.mode-tile,
+.mode-card,
+.menu-tile {
+  position: relative;
+  isolation: isolate;
+}
+.mode-tile::before,
+.mode-card::before,
+.menu-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--tone, #ffcc66) 22%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .mode-tile:not(.locked):hover::before,
+  .mode-card:hover::before,
+  .menu-tile:hover::before {
+    opacity: 1;
+  }
+}
+/* Açılış: kartlar sırayla belirir (ilk on dördü kademeli, gerisi hemen); hareketi azalt açıksa yok */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stagger > * {
+    animation: stagger-in 360ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .stagger > :nth-child(1) { animation-delay: 28ms; }
+  .stagger > :nth-child(2) { animation-delay: 56ms; }
+  .stagger > :nth-child(3) { animation-delay: 84ms; }
+  .stagger > :nth-child(4) { animation-delay: 112ms; }
+  .stagger > :nth-child(5) { animation-delay: 140ms; }
+  .stagger > :nth-child(6) { animation-delay: 168ms; }
+  .stagger > :nth-child(7) { animation-delay: 196ms; }
+  .stagger > :nth-child(8) { animation-delay: 224ms; }
+  .stagger > :nth-child(9) { animation-delay: 252ms; }
+  .stagger > :nth-child(10) { animation-delay: 280ms; }
+  .stagger > :nth-child(11) { animation-delay: 308ms; }
+  .stagger > :nth-child(12) { animation-delay: 336ms; }
+  .stagger > :nth-child(13) { animation-delay: 364ms; }
+  .stagger > :nth-child(14) { animation-delay: 392ms; }
 }

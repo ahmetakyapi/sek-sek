@@ -34,6 +34,9 @@ import { mirrorLevel } from '@/game/mirror'
 import { customLevel, decodeMap } from '@/lib/customLevel'
 import type { LevelDef } from '@/game/types'
 import { LangProvider, characterFor, localize, makeT, storyFor, useLang, useT } from '@/lib/i18n'
+import { POINTS, runPoints } from '@/lib/points'
+import { useListRanks } from '@/lib/listRanks'
+import { RankTag } from '@/components/RankTag'
 import { MedalBadge, SectionTitle, Overlay, displayName, haptic, ic, medalFor, setHapticScale } from '@/components/ui'
 import { Sound } from '@/game/audio'
 import { CHARACTERS, type CharacterId } from '@/game/characters'
@@ -44,7 +47,7 @@ import Coop, { CoopEnd, CoopSetup, coopKey, type CoopPlan, type CoopResult } fro
 import { useInstallPrompt } from '@/lib/useInstallPrompt'
 import { USTA_TEXT, ustaDone, ustaTask } from '@/lib/ustalar'
 import { BOSSES } from '@/game/boss'
-import { ALL_CHALLENGES, CHALLENGES, RAGE_COURSES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
+import { ALL_CHALLENGES, CHALLENGES, MASTER_COURSES, RAGE_COURSES, challengeLevel, type Challenge as MapChallenge } from '@/game/challenges'
 import { LEVELS, rushArena, type RushVariant, FIRST_BOOK } from '@/game/levels'
 import { Renderer } from '@/game/render'
 import type { CbMode } from '@/game/colorBlind'
@@ -54,7 +57,7 @@ import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, extraMissing, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -343,6 +346,8 @@ export default function Game() {
   const bossCount = LEVELS.filter((l) => save.bosses[l.id]).length
   const wallet = walletOf(earned(foundTotal, bossCount, ustaCount), save.owned, hero.id)
   const heroAcc = kitOf(save, hero.id)
+  // Şehirler listesinde her şehrin lideri ve oyuncunun sırası (tek istek, liste açıkken)
+  const cityRanks = useListRanks('sehir', save.player?.name ?? '', screen === 'map')
   // ?debug (ölçüm ve görsel betikleri): güncelleme notu ekranı kapatmasın
   const mapNotice = quiet ? { renewed: [], added: [] } : mapNews(save)
   const now = new Date()
@@ -1217,7 +1222,8 @@ export default function Game() {
     setDailySend({ status: 'idle', rank: null })
     loadLevel(LEVELS.findIndex((l) => l.id === daily.levelId), 'play')
     beginPlay()
-    setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[daily.rule].name)}: ${t(DAILY_RULES[daily.rule].text)}` })
+    const miss = extraMissing(daily.rule, daily.day)
+    setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[daily.rule].name)}: ${t(DAILY_RULES[daily.rule].text)}${miss ? ` ${t('Eksik her hatıra +{s} sn.', { s: miss })}` : ''}` })
   }
 
   /** sıralamalı günlük koşu sürüyor mu (mola menüsü buna göre) */
@@ -1893,7 +1899,8 @@ export default function Game() {
     if (mode?.kind === 'daily') {
       if (mode.run.rule === 'tekcan' && triesRef.current === 0) addFeat('oneLifeFirst')
       const found = w.pickups.filter((p) => p.taken).length
-      const scoreMs = dailyScore(mode.run.rule, timeMs, w.deaths, found)
+      // serbest Kurallı Koşu kendi tablosunda eski kuralla kalır (eski rekorlarla karşılaştırılabilsin); hatıra cezası yalnız günlükte
+      const scoreMs = dailyScore(mode.run.rule, timeMs, w.deaths, found, mode.free ? '' : mode.run.day)
       const deaths = w.deaths
       if (mode.free) {
         const key = ruleKey(mode.run.levelId, mode.run.rule)
@@ -2334,7 +2341,12 @@ export default function Game() {
     <div className="mt-3 border-2 border-accent/60 bg-accent/10 px-3 py-2 short:mt-2 short:py-1.5">
       <p className="text-[12px] font-bold tracking-[0.12em] text-accent-2">{t('Mod').toLocaleUpperCase(lang)}</p>
       <p className="text-[14px] font-semibold leading-snug text-cream">{modeLabel}</p>
-      {modeRule && <p className="mt-0.5 text-[13px] leading-snug text-cream/85">{t(modeRule.text)}</p>}
+      {modeRule && (
+        <p className="mt-0.5 text-[13px] leading-snug text-cream/85">
+          {t(modeRule.text)}
+          {modeRef.current?.kind === 'daily' && !modeRef.current.free && extraMissing(modeRef.current.run.rule, modeRef.current.run.day) > 0 && <span className="text-gold"> {t('Eksik her hatıra +{s} sn.', { s: extraMissing(modeRef.current.run.rule, modeRef.current.run.day) })}</span>}
+        </p>
+      )}
       {rankedDaily && <p className="mt-0.5 text-[13px] leading-snug text-gold">{t('Tek hak: baştan başlasan da süre ve düşüş sürer, çıkarsan koşun biter.')}</p>}
       {modeRef.current?.kind === 'duel' && <p className="mt-0.5 text-[13px] leading-snug text-cream/85">{t('Düello: skor süre artı düşüş başına 5 saniye.')}</p>}
       <p className="mt-1 flex flex-wrap gap-x-3 text-[13px] tabular-nums text-muted">
@@ -2392,7 +2404,7 @@ export default function Game() {
         <>
           <Hud level={level} hud={hud} hero={hero.id} scarf={heroScarf} kit={heroAcc} showGoal={levelIdx < GOAL_CITIES && !rushRef.current && !modeRef.current}
             label={modeLabel}
-            penaltyFor={modeRef.current?.kind === 'daily' ? ((r) => (d: number, f: number) => dailyScore(r, 0, d, f))(modeRef.current.run.rule) : modeRef.current?.kind === 'duel' && duel ? (d: number, f: number) => d * duelTerms(duel.setup).penalty * 1000 - f * duelTerms(duel.setup).itemBonus * 1000 : undefined}
+            penaltyFor={modeRef.current?.kind === 'daily' ? ((r, day) => (d: number, f: number) => dailyScore(r, 0, d, f, day))(modeRef.current.run.rule, modeRef.current.free ? '' : modeRef.current.run.day) : modeRef.current?.kind === 'duel' && duel ? (d: number, f: number) => d * duelTerms(duel.setup).penalty * 1000 - f * duelTerms(duel.setup).itemBonus * 1000 : undefined}
             onPause={() => setScreen('pause')} />
           {titleCard > 0 && hud.time < 0.05 && (
             <div key={titleCard} className={`title-card ${save.tutorial ? 'slow' : ''} pointer-events-none absolute inset-x-0 top-[30%] z-10 flex flex-col items-center ${save.tutorial ? '[@media(max-height:500px)]:top-[20%]' : '[@media(max-height:500px)]:top-[12%]'}`}>
@@ -2571,6 +2583,7 @@ export default function Game() {
             character={save.character ?? null}
             hero={hero}
             scarf={heroScarf}
+            kit={heroAcc}
             best={save.best}
             found={totalFound}
             stamps={Object.values(save.stamps ?? {}).filter(Boolean).length}
@@ -2865,7 +2878,35 @@ export default function Game() {
                   })}
                 </div>
                 <div className="mt-3 short:mt-0">
-                  <TurkeyMap unlocked={save.unlocked} selected={levelIdx} onSelect={(i) => loadLevel(i)} />
+                  <TurkeyMap
+                    unlocked={save.unlocked}
+                    selected={levelIdx}
+                    onSelect={(i) => loadLevel(i)}
+                    detail={(i) => {
+                      const l = LEVELS[i]
+                      const b = save.best[l.id]
+                      if (i > save.unlocked) return <p className="mt-1 text-[12px] opacity-75">{t('🔒 Kilitli')}</p>
+                      return (
+                        <>
+                          <p className="text-[12px] leading-snug opacity-80">
+                            {localize(l, lang).subtitle} · {t(l.difficulty)}
+                          </p>
+                          <p className="mt-1.5 flex items-center gap-2 text-[13px] font-semibold tabular-nums">
+                            {b && !b.stale ? (
+                              <>
+                                <MedalBadge medal={medalFor(l, b.timeMs)} />
+                                {formatTime(b.timeMs)}
+                                <span className="font-normal opacity-75">· {b.items.filter(Boolean).length}/3</span>
+                              </>
+                            ) : (
+                              <span className="font-normal opacity-80">{t('Oynanmadı')}</span>
+                            )}
+                            <RankTag rank={cityRanks[l.id]} className="ml-auto" />
+                          </p>
+                        </>
+                      )
+                    }}
+                  />
                 </div>
               </div>
               <div className="relative mt-4 side:mt-0 side:flex side:min-h-[160px] side:flex-1 side:flex-col">
@@ -2918,6 +2959,7 @@ export default function Game() {
                                   {found}/3
                                 </span>
                               )}
+                              {!locked && <RankTag rank={cityRanks[l.id]} />}
                             </span>
                           </span>
                         </button>
@@ -3389,7 +3431,7 @@ export default function Game() {
           aynaTourBest={save.aynaTur ?? null}
           citiesDone={Object.keys(save.best).length}
           tournament={save.turnuva ?? null}
-          challengeDone={CHALLENGES.filter((c) => save.challenges?.[c.id]).length}
+          challengeDone={[...CHALLENGES, ...MASTER_COURSES].filter((c) => save.challenges?.[c.id]).length}
           onBack={() => setScreen('title')}
         />
       )}
@@ -4036,6 +4078,31 @@ function Complete({
                 </button>
               )}
             </div>
+            {/* puan: süre, hatıra ve temiz koşu tek sayıda (lib/points.ts; sunucu aynısını hesaplar) */}
+            {(() => {
+              const p = runPoints(level.medals[0], result.timeMs, result.deaths, found)
+              const parts: [string, number][] = [[t('Süre'), p.time], [t('Hatıra'), p.items], [t('Düşüş'), p.deaths], [t('Temiz Koşu'), p.clean]]
+              return (
+                <>
+                  <SectionTitle title={t('Puan')} note={t('Sıralamada “Puan” süzgeci')} tone="var(--color-accent-2)" className="mt-5" />
+                  <div className="mt-2 flex items-stretch gap-2">
+                    <p className="flex shrink-0 flex-col justify-center border-2 border-accent-2/70 bg-accent-2/10 px-3 text-center">
+                      <span className="font-display text-2xl leading-none tabular-nums text-cream">{p.total.toLocaleString(lng === 'en' ? 'en-US' : 'tr-TR')}</span>
+                      <span className="mt-1 text-[12px] text-muted">{t('puan')}</span>
+                    </p>
+                    <dl className="grid min-w-0 flex-1 grid-cols-4 gap-[2px] border-2 border-line bg-line/70 text-center">
+                      {parts.map(([k, v]) => (
+                        <div key={k} className="min-w-0 bg-panel px-1 py-1.5">
+                          <dd className={`font-display text-[15px] leading-none tabular-nums ${v < 0 ? 'text-coral' : v > 0 ? 'text-cream' : 'text-cream/50'}`}>{v > 0 ? `+${v}` : v}</dd>
+                          <dt className="mt-1 truncate text-[12px] text-muted">{k}</dt>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                  {found < 3 && <p className="mt-1.5 text-[13px] leading-snug text-muted">{t('Kalan {n} hatıra {p} puan daha getirir.', { n: 3 - found, p: (3 - found) * POINTS.item })}</p>}
+                </>
+              )
+            })()}
             {/* madalya süreleri: hangisi alındı, sıradaki hedefe ne kadar kaldı */}
             <SectionTitle title={t('Madalya Süreleri')} tone="var(--color-gold)" className="mt-5" />
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">

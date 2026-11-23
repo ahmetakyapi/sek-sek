@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { ALL_CHALLENGES } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { minScoreMs } from '@/lib/antiCheat'
+import { POINTS, runPoints } from '@/lib/points'
 import { db } from '@/lib/db'
 import { DAILY_RULES, dailyBossKey, dailyMiniKey, istanbulDay, ruleFits, shiftDay, tournamentFor, tournamentKey, tournamentWeek } from '@/lib/extras'
 import { nameKey, verifyPlayer } from '@/lib/players'
@@ -50,6 +51,23 @@ const MAX_ITEMS = sql`coalesce(s.max_items, s.items)`
 /** Bir tabloda en çok bu kadar satır döner (sayfalama: `lim` 100'e dek büyür; arama: eşleşenler) */
 const LIST_MAX = 100
 
+/** şehrin altın süresi (sn): puanın süre payı buna göre (lib/points.ts) */
+const goldOf = (city: string) => LEVELS.find((l) => l.id === city)?.medals[0] ?? 0
+/** bugünkü şehir anahtarlarının altın süreleri (genel tablo için) */
+const GOLDS = sql.join(
+  LEVELS.map((l) => sql`(${scoreKey(l.id)}::text, ${l.medals[0]}::numeric)`),
+  sql`, `,
+)
+
+/**
+ * Satırın puanı: kayıtlı en yüksek puan, yoksa (sütun gelmeden yazılmış satır) en iyi süreli koşunun puanı. `gold` bir sayı
+ * ya da sütundur; formül lib/points.ts `runPoints` ile birebir aynıdır.
+ */
+const pointsSql = (gold: SQL) => sql`greatest(coalesce(s.max_points, 0), greatest(0,
+  round(${POINTS.time} * least(${POINTS.maxTime}::numeric, greatest(${POINTS.minTime}::numeric, ${gold} * 1000.0 / greatest(s.time_ms, 1))))::int
+  + ${POINTS.item} * least(greatest(s.items, 0), 3) - least(${POINTS.maxDeathLoss}, ${POINTS.death} * s.deaths)
+  + case when s.deaths = 0 then ${POINTS.clean} else 0 end))`
+
 /**
  * Satır süzgeci: arama (`q`, adın bir parçası) varsa eşleşenler, yoksa ilk `limit` sıra; oyuncunun kendi satırı her zaman gelir.
  * Arama değeri hep parametredir (LIKE değil position: % ve _ özel sayılmaz).
@@ -57,23 +75,24 @@ const LIST_MAX = 100
 const pick = (limit: number, find: string, me: string) => (find ? sql`(position(${find}::text in name_key) > 0 or name_key = ${me})` : sql`(rank <= ${limit} or name_key = ${me})`)
 
 /** Bir şehrin (ya da günün) sıralaması: ilk `limit` satır + istenen oyuncunun satırı, sırasıyla */
-async function board(key: string, order: SQL, me: string, limit: number, scope: SQL = sql`true`, find = '') {
+async function board(key: string, order: SQL, me: string, limit: number, scope: SQL = sql`true`, find = '', points: SQL = sql`null`) {
   const r = await db().execute(sql`
     with t as (
       select p.name, p.name_key, s.time_ms as "timeMs", s.deaths, s.items, ${MIN_DEATHS}::int as "minDeaths",
-             ${MAX_ITEMS}::int as "maxItems", s.plays,
+             ${MAX_ITEMS}::int as "maxItems", s.plays, ${points}::int as points,
              (select v.data->>'character' from seksek_saves v where v.player_id = s.player_id) as hero,
              row_number() over (order by ${order})::int as rank, count(*) over ()::int as total
       from seksek_scores s join seksek_players p on p.id = s.player_id
       where s.level = ${key} and ${scope})
-    select name, "timeMs", deaths, items, "minDeaths", "maxItems", plays, hero, rank, total, name_key = ${me} as me
+    select name, "timeMs", deaths, items, "minDeaths", "maxItems", plays, points, hero, rank, total, name_key = ${me} as me
     from t where ${pick(limit, find, me)} order by rank limit ${LIST_MAX}`)
   return r.rows
 }
 
 /**
- * GET ?level=<şehir>&sort=time|deaths|items        → şehrin ilk 10'u (en iyi süre · en az düşüş · en çok hatıra)
- * GET ?level=genel&sort=cities|items|deaths         → oyuncu başına toplamlar (yalnız şehirlerin bugünkü haritaları)
+ * GET ?level=<şehir>&sort=time|deaths|items|points → şehrin ilk 10'u (en iyi süre · en az düşüş · en çok hatıra · en yüksek puan)
+ * GET ?level=genel&sort=cities|items|deaths|points  → oyuncu başına toplamlar (yalnız şehirlerin bugünkü haritaları; puan: şehir puanlarının toplamı)
+ * GET ?level=ozet&kind=sehir|mucadele&me=<ad>        → listelerin özeti: her şehir/mücadele için lider, süresi, yolcu sayısı ve oyuncunun sırası
  * GET ?level=koleksiyon                             → hesaba kayıtlı defterden: hatıra + gizli pul + nazar boncuğu
  * GET ?level=gunluk&day=2026-11-14                  → Günlük Meydan Okuma (düşük skor önde)
  * GET ?level=mucadele-<id>                         → mücadele haritası (en iyi süre)
@@ -101,7 +120,9 @@ export async function GET(req: NextRequest) {
   try {
     if (level === 'genel') {
       const order =
-        sort === 'items'
+        sort === 'points'
+          ? sql`points desc, cities desc, "timeMs" asc`
+          : sort === 'items'
           ? sql`items desc, cities desc, "timeMs" asc`
           : sort === 'deaths'
             ? sql`cities desc, deaths asc, "timeMs" asc`
@@ -110,14 +131,33 @@ export async function GET(req: NextRequest) {
         with agg as (
           select p.name, p.name_key, count(*)::int as cities, sum(s.time_ms)::int as "timeMs",
                  sum(${MIN_DEATHS})::int as deaths, sum(${MAX_ITEMS})::int as items, sum(s.plays)::int as plays,
+                 sum(${pointsSql(sql`g.gold`)})::int as points,
                  (select v.data->>'character' from seksek_saves v where v.player_id = p.id) as hero
-          from seksek_scores s join seksek_players p on p.id = s.player_id
+          from seksek_scores s join seksek_players p on p.id = s.player_id join (values ${GOLDS}) as g(level, gold) on g.level = s.level
           where s.level in ${currentKeys()} and ${scope}
           group by p.id, p.name, p.name_key),
         t as (select *, row_number() over (order by ${order})::int as rank, count(*) over ()::int as total from agg)
-        select name, cities, "timeMs", deaths, items, plays, hero, rank, total, name_key = ${me} as me
+        select name, cities, "timeMs", deaths, items, plays, points, hero, rank, total, name_key = ${me} as me
         from t where ${pick(lim(20), find, me)} order by rank limit ${LIST_MAX}`)
       return out(r.rows)
+    }
+    // listelerin özeti (şehirler ya da mücadeleler): her tablonun lideri, yolcu sayısı ve oyuncunun sırası, tek sorguda
+    if (level === 'ozet') {
+      const kind = q.get('kind') === 'mucadele' ? 'mucadele' : 'sehir'
+      const keys = kind === 'mucadele' ? ALL_CHALLENGES.map((c) => challengeScoreKey(`mucadele-${c.id}`)) : currentKeys()
+      const r = await db().execute(sql`
+        with t as (
+          select s.level, p.name, p.name_key, s.time_ms,
+                 row_number() over (partition by s.level order by s.time_ms asc, s.deaths asc, s.created_at asc)::int as rank,
+                 count(*) over (partition by s.level)::int as total
+          from seksek_scores s join seksek_players p on p.id = s.player_id
+          where s.level in ${keys})
+        select level, max(total)::int as total,
+               max(case when rank = 1 then name end) as "leader", max(case when rank = 1 then time_ms end)::int as "leaderMs",
+               max(case when name_key = ${me} then rank end)::int as "myRank", max(case when name_key = ${me} then time_ms end)::int as "myMs"
+        from t group by level`)
+      const id = (key: string) => (kind === 'mucadele' ? key.slice('mucadele:'.length) : key.split('@')[0])
+      return NextResponse.json({ rows: r.rows.map((x) => ({ ...x, id: id(String((x as { level: string }).level)) })) }, { headers: fresh })
     }
     if (level === 'koleksiyon') {
       const ids = [...LEVEL_IDS]
@@ -188,13 +228,16 @@ export async function GET(req: NextRequest) {
     if ((TOUR_KEYS as readonly string[]).includes(level)) return out(await board(level, sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(20), scope, find))
     if (CHALLENGE_IDS.has(level)) return out(await board(challengeScoreKey(level), sql`s.time_ms asc, s.deaths asc, s.created_at asc`, me, lim(10), scope, find))
     if (!LEVEL_IDS.has(level)) return bad('Geçersiz bölüm')
+    const points = pointsSql(sql`${goldOf(level)}::numeric`)
     const order =
-      sort === 'deaths'
+      sort === 'points'
+        ? sql`${points} desc, s.time_ms asc, s.created_at asc`
+        : sort === 'deaths'
         ? sql`${MIN_DEATHS} asc, s.time_ms asc, s.created_at asc`
         : sort === 'items'
           ? sql`${MAX_ITEMS} desc, s.time_ms asc, s.created_at asc`
           : sql`s.time_ms asc, s.deaths asc, s.created_at asc`
-    return out(await board(scoreKey(level), order, me, lim(10), scope, find))
+    return out(await board(scoreKey(level), order, me, lim(10), scope, find, points))
   } catch {
     return bad('Skorlar şu an alınamıyor', 503)
   }
@@ -215,6 +258,8 @@ interface Run {
   timeMs: number
   deaths: number
   items: number
+  /** şehir koşusunun puanı (lib/points.ts; sunucu hesaplar), öteki tablolarda null */
+  points: number | null
 }
 
 /** Koşu satırını doğrular; günlük tabloda süre yerine cezalı skor gelir */
@@ -261,7 +306,8 @@ function parseRun(b: Record<string, unknown>): Run | string {
   if (!Number.isInteger(timeMs) || timeMs < (key.startsWith('mucadele:') || key.startsWith('turnuva:') || key.startsWith('gunluk-m:') ? 3000 : 5000) || timeMs > maxMs) return 'Geçersiz süre'
   if (!Number.isInteger(deaths) || deaths < 0 || deaths > 9999) return 'Geçersiz düşüş sayısı'
   if (!Number.isInteger(items) || items < 0 || items > 3) return 'Geçersiz hatıra sayısı'
-  return { key, timeMs, deaths, items }
+  const points = LEVEL_IDS.has(level) ? runPoints(goldOf(level), timeMs, deaths, items).total : null
+  return { key, timeMs, deaths, items, points }
 }
 
 /** Biçimi doğru ama fiziğe sığmayan koşu (haritanın en kısa süresinden hızlı): 422 ile reddedilir (lib/antiCheat.ts) */
@@ -273,8 +319,8 @@ const tooFast = (r: Run) => r.timeMs < minScoreMs(r.key)
  */
 async function upsert(playerId: string, name: string, r: Run, played: number) {
   await db().execute(sql`
-    insert into seksek_scores as s (level, name, player_id, time_ms, deaths, items, min_deaths, max_items, plays)
-    values (${r.key}, ${name}, ${playerId}, ${r.timeMs}, ${r.deaths}, ${r.items}, ${r.deaths}, ${r.items}, 1)
+    insert into seksek_scores as s (level, name, player_id, time_ms, deaths, items, min_deaths, max_items, max_points, plays)
+    values (${r.key}, ${name}, ${playerId}, ${r.timeMs}, ${r.deaths}, ${r.items}, ${r.deaths}, ${r.items}, ${r.points}::int, 1)
     on conflict (level, player_id) do update set
       deaths = case when excluded.time_ms < s.time_ms then excluded.deaths else s.deaths end,
       items = case when excluded.time_ms < s.time_ms then excluded.items else s.items end,
@@ -282,6 +328,7 @@ async function upsert(playerId: string, name: string, r: Run, played: number) {
       time_ms = least(s.time_ms, excluded.time_ms),
       min_deaths = least(${MIN_DEATHS}, excluded.deaths),
       max_items = greatest(${MAX_ITEMS}, excluded.items),
+      max_points = greatest(s.max_points, excluded.max_points),
       plays = s.plays + ${played},
       name = excluded.name`)
 }
@@ -321,14 +368,15 @@ export async function POST(req: NextRequest) {
     if (!me) return bad('Oturum doğrulanamadı, yeniden giriş yap', 401)
     const d = db()
     const prev = (
-      await d.execute(sql`select time_ms as "timeMs", coalesce(min_deaths, deaths) as "minDeaths", coalesce(max_items, items) as "maxItems"
+      await d.execute(sql`select time_ms as "timeMs", coalesce(min_deaths, deaths) as "minDeaths", coalesce(max_items, items) as "maxItems", max_points as "maxPoints"
                           from seksek_scores where level = ${run.key} and player_id = ${me.id} limit 1`)
-    ).rows[0] as { timeMs: number; minDeaths: number; maxItems: number } | undefined
+    ).rows[0] as { timeMs: number; minDeaths: number; maxItems: number; maxPoints: number | null } | undefined
     await upsert(me.id, me.name, run, 1)
     const better = {
       time: !prev || run.timeMs < prev.timeMs,
       deaths: !prev || run.deaths < prev.minDeaths,
       items: !prev || run.items > prev.maxItems,
+      points: run.points !== null && (!prev || run.points > (prev.maxPoints ?? 0)),
     }
     const best = better.time ? run.timeMs : prev!.timeMs
     const rank = await d.execute(sql`select count(*)::int + 1 as rank, (select count(*)::int from seksek_scores where level = ${run.key}) as total

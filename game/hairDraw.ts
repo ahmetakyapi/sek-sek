@@ -1,5 +1,6 @@
 /**
- * Saç parçaları (Mağaza: saç stili): arka saç (at kuyruğu, örgü, küt kesim) başın arkasında, topuz başın üstünde durur.
+ * Saç parçaları (Mağaza: saç stili): arka saç (at kuyruğu, örgü, küt kesim, iki yandan örgü) başın arkasında, topuz başın
+ * üstünde durur. İki yandan örgü portrede (önden) omuzların önüne düşer: orada `drawHairTop` çizer.
  * Parçalar `HeadFrame` ile yazılır (accessoryDraw.ts): tek yazım hem oyundaki karakteri (profil) hem portreyi (önden) çizer.
  * Uzun saçın (`long`) ve ön saç biçimlerinin çizimi heroDraw.ts / portraitDraw.ts'te kalır (kendi başlarına eski kodlar).
  * Saate bağlıdır (savrulma `hair`, `lift`, `t`); kare başına rastgelelik ve filtre yok.
@@ -18,9 +19,10 @@ const band = '#e0566a'
 
 /** başın arkasında duran saç; çizildiyse true */
 export function drawHairBack(c: CanvasRenderingContext2D, back: Back, H: HeadFrame, an: Anim, tone: HairTones): boolean {
+  const P = H.f > 4
+  if (back === 'pigtails') return P ? drawPigtails(c, H, an, tone) : false
   if (back !== 'tail' && back !== 'braid' && back !== 'bob') return false
   const g = kit(c, H)
-  const P = H.f > 4
   const moving = an.moving
   // savrulma: koşarken geriye uzanır ve dalgalanır, dururken hafifçe salınır (saate bağlı)
   const sw = an.hair * 3.2 + Math.sin(an.t * (moving ? 11 : 1.7)) * (moving ? 0.9 : 0.45)
@@ -106,9 +108,11 @@ export function drawHairBack(c: CanvasRenderingContext2D, back: Back, H: HeadFra
 
 /** başın üstündeki topuz (ön saçtan sonra çizilir); `hat`: başlık takılıysa topuz altta kalır, çizilmez */
 export function drawHairTop(c: CanvasRenderingContext2D, back: Back, H: HeadFrame, an: Anim, tone: HairTones, hat: boolean): boolean {
+  const P = H.f > 4
+  // iki yandan örgü önden: kulakların arkasından omuzların önüne iner (başlık takılı olsa da görünür)
+  if (back === 'pigtails') return P ? false : drawPigtails(c, H, an, tone)
   if (back !== 'bun' || hat) return false
   const g = kit(c, H)
-  const P = H.f > 4
   const bx = P ? -3.4 : 0.6
   const by = P ? -26 : -19.2
   const r = P ? 6.4 : 5.8
@@ -120,5 +124,58 @@ export function drawHairTop(c: CanvasRenderingContext2D, back: Back, H: HeadFram
   g.fine(bx - r * 0.8, by + bob - 1.5, bx - r * 0.4, by + bob - 3.8, bx + 0.6, by + bob - 4.3, 1.5, tone.hairL)
   // bağ
   blob(c, () => g.ell(bx, by + bob + r * 0.82, r * 0.68, 1.4), band)
+  return true
+}
+
+/**
+ * İki yandan örgü: kulağın arkasında bağlanan kısa bir tutam, altında halka halka inen örgü ve ucunda püskül gibi açılan saç.
+ * Profilde (oyun) iki örgü ensenin arkasından sarkar (uzak olan gölgede, biraz önde); önden (portre)
+ * iki örgü kulakların dışından omuzların önüne düşer. Kulak ve boyun açık kalır.
+ */
+function drawPigtails(c: CanvasRenderingContext2D, H: HeadFrame, an: Anim, tone: HairTones): boolean {
+  const g = kit(c, H)
+  const P = H.f > 4
+  const moving = an.moving
+  const sw = an.hair * 2.6 + Math.sin(an.t * (moving ? 11 : 1.7)) * (moving ? 0.8 : 0.35)
+  const up = an.lift * 4
+  const sh = { color: tone.hairS, dx: -1.2, dy: -0.8 }
+  const braid = (x0: number, y0: number, dx: number, n: number, step: number, r: number, swing: number, far: boolean) => {
+    const px = (i: number) => x0 + dx * i * step - swing * (i / n) * 1.6
+    const py = (i: number) => y0 + i * step - up * 0.35 * (i / n)
+    // ucu: bağın altında fırça gibi açılan saç
+    const ex = px(n)
+    const ey = py(n)
+    blob(c, () => {
+      g.m(ex - 2.2, ey - 1)
+      g.q(ex - 3.4 - swing * 0.3, ey + 3, ex - 2 - swing * 0.6, ey + 5.6)
+      g.l(ex - 0.6 - swing * 0.6, ey + 3.8)
+      g.l(ex + 0.6 - swing * 0.5, ey + 6.2)
+      g.l(ex + 1.4 - swing * 0.4, ey + 3.8)
+      g.q(ex + 3.2 - swing * 0.2, ey + 3.6, ex + 2.2, ey - 1)
+    }, far ? tone.hairS : tone.hair, far ? undefined : sh)
+    for (let i = n - 1; i >= 0; i--) {
+      const lx = px(i)
+      const ly = py(i)
+      const rr = r - i * 0.12
+      blob(c, () => g.ell(lx, ly, rr * 0.92, rr, i % 2 ? 0.45 : -0.45), far ? tone.hairS : i % 2 ? tone.hairS : tone.hair, far || i % 2 ? undefined : sh)
+      if (!far) g.fine(lx - rr * 0.5, ly - rr * 0.3, lx - rr * 0.2, ly - rr * 0.8, lx + rr * 0.3, ly - rr * 0.7, 0.8, tone.hairL)
+    }
+    blob(c, () => g.ell(ex, ey - 1, 2, 1.5), band)
+  }
+  if (P) {
+    // uzak örgü: yakının biraz önünde ve gölgede, ensenin arkasından sarkar
+    braid(-14.4, 3.4, -0.1, 4, 4.2, 2.6, sw * 0.8, true)
+    // yakın örgü: kulağın arkasındaki bağdan ensenin arkasına
+    blob(c, () => g.ell(-16.4, -2.4, 3.8, 3.4, 0.3), tone.hair, sh)
+    braid(-18, 2, -0.14, 4, 4.4, 2.9, sw, false)
+    blob(c, () => g.ell(-17.2, -0.2, 2.2, 1.6, 0.4), band)
+    return true
+  }
+  for (const side of [-1, 1]) {
+    const x0 = side * 15.6
+    blob(c, () => g.ell(x0, -2, 3.6, 3.2), tone.hair, side < 0 ? sh : undefined)
+    braid(x0 + side * 0.6, 2.4, side * 0.06, 6, 4.6, 3, side * sw * 0.4, false)
+    blob(c, () => g.ell(x0 + side * 0.2, 0.4, 2.4, 1.4), band)
+  }
   return true
 }

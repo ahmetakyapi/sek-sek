@@ -10,6 +10,7 @@ import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { BOSS_FLOOR_MS, minScoreMs, minTimeMs } from '../lib/antiCheat'
 import { dailyBoss, dailyRun, istanbulDay, shiftDay, tournamentFor, tournamentWeek } from '../lib/extras'
+import { runPoints } from '../lib/points'
 import { parseShare } from '../lib/share'
 
 /**
@@ -464,5 +465,41 @@ describe('güvenlik', () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined()
     const g = (await (await saveApi.GET(new NextRequest('http://x/api/players/save', { headers: { cookie: `seksek_oturum=${H.id}.${H.token}` } }))).json()) as { data: Record<string, unknown> }
     expect(JSON.stringify(g.data)).not.toContain('polluted')
+  })
+})
+
+describe('puan (en sonda: öteki testlerin şehir sayılarına dokunmaz)', () => {
+  it('puan: sunucu hesaplar, en yüksek puan kalır; hatıra ve temiz koşu puanı yükseltir', async () => {
+    const gold = LEVELS.find((l) => l.id === 'mardin')!.medals[0]
+    const fast = runPoints(gold, 70000, 3, 0).total
+    const full = runPoints(gold, 90000, 0, 3).total
+    expect(full).toBeGreaterThan(fast)
+    let r = await run(P[0], 'mardin', 70000, 3, 0)
+    expect(r.j).toMatchObject({ better: { points: true } })
+    r = await run(P[1], 'mardin', 90000, 0, 3)
+    // daha yavaş koşu süre sırasında arkada, puan sırasında önde
+    const names = async (sort: string) => (await get(`level=mardin&sort=${sort}`)).scores.map((x) => [x.name, x.points])
+    expect(await names('time')).toEqual([['Ayşe', fast], ['Bora', full]])
+    expect(await names('points')).toEqual([['Bora', full], ['Ayşe', fast]])
+    // Ayşe hızlı ama hatırasız yeniden koşar: puanı düşük koşu kaydı ezmez
+    r = await run(P[0], 'mardin', 65000, 9, 0)
+    expect(r.j).toMatchObject({ better: { time: true, points: false } })
+    expect((await get('level=mardin&sort=points')).scores.find((x) => x.name === 'Ayşe')!.points).toBe(Math.max(fast, runPoints(gold, 65000, 9, 0).total))
+    // sütun gelmeden yazılmış satır: en iyi koşudan SQL'de hesaplanır, JS ile aynı
+    const eski = (await get('level=kayseri&sort=points')).scores[0]
+    expect(eski.points).toBe(runPoints(LEVELS.find((l) => l.id === 'kayseri')!.medals[0], 120000, 4, 1).total)
+    // genel: şehir puanlarının toplamı
+    const genel = (await get('level=genel&sort=points')).scores
+    expect(genel.every((x) => typeof x.points === 'number')).toBe(true)
+    expect(genel.map((x) => x.points)).toEqual([...genel.map((x) => x.points as number)].sort((a, b) => b - a))
+  })
+
+  it('liste özeti: her şehrin lideri, yolcu sayısı ve oyuncunun sırası tek istekte', async () => {
+    const r = await GET(new NextRequest('http://x/api/scores?level=ozet&kind=sehir&me=Bora'))
+    const rows = ((await r.json()) as { rows: Record<string, unknown>[] }).rows
+    const mardin = rows.find((x) => x.id === 'mardin')!
+    expect(mardin).toMatchObject({ total: 2, leader: 'Ayşe', leaderMs: 65000, myRank: 2, myMs: 90000 })
+    const m = await GET(new NextRequest('http://x/api/scores?level=ozet&kind=mucadele'))
+    expect(((await m.json()) as { rows: unknown[] }).rows.every((x) => !String((x as { id: string }).id).includes(':'))).toBe(true)
   })
 })

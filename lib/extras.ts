@@ -311,10 +311,22 @@ export function dailyRun(day: string, levels: LevelDef[]): DailyRun {
   return { day, levelId: levels[i].id, rule: pool[(hash(`kural:${day}`) >>> 4) % pool.length] }
 }
 
+/**
+ * Hatıra her günlükte sayılır (23 Kasım 2026): bu günden başlayarak kuralın kendi cezası yoksa eksik her hatıra
+ * DAILY_MISSING saniye ekler (Hatıra Avı kendi 20 saniyesiyle kalır). Ceza süreye eklenir, düşmez: skor haritanın
+ * fiziksel alt sınırının altına inmez (hile önleme). Önceki günlerin skoru eski kuralla kalır.
+ */
+export const DAILY_ITEMS_FROM = '2026-11-24'
+export const DAILY_MISSING = 5
+/** kuralın metnine eklenen hatıra notu (kural kendi cezasını yazmıyorsa); yoksa 0 */
+export const extraMissing = (rule: DailyRule, day: string) => (DAILY_RULES[rule].perMissing ? 0 : missingFor(rule, day))
+/** günün kuralında eksik hatıra başına saniye */
+export const missingFor = (rule: DailyRule, day: string) => Math.max(DAILY_RULES[rule].perMissing, day >= DAILY_ITEMS_FROM ? DAILY_MISSING : 0)
+
 /** Günlük skor (ms): süre + cezalar */
-export function dailyScore(rule: DailyRule, timeMs: number, deaths: number, found: number) {
+export function dailyScore(rule: DailyRule, timeMs: number, deaths: number, found: number, day: string) {
   const r = DAILY_RULES[rule]
-  return timeMs + deaths * r.perDeath * 1000 + Math.max(0, 3 - found) * r.perMissing * 1000
+  return timeMs + deaths * r.perDeath * 1000 + Math.max(0, 3 - found) * missingFor(rule, day) * 1000
 }
 
 

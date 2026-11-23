@@ -409,13 +409,20 @@ function placeNarrow(geo: Geo, u: number, fixed: Box[]): Box[] {
 
 const WIDE = makeGeo(1, 24.6, 30.6)
 
-export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: number; selected: number; onSelect?: (i: number) => void }) {
+/**
+ * `detail` verilirse şehrin üstüne gelince (ya da klavyeyle odaklanınca) haritanın üstünde süzülen kart açılır: kartın
+ * içini çağıran doldurur (rekor, madalya, sıra). Üstüne gelinen şehrin geliş ve gidiş yolu da seçili şehirdeki gibi öne çıkar.
+ */
+export default function TurkeyMap({ unlocked, selected, onSelect, detail }: { unlocked: number; selected: number; onSelect?: (i: number) => void; detail?: (i: number) => React.ReactNode }) {
   const lang = useLang()
   const words = SEAS[lang]
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const wrap = useRef<HTMLDivElement>(null)
   const svg = useRef<SVGSVGElement>(null)
   const [width, setWidth] = useState(W)
+  // üstüne gelinen ya da odaklanan şehir (kart ve öne çıkan yollar); yoksa seçili şehir
+  const [hover, setHover] = useState<number | null>(null)
+  const focus = hover ?? selected
 
   useEffect(() => {
     const el = wrap.current
@@ -492,10 +499,6 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
             <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="7" result="n" />
             <feDisplacementMap in="SourceGraphic" in2="n" scale="2" xChannelSelector="R" yChannelSelector="G" />
           </filter>
-          <filter id={`${uid}-grain`} x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" />
-            <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.23  0 0 0 0 0.12  0 0 0 0.5 -0.2" />
-          </filter>
           <radialGradient id={`${uid}-vignette`} cx="50%" cy="45%" r="75%">
             <stop offset="55%" stopColor="var(--tm-ink)" stopOpacity="0" />
             <stop offset="100%" stopColor="var(--tm-ink)" stopOpacity="0.22" />
@@ -556,23 +559,32 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
             <path d={`M0 ${-rose.r}L${rose.r * 0.17} ${-rose.r * 0.17}L0 0ZM0 ${rose.r}L${-rose.r * 0.17} ${rose.r * 0.17}L0 0ZM${rose.r} 0L${rose.r * 0.17} ${rose.r * 0.17}L0 0ZM${-rose.r} 0L${-rose.r * 0.17} ${-rose.r * 0.17}L0 0Z`} fill="var(--tm-route)" stroke="none" />
           </g>
 
-          {/* rota: gidilen kısım dolu ve sıcak, kalan kısım soluk noktalı; ok yönü gösterir */}
+          {/* rota: gidilen kısım ince ve soluk (kırk şehrin oku göz yormasın), kalan kısım soluk noktalı; seçili şehre gelen
+              ve ondan çıkan yol öne çıkar, yön oku yalnız onlarda */}
           {geo.legs.map((leg, i) => {
             const walked = i + 1 <= unlocked
+            const near = i === focus - 1 || i === focus
             const a = Math.max(2.4, 2.6 * u)
-            const color = walked ? 'var(--tm-route)' : 'var(--tm-ink)'
+            const color = walked || near ? 'var(--tm-route)' : 'var(--tm-ink)'
             return (
-              <g key={i} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={walked ? 1 : 0.42}>
-                {walked && <path d={leg.path} stroke="var(--tm-paper)" strokeWidth={ink * 3.4} opacity="0.7" />}
-                <path d={leg.path} stroke={color} strokeWidth={walked ? ink * 1.7 : ink * 1.2} strokeDasharray={walked ? undefined : `0.1 ${3.6 * ink}`} />
-                {leg.length > r * 4.2 && (
+              <g key={i} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={near ? 1 : walked ? 0.34 : 0.32}>
+                {near && <path d={leg.path} stroke="var(--tm-paper)" strokeWidth={ink * 3.4} opacity="0.7" />}
+                <path
+                  key={near ? `on-${focus}` : 'off'}
+                  className={near ? 'tm-draw' : undefined}
+                  pathLength={near ? 1 : undefined}
+                  d={leg.path}
+                  stroke={color}
+                  strokeWidth={near ? ink * 1.8 : ink * 1.1}
+                  strokeDasharray={near ? 1 : walked ? undefined : `0.1 ${3.6 * ink}`}
+                />
+                {near && leg.length > r * 4.2 && (
                   <path d={`M${-a} ${-a}L${a * 0.6} 0L${-a} ${a}`} transform={`translate(${leg.mx.toFixed(1)} ${leg.my.toFixed(1)}) rotate(${leg.angle.toFixed(0)})`} stroke={color} strokeWidth={ink * 1.5} />
                 )}
               </g>
             )
           })}
 
-          <rect width={W} height={H} filter={`url(#${uid}-grain)`} opacity="0.5" />
           <rect width={W} height={H} fill={`url(#${uid}-vignette)`} />
           <rect x={3 * u} y={3 * u} width={W - 6 * u} height={H - 6 * u} fill="none" stroke="var(--tm-ink)" strokeWidth={ink * 0.6} opacity="0.55" />
         </g>
@@ -607,7 +619,8 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
           const done = !!onSelect && i < unlocked
           // sıradaki (açık ama bitmemiş en ileri şehir): seçili olmasa da nabız gibi atan altın halkayla öne çıkar
           const next = !!onSelect && i === unlocked
-          const rr = on ? r * 1.14 : next ? r * 1.08 : r
+          // biten şehirler bir tık küçük: seçili ve sıradaki öne çıkar, kırk kırmızı daire göz yormaz
+          const rr = on ? r * 1.14 : next ? r * 1.08 : done ? r * 0.9 : r
           const label = `${l.name}${locked ? ` (${words.locked})` : done ? ` (${words.done})` : ''}`
           const badge = (
             <>
@@ -650,12 +663,6 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
                   {l.plate}
                 </text>
               )}
-              {done && !compact && (
-                <g transform={`translate(${x + rr * 0.78} ${y - rr * 0.78})`}>
-                  <circle r={rr * 0.42} fill="var(--tm-gold)" stroke="var(--tm-ink)" strokeWidth={ink * 0.7} />
-                  <path d={`M${-rr * 0.2} 0l${rr * 0.14} ${rr * 0.15}l${rr * 0.26} ${-rr * 0.3}`} fill="none" stroke="var(--tm-ink)" strokeWidth={ink * 0.9} strokeLinecap="round" strokeLinejoin="round" />
-                </g>
-              )}
             </>
           )
           if (!onSelect) {
@@ -675,6 +682,10 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
               aria-disabled={locked}
               aria-pressed={on}
               onClick={(e) => pick(e, i)}
+              onPointerEnter={() => setHover(i)}
+              onPointerLeave={() => setHover((h) => (h === i ? null : h))}
+              onFocus={() => setHover(i)}
+              onBlur={() => setHover((h) => (h === i ? null : h))}
               onKeyDown={(e) => {
                 if (locked || (e.key !== 'Enter' && e.key !== ' ')) return
                 e.preventDefault()
@@ -708,6 +719,26 @@ export default function TurkeyMap({ unlocked, selected, onSelect }: { unlocked: 
           </g>
         )}
       </svg>
+      {/* süzülen şehir kartı: düğümün üstünde (yer yoksa altında), harita kenarına taşmaz; fareyi engellemez */}
+      {detail && hover !== null && (() => {
+        const n = nodes[hover]
+        const px = (n.x / W) * 100
+        const below = n.y / H < 0.34
+        const l = LEVELS[hover]
+        return (
+          <div
+            className={`tm-card ${below ? 'below' : ''}`}
+            style={{ left: `clamp(92px, ${px}%, calc(100% - 92px))`, top: `${(n.y / H) * 100}%` }}
+            role="status"
+          >
+            <p className="flex items-baseline justify-between gap-2">
+              <span className="truncate font-display text-[15px] leading-tight text-[var(--tm-ink)]">{l.name}</span>
+              <span className="shrink-0 font-mono text-[11px] font-bold tabular-nums text-[var(--tm-route)]">{String(l.plate).padStart(2, '0')}</span>
+            </p>
+            {detail(hover)}
+          </div>
+        )
+      })()}
     </div>
   )
 }

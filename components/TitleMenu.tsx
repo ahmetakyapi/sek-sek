@@ -4,6 +4,7 @@ import { ic } from '@/components/ui'
 import { ItemIcon } from '@/components/HudBits'
 import { HeroFigure } from '@/components/Figures'
 import Portrait from '@/components/Portrait'
+import type { Kit } from '@/game/accessories'
 import type { CharacterId } from '@/game/characters'
 import { LEVELS } from '@/game/levels'
 import type { CityKey, LevelDef } from '@/game/types'
@@ -64,6 +65,8 @@ export default function TitleMenu(props: {
   character: CharacterId | null
   hero: { id: CharacterId; name: string }
   scarf: { color: string; shade: string } | null
+  /** yolcunun Mağaza kombini (aksesuar + görünüm): fotoğraf ve hesap satırı onu giyer */
+  kit?: Kit
   best: Record<string, unknown>
   found: number
   stamps: number
@@ -115,7 +118,7 @@ export default function TitleMenu(props: {
         {props.character ? (
           <figure className="polaroid relative rotate-[-5deg]">
             <span className="tape" />
-            <HeroFigure look={props.hero.id} scarf={props.scarf} className="block aspect-[64/76] w-full" />
+            <HeroFigure look={props.hero.id} scarf={props.scarf} kit={props.kit} className="block aspect-[64/76] w-full" />
             <figcaption>{props.hero.name}</figcaption>
           </figure>
         ) : (
@@ -248,7 +251,7 @@ export default function TitleMenu(props: {
           {/* yatay telefonda iki öbeğin altı kutucuğu tek ızgarada 3×2 (başlıklar gizli): kaydırmadan sığar */}
           <div className="short:grid short:grid-cols-3 short:gap-1.5">
             <Group label={t('Oyna')} />
-            <div className="grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
+            <div className="stagger grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
               <Tile icon="map" label={t('Şehirler')} sub={t('{n}/{m} şehir bitti', { n: done, m: total })} onClick={() => props.onScreen('map')} />
               <Tile
                 icon="modes"
@@ -263,7 +266,7 @@ export default function TitleMenu(props: {
               <Tile icon="pencil" label={t('Harita Yap')} sub={t('Kendi bölümünü çiz')} onClick={() => (window.location.href = '/duzenle')} />
             </div>
             <Group label={t('Senin')} />
-            <div className="grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
+            <div className="stagger grid grid-cols-2 gap-2 max-sm:gap-1.5 short:contents">
               <Tile icon="book" label={t('Defter')} sub={t('{n} hatıra', { n: props.found })} onClick={() => props.onScreen('notebook')} />
               <Tile icon="hero" label={t('Karakter')} sub={t('Kılık, atkı, dükkân')} badge={props.wallet > 0 ? t('{n} Parça', { n: props.wallet }) : undefined} onClick={() => props.onScreen('character')} />
             </div>
@@ -279,7 +282,7 @@ export default function TitleMenu(props: {
             {props.player ? (
               <button className="account-row flex w-full items-center gap-2.5 px-2.5 py-2 text-left" onClick={() => props.onScreen('name')}>
                 <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-panel-2 shadow-[0_0_0_2px_#d9a441]">
-                  <Portrait id={props.hero.id} className="h-full w-full" />
+                  <Portrait id={props.hero.id} scarf={props.scarf} accessory={props.kit} className="h-full w-full" />
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">
                   <span className="block truncate text-[13px] font-semibold text-cream">{props.player.name}</span>
