@@ -2521,7 +2521,7 @@ export const LEVELS: LevelDef[] = [
       { name: 'Masör Halit', look: 'amca', text: 'Kırk yıldır bu kaplıcada kese atarım; sırttan kir değil, hikâye çıkar! Sıcak su yerin dibinden kaynar, buharı tavana vurur. Buhar odasında ikinci buharın tepesine çıkınca arkana, sola bak: buğunun ardında karanlık bir kapı var, içeride biri bir pul unutmuş.' },
     ],
     medals: [180, 245, 330],
-    quips: ['Havlu tam isabet!', 'Kahvaltıda fazla kaçırdın.', 'Terliğin kaydı.', 'Buhar seni bıraktı.', 'Kaymağın eridi.'],
+    quips: ['Havlu tam isabet!', 'Kahvaltıda fazla kaçırdın.', 'Terliğin kaydı.', 'Buhar seni bıraktı.', 'Kaymağın eridi.', 'Teyze seni gördü, havluyu yedin.', 'Simide uzandın, tepsi kızgındı.', 'Üçüncü tabak menemen fazlaydı.'],
     item: 'Kaymak',
     intro: 'Kara kayanın tepesindeki Afyon Kalesi’nden Frig Vadisi’nin kaya anıtlarına, oradan termal otelin içine: döner kapı, kahvaltı büfesi, buhar odası ve teyzelerin sıcak havuzu. Görünmeden geç, buharla yüksel.',
     facts: [

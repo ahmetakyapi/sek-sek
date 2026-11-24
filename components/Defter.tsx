@@ -70,7 +70,7 @@ export default function Defter({ save, today, hero, sound, onClose, onModes, onM
                 ★ {t(travelerTitle(titleFacts(save, today)))}
               </span>
             </h2>
-            <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Yolculukta topladığın her şey: şehirler, albüm, başarımlar ve besteler.')}</p>
+            <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Yolculukta topladığın her şey: şehirler, albüm, başarımlar ve tanıştığın insanlar.')}</p>
           </div>
           <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onClose}>
             {ic(t('← Geri'))}

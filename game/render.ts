@@ -2890,7 +2890,7 @@ export class Renderer {
   }
 
   /** iç mekânın sütunları (dünya başına bir kez): tavanın altı (ilk boş satır); tavansız sütun -1 */
-  private room: { w: World | null; top: Int16Array } = { w: null, top: new Int16Array(0) }
+  private room: { w: World | null; top: Int16Array; buf: Int16Array; runs: [number, number][] } = { w: null, top: new Int16Array(0), buf: new Int16Array(0), runs: [] }
 
   /** çini lambrinin deseni (16x16, bir kez çizilir): turkuaz zemin, beyaz baklavalar şaşırtmalı; dünya koordinatına oturur */
   private tilePat: CanvasPattern | null = null
@@ -2923,8 +2923,181 @@ export class Renderer {
       while (r < w.rows && w.isSolid(tx, r)) r++
       if (r < w.rows - 4) top[tx] = r
     }
-    this.room = { w, top }
+    // açık büfe: tavanlı sütunların altında kızgın tepsi (diken) varsa orası büfe salonudur; duvara uzun tezgâh çizilir
+    const buf = new Int16Array(w.cols).fill(-1)
+    const runs: [number, number][] = []
+    let start = -1
+    for (let tx = 0; tx <= w.cols; tx++) {
+      let hot = false
+      if (tx < w.cols && top[tx] >= 0) for (let ty = top[tx]; ty < w.rows && !hot; ty++) hot = w.raw(tx, ty) === SPIKE_UP
+      if (hot && start < 0) start = tx
+      if (!hot && start >= 0) {
+        if (tx - start >= 6) {
+          runs.push([start, tx - 1])
+          for (let k = start; k < tx; k++) buf[k] = k - start
+        }
+        start = -1
+      }
+    }
+    this.room = { w, top, buf, runs }
     return this.room
+  }
+
+  /**
+   * Açık büfe (termal otelin kahvaltı salonu): duvar boyu mermer tezgâh, üstünde sırayla büyük ve tanınır kahvaltılıklar
+   * (benmari kapları, sucuklu yumurta, menemen, simit kulesi, semaver ve çay, kaymak ve bal, peynir, zeytin, domates,
+   * kakaolu süt kutuları, bebe bisküvisi, lokum, portakal suyu), tepede piksel yazılı "AÇIK BÜFE" tabelası. Arka tampona,
+   * yalnız görünen sütunlar; buhar saatten.
+   */
+  private drawBuffet(b: Ctx, w: World, a: number, z: number, from: number, to: number) {
+    const top = this.room.top
+    const cy = (w.rows - 7) * T // tezgâhın üstü: çini lambrinin hizası
+    const t = w.clock
+    const ITEMS = 14
+    for (let tx = from; tx <= to; tx++) {
+      const x = tx * T
+      const k = tx - a
+      // tezgâh: mermer üst, ahşap ön, pirinç şerit
+      rect(b, x, cy - 3, T, 3, '#f4f0ea')
+      rect(b, x, cy - 3, T, 1, '#ffffff')
+      rect(b, x + ((k * 5) % 11), cy - 2, 4, 1, '#d8d0c8')
+      // ön yüz soluk: arka plandır, üstüne basılmaz (çini lambri arasından görünür)
+      rect(b, x, cy, T, 12, 'rgba(176,136,96,0.55)')
+      rect(b, x, cy, T, 1, 'rgba(120,84,52,0.6)')
+      if (k % 2 === 0) rect(b, x + 3, cy + 3, 10, 6, 'rgba(150,110,74,0.45)')
+      if (tx === a || tx === z) continue
+      const ix = x
+      const iy = cy - 3 // eşyaların oturduğu çizgi
+      switch ((k - 1) % ITEMS) {
+        case 0: // benmari: gümüş kap, kapağı açık, içinde sucuklu yumurta
+        case 7: {
+          rect(b, ix + 1, iy - 6, 14, 6, '#aab2bc')
+          rect(b, ix + 1, iy - 6, 14, 1, '#e4e8ee')
+          rect(b, ix + 2, iy - 7, 12, 1, '#fff4e0')
+          for (const dx of [3, 7, 11]) rect(b, ix + dx, iy - 8, 2, 2, '#fff8ee')
+          for (const dx of [4, 8, 12]) rect(b, ix + dx, iy - 8, 1, 1, '#f2a81e')
+          for (const dx of [5, 10]) rect(b, ix + dx, iy - 8, 1, 1, '#b8402e')
+          // kapak arkada açık durur
+          rect(b, ix + 2, iy - 14, 12, 2, '#c8ced6')
+          rect(b, ix + 7, iy - 15, 2, 1, '#8a929c')
+          break
+        }
+        case 1: // menemen tavası, sapı yana
+          rect(b, ix + 1, iy - 4, 12, 4, '#2a2630')
+          rect(b, ix + 2, iy - 5, 10, 1, '#e8582e')
+          rect(b, ix + 3, iy - 5, 2, 1, '#f2c14e')
+          rect(b, ix + 8, iy - 5, 2, 1, '#f2c14e')
+          rect(b, ix + 6, iy - 6, 1, 1, '#5aa83e')
+          rect(b, ix + 13, iy - 3, 3, 1, '#2a2630')
+          break
+        case 2: // simit kulesi
+          for (let r = 0; r < 4; r++) {
+            const ox = r % 2 ? 4 : 2
+            rect(b, ix + ox, iy - 3 - r * 3, 10, 3, '#b8743a')
+            rect(b, ix + ox + 3, iy - 2 - r * 3, 4, 1, '#7a4a22')
+            rect(b, ix + ox + 1, iy - 3 - r * 3, 2, 1, '#f4e6c0')
+          }
+          break
+        case 3: { // semaver: buhar tüter
+          rect(b, ix + 4, iy - 14, 8, 14, '#c8a050')
+          rect(b, ix + 4, iy - 14, 2, 14, '#f0d080')
+          rect(b, ix + 6, iy - 17, 4, 3, '#a87a30')
+          rect(b, ix + 12, iy - 8, 3, 1, '#a87a30')
+          rect(b, ix + 3, iy - 2, 10, 2, '#8a6420')
+          const ph = (t * 0.8) % 1
+          b.globalAlpha = 0.6 * (1 - ph)
+          rect(b, ix + 7, Math.round(iy - 19 - ph * 8), 2, 2, '#ffffff')
+          b.globalAlpha = 1
+          break
+        }
+        case 4: // ince belli çay bardakları, tabakta
+          for (const dx of [1, 6, 11]) {
+            rect(b, dx + ix, iy - 1, 4, 1, '#e4e8ee')
+            rect(b, dx + ix, iy - 6, 4, 5, '#c84a1e')
+            rect(b, dx + ix + 1, iy - 4, 2, 1, '#e8742e')
+            rect(b, dx + ix, iy - 6, 4, 1, '#f4e6c0')
+          }
+          break
+        case 5: // kaymak tabağı ve bal peteği (şehrin hatırası)
+          rect(b, ix + 1, iy - 2, 14, 2, '#e4e8ee')
+          rect(b, ix + 2, iy - 6, 7, 4, '#fff8e8')
+          rect(b, ix + 3, iy - 7, 5, 1, '#fffdf6')
+          rect(b, ix + 10, iy - 6, 5, 4, '#e8a43a')
+          rect(b, ix + 11, iy - 5, 1, 1, '#f8d070')
+          rect(b, ix + 13, iy - 4, 1, 1, '#f8d070')
+          break
+        case 6: // tekerlek peynir, bir dilimi kesik
+          rect(b, ix + 2, iy - 7, 12, 7, '#f4dc8a')
+          rect(b, ix + 2, iy - 7, 12, 1, '#fff0b0')
+          rect(b, ix + 10, iy - 7, 4, 3, '#eadcc0')
+          rect(b, ix + 5, iy - 4, 1, 1, '#d8b860')
+          rect(b, ix + 8, iy - 2, 1, 1, '#d8b860')
+          break
+        case 8: // kakaolu süt kutuları (markasız): kahverengi kutu, sarı şerit, pipet
+          for (const dx of [1, 6, 11]) {
+            rect(b, ix + dx, iy - 9, 4, 9, '#7a4a2a')
+            rect(b, ix + dx, iy - 9, 4, 1, '#a87a52')
+            rect(b, ix + dx, iy - 6, 4, 2, '#f2c14e')
+            rect(b, ix + dx + 2, iy - 12, 1, 3, '#f2f2f2')
+          }
+          break
+        case 9: // bebe bisküvisi paketi ve tabakta bisküviler (markasız)
+          rect(b, ix + 1, iy - 8, 8, 8, '#f2d24e')
+          rect(b, ix + 2, iy - 6, 6, 2, '#e8794a')
+          rect(b, ix + 3, iy - 8, 4, 1, '#ffffff')
+          rect(b, ix + 9, iy - 1, 7, 1, '#e4e8ee')
+          for (const [dx, dy] of [[10, 3], [13, 3], [11, 5]]) rect(b, ix + dx, iy - dy, 3, 2, '#e4b46a')
+          break
+        case 10: // zeytin kâsesi ve domates salatalık
+          rect(b, ix + 1, iy - 4, 7, 4, '#ffffff')
+          rect(b, ix + 2, iy - 5, 5, 1, '#2a2430')
+          rect(b, ix + 3, iy - 6, 2, 1, '#4a5a2a')
+          rect(b, ix + 9, iy - 4, 3, 3, '#d8342a')
+          rect(b, ix + 9, iy - 5, 1, 1, '#4a8a2a')
+          rect(b, ix + 12, iy - 3, 4, 2, '#6aae4a')
+          rect(b, ix + 12, iy - 3, 4, 1, '#c8e8a8')
+          break
+        case 11: // portakal suyu sürahisi ve bardak
+          rect(b, ix + 2, iy - 11, 7, 11, '#d8eef4')
+          rect(b, ix + 3, iy - 9, 5, 8, '#f29a2e')
+          rect(b, ix + 9, iy - 8, 2, 4, '#d8eef4')
+          rect(b, ix + 12, iy - 5, 3, 5, '#d8eef4')
+          rect(b, ix + 12, iy - 4, 3, 4, '#f29a2e')
+          break
+        case 12: // lokum tepsisi
+          rect(b, ix + 1, iy - 2, 14, 2, '#c8a060')
+          for (const [dx, c] of [[2, '#f2a8c0'], [6, '#ffffff'], [10, '#f2a8c0']] as const) {
+            rect(b, ix + dx, iy - 5, 3, 3, c)
+            rect(b, ix + dx + 2, iy - 8, 3, 3, c === '#ffffff' ? '#f2a8c0' : '#ffffff')
+          }
+          break
+        default: // tabak kulesi ve çatal bıçak
+          for (let r = 0; r < 5; r++) rect(b, ix + 2, iy - 1 - r * 2, 9, 1, r % 2 ? '#dfe4ea' : '#ffffff')
+          rect(b, ix + 13, iy - 9, 1, 9, '#aab2bc')
+          rect(b, ix + 15, iy - 8, 1, 8, '#aab2bc')
+      }
+    }
+    // tabela: tezgâhın ortasında, tavandan iki zincirle; içinde piksel "AÇIK BÜFE"
+    const mid = Math.floor((a + z) / 2)
+    if (mid >= from - 3 && mid <= to + 3 && top[mid] >= 0) {
+      const text = 'AÇIK BÜFE'
+      const tw = text.length * 4 - 1
+      const bw = tw + 8
+      const bx = mid * T + T / 2 - Math.round(bw / 2)
+      // tezgâhın biraz üstünde asılı (telefonda üst gösterge altında kalmasın)
+      const by = Math.max(top[mid] * T + 22, cy - 46)
+      rect(b, bx + 3, top[mid] * T + 4, 1, by - top[mid] * T - 4, '#5a4a3a')
+      rect(b, bx + bw - 4, top[mid] * T + 4, 1, by - top[mid] * T - 4, '#5a4a3a')
+      rect(b, bx - 1, by - 1, bw + 2, 13, '#5a3a20')
+      rect(b, bx, by, bw, 11, '#2f5a4a')
+      rect(b, bx, by, bw, 1, '#4a7a66')
+      let px = bx + 4
+      for (const ch of text) {
+        const g = PIX_FONT[ch]
+        if (g) for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) if (g[r][c] === '#') rect(b, px + c, by + 2 + r, 1, 1, '#f8e8b8')
+        px += 4
+      }
+    }
   }
 
   /**
@@ -2933,7 +3106,7 @@ export class Renderer {
    * olmayan tek yönlü tahta) yemek tepsileri, havuz yüzünde buhar. Otelin içinde sokak feneri ve ağaç süsü çizilmez. Arka tampona, saate bağlı (her Hz'de aynı), yalnız görünen sütunlar.
    */
   private drawInterior(b: Ctx, w: World, cx: number) {
-    const { top } = this.roomOf(w)
+    const { top, buf, runs } = this.roomOf(w)
     const x0 = Math.max(0, Math.floor(cx / T) - 1)
     const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T) + 1)
     const t = w.clock
@@ -3025,9 +3198,10 @@ export class Renderer {
         }
       }
     }
+    for (const [a, z] of runs) if (z >= x0 - 2 && a <= x1 + 2) this.drawBuffet(b, w, a, z, Math.max(a, x0 - 1), Math.min(z, x1 + 1))
     // kemerli pencereler: duvarlardan sonra (iki karo genişliğinde, komşu sütunun duvarı üstüne binmesin); oda yeterince yüksekse
     for (let tx = x0; tx <= x1; tx++) {
-      if (tx % 9 !== 3 || top[tx] < 0 || top[tx + 1] < 0) continue
+      if (tx % 9 !== 3 || top[tx] < 0 || top[tx + 1] < 0 || buf[tx] >= 0 || buf[tx + 1] >= 0) continue
       const y0 = top[tx] * T
       const wt = y0 + T + 2
       const wh = Math.min((w.rows - 7) * T - wt - T, 3 * T)
@@ -3352,6 +3526,21 @@ export class Renderer {
         rect(b, pl.x - 30, pl.y - 31, pl.w + 60, 1, '#2a3a30')
         rect(b, pl.x + 4, pl.y + 6, pl.w - 8, 10, '#d6403a')
         rect(b, pl.x + 7, pl.y + 8, pl.w - 14, 4, '#cfe8f0')
+      }
+      if (w.level.indoor) {
+        // servis arabası: paslanmaz ayaklar, tekerlek, alt rafta çaydanlık ve tabaklar
+        rect(b, pl.x + 1, pl.y + 6, 2, 12, '#9aa2ac')
+        rect(b, pl.x + pl.w - 3, pl.y + 6, 2, 12, '#9aa2ac')
+        rect(b, pl.x + 1, pl.y + 14, pl.w - 2, 2, '#c8ced6')
+        disc(b, pl.x + 3, pl.y + 19, 2, '#2a2630')
+        disc(b, pl.x + pl.w - 3, pl.y + 19, 2, '#2a2630')
+        rect(b, pl.x + 6, pl.y + 9, 6, 5, '#d8d0c8')
+        rect(b, pl.x + 7, pl.y + 8, 4, 1, '#aab2bc')
+        rect(b, pl.x + 12, pl.y + 10, 2, 1, '#aab2bc')
+        for (let i = 18; i < pl.w - 6; i += 8) {
+          rect(b, pl.x + i, pl.y + 12, 6, 2, '#ffffff')
+          rect(b, pl.x + i + 1, pl.y + 11, 4, 1, '#f2c14e')
+        }
       }
       if (this.city === 'istanbul') {
         // iskele dubaları
@@ -5346,16 +5535,32 @@ function tideHash(a: number, b: number) {
   return (h ^ (h >>> 16)) >>> 0
 }
 
+/** tabela yazısı için 3×7 piksel harfler (üstte iki satır nokta/şapka payı) */
+const PIX_FONT: Record<string, string[]> = {
+  A: ['...', '...', '###', '#.#', '###', '#.#', '#.#'],
+  Ç: ['...', '...', '###', '#..', '#..', '###', '.#.'],
+  I: ['...', '...', '###', '.#.', '.#.', '.#.', '###'],
+  K: ['...', '...', '#.#', '##.', '#..', '##.', '#.#'],
+  B: ['...', '...', '##.', '#.#', '##.', '#.#', '##.'],
+  Ü: ['...', '#.#', '...', '#.#', '#.#', '#.#', '###'],
+  F: ['...', '...', '###', '#..', '##.', '#..', '#..'],
+  E: ['...', '...', '###', '#..', '##.', '#..', '###'],
+}
+
 /** havuz teyzesinin çığlık sözleri [TR, EN]: görünce bağırıp havlu fırlatırken (komik, kısa; balonda okunur) */
 const AUNT_SHOUT: [string, string][] = [
   ['Aaaa! Bakma!', 'Eeek! Don’t look!'],
   ['Bizi dikizleme!', 'Stop peeking at us!'],
   ['Telefonu bırak!', 'Put that phone down!'],
-  ['Röntgenci misin?!', 'Are you a peeping Tom?!'],
-  ['Utanmaz! Al sana havlu!', 'Shameless! Have a towel!'],
-  ['Burası kadınlar havuzu!', 'This is the ladies’ pool!'],
-  ['Bone tak, bone!', 'Swim cap, please!'],
   ['Çek o kamerayı!', 'Get that camera away!'],
+  ['Utanmaz! Al sana havlu!', 'Shameless! Have a towel!'],
+  ['Bone tak, bone!', 'Swim cap, please!'],
+  ['Terliksiz mi girdin?!', 'No slippers?! Really?!'],
+  ['Story mi atıyorsun?!', 'Are you posting a story?!'],
+  ['Kaymağımı mı yedin?!', 'Did you eat my kaymak?!'],
+  ['Saat dokuz, bizim saat!', 'It’s nine, it’s our hour!'],
+  ['Annen biliyor mu?!', 'Does your mother know?!'],
+  ['Havlu geliyor, eğil!', 'Towel incoming, duck!'],
 ]
 /** dönmeden önceki şüphe sözleri [TR, EN] */
 const AUNT_HM: [string, string][] = [
@@ -5363,4 +5568,7 @@ const AUNT_HM: [string, string][] = [
   ['Kim var orada?', 'Who’s there?'],
   ['Bir ses mi geldi?', 'Did I hear something?'],
   ['Kim o?', 'Who is it?'],
+  ['Terlik sesi mi o?', 'Was that a slipper?'],
+  ['Çay demlendi mi?', 'Is the tea ready?'],
+  ['Biri mi dikiziyor?', 'Is someone peeking?'],
 ]

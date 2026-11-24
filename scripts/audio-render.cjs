@@ -1,6 +1,6 @@
 /**
  * Sesi dinlemeden kanıtla: oyunun ses motoru tarayıcıda çevrimdışı ses bağlamıyla (OfflineAudioContext, sahte saat)
- * çalınır; jenerik (başı ve bütün formu), iki şehrin başı, bir şehrin bütün döngüsü, boss dövüşü (kabarıp sönen), molada boğukluk ve bütün efektler WAV olarak yazılır. Her parça için tepe,
+ * çalınır; oyunun tek bestesi jenerik (başı, bütün formu, ikinci tur, menüden şehre kesintisiz geçiş), boss dövüşü (kabarıp sönen), molada boğukluk, müziğin üstünde efektler ve bütün efektler tek tek WAV olarak yazılır. Her parça için tepe,
  * RMS ve NaN ölçülür: sessiz kalan, NaN üreten, patlayan (tepe ≥ 0,98) ya da aşırı yüksek parça FAIL. Ayrıntılı çözümleme (LUFS, frekans dengesi,
  * tekrar): python3 scripts/audio-render-analiz.py <klasör>. TEL=1 yalnız tel akordu için
  * tek notalar üretir; ONLY=ad,ad yalnız o parçaları. Kullanım: sunucu açıkken  PORT=3000 node scripts/audio-render.cjs [klasör]
@@ -18,17 +18,17 @@ const CLIPS = process.env.TEL ? [
   ['tel-saz-50', 2, `s.musicOn=false; s.pluckSfx(50, 0.8, 0.05, 'saz')`],
 ] : [
   ['jenerik', 24, `s.playTheme()`],
-  // jeneriğin bütün formu: giriş + 64 ölçülük döngü (A B A B · nefes · C A B · nefes); tekrar yorgunluğu analizi için
-  ['jenerik-dongu', 224, `s.playTheme()`],
-  ['istanbul', 50, `s.setMusic('istanbul')`],
-  ['trabzon', 18, `s.setMusic('trabzon')`],
-  ['balikesir', 14, `s.setMusic('balikesir')`],
-  ['elazig', 14, `s.setMusic('elazig')`],
-  // bütün döngü: giriş, A, A', B, A'', nefes, C, A4, B', nefes ve A'ya dönüş (tremolo, yankı, geciktirmeler)
-  ['van-dongu', 250, `s.setMusic('van')`],
+  // jeneriğin bütün formu: giriş + 64 ölçülük döngü (A A′ B A″ · nefes · C A4 B′ · nefes) ve A'ya dönüş; tekrar yorgunluğu analizi için
+  ['jenerik-dongu', 216, `s.playTheme()`],
+  // döngünün ikinci turu: ezgiyi A'da kanun söyler (bestedeki pass 1); tur başına atlanır
+  ['jenerik-tur2', 30, `s.playTheme(); s.stepIdx = s.song.length`],
+  // menüden şehre geçiş: müzik kesilmez, baştan başlamaz (3. saniyede şehir açılır)
+  ['oyun-gecis', 10, `s.playTheme(); setAt(3, () => s.setMusic('istanbul'))`],
   // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
-  ['erzurum-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
+  ['jenerik-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
+  // müziğin üstünde efektler: yan zincir müziği hafifçe eğer, efekt üstte duyulur
+  ['efekt-muzik', 12, `s.setMusic('izmir'); ['collect','jump','checkpoint','dash','stomp','death','complete'].forEach((n,i)=>setAt(2+i*1.4,()=>s.sfx(n)))`],
   // havuz teyzesinin çığlığı tek başına (ünlü tınısı, titreme): tepe ve tını ayrı ölçülsün
   ['ciglik', 3, `s.setMusic('afyon'); s.musicOn=false; setAt(0.3, () => s.sfx('shriek'))`],
   ['efektler', 42, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown','grab','swim','ui','key','pet','crystal','warp','perfect','nitro','switch','breath','drown','beat','shoot','freeze','thaw','shriek','sink']; names.forEach((n,i)=>setAt(0.5+i,()=>s.sfx(n)))`],

@@ -1,5 +1,5 @@
 import type { CityKey } from './types'
-import { SCALES, cityTheme, titleTheme, type Inst, type NoteEvent, type Song } from './music'
+import { SCALES, titleTheme, type Inst, type NoteEvent, type Song } from './music'
 
 /**
  * Tamamen sentezlenmiş ses: harici dosya yok. Müziğin notaları music.ts'te.
@@ -7,11 +7,12 @@ import { SCALES, cityTheme, titleTheme, type Inst, type NoteEvent, type Song } f
  * Rahatlatıcı arka plan müziği (lo-fi): Rhodes benzeri elektrik piyano, sıcak alt bas, yumuşak bas davul, fırçalı kenar
  * vuruşu, kapalı zil; ezgide ney (alttan girer, nefesi duyulur) ve kanun (Karplus-Strong tel benzetimi, nota başına
  * önbellek; uzun notada tremolo). Tek adımlar hafif geç çalar (swing). Her çalgının stereoda yeri, oda yankısı payı ve
- * tempoya bağlı sağ-sol sekişen yankı (noktalı sekizlik) payı var. Boss uyanınca altta sakin bir dövüş katmanı (usule
- * basan davul, durakta pedal bas, kanunda 3+3+2 ostinato) birkaç saniyede kabarır, bitince söner; molada müzik süzgeçle
- * boğuklaşır. Müzik yolu: ton (çamur kesilir, varlık açılır) → bant doygunluğu → yapıştırıcı sıkıştırma → kendi tepe
- * sınırlayıcısı → efekt çalınca ~3 dB eğilen yan zincir. Döngünün tek turlarında ezgi başka çalgıda gelir (`pass`).
- * Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
+ * tempoya bağlı sağ-sol sekişen yankı (noktalı sekizlik) payı var. Oyunun her yerinde tek beste çalar (jenerik, music.ts):
+ * menüden şehre geçişte kesilmez, baştan da başlamaz. Boss uyanınca altta sakin bir dövüş katmanı (bestenin ölçü
+ * köküne basan yumuşak davul ve tokmak, on altılık zil, kökte pedal bas, kanunda 3+3+2 ostinato) birkaç saniyede kabarır,
+ * bitince söner; molada müzik süzgeçle boğuklaşır. Müzik yolu: ton (çamur kesilir, varlık açılır) → bant doygunluğu →
+ * yapıştırıcı sıkıştırma → kendi tepe sınırlayıcısı → efekt çalınca ~3 dB eğilen yan zincir. Döngünün tek turlarında
+ * ezgi başka çalgıda gelir (`pass`). Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
  */
 
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
@@ -82,10 +83,10 @@ export class Sound {
   private ac: AudioContext | null = null
   private master: GainNode | null = null
   private musicGain: GainNode | null = null
-  /** efekt çalarken müziği hafifçe eğen kazanç ve efekt yolunun ölçeri (yan zincir) */
+  /** efekt çalarken müziği hafifçe eğen kazanç (yan zincir) ve zamanlanmış efektlerin bittiği an (ses saati) */
   private sfxDuck: GainNode | null = null
-  private sfxMeter: AnalyserNode | null = null
-  private meterBuf: Float32Array<ArrayBuffer> | null = null
+  private sfxEnd = 0
+  private sfxDucked = false
   /** molada müziği boğuklaştıran süzgeç */
   private muffle: BiquadFilterNode | null = null
   /** efektlerin yolu: alçak geçiren süzgeç (sert, bip gibi tiz harmonikler kesilir) */
@@ -193,7 +194,9 @@ export class Sound {
       // bant doygunluğu: yumuşak tanh eğrisi, vuruşların sivri tepesini yuvarlar, alt-ortaya sıcak çift harmonik katar
       const tape = this.ac.createWaveShaper()
       tape.curve = tapeCurve()
-      tape.oversample = '2x'
+      // aşırı örnekleme yok: müzik eğrinin neredeyse doğrusal bölgesinde (tepe ~-9 dB), katılan harmonik az ve
+      // katlanma duyulmaz; '2x' ses iş parçacığında her örnekte iki kat süzgeç işi demekti (zayıf telefonda boşa yük)
+      tape.oversample = 'none'
       tape.connect(comp)
       // ton: 280 Hz çevresindeki çamur biraz kısılır (bas, dem ve piyano üst üste binince bulanıyordu), 3,2 kHz üstü
       // hafif açılır (ney nefesi, kanun teli, zil: "sönük" duyuluyordu); sert tiz yine muffle süzgecinde kesilir
@@ -213,10 +216,6 @@ export class Sound {
       this.muffle.Q.value = 0.5
       this.muffle.frequency.value = MUFFLE_OPEN
       this.muffle.connect(mud)
-      // efekt yolunu dinleyen ölçer: efekt çalarken müzik ~3 dB eğilir (yan zincir), efekt bitince geri gelir
-      this.sfxMeter = this.ac.createAnalyser()
-      this.sfxMeter.fftSize = 1024
-      this.sfxBus.connect(this.sfxMeter)
       this.musicGain = this.ac.createGain()
       this.musicGain.gain.value = this._musicOn ? MUSIC_VOL * this._musicVol : 0
       this.musicGain.connect(this.muffle)
@@ -373,6 +372,7 @@ export class Sound {
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     o.connect(g)
     g.connect(dest ?? this.sfxBus ?? this.master)
+    this.duckForSfx(t + dur)
     o.start(t)
     o.stop(t + dur + 0.02)
     // alçak notalar (iniş, yer sarsıntısı, hırıltı) küçük hoparlörde duyulmaz: ikinci harmonik onları taşır
@@ -407,6 +407,7 @@ export class Sound {
     src.connect(f)
     f.connect(g)
     g.connect(this.sfxBus ?? this.master)
+    this.duckForSfx(t + dur)
     src.start(t, Math.random() * 0.5, dur + 0.05)
   }
 
@@ -424,6 +425,7 @@ export class Sound {
     out.gain.setValueAtTime(0.11, t + dur * 0.6)
     out.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     out.connect(this.sfxBus)
+    this.duckForSfx(t + dur)
     // titreme: 7 Hz'lik perde salınımı (yaşlı teyze vibratosu)
     const lfo = ac.createOscillator()
     lfo.frequency.value = 7.5
@@ -472,6 +474,7 @@ export class Sound {
     g.gain.linearRampToValueAtTime(vol, t + 0.008)
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     g.connect(this.sfxBus)
+    this.duckForSfx(t + dur)
     // gövde: müzikteki piyanoyla aynı armonik dalga, iki tel hafif akortsuz; üstte çabuk sönen çan kısmı
     const o = ac.createOscillator()
     o.setPeriodicWave(this.wave('rhodes'))
@@ -647,18 +650,25 @@ export class Sound {
 
   /* ── Müzik ────────────────────────────────────────────────── */
 
-  /** oyun müziği: şehrin makamında besteli tema */
+  /**
+   * oyun müziği: şehirde de jenerik çalar (şehre özgü beste yok). Şehir yalnız efektlerin makamını seçer; jenerik zaten
+   * çalıyorsa baştan başlamaz, menüden şehre geçişte müzik kesilmeden sürer
+   */
   setMusic(city: CityKey) {
     if (this.city !== city) this.intense = false
     this.city = city
-    this.play(cityTheme(city))
+    this.play(titleTheme())
   }
 
-  /** jenerik: menülerde çalan tema (zaten çalıyorsa baştan başlamaz) */
+  /** menülerin müziği: aynı jenerik (zaten çalıyorsa baştan başlamaz), boss katmanı söner */
   playTheme() {
     this.intense = false
-    if (this.song?.id === 'title') return
     this.play(titleTheme())
+  }
+
+  /** müzik şu an çalıyor mu (Müzik Kutusu'nun çal/durdur düğmesi) */
+  get playing() {
+    return this.song !== null
   }
 
   stopMusic() {
@@ -753,59 +763,64 @@ export class Sound {
       for (const e of song.byStep[i]) if (e.pass === undefined || e.pass === pass) this.voice(e, t, song.step)
       // dövüş katmanı ~3 sn'de kabarır, ~2 sn'de söner
       this.heat = this.intense ? Math.min(1, this.heat + song.step / 3) : Math.max(0, this.heat - song.step / 2)
-      if (this.heat > 0 && song.pulse.length) this.battle(i, t, song)
+      if (this.heat > 0) this.battle(i, t, song)
       this.nextTime += song.step
       this.stepIdx++
     }
   }
 
-  /**
-   * Yan zincir: efekt yolunun o anki gücüne bakar (zamanlayıcıyla, ~50 ms'de bir); efekt duyuluyorsa müzik hızla ~3 dB
-   * eğilir, susunca yavaşça geri gelir. Müzik dolgunlaştı ama zıplama, toplama gibi kısa efektler yine üstte kalır.
-   */
-  private followSfx() {
-    const ac = this.ac
-    const meter = this.sfxMeter
-    if (!ac || !meter || !this.sfxDuck) return
-    this.meterBuf ??= new Float32Array(meter.fftSize)
-    meter.getFloatTimeDomainData(this.meterBuf)
-    let sum = 0
-    for (let k = 0; k < this.meterBuf.length; k++) sum += this.meterBuf[k] * this.meterBuf[k]
-    const busy = this.sfxOn && Math.sqrt(sum / this.meterBuf.length) > 0.006
-    this.sfxDuck.gain.setTargetAtTime(busy ? SFX_DUCK : 1, ac.currentTime, busy ? 0.03 : 0.4)
+  /** yan zincir: efekt çalarken müzik hızla ~3 dB eğilir (efektin zamanlanmış bitişi `sfxEnd`'e yazılır) */
+  private duckForSfx(end: number) {
+    this.sfxEnd = Math.max(this.sfxEnd, end)
+    if (this.sfxDucked || !this.ac || !this.sfxDuck) return
+    this.sfxDucked = true
+    this.sfxDuck.gain.setTargetAtTime(SFX_DUCK, this.ac.currentTime, 0.03)
   }
 
   /**
-   * Boss dövüşü katmanı (dört vuruş): birinci ve üçüncü vuruşta yumuşak bas davul, usulün (3+3+2) vurgularında alçak
-   * tokmak davulu (çerçeve davulu gibi, tıkırtısız), kısık kenar vuruşu ve zil, iki ölçülük dem pedalı (kök, beşli ve
-   * makamın ikinci derecesi iki oktav yukarıda asılı: gerilim ritimden ve armoniden gelir, sertlikten değil), kanunda usule basan
-   * ostinato. Ses yükselmez, tizlenmez. Gücü `heat` ile kabarıp söner.
+   * Efekt bitince müzik yavaşça geri gelir (zamanlayıcıda, ~50 ms'de bir; yalnız eğikken bir karşılaştırma). Eskiden
+   * efekt yolunu bir ölçer (AnalyserNode) dinliyor, her tikte 1024 örnek okunuyordu: efektin ne zaman biteceği zaten belli.
+   */
+  private followSfx() {
+    const ac = this.ac
+    if (!this.sfxDucked || !ac || !this.sfxDuck || ac.currentTime < this.sfxEnd + 0.1) return
+    this.sfxDucked = false
+    this.sfxDuck.gain.setTargetAtTime(1, ac.currentTime, 0.4)
+  }
+
+  /**
+   * Boss dövüşü katmanı: ölçünün başında ve ortasında yumuşak bas davul, usulün (3+3+2) vurgularında alçak tokmak davulu
+   * (çerçeve davulu gibi, tıkırtısız) bestenin o ölçüdeki kökünde ve beşlisinde, ikide ve dörtte kısık kenar vuruşu, on
+   * altılık zil (ritim sıklaşır), kökte pedal bas ve dem, kanunda usule basan ostinato. Armoni bestenin ölçü köklerinden
+   * (`song.roots`) gelir, ezgiyle çatışmaz. Ses yükselmez, tizlenmez. Gücü `heat` ile kabarıp söner.
    */
   private battle(step: number, t: number, song: Song) {
-    const beats = song.pulse.reduce((a, b) => a + b, 0)
+    const beats = song.bar
     const pos = step % beats
     const bar = Math.floor(step / beats)
     const h = this.heat
-    const at = (inst: Inst, vol: number, midi: number[] = [], dur = 1) => this.voice({ at: step, dur, inst, midi, vol: vol * h }, t, song.step)
-    const sc = SCALES[this.city]
+    const at = (inst: Inst, vol: number, midi: number[] = [], dur = 1, dt = 0) => this.voice({ at: step, dur, inst, midi, vol: vol * h }, t + dt, song.step)
+    const root = song.roots[bar] ?? song.roots[0]
+    const tom = root < 48 ? root : root - 12
+    // usulün vurguları ölçüye yayılır (sekizlikte 0, 3, 6)
+    const a2 = Math.round((beats * 3) / 8)
+    const a3 = Math.round((beats * 6) / 8)
     if (pos === 0) at('kick', 0.16)
     else if (pos === beats / 2) at('kick', 0.1)
-    else if (pos === beats - 2 && bar % 2) at('kick', 0.06)
-    // alçak tokmak: usulün vurguları (0, 6, 12), kökte ve beşlide
-    const tom = sc.root < 60 ? sc.root - 12 : sc.root - 24
+    else if (pos === beats - 1 && bar % 2) at('kick', 0.06)
     if (pos === 0) at('tom', 0.15, [tom])
-    else if (pos === 6) at('tom', 0.075, [tom + 7])
-    else if (pos === 12) at('tom', 0.09, [tom])
+    else if (pos === a2) at('tom', 0.075, [tom + 7])
+    else if (pos === a3) at('tom', 0.09, [tom])
     if (pos === beats / 4 || pos === (3 * beats) / 4) at('rim', 0.045)
-    at('hat', pos % 4 === 0 ? 0.022 : pos % 2 === 0 ? 0.015 : 0.009)
-    const low = sc.root - 24 < 36 ? sc.root - 12 : sc.root - 24
-    if (pos === 0) at('sub', 0.08, [low], 8)
-    else if (pos === beats / 2) at('sub', 0.05, [low], 6)
-    // dem pedalı: iki ölçüde bir, yavaşça açılıp kapanır (pad'in kendi zarfı); ikinci derece tizde asılı gerilim verir
-    if (pos === 0 && bar % 2 === 0) at('pad', 0.032, [low + 12, low + 19, low + 36 + sc.steps[1]], beats * 2)
-    const k = sc.root < 60 ? sc.root + 12 : sc.root
-    if (pos === 0 || pos === 6) at('kanun', 0.02, [k])
-    else if (pos === 12) at('kanun', 0.017, [k + sc.steps[4]])
+    // zil adımda ve adımın ortasında (on altılık): dövüşte ritim sıklaşır ama sertleşmez
+    at('hat', pos % 4 === 0 ? 0.022 : pos % 2 === 0 ? 0.015 : 0.011)
+    at('hat', 0.008, [], 1, song.step / 2)
+    if (pos === 0) at('sub', 0.08, [root], beats / 2)
+    else if (pos === beats / 2) at('sub', 0.05, [root], beats / 2 - 1)
+    if (pos === 0) at('pad', 0.03, [root + 12, root + 19], beats)
+    const k = root + 24
+    if (pos === 0 || pos === a2) at('kanun', 0.02, [k])
+    else if (pos === a3) at('kanun', 0.017, [k + 7])
   }
 
   /** bir notayı çalgısıyla çalar */

@@ -88,6 +88,9 @@ const SCREENS = {
   'mola-mod': [SAVE, ['Modlar', '▶ Oyna', 'wait:600', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300']],
   'mola-tuslar': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', 'key:ArrowRight', 'wait:400', 'key:Escape', 'wait:300', 'opt:⚙ Ayarlar', 'Tuşları Değiştir']],
   'bolum-sonu': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:900']],
+  // girişli yolcu (skor gönderildi, sıra yazısı) ve Paylaş sekmesi (kartpostal + düğmeler)
+  'bolum-sonu-giris': [{ ...SAVE, player: { id: '00000000-0000-4000-8000-000000000001', name: 'Deniz', token: 'x'.repeat(40) } }, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:1600']],
+  'bolum-sonu-paylas': [SAVE, ['Devam Et', 'wait:300', 'key:Enter', 'wait:600', FINISH, 'wait:900', 'tab:Paylaş']],
   'gunluk-sonu': [SAVE, ['Modlar', '▶ Oyna', 'wait:600', FINISH, 'wait:900']],
   mucadeleler: [SAVE, ['Modlar', 'Mücadeleler']],
   'mucadele-sonu': [SAVE, ['Modlar', 'Mücadeleler', '▶ Yeniden Oyna', 'wait:600', FINISH, 'wait:900']],

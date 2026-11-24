@@ -133,6 +133,8 @@ export interface Save {
   duoKeys?: Partial<Record<'left' | 'right' | 'down' | 'jump' | 'dash', string[]>>[]
   /** en iyi koşunun hayaleti görünsün mü */
   ghost: boolean
+  /** hayalet varsayılanı sürümü: 1'den küçükse (24 Kasım 2026 öncesi kayıt) hayalet bir kez kapatılır, oyuncu Ayarlar'dan açar */
+  ghostV?: number
   player: Player | null
   skippedName: boolean
   stamps: Record<string, boolean>
@@ -232,7 +234,7 @@ const KEY = 'seksek:v1'
 /** 8 Kasım'a dek anahtar `memleket:v1`di; ilk açılışta yeni anahtara taşınır, ilerleme kaybolmaz. */
 const LEGACY_KEY = 'memleket:v1'
 
-export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: true, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2, seen: LEVELS.map((l) => l.id) })
+export const defaultSave = (): Save => ({ unlocked: 0, best: {}, name: '', sfx: true, music: true, touch: 'auto', character: null, seenStory: false, tutorial: true, controlSize: 'normal', keyHints: true, relaxed: false, ghost: false, ghostV: 1, player: null, skippedName: false, stamps: {}, charms: {}, bosses: {}, scarf: 'al', daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, rush: null, mapVersion: MAP_VERSION, lang: 'tr', accountVersion: 2, seen: LEVELS.map((l) => l.id) })
 
 export function loadSave(): Save {
   try {
@@ -308,6 +310,11 @@ export function normalizeSave(parsed: Partial<Save>): Save {
     s.player = null
     s.skippedName = false
     s.accountVersion = 2
+  }
+  // hayalet koşu başta kapalı (24 Kasım 2026): eski kayıtta bir kez kapatılır, sonra oyuncunun seçimi kalır
+  if ((parsed.ghostV ?? 0) < 1) {
+    s.ghost = false
+    s.ghostV = 1
   }
   // eski sürümdeki "ayla" seçimi Uktun'a taşınır
   if ((s.character as string) === 'ayla') s.character = 'uktun'

@@ -1409,7 +1409,7 @@ export const LEVELS_EN: Record<string, LevelEn> = {
       { name: 'Sertaç the Doorman', text: 'Hold on! No phones in the pool: slippers on, swim cap on, phone to me. Breakfast ends at ten, the aunties are in the pool by nine; if they see you they will scream the place down and throw towels at you! Pass while their backs are turned, or dive. If the service trolley comes at the buffet, step aside.' },
       { name: 'Halit the Masseur', text: 'For forty years I have scrubbed backs in this spa; out of a back comes not dirt but stories! The hot water boils up from deep below and the steam hits the ceiling. When the second plume of steam lifts you to the top, look behind you, to the left: past the haze there is a dark doorway, and someone left a stamp inside.' },
     ],
-    quips: ['Towel, bullseye!', 'Too much breakfast.', 'Your slipper slid.', 'The steam let you go.', 'Your kaymak melted.'],
+    quips: ['Towel, bullseye!', 'Too much breakfast.', 'Your slipper slid.', 'The steam let you go.', 'Your kaymak melted.', 'An auntie spotted you: towel to the face.', 'You reached for a simit; the tray was hot.', 'The third plate of menemen was one too many.'],
   },
   elazig: {
     subtitle: 'Milk Castle, Buzluk and Hazar',
