@@ -121,7 +121,7 @@ export const THERMAL = { rise: 170, accel: 1500 }
  * `shriek` saniye soluklanır (yeniden fırlatmaz). Başı su altındaki oyuncuyu görmez (dalarak geçilir); sırtı dönükken yanından
  * geçilir; ona değen yakalanır. Ezilmez, dash'le geçilmez.
  */
-export const AUNT = { turn: 3.2, warn: 0.7, sight: 6 * 16, rows: 2.5 * 16, shriek: 1.2, towel: { speed: 150, g: 520, w: 10, h: 6 } }
+export const AUNT = { turn: 2.8, warn: 0.7, sight: 9 * 16, rows: 3 * 16, shriek: 0.9, towel: { speed: 185, g: 520, w: 10, h: 6 } }
 /** teyzenin verilen saatte baktığı yön ve dönmeye ne kaldığı (ofset haritadaki sütundan) */
 export function auntFacing(clock: number, offset: number, mirror = false): { dir: 1 | -1; left: number } {
   const t = clock + offset
