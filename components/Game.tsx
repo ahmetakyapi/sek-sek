@@ -59,7 +59,7 @@ import { STORY, fill } from '@/game/story'
 import { emptyInput, type Fact } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
-import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, extraMissing, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
+import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, dailyTaken, dailyTryKey, ruleText, extraMissing, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
 import { FLAG_MOMENTS } from '@/game/flagMoments'
 import { record, type GhostRun } from '@/game/ghost'
 import { loadGhost, saveGhost } from '@/lib/ghost'
@@ -265,6 +265,8 @@ export default function Game() {
   const [hud, setHud] = useState<HudState>(EMPTY_HUD)
   const [tutStep, setTutStep] = useState<TutorialStep | null>(null)
   const [cpToast, setCpToast] = useState<{ at: number; text: string; delta?: number | null } | null>(null)
+  /** Tek Can / Bayraksız / süre sınırı: koşu şehrin başına dönünce ekranın ortasında nedenini söyleyen kart */
+  const [resetCard, setResetCard] = useState<{ at: number; title: string; text: string } | null>(null)
   // hesap ekranı: üye ol / giriş sekmesi (başlık ona göre) ve çıkış onayı
   const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup')
   const [confirmOut, setConfirmOut] = useState(false)
@@ -298,6 +300,7 @@ export default function Game() {
   const [exitAsk, setExitAsk] = useState<null | 'title' | 'map'>(null)
   const resumeNRef = useRef<number | null>(null)
   const exitAskRef = useRef<null | 'title' | 'map'>(null)
+  const noCheckpointRef = useRef(false)
   const resumeRef = useRef<() => void>(() => {})
   /** molada yolcu değiştirme onayı bekleyen karakter (yola çıkılmışsa şehrin başına dönülür) */
   const [pauseHero, setPauseHero] = useState<CharacterId | null>(null)
@@ -582,7 +585,11 @@ export default function Game() {
                 sp.rec[e.index] = Math.round(w.time * 1000)
                 if (sp.pb?.[e.index] !== undefined) delta = sp.rec[e.index] - sp.pb[e.index]
               }
-              setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0], delta })
+              // Tek Can / Bayraksız: bayrak kayıt tutmaz; oyuncu bayrağı görünce bunu bilsin
+              const md = modeRef.current
+              const dr = md?.kind === 'daily' ? DAILY_RULES[md.run.rule] : null
+              if (dr?.oneLife || dr?.noFlags) setCpToast({ at: Date.now(), text: makeT(langRef.current)(dr.oneLife ? 'Tek Can: bu bayrak seni kurtarmaz, düşersen şehrin başına dönersin.' : 'Bayraksız: bayraklar çalışmıyor, düşersen şehrin başına dönersin.') })
+              else setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0], delta })
               break
             }
             case 'stamp': {
@@ -683,7 +690,19 @@ export default function Game() {
           renderer.setLevel(w2)
           goalRef.current = 'square'
           setCoach(false)
-          setCpToast({ at: Date.now(), text: makeT(langRef.current)(timeUp ? 'Süre doldu: baştan' : ranked ? 'Şehrin başından: süre sürüyor' : rule.oneLife ? 'Düştün: baştan · {n}. deneme' : 'Bayrak yok: şehrin başından', { n: triesRef.current + 1 }) })
+          const tt = makeT(langRef.current)
+          setCpToast(null)
+          setResetCard({
+            at: Date.now(),
+            title: tt(timeUp ? 'Süre Doldu' : rule.name),
+            text: timeUp
+              ? tt('Süre doldu: baştan')
+              : ranked
+                ? tt(rule.oneLife ? 'Düştün: Tek Can’da bayraklar seni kurtarmaz, şehrin başına dönüyorsun. Süre ve düşüş sürüyor.' : 'Düştün: bayraklar çalışmıyor, şehrin başına dönüyorsun. Süre ve düşüş sürüyor.')
+                : rule.oneLife
+                  ? tt('Düştün: baştan · {n}. deneme', { n: triesRef.current + 1 })
+                  : tt('Bayrak yok: şehrin başından'),
+          })
         }
         respawned = false
         // Ters Tuşlar: dönmeden ve düzelmeden önce bir kez uyarı
@@ -766,7 +785,7 @@ export default function Game() {
       else if (screenRef.current === 'photo') closePhoto()
     }
     input.onRetry = () => {
-      if (screenRef.current === 'play') worldRef.current?.retryFromCheckpoint()
+      if (screenRef.current === 'play' && !noCheckpointRef.current) worldRef.current?.retryFromCheckpoint()
     }
     // Shift + R: baştan başla (oyunda ya da molada); günlükte tek hak: süre ve düşüş sürer
     input.onRestart = () => {
@@ -1211,7 +1230,7 @@ export default function Game() {
   const duoKeys = normalizeDuo(save.duoKeys)
 
   /** bugünün hakkı kullanıldı mı: başlandıysa (yarıda bırakılsa da) ya da bitirildiyse */
-  const dailyUsed = save.dailyTry === today || save.meydan?.day === today
+  const dailyUsed = dailyTaken(today, save.dailyTry, save.meydan?.day)
 
   /** Günlük Meydan Okuma: herkes için aynı şehir ve kural; günde tek hak, ilerlemeye dokunmaz */
   const startDaily = () => {
@@ -1219,7 +1238,7 @@ export default function Game() {
       setCpToast({ at: Date.now() + 1, text: t('Bugünkü hakkını kullandın. Yarın yeni bir şehir.') })
       return
     }
-    patch({ dailyTry: today })
+    patch({ dailyTry: dailyTryKey(today) })
     soundRef.current?.unlock()
     ui()
     rushRef.current = null
@@ -1229,11 +1248,14 @@ export default function Game() {
     loadLevel(LEVELS.findIndex((l) => l.id === daily.levelId), 'play')
     beginPlay()
     const miss = extraMissing(daily.rule, daily.day)
-    setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[daily.rule].name)}: ${t(DAILY_RULES[daily.rule].text)}${miss ? ` ${t('Eksik her hatıra +{s} sn.', { s: miss })}` : ''}` })
+    setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[daily.rule].name)}: ${t(ruleText(daily.rule, true))}${miss ? ` ${t('Eksik her hatıra +{s} sn.', { s: miss })}` : ''}` })
   }
 
   /** sıralamalı günlük koşu sürüyor mu (mola menüsü buna göre) */
   const rankedDaily = modeRef.current?.kind === 'daily' && !modeRef.current.free
+  /** Tek Can / Bayraksız: checkpoint yok (R ve moladaki düğme kapalı; düşünce zaten şehrin başına dönülür) */
+  const noCheckpoint = modeRef.current?.kind === 'daily' && !!(DAILY_RULES[modeRef.current.run.rule].oneLife || DAILY_RULES[modeRef.current.run.rule].noFlags)
+  noCheckpointRef.current = noCheckpoint
   useEffect(() => {
     if (screen !== 'pause') setPauseHero(null)
   }, [screen])
@@ -2308,6 +2330,7 @@ export default function Game() {
 
   /** Mola eylemleri */
   const pauseRetry = () => {
+    if (noCheckpoint) return
     worldRef.current?.retryFromCheckpoint()
     setScreen('play')
   }
@@ -2350,7 +2373,7 @@ export default function Game() {
       <p className="text-[14px] font-semibold leading-snug text-cream">{modeLabel}</p>
       {modeRule && (
         <p className="mt-0.5 text-[13px] leading-snug text-cream/85">
-          {t(modeRule.text)}
+          {t(modeRef.current?.kind === 'daily' ? ruleText(modeRef.current.run.rule, !modeRef.current.free) : modeRule.text)}
           {modeRef.current?.kind === 'daily' && !modeRef.current.free && extraMissing(modeRef.current.run.rule, modeRef.current.run.day) > 0 && <span className="text-gold"> {t('Eksik her hatıra +{s} sn.', { s: extraMissing(modeRef.current.run.rule, modeRef.current.run.day) })}</span>}
         </p>
       )}
@@ -2464,6 +2487,17 @@ export default function Game() {
                   </li>
                 ))}
               </ol>
+            </div>
+          )}
+          {resetCard && Date.now() - resetCard.at < 3400 && (
+            // başa dönüşün nedeni: ekranın ortasında, oynanışı kapatmadan (karakter şehrin başında, kartın altında kalır)
+            <div key={resetCard.at} className="rise pointer-events-none absolute inset-x-0 top-[24%] z-10 flex justify-center px-4 [@media(max-height:500px)]:top-[16%]" role="status" aria-live="assertive">
+              <div className="max-w-[min(92vw,460px)] border-2 border-[#e30a17] bg-ink/85 px-4 py-2.5 text-center">
+                <p className="font-display text-2xl leading-none text-cream [text-shadow:0_2px_0_#0e0d22] sm:text-3xl">
+                  <span className="text-[#e30a17]">♥</span> {resetCard.title}
+                </p>
+                <p className="mt-1.5 text-[14px] leading-snug text-cream/90 [text-wrap:balance]">{resetCard.text}</p>
+              </div>
             </div>
           )}
           {cpToast && Date.now() - cpToast.at < 3200 && (
@@ -3179,7 +3213,7 @@ export default function Game() {
                 </button>
                 {exitAsk ? (
                   <div className="mt-3 border-2 border-accent bg-ink/50 px-3 py-3 short:mt-2 short:py-2" role="alertdialog" aria-label={t('Çıkış Onayı')}>
-                    <p className="text-[14px] leading-snug text-cream">{exitAsk === 'title' ? t('Ana Menü’ye dönersen bu koşu kaybolur.') : t('Şehirler’e dönersen bu koşu kaybolur.')}</p>
+                    <p className="text-[14px] leading-snug text-cream">{exitAsk === 'title' ? t('Ana Menü’ye dönersen bu koşu kaybolur.') : t('Şehirler’e dönersen bu koşu kaybolur.')}{rankedDaily && <strong className="block text-gold">{t('Günlük Meydan Okuma’da tek hakkın var: çıkarsan bugünkü hakkın biter.')}</strong>}</p>
                     <div className="mt-2.5 grid grid-cols-2 gap-2">
                       <button className="pixel-btn primary min-h-[44px] justify-center text-[14px]" onClick={() => setScreen(exitAsk)} autoFocus>
                         {exitAsk === 'title' ? t('Evet, Ana Menü') : t('Evet, Şehirler')}
@@ -3199,7 +3233,7 @@ export default function Game() {
                         ['⌂', t('Ana Menü'), 'M', () => leaveRun('title')],
                       ] as const
                     ).map(([icon, label, key, act]) => (
-                      <button key={label} className="pixel-btn min-h-[56px] flex-col justify-center gap-0.5 px-1 py-2 text-[13px] short:min-h-[48px]" onClick={act}>
+                      <button key={label} className="pixel-btn min-h-[56px] flex-col justify-center gap-0.5 px-1 py-2 text-[13px] disabled:opacity-45 short:min-h-[48px]" onClick={act} disabled={act === pauseRetry && noCheckpoint} title={act === pauseRetry && noCheckpoint ? t('Bu kuralda checkpoint yok') : undefined}>
                         <span className="text-lg leading-none" aria-hidden>{icon}</span>
                         {label}
                         <span className="text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">{key}</span>

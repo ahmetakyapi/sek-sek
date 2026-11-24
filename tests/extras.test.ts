@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
-import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK, HEAVY_OK, SHORT_DASH_OK, NO_MERCY_OK, GEZGIN_SIZES, gezginFor, gezginKey, gezginSeed, gezginTotal, dailyBoss, dailyMini, cleanTrio, markTrio, mergeTrio, settleTrio, trioCount, trioParts } from '../lib/extras'
+import { SCARVES, markTournament, mergeTournament, tournamentFor, tournamentTotal, completes, dailyChallenge, dailyRun, ruleFits, ruleLimit, dailyScore, dayKey, duelFirst, duelResult, duelScoreWith, rushPlan, istanbulDay, liveStreak, markDaily, meets, mergeDaily, shiftDay, weekKey, weeklyChallenge, type DuelRounds, swapPhase, SWAP, RAGE_RULES, ruleLevel, SLIPPERY_OK, CRUMBLE_OK, MOON_OK, STORM_OK, HEAVY_OK, SHORT_DASH_OK, NO_MERCY_OK, GEZGIN_SIZES, gezginFor, gezginKey, gezginSeed, gezginTotal, dailyTaken, dailyTryKey, ruleText, dailyBoss, dailyMini, cleanTrio, markTrio, mergeTrio, settleTrio, trioCount, trioParts } from '../lib/extras'
 import { bossLevel } from '../game/levels'
 import { mirrorLevel } from '../game/mirror'
 import { ACCESSORIES, HEROES, NO_KIT, closetPrice, earned, forHero, kitFor, kitKey, walletOf } from '../game/accessories'
@@ -129,6 +129,23 @@ describe('Günlük Meydan Okuma', () => {
     expect(mergeDaily(m, { day: '2026-11-11', bestMs: 50000, streak: 1 })).toEqual({ day: '2026-11-11', bestMs: 50000, streak: 2 })
     // buluttan çekmeden oynanan gün seriyi sıfırlamaz
     expect(mergeDaily({ day: '2026-11-12', bestMs: 1, streak: 1 }, { day: '2026-11-11', bestMs: 2, streak: 6 })?.streak).toBe(7)
+  })
+  it('hak geri verilen günde eski deneme sayılmaz, yeni deneme sayılır; bulut birleşmesinde yeni deneme kazanır', () => {
+    expect(dailyTryKey('2026-11-25')).toBe('2026-11-25')
+    expect(dailyTaken('2026-11-25', '2026-11-25', undefined)).toBe(true)
+    expect(dailyTaken('2026-11-25', undefined, '2026-11-25')).toBe(true)
+    // 24 Kasım: hak geri verildi
+    expect(dailyTaken('2026-11-24', '2026-11-24', '2026-11-24')).toBe(false)
+    expect(dailyTaken('2026-11-24', dailyTryKey('2026-11-24'), undefined)).toBe(true)
+    const a = { ...defaultSave(), dailyTry: '2026-11-24' }
+    const b = { ...defaultSave(), dailyTry: dailyTryKey('2026-11-24') }
+    expect(mergeSaves(a, b).dailyTry).toBe(dailyTryKey('2026-11-24'))
+    expect(mergeSaves(b, a).dailyTry).toBe(dailyTryKey('2026-11-24'))
+  })
+  it('Tek Can günlükte başa dönüşü ve sürenin sürdüğünü söyler', () => {
+    expect(ruleText('tekcan', true)).toMatch(/şehrin başına/)
+    expect(ruleText('tekcan', true)).not.toBe(ruleText('tekcan', false))
+    expect(ruleText('ceza', true)).toBe(ruleText('ceza', false))
   })
   it('İstanbul saatiyle gün döner', () => {
     expect(istanbulDay(new Date('2026-11-14T21:30:00Z'))).toBe('2026-11-15')

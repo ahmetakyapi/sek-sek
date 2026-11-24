@@ -142,6 +142,8 @@ export interface DailyRuleDef {
   oneLife?: boolean
   /** bayraklar çalışmaz: düşünce şehrin başına dönülür, süre akmaya devam eder */
   noFlags?: boolean
+  /** Günlük Meydan Okuma'da (tek hak, süre sürer) gösterilen metin; yoksa `text` */
+  rankedText?: string
   /** dash kapalı (yalnız NO_DASH_OK şehirlerinde: orada dash'siz yol kanıtlı) */
   noDash?: boolean
   /** süre sınırı: bronz sürenin katı; dolunca koşu baştan başlar */
@@ -181,7 +183,7 @@ export const DAILY_RULES: Record<DailyRule, DailyRuleDef> = {
   ceza: { name: 'Ceza Saati', text: 'Her düşüş skoruna 8 saniye ekler. Acele et ama düşme.', speed: 1, perDeath: 8, perMissing: 0 },
   hiz: { name: 'Hızlı Dünya', text: 'Dünya %20 hızlı akar. Her düşüş 3 saniye ekler.', speed: 1.2, perDeath: 3, perMissing: 0 },
   hatira: { name: 'Hatıra Avı', text: 'Eksik her hatıra skoruna 20 saniye ekler. Her düşüş 3 saniye.', speed: 1, perDeath: 3, perMissing: 20 },
-  tekcan: { name: 'Tek Can', text: 'Düşersen koşu baştan başlar. Skor, hiç düşmeden bitirdiğin koşunun süresi.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true },
+  tekcan: { name: 'Tek Can', text: 'Düşersen koşu baştan başlar. Skor, hiç düşmeden bitirdiğin koşunun süresi.', speed: 1, perDeath: 0, perMissing: 0, oneLife: true, rankedText: 'Düşersen şehrin başına dönersin: bayraklar seni kurtarmaz. Süre ve düşüş sürer, tek hakkın var.' },
   bayraksiz: { name: 'Bayraksız', text: 'Bayraklar çalışmaz: düşersen şehrin başına dönersin, süre akmaya devam eder.', speed: 1, perDeath: 0, perMissing: 0, noFlags: true },
   zaman: { name: 'Zamana Karşı', text: 'Bronz süre dolmadan çıkışa var. Süre dolarsa koşu baştan başlar.', speed: 1, perDeath: 0, perMissing: 0, limit: 1 },
   dashsiz: { name: 'Dash’siz', text: 'Dash kapalı: yalnız yürü ve zıpla. Her düşüş 3 saniye ekler.', speed: 1, perDeath: 3, perMissing: 0, noDash: true },
@@ -322,6 +324,19 @@ export const DAILY_MISSING = 5
 export const extraMissing = (rule: DailyRule, day: string) => (DAILY_RULES[rule].perMissing ? 0 : missingFor(rule, day))
 /** günün kuralında eksik hatıra başına saniye */
 export const missingFor = (rule: DailyRule, day: string) => Math.max(DAILY_RULES[rule].perMissing, day >= DAILY_ITEMS_FROM ? DAILY_MISSING : 0)
+
+/** kuralın metni: Günlük Meydan Okuma'da (sıralamalı) varsa kendi metni */
+export const ruleText = (rule: DailyRule, ranked: boolean) => (ranked && DAILY_RULES[rule].rankedText) || DAILY_RULES[rule].text
+
+/**
+ * Günlük hakkın geri verildiği günler (gün → kaçıncı hak). O gün başlamış oyuncunun eski denemesi sayılmaz, yeniden oynar.
+ * 24 Kasım 2026: Tek Can'da şehrin başına dönüş anlaşılmıyordu (bayraklar bozuk sanıldı); başa dönüş artık açıkça yazar.
+ */
+export const DAILY_GRANTS: Record<string, number> = { '2026-11-24': 1 }
+/** `save.dailyTry`a yazılan değer: hak geri verilen günde `gün~n` (dizgi olarak eski değerden büyük, bulut birleşmesi bozulmaz) */
+export const dailyTryKey = (day: string) => (DAILY_GRANTS[day] ? `${day}~${DAILY_GRANTS[day]}` : day)
+/** bugünün hakkı kullanıldı mı: başlandıysa (yarıda bırakılsa da) ya da bitirildiyse (hak geri verilen günde yalnız yeni deneme sayılır) */
+export const dailyTaken = (day: string, tryMark: string | undefined, doneDay: string | undefined) => tryMark === dailyTryKey(day) || (!DAILY_GRANTS[day] && doneDay === day)
 
 /** Günlük skor (ms): süre + cezalar */
 export function dailyScore(rule: DailyRule, timeMs: number, deaths: number, found: number, day: string) {
