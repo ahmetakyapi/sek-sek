@@ -28,6 +28,7 @@ import { road as aydinRoad } from './cities/aydin'
 import { road as balikesirRoad } from './cities/balikesir'
 import { road as elazigRoad } from './cities/elazig'
 import { road as afyonRoad } from './cities/afyon'
+import { road as bingolRoad } from './cities/bingol'
 import { road as karabukRoad } from './cities/karabuk'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
@@ -1126,6 +1127,7 @@ const DECOR_CYCLE: Record<string, string> = {
   balikesir: 'tlz',
   elazig: 'zlt',
   afyon: 'tlz',
+  bingol: 'ztl',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2478,7 +2480,7 @@ export const LEVELS: LevelDef[] = [
     difficulty: 'Çok Zor',
     note: 'Defterin bu sayfası soğuk, mürekkebi yer yer donmuş gibi. Elazığ’da mevsimler tersine döner: Buzluk Mağarası yazın buz tutar, kışın ılır; Hazar Gölü’nün altında bir şehir uyur. Bu yolda saati dinle: su donar, buz erir.',
     npcs: [
-      { name: 'Orcikçi Necmi Usta', look: 'usta', text: 'Orciği cevize pestil gibi sararım, Harput’un üzümüyle! Üç dizi orcik kaybettim: biri Harput Kalesi’nin burcunda, biri Ulu Cami’nin eğri minaresinin şerefesinde, biri de Buzluk Mağarası’nın buz cebinde kaldı.' },
+      { name: 'Orcikçi Necmi Usta', look: 'usta', text: 'Orciği cevize pestil gibi sararım, Harput’un üzümüyle! Üç dizi orcik kaybettim: biri Harput Kalesi’nin burcunda, biri Ulu Cami’nin eğri minaresinin balkonunda, biri de Buzluk Mağarası’nın buz cebinde kaldı.' },
       { name: 'Harputlu Lütfiye Nine', look: 'teyze', text: 'Bu kaleye Süt Kalesi derler: yapılırken su yokmuş, harcı sütle karmışlar. Surları dik, ama taşları sağlam; duvardan duvara sekerek burca çıkılır.' },
       { name: 'Mağara Rehberi Berk', look: 'genc', text: 'Buzluk’ta mevsim terstir: su bir donar, bir erir, saat gibi. Buz çatlamaya başlayınca üstünden çekil; su buğulanınca yüzeye çık. Buzun altına dalarsan duvarda bir oyuk görürsün, içinde biri bir pul saklamış.' },
       { name: 'Balıkçı Bahri', look: 'amca', text: 'Hazar Gölü’nün dibinde eski bir şehir varmış, dalgıçlar surlarını görmüş. Göl donunca karşıya yürünür, erirken yüzülür; acele eden ortada kalır. Meydan kapısı göl kıyısında.' },
@@ -2495,7 +2497,7 @@ export const LEVELS: LevelDef[] = [
     secret: { title: 'Eğri Minare', text: 'Harput Ulu Camii 12. yüzyılda Artuklular döneminde yapıldı. Tuğladan minaresi yıllar içinde eğilmiştir; Harputlular ona Eğri Minare der.' },
     hints: [
       'Elazığ’a hoş geldin! Harput Kalesi’nin surları dik: duvardan duvara sekerek çık, çatlak taşta durma.',
-      'Ulu Cami: eğri minarenin şerefesine hareketli tahtayla çık. Tahtanın döndüğü anı bekle.',
+      'Ulu Cami: eğri minarenin balkonuna hareketli tahtayla çık. Tahtanın döndüğü anı bekle.',
       'Buzluk Mağarası: su saat gibi donar ve erir. Buz çatlayınca üstünden çekil, su buğulanınca yüzeye çık.',
       'Mağaranın dibinde buz tavanı var: dalarsan su donmadan öbür cebe geç, yoksa erimesini bekle.',
       'Hazar Gölü: göl donunca koş, erirken yüz. Göle uzanan yarın altından yalnız su eriyince dalınır; öbür yanda buz tutmuşsa erimesini bekle.',
@@ -2513,15 +2515,15 @@ export const LEVELS: LevelDef[] = [
     indoor: true,
     note: 'Defterin bu sayfası buğulanmış, mürekkep yer yer kabarmış: sanki biri onu kaplıcaya götürmüş. Afyon’da kara bir kayanın tepesinde kale, altında sıcak su kaynar. Bu yolda otelin içine de gireceksin: büfeye dalma, havuzdaki teyzelere görünme.',
     npcs: [
-      { name: 'Kaymakçı Zekai Usta', look: 'usta', text: 'Kaymağımı manda sütünden, sabırla toplarım! Üç tabak kaymak kayboldu: biri kalenin tepesinde, biri Frig Vadisi’nde Aslantaş’ın başında, biri de termal otelin açık büfesinde kaldı. Büfedekini yemeden getir!' },
+      { name: 'Kaymakçı Zekai Usta', look: 'usta', text: 'Kaymağımı manda sütünden, sabırla toplarım! Üç tabak kaymak kayboldu: biri kalenin tepesinde, biri Frig Vadisi’nde Aslantaş’ın başında, biri de termal otelin kahvaltı büfesinde. Büfedekini yemeden getir, kaşığını görürsem anlarım!' },
       { name: 'Kale Bekçisi Nadide', look: 'teyze', text: 'Kalenin adı Karahisar: kara kayanın kalesi. Basamakları saymadım ama dizlerim saydı! Tepeye duvardan duvara sekerek çıkılır; çatlak taşta oyalanma.' },
-      { name: 'Kapı Görevlisi Sertaç', look: 'genc', text: 'Dur bakalım! Havuza telefonla giremezsin, terlik giy, bone tak. Hele içeride teyzeler var: seni görürlerse çığlığı basıp havlu fırlatırlar! Arkaları dönükken geç ya da dal. Büfede de servis arabalarına dikkat.' },
-      { name: 'Masör Halit', look: 'amca', text: 'Kırk yıldır bu kaplıcada kese atarım; sıcak su yerin dibinden kaynar, buharı tavana vurur. Buhar odasında ikinci buharın tepesine çıkınca arkana, sola bak: buğunun ardında karanlık bir kapı var, içeride biri bir pul unutmuş.' },
+      { name: 'Kapı Görevlisi Sertaç', look: 'genc', text: 'Dur bakalım! Havuza telefonla girilmez: terlik giy, bone tak, telefonu bana ver. Kahvaltı onda biter, teyzeler dokuzda havuzdadır; seni görürlerse çığlığı basıp havlu fırlatırlar! Arkaları dönükken geç ya da dal. Büfede servis arabası gelirse kenara çekil.' },
+      { name: 'Masör Halit', look: 'amca', text: 'Kırk yıldır bu kaplıcada kese atarım; sırttan kir değil, hikâye çıkar! Sıcak su yerin dibinden kaynar, buharı tavana vurur. Buhar odasında ikinci buharın tepesine çıkınca arkana, sola bak: buğunun ardında karanlık bir kapı var, içeride biri bir pul unutmuş.' },
     ],
     medals: [180, 245, 330],
-    quips: ['Havlu tam isabet!', 'Büfede oyalandın.', 'Buhar seni bıraktı.', 'Kaymağın eridi.'],
+    quips: ['Havlu tam isabet!', 'Kahvaltıda fazla kaçırdın.', 'Terliğin kaydı.', 'Buhar seni bıraktı.', 'Kaymağın eridi.'],
     item: 'Kaymak',
-    intro: 'Kara kayanın tepesindeki Afyon Kalesi’nden Frig Vadisi’nin kaya anıtlarına, oradan termal otelin içine: döner kapı, açık büfe, buhar odası ve teyzelerin sıcak havuzu. Görünmeden geç, buharla yüksel.',
+    intro: 'Kara kayanın tepesindeki Afyon Kalesi’nden Frig Vadisi’nin kaya anıtlarına, oradan termal otelin içine: döner kapı, kahvaltı büfesi, buhar odası ve teyzelerin sıcak havuzu. Görünmeden geç, buharla yüksel.',
     facts: [
       { title: 'Afyon Kalesi', text: 'Afyon Kalesi şehrin ortasında yükselen sarp, kara bir kayanın tepesindedir. Şehre adını veren Karahisar, “kara kale” demektir; tepeye yüzlerce basamakla çıkılır.' },
       { title: 'Kaplıcalar', text: 'Afyon, Türkiye’nin önemli termal turizm merkezlerindendir. Gazlıgöl ve Ömer-Gecek gibi kaplıcalarında sıcak su yerin derinliklerinden kaynar.' },
@@ -2531,11 +2533,45 @@ export const LEVELS: LevelDef[] = [
     hints: [
       'Afyon’a hoş geldin! Kara kayanın tepesindeki kaleye çık: duvardan duvara sek, çatlak taşta durma.',
       'Frig Vadisi: kayalar sivri, aralar derin. Aslantaş’ın başına duvar sekmesi ve dash’le çık.',
-      'Termal otel: döner kapı iki kanatlı, sırayla açılır. Açık büfede servis arabası gelip gider: masalardan arabaya doğru anda atla.',
+      'Termal otel: döner kapı iki kanatlı, sırayla açılır. Kahvaltı büfesinde servis arabası gelip gider: sucuğa dalma, arabaya doğru anda atla.',
       'Kaplıca havuzu: teyzeler sağa sola bakar, görürse havlu fırlatır. “Hı?” derse dönecek: sırtı dönükken geç ya da dal; havlu suya giremez.',
-      'Buhar odası: sıcak buhar seni tavana taşır. Buharın tepesinde asılı kal, yana atla.',
+      'Buhar odası: sıcak buhar seni tavana taşır. Buharın tepesinde asılı kal, terlemeden yana atla.',
     ],
     map: roadMap(afyonRoad),
+  },
+  {
+    id: 'bingol',
+    city: 'bingol',
+    name: 'Bingöl',
+    nickname: 'Çapakçur',
+    plate: 12,
+    subtitle: 'Bin Göl ve Yüzen Adalar',
+    difficulty: 'Zor',
+    note: 'Defterin bu sayfasında kurumuş bir saz yaprağı, kenarında bal lekesi var. Bingöl’ün dağlarında göl üstüne göl dizilmiş; Solhan’da adalar suyun yüzünde yüzer, üstüne basana boyun eğer. Bu yolda bir yerde durma: ada da arı da sabırsızdır.',
+    npcs: [
+      { name: 'Balcı Cemşit Usta', look: 'usta', text: 'Balımı Şerafettin Dağları’nın çiçeklerinden yaparım, kavanozu ışığa tutsan altın gibi parlar! Üç kavanoz kayboldu: biri Çır Şelalesi’nin tepesinde, biri yayladaki arı kovanlarının arasında, biri de yüzen adaların en uzağında kaldı.' },
+      { name: 'Yaylacı Zelal Nine', look: 'teyze', text: 'Bingöl’e bin göl derler, saydım da yetmedi! Şelalenin iki yanı kaya: duvardan duvara sekersen tepeye varırsın. Islak taşta ayağın kayar, acele etme ama durma da.' },
+      { name: 'Rehber Dilan', look: 'genc', text: 'Yaylada arılar kovanın başında nöbet tutar; yanlarından hızlı geç. Kovanların ardındaki kayanın öbür yüzüne bir bak: karanlık bir oyuk var, biri içine bir pul bırakmış.' },
+      { name: 'Adacı Seyfettin', look: 'amca', text: 'Solhan’ın adaları kökten ve ottan örülüdür; suyun üstünde yüzer, rüzgâr onları gezdirir. Üstünde dikilirsen bir saniyede batar! Adadan adaya hiç durmadan geç; batan ada bir süre sonra yine çıkar. Meydan kapısı gölün öbür ucunda.' },
+    ],
+    medals: [175, 240, 320],
+    quips: ['Ada seni yuttu.', 'Arı seni gördü.', 'Bal kavanozu döküldü.', 'Durmamalıydın.'],
+    item: 'Bingöl Balı',
+    intro: 'Bingöl’ün çarşısından Çır Şelalesi’ne, Şerafettin Dağları’nın arı kovanlı yaylasından Solhan’ın yüzen adalarına. Bu yolda ada da arı da beklemez: hiç durmadan geç.',
+    facts: [
+      { title: 'Yüzen Adalar', text: 'Solhan’daki Hamurpet Gölü’nde kök ve otlardan oluşmuş adalar suyun üstünde yüzer. Rüzgârla yer değiştirirler, üstlerinde yürünebilir.' },
+      { title: 'Bin Göl', text: 'Bingöl, adını dağlarındaki sayısız küçük gölden alır. Şehrin eski adı Çapakçur’dur.' },
+      { title: 'Çır Şelalesi', text: 'Şehir merkezine yakın Çır Şelalesi, kayalıklardan dökülen soğuk suyuyla yazın serinlik arayanların durağıdır.' },
+    ],
+    secret: { title: 'Bingöl Balı', text: 'Bingöl’ün yaylalarında arıcılık köklüdür. Şerafettin Dağları’nın çiçeklerinden yapılan bal, şehrin en ünlü armağanıdır.' },
+    hints: [
+      'Bingöl’e hoş geldin! Çarşıdan geç, şelaleye doğru yürü. Islak taş kaygandır: önceden yavaşla.',
+      'Çır Şelalesi: iki yan kaya, aralarından su dökülür. Duvardan duvara sekerek tepeye çık.',
+      'Şerafettin Dağları: arılar kovanların başında döner. Kovanın üstüne bas, arıyı kolla; son kovandan kayaya dash’le atla.',
+      'Solhan’ın yüzen adaları: üstünde durursan bir saniyede batar! Basıp hemen öbür adaya atla.',
+      'Göl zinciri: batan ada bir süre sonra yine çıkar. Kıyıda bekle, sırayı gör, sonra durmadan geç.',
+    ],
+    map: roadMap(bingolRoad),
   },
 ]
 

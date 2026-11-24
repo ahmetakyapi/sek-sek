@@ -2016,6 +2016,95 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     dab(c, -1.8, -3.3, 0.9, 0.35, 'rgba(255,240,180,0.9)', -0.2)
     dab(c, -3.6, -1, 0.6, 1.2, 'rgba(255,255,255,0.7)', 0.2)
   },
+  // Bingöl Balı: cam kavanozda altın sarısı yayla balı, ağzında iple bağlı kareli bez kapak; dibinde küçük bir petek parçası
+  bingol: (c) => {
+    // kavanoz: cam gövde, yuvarlak omuzlar, kısa boyun
+    shape(
+      c,
+      () => {
+        c.moveTo(-3.2, -3.6)
+        c.lineTo(3.2, -3.6)
+        c.quadraticCurveTo(5, -3.2, 5, -1)
+        c.lineTo(5, 5)
+        c.quadraticCurveTo(5, 6.6, 3.2, 6.6)
+        c.lineTo(-3.2, 6.6)
+        c.quadraticCurveTo(-5, 6.6, -5, 5)
+        c.lineTo(-5, -1)
+        c.quadraticCurveTo(-5, -3.2, -3.2, -3.6)
+      },
+      '#dceef4',
+      '#a8c4d0',
+    )
+    // bal: camın içinde, üst yüzü hafif kavisli
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.2, -0.8)
+        c.quadraticCurveTo(0, -1.6, 4.2, -0.8)
+        c.lineTo(4.2, 4.8)
+        c.quadraticCurveTo(4.2, 5.8, 3, 5.8)
+        c.lineTo(-3, 5.8)
+        c.quadraticCurveTo(-4.2, 5.8, -4.2, 4.8)
+        c.closePath()
+      },
+      '#f2b42a',
+      '#c8841a',
+    )
+    dab(c, 0.6, 2.4, 2.4, 2.2, 'rgba(255,214,110,0.55)')
+    // cam parıltısı: sol üstten ışık
+    dab(c, -3.4, 1.6, 0.55, 2.6, 'rgba(255,255,255,0.85)')
+    dab(c, -2.6, -2.2, 0.9, 0.4, 'rgba(255,255,255,0.7)', -0.3)
+    // etiket şeridi
+    // etiket: kavanozun altında köşeli kâğıt, iki satır yazı
+    poly(c, [-3.6, 3.2, 2.6, 3.2, 2.6, 5.4, -3.6, 5.4], '#fbf3dc', '#d8c49a')
+    line(c, [-2.8, 4, 1.8, 4], 0.3, '#a8681a', false)
+    line(c, [-2.8, 4.7, 0.6, 4.7], 0.3, '#a8681a', false)
+    // bez kapak: ağzın üstünde kabaran, kenarları sarkan kırmızı-beyaz kareli bez
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.4, -3.2)
+        c.quadraticCurveTo(-4.6, -6.6, 0, -6.8)
+        c.quadraticCurveTo(4.6, -6.6, 4.4, -3.2)
+        c.lineTo(4.8, -1.6)
+        c.lineTo(3, -2.6)
+        c.lineTo(1.4, -1.8)
+        c.lineTo(-0.4, -2.6)
+        c.lineTo(-2.2, -1.8)
+        c.lineTo(-3.8, -2.6)
+        c.lineTo(-4.8, -1.6)
+        c.closePath()
+      },
+      '#e0483a',
+      '#a82a22',
+    )
+    for (const x of [-2.4, 0, 2.4]) dab(c, x, -5, 0.65, 0.65, 'rgba(255,245,235,0.85)')
+    for (const x of [-3.4, -1.2, 1.2, 3.4]) dab(c, x, -3.4, 0.55, 0.5, 'rgba(255,245,235,0.8)')
+    // ip: boynu saran bağ ve küçük fiyonk
+    line(c, [-4.5, -3.3, 0, -3.6, 4.5, -3.3], 0.55, '#d8c08a')
+    ell(c, 3.6, -3.8, 0.8, 0.5, '#d8c08a', undefined, 0.5)
+    line(c, [3.6, -3.4, 4.4, -1.8], 0.35, '#d8c08a', false)
+    // petek parçası: kavanozun önünde sağ dibine yaslanmış, dört gözlü
+    poly(c, [3.4, 2.2, 7.8, 1.2, 8.2, 6.2, 3.6, 7], '#e8a826', '#b8761a')
+    if (!halo) {
+      for (const [x, y] of [[4.8, 3.2], [6.8, 2.8], [5.6, 5.4], [7.4, 5]] as const) {
+        c.beginPath()
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3
+          const px = x + Math.cos(a) * 0.95
+          const py = y + Math.sin(a) * 0.95
+          if (i === 0) c.moveTo(px, py)
+          else c.lineTo(px, py)
+        }
+        c.closePath()
+        c.fillStyle = '#f6c84a'
+        c.fill()
+        c.strokeStyle = '#a8681a'
+        c.lineWidth = 0.35
+        c.stroke()
+      }
+    }
+  },
   // Orcik: ipe dizili cevizin üstüne pestil (kayısı rengi) dökülmüş sucuk; tepede düğüm ve ilmek
   elazig: (c) => {
     line(c, [-1.6, -7, 0, -5.4, 1.6, -7], 0.5, '#d8c8a4')

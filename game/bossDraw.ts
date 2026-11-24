@@ -2395,7 +2395,7 @@ const PAINT: Record<CityKey, Painter> = {
     dab(c, hx + 1.6, hy + 1.6, 1, 0.6, BLUSH)
     aura(c, mood, t, hx - 4.6, hy - 4, hx + 14, hy - 1)
   },
-  // Kaplıca Natırı: iri, tombul hamam natırı; başında pembe çizgili havlu türban, kırmızı-krem çizgili peştamal,
+  // Hamamcı Teyze: iri, tombul hamam teyzesi; başında pembe çizgili havlu türban, kırmızı-krem çizgili peştamal,
   // ayağında tahta nalın, bir elinde keçe kese, ötekinde bakır hamam tası; arkasında hamam buharı tüter.
   // Kayarken sabunlu mermerde öne eğilir, kesesini uzatır, ayağının altından köpük saçılır; atarken köpük topunu
   // başının üstüne kaldırır; sıçrarken tasını başından aşağı döker. Yorgunken türbanı yana kayar
@@ -2555,6 +2555,159 @@ const PAINT: Record<CityKey, Painter> = {
       for (const [dx, dy] of [[-0.6, -2], [0.9, -1.4], [-0.2, -0.2], [1.2, 0.4], [-0.8, 1], [0.5, -2.6]] as const) dab(c, hand[0] + dx, hand[1] + dy, 0.35, 0.25, '#b48058')
       stroke(c, [hand[0] - 1.6, hand[1] + 2.2, hand[0] + 2, hand[1] + 2.6], 0.9, '#e8d8b4')
     })
+    c.restore()
+  },
+  // Bal Hırsızı Ayı: iri, tombul boz ayı; ağzının kenarında ve pençesinde akan bal, burnunun ucunda vızıldayan bir arı.
+  // Sıçrarken bacaklarını toplar, petek atarken kolunu kaldırır, toslarken öne eğilir; yorulunca dili dışarıda soluklanır
+  bingol: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const slide = b.state === 'attack' && b.move === 'charge'
+    const toss = b.move === 'throw' && b.state === 'warn'
+    const FUR = '#8e5c34'
+    const FUR_SH = '#5e3a1e'
+    const FUR_D = '#6e4426'
+    const BELLY = '#d2a676'
+    const MUZ = '#e6c69a'
+    const HONEY = '#f4b42a'
+    const HONEY_SH = '#c8841a'
+    const run = slide && !air ? Math.sin(t * 22) * 1.6 : 0
+    c.save()
+    if (slide) c.rotate(0.12)
+    // arka kol: gövdenin ardında, koyu
+    stroke(c, [-6, -15, -11, out ? -8 : -11, -12, out ? -4 : -7], 4.6, FUR_D)
+    ell(c, -12.2, out ? -3.6 : -6.6, 2.6, 2.2, FUR_D, FUR_SH)
+    // arka ayaklar: sıçrarken toplanır, toslarken adımlar
+    const tuck = air ? 3 : 0
+    for (const k of [-1, 1]) {
+      const x = k * 5.4 - 0.6
+      const lift = k < 0 ? Math.max(0, run) : Math.max(0, -run)
+      ell(c, x, -3.4 - tuck - lift, 3.6, 3.4, k < 0 ? FUR_D : FUR, FUR_SH)
+      fine(() => ell(c, x + 1.2, -1.6 - tuck - lift, 2.6, 1.4, '#3a2416'))
+      for (const dx of [-0.6, 0.8, 2.2]) dab(c, x + dx + 0.6, -1.9 - tuck - lift, 0.45, 0.35, '#c8a888')
+    }
+    // gövde: yuvarlak, tombul; göğüste açık kahve leke
+    if (out) puff(c, -0.6, -11.6, 10.6, 8.6, 13, 2.4, FUR, FUR_SH)
+    else ell(c, -0.6, -11.6, 11, 9.4, FUR, FUR_SH)
+    ell(c, 2.6, -10.4, 5.8, 6.4, BELLY)
+    for (const [x, y] of [[-6, -16], [-8, -10], [-4, -6]] as const) stroke(c, [x, y, x - 1.2, y + 1.4], 0.5, FUR_SH, false)
+    // göbeğe damlamış bal
+    fine(() =>
+      blob(
+        c,
+        () => {
+          c.moveTo(1, -15.4)
+          c.quadraticCurveTo(4.6, -16.2, 6.4, -14.4)
+          c.quadraticCurveTo(5.4, -12.4, 4.8, -11)
+          c.quadraticCurveTo(4.2, -9.6, 3.6, -11.2)
+          c.quadraticCurveTo(2.4, -13.2, 1, -15.4)
+        },
+        HONEY,
+        shade(HONEY_SH, 0.6, -0.5),
+      ),
+    )
+    dab(c, 2.6, -15, 1, 0.4, 'rgba(255,244,190,0.9)')
+    // baş: sağa bakan iri yuvarlak baş, kulaklar, açık renk burun
+    const hx = slide ? 7 : 5
+    const hy = out ? -20 : slide ? -20.4 : -21.6
+    for (const [ex, ey] of [[hx - 4.6, hy - 5.6], [hx + 3.2, hy - 6.4]] as const) {
+      ell(c, ex, ey, 2.6, 2.4, FUR, FUR_SH)
+      dab(c, ex + 0.3, ey + 0.3, 1.3, 1.2, '#c8907a')
+    }
+    ell(c, hx, hy, 7.6, 6.6, FUR, FUR_SH)
+    dab(c, hx - 2.8, hy - 3.6, 2.6, 1.2, '#a8744a')
+    ell(c, hx + 5.4, hy + 2.2, 4.4, 3.2, MUZ, '#c4a078')
+    // burun: kalın, parlak
+    fine(() => ell(c, hx + 8.6, hy + 0.8, 1.7, 1.3, '#2a1a12'))
+    dab(c, hx + 8.1, hy + 0.3, 0.55, 0.35, '#ffffff')
+    dab(c, hx - 1.4, hy + 2.6, 1.6, 1, BLUSH)
+    eye(c, hx + 0.6, hy - 1.4, 1.75, mood, t)
+    eye(c, hx + 4.8, hy - 1.6, 1.6, mood, t)
+    mouth(c, hx + 6, hy + 3.6, 1.5, mood, t)
+    // ağız kenarından süzülen bal: yanağa bulaşmış leke ve uzayıp kısalan damla
+    if (!out || mood === 'dizzy') {
+      const drip = 0.5 + 0.5 * Math.sin(t * 2.4)
+      fine(() => {
+        ell(c, hx + 2.4, hy + 3.4, 1.6, 1, HONEY)
+        blob(
+          c,
+          () => {
+            c.moveTo(hx + 1.6, hy + 3.8)
+            c.lineTo(hx + 1.8, hy + 5 + drip * 1.4)
+            c.arc(hx + 2.1, hy + 5.4 + drip * 1.4, 0.75, Math.PI, 0, true)
+            c.lineTo(hx + 2.8, hy + 3.8)
+            c.closePath()
+          },
+          HONEY,
+        )
+      })
+      dab(c, hx + 1.9, hy + 3.1, 0.6, 0.3, 'rgba(255,244,190,0.9)')
+    }
+    aura(c, mood, t, hx - 6.6, hy - 4.4, hx + 10, hy + 0.4)
+    // arı: burnun ucunda vızıldar; uykuda burnuna konmuş, kanatları ağır ağır
+    {
+      const sleep = mood === 'sleep'
+      const bx = hx + 9.4 + (sleep ? 0 : Math.sin(t * 5.2) * 1.4)
+      const by = hy - (sleep ? 1.2 : 3.4 + Math.cos(t * 7.4) * 0.9)
+      const flap = Math.sin(t * (sleep ? 3 : 60)) * 0.5
+      c.save()
+      c.globalAlpha *= 0.85
+      dab(c, bx - 0.5, by - 1.3 - flap * 0.4, 1, 1.4 + flap * 0.4, '#e8f6ff')
+      dab(c, bx + 0.6, by - 1.2 + flap * 0.4, 0.9, 1.2 - flap * 0.3, '#e8f6ff')
+      c.restore()
+      fine(() => ell(c, bx, by, 1.5, 1.05, '#f6c43a'))
+      c.fillStyle = '#2a1a12'
+      c.fillRect(bx - 0.4, by - 0.95, 0.5, 1.9)
+      c.fillRect(bx + 0.55, by - 0.8, 0.4, 1.6)
+      dab(c, bx + 1.25, by - 0.15, 0.3, 0.3, '#2a1a12')
+    }
+    // ön kol: petek atarken başın üstüne kalkar; toslarken öne uzanır; yorgunken sarkar. Pençe bala bulanmış
+    let px = 11
+    let py = -10
+    if (toss) {
+      px = 4 + Math.sin(t * 20) * 0.6
+      py = -31
+    } else if (slide) {
+      px = 15
+      py = -14
+    } else if (out) {
+      px = 9
+      py = -4
+    } else if (air) {
+      px = 12
+      py = -17
+    }
+    stroke(c, [4, -15, (4 + px) / 2 + 1.6, (-15 + py) / 2, px, py], 4.8, FUR)
+    if (toss) {
+      // petek: altıgen gözlü altın parça, başın üstünde
+      fine(() => {
+        poly(c, [px - 4, py - 5.6, px + 3.4, py - 6.4, px + 4.4, py - 0.6, px - 3.2, py + 0.4], '#e8a826', '#b8761a')
+        for (const [gx, gy] of [[-1.8, -4], [1.4, -4.4], [-0.6, -1.6], [2.4, -1.8]] as const) {
+          c.beginPath()
+          for (let i = 0; i < 6; i++) {
+            const a = (i * Math.PI) / 3
+            c.lineTo(px + gx + Math.cos(a) * 1.15, py + gy + Math.sin(a) * 1.15)
+          }
+          c.closePath()
+          c.fillStyle = '#f8cc50'
+          c.fill()
+          c.strokeStyle = '#a8681a'
+          c.lineWidth = 0.35
+          c.stroke()
+        }
+      })
+    }
+    ell(c, px, py, 2.9, 2.5, FUR, FUR_SH)
+    // pençedeki bal: kaplayan altın, ucundan damla
+    fine(() => ell(c, px + 0.8, py - 0.6, 2, 1.4, HONEY, HONEY_SH))
+    if (!toss) {
+      const k = frac(t * 0.8)
+      c.save()
+      c.globalAlpha *= 1 - k * k
+      fine(() => ell(c, px + 1.2, py + 2 + k * 5, 0.7, 0.9, HONEY))
+      c.restore()
+    }
+    for (const dy of [-1.4, 0, 1.4]) dab(c, px + 2.9, py + dy, 0.5, 0.32, '#f4ead8')
     c.restore()
   },
   // Buzluk Devi: Buzluk Mağarası’nın ağzından kopmuş dev; kaya bacaklar ve omuzlar, üstü mavi buz kristali, yüzünde

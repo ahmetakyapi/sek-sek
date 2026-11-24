@@ -21,9 +21,9 @@ describe('Şehirler süzgeci', () => {
     expect(cityMatches(ist, 0, { ...base, filter: 'missing' })).toBe(true)
     expect(cityMatches(ist, 0, { ...base, filter: 'nogold', best: full })).toBe(false)
     expect(cityMatches(ist, 0, { ...base, filter: 'nogold', best: slow })).toBe(true)
-    const lead = { id: 'istanbul', total: 3, leader: 'x', leaderMs: 1, myRank: 1, myMs: 1 }
-    expect(cityMatches(ist, 0, { ...base, filter: 'notlead', rank: lead })).toBe(false)
-    expect(cityMatches(ist, 0, { ...base, filter: 'notlead', rank: { ...lead, myRank: 2 } })).toBe(true)
+    // Oynanmadı: rekoru olmayan açık şehir
+    expect(cityMatches(ist, 0, { ...base, filter: 'new', best: undefined })).toBe(true)
+    expect(cityMatches(ist, 0, { ...base, filter: 'new', best: { timeMs: 60000, deaths: 0, items: [true, true, true] } })).toBe(false)
     expect(cityMatches(LEVELS[9], 9, { ...base, filter: 'missing' })).toBe(false)
     expect(cityMatches(LEVELS[9], 9, base)).toBe(true)
   })

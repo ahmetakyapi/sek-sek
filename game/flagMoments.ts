@@ -254,6 +254,12 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Fırından taze höşmerim çıktı.', 'Fresh höşmerim comes out of the oven.'],
     ['Bir pelikan kanat çırpmadan süzülüyor.', 'A pelican glides by without a single flap.'],
   ],
+  bingol: [
+    ['Çarşıda bal kavanozları güneşte parlıyor.', 'Jars of honey shine in the sun at the bazaar.'],
+    ['Şelalenin serin buğusu yüzüne değiyor.', 'The cool mist of the waterfall brushes your face.'],
+    ['Kovanlardan derin bir vızıltı yükseliyor.', 'A deep hum rises from the hives.'],
+    ['Bir ada rüzgârla usulca kayıyor.', 'An island drifts gently with the wind.'],
+  ],
   afyon: [
     ['Kalenin tepesinde rüzgâr bayrağı sallıyor.', 'Up on the castle the wind shakes the flag.'],
     ['Aslantaş’ın aslanları seni süzüyor.', 'The lions of Aslantaş look you over.'],
@@ -261,7 +267,7 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Havuzdan bir “aaaa!” yükseldi.', 'An “eeek!” rises from the pool.'],
   ],
   elazig: [
-    ['Harput’ta bir kürsübaşı sohbeti başladı.', 'A fireside gathering begins in Harput.'],
+    ['Harput’ta ocak başında sohbet başladı.', 'A fireside chat begins in Harput.'],
     ['Eğri minare bugün de eğri.', 'The leaning minaret is still leaning today.'],
     ['Mağarada buz çıtırdıyor.', 'Ice crackles in the cave.'],
     ['Hazar’ın üstünde bir balıkçı ağ atıyor.', 'A fisherman casts his net over Hazar.'],

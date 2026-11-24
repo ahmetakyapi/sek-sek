@@ -101,6 +101,7 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 43 | Balıkesir · Termal, Zeytin ve Kuşlar | 10 | Zor | Yükselen sıcak havayla uçuş, Şeytan Sofrası, Hasanboğuldu, Kuşcenneti | Höşmerim |
 | 44 | Elazığ · Süt Kalesi, Buzluk ve Hazar | 23 | Çok Zor | Saat gibi donup eriyen su, Harput Kalesi, yeraltında Buzluk Mağarası, Hazar’ın batık şehri | Orcik |
 | 45 | Afyon · Kara Kale, Kaymak ve Kaplıca | 03 | Zor | Termal otel: döner kapı, açık büfe, buhar odası; havuz teyzelerine görünmeden geç | Kaymak |
+| 46 | Bingöl · Bin Göl ve Yüzen Adalar | 12 | Zor | Üstüne basınca batan yüzen adalar, Çır Şelalesi, arılı yayla | Bingöl Balı |
 
 ## Yolcular ve Şehir İnsanları
 

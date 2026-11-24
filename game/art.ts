@@ -356,6 +356,26 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'raven',
     animal: 'cat',
   },
+  bingol: {
+    // Bingöl: yayla yeşili, göllerin koyu mavisi, bal sarısı ve dağ çiçeği moru
+    sky: ['#3e78b8', '#94c4e8', '#f4ecd4'],
+    sun: { x: 0.3, y: 0.22, r: 14, color: '#fff4cc', glow: 'rgba(255,240,190,0.22)' },
+    far: '#8aa4c0',
+    mid: '#5a8a5e',
+    near: '#345a3e',
+    tileTop: '#9a8a6a',
+    tile: '#7a6a4e',
+    tileDark: '#4a3e2c',
+    tileLight: '#bcae8a',
+    plank: '#8a6a40',
+    accent: '#e8a43a',
+    water: ['#2a6a9a', '#18466e', '#cfe6f2'],
+    spike: ['#3e3a34', '#1e1c18'],
+    weather: 'petals',
+    enemyGround: 'boar',
+    enemyFly: 'bee',
+    animal: 'horse',
+  },
   afyon: {
     // Afyon: kara volkanik kaya, kaplıca buharının beyazı, termal havuzun turkuazı ve kaymak sarısı
     sky: ['#4a6aa8', '#a8c4e4', '#f6ead8'],
@@ -1272,6 +1292,8 @@ export function buildLayers(city: CityKey): Layers {
       return aydinLayers(s, B)
     case 'balikesir':
       return balikesirLayers(s, B)
+    case 'bingol':
+      return bingolLayers(s, B)
     case 'afyon':
       return afyonLayers(s, B)
     case 'elazig':
@@ -4137,6 +4159,143 @@ function afyonLayers(s: CityStyle, B: number): Layers {
       }
       // söğüt: çay kıyısında sarkık dallar
       for (const x of [200, 340, 560]) {
+        rect(c, x + 6, base - 14, 3, 14, '#5a4a36')
+        disc(c, x + 7, base - 22, 9, '#6a8e4a')
+        disc(c, x + 4, base - 25, 5, '#86a65a')
+        for (let i = -9; i <= 9; i += 2) {
+          const len = 9 + Math.floor(r() * 7) - Math.abs(i) / 2
+          rect(c, x + 7 + i, base - 22 + Math.floor(Math.sqrt(Math.max(0, 81 - i * i)) * 0.6), 1, len, i % 4 ? '#7a9a52' : '#9ab866')
+        }
+      }
+    }),
+  }
+}
+
+/** Bingöl: uzakta Şerafettin Dağları’nın yeşil-mor karlı sırtları ve aralarında parıldayan küçük göller (bin göl);
+ *  ortada Solhan’ın sazlıklı gölü ve üstünde yüzen yeşil adalar, Çır Şelalesi, arı kovanlı yayla evleri; önde kavak, söğüt ve dağ çiçekleri */
+function bingolLayers(s: CityStyle, B: number): Layers {
+  // küçük dağ gölü: yassı elips, parlak üst kenar ve ışıltı
+  const tarn = (c: Ctx, x: number, y: number, w: number) => {
+    const h = Math.max(2, Math.round(w / 5))
+    for (let i = 0; i < h; i++) {
+      const hw = Math.round((w / 2) * Math.sqrt(1 - ((i - h / 2 + 0.5) / (h / 2)) ** 2))
+      rect(c, x - hw, y + i, hw * 2, 1, i === 0 ? '#d8ecf8' : i < h / 2 ? '#6a9ccc' : '#4a7cb0')
+    }
+    rect(c, x - Math.round(w / 6), y + 1, 2, 1, '#ffffff')
+  }
+  // arı kovanı: renkli tahta kutu, çatı kapağı, uçuş deliği
+  const hive = (c: Ctx, x: number, base: number, col: string) => {
+    rect(c, x, base - 6, 6, 6, col)
+    rect(c, x + 5, base - 6, 1, 6, 'rgba(40,30,20,0.35)')
+    rect(c, x - 1, base - 7, 8, 1, '#f0e8d8')
+    rect(c, x + 2, base - 2, 2, 1, '#2a2018')
+    rect(c, x, base - 4, 6, 1, 'rgba(255,255,255,0.25)')
+  }
+  return {
+    far: layer((c) => {
+      // Şerafettin Dağları: arkada mor, önde yeşil sırt; yer yer kar
+      hills(c, '#9c94c0', B - 180, 44, 2, 4601)
+      snowCaps(c, '#f4f2fa', B - 180, 44, 2, 4601)
+      hills(c, '#7a9aa4', B - 140, 30, 3, 4602)
+      snowCaps(c, '#e8eef4', B - 140, 30, 3, 4602)
+      hills(c, '#6a8e7a', B - 112, 16, 4, 4603)
+      rect(c, 0, B - 100, LAYER_W, B, '#6a8e7a')
+      // bin göl: yeşil yaylada parıldayan küçük göller
+      const r = rng(4604)
+      for (let i = 0; i < 16; i++) {
+        const x = 20 + ((i * 167 + Math.floor(r() * 30)) % (LAYER_W - 40))
+        const y = B - 98 + Math.floor(r() * 10)
+        tarn(c, x, y, 8 + Math.floor(r() * 12))
+      }
+    }),
+    mid: layer((c) => {
+      const r = rng(4605)
+      const base = B - 58
+      rect(c, 0, base - 4, LAYER_W, B - base + 4, s.mid)
+      // Solhan’ın gölü: koyu mavi su, kıyıda sazlık, üstünde yüzen yeşil adalar
+      const lx0 = 20
+      const lx1 = 230
+      const ly = base - 10
+      rect(c, lx0, ly, lx1 - lx0, 14, '#3a72a4')
+      rect(c, lx0, ly, lx1 - lx0, 1, '#cfe6f4')
+      for (let i = 0; i < 18; i++) rect(c, lx0 + 6 + ((i * 47) % (lx1 - lx0 - 12)), ly + 3 + ((i * 7) % 9), 3 + (i % 3) * 2, 1, 'rgba(220,240,250,0.5)')
+      for (const [ix, iw] of [[50, 26], [104, 34], [170, 22]] as const) {
+        // yüzen ada: yassı çim kümesi, altında suya yansıyan koyu kenar, üstünde saz demeti
+        rect(c, ix - 1, ly + 4, iw + 2, 2, '#2a4a3a')
+        for (let k = 0; k < 4; k++) rect(c, ix + k, ly + 3 - k, iw - k * 2, 1, k % 2 ? '#6a9a4a' : '#5a8a3e')
+        rect(c, ix + 2, ly, iw - 4, 1, '#8ab85a')
+        for (let x = ix + 3; x < ix + iw - 3; x += 2) {
+          const h = 3 + Math.floor(r() * 5)
+          rect(c, x, ly - h, 1, h, x % 4 ? '#7a9a4a' : '#9ab060')
+          if (r() > 0.75) rect(c, x, ly - h - 2, 1, 2, '#7a4e2a')
+        }
+      }
+      for (let x = lx0; x < lx1; x += 2) {
+        if (x > lx0 + 14 && x < lx1 - 14) continue
+        const h = 6 + Math.floor(r() * 8)
+        rect(c, x, ly + 4 - h, 1, h, x % 4 ? '#6e8a4a' : '#8aa25a')
+      }
+      // Çır Şelalesi: kayalık yarın kenarından dökülen beyaz su, dipte köpük ve küçük göl
+      const wx = 300
+      for (let x = -34; x <= 34; x++) {
+        const ax = Math.abs(x)
+        const h = Math.max(0, Math.round(70 - ax * 0.5 - (ax > 22 ? (ax - 22) * 2.4 : 0) + (((x * 31) % 7) - 3)))
+        rect(c, wx + x, base - h, 1, h, x > 10 ? '#6a5e56' : '#8a7c70')
+        if (h > 3 && x < 10) rect(c, wx + x, base - h, 1, 2, '#5e8a4a')
+        for (let ly2 = 12; ly2 < h - 4; ly2 += 11) if ((x + ly2) % 8 < 5) rect(c, wx + x, base - ly2, 1, 1, '#4e443e')
+      }
+      for (let y = base - 60; y < base - 4; y++) {
+        const sway = Math.round(Math.sin(y * 0.3) * 0.6)
+        rect(c, wx - 6 + sway, y, 12, 1, '#e8f4fa')
+        rect(c, wx - 3 + ((y * 5) % 7) - 3, y, 1, 2, '#ffffff')
+        rect(c, wx + 4 + sway, y, 2, 1, '#b8d8ea')
+      }
+      rect(c, wx - 8, base - 61, 16, 2, '#cfe6f2')
+      rect(c, wx - 22, base - 4, 44, 6, '#4a82b0')
+      for (let i = 0; i < 8; i++) disc(c, wx - 10 + i * 3, base - 4 - (i % 3), 2 + (i % 2), '#f4faff')
+      // yayla evleri: alçak taş duvar, düz toprak dam; önlerinde renkli arı kovanları
+      const HIVE = ['#4a8ac8', '#e8c24a', '#d85a3a', '#5aa86a', '#f0f0e8']
+      for (let x = 360; x < LAYER_W - 20; x += 46 + Math.floor(r() * 14)) {
+        const w = 22 + Math.floor(r() * 6)
+        const h = 14 + Math.floor(r() * 6)
+        rect(c, x, base - h, w, h, r() > 0.5 ? '#bca88a' : '#a8947a')
+        rect(c, x + w - 2, base - h, 2, h, 'rgba(60,40,30,0.3)')
+        rect(c, x - 2, base - h - 3, w + 4, 3, '#6a5a3e')
+        rect(c, x - 2, base - h - 4, w + 4, 1, '#7a9a4a')
+        rect(c, x + 4, base - 9, 4, 9, '#4a3424')
+        rect(c, x + w - 9, base - h + 4, 4, 4, '#2e3a4a')
+        if (r() > 0.4) {
+          rect(c, x + 3, base - h - 10, 3, 6, '#6a5a4a')
+          disc(c, x + 5, base - h - 13, 2, 'rgba(240,240,244,0.4)')
+        }
+        for (let k = 0; k < 3; k++) hive(c, x + w + 4 + k * 8, base + 2, HIVE[Math.floor(r() * HIVE.length)])
+        // kovan başında arılar
+        for (let k = 0; k < 4; k++) rect(c, x + w + 6 + ((k * 7) % 20), base - 10 - ((k * 5) % 6), 1, 1, k % 2 ? '#2a2018' : '#f2c040')
+      }
+      rect(c, 0, base + 18, LAYER_W, B - base, s.mid)
+    }),
+    near: layer((c) => {
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      const r = rng(4606)
+      // dağ çiçekleri: mor, sarı, beyaz ve kırmızı benekler, çimen tutamları
+      const FLOW = ['#a86ad8', '#f2c84a', '#f4f2ee', '#e0524a', '#7a8ae8']
+      for (let x = 0; x < LAYER_W; x += 3) {
+        const h = 2 + Math.floor(r() * 4)
+        rect(c, x, base - h, 1, h, x % 6 ? '#4e7a44' : '#5e8a4e')
+        if (r() > 0.55) rect(c, x + Math.floor(r() * 2), base - h - 1 - Math.floor(r() * 3), 2, 2, FLOW[Math.floor(r() * FLOW.length)])
+      }
+      // kavaklar: ince uzun, rüzgârda hafif eğik
+      for (const x of [60, 84, 300, 324, 520]) {
+        for (let y = 0; y < 54; y++) {
+          const w = Math.round(Math.sin((y / 54) * Math.PI) * 4)
+          const lean = Math.round((y * y) / 1400)
+          rect(c, x - w + lean, base - y, w * 2 + 1, 1, y % 6 === 0 ? '#6a8e44' : y % 3 ? '#4e7034' : '#5a7e3c')
+        }
+        rect(c, x, base - 4, 1, 4, '#5a4632')
+      }
+      // söğütler: su kıyısında sarkık dallar
+      for (const x of [170, 420, 590]) {
         rect(c, x + 6, base - 14, 3, 14, '#5a4a36')
         disc(c, x + 7, base - 22, 9, '#6a8e4a')
         disc(c, x + 4, base - 25, 5, '#86a65a')

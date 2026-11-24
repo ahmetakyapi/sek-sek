@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { AIR, AUNT, CHASE, EMPTY, FROST_CYCLE, auntFacing, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
+import { AIR, AUNT, CHASE, EMPTY, FROST_CYCLE, SINK, auntFacing, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -897,5 +897,39 @@ describe('havuz teyzesi (Afyon)', () => {
     wall.clock = c2
     step(wall, 1.2)
     expect(wall.player.dead).toBe(false)
+  })
+})
+
+describe('yüzen ada (Bingöl)', () => {
+  // su üstünde üç karoluk yüzen ada; solda kıyı
+  const map = ['            ', '            ', ' P          ', '###+++  ####', '###WWWWWW###', '###WWWWWW###', '############']
+  it('üstünde durana batar, gömülünce suyun altında kalır, sonra yüzeye çıkar', () => {
+    const w = mk(map)
+    const isl = w.platforms.find((q) => q.axis === 'f')!
+    expect(isl).toBeTruthy()
+    const top = isl.y
+    step(w, 0.3)
+    step(w, 0.42, { right: true })
+    step(w, 0.15)
+    expect(w.player.onPlatform).toBe(isl)
+    step(w, 0.5)
+    expect(isl.y).toBeGreaterThan(top + 3)
+    // bir saniyeden biraz uzun durunca gömülür, oyuncu suya düşer
+    step(w, SINK.depth / SINK.rate)
+    expect(isl.under).toBeGreaterThan(0)
+    step(w, 0.4)
+    expect(w.player.onPlatform).toBe(null)
+    expect(w.player.swim).toBe(true)
+    // gömülü süre bitince çıkar
+    step(w, SINK.under + SINK.depth / SINK.rise + 0.2)
+    expect(isl.under).toBe(0)
+    expect(isl.y).toBeCloseTo(top, 0)
+  })
+  it('üstünden geçen batırmaz: kısa basış adayı gömmez', () => {
+    const w = mk(map)
+    const isl = w.platforms.find((q) => q.axis === 'f')!
+    step(w, 0.3)
+    step(w, 0.6, { right: true })
+    expect(isl.under).toBe(0)
   })
 })

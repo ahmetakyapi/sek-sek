@@ -54,6 +54,7 @@ const TILES: TileDef[] = [
   { sym: 'W', name: 'Derin Su (Yüzülür)', desc: 'Yüzülür: zıplama kulaç atar, boğulma yok.', key: 'N', cat: 'zemin' },
   { sym: 'A', name: 'Gelgit Suyu', desc: 'Sekiz saniyede bir yükselip alçalır: yüksekken yüzülür, alçakken dibinde yürünür. Bitişik karolar tek havuzdur.', key: 'E', cat: 'zemin' },
   { sym: 'Z', name: 'Donan Su', desc: 'İki buçuk saniye buz (üstünde yürünür, kaygan), iki buçuk saniye su (yüzülür). Bütün donan sular aynı anda döner.', cat: 'zemin' },
+  { sym: '+', name: 'Yüzen Ada', desc: 'Suyun yüzünde sazlık ada (yan yana karolar tek ada). Üstünde durana bir saniyede batar, bir süre suyun altında kalır: durmadan geç. Altına su (W) koy.', cat: 'zemin' },
   { sym: 'V', name: 'Yükselen Hava', desc: 'Termal: içine giren yukarı taşınır, sütunun tepesinde asılı kalır. İnilecek taştan en az bir karo yukarı çıksın.', cat: 'zemin' },
   { sym: '^', name: 'Diken', desc: 'Değen düşer. Çukurdaysa bir karo gömülü ve en çok iki karo geniş olsun.', key: '3', cat: 'tehlike' },
   { sym: 'v', name: 'Tavan Dikeni', desc: 'Tavandan sarkar; kafasını çarpan düşer.', key: '4', cat: 'tehlike' },

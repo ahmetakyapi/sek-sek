@@ -45,6 +45,7 @@ export const BOSS_LINES: Record<CityKey, { wake: [string, string]; tired: [strin
   mersin: { wake: ['Üzüm ister misin?', 'Fancy some grapes?'], tired: ['Kabuğum soyuldu…', 'I am shedding…'], ouch: ['Kuyruğum düğüm oldu!', 'My tail is in a knot!'] },
   karabuk: { wake: ['Vuruş sırası bende!', 'The strike is mine!'], tired: ['Soğudum… nefesim çıkmıyor…', 'I have cooled… out of breath…'], ouch: ['Sapım gıcırdadı!', 'My handle creaked!'] },
   balikesir: { wake: ['Balık mı getirdin?', 'Did you bring fish?'], tired: ['Gagam yoruldu…', 'My beak is tired…'], ouch: ['Kesem boşaldı!', 'My pouch is empty!'] },
+  bingol: { wake: ['Benim balım!', 'My honey!'], tired: ['Midem doldu…', 'I am stuffed…'], ouch: ['Arılar bile acıtmazdı!', 'Even bees did not sting this much!'] },
   afyon: { wake: ['Kese sırası sende!', 'Your turn for a scrub!'], tired: ['Of, buhar çarptı…', 'Oof, the steam got me…'], ouch: ['Terliğim gitti!', 'My slipper flew off!'] },
   elazig: { wake: ['Mevsim döndü!', 'The season has turned!'], tired: ['Eriyorum…', 'I am melting…'], ouch: ['Buzum çatladı!', 'My ice cracked!'] },
   aydin: { wake: ['Bana bakma!', 'Do not look at me!'], tired: ['Saçlarım düğüm oldu…', 'My hair is in knots…'], ouch: ['Yılanlarım!', 'My snakes!'] },

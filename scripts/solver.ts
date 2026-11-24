@@ -145,7 +145,10 @@ function key(s: Snapshot, w: World) {
   const p = s.player
   // sema halkaları ve tokmaklar ortak saate bağlı: konumları yerine saatin evresi yeter
   const near = s.platforms.map((q, i) => ({ q, a: w.platforms[i].axis })).filter(({ q }) => Math.abs(q.x - p.x) < 260 && Math.abs(q.y - p.y) < 200)
-  const plats = near.filter(({ a }) => a === 'x' || a === 'y' || a === 'b').map(({ q, a }) => (a === 'b' ? `b${Math.round(q.y / 16)}` : `${Math.round((q.x + q.y) / 12)}${q.dir}`))
+  // yüzen ada: batma derinliği ve suyun altında kalma süresi (yarım saniyelik dilimler) durumun parçası
+  const plats = near
+    .filter(({ a }) => a === 'x' || a === 'y' || a === 'b' || a === 'f')
+    .map(({ q, a }) => (a === 'b' ? `b${Math.round(q.y / 16)}` : a === 'f' ? `f${Math.round(q.y / 4)}${q.under ? 'u' + Math.ceil(q.under * 2) : ''}` : `${Math.round((q.x + q.y) / 12)}${q.dir}`))
   const clocked = near.some(({ q, a }) => (a === 'o' || a === 'h') && Math.abs(q.x - p.x) < 120) || w.hammers.some((h) => Math.abs(h.x - p.x) < 40 && p.y > h.top - 8)
   const phase = clocked ? Math.floor(((s.clock * 1.35) / (Math.PI * 2)) * 8) % 8 + '/' + Math.floor((s.clock % 3.11) * 4) : ''
   // bayrak numarası anahtarda yok: çözücü ölen dalı atar, bayraktan hiç doğmaz; bayrak eklemek aramayı katlamasın

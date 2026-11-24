@@ -18,7 +18,7 @@ Bir şehir ~25 dosyaya dokunur. Tip denetimi bunların yarısını yakalar, `cit
   Şehri kendine has kılan dört gerçek yer seç (ana yolun dört parçası) ve meydan yolu için bir yer daha.
 - **Zorluk:** etiket ve boss kademesi birlikte seçilir: Kolay → kademe 1, Orta → 2, Zor ve Çok Zor → 3.
 - **Mekanik:** şehir yeni bir şey getirsin. Var olanlar: halat, teleferik, derin su, gelgit, ritim, nitro, sandık, rüzgâr, yükselen hava,
-  donan su. Yeni mekanik eklenecekse önce **`yeni-mekanik`** yeteneğini izle; şehrin haritası mekanik bittikten sonra çizilir.
+  donan su, havuz teyzesi (görüş + havlu), yüzen ada, iç mekân (`LevelDef.indoor`). Yeni mekanik eklenecekse önce **`yeni-mekanik`** yeteneğini izle; şehrin haritası mekanik bittikten sonra çizilir.
 - **Hatıra, boss, insanlar:** hatıra şehrin bir yiyeceği ya da el işidir. Boss şehrin bir ayrıntısından doğar, dost hayvanla aynı tür olmaz.
   Dört şehir insanından ilki esnaftır ve şehrin ustasıdır; yanına tezgâh `s` konur. Kişi adları oyun genelinde tekrar etmez:
   `grep -rn "<Ad>" game/levels.ts game/finales game/signatures.ts game/extensions.ts game/cities game/stories` boş dönmeli.

@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 44 şehrini (iki defter: 30 + 14) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 46 şehrini (iki defter: 30 + 16) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -23,9 +23,9 @@ Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak i
 
 ```text
 game/            DOM'suz oyun çekirdeği (testlenebilir)
-  sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon, gelgit (TIDE), yükselen hava (LIFT), donan su (FROST)
-  levels.ts      44 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
-  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla, Rize, Artvin, Kars, Bitlis, Ağrı, Giresun, Tokat, Denizli, Zonguldak, Mersin, Karabük, Aydın, Balıkesir, Elazığ); yeni şehir buraya eklenir
+  sim.ts         fizik + dünya: zıplama, duvar, dash, düşmanlar, bulmaca nesneleri, sema/balon/tokmak/horon, gelgit (TIDE), yükselen hava (LIFT), donan su (FROST), havuz teyzesi (AUNT), yüzen ada (SINK)
+  levels.ts      46 bölüm (ASCII harita, 24 satır; ilk defter 30, `FIRST_BOOK`'tan sonrası ikinci defter) + şehir metinleri; extend(), addSignature(), addFinale() ve bossLevel() (Boss Rush arenası) burada
+  cities/        yeni şehirlerin ana yolu, şehir başına bir dosya (Çanakkale, Diyarbakır, Sinop, Edirne, Bursa, Antalya, Şanlıurfa, Van, Erzurum, Kayseri, Hatay, Eskişehir, Amasya, Muğla, Rize, Artvin, Kars, Bitlis, Ağrı, Giresun, Tokat, Denizli, Zonguldak, Mersin, Karabük, Aydın, Balıkesir, Elazığ, Afyon, Bingöl); yeni şehir buraya eklenir
   extensions.ts  bölümlere eklenen ikinci parçalar
   signatures.ts  eski 12 şehrin imza bölümleri (+ İngilizce ipucu ve kişi metinleri)
   finales/       bölüm finalleri: meydan kapısı (@) → varış (&) + bayrak → meydan yolu (şehir başına bir dosya: bulmaca + saklı nazar boncuğu `!`) → arena (Q boss, G kapı) → çıkış; arenayı index.ts kurar
@@ -43,7 +43,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
   portraitDraw.ts vesikalık portreler (vektör, heroDraw fırçalarıyla; sekiz kılık, atkı rengi parametreli). Sunucu kartı için public/portreler/<kılık>.png: `node scripts/art/portraits.cjs` (çizim ya da LOOKS değişince yeniden üret)
-  audio.ts       WebAudio: rahatlatıcı arka plan müziği çalgıları (Rhodes benzeri piyano `keys`, alt bas `sub`, yumuşak davul `kick`/`rim`/`hat`, ney, kanun Karplus-Strong, dem), swing, çalgı başına stereo ve yankı, ana sınırlayıcı; boss'ta sıklaşan ama sakin ritim (`setIntense`), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında, kısık
+  audio.ts       WebAudio: rahatlatıcı arka plan müziği çalgıları (Rhodes benzeri piyano `keys`, alt bas `sub`, yumuşak davul `kick`/`rim`/`hat`, ney, kanun Karplus-Strong, dem), swing, çalgı başına stereo ve yankı, ana sınırlayıcı; boss'ta sıklaşan ama sakin ritim (`setIntense`), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında, kısık; müzik yolu (24 Kasım 2026): çalgı dengesi `TRIM`, çamur kesimi + varlık rafı, hafif bant doygunluğu, yapıştırıcı sıkıştırma, `MUSIC_MAKEUP`, kendi tepe sınırlayıcısı ve efekt çalınca ~3 dB eğilen yan zincir (müzik ~−17 LUFS); döngünün ikinci turunda ezgiyi kanun alır (`NoteEvent.pass`). Ses değişince `node scripts/audio-render.cjs` + `python3 scripts/audio-render-analiz.py`
   music.ts       besteler veri olarak: jenerik (Hicaz ezgisi, köksüz dokuzlu akorlar, giriş + A-B-A-B) ve şehir müzikleri (4/4, 70-84 BPM şehrin tempo değerinden; form giriş (bir kez) → A piyano → A′ ney + davul → B karşıtlık (güçlüde pedal bas) → A″ soru-cevap → nefes → C köprü → A4 → B′ → nefes, 64 ölçülük döngü; ses yürütmeli yedili akorlar `voiceLead`, makama göre kadans, ney süslemeleri, kanun tremolosu; şehirden tohumlanan sabit beste)
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts, sunucusu app/api/ghosts (skor tablosundan "◌ Yarış")
@@ -147,7 +147,7 @@ sütunda gösterilen değeri de değiştirir. Günlük Meydan Okuma satırları 
 çekmecesini açar (`introScores`): şehrin ilk 10 yolcusu + oyuncunun kendi satırı (sıra, portre, ad, madalya, süre, düşüş, hatıra; "Sen" vurgulu, ☆ arkadaş), satıra basınca ayrıntı (süre, en az düşüş, en çok hatıra, koşu sayısı,
 yolcu, lidere fark, "Profili Aç" `/oyuncu/<ad>`, "◌ Hayaletiyle Yarış" mevcut `startRace` akışı), "Tüm Sıralama →" Skor Tablosu'nun Şehirler sekmesine o şehirle atlar (`boardTab: 'city'`, `startCity`). Giriş gerekmez.
 Veri mevcut `GET /api/scores?level=<şehir>` (sunucu değişmedi); saf mantık, kısa ömürlü önbellek (20 sn), uçuştaki isteğin paylaşımı ve iptal `lib/cityScores.ts` (`tests/cityScores.test.ts`); `useCityScores` şehir değişince yeniden
-yükler, hata + Tekrar Dene, boş durum "İlk Rekoru Sen Koy". Bayrak başına süre API'de yok (hayalet dosyasında var, listede değil), bu yüzden ayrıntıda gösterilmez. Şehirler listesinde lider ve sıra toplu uçtan gelir ("Listede sıran"). Şehirler ekranı: başlıkta özet şeridi (`CityStats`), listede arama ve "tekrar oynamaya değer" süzgeçleri (`lib/cityFilter.ts`: Eksik Hatıra, Altın Yok, Lider Değilim; testi `tests/cityFilter.test.ts`), listede üstüne gelinen şehir haritada öne çıkar (`TurkeyMap peek`; kart yalnız fare ve klavye odağıyla açılır). Skor Tablosu: geniş tabloda ilk üç podyumda (ikinci, birinci, üçüncü; taç, ◌ Yarış), liste dördüncüden sürer; dar ve alçak ekranda podyum gizli, ilk üç listede. Mücadele kartı: madalya çizgisi (`MedalTrack`: işaretler + rekorun + sıradaki madalyaya kalan) ve eğilen parkur görseli (`components/useTilt.ts`, ana menü kartpostalıyla ortak). **Sütunlar eşit biter (kullanıcı kararı, 23 Kasım 2026):** yan yana sütunlu her ekranda (bölüm sonu, şehir kartı, Defter, düzenleyici) sütunların alt kenarı aynı hizada olur; kısa kalan sütunun son öbeği `mt-auto` ile dibe yaslanır (sütun `flex flex-col`). Bölüm sonu: süre sayarak gelir (`components/CountUp.tsx`), mühür basılır (`.seal-slam`), puan sayarak dolar. Düzenleyici: `.ed-shell` / `.ed-top` / `.ed-panel` / `.ed-canvas` (globals.css), Oyna düğmesi `cta`.
+yükler, hata + Tekrar Dene, boş durum "İlk Rekoru Sen Koy". Bayrak başına süre API'de yok (hayalet dosyasında var, listede değil), bu yüzden ayrıntıda gösterilmez. Şehirler listesinde lider ve sıra toplu uçtan gelir ("Listede sıran"). Şehirler ekranı: başlıkta özet şeridi (`CityStats`), listede arama ve "oynamaya değer" süzgeçleri (`lib/cityFilter.ts`: Oynanmadı, Eksik Hatıra, Altın Yok; düzenli 2×2 ızgara, tek çip alta kaymaz; testi `tests/cityFilter.test.ts`), listede üstüne gelinen şehir haritada öne çıkar (`TurkeyMap peek`; kart yalnız fare ve klavye odağıyla açılır). Skor Tablosu: geniş tabloda ilk üç podyumda (ikinci, birinci, üçüncü; taç, ◌ Yarış), liste dördüncüden sürer; dar ve alçak ekranda podyum gizli, ilk üç listede. Mücadele kartı: madalya çizgisi (`MedalTrack`: işaretler + rekorun + sıradaki madalyaya kalan) ve eğilen parkur görseli (`components/useTilt.ts`, ana menü kartpostalıyla ortak). **Sütunlar eşit biter (kullanıcı kararı, 23 Kasım 2026):** yan yana sütunlu her ekranda (bölüm sonu, şehir kartı, Defter, düzenleyici) sütunların alt kenarı aynı hizada olur; kısa kalan sütunun son öbeği `mt-auto` ile dibe yaslanır (sütun `flex flex-col`). Bölüm sonu: süre sayarak gelir (`components/CountUp.tsx`), mühür basılır (`.seal-slam`), puan sayarak dolar. Düzenleyici: `.ed-shell` / `.ed-top` / `.ed-panel` / `.ed-canvas` (globals.css), Oyna düğmesi `cta`.
 
 **Yolcu seçici `HeroPicker` (21 Kasım 2026).** Uktun / Memo seçimi her yerde `components/HeroPicker.tsx`: iki kart (portre, ad, rol), seçili kart tonlu çerçeve + tik, `role="radiogroup"` (←/→/↑/↓ geçer, 1 ve 2 seçer, Tab seçili karta
 durur), altın odak halkası, hedef en az 56 px (alçak ekranda 48), hareketi azalt desteği. Boyutlar: `lg` şehir kartı (geniş ekranda sağ sütunun altı, dar ekranda alt çubuğun üstü; yatay telefonda alt çubukta `sm`),
@@ -253,7 +253,7 @@ hatırlar (`rememberMode`).
 **Arkadaşlar.** `save.friends` (yolcu adları, buluta da gider). Skor tablosunda ☆ ile ya da adla eklenir; her tabloya
 `names=a,b` süzgeci verilir (adlar zaten herkese açık, yanıt önbelleklenebilir). "⚔ Beni Geç Bağlantısı" `/?yaris=<şehir>~<ad>`.
 
-**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı ve dönüş yolu Giresun, Tokat, Denizli, Zonguldak, Mersin, Karabük, Aydın, Balıkesir, Elazığ (`FIRST_BOOK` = Rize'nin sırası; defter Elazığ'ın Buzluk Mağarası ve Hazar Gölü'nde biter). Bayburt ilk kez bitince final
+**İkinci defter.** Rize, Artvin, Kars, Bitlis, Ağrı ve dönüş yolu Giresun, Tokat, Denizli, Zonguldak, Mersin, Karabük, Aydın, Balıkesir, Elazığ, Afyon, Bingöl (`FIRST_BOOK` = Rize'nin sırası; defter Bingöl'ün yüzen adalarında biter). Bayburt ilk kez bitince final
 sahnesi (`Ending`) açılır, sonundaki "İkinci Defteri Aç" Rize'yi yükler. Final, Ayna Yolu ve Tam Tur ilk defterin 30
 şehriyle kalır (ikinci defterin aynası doğrulanmadı). Biten en ileri şehrin ardındaki her zaman açıktır (`normalizeSave`):
 yol uzayınca son şehri bitirmiş oyuncu yeni şehre geçer. Yeni defter eklenirse aynı kalıp.
@@ -510,6 +510,10 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
   (24 Kasım 2026: kullanıcı isteğiyle zorlaştı; görüş 6 → 9 karo). Havlu değen bayraktan
   doğar; teyzeye değen de yakalanır, ezilmez.
   Güvenli cevaplar: sırtı dönükken geç, araya katı bir şey al, dal, havluyu görünce kaç. Her teyzenin yanından geçmek için ~1,5 sn'lik pencere ya da dalış yolu bırak.
+- `+` yüzen ada (Bingöl; `sim.ts` SINK, Platform axis `f`): bir satırdaki bitişik `+` tek adadır, gölün yüzünde yüzer (altındaki satır
+  `W` ise adanın karoları da sudur: göl adayla aynı satırdadır). Üstünde durana 11 px/sn batar, 11 px batınca (~1 sn) gömülür:
+  1,5 sn üstüne basılmaz (oyuncu suya düşer), sonra çıkar; kısa basıp geçen batırmaz. Altına mutlaka `W` (öldüren `~` değil),
+  zincirde arada nefes taşı. Çözücü batma hâlini durum sayar; çizimi `render.ts` `drawIsland` (su örtüsü adanın karesine çizilmez).
 - Suda yüzen düşmanlar (karesi derin su sayılır): `y` Esoli (köpekbalığı: devriye → yüzeni görünce titreyip uyarır → hamle →
   soluklanır; ezilmez, kaçılır), `U` pirana (±2,5 karo gidip gelir; basılır, dash'le vurulur).
 - Van'ın öldüren sularında gölün canavarı yüzer (`render.ts` drawLakeMonster): süs, zararsız; su katmanı alt yarısını örter.
@@ -607,7 +611,7 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
   önbellekten, sayfalar önce ağdan (çevrimdışında önbellekteki `/`), `/api/*` hiç önbelleğe girmez. Önbelleğe giren yolların
   davranışını değiştirirsen `VERSION`ı artır. "Ana Ekrana Ekle" `lib/useInstallPrompt.ts` → Ayarlar.
 - Vercel Analytics + Speed Insights `components/Telemetry.tsx`: adresin sorgu kısmı silinerek gönderilir (`?yaris=` ad, `?ozel=` harita taşır).
-- CI (`.github/workflows/ci.yml`): typecheck, test, build; 44 şehrin her biri için verify-levels → verify-respawn → bossbot.
+- CI (`.github/workflows/ci.yml`): typecheck, test, build; 46 şehrin her biri için verify-levels → verify-respawn → bossbot.
   Yeni şehir eklenince matrise yaz.
 
 ## Yayın boyutu (kalıcı kural, 23 Kasım 2026)

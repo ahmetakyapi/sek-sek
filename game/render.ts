@@ -12,7 +12,7 @@ import { cb, cbc, type CbMode } from './colorBlind'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
-import { AIR, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, ONEWAY, DOOR, EMPTY, FROST_CYCLE, ICE, NITRO, PHYS, THERMAL, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, TIDE_CYCLE, WATER, hammerState, tideFill, tidePhase, type World } from './sim'
+import { AIR, AUNT, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, ONEWAY, DOOR, EMPTY, FROST_CYCLE, ICE, NITRO, PHYS, THERMAL, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, TIDE_CYCLE, WATER, hammerState, tideFill, tidePhase, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -1438,6 +1438,38 @@ export class Renderer {
         }
         break
       }
+      case 'bingol': {
+        // balcı: rafta altın sarısı bal kavanozları (bez kapaklı), dikili petek çerçeveleri, direkte asılı arıcı şapkası; bal sarısı tente
+        rect(b, x - 4, bot - 8, 26, 8, '#7a5234')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a7250')
+        for (const dx of [-3, 1, 5, 9]) {
+          rect(b, x + dx, bot - 12, 3, 4, '#f2b42a')
+          rect(b, x + dx, bot - 12, 1, 4, '#ffd870')
+          rect(b, x + dx, bot - 13, 3, 1, dx % 2 ? '#d04a3a' : '#f4f0e6')
+        }
+        rect(b, x - 3, bot - 15, 15, 1, '#6a4a2e')
+        for (const dx of [-2, 3, 8]) {
+          rect(b, x + dx, bot - 19, 3, 4, '#f2b42a')
+          rect(b, x + dx, bot - 19, 1, 4, '#ffd870')
+          rect(b, x + dx, bot - 20, 3, 1, '#e8dcc0')
+        }
+        for (const dx of [14, 19]) {
+          rect(b, x + dx, bot - 17, 5, 9, '#8a5a32')
+          rect(b, x + dx + 1, bot - 16, 3, 7, '#e8a826')
+          for (let k = 0; k < 3; k++) rect(b, x + dx + 1 + (k % 2) * 2, bot - 15 + k * 2, 1, 1, '#ffd060')
+        }
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#e8a43a')
+        const sw = Math.round(Math.sin(this.t * 1.2) * 0.6)
+        rect(b, x + 22 + sw, bot - 28, 7, 1, '#f4f0e6')
+        rect(b, x + 23 + sw, bot - 30, 5, 2, '#f4f0e6')
+        rect(b, x + 22 + sw, bot - 27, 7, 4, 'rgba(60,60,70,0.55)')
+        const bz = this.t * 3
+        rect(b, x + 6 + Math.round(Math.cos(bz) * 6), bot - 24 + Math.round(Math.sin(bz * 1.7) * 2), 1, 1, '#2a1a12')
+        rect(b, x + 12 + Math.round(Math.sin(bz * 0.8) * 5), bot - 22 + Math.round(Math.cos(bz * 1.3) * 2), 1, 1, '#f2c040')
+        break
+      }
       case 'elazig': {
         // orcikçi: askıda sallanan kayısı rengi orcik dizileri, tezgâhta kayısı kasaları ve kuru kayısı
         rect(b, x - 4, bot - 8, 26, 8, '#6e4c34')
@@ -2269,6 +2301,32 @@ export class Renderer {
         }
         break
       }
+      case 'bingol': {
+        // yayla arı kovanları: taş üstünde üst üste iki renkli tahta kutu kovan, beyaz kapak, uçuş deliği; çevresinde vızıldayan arılar
+        rect(b, x, bot - 3, 16, 3, '#7a6a58')
+        rect(b, x, bot - 3, 16, 1, '#9a8a76')
+        rect(b, x + 2, bot - 13, 12, 10, '#4a8ac8')
+        rect(b, x + 2, bot - 13, 2, 10, '#6aa6dc')
+        rect(b, x + 12, bot - 13, 2, 10, '#2e6aa0')
+        rect(b, x + 6, bot - 6, 4, 1, '#1e1a16')
+        rect(b, x + 2, bot - 22, 12, 9, '#e8c24a')
+        rect(b, x + 2, bot - 22, 2, 9, '#f6dc7a')
+        rect(b, x + 12, bot - 22, 2, 9, '#b8922a')
+        rect(b, x + 2, bot - 14, 12, 1, '#6a5a3e')
+        rect(b, x + 1, bot - 25, 14, 3, '#f0ece2')
+        rect(b, x + 1, bot - 25, 14, 1, '#ffffff')
+        rect(b, x + 13, bot - 24, 2, 2, '#c4beb0')
+        rect(b, x + 7, bot - 17, 2, 1, '#1e1a16')
+        for (let i = 0; i < 4; i++) {
+          const a = this.t * (2.2 + i * 0.4) + i * 1.6
+          const bx = x + 8 + Math.round(Math.cos(a) * (6 + i * 2))
+          const by = bot - 18 + Math.round(Math.sin(a * 1.3) * (4 + i))
+          rect(b, bx, by, 2, 1, '#f2c040')
+          rect(b, bx + 1, by, 1, 1, '#2a1a12')
+          rect(b, bx, by - 1, 1, 1, 'rgba(240,248,255,0.8)')
+        }
+        break
+      }
       case 'elazig': {
         // Harput Ulu Camii'nin eğri minaresi: kalın tuğla gövde sağa yatık, tuğla örgü kuşakları, kısa külah
         rect(b, x, bot - 3, 16, 3, '#8a7462')
@@ -2910,17 +2968,24 @@ export class Renderer {
         const by = ty * T
         rect(b, x + 1, by - 2, T - 2, 2, '#c8ccd4')
         rect(b, x + 1, by - 1, T - 2, 1, '#9aa0aa')
-        switch (tx % 5) {
-          case 0: // sucuk dilimleri
-            for (const dx of [3, 7, 11]) rect(b, x + dx, by - 4, 3, 2, '#b8402e')
+        // kahvaltı büfesi: masa masa başka yemek (sütuna göre sabit)
+        switch (tx % 9) {
+          case 0: // sucuklu yumurta tavası
+            rect(b, x + 3, by - 4, 10, 2, '#3a3440')
+            rect(b, x + 4, by - 5, 8, 1, '#fff4e0')
+            rect(b, x + 6, by - 5, 2, 1, '#f2b134')
+            for (const dx of [4, 9]) rect(b, x + dx, by - 5, 2, 1, '#b8402e')
+            rect(b, x + 13, by - 4, 2, 1, '#3a3440')
             break
-          case 1: // rulo kaymak, bal
+          case 1: // rulo kaymak ve bal
             rect(b, x + 4, by - 5, 8, 3, '#fff8e8')
             rect(b, x + 9, by - 5, 2, 1, '#e8a43a')
+            rect(b, x + 11, by - 3, 1, 1, '#e8a43a')
             break
           case 2: // simit
             rect(b, x + 4, by - 5, 7, 3, '#b87a3a')
             rect(b, x + 6, by - 4, 3, 1, '#c8ccd4')
+            rect(b, x + 5, by - 5, 1, 1, '#f4e6c0')
             break
           case 3: // ince belli çay bardakları
             for (const dx of [4, 9]) {
@@ -2928,9 +2993,35 @@ export class Renderer {
               rect(b, x + dx, by - 6, 3, 1, '#f4e6c0')
             }
             break
-          default: // lokum
-            for (const dx of [4, 8]) rect(b, x + dx, by - 4, 3, 2, '#f2a8c0')
-            rect(b, x + 6, by - 6, 3, 2, '#fff4f4')
+          case 4: // menemen tavası
+            rect(b, x + 3, by - 4, 10, 2, '#3a3440')
+            rect(b, x + 4, by - 5, 8, 1, '#e8582e')
+            rect(b, x + 5, by - 5, 2, 1, '#f2c14e')
+            rect(b, x + 9, by - 5, 1, 1, '#6aae4a')
+            break
+          case 5: // peynir ve zeytin tabağı
+            rect(b, x + 3, by - 4, 5, 2, '#fffaf0')
+            for (const dx of [9, 11, 13]) rect(b, x + dx, by - 4, 1, 1, '#2a2430')
+            rect(b, x + 10, by - 5, 1, 1, '#4a5a2a')
+            break
+          case 6: // kakaolu süt kutusu (markasız), yanında bardak
+            rect(b, x + 4, by - 9, 5, 7, '#7a4a2a')
+            rect(b, x + 4, by - 9, 5, 1, '#f4e6c0')
+            rect(b, x + 5, by - 6, 3, 2, '#f2c14e')
+            rect(b, x + 10, by - 5, 3, 3, '#a87a52')
+            rect(b, x + 10, by - 5, 3, 1, '#fff4e8')
+            break
+          case 7: // bebe bisküvisi paketi (markasız) ve tabakta bisküviler
+            rect(b, x + 3, by - 6, 6, 4, '#f2d24e')
+            rect(b, x + 4, by - 5, 4, 1, '#e8794a')
+            for (const dx of [10, 12]) rect(b, x + dx, by - 3, 2, 1, '#e4b46a')
+            rect(b, x + 11, by - 4, 2, 1, '#e4b46a')
+            break
+          default: // domates, salatalık ve lokum
+            rect(b, x + 3, by - 4, 3, 2, '#d8342a')
+            rect(b, x + 7, by - 4, 3, 2, '#6aae4a')
+            rect(b, x + 7, by - 4, 3, 1, '#c8e8a8')
+            rect(b, x + 11, by - 4, 3, 2, '#f2a8c0')
         }
       }
     }
@@ -2962,6 +3053,15 @@ export class Renderer {
       if (top[tx] < 0) continue
       for (let ty = top[tx]; ty < w.rows; ty++) {
         if (w.tile(tx, ty) !== SWIM || w.tile(tx, ty - 1) === SWIM) continue
+        // havuz kenarı duvarında askıda çizgili havlu (dört sütunda bir; renkleri sırayla)
+        if (tx % 4 === 0) {
+          const hy = (w.rows - 7) * T - 10
+          const col = ['#f08aa8', '#7ac8d8', '#f2c14e'][Math.floor(tx / 4) % 3]
+          rect(b, tx * T + 6, hy, 4, 1, '#8a6a48')
+          rect(b, tx * T + 5, hy + 1, 6, 8, '#fffaf4')
+          rect(b, tx * T + 5, hy + 3, 6, 2, col)
+          rect(b, tx * T + 5, hy + 7, 6, 1, col)
+        }
         for (let k = 0; k < 2; k++) {
           const ph = (t * 0.7 + tx * 0.37 + k * 0.5) % 1
           const yy = ty * T - 2 - ph * 14
@@ -3167,6 +3267,49 @@ export class Renderer {
     }
   }
 
+  /**
+   * Yüzen ada (Bingöl): kök ve turba gövdeli, üstü çimenli, kamışlı sazlık ada. Battıkça sallanır ve koyulaşır; gömülmeye az
+   * kala kabarcık çıkar; suyun altındayken yalnız soluk gölgesi ve kabarcıklar görünür. Hepsi saatten ve adanın hâlinden.
+   */
+  private drawIsland(b: Ctx, pl: { x: number; y: number; w: number; min: number; max: number; under?: number }, t: number) {
+    const sink = (pl.y - pl.min) / Math.max(1, pl.max - pl.min)
+    const x = Math.round(pl.x)
+    const y = Math.round(pl.y)
+    if (pl.under) {
+      b.globalAlpha = 0.35
+      rect(b, x + 1, y + 2, pl.w - 2, 5, '#1e4a3a')
+      b.globalAlpha = 1
+      for (let i = 0; i < 3; i++) {
+        const ph = (t * 1.6 + i * 0.33 + pl.x * 0.01) % 1
+        rect(b, x + 4 + ((i * 11) % Math.max(4, pl.w - 6)), Math.round(y - ph * 8), 2, 2, 'rgba(230,250,255,0.75)')
+      }
+      return
+    }
+    // sallantı: batarken iki yana yatar (saatle)
+    const wob = sink > 0.05 ? Math.round(Math.sin(t * 18) * sink * 1.5) : 0
+    // gövde suya gömülü: turba suyun içine dek iner (su yüzü adanın 4 px altında), altta su rengine karışan kök
+    rect(b, x - 1, y + 2, pl.w + 2, 9, 'rgba(14,20,24,0.35)')
+    rect(b, x, y + 1, pl.w, 7, sink > 0.6 ? '#4a3a26' : '#5e4a2e')
+    rect(b, x, y + 5, pl.w, 3, '#3a2c1c')
+    rect(b, x + 1, y + 8, pl.w - 2, 3, 'rgba(58,44,28,0.55)')
+    for (let i = 3; i < pl.w; i += 6) rect(b, x + i, y + 10, 1, 3, 'rgba(58,44,28,0.5)')
+    // su yüzünde adanın çevresinde ince köpük halkası
+    rect(b, x - 2, y + 4, 2, 1, 'rgba(230,250,255,0.7)')
+    rect(b, x + pl.w, y + 4, 2, 1, 'rgba(230,250,255,0.7)')
+    // çimen örtüsü
+    rect(b, x, y, pl.w, 2, sink > 0.6 ? '#4f8a3e' : '#6aae4a')
+    rect(b, x, y, pl.w, 1, '#9ad06a')
+    // kamış ve saz başları
+    for (let i = 2; i < pl.w - 1; i += 5) {
+      const h = 4 + ((i * 7 + x) % 4)
+      const lean = wob + (((i + x) % 3) - 1)
+      rect(b, x + i + Math.round(lean / 2), y - h, 1, h, '#5e9a3e')
+      if ((i + x) % 2 === 0) rect(b, x + i + lean, y - h - 2, 1, 3, '#7a5432')
+    }
+    // gömülmeye az kala kabarcık
+    if (sink > 0.7) for (let i = 0; i < 2; i++) rect(b, x + 3 + i * (pl.w - 8), y + 6 - Math.round(((t * 3 + i) % 1) * 4), 2, 1, 'rgba(230,250,255,0.8)')
+  }
+
   private drawEntities(b: Ctx, w: World) {
     const s = CITY[this.city]
     // platformlar
@@ -3177,6 +3320,10 @@ export class Renderer {
       }
       if (pl.axis === 'h') {
         this.drawHoron(b, pl)
+        continue
+      }
+      if (pl.axis === 'f') {
+        this.drawIsland(b, pl, w.clock)
         continue
       }
       if (pl.axis === 'o') {
@@ -3852,10 +3999,16 @@ export class Renderer {
       break
     }
     if (!any) return
+    // yüzeydeki yüzen adanın karesine su örtüsü çizilmez: ada suyun üstünde görünsün (gömülünce örtü yine çizilir)
+    let isl: Set<number> | null = null
+    if (w.hasFloat)
+      for (const pl of w.platforms)
+        if (pl.axis === 'f' && !pl.under) for (let k = Math.floor(pl.x / T); k < Math.ceil((pl.x + pl.w) / T); k++) (isl ??= new Set()).add(Math.floor(pl.min / T) * w.cols + k)
     c.save()
     for (let tx = x0; tx <= x1; tx++) {
       for (let ty = y0; ty <= y1; ty++) {
         if (w.tile(tx, ty) !== SWIM || w.isTide(tx, ty)) continue
+        if (isl?.has(ty * w.cols + tx)) continue
         const surface = w.tile(tx, ty - 1) !== SWIM
         const top = ty * T + (surface ? 6 : 0)
         c.fillStyle = 'rgba(70,180,200,0.34)'
@@ -3975,14 +4128,20 @@ export class Renderer {
     for (const e of w.enemies) if (e.alive && seen(e.x)) drawEnemy(c, enemySpecies(e.kind, this.city), e, X(e.x + e.w / 2), Y(e.y + e.h), sc, e.dir > 0 ? 1 : -1, t)
     // havuz teyzesi: dönmeden önce "Hı?", görünce "Aaaa!" (konuşma balonu başının üstünde)
     for (const e of w.enemies)
-      if (e.kind === 'aunt' && seen(e.x) && e.state !== 'idle') this.auntBubble(X(e.x + e.w / 2), Y(e.y) - sc * 6, e.state === 'charge' ? (this.lang === 'en' ? 'Eeek!' : 'Aaaa!') : (this.lang === 'en' ? 'Hm?' : 'Hı?'), e.state === 'charge')
+      if (e.kind === 'aunt' && seen(e.x) && e.state !== 'idle') {
+        // söz teyzeye ve döneme göre seçilir (bir bağırış boyunca aynı kalır); Memo'ya telefon sözü daha sık
+        const lines = e.state === 'charge' ? AUNT_SHOUT : AUNT_HM
+        let k = (Math.floor(e.ox / T) * 7 + Math.floor(w.clock / AUNT.turn)) % lines.length
+        if (e.state === 'charge' && this.character.id === 'memo' && k % 3 === 0) k = 2
+        this.auntBubble(X(e.x + e.w / 2), Y(e.y) - sc * 6, lines[k][this.lang === 'en' ? 1 : 0], e.state === 'charge')
+      }
   }
 
   /** teyzenin balonu: beyaz, mürekkep hatlı, kuyruğu aşağı; çığlıkta büyük ve titrek */
   private auntBubble(x: number, y: number, text: string, loud: boolean) {
     const c = this.ctx
     const sc = this.scale
-    const size = Math.round(sc * (loud ? 7 : 5.5))
+    const size = Math.round(sc * (loud ? 6.5 : 5.5))
     c.save()
     c.font = `800 ${size}px ${this.popFont()}`
     c.textAlign = 'center'
@@ -4872,11 +5031,12 @@ export class Renderer {
     const u = this.dpr
     const W = this.canvas.width
     const small = this.canvas.height / u < 520 || this.canvas.width / u < 500
-    const size = Math.round((small ? 12 : 14) * u)
-    const nameSize = Math.round((small ? 11 : 13) * u)
-    const pad = Math.round((small ? 8 : 10) * u)
-    const lh = Math.round(size * 1.38)
-    const maxW = Math.min(W - 24 * u, (small ? 250 : 320) * u)
+    // okunaklı: gövde 13/15 px, satır aralığı geniş, satır en çok ~42 harf
+    const size = Math.round((small ? 13 : 15) * u)
+    const nameSize = Math.round((small ? 11.5 : 13) * u)
+    const pad = Math.round((small ? 9 : 11) * u)
+    const lh = Math.round(size * 1.42)
+    const maxW = Math.min(W - 24 * u, (small ? 260 : 340) * u)
     const body = `400 ${size}px ${this.textFont()}`
     // satırlara böl (genişlik tam metne göre: yazı akarken baloncuk büyümez)
     c.font = body
@@ -4908,6 +5068,17 @@ export class Renderer {
     const hero = { x0: (pl.x - 4 - cx) * sc, x1: (pl.x + pl.w + 4 - cx) * sc, y0: (pl.y + pl.h - HERO_SIZE - 4 - cy) * sc, y1: (pl.y + pl.h - cy) * sc }
     const [bx, by] = placeBubble({ tipX, tipY, bw, bh, tail, W, H: this.canvas.height, top: 64 * u, edge: 12 * u, gap: 8 * u }, hero)
     const k = Math.min(1, (this.t - this.dlgAt) / 0.16)
+    // daktilo: saniyede ~130 harf; kutu yazılan satır kadar büyür (genişlik baştan tam: titremez, boş kâğıt kalmaz)
+    const typed = Math.floor((this.t - this.dlgAt) * 130)
+    let started = 0
+    for (let i = 0, at = 0; i < lines.length; i++) {
+      if (typed > at) started = i + 1
+      at += lines[i].length + 1
+    }
+    const shownH = Math.ceil(pad * 2 + head + Math.max(1, started) * lh - (lh - size))
+    // balon konuşanın üstündeyse alt kenarı sabit kalır (yukarı büyür), altındaysa üst kenarı
+    const above = tipY - tail > by + bh - 1
+    const top = above ? by + bh - shownH : by
     const sign = d.kind === 'sign'
     const fill = sign ? '#3a2a1e' : '#fffaf0'
     const line = sign ? '#c79a62' : '#22161f'
@@ -4917,7 +5088,7 @@ export class Renderer {
     // yumuşak gölge, sonra kâğıt ve kuyruk tek dış hatla
     c.fillStyle = 'rgba(10,6,20,0.28)'
     c.beginPath()
-    c.roundRect(bx + 3 * u, by + 4 * u, bw, bh, 7 * u)
+    c.roundRect(bx + 3 * u, top + 4 * u, bw, shownH, 9 * u)
     c.fill()
     c.lineJoin = 'round'
     c.lineWidth = Math.max(1.5, 2 * u)
@@ -4925,27 +5096,29 @@ export class Renderer {
     c.fillStyle = fill
     const tx = Math.max(bx + 14 * u, Math.min(bx + bw - 14 * u, tipX))
     c.beginPath()
-    c.roundRect(bx, by, bw, bh, 7 * u)
-    if (tipY - tail > by + bh && tipX > bx && tipX < bx + bw) {
-      c.moveTo(tx - 6 * u, by + bh - 1)
+    c.roundRect(bx, top, bw, shownH, 9 * u)
+    if (above && tipX > bx && tipX < bx + bw) {
+      c.moveTo(tx - 6 * u, top + shownH - 1)
       c.lineTo(tipX, tipY + Math.min(reach, 4 * u))
-      c.lineTo(tx + 6 * u, by + bh - 1)
+      c.lineTo(tx + 6 * u, top + shownH - 1)
     }
     c.stroke()
     c.fill()
     c.textAlign = 'left'
     c.textBaseline = 'top'
-    let y = by + pad
+    let y = top + pad
     if (d.name) {
       c.font = `700 ${nameSize}px ${this.popFont()}`
-      c.fillStyle = sign ? '#e8c890' : '#8a3a24'
+      c.fillStyle = sign ? '#f0d49a' : '#9a3e22'
       c.fillText(d.name, bx + pad, y)
+      // adın altında ince çizgi: ad ile söz ayrışır
+      c.fillStyle = sign ? 'rgba(240,212,154,0.25)' : 'rgba(154,62,34,0.18)'
+      c.fillRect(bx + pad, y + nameSize + 3 * u, bw - pad * 2, Math.max(1, u))
       y += head
     }
-    // daktilo: saniyede ~90 harf
-    let left = Math.floor((this.t - this.dlgAt) * 90)
+    let left = typed
     c.font = body
-    c.fillStyle = sign ? '#f4ead8' : '#2a2230'
+    c.fillStyle = sign ? '#fbf3e4' : '#221a28'
     for (const l of lines) {
       if (left <= 0) break
       c.fillText(l.slice(0, left), bx + pad, y)
@@ -5141,7 +5314,8 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   aydin: 'BALIKESİR',
   balikesir: 'ELAZIĞ',
   elazig: 'AFYON',
-  afyon: null,
+  afyon: 'BİNGÖL',
+  bingol: null,
 }
 
 function hexA(hex: string, a: number) {
@@ -5172,3 +5346,21 @@ function tideHash(a: number, b: number) {
   return (h ^ (h >>> 16)) >>> 0
 }
 
+/** havuz teyzesinin çığlık sözleri [TR, EN]: görünce bağırıp havlu fırlatırken (komik, kısa; balonda okunur) */
+const AUNT_SHOUT: [string, string][] = [
+  ['Aaaa! Bakma!', 'Eeek! Don’t look!'],
+  ['Bizi dikizleme!', 'Stop peeking at us!'],
+  ['Telefonu bırak!', 'Put that phone down!'],
+  ['Röntgenci misin?!', 'Are you a peeping Tom?!'],
+  ['Utanmaz! Al sana havlu!', 'Shameless! Have a towel!'],
+  ['Burası kadınlar havuzu!', 'This is the ladies’ pool!'],
+  ['Bone tak, bone!', 'Swim cap, please!'],
+  ['Çek o kamerayı!', 'Get that camera away!'],
+]
+/** dönmeden önceki şüphe sözleri [TR, EN] */
+const AUNT_HM: [string, string][] = [
+  ['Hı?', 'Hm?'],
+  ['Kim var orada?', 'Who’s there?'],
+  ['Bir ses mi geldi?', 'Did I hear something?'],
+  ['Kim o?', 'Who is it?'],
+]

@@ -56,7 +56,7 @@ import type { CbMode } from '@/game/colorBlind'
 import CbPreview from '@/components/CbPreview'
 import { World } from '@/game/sim'
 import { STORY, fill } from '@/game/story'
-import { emptyInput, type Fact } from '@/game/types'
+import { emptyInput } from '@/game/types'
 import { shareQuery } from '@/lib/share'
 import { bindCookie, pullMerge, pushSave, restorePlayer, syncBests, uploadGhost } from '@/lib/cloud'
 import { gezginFor, gezginKey, gezginTotal, CHALLENGE_TEXT, DAILY_RULES, completes, dailyChallenge, dailyRun, dailyScore, dailyTaken, dailyTryKey, ruleText, extraMissing, duelFirst, duelResult, duelScoreWith, travelerTitle, emptyStats, addStats, istanbulDay, liveStreak, markDaily, scarfFor, weeklyChallenge, type Challenge, type DailyRun, type DailyRule, type DuelRounds, type DuelRun, ruleKey, ruleFits, ruleLevel, ruleLimit, rushPlan, markTournament, markTrio, settleTrio, trioCount, trioParts, dailyBoss, dailyMini, swapPhase, tournamentWeek, RAGE_RULES, type RageRule } from '@/lib/extras'
@@ -153,6 +153,11 @@ const STEP = 1 / 120
 
 /** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
 const RELEASE_NOTES: Record<string, [string, string][]> = {
+  bingol: [
+    ['Yeni Şehir: Bingöl', 'Bin göl, Çır Şelalesi, arılı yayla ve Solhan’ın üstüne basınca batan yüzen adaları.'],
+    ['Okunur Yazılar', 'Konuşma balonları yazıldıkça büyür; hatıra, nazar ve checkpoint bildirimleri yenilendi.'],
+    ['Teyzeler Konuşuyor', 'Afyon’un havuz teyzeleri artık “Bizi dikizleme!”, “Telefonu bırak!” diye bağırıyor; kahvaltı büfesi de zenginleşti.'],
+  ],
   afyon: [
     ['Yeni Şehir: Afyon', 'Kara kayanın kalesi, Frig Vadisi ve termal otelin içi: döner kapı, açık büfe, buhar odası.'],
     ['Havuz Teyzeleri', 'Sıcak havuzdaki teyzeler sağa sola bakar; “Hı?” derse dönecek. Görürse “Aaaa!” deyip havlu fırlatır: sırtı dönükken geç ya da dal.'],
@@ -275,7 +280,8 @@ export default function Game() {
   const [save, setSave] = useState<Save>(defaultSave)
   const [hud, setHud] = useState<HudState>(EMPTY_HUD)
   const [tutStep, setTutStep] = useState<TutorialStep | null>(null)
-  const [cpToast, setCpToast] = useState<{ at: number; text: string; delta?: number | null } | null>(null)
+  /** üstteki kısa şerit: bayrak (flag: Checkpoint başlığı ve ara süre) ya da düz bilgi notu */
+  const [cpToast, setCpToast] = useState<{ at: number; text: string; delta?: number | null; flag?: boolean } | null>(null)
   /** Tek Can / Bayraksız / süre sınırı: koşu şehrin başına dönünce ekranın ortasında nedenini söyleyen kart */
   const [resetCard, setResetCard] = useState<{ at: number; title: string; text: string } | null>(null)
   // hesap ekranı: üye ol / giriş sekmesi (başlık ona göre) ve çıkış onayı
@@ -287,7 +293,8 @@ export default function Game() {
   /** Hikâye Gezisi: konuşulan şehir insanı (-1: konuşma yok); konuşurken dünya donar */
   const [talkNpc, setTalkNpc] = useState<number>(-1)
   const talkRef = useRef(-1)
-  const [toast, setToast] = useState<(Fact & { item: string; key: number }) | null>(null)
+  /** bulunan şeyin bildirimi: tür (simge ve başlık), alt yazı (bilginin başlığı), hatırada kaçıncı olduğu */
+  const [toast, setToast] = useState<{ kind: 'item' | 'stamp' | 'charm'; head: string; sub: string; count?: string; key: number } | null>(null)
   const [quip, setQuip] = useState<{ text: string; key: number } | null>(null)
   /** boss uyandı, henüz vurulmadı: nasıl yenileceği üç adımda görünür */
   const [coach, setCoach] = useState(false)
@@ -554,7 +561,8 @@ export default function Game() {
             case 'collect': {
               tutRef.current.got = true
               const lv = localize(w.level, langRef.current)
-              setToast({ ...lv.facts[e.index], item: lv.item, key: Date.now() })
+              const got = w.pickups.filter((q) => q.taken).length
+              setToast({ kind: 'item', head: makeT(langRef.current)('{item} Bulundu', { item: lv.item }), sub: lv.facts[e.index]?.title ?? '', count: `${got}/${w.pickups.length}`, key: Date.now() })
               haptic([12, 40, 12])
               break
             }
@@ -605,14 +613,14 @@ export default function Game() {
               // Tek Can / Bayraksız: bayrak kayıt tutmaz; oyuncu bayrağı görünce bunu bilsin
               const md = modeRef.current
               const dr = md?.kind === 'daily' ? DAILY_RULES[md.run.rule] : null
-              if (dr?.oneLife || dr?.noFlags) setCpToast({ at: Date.now(), text: makeT(langRef.current)(dr.oneLife ? 'Tek Can: bu bayrak seni kurtarmaz, düşersen şehrin başına dönersin.' : 'Bayraksız: bayraklar çalışmıyor, düşersen şehrin başına dönersin.') })
-              else setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0], delta })
+              if (dr?.oneLife || dr?.noFlags) setCpToast({ at: Date.now(), flag: true, text: makeT(langRef.current)(dr.oneLife ? 'Tek Can: bu bayrak seni kurtarmaz, düşersen şehrin başına dönersin.' : 'Bayraksız: bayraklar çalışmıyor, düşersen şehrin başına dönersin.') })
+              else setCpToast({ at: Date.now(), text: langRef.current === 'en' ? m[1] : m[0], delta, flag: true })
               break
             }
             case 'stamp': {
               haptic([30, 40, 30, 40, 60])
               const lv = localize(w.level, langRef.current)
-              setToast({ ...lv.secret, item: makeT(langRef.current)('Gizli Pul'), key: Date.now() })
+              setToast({ kind: 'stamp', head: makeT(langRef.current)('Gizli Pul Bulundu!'), sub: lv.secret.title, key: Date.now() })
               // modlarda ve özel haritada bulunan şey deftere yazılmaz (kart "ilerlemen değişmez" diyor; kilitli şehir de gelebilir)
               if (modeRef.current || customRef.current) break
               setSave((prev) => {
@@ -625,7 +633,7 @@ export default function Game() {
             case 'charm': {
               haptic([20, 30, 20, 30, 50])
               const tr = makeT(langRef.current)
-              setToast({ title: tr('Nazar Boncuğu'), text: tr('Gezgin’in çantasından düşmüş. Her şehirde bir tane saklı; bulana nazar değmez.'), item: tr('Gizli Bulgu'), key: Date.now() })
+              setToast({ kind: 'charm', head: tr('Nazar Boncuğu Bulundu!'), sub: tr('Bulana nazar değmez.'), key: Date.now() })
               if (modeRef.current || customRef.current) break
               setSave((prev) => {
                 const next = { ...prev, charms: { ...prev.charms, [w.level.id]: true } }
@@ -2478,20 +2486,22 @@ export default function Game() {
           {quip && (
             // ölünce şehrin lafı: oynanış alanında değil, üstte HUD'ın altında; küçük ve soluk (yeniden doğuşu kapatmaz)
             <div key={quip.key} className="pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+62px)] z-10 flex justify-center px-4">
-              <p className="rise font-display text-[13px] text-cream/75 [text-shadow:0_1px_0_#0e0d22,0_0_8px_#0e0d22] sm:text-sm">{quip.text}</p>
+              <p className="rise max-w-[min(90vw,420px)] rounded-full bg-[#17142f]/75 px-3 py-1 text-center font-display text-[14px] leading-snug text-cream/95 shadow-[0_2px_0_rgba(0,0,0,0.3)] ring-1 ring-white/10">{quip.text}</p>
             </div>
           )}
           {toast && (
+            // bulunan şey: sakin kart (yuvarlak köşe, ince altın çerçeve), simgesi kendi türünde; iki satır, okunaklı ama küçük
             <div key={toast.key} className="toast-strip pointer-events-none absolute inset-x-0 top-[calc(var(--safe-top)+58px)] z-10 flex justify-center px-4">
-              <p className="flex max-w-[92vw] items-center gap-2 bg-ink/85 py-1.5 pl-1.5 pr-3 text-[13px] text-cream [box-shadow:0_-2px_0_0_#d9a441,0_2px_0_0_#d9a441,-2px_0_0_0_#d9a441,2px_0_0_0_#d9a441] sm:text-[13px]">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#221f4a]">
-                  <ItemIcon city={level.city} taken size={20} />
+              <div className="flex max-w-[min(92vw,420px)] items-center gap-2.5 rounded-xl bg-[#17142f]/90 py-1.5 pl-1.5 pr-3 text-left shadow-[0_3px_0_rgba(0,0,0,0.35)] ring-1 ring-gold/55">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2a2552] ring-1 ring-gold/30">
+                  {toast.kind === 'item' ? <ItemIcon city={level.city} taken size={24} /> : <ThingIcon kind={toast.kind} taken size={24} />}
                 </span>
-                <span className="truncate">
-                  <strong className="font-display text-gold">{toast.item === 'Gizli Pul' ? 'Gizli Pul Bulundu!' : `${toast.item} Bulundu`}</strong>
-                  <span className="text-muted"> · {toast.title}</span>
+                <span className="min-w-0">
+                  <span className="block truncate font-display text-[15px] leading-tight text-gold">{toast.head}</span>
+                  {toast.sub && <span className="block truncate text-[13px] leading-snug text-cream/80">{toast.sub}</span>}
                 </span>
-              </p>
+                {toast.count && <span className="ml-0.5 shrink-0 rounded-full bg-gold/15 px-2 py-0.5 font-mono text-[12px] font-bold tabular-nums text-gold">{toast.count}</span>}
+              </div>
             </div>
           )}
           {coach && (
@@ -2518,20 +2528,28 @@ export default function Game() {
             </div>
           )}
           {cpToast && Date.now() - cpToast.at < 3200 && (
-            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(var(--safe-top)+100px)]' : 'top-[calc(var(--safe-top)+60px)]'}`}>
-              {/* sakin şerit: yarı saydam, solda ince kırmızı çizgi; göze batmaz, oynanışı kapatmaz */}
-              <div className="max-w-[min(88vw,380px)] border-l-2 border-[#e30a17] bg-ink/60 px-3 py-1.5 text-left backdrop-blur-[2px]">
-                <p className="flex items-center gap-1.5 font-display text-[13px] text-cream/90">
-                  <span className="text-[#e30a17]">⚑</span> {t("Checkpoint")}
-                  {cpToast.delta != null && (
-                    <span className={`ml-auto pl-3 font-mono text-[13px] font-bold tabular-nums ${cpToast.delta <= 0 ? 'text-[#7ad88a]' : 'text-[#f08a80]'}`} title={t('Rekor Koşuya Göre')}>
-                      {cpToast.delta <= 0 ? '−' : '+'}
-                      {(Math.abs(cpToast.delta) / 1000).toFixed(2)}
+            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(var(--safe-top)+112px)]' : 'top-[calc(var(--safe-top)+60px)]'}`}>
+              {cpToast.flag ? (
+                // bayrak: küçük kart, solda kırmızı bayrak rozeti; başlık + ara süre, altında şehrin sözü (okunaklı, soluk değil)
+                <div className="flex max-w-[min(90vw,400px)] items-start gap-2.5 rounded-xl bg-[#17142f]/85 py-1.5 pl-1.5 pr-3 text-left shadow-[0_3px_0_rgba(0,0,0,0.3)] ring-1 ring-[#e30a17]/55">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e30a17] font-display text-[14px] text-white">⚑</span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2 font-display text-[14px] leading-tight text-cream">
+                      {t('Checkpoint')}
+                      {cpToast.delta != null && (
+                        <span className={`rounded-full px-1.5 font-mono text-[12px] font-bold tabular-nums ${cpToast.delta <= 0 ? 'bg-[#7ad88a]/15 text-[#8ee49c]' : 'bg-[#f08a80]/15 text-[#f6a198]'}`} title={t('Rekor Koşuya Göre')}>
+                          {cpToast.delta <= 0 ? '−' : '+'}
+                          {(Math.abs(cpToast.delta) / 1000).toFixed(2)}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </p>
-                <p className="text-[13px] italic leading-snug text-gold/85 [text-wrap:balance]">{cpToast.text}</p>
-              </div>
+                    <span className="block text-[13px] leading-snug text-cream/85 [text-wrap:pretty]">{cpToast.text}</span>
+                  </span>
+                </div>
+              ) : (
+                // düz bilgi notu (kural, baştan başlama, mod): başlıksız, sakin
+                <p className="max-w-[min(90vw,440px)] rounded-xl bg-[#17142f]/80 px-3 py-1.5 text-center text-[13px] leading-snug text-cream/90 shadow-[0_3px_0_rgba(0,0,0,0.3)] ring-1 ring-white/10 [text-wrap:balance]">{cpToast.text}</p>
+              )}
             </div>
           )}
           {customRef.current?.story && talkNpc < 0 && npc >= 0 && level.npcs[npc] && (
@@ -2981,9 +2999,10 @@ export default function Game() {
                     aria-label={t('Şehir ara (ad ya da plaka)')}
                     className="city-search w-full px-3 py-1.5 text-[14px] text-cream placeholder:text-muted"
                   />
-                  <div className="strip-fade -mx-1 flex gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:[mask-image:none]" role="group" aria-label={t('Süzgeç')}>
+                  {/* dört süzgeç düzenli ızgarada: geniş yerde tek satır, dar panelde 2×2; yazı kesilmez, tek çip alta kaymaz */}
+                  <div className="grid grid-cols-2 gap-1.5 min-[1700px]:grid-cols-4" role="group" aria-label={t('Süzgeç')}>
                     {CITY_FILTERS.map(([k, label]) => (
-                      <button key={k} type="button" className="mode-filter shrink-0 whitespace-nowrap" aria-pressed={cityFilter === k} onClick={() => setCityFilter(k)}>
+                      <button key={k} type="button" className="mode-filter min-w-0 whitespace-nowrap text-center" aria-pressed={cityFilter === k} onClick={() => setCityFilter(k)}>
                         {t(label)}
                       </button>
                     ))}

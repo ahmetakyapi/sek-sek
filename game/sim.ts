@@ -130,6 +130,14 @@ export function auntFacing(clock: number, offset: number, mirror = false): { dir
   return { dir: d as 1 | -1, left: AUNT.turn - (t - k * AUNT.turn) }
 }
 
+/**
+ * Yüzen ada (`+`, Bingöl'ün Solhan'daki yüzen adaları): suyun yüzünde duran sazlık ada. Üstünde duran oyuncuyla `rate` px/sn
+ * batar; `depth` piksel batınca suya gömülür (`under` saniye üstüne basılmaz, oyuncu suya düşer), sonra `rise` px/sn ile yüzeye
+ * çıkar. Kimse yokken yavaşça yerine döner. Yani bir adada en çok `depth / rate` saniye durulur: adadan adaya durmadan geçilir.
+ * Batmaya başlayınca sallanır, gömülmeden önce kabarcık çıkar (render).
+ */
+export const SINK = { rate: 11, depth: 11, under: 1.5, rise: 26 }
+
 /** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
 export const PERFECT_SPRING = 1.22
 
@@ -293,8 +301,10 @@ export interface Player extends Box {
 }
 
 export interface Platform extends Box {
-  /** x/y: gidip gelir · o: çember çizer (sema) · b: binince yükselen balon · h: horon halkası (ritimle zıplar) */
-  axis: 'x' | 'y' | 'o' | 'b' | 'h'
+  /** x/y: gidip gelir · o: çember çizer (sema) · b: binince yükselen balon · h: horon halkası (ritimle zıplar) · f: yüzen ada (basınca batar) */
+  axis: 'x' | 'y' | 'o' | 'b' | 'h' | 'f'
+  /** yüzen ada: suyun altında kalacağı süre (sn); 0 ise yüzeyde (üstüne basılır) */
+  under?: number
   /** çember için merkez, yarıçap, başlangıç açısı */
   cx?: number
   cy?: number
@@ -505,6 +515,8 @@ export class World {
   hasFrost = false
   /** haritada yükselen hava var mı */
   hasLift = false
+  /** haritada yüzen ada var mı */
+  hasFloat = false
   /** donduğu an oyuncunun içinde kalan donan su karoları: oyuncu çıkana dek su */
   readonly frostHold = new Set<number>()
   private frostLast = -1
@@ -732,6 +744,9 @@ export class World {
           case 'n':
             this.npcs.push({ x: px, y: py, w: T, h: T, index: 0 })
             break
+          case '+':
+            this.hasFloat = true
+          // falls through
           case 'M':
           case 'N':
           case 'O':
@@ -741,7 +756,9 @@ export class World {
             if (row[tx - 1] === ch) break // aynı platformun devamı
             let n = 1
             while (row[tx + n] === ch) n++
-            const plat = this.makePlatform(map, tx, ty, n, ch === 'M' ? 'x' : ch === 'N' ? 'y' : ch === 'O' ? 'o' : ch === 'H' || ch === 'J' ? 'h' : 'b')
+            const plat = this.makePlatform(map, tx, ty, n, ch === 'M' ? 'x' : ch === 'N' ? 'y' : ch === 'O' ? 'o' : ch === 'H' || ch === 'J' ? 'h' : ch === '+' ? 'f' : 'b')
+            // yüzen ada suyun içinde yüzer: altındaki satır suysa adanın karoları da sudur (gölün yüzü adayla aynı satırda)
+            if (ch === '+') for (let k = 0; k < n; k++) if ('W'.includes(map[ty + 1]?.[tx + k] ?? '')) this.set(tx + k, ty, SWIM)
             if (ch === 'J') {
               plat.dance = 'kocari'
               plat.min = plat.max - KOCARI.lift
@@ -878,6 +895,10 @@ export class World {
     if (axis === 'h') {
       // horon: kol kola oyuncuların elleri; hepsi aynı ritimde zıplar
       return { x, y, w, h: 6, axis, min: y - HORON.lift, max: y, dir: 1, speed: 0, dx: 0, dy: 0 }
+    }
+    if (axis === 'f') {
+      // yüzen ada: karonun üst kenarından 4 px aşağıda yüzer (su yüzüyle aynı hizada), basınca batar
+      return { x, y: y + 4, w, h: 8, axis, min: y + 4, max: y + 4 + SINK.depth, dir: 1, speed: SINK.rate, dx: 0, dy: 0, under: 0 }
     }
     if (axis === 'b') {
       let u = ty - 1
@@ -1218,6 +1239,7 @@ export class World {
       if (pl.axis === 'x') pad(pl.min, pl.y, pl.max + pl.w, pl.y + pl.h)
       else if (pl.axis === 'y') pad(pl.x, pl.min, pl.x + pl.w, pl.max + pl.h)
       else if (pl.axis === 'o' && pl.cx !== undefined && pl.cy !== undefined && pl.r !== undefined) pad(pl.cx - pl.r, pl.cy - pl.r, pl.cx + pl.r + pl.w, pl.cy + pl.r + pl.h)
+      else if (pl.axis === 'f') pad(pl.x, pl.min, pl.x + pl.w, pl.max + pl.h, 3 * T, 4 * T, 3 * T)
       else pad(pl.x, pl.y - HORON.lift - 6 * T, pl.x + pl.w, pl.y + pl.h)
     }
     for (const h of this.hammers) pad(h.x - T, h.top, h.x + 2 * T, h.bottom, 2 * T, T, 2 * T)
@@ -1257,6 +1279,28 @@ export class World {
     const p = this.player
     this.clock += dt
     for (const pl of this.platforms) {
+      if (pl.axis === 'f') {
+        // yüzen ada: basılıyken batar, gömülünce bir süre suyun altında kalır, sonra çıkar
+        const ridden = !p.dead && p.onPlatform === pl
+        let ny = pl.y
+        if (pl.under! > 0) {
+          pl.under = Math.max(0, pl.under! - dt)
+          ny = pl.max
+        } else if (ridden) {
+          ny = Math.min(pl.max, pl.y + SINK.rate * dt)
+          if (ny >= pl.max) {
+            pl.under = SINK.under
+            p.onPlatform = null
+            p.grounded = false
+            this.events.push({ type: 'sink', x: pl.x + pl.w / 2, y: pl.y })
+          }
+        } else ny = Math.max(pl.min, pl.y - SINK.rise * dt)
+        pl.dx = 0
+        pl.dy = ny - pl.y
+        pl.y = ny
+        if (ridden && p.onPlatform === pl) p.y = pl.y - p.h
+        continue
+      }
       if (pl.axis === 'o' || pl.axis === 'b' || pl.axis === 'h') {
         let nx = pl.x
         let ny = pl.y
@@ -1784,6 +1828,8 @@ export class World {
       }
       for (const pl of this.platforms) {
         if (x + p.w <= pl.x || x >= pl.x + pl.w) continue
+        // suya gömülmüş yüzen adaya basılmaz
+        if (pl.under) continue
         const top = pl.y
         if (prevBottom <= top + Math.max(1, Math.abs(pl.dy) + 1) && bottom >= top) {
           const cand = top - p.h
@@ -2530,6 +2576,11 @@ export class World {
       c.timer = 0
     }
     for (const pl of this.platforms) if (pl.axis === 'b') pl.y = pl.max
+    for (const pl of this.platforms)
+      if (pl.axis === 'f') {
+        pl.y = pl.min
+        pl.under = 0
+      }
     for (const c of this.crates) Object.assign(c, { x: c.ox, y: c.oy, vy: 0, sunk: 0 })
     this.projectiles = []
     this.crumbles.clear()
@@ -2571,7 +2622,7 @@ function shrink(b: Box, n: number): Box {
 /* ── Anlık görüntü (çözücü ve testler için) ─────────────────── */
 export interface Snapshot {
   player: Omit<Player, 'onPlatform'> & { onPlatform: number }
-  platforms: Array<Pick<Platform, 'x' | 'y' | 'dir' | 'dx' | 'dy'>>
+  platforms: Array<Pick<Platform, 'x' | 'y' | 'dir' | 'dx' | 'dy' | 'under'>>
   crumbles: Array<[number, CrumbleState]>
   time: number
   complete: boolean
@@ -2598,7 +2649,7 @@ export function snapshot(w: World): Snapshot {
   const { onPlatform, ...rest } = w.player
   return {
     player: { ...rest, dashDir: [...rest.dashDir] as [number, number], onPlatform: onPlatform ? w.platforms.indexOf(onPlatform) : -1 },
-    platforms: w.platforms.map((p) => ({ x: p.x, y: p.y, dir: p.dir, dx: p.dx, dy: p.dy })),
+    platforms: w.platforms.map((p) => ({ x: p.x, y: p.y, dir: p.dir, dx: p.dx, dy: p.dy, under: p.under })),
     crumbles: [...w.crumbles].map(([k, v]) => [k, { ...v }]),
     time: w.time,
     complete: w.complete,

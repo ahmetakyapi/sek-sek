@@ -105,39 +105,43 @@ describe('şehir başına harita sürümü', () => {
 
   it('sonradan eklenen şehirler yeni şehir olarak listelenir', () => {
     const s = normalizeSave({ mapVersion: 7, migrated: true, unlocked: 20, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
-    expect(mapNews(s).added.sort()).toEqual(['afyon', 'agri', 'amasya', 'artvin', 'aydin', 'balikesir', 'bitlis', 'denizli', 'elazig', 'eskisehir', 'giresun', 'hatay', 'karabuk', 'kars', 'kayseri', 'mersin', 'mugla', 'rize', 'tokat', 'zonguldak'])
+    expect(mapNews(s).added.sort()).toEqual(['afyon', 'agri', 'amasya', 'artvin', 'aydin', 'balikesir', 'bingol', 'bitlis', 'denizli', 'elazig', 'eskisehir', 'giresun', 'hatay', 'karabuk', 'kars', 'kayseri', 'mersin', 'mugla', 'rize', 'tokat', 'zonguldak'])
     // sürüm 8'den gelen oyuncuya yalnız son eklenen iki şehir yenidir
     const s8 = normalizeSave({ mapVersion: 8, unlocked: 27, best: { izmir: { timeMs: 60000, deaths: 1, items: [true, false, false] } } })
-    expect(mapNews(s8).added.sort()).toEqual(['afyon', 'agri', 'amasya', 'artvin', 'aydin', 'balikesir', 'bitlis', 'denizli', 'elazig', 'giresun', 'karabuk', 'kars', 'mersin', 'mugla', 'rize', 'tokat', 'zonguldak'])
+    expect(mapNews(s8).added.sort()).toEqual(['afyon', 'agri', 'amasya', 'artvin', 'aydin', 'balikesir', 'bingol', 'bitlis', 'denizli', 'elazig', 'giresun', 'karabuk', 'kars', 'mersin', 'mugla', 'rize', 'tokat', 'zonguldak'])
     // eski sırada son şehir (Bayburt) açıktı: kimliğiyle yeni sıradaki yerine taşınır
     expect(LEVELS[s8.unlocked].id).toBe('bayburt')
     // sürüm 9'dan gelen, Bayburt'u bitirmiş oyuncuya ikinci defterin ilk şehri açılır
     const s9 = normalizeSave({ mapVersion: 9, unlocked: 29, best: { bayburt: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s9).added.sort()).toEqual(['afyon', 'agri', 'artvin', 'aydin', 'balikesir', 'bitlis', 'denizli', 'elazig', 'giresun', 'karabuk', 'kars', 'mersin', 'rize', 'tokat', 'zonguldak'])
+    expect(mapNews(s9).added.sort()).toEqual(['afyon', 'agri', 'artvin', 'aydin', 'balikesir', 'bingol', 'bitlis', 'denizli', 'elazig', 'giresun', 'karabuk', 'kars', 'mersin', 'rize', 'tokat', 'zonguldak'])
     expect(LEVELS[s9.unlocked].id).toBe('rize')
     // sürüm 10'dan gelen, Ağrı'yı bitirmiş oyuncuya dönüş yolunun ilk şehri (Giresun) açılır
     const s10 = normalizeSave({ mapVersion: 10, unlocked: 34, best: { agri: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s10).added.sort()).toEqual(['afyon', 'aydin', 'balikesir', 'denizli', 'elazig', 'giresun', 'karabuk', 'mersin', 'tokat', 'zonguldak'])
+    expect(mapNews(s10).added.sort()).toEqual(['afyon', 'aydin', 'balikesir', 'bingol', 'denizli', 'elazig', 'giresun', 'karabuk', 'mersin', 'tokat', 'zonguldak'])
     // sürüm 11'den gelen, Denizli'yi bitirmiş oyuncuya Zonguldak açılır
     const s11 = normalizeSave({ mapVersion: 11, unlocked: 37, best: { denizli: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s11).added).toEqual(['zonguldak', 'mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon'])
+    expect(mapNews(s11).added).toEqual(['zonguldak', 'mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon', 'bingol'])
     expect(LEVELS[s11.unlocked].id).toBe('zonguldak')
     // sürüm 12'den gelen, Zonguldak'ı bitirmiş oyuncuya Mersin açılır
     const s12 = normalizeSave({ mapVersion: 12, unlocked: 38, best: { zonguldak: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s12).added).toEqual(['mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon'])
+    expect(mapNews(s12).added).toEqual(['mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon', 'bingol'])
     expect(LEVELS[s12.unlocked].id).toBe('mersin')
     // sürüm 13'ten gelen, Mersin'i bitirmiş oyuncuya Karabük açılır
     const s13 = normalizeSave({ mapVersion: 13, unlocked: 39, best: { mersin: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s13).added).toEqual(['karabuk', 'aydin', 'balikesir', 'elazig', 'afyon'])
+    expect(mapNews(s13).added).toEqual(['karabuk', 'aydin', 'balikesir', 'elazig', 'afyon', 'bingol'])
     expect(LEVELS[s13.unlocked].id).toBe('karabuk')
     // sürüm 14'ten gelen, Aydın'ı bitirmiş oyuncuya Balıkesir açılır
     const s14 = normalizeSave({ mapVersion: 14, unlocked: 41, best: { aydin: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s14).added).toEqual(['balikesir', 'elazig', 'afyon'])
+    expect(mapNews(s14).added).toEqual(['balikesir', 'elazig', 'afyon', 'bingol'])
     expect(LEVELS[s14.unlocked].id).toBe('balikesir')
     // sürüm 15'ten gelen, Elazığ'ı bitirmiş oyuncuya Afyon açılır
     const s15 = normalizeSave({ mapVersion: 15, unlocked: 43, best: { elazig: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
-    expect(mapNews(s15).added).toEqual(['afyon'])
+    expect(mapNews(s15).added).toEqual(['afyon', 'bingol'])
     expect(LEVELS[s15.unlocked].id).toBe('afyon')
+    // sürüm 16'dan gelen, Afyon'u bitirmiş oyuncuya Bingöl açılır
+    const s16 = normalizeSave({ mapVersion: 16, unlocked: 44, best: { afyon: { timeMs: 90000, deaths: 0, items: [true, true, true] } } })
+    expect(mapNews(s16).added).toEqual(['bingol'])
+    expect(LEVELS[s16.unlocked].id).toBe('bingol')
     expect(LEVELS[s10.unlocked].id).toBe('giresun')
     expect(mapNews(defaultSave())).toEqual({ renewed: [], added: [] })
   })

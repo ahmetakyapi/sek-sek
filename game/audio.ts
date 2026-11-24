@@ -9,13 +9,32 @@ import { SCALES, cityTheme, titleTheme, type Inst, type NoteEvent, type Song } f
  * önbellek; uzun notada tremolo). Tek adımlar hafif geç çalar (swing). Her çalgının stereoda yeri, oda yankısı payı ve
  * tempoya bağlı sağ-sol sekişen yankı (noktalı sekizlik) payı var. Boss uyanınca altta sakin bir dövüş katmanı (usule
  * basan davul, durakta pedal bas, kanunda 3+3+2 ostinato) birkaç saniyede kabarır, bitince söner; molada müzik süzgeçle
- * boğuklaşır. Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
+ * boğuklaşır. Müzik yolu: ton (çamur kesilir, varlık açılır) → bant doygunluğu → yapıştırıcı sıkıştırma → kendi tepe
+ * sınırlayıcısı → efekt çalınca ~3 dB eğilen yan zincir. Döngünün tek turlarında ezgi başka çalgıda gelir (`pass`).
+ * Efektler müzikteki piyanoyla aynı tınıda, şehrin makamında.
  */
 
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
 
-/** müziğin genel sesi (efektlerin altında kalır) */
+/** müziğin genel sesi (efektlerin altında kalır); yapıştırıcı sıkıştırmadan sonraki telafi kazancı ayrı */
 const MUSIC_VOL = 0.36
+const MUSIC_MAKEUP = 0.85
+
+/** efekt çalarken müziğin eğildiği kazanç (yan zincir, ~-3 dB) */
+const SFX_DUCK = 0.7
+
+/** bant doygunluğu eğrisi: küçük seste doğrusal, büyükte yumuşakça doyar (tanh); sert kırpma yok */
+function tapeCurve() {
+  const n = 1024
+  const c = new Float32Array(n)
+  const k = 1.6
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1
+    // hafif bakışımsızlık (+0,04): çift harmonik, sıcaklık; ortası sıfırda kalsın diye kaydırma geri alınır
+    c[i] = (Math.tanh(k * (x + 0.04)) - Math.tanh(k * 0.04)) / Math.tanh(k)
+  }
+  return c
+}
 
 /** müzik açıkken tiz kesimi: ney nefesi ve kanun tırnağı kulağı yormasın (molada 700 Hz'e iner) */
 const MUFFLE_OPEN = 9500
@@ -23,9 +42,11 @@ const MUFFLE_OPEN = 9500
 /**
  * Çalgı başına düzeltme: bestedeki ses payları (music.ts) olduğu gibi kalır, karışım burada dengelenir. Ölçüm (audio-render +
  * audio-render-analiz.py): bas, ezgiden çok baskındı (güç %65-75'i 120 Hz altında); alt bas kısılıp ezgi çalgıları öne alındı,
- * küçük hoparlörde duyulmayan alt notalar ikinci harmonikle taşınır.
+ * küçük hoparlörde duyulmayan alt notalar ikinci harmonikle taşınır. İkinci ölçüm (24 Kasım 2026, çalgı başına tek tek):
+ * piyano tek başına karışımın tepesini belirliyor (tepe/RMS 21 dB), kanun (-49 LUFS), dem (-43), kenar vuruşu (-53) ve zil
+ * (-62) neredeyse duyulmuyordu: ritim ve doku kayboluyor, müzik sönük ve tekdüze geliyordu. Piyano kısıldı, onlar açıldı.
  */
-const TRIM: Record<Inst, number> = { ney: 1.5, kanun: 1.4, keys: 1.5, pad: 1.25, sub: 0.5, kick: 0.85, rim: 1, hat: 0.85, tom: 1 }
+const TRIM: Record<Inst, number> = { ney: 1.2, kanun: 3.2, keys: 1.2, pad: 3.4, sub: 0.6, kick: 1.15, rim: 2.6, hat: 4.2, tom: 1.2 }
 
 /** efektlerin müziğe göre payı: kısa ve seyrek oldukları için müzikten birkaç dB yukarıda durur */
 const SFX_TRIM = 2
@@ -61,6 +82,10 @@ export class Sound {
   private ac: AudioContext | null = null
   private master: GainNode | null = null
   private musicGain: GainNode | null = null
+  /** efekt çalarken müziği hafifçe eğen kazanç ve efekt yolunun ölçeri (yan zincir) */
+  private sfxDuck: GainNode | null = null
+  private sfxMeter: AnalyserNode | null = null
+  private meterBuf: Float32Array<ArrayBuffer> | null = null
   /** molada müziği boğuklaştıran süzgeç */
   private muffle: BiquadFilterNode | null = null
   /** efektlerin yolu: alçak geçiren süzgeç (sert, bip gibi tiz harmonikler kesilir) */
@@ -109,7 +134,8 @@ export class Sound {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
       if (!AC) return
       this.ac = new AC()
-      // ana çıkış: yumuşak sınırlayıcı (çok ses üst üste binince patlamasın)
+      // ana çıkış: yumuşak sınırlayıcı (çok ses üst üste binince patlamasın). Eşiği efektlerin bugünkü sesini belirler
+      // (sıkıştırıcının kendi telafi kazancı eşiğe bağlı): değiştirme; müziğin tepesi kendi sınırlayıcısında tutulur
       const limiter = this.ac.createDynamicsCompressor()
       limiter.threshold.value = -6
       limiter.knee.value = 4
@@ -142,19 +168,55 @@ export class Sound {
       this.sfxBus.connect(sv)
       sv.connect(this.sfxVerb)
       this.sfxVerb.connect(this.sfxGain)
-      // müzik: ses düzeyi → (molada) süzgeç → hafif sıkıştırma → ana çıkış; yankı da ses düzeyinden geçer
+      // müzik: ses düzeyi → (molada) süzgeç → ton (çamur kesilir, varlık açılır) → bant doygunluğu → yapıştırıcı
+      // sıkıştırma → müziğin kendi tepe sınırlayıcısı → efekt çalınca hafifçe eğilen kazanç → ana çıkış. Müzik ana
+      // sınırlayıcıya kendi başına dayanmaz: efektler hep üstte, pompalanmadan duyulur. Yankı da ses düzeyinden geçer.
+      this.sfxDuck = this.ac.createGain()
+      this.sfxDuck.connect(this.master)
+      const peak = this.ac.createDynamicsCompressor()
+      peak.threshold.value = -9
+      peak.knee.value = 3
+      peak.ratio.value = 20
+      peak.attack.value = 0.002
+      peak.release.value = 0.12
+      peak.connect(this.sfxDuck)
       const comp = this.ac.createDynamicsCompressor()
-      comp.threshold.value = -20
-      comp.knee.value = 14
-      comp.ratio.value = 2.5
-      comp.attack.value = 0.02
-      comp.release.value = 0.3
-      comp.connect(this.master)
+      comp.threshold.value = -26
+      comp.knee.value = 10
+      comp.ratio.value = 3
+      comp.attack.value = 0.008
+      comp.release.value = 0.25
+      const makeup = this.ac.createGain()
+      makeup.gain.value = MUSIC_MAKEUP
+      comp.connect(makeup)
+      makeup.connect(peak)
+      // bant doygunluğu: yumuşak tanh eğrisi, vuruşların sivri tepesini yuvarlar, alt-ortaya sıcak çift harmonik katar
+      const tape = this.ac.createWaveShaper()
+      tape.curve = tapeCurve()
+      tape.oversample = '2x'
+      tape.connect(comp)
+      // ton: 280 Hz çevresindeki çamur biraz kısılır (bas, dem ve piyano üst üste binince bulanıyordu), 3,2 kHz üstü
+      // hafif açılır (ney nefesi, kanun teli, zil: "sönük" duyuluyordu); sert tiz yine muffle süzgecinde kesilir
+      const mud = this.ac.createBiquadFilter()
+      mud.type = 'peaking'
+      mud.frequency.value = 280
+      mud.Q.value = 0.9
+      mud.gain.value = -3.5
+      const air = this.ac.createBiquadFilter()
+      air.type = 'highshelf'
+      air.frequency.value = 2500
+      air.gain.value = 4.5
+      mud.connect(air)
+      air.connect(tape)
       this.muffle = this.ac.createBiquadFilter()
       this.muffle.type = 'lowpass'
       this.muffle.Q.value = 0.5
       this.muffle.frequency.value = MUFFLE_OPEN
-      this.muffle.connect(comp)
+      this.muffle.connect(mud)
+      // efekt yolunu dinleyen ölçer: efekt çalarken müzik ~3 dB eğilir (yan zincir), efekt bitince geri gelir
+      this.sfxMeter = this.ac.createAnalyser()
+      this.sfxMeter.fftSize = 1024
+      this.sfxBus.connect(this.sfxMeter)
       this.musicGain = this.ac.createGain()
       this.musicGain.gain.value = this._musicOn ? MUSIC_VOL * this._musicVol : 0
       this.musicGain.connect(this.muffle)
@@ -162,7 +224,13 @@ export class Sound {
       this.reverb.buffer = this.impulse(2.6)
       const wet = this.ac.createGain()
       wet.gain.value = 0.42
-      this.reverb.connect(wet)
+      // yankının dönüşünde pesler kesilir: bas ve demin kuyruğu alt-ortayı bulandırmasın, oda yalnız ezgiyi sarsın
+      const wetHp = this.ac.createBiquadFilter()
+      wetHp.type = 'highpass'
+      wetHp.frequency.value = 220
+      wetHp.Q.value = 0.6
+      this.reverb.connect(wetHp)
+      wetHp.connect(wet)
       wet.connect(this.musicGain)
       // sağ-sol sekişen yankı: sol gecikme → sağ gecikme → sola geri; her dönüşte tizler biraz söner
       this.echoIn = this.ac.createGain()
@@ -485,6 +553,10 @@ export class Sound {
         // havuz teyzesi: "Aaaa!" diye çığlık (ünlü tınısında ses, titrek), ardından havlunun savruluşu
         this.scream(now)
         return this.noise(0.22, 0.05, 1400, now + 0.35, 0.6, 'lowpass')
+      case 'sink':
+        // yüzen ada gömüldü: pes bir "blop" ve kabarcık hışırtısı
+        this.tone(180 * vary, 0.18, 'sine', 0.06, -90, now)
+        return this.noise(0.35, 0.03, 600, now + 0.05, 0.6, 'lowpass')
       case 'freeze':
         // su donuyor: tiz, çıtırdayan kısa buz sesi ve makamdan tiz bir çan
         this.noise(0.25, 0.03, 3200, now, 0.4, 'lowpass')
@@ -669,19 +741,38 @@ export class Sound {
       this.nextTime = this.ac.currentTime + 0.12
       return
     }
+    this.followSfx()
     while (this.nextTime < this.ac.currentTime + 0.3) {
       // giriş bir kez çalar; döngü bestenin döndüğü yerden sürer
       const n = this.stepIdx
       const i = n < song.length ? n : song.loop + ((n - song.loop) % (song.length - song.loop))
+      // döngünün kaçıncı turu: tek turlarda ezgi başka çalgıda gelir (bestedeki `pass`)
+      const pass = n < song.length ? 0 : Math.floor((n - song.loop) / (song.length - song.loop)) % 2
       // lo-fi sallantısı: tek adımlar biraz geç çalar
       const t = this.nextTime + (i % 2 ? song.swing * song.step : 0)
-      for (const e of song.byStep[i]) this.voice(e, t, song.step)
+      for (const e of song.byStep[i]) if (e.pass === undefined || e.pass === pass) this.voice(e, t, song.step)
       // dövüş katmanı ~3 sn'de kabarır, ~2 sn'de söner
       this.heat = this.intense ? Math.min(1, this.heat + song.step / 3) : Math.max(0, this.heat - song.step / 2)
       if (this.heat > 0 && song.pulse.length) this.battle(i, t, song)
       this.nextTime += song.step
       this.stepIdx++
     }
+  }
+
+  /**
+   * Yan zincir: efekt yolunun o anki gücüne bakar (zamanlayıcıyla, ~50 ms'de bir); efekt duyuluyorsa müzik hızla ~3 dB
+   * eğilir, susunca yavaşça geri gelir. Müzik dolgunlaştı ama zıplama, toplama gibi kısa efektler yine üstte kalır.
+   */
+  private followSfx() {
+    const ac = this.ac
+    const meter = this.sfxMeter
+    if (!ac || !meter || !this.sfxDuck) return
+    this.meterBuf ??= new Float32Array(meter.fftSize)
+    meter.getFloatTimeDomainData(this.meterBuf)
+    let sum = 0
+    for (let k = 0; k < this.meterBuf.length; k++) sum += this.meterBuf[k] * this.meterBuf[k]
+    const busy = this.sfxOn && Math.sqrt(sum / this.meterBuf.length) > 0.006
+    this.sfxDuck.gain.setTargetAtTime(busy ? SFX_DUCK : 1, ac.currentTime, busy ? 0.03 : 0.4)
   }
 
   /**
@@ -821,19 +912,23 @@ export class Sound {
         g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.6)
         lp.connect(g)
         g.connect(out)
+        // akortsuz sesler sağa ve sola açılır: dem ortada değil, odanın iki yanından sarar (geniş, sıcak yatak)
+        const sides = [-0.55, 0, 0.55].map((pan) => {
+          const sg2 = ac.createGain()
+          sg2.gain.value = 1 / (e.midi.length * 3)
+          sg2.connect(pan ? this.spread(lp, pan) : lp)
+          return sg2
+        })
         for (const n of e.midi) {
-          for (const det of [-8, 0, 8]) {
+          ;[-9, 0, 9].forEach((det, k) => {
             const o = ac.createOscillator()
             o.type = 'triangle'
             o.frequency.value = mtof(n)
             o.detune.value = det
-            const og = ac.createGain()
-            og.gain.value = 1 / (e.midi.length * 3)
-            o.connect(og)
-            og.connect(lp)
+            o.connect(sides[k])
             o.start(t)
             o.stop(t + dur + 0.65)
-          }
+          })
         }
         return
       }
@@ -844,9 +939,11 @@ export class Sound {
         const dest = single ? this.spread(out, ((e.midi[0] % 12) - 5.5) / 5.5 * 0.28) : out
         const g = ac.createGain()
         const ring = Math.max(0.6, dur * 1.1)
+        // akorda vuruş biraz yumuşak (dört ses birden sivri bir tepe yapıyordu), tek notada çekiç belirgin
+        const atk = single ? 0.01 : 0.022
         g.gain.setValueAtTime(0.0001, t)
-        g.gain.linearRampToValueAtTime(vol, t + 0.012)
-        g.gain.exponentialRampToValueAtTime(vol * 0.45, t + 0.35)
+        g.gain.linearRampToValueAtTime(vol, t + atk)
+        g.gain.exponentialRampToValueAtTime(vol * 0.5, t + 0.35)
         g.gain.exponentialRampToValueAtTime(0.0001, t + ring + 0.4)
         const trem = ac.createOscillator()
         trem.frequency.value = 4.2 + w * 0.9
@@ -857,16 +954,16 @@ export class Sound {
         // yumuşak basılan nota daha boğuk, güçlüsü biraz parlak (piyanonun doğası)
         const lp = ac.createBiquadFilter()
         lp.type = 'lowpass'
-        const top = Math.min(4200, 1300 + vol * 8000)
+        const top = Math.min(5200, 1800 + vol * 9000)
         lp.frequency.setValueAtTime(top, t)
-        lp.frequency.exponentialRampToValueAtTime(Math.max(700, top * 0.4), t + 0.7)
+        lp.frequency.exponentialRampToValueAtTime(Math.max(900, top * 0.45), t + 0.7)
         g.connect(lp)
         lp.connect(dest)
         const nodes: OscillatorNode[] = [trem]
         for (const n of e.midi) {
           const f = mtof(n)
           const og = ac.createGain()
-          og.gain.value = 1 / Math.max(1, e.midi.length * 0.8)
+          og.gain.value = 1 / Math.max(1, e.midi.length * 1.05)
           for (const [det, amp] of [[-3, 1], [4, 0.5]] as const) {
             const o = ac.createOscillator()
             o.setPeriodicWave(this.wave('rhodes'))
@@ -899,7 +996,8 @@ export class Sound {
         return
       }
       case 'sub': {
-        // sıcak alt bas: yuvarlak sinüs, kısa yumuşak giriş
+        // sıcak alt bas: yuvarlak sinüs gövde + üçgen ikinci harmonik (küçük hoparlörde de duyulur); harmonik, parmakla
+        // çekilmiş tel gibi parlak girip çabucak yumuşar (süzgeç kapanır): bas notası kıpırdar, uğuldamaz
         const f = mtof(e.midi[0])
         const o = ac.createOscillator()
         o.type = 'sine'
@@ -908,16 +1006,23 @@ export class Sound {
         h.type = 'triangle'
         h.frequency.value = f * 2
         const hg = ac.createGain()
-        hg.gain.value = 0.28
+        hg.gain.value = 0.4
+        const hl = ac.createBiquadFilter()
+        hl.type = 'lowpass'
+        hl.Q.value = 0.7
+        hl.frequency.setValueAtTime(Math.min(1400, f * 9), t)
+        hl.frequency.exponentialRampToValueAtTime(Math.max(160, f * 3), t + 0.25)
         const g = ac.createGain()
         const end = Math.max(0.3, dur)
         g.gain.setValueAtTime(0.0001, t)
-        g.gain.linearRampToValueAtTime(vol, t + 0.03)
-        g.gain.setValueAtTime(vol, t + end * 0.6)
+        g.gain.linearRampToValueAtTime(vol, t + 0.02)
+        g.gain.exponentialRampToValueAtTime(vol * 0.78, t + 0.3)
+        g.gain.setValueAtTime(vol * 0.78, t + Math.max(0.3, end * 0.6))
         g.gain.exponentialRampToValueAtTime(0.0001, t + end + 0.1)
         o.connect(g)
         h.connect(hg)
-        hg.connect(g)
+        hg.connect(hl)
+        hl.connect(g)
         g.connect(out)
         for (const x of [o, h]) {
           x.start(t)

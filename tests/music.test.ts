@@ -93,6 +93,17 @@ describe('müzik', () => {
     expect(Math.max(...a.events.map((e) => e.vol))).toBeLessThanOrEqual(0.3)
   })
 
+  it.each(LEVELS.map((l) => [l.city] as const))('%s: döngünün ikinci turunda ezgi başka çalgıda gelir (tekrar duygusu azalır)', (city) => {
+    const a = cityTheme(city)
+    const marked = a.events.filter((e) => e.pass !== undefined)
+    // tura bağlı olaylar yalnız döngüde (giriş bir kez çalar), iki tur da dolu ve ikisinde ezgi başka çalgıda
+    expect(marked.every((e) => e.at >= a.loop)).toBe(true)
+    const inst = (p: 0 | 1) => new Set(marked.filter((e) => e.pass === p).map((e) => e.inst))
+    expect(inst(0).size).toBeGreaterThan(0)
+    expect(inst(1).has('kanun')).toBe(true)
+    expect(inst(0).has('kanun')).toBe(false)
+  })
+
   it('jenerik: giriş bir kez çalar, 64 ölçülük döngü A-B-A-B · nefes · C-A-B · nefes akar', () => {
     const s = titleTheme()
     expect(s.loop).toBe(4 * 8)

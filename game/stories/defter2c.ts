@@ -1,6 +1,6 @@
 import { talk, type Talk } from './types'
 
-/** İkinci defterin uzayan yolu: Balıkesir, Elazığ, Afyon */
+/** İkinci defterin uzayan yolu: Balıkesir, Elazığ, Afyon, Bingöl */
 export const DEFTER2C: Record<string, Talk> = {
   'Höşmerimci Ekrem Usta': talk(
     ['Hoş geldin {rol}! Kazanı bırakamam, höşmerim dibini tutarsa küser. Bir kaşık tat, sonra konuşalım.', 'Welcome, {rol}! I cannot leave the pot; if the höşmerim catches on the bottom it sulks. Have a spoonful, then we talk.'],
@@ -25,7 +25,7 @@ export const DEFTER2C: Record<string, Talk> = {
     [
       [['Orcik nasıl yapılır?', 'How is orcik made?'], ['Cevizi ipe dizer, kaynamış şıraya batırır, kurutur, yine batırırız. Her kat bir gün ister. Kat kat sabır, sonunda dişe tatlı bir zırh olur.', 'We string the walnuts, dip them in boiled grape must, dry them, then dip them again. Every layer takes a day. Layer upon layer of patience becomes, in the end, a sweet armour for the teeth.']],
       [['Orcikler sizden kaçtı mı yoksa?', 'Did the orcik run away from you?'], ['İpe dizili oldukları için kaçamazlar sanıyordum! Rüzgâr ipi kaptı; biri kaleye, biri minareye, biri de mağaraya gitti. Mağaradaki dondu herhalde, buz orcik olur.', 'I thought they could not run off, being on a string! The wind grabbed the string; one went to the castle, one to the minaret, one to the cave. The one in the cave must be frozen by now, ice orcik.']],
-      [['Harput sizin için ne demek?', 'What does Harput mean to you?'], ['Kürsübaşında anlatılan hikâyeler demek. Kış gecesi mangal yanar, büyükler anlatır, çocuklar orcik yer. Ben o çocuklardan biriydim, şimdi anlatanlardanım.', 'It means the stories told by the fireside. On a winter night the brazier burns, the elders tell tales and the children eat orcik. I was one of those children; now I am one of the tellers.']],
+      [['Harput sizin için ne demek?', 'What does Harput mean to you?'], ['Ocak başında anlatılan hikâyeler demek. Kış gecesi mangal yanar, büyükler anlatır, çocuklar orcik yer. Ben o çocuklardan biriydim, şimdi anlatanlardanım.', 'It means the stories told by the fireside. On a winter night the brazier burns, the elders tell tales and the children eat orcik. I was one of those children; now I am one of the tellers.']],
     ],
     [['Orcikçinin Defteri', 'The Orcik Maker’s Page'], ['İyi şey bir günde olmaz, kat kat olur. Defterine yaz: bugün bir kat, yarın bir kat; sonunda sağlam bir tatlı. Elazığ’da kışı orcikle, sohbetle geçirirsin.', 'Good things are not made in a day, they are made layer by layer. Write it: a layer today, a layer tomorrow; in the end a sturdy sweet. In Elazığ you pass the winter with orcik and conversation.']],
   ),
@@ -55,5 +55,23 @@ export const DEFTER2C: Record<string, Talk> = {
       [['Bu işi sevdiniz mi?', 'Do you like this job?'], ['Severim. Kapıda herkesin yüzünü görürüm: içeri yorgun girer, dışarı yumuşamış çıkar. Su insanı değiştiriyor; ben de o değişime kapı açıyorum.', 'I do. At the door I see everyone’s face: they come in tired and leave softened. The water changes people; I just open the door to that change.']],
     ],
     [['Görevlinin Defteri', 'The Doorman’s Page'], ['Her kapının bir kuralı vardır, her kuralın da bir nedeni. Defterine yaz: kuralı sorarak öğren, nedenini dinleyerek sev. Afyon’da sıcak suya telefonsuz girilir; bir saatliğine dünya bekleyebilir.', 'Every door has a rule, and every rule a reason. Write it: learn the rule by asking, love it by hearing why. In Afyon you enter the hot water without a phone; the world can wait an hour.']],
+  ),
+  'Balcı Cemşit Usta': talk(
+    ['Hoş geldin {rol}! Bir kaşık bal al, dilinin ucunda dağ çiçekleri açsın. Bingöl’ün balı aceleye gelmez, ben de gelmem.', 'Welcome, {rol}! Take a spoonful of honey and let the mountain flowers bloom on your tongue. Bingöl honey cannot be rushed, and neither can I.'],
+    [
+      [['Arılar sizi hiç sokmuyor mu?', 'Do the bees never sting you?'], ['Sokarlar elbet, ama sebepsiz değil. Kovanı yavaş açar, onlarla konuşur gibi çalışırım. Arı telaşı sevmez; telaşlı insan sokulur, sakin insan bal yer.', 'Of course they sting, but never without reason. I open the hive slowly and work as if talking to them. Bees dislike fuss; the fussy get stung, the calm get honey.']],
+      [['Kavanozlar adaya nasıl gitti, yüzerek mi?', 'How did the jars get to the island, did they swim?'], ['Bir ayı kaçırdı onları! Kovandan kovana dolaşır, kavanozu görünce aklı başından gider. Adada da durmamış, ada batınca kaçmış. Sen de durma, yoksa sen de batarsın.', 'A bear ran off with them! It wanders hive to hive and loses its head at the sight of a jar. It did not stay on the island either; when the island sank, it fled. Do not stop, or you will sink too.']],
+      [['Bu kovanlar kaç yıllık?', 'How old are these hives?'], ['Bazıları dedemden kaldı. Tahtası değişti, arısı değişti, ama yeri hep aynı yamaç. Arı yolunu unutmaz; insan unutur, arıya bakıp hatırlar.', 'Some came from my grandfather. The wood has changed, the bees have changed, but the slope is always the same. A bee never forgets its way; people forget, and remember by watching the bees.']],
+    ],
+    [['Balcının Defteri', 'The Beekeeper’s Page'], ['Tatlı olan sabırla birikir, damla damla. Defterine yaz: bin çiçekten bir kaşık; acele eden hiçbirine konamaz. Bingöl’de bal, dağın sabrıdır.', 'Sweetness gathers with patience, drop by drop. Write it: a thousand flowers for one spoonful; whoever hurries lands on none. In Bingöl honey is the patience of the mountain.']],
+  ),
+  'Yaylacı Zelal Nine': talk(
+    ['Gel kuzum, ayran soğuk, gölge serin! Yaylaya çıkan yorulur ama geri inmek istemez; sen de istemeyeceksin.', 'Come, little lamb, the ayran is cold and the shade is cool! Whoever climbs to the pasture grows tired but never wants to come down; neither will you.'],
+    [
+      [['Bingöl’de gerçekten bin göl var mı?', 'Are there really a thousand lakes in Bingöl?'], ['Ben gençken saymaya başladım; yüzü geçince bıraktım, çünkü her yağmurdan sonra yenisi çıkıyordu! Bin dediler, ben de inandım. Saymak değil, görmek güzel.', 'I started counting when I was young; after a hundred I gave up, because a new one appeared after every rain! They said a thousand, and I believed them. It is seeing that is lovely, not counting.']],
+      [['Şelaleye çıkmak zor mu, nine?', 'Is climbing the waterfall hard, grandma?'], ['Benim dizlerimle zor, seninkilerle oyun! Kayadan kayaya sek, ıslak taşa basarken yavaş ol. Ben gençken bir solukta çıkardım, şimdi bakmakla yetiniyorum.', 'With my knees it is hard, with yours it is a game! Bounce from rock to rock and go easy on the wet stone. When I was young I climbed it in one breath; now I am happy just to look.']],
+      [['Yayla size ne öğretti?', 'What has the pasture taught you?'], ['Az şeyle mutlu olmayı. Bir çadır, bir ocak, bir sürü koyun ve uzakta parıldayan göller. İnsan yükünü azaltınca dağa kolay çıkar.', 'To be happy with little. A tent, a hearth, a flock of sheep and lakes shining in the distance. When you lighten your load, the mountain is easy to climb.']],
+    ],
+    [['Ninenin Yayla Sayfası', 'Grandma’s Pasture Page'], ['Göl de insan da sakin kalınca gökyüzünü gösterir. Defterine yaz: telaşlı su bulanır, durgun su yansıtır. Bingöl’de her göl bir ayna, her ayna bir dua.', 'A lake, like a person, shows the sky when it stays calm. Write it: hurried water clouds, still water reflects. In Bingöl every lake is a mirror and every mirror a prayer.']],
   ),
 }
