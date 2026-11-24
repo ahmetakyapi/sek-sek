@@ -22,12 +22,14 @@ const CLIPS = process.env.TEL ? [
   ['jenerik-dongu', 224, `s.playTheme()`],
   ['istanbul', 50, `s.setMusic('istanbul')`],
   ['trabzon', 18, `s.setMusic('trabzon')`],
+  ['balikesir', 14, `s.setMusic('balikesir')`],
+  ['elazig', 14, `s.setMusic('elazig')`],
   // bütün döngü: giriş, A, A', B, A'', nefes, C, A4, B', nefes ve A'ya dönüş (tremolo, yankı, geciktirmeler)
   ['van-dongu', 250, `s.setMusic('van')`],
   // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
   ['erzurum-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
-  ['efektler', 38, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown','grab','swim','ui','key','pet','crystal','warp','perfect','nitro','switch','breath','drown','beat','shoot']; names.forEach((n,i)=>setAt(0.5+i,()=>s.sfx(n)))`],
+  ['efektler', 40, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown','grab','swim','ui','key','pet','crystal','warp','perfect','nitro','switch','breath','drown','beat','shoot','freeze','thaw']; names.forEach((n,i)=>setAt(0.5+i,()=>s.sfx(n)))`],
 ]
 ;(async () => {
   let bad = 0

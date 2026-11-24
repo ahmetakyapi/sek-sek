@@ -24,8 +24,8 @@ import { PHYS, SPIKE_DOWN, SPIKE_UP, WATER, World, hammerState, restore, snapsho
 import { T, emptyInput, type LevelDef } from '../game/types'
 import { holdPlates, macros, runMacro, solve, type Macro } from './solver'
 
-/** bot bu durumlardan karar verir: yerde, halatta/teleferikte asılı ya da suda (çözücüyle aynı) */
-const rest = (p: { grounded: boolean; hang: number; swim: boolean }) => p.grounded || p.hang !== 0 || p.swim
+/** bot bu durumlardan karar verir: yerde, halatta/teleferikte asılı, suda ya da yükselen havada (çözücüyle aynı) */
+const rest = (p: { grounded: boolean; hang: number; swim: boolean; lift: boolean }) => p.grounded || p.hang !== 0 || p.swim || p.lift
 
 const DT = 1 / 120
 /** hamle başına en çok gecikme (sn): insanın tuşa geç basma payı */

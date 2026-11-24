@@ -948,6 +948,26 @@ export function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: 
       c.fillRect(x + 2 * u, y + 4 * u, 4 * u, u)
       c.fillRect(x + 10 * u, y + 4 * u, 4 * u, u)
       break
+    case 'Z':
+      // donan su: üst yarısı buz, alt yarısı su
+      c.fillStyle = '#3fa9b8'
+      c.fillRect(x, y, s, s)
+      c.fillStyle = '#9fd4ec'
+      c.fillRect(x, y, s, 8 * u)
+      c.fillStyle = '#e8f8ff'
+      c.fillRect(x, y, s, 2 * u)
+      c.fillRect(x + 3 * u, y + 4 * u, 2 * u, 2 * u)
+      break
+    case 'V':
+      // yükselen hava: sıcak, yarı saydam sütun ve yukarı oklar
+      c.fillStyle = 'rgba(255,224,160,0.35)'
+      c.fillRect(x, y, s, s)
+      c.fillStyle = '#f2c14e'
+      for (const dx of [4, 11]) {
+        c.fillRect(x + dx * u, y + 4 * u, u, 9 * u)
+        c.fillRect(x + (dx - 1) * u, y + 5 * u, 3 * u, u)
+      }
+      break
     case 'b':
       c.fillStyle = look.cream
       c.fillRect(x, y + 3 * u, s, u)

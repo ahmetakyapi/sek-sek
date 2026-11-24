@@ -137,6 +137,8 @@ const COORDS: Record<string, [number, number]> = {
   mersin: [34.63, 36.81],
   karabuk: [32.62, 41.2],
   aydin: [27.84, 37.85],
+  balikesir: [27.88, 39.65],
+  elazig: [39.22, 38.67],
 }
 
 const W = 640

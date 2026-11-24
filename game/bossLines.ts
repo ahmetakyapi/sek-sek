@@ -44,6 +44,8 @@ export const BOSS_LINES: Record<CityKey, { wake: [string, string]; tired: [strin
   denizli: { wake: ['Ü-ürü-üüüü!', 'Cock-a-doodle-doooo!'], tired: ['Sesim kısıldı…', 'I have lost my voice…'], ouch: ['İbiğim!', 'My comb!'] },
   mersin: { wake: ['Üzüm ister misin?', 'Fancy some grapes?'], tired: ['Kabuğum soyuldu…', 'I am shedding…'], ouch: ['Kuyruğum düğüm oldu!', 'My tail is in a knot!'] },
   karabuk: { wake: ['Vuruş sırası bende!', 'The strike is mine!'], tired: ['Soğudum… nefesim çıkmıyor…', 'I have cooled… out of breath…'], ouch: ['Sapım gıcırdadı!', 'My handle creaked!'] },
+  balikesir: { wake: ['Balık mı getirdin?', 'Did you bring fish?'], tired: ['Gagam yoruldu…', 'My beak is tired…'], ouch: ['Kesem boşaldı!', 'My pouch is empty!'] },
+  elazig: { wake: ['Mevsim döndü!', 'The season has turned!'], tired: ['Eriyorum…', 'I am melting…'], ouch: ['Buzum çatladı!', 'My ice cracked!'] },
   aydin: { wake: ['Bana bakma!', 'Do not look at me!'], tired: ['Saçlarım düğüm oldu…', 'My hair is in knots…'], ouch: ['Yılanlarım!', 'My snakes!'] },
   zonguldak: { wake: ['Damarımdan uzak dur!', 'Keep away from my seam!'], tired: ['Kömür tozu… boğuldum…', 'Coal dust… choking…'], ouch: ['Elmasım çatladı!', 'My diamond cracked!'] },
   agri: { wake: ['Çığ geliyor!', 'Avalanche!'], tired: ['Eriyorum…', 'I am melting…'], ouch: ['Buzum çatladı!', 'My ice cracked!'] },

@@ -255,3 +255,17 @@ describe('boss tasarımı boss\'suz haritada', () => {
     expect(withDesign).toBe(plain)
   })
 })
+
+describe('donan su (Z) ve yükselen hava (V) karoları', () => {
+  it('kodda yer alır, kod gidip gelir; eski kodların anlamı değişmez', () => {
+    const map = SAMPLE_MAP.map((r, y) => (y >= 20 ? r.slice(0, 12) + 'ZZZZ' + r.slice(16) : y >= 14 && y < 20 ? r.slice(0, 30) + 'VV' + r.slice(32) : r))
+    expect(validateMap(map)).toBeNull()
+    const back = decodeMap(encodeMap(map, 'elazig'))
+    expect('error' in back).toBe(false)
+    if (!('error' in back)) {
+      expect(back.map).toEqual(map)
+      expect(back.city).toBe('elazig')
+    }
+    expect(SYMBOLS.indexOf('A')).toBeLessThan(SYMBOLS.indexOf('V'))
+  })
+})

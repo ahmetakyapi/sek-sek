@@ -139,6 +139,10 @@ export const SCALES: Record<CityKey, Makam> = {
   aydin: { root: 52, steps: [0,  1,  3,  4,  7,  8,  10,  12], meter: [2,  2,  2,  3], tempo: 0.18 },
   // Hüseyni, dağ havası 9/8 (Ağrı)
   agri: { root: 57, steps: [0,  2,  3,  5,  7,  9,  10,  12], meter: [2,  2,  2,  3], tempo: 0.15 },
+  // Uşşak, ağır zeybek 9/8 (Balıkesir)
+  balikesir: { root: 55, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.19 },
+  // Kürdi, Harput havası 7/8 (Elazığ)
+  elazig: { root: 50, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.17 },
 }
 
 // ── ortak araçlar ─────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 export const T = 16
 
-export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis' | 'zonguldak' | 'mersin' | 'karabuk' | 'aydin'
+export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis' | 'zonguldak' | 'mersin' | 'karabuk' | 'aydin' | 'balikesir' | 'elazig'
 
 export interface Fact {
   title: string
@@ -119,6 +119,8 @@ export type GameEvent =
   | { type: 'crystal' }
   | { type: 'nitro' }
   | { type: 'beat' }
+  | { type: 'freeze' }
+  | { type: 'thaw' }
   | { type: 'perfect' }
   | { type: 'key' }
   | { type: 'stamp' }

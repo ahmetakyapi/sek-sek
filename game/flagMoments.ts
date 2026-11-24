@@ -248,6 +248,18 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Didim’de bir yılan saçlı baş taştan bakıyor.', 'At Didyma a snake-haired head stares from the stone.'],
     ['Tünelin içinden su sesi geliyor.', 'The sound of water drifts out of the tunnel.'],
   ],
+  balikesir: [
+    ['Şeytan Sofrası’nda biri dilek tutup para attı.', 'Someone makes a wish and drops a coin at Şeytan Sofrası.'],
+    ['Kaz Dağları’ndan çam ve kekik kokusu geliyor.', 'The scent of pine and thyme drifts down from the Kaz Mountains.'],
+    ['Fırından taze höşmerim çıktı.', 'Fresh höşmerim comes out of the oven.'],
+    ['Bir pelikan kanat çırpmadan süzülüyor.', 'A pelican glides by without a single flap.'],
+  ],
+  elazig: [
+    ['Harput’ta bir kürsübaşı sohbeti başladı.', 'A fireside gathering begins in Harput.'],
+    ['Eğri minare bugün de eğri.', 'The leaning minaret is still leaning today.'],
+    ['Mağarada buz çıtırdıyor.', 'Ice crackles in the cave.'],
+    ['Hazar’ın üstünde bir balıkçı ağ atıyor.', 'A fisherman casts his net over Hazar.'],
+  ],
   agri: [
     ['Sarayın kapısında taş işlemeler.', 'Carved stone at the palace gate.'],
     ['Kaval sesi yamaçtan geliyor.', 'A kaval sounds from the slope.'],

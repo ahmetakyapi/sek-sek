@@ -434,6 +434,14 @@ export class Sound {
         // gelgit dönüyor: dalga hışırtısı ve makamdan bir çan (yükselecekse tiz, çekilecekse pes)
         this.noise(0.9, 0.03, 900, now, 0.5, 'lowpass')
         return this.chime(this.scaleNote(name === 'tideUp' ? 4 : 0, name === 'tideUp' ? 1 : 0), 0.05, now + 0.15, 0.7)
+      case 'freeze':
+        // su donuyor: tiz, çıtırdayan kısa buz sesi ve makamdan tiz bir çan
+        this.noise(0.25, 0.03, 3200, now, 0.4, 'lowpass')
+        return this.chime(this.scaleNote(7, 1), 0.04, now + 0.05, 0.5)
+      case 'thaw':
+        // buz eriyor: yumuşak su şırıltısı ve pes bir çan
+        this.noise(0.5, 0.03, 700, now, 0.5, 'lowpass')
+        return this.chime(this.scaleNote(0, 0), 0.04, now + 0.1, 0.6)
       case 'bite':
         // Kangal havlar: iki kısa, inen "hav"
         this.tone(220 * vary, 0.09, 'triangle', 0.095, -90, now)

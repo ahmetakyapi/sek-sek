@@ -25,6 +25,8 @@ import { road as denizliRoad } from './cities/denizli'
 import { road as zonguldakRoad } from './cities/zonguldak'
 import { road as mersinRoad } from './cities/mersin'
 import { road as aydinRoad } from './cities/aydin'
+import { road as balikesirRoad } from './cities/balikesir'
+import { road as elazigRoad } from './cities/elazig'
 import { road as karabukRoad } from './cities/karabuk'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
@@ -1120,6 +1122,8 @@ const DECOR_CYCLE: Record<string, string> = {
   mersin: 'tlz',
   aydin: 'ltz',
   karabuk: 'ltz',
+  balikesir: 'tlz',
+  elazig: 'zlt',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2427,6 +2431,74 @@ export const LEVELS: LevelDef[] = [
       'Nysa’nın tüneli: önce soldaki plakaya bas, kapı açılır; ikinci plaka öbür kapıyı açar. Geniş odada sandığı duvarın dibine it, üstüne çık.',
     ],
     map: roadMap(aydinRoad),
+  },
+  {
+    id: 'balikesir',
+    city: 'balikesir',
+    name: 'Balıkesir',
+    nickname: 'Karesi',
+    plate: 10,
+    subtitle: 'Termal, Zeytin ve Kuşlar',
+    difficulty: 'Zor',
+    note: 'Defterin bu sayfasında bir martı tüyü kurumuş, kenarı zeytinyağından yarı saydam. Balıkesir’de güneş taşı ısıtır, sıcak hava yükselir: kuşlar kanat çırpmadan süzülür. Bu yolda yere değil göğe bak, rüzgârın seni nereye taşıdığını izle.',
+    npcs: [
+      { name: 'Höşmerimci Ekrem Usta', look: 'usta', text: 'Höşmerimimi tereyağında, sabırla karıştırırım! Üç kâse höşmerim kayboldu: biri Şeytan Sofrası’nın uçurum taşında, biri Hasanboğuldu şelalesinin tepesinde, biri de Kuşcenneti’nde leylek yuvasında kaldı.' },
+      { name: 'Zeytinci Melahat Teyze', look: 'teyze', text: 'Ayvalık’ın taşı öğlen güneşinde fırın gibi olur. Taşın ısıttığı hava yükselir, tüyler, yapraklar uçuşur: içine gir, seni taşır. İnmek istersen aşağı bas, yavaşça süzülürsün.' },
+      { name: 'Paraşütçü Doruk', look: 'genc', text: 'Kaz Dağları’nda kanatsız uçulur, yeter ki havayı oku! Termalin tepesinde asılı kalırsın, oradan yana atla. Şelalenin arkasındaki kayaya bir bak: suyun ardında karanlık bir ağız var, içinde biri bir pul unutmuş.' },
+      { name: 'Kuş Bekçisi Şerafettin', look: 'amca', text: 'Kuşcenneti’nde pelikanlar kanat çırpmaz, havada süzülür. Gölün suyu derin ve soğuk, düşen çıkamaz: sazlığın üstündeki sıcak havadan havaya geç. Meydan kapısı gözlem kulesinin ardında.' },
+    ],
+    medals: [170, 230, 310],
+    quips: ['Termal seni bıraktı.', 'Pelikan güldü.', 'Höşmerimin soğudu.', 'Rüzgâr yön değiştirdi.'],
+    item: 'Höşmerim',
+    intro: 'Ayvalık’ta Şeytan Sofrası’ndan Kaz Dağları’nda Hasanboğuldu şelalesine, Balıkesir’in Saat Kulesi’nden Manyas’ta Kuşcenneti’ne. Bu yolda yükselen sıcak hava seni taşır: kanatsız uçmayı öğren.',
+    facts: [
+      { title: 'Kuşcenneti', text: 'Manyas Gölü kıyısındaki Kuşcenneti Milli Parkı, göç yolunun üstündedir: burada yüzlerce kuş türü görülür, Dalmaçyalı pelikan da kuluçkaya yatar.' },
+      { title: 'Kaz Dağları', text: 'Kaz Dağları antik çağın İda Dağı’dır. Efsaneye göre Paris, altın elmayı burada Afrodit’e verdi; Troya Savaşı’nın kıvılcımı bu dağda çaktı.' },
+      { title: 'Şeytan Sofrası', text: 'Ayvalık’taki Şeytan Sofrası tepesinde kayada büyük bir ayak izi vardır. Efsaneye göre şeytanın izidir; gelenler dilek tutup içine bozuk para atar, gün batımı da buradan izlenir.' },
+    ],
+    secret: { title: 'Hasanboğuldu', text: 'Kaz Dağları’ndaki Hasanboğuldu’nun adı bir aşk efsanesinden gelir: Emine’ye kavuşmak isteyen Hasan, göletin suyunda boğulmuş. Şelalenin serin suyu bugün de o hikâyeyi anlatır.' },
+    hints: [
+      'Balıkesir’e hoş geldin! Sıcak taşın üstünde hava yükselir: tüylerin uçuştuğu sütuna gir, seni yukarı taşır. Aşağı basarsan süzülüp inersin.',
+      'Şeytan Sofrası: uçurumun taşlarına termallerle çık. Termalin tepesinde asılı kal, sonra yana atla.',
+      'Kaz Dağları: Hasanboğuldu şelalesi yüksek. Termalden termale geç, duvardan sekerek kayalara tutun.',
+      'Saat Kulesi: fırın bacalarından sıcak hava yükselir. Hareketli tahtayı bekle, doğru anda termale atla.',
+      'Kuşcenneti: göl derin ve soğuk, düşen çıkamaz. Sazlığın üstündeki termallerden geç, leylek yuvalarına kon.',
+    ],
+    map: roadMap(balikesirRoad),
+  },
+  {
+    id: 'elazig',
+    city: 'elazig',
+    name: 'Elazığ',
+    nickname: 'Harput',
+    plate: 23,
+    subtitle: 'Süt Kalesi, Buzluk ve Hazar',
+    difficulty: 'Çok Zor',
+    note: 'Defterin bu sayfası soğuk, mürekkebi yer yer donmuş gibi. Elazığ’da mevsimler tersine döner: Buzluk Mağarası yazın buz tutar, kışın ılır; Hazar Gölü’nün altında bir şehir uyur. Bu yolda saati dinle: su donar, buz erir.',
+    npcs: [
+      { name: 'Orcikçi Necmi Usta', look: 'usta', text: 'Orciği cevize pestil gibi sararım, Harput’un üzümüyle! Üç dizi orcik kaybettim: biri Harput Kalesi’nin burcunda, biri Ulu Cami’nin eğri minaresinin şerefesinde, biri de Buzluk Mağarası’nın buz cebinde kaldı.' },
+      { name: 'Harputlu Lütfiye Nine', look: 'teyze', text: 'Bu kaleye Süt Kalesi derler: yapılırken su yokmuş, harcı sütle karmışlar. Surları dik, ama taşları sağlam; duvardan duvara sekerek burca çıkılır.' },
+      { name: 'Mağara Rehberi Berk', look: 'genc', text: 'Buzluk’ta mevsim terstir: su bir donar, bir erir, saat gibi. Buz çatlamaya başlayınca üstünden çekil; su buğulanınca yüzeye çık. Buzun altına dalarsan duvarda bir oyuk görürsün, içinde biri bir pul saklamış.' },
+      { name: 'Balıkçı Bahri', look: 'amca', text: 'Hazar Gölü’nün dibinde eski bir şehir varmış, dalgıçlar surlarını görmüş. Göl donunca karşıya yürünür, erirken yüzülür; acele eden ortada kalır. Meydan kapısı göl kıyısında.' },
+    ],
+    medals: [190, 260, 350],
+    quips: ['Buz seni tutmadı.', 'Buzluk Devi homurdandı.', 'Orcik dondu.', 'Göl seni yuttu.'],
+    item: 'Orcik',
+    intro: 'Harput’ta Süt Kalesi’nden Ulu Cami’nin eğri minaresine, Buzluk Mağarası’nın yeraltı buzundan Hazar Gölü’nün donan sularına. Bu yolda su saat gibi donar ve erir: zamanı kolla.',
+    facts: [
+      { title: 'Süt Kalesi', text: 'Harput Kalesi’ne Süt Kalesi de denir. Efsaneye göre kale yapılırken su bulunamamış, harç sütle karılmış. Kale, Harput’un kayalık tepesinden ovaya bakar.' },
+      { title: 'Buzluk Mağarası', text: 'Harput yakınındaki Buzluk Mağarası’nda mevsimler terstir: yazın en sıcak günlerinde tavandan buz sarkıtları iner, kışın içi ılık olur.' },
+      { title: 'Hazar Gölü', text: 'Sivrice’deki Hazar Gölü’nün altında batık bir yerleşimin kalıntıları bulundu; dalgıçlar suyun altında sur ve yapı izleri gördü.' },
+    ],
+    secret: { title: 'Eğri Minare', text: 'Harput Ulu Camii 12. yüzyılda Artuklular döneminde yapıldı. Tuğladan minaresi yıllar içinde eğilmiştir; Harputlular ona Eğri Minare der.' },
+    hints: [
+      'Elazığ’a hoş geldin! Harput Kalesi’nin surları dik: duvardan duvara sekerek çık, çatlak taşta durma.',
+      'Ulu Cami: eğri minarenin şerefesine hareketli tahtayla çık. Tahtanın döndüğü anı bekle.',
+      'Buzluk Mağarası: su saat gibi donar ve erir. Buz çatlayınca üstünden çekil, su buğulanınca yüzeye çık.',
+      'Mağaranın dibinde buz tavanı var: dalarsan su donmadan öbür cebe geç, yoksa erimesini bekle.',
+      'Hazar Gölü: göl donunca koş, erirken yüz. Göle uzanan yarın altından yalnız su eriyince dalınır; öbür yanda buz tutmuşsa erimesini bekle.',
+    ],
+    map: roadMap(elazigRoad),
   },
 ]
 

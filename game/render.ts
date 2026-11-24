@@ -12,7 +12,7 @@ import { cb, cbc, type CbMode } from './colorBlind'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
-import { AIR, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, NITRO, PHYS, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, TIDE_CYCLE, WATER, hammerState, tideFill, tidePhase, type World } from './sim'
+import { AIR, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, FROST_CYCLE, ICE, NITRO, PHYS, THERMAL, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, TIDE_CYCLE, WATER, hammerState, tideFill, tidePhase, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -732,7 +732,9 @@ export class Renderer {
     this.drawUnderground(f, w, cx, cy)
     this.drawDynamicTiles(f, w, cx, cy)
     this.drawCrumbles(f, w, cx, cy)
+    if (w.hasLift) this.drawLift(f, w, cx, cy)
     this.drawWater(f, w, cx, cy)
+    if (w.hasFrost) this.drawFrost(f, w, cx, cy)
     if (w.hasTide) this.drawTide(f, w, cx)
     this.drawEntities(f, w)
     this.drawGhostRun(w)
@@ -1372,6 +1374,56 @@ export class Renderer {
           const sw = Math.round(Math.sin(this.t * 1.4 + i * 1.7) * 0.8)
           rect(b, x + 3 + i * 8 + sw, bot - 29, 1, 3, '#4e8a2a')
           rect(b, x + 2 + i * 8 + sw, bot - 26, 3, 3, '#f29a2a')
+        }
+        break
+      }
+      case 'balikesir': {
+        // höşmerimci: tepside altın sarısı höşmerim kâseleri (üstü ceviz), yanında zeytinyağı tenekeleri; zeytin yeşili tente
+        rect(b, x - 4, bot - 8, 26, 8, '#7a5a38')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a7a52')
+        rect(b, x - 3, bot - 10, 15, 2, '#c8ccd4')
+        rect(b, x - 3, bot - 10, 15, 1, '#eef0f4')
+        for (const dx of [-2, 3, 8]) {
+          rect(b, x + dx, bot - 13, 4, 3, '#b8603a')
+          rect(b, x + dx, bot - 15, 4, 2, '#f2c24a')
+          rect(b, x + dx + 1, bot - 16, 2, 1, '#f2c24a')
+          rect(b, x + dx + 1, bot - 15, 1, 1, '#8a5226')
+        }
+        for (const dx of [14, 19]) {
+          rect(b, x + dx, bot - 16, 5, 8, '#c8b048')
+          rect(b, x + dx, bot - 16, 1, 8, '#ecd878')
+          rect(b, x + dx + 1, bot - 13, 3, 3, '#4e7a3a')
+          rect(b, x + dx + 3, bot - 17, 1, 1, '#5a5a5a')
+        }
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#5e7a3a')
+        for (let i = 0; i < 8; i++) rect(b, x - 6 + i * 4, bot - 29, 2, 1, i % 2 ? '#f4f0e6' : '#5e7a3a')
+        break
+      }
+      case 'elazig': {
+        // orcikçi: askıda sallanan kayısı rengi orcik dizileri, tezgâhta kayısı kasaları ve kuru kayısı
+        rect(b, x - 4, bot - 8, 26, 8, '#6e4c34')
+        rect(b, x - 4, bot - 8, 26, 1, '#8e6a4a')
+        for (const dx of [-3, 7]) {
+          rect(b, x + dx, bot - 13, 9, 5, '#c89a5a')
+          rect(b, x + dx, bot - 11, 9, 1, '#8a6034')
+          for (let i = 0; i < 4; i++) rect(b, x + dx + i * 2, bot - 15 + (i % 2), 2, 2, i % 2 ? '#e08a3a' : '#f2a650')
+        }
+        rect(b, x + 17, bot - 12, 7, 4, '#b07a3e')
+        rect(b, x + 18, bot - 13, 5, 1, '#9a5a2e')
+        rect(b, x - 6, bot - 31, 1, 31, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 31, '#5a3c26')
+        rect(b, x - 6, bot - 31, 32, 1, '#5a3c26')
+        for (let i = 0; i < 5; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.3 + i * 1.1) * 0.7)
+          const cx = x - 2 + i * 6 + sw
+          const len = 9 + (i % 3) * 2
+          rect(b, cx, bot - 30, 1, 2, '#e8dcc0')
+          rect(b, cx - 1, bot - 28, 3, len, '#d8742a')
+          rect(b, cx - 1, bot - 28, 1, len, '#f2a24a')
+          for (let k = 3; k < len; k += 3) rect(b, cx - 1, bot - 28 + k, 3, 1, '#a8541c')
+          rect(b, cx, bot - 28 + len, 1, 1, '#a8541c')
         }
         break
       }
@@ -2132,6 +2184,47 @@ export class Renderer {
         rect(b, x + 14 - surf, bot - 3, 3, 1, 'rgba(240,250,255,0.85)')
         break
       }
+      case 'balikesir': {
+        // Saat Kulesi: Galata'yı andıran yuvarlak kesme taş gövde, saat yüzü, sivri külah; ibresi saate bağlı döner
+        rect(b, x + 1, bot - 3, 14, 3, '#7a6a58')
+        rect(b, x + 1, bot - 3, 14, 1, '#9a8a76')
+        rect(b, x + 3, bot - 28, 10, 25, '#d4c09c')
+        rect(b, x + 3, bot - 28, 2, 25, '#ead8b6')
+        rect(b, x + 11, bot - 28, 2, 25, '#a8946e')
+        for (const dy of [-10, -17]) rect(b, x + 3, bot + dy, 10, 1, '#b4a07c')
+        rect(b, x + 7, bot - 7, 2, 4, '#4a3a2e')
+        rect(b, x + 6, bot - 14, 1, 2, '#4a3a2e')
+        rect(b, x + 9, bot - 14, 1, 2, '#4a3a2e')
+        rect(b, x + 2, bot - 29, 12, 1, '#8a7660')
+        rect(b, x + 2, bot - 31, 12, 2, '#d4c09c')
+        for (let i = 0; i < 3; i++) rect(b, x + 2 + i * 4, bot - 32, 2, 1, '#d4c09c')
+        for (let i = 0; i < 10; i++) rect(b, x + 3 + Math.round(i * 0.45), bot - 33 - i, 10 - Math.round(i * 0.9), 1, i % 3 ? '#5a6478' : '#6e788c')
+        rect(b, x + 8, bot - 46, 1, 3, '#f2c14e')
+        disc(b, x + 8, bot - 22, 2, '#f4ead8')
+        const a = this.t * 0.6
+        rect(b, x + 8 + Math.round(Math.cos(a) * 1.4), bot - 22 + Math.round(Math.sin(a) * 1.4), 1, 1, '#2a2420')
+        rect(b, x + 8, bot - 22, 1, 1, '#2a2420')
+        break
+      }
+      case 'elazig': {
+        // Harput Ulu Camii'nin eğri minaresi: kalın tuğla gövde sağa yatık, tuğla örgü kuşakları, kısa külah
+        rect(b, x, bot - 3, 16, 3, '#8a7462')
+        rect(b, x, bot - 3, 16, 1, '#a89078')
+        for (let i = 0; i < 26; i++) {
+          const lean = Math.round(i * 0.12)
+          const y = bot - 4 - i
+          rect(b, x + 4 + lean, y, 8, 1, i % 4 === 0 ? '#8a4a2e' : '#b4643e')
+          rect(b, x + 4 + lean, y, 2, 1, i % 4 === 0 ? '#9a5a3a' : '#cc7c52')
+          rect(b, x + 10 + lean, y, 2, 1, '#8a4a2e')
+          if (i % 4 === 2) rect(b, x + 7 + lean + (i % 8 === 2 ? 0 : 1), y, 1, 1, '#e8b48a')
+        }
+        rect(b, x + 6, bot - 31, 10, 2, '#cc7c52')
+        rect(b, x + 6, bot - 30, 10, 1, '#8a4a2e')
+        for (let i = 0; i < 7; i++) rect(b, x + 8 + Math.round(i / 2), bot - 32 - i, 7 - i, 1, '#6a6a74')
+        rect(b, x + 11, bot - 42, 1, 3, '#f2c14e')
+        rect(b, x + 8, bot - 18, 2, 3, '#3a2420')
+        break
+      }
       case 'karabuk': {
         // Safranbolu konağı: beyaz sıvalı, koyu kirişli, çıkmalı üst katı ve kiremit çatısıyla
         rect(b, x - 2, bot - 14, 18, 14, '#ece0c8')
@@ -2672,6 +2765,87 @@ export class Renderer {
           rect(b, x + 12, y + 8, 3, 1, s.tileDark)
         }
         if (st && this.chance(0.25 + k * 0.4)) this.particles.push({ x: tx * T + Math.random() * T, y: ty * T + 13, vx: (Math.random() - 0.5) * 10, vy: 10, life: 0.5, max: 0.5, color: s.tileLight, size: 1, grav: 200 })
+      }
+  }
+
+  /**
+   * Yükselen hava (V): sütunun içi sıcak, yarı saydam bir hava; içinde yukarı akan çizgiler, tüyler ve kuru yapraklar.
+   * Sütunun tepesinde dalgalı bir kenar: oyuncu nereye dek taşınacağını görür. Hepsi saatten (her Hz'de aynı).
+   */
+  private drawLift(b: Ctx, w: World, cx: number, cy: number) {
+    const x0 = Math.floor(cx / T) - 1
+    const x1 = Math.ceil((cx + this.viewW) / T) + 1
+    const y0 = Math.max(0, Math.floor(cy / T) - 1)
+    const y1 = Math.min(w.rows - 1, Math.ceil((cy + this.viewH) / T) + 1)
+    const t = w.clock
+    for (let tx = x0; tx <= x1; tx++)
+      for (let ty = y0; ty <= y1; ty++) {
+        if (!w.isLift(tx, ty)) continue
+        const x = tx * T
+        const y = ty * T
+        const top = !w.isLift(tx, ty - 1)
+        rect(b, x, y, T, T, top ? 'rgba(255,230,170,0.14)' : 'rgba(255,230,170,0.22)')
+        // yukarı akan ince çizgiler: karoya göre kaymış, hızı termalin hızıyla orantılı
+        for (let k = 0; k < 3; k++) {
+          const ph = (tx * 37 + k * 53) % 97
+          const yy = y + T - (((t * THERMAL.rise * 0.45 + ph * 3) % (T + 6)) | 0)
+          const xx = x + 2 + ((k * 5 + tx * 3) % 12)
+          if (yy >= y - 4 && yy <= y + T) rect(b, xx, yy, 1, 4, 'rgba(255,248,226,0.55)')
+        }
+        // arada bir yukarı süzülen tüy ya da yaprak
+        const f = (t * 0.9 + ((tx * 13 + ty * 7) % 11) * 0.37) % 4
+        if (f < 1) {
+          const fy = y + T - f * T
+          const fx = x + 8 + Math.sin(t * 3 + tx) * 3
+          rect(b, Math.round(fx), Math.round(fy), 2, 1, (tx + ty) % 3 === 0 ? '#e8b04a' : '#ffffff')
+          rect(b, Math.round(fx) + 1, Math.round(fy) - 1, 1, 1, 'rgba(255,255,255,0.7)')
+        }
+        if (top) {
+          // tepe kenarı: dalgalı, hafif parlayan çizgi
+          for (let i = 0; i < T; i += 2) rect(b, x + i, y + Math.round(1.5 + Math.sin(t * 4 + (x + i) * 0.4) * 1.5), 2, 1, 'rgba(255,244,214,0.6)')
+        }
+      }
+  }
+
+  /**
+   * Donan su (Z): buzken açık mavi buz (kenarı beyaz, içinde kabarcık), erimeden önce çatlaklar büyür ve yanıp söner;
+   * suyken suyu drawWater çizer, donmadan önce yüzeyde kırağı çizgisi belirir. Hepsi saatten (her Hz'de aynı).
+   */
+  private drawFrost(b: Ctx, w: World, cx: number, cy: number) {
+    const x0 = Math.floor(cx / T) - 1
+    const x1 = Math.ceil((cx + this.viewW) / T) + 1
+    const y0 = Math.max(0, Math.floor(cy / T) - 1)
+    const y1 = Math.min(w.rows - 1, Math.ceil((cy + this.viewH) / T) + 1)
+    const left = FROST_CYCLE.half - (w.clock % FROST_CYCLE.half)
+    const soon = left < FROST_CYCLE.warn
+    const crack = soon ? 1 - left / FROST_CYCLE.warn : 0
+    for (let tx = x0; tx <= x1; tx++)
+      for (let ty = y0; ty <= y1; ty++) {
+        if (!w.isFrost(tx, ty)) continue
+        const x = tx * T
+        const y = ty * T
+        const ice = w.tile(tx, ty) === ICE
+        const top = !w.isFrost(tx, ty - 1) && !w.isSolid(tx, ty - 1)
+        if (ice) {
+          const blink = soon && Math.floor(left * 12) % 2 === 0
+          b.globalAlpha = blink ? 0.6 : 1
+          rect(b, x, y, T, T, '#9fd4ec')
+          rect(b, x, y, T, top ? 3 : 1, '#e8f8ff')
+          rect(b, x + 3 + ((tx * 5) % 7), y + 6 + ((ty * 3) % 5), 2, 2, 'rgba(255,255,255,0.7)')
+          rect(b, x + 10 - ((tx * 3) % 5), y + 10, 1, 1, 'rgba(255,255,255,0.8)')
+          if (!w.isFrost(tx, ty + 1)) rect(b, x, y + T - 1, T, 1, '#6aa6c8')
+          if (crack > 0) {
+            // çatlak: erimeye yaklaştıkça uzar
+            const n = Math.ceil(crack * 8)
+            for (let i = 0; i < n; i++) rect(b, x + 3 + i, y + 4 + ((i * 7 + tx) % 3) + (i > 4 ? i - 4 : 0), 1, 1, '#3a6e94')
+          }
+          b.globalAlpha = 1
+        } else if (soon && top) {
+          // donacak yüzey: kırağı kenardan ortaya yürür
+          const k = Math.ceil(crack * (T / 2))
+          rect(b, x, y, k, 2, 'rgba(240,252,255,0.85)')
+          rect(b, x + T - k, y, k, 2, 'rgba(240,252,255,0.85)')
+        }
       }
   }
 
@@ -4709,7 +4883,9 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   zonguldak: 'MERSİN',
   mersin: 'KARABÜK',
   karabuk: 'AYDIN',
-  aydin: null,
+  aydin: 'BALIKESİR',
+  balikesir: 'ELAZIĞ',
+  elazig: null,
 }
 
 function hexA(hex: string, a: number) {

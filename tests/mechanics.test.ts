@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { AIR, CHASE, EMPTY, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
+import { AIR, CHASE, EMPTY, FROST_CYCLE, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -764,5 +764,77 @@ describe('co-op: Kurtarma, Fırlatma, işaret', () => {
     expect(w.events.filter((e) => e.type === 'ping')).toHaveLength(3)
     tick(w, 2.6)
     expect(w.pings).toHaveLength(0)
+  })
+})
+
+describe('yükselen hava (Balıkesir)', () => {
+  // dört karo genişliğinde, sekiz karo yüksek termal; sağında, termalin tepesinden iki karo aşağıda yüksek bir taş
+  const map = [
+    '               ',
+    '               ',
+    '   VVVV        ',
+    '   VVVV        ',
+    '   VVVV ##     ',
+    '   VVVV        ',
+    '   VVVV        ',
+    '   VVVV        ',
+    '   VVVV        ',
+    ' P VVVV        ',
+    '###############',
+  ]
+  it('içine giren yukarı taşınır, tepede asılı kalır; aşağı basan süzülüp iner', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    step(w, 0.32, { right: true })
+    step(w, 1.6)
+    expect(w.player.lift || w.player.y < 3 * T).toBe(true)
+    // termalin tepesine (2. satır) dek çıktı, oradan uçmadı
+    expect(w.player.y).toBeLessThan(3 * T)
+    expect(w.player.y).toBeGreaterThan(T - 8)
+    step(w, 1.5)
+    expect(w.player.y).toBeLessThan(3.5 * T)
+    // aşağı basınca itiş kesilir, yere iner
+    step(w, 1.5, { down: true })
+    expect(w.player.grounded).toBe(true)
+    expect(w.tile(4, 5)).toBe(EMPTY)
+  })
+  it('tepeden yana uçup yüksek taşa iner', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    step(w, 0.32, { right: true })
+    step(w, 1.6)
+    step(w, 0.8, { right: true })
+    expect(w.player.grounded).toBe(true)
+    expect(w.player.y + w.player.h).toBe(4 * T)
+  })
+})
+
+describe('donan su (Elazığ)', () => {
+  // iki karo derin donan su; buzken üstünde yürünür, suyken yüzülür
+  const map = ['            ', '            ', ' P          ', '###ZZZZZ####', '###ZZZZZ####', '############']
+  it('saate bağlı: buzken katı (kaygan), suyken derin su; ham karo donan su kalır', () => {
+    const w = mk(map)
+    expect(w.frozen).toBe(true)
+    expect(w.isSolid(4, 3)).toBe(true)
+    expect(w.isFrost(4, 3)).toBe(true)
+    step(w, FROST_CYCLE.half + 0.05)
+    expect(w.frozen).toBe(false)
+    expect(w.tile(4, 3)).toBe(SWIM)
+    expect(w.isSolid(4, 3)).toBe(false)
+  })
+  it('buzun üstünden yürünür; eriyince oyuncu suya düşer ve yüzer; donunca içindeki karo çıkana dek su kalır', () => {
+    const w = mk(map)
+    step(w, 0.3)
+    step(w, 0.28, { right: true })
+    step(w, 0.6)
+    expect(w.player.grounded).toBe(true)
+    expect(w.player.x).toBeGreaterThan(3 * T)
+    step(w, FROST_CYCLE.half - 1.18 + 0.4)
+    expect(w.player.swim).toBe(true)
+    step(w, FROST_CYCLE.half)
+    expect(w.frozen).toBe(true)
+    // içinde yüzdüğü karo buz olmadı: kimse buzun içinde sıkışmaz
+    const p = w.player
+    expect(w.isSolid(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T))).toBe(false)
   })
 })

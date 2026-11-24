@@ -1627,6 +1627,81 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     piece(0.6, -5, 5, 8.6)
     dab(c, -3.6, -1.2, 0.9, 0.4, 'rgba(255,255,255,0.7)', -0.2)
   },
+  // Höşmerim: toprak kâsede altın sarısı, kabarık tatlı; üstünde ceviz içi ve tarçın serpintisi, yanında kaşık
+  balikesir: (c) => {
+    // kaşık: kâsenin arkasından çapraz çıkar
+    line(c, [2.4, -1.6, 5.8, -6.2], 0.8, '#c8ccd4')
+    ell(c, 6.1, -6.6, 1, 1.4, '#dfe2e8', '#a8acb6', 0.6)
+    // kâse: geniş ağız, daralan gövde, ayak
+    shape(
+      c,
+      () => {
+        c.moveTo(-6.2, -0.4)
+        c.lineTo(6.2, -0.4)
+        c.quadraticCurveTo(5.6, 4.2, 2.4, 4.8)
+        c.lineTo(-2.4, 4.8)
+        c.quadraticCurveTo(-5.6, 4.2, -6.2, -0.4)
+      },
+      '#b8603a',
+      '#7e3a20',
+    )
+    poly(c, [-2.6, 4.6, 2.6, 4.6, 3.2, 6.2, -3.2, 6.2], '#a0502e', '#6e301a')
+    line(c, [-5.4, 1.4, 5.4, 1.4], 0.4, '#e8b078', false)
+    dab(c, -4.2, 2.2, 0.6, 1.1, 'rgba(255,220,180,0.45)', 0.3)
+    // höşmerim: kâsenin ağzından kubbe gibi kabaran altın sarısı
+    shape(
+      c,
+      () => {
+        c.moveTo(-5.8, -0.4)
+        c.quadraticCurveTo(-5.4, -4.6, 0, -4.8)
+        c.quadraticCurveTo(5.4, -4.6, 5.8, -0.4)
+        c.closePath()
+      },
+      '#f2c24a',
+      '#c8901e',
+    )
+    dab(c, -2.6, -3, 1.6, 0.7, '#fde69a', -0.2)
+    // ceviz içleri ve tarçın
+    for (const [x, y] of [[-1.6, -2.2], [1.8, -2.8], [0.2, -1.2]] as const) ell(c, x, y, 0.95, 0.7, '#9a6234', '#6a3e1c')
+    for (const [x, y] of [[-3.6, -1.4], [-0.6, -3.6], [2.8, -1.4], [3.8, -2.2], [-2.6, -0.8], [1, -0.6]] as const) dab(c, x, y, 0.32, 0.32, '#7a3e1a')
+  },
+  // Orcik: ipe dizili cevizin üstüne pestil (kayısı rengi) dökülmüş sucuk; tepede düğüm ve ilmek
+  elazig: (c) => {
+    line(c, [-1.6, -7, 0, -5.4, 1.6, -7], 0.5, '#d8c8a4')
+    line(c, [0, -5.4, 0, -4.2], 0.5, '#d8c8a4')
+    // sucuk: hafif kavisli, boğum boğum (içindeki cevizler)
+    shape(
+      c,
+      () => {
+        c.moveTo(-1.6, -4.4)
+        c.quadraticCurveTo(0.2, -5.2, 1.8, -4.2)
+        c.quadraticCurveTo(3.4, -2.2, 1.9, -0.6)
+        c.quadraticCurveTo(3.6, 1.2, 2.2, 3)
+        c.quadraticCurveTo(3.4, 5, 1.6, 6.2)
+        c.quadraticCurveTo(0, 7, -1.2, 6.2)
+        c.quadraticCurveTo(-3, 4.8, -1.8, 3)
+        c.quadraticCurveTo(-3.4, 1.2, -1.6, -0.6)
+        c.quadraticCurveTo(-3.4, -2.4, -1.6, -4.4)
+      },
+      '#d8742a',
+      '#9a4a16',
+    )
+    if (!halo) {
+      // pestilin parlak yüzü ve boğumlardaki gölge çizgileri
+      dab(c, -0.9, -2.4, 0.6, 1.3, 'rgba(255,214,150,0.75)', 0.2)
+      dab(c, -1, 1.2, 0.5, 1, 'rgba(255,214,150,0.6)', 0.1)
+      dab(c, -0.4, 4.4, 0.45, 0.9, 'rgba(255,214,150,0.55)')
+      line(c, [-1.2, -0.6, 1.6, -0.6], 0.35, '#a8541c', false)
+      line(c, [-1.4, 3, 1.8, 3], 0.35, '#a8541c', false)
+      // pestilin altından seçilen ceviz içi
+      dab(c, 1.2, 1.4, 0.55, 0.4, '#8a5226')
+      dab(c, 0.8, -2.6, 0.5, 0.35, '#8a5226')
+    }
+    // yanında yarım ceviz
+    ell(c, -4.6, 4.6, 1.8, 1.5, '#b88a54', '#7e5a30')
+    line(c, [-6, 4.6, -3.2, 4.6], 0.3, '#6e4a26', false)
+    dab(c, -5.2, 3.8, 0.5, 0.35, '#e0c08a')
+  },
   // Safran: mor çiğdem çiçeği, ortasından sarkan kızıl-turuncu üç tel; altında kesekâğıdı gibi küçük bir keten kese
   karabuk: (c) => {
     poly(c, [-5.4, 6, 5.4, 6, 4.2, 0.8, -4.2, 0.8], '#e8d8b4', '#b49a6c')

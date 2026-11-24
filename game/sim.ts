@@ -33,6 +33,13 @@ export const RHYTHM_B = 19
  * kuralı geçerli), açıkta kalan karesi boş havadır. tile() bu karoyu o anki hâline çevirir; ham hâli isTide() söyler.
  */
 export const TIDE = 20
+/**
+ * donan su (Z, Elazığ'ın Buzluk Mağarası ve Hazar Gölü): saate bağlı, bir yarı buz (üstünde yürünür, kaygan), bir yarı
+ * derin su (yüzülür, nefes kuralı geçerli). tile() karonun o anki hâlini verir (ICE ya da SWIM); ham hâli isFrost().
+ */
+export const FROST = 21
+/** yükselen hava (V, Balıkesir'in termalleri): geçilir; gövdesinin ortası içinde olan oyuncuyu yukarı taşır */
+export const LIFT = 22
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
@@ -90,6 +97,21 @@ export function tidePhase(clock: number): { phase: 'high' | 'ebb' | 'low' | 'flo
   if (ph < hold * 2 + move) return { phase: 'low', next: hold * 2 + move - ph }
   return { phase: 'flood', next: period - ph }
 }
+
+/**
+ * Donan su: her `half` saniyede bir buz ile su yer değiştirir (saat 0'da buz). Değişmeden `warn` saniye önce buz çatlar,
+ * su buğulanır (render). Donacak karo oyuncunun içindeyse oyuncu çıkana dek su kalır (kimse buzun içinde sıkışmaz).
+ * Buzun altında kalan oyuncu en çok `half` saniye bekler: nefesten (AIR.max) kısa, buz altında boğulma tuzağı yok.
+ */
+export const FROST_CYCLE = { half: 2.4, warn: 0.7 }
+/** buz mu (true) su mu, verilen saatte */
+export const frozenAt = (clock: number) => Math.floor(clock / FROST_CYCLE.half) % 2 === 0
+
+/**
+ * Yükselen hava (termal): içindeyken yerçekimi yerine `accel` ile yukarı itilir, en çok `rise` px/sn yükselir. Sütunun
+ * tepesine varan oyuncu hız kaybedip geri süzülür: tepede asılı kalır, oradan yana atlar. Aşağı basılıyken itmez (inilir).
+ */
+export const THERMAL = { rise: 170, accel: 1500 }
 
 /** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
 export const PERFECT_SPRING = 1.22
@@ -249,6 +271,8 @@ export interface Player extends Box {
   nitro: number
   /** kalan nefes (sn): derin suda başı su altındayken azalır */
   air: number
+  /** yükselen havanın içinde (gövdenin ortası V karosunda): yukarı taşınıyor */
+  lift: boolean
 }
 
 export interface Platform extends Box {
@@ -456,6 +480,13 @@ export class World {
   readonly tidePools: Array<{ top: number; bottom: number; x0: number; x1: number }> = []
   private tideClock = -1
   private tideNow = 1
+  /** haritada donan su var mı */
+  hasFrost = false
+  /** haritada yükselen hava var mı */
+  hasLift = false
+  /** donduğu an oyuncunun içinde kalan donan su karoları: oyuncu çıkana dek su */
+  readonly frostHold = new Set<number>()
+  private frostLast = -1
   /** zehirli su karoları (y * cols + x): fizikte öldüren su, çizimde yeşil */
   readonly poison = new Set<number>()
 
@@ -552,6 +583,14 @@ export class World {
           case 'A':
             this.set(tx, ty, TIDE)
             this.hasTide = true
+            break
+          case 'Z':
+            this.set(tx, ty, FROST)
+            this.hasFrost = true
+            break
+          case 'V':
+            this.set(tx, ty, LIFT)
+            this.hasLift = true
             break
           case 'W':
           case 'y':
@@ -878,6 +917,7 @@ export class World {
       strokeCool: 0,
       nitro: 0,
       air: AIR.max,
+      lift: false,
     }
   }
 
@@ -895,7 +935,24 @@ export class World {
     const t = this.tiles[ty * this.cols + tx]
     // gelgit karosu o anki hâlidir: su altındaysa derin su, açıktaysa boşluk
     if (t === TIDE) return this.tideCovers(tx, ty) ? SWIM : EMPTY
+    // donan su: buzken buz, erimişken derin su (donduğu an oyuncunun içindeki karo çıkana dek su kalır)
+    if (t === FROST) return this.frozen && !this.frostHold.has(ty * this.cols + tx) ? ICE : SWIM
+    // yükselen hava fizikte boşluktur (itişi updatePlayer verir)
+    if (t === LIFT) return EMPTY
     return t
+  }
+
+  /** donan su şu an buz mu */
+  get frozen(): boolean {
+    return frozenAt(this.clock)
+  }
+
+  isFrost(tx: number, ty: number): boolean {
+    return this.raw(tx, ty) === FROST
+  }
+
+  isLift(tx: number, ty: number): boolean {
+    return this.raw(tx, ty) === LIFT
   }
 
   /** haritadaki ham karo (gelgit karosu TIDE olarak kalır) */
@@ -1007,6 +1064,7 @@ export class World {
     if (this.hasTide) this.tideCue(clock0)
     this.updateCrumbles(dt)
     this.updateRhythm()
+    if (this.hasFrost) this.updateFrost()
     if (this.crates.length) this.updateCrates(dt)
 
     if (p.dead) {
@@ -1150,6 +1208,13 @@ export class World {
         if (t === RHYTHM_A || t === RHYTHM_B) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 3 * T, 3 * T)
       }
     for (const q of this.tidePools) pad(q.x0 * T, q.top, q.x1 * T + T, q.bottom, 3 * T, 4 * T, T)
+    // donan su (bekleyip geçilir) ve yükselen hava (köpek uçamaz): çevresinde köpek oturur
+    for (let ty = 0; ty < this.rows; ty++)
+      for (let tx = 0; tx < this.cols; tx++) {
+        const t = this.tiles[ty * this.cols + tx]
+        if (t === FROST) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 4 * T, 2 * T)
+        else if (t === LIFT) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 4 * T, 3 * T)
+      }
   }
 
   /** köpeği yeniden doğuş yerine koyar: iz silinir, bekler */
@@ -1247,7 +1312,31 @@ export class World {
     for (const k of [...this.rhythmHold]) if (!covered.has(k)) this.rhythmHold.delete(k)
   }
 
-  private updateCrumbles(dt: number) {
+  /** donma anında oyuncunun (ve eşin) içindeki donan su karoları beklemeye alınır; çıkılan karo hemen donar */
+  private updateFrost() {
+    const phase = this.frozen ? 1 : 0
+    const bodies = [this.player, ...(this.partner ? [this.partner] : [])].filter((b) => !b.dead)
+    const covered = new Set<number>()
+    for (const b of bodies)
+      for (let ty = Math.floor(b.y / T); ty <= Math.floor((b.y + b.h - 0.001) / T); ty++)
+        for (let tx = Math.floor(b.x / T); tx <= Math.floor((b.x + b.w - 0.001) / T); tx++) if (this.raw(tx, ty) === FROST) covered.add(ty * this.cols + tx)
+    if (phase !== this.frostLast) {
+      if (this.frostLast >= 0 && this.frostNearPlayer()) this.events.push({ type: phase ? 'freeze' : 'thaw' })
+      this.frostLast = phase
+      if (phase) for (const k of covered) this.frostHold.add(k)
+    }
+    for (const k of [...this.frostHold]) if (!covered.has(k)) this.frostHold.delete(k)
+  }
+
+  /** oyuncunun 14 karo çevresinde donan su var mı (ses uyarısı yalnız yakındayken) */
+  private frostNearPlayer() {
+    const cx = Math.floor((this.player.x + PW / 2) / T)
+    const cy = Math.floor(this.player.y / T)
+    for (let ty = cy - 9; ty <= cy + 9; ty++) for (let tx = cx - 14; tx <= cx + 14; tx++) if (this.raw(tx, ty) === FROST) return true
+    return false
+  }
+
+    private updateCrumbles(dt: number) {
     const p = this.player
     for (const [idx, c] of this.crumbles) {
       if (!c.broken) {
@@ -1352,6 +1441,8 @@ export class World {
       // yatay kontrol. Rüzgâr hedef hızı kaydırır (hıza eklenen ivme, hedefe kırpılınca siliniyordu): havada her zaman,
       // yerde yalnız yürürken; dururken itmez ki dar taşta kaydırmasın. Esinti güçlüyken atlayış belirgin uzar ya da kısalır
       p.swim = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === SWIM
+      // yükselen hava: gövdenin ortası termalde ve aşağı basılmıyorsa (aşağı basan termalden süzülüp iner)
+      p.lift = this.hasLift && !p.swim && iy <= 0 && this.raw(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === LIFT
       if (p.nitro > 0) p.nitro = Math.max(0, p.nitro - dt)
       const run = p.nitro > 0 ? PHYS.run * NITRO.speed : PHYS.run
       const target = p.swim ? ix * PHYS.swimRun : ix * run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
@@ -1372,7 +1463,8 @@ export class World {
       const moon = this.level.lowGravity && !p.swim
       if (moon) g *= MOON.gravity
       if (this.level.heavy && !p.swim) g *= HEAVY.gravity
-      p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1), p.vy + g * dt)
+      if (p.lift) p.vy = Math.max(-THERMAL.rise, p.vy - THERMAL.accel * dt)
+      else p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1), p.vy + g * dt)
       if (p.swim) {
         p.canDash = true
         // kulaç: her zıplama basışı; başı yüzeye yakınsa sudan sıçrayarak çıkar

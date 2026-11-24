@@ -153,6 +153,12 @@ const STEP = 1 / 120
 
 /** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
 const RELEASE_NOTES: Record<string, [string, string][]> = {
+  balikesir: [
+    ['İki Yeni Şehir', 'Balıkesir ve Elazığ: yükselen sıcak havayla kanatsız uçuş ve saat gibi donup eriyen su.'],
+    ['Termal', 'Balıkesir’de tüylerin uçuştuğu sütuna gir: seni yukarı taşır, tepesinden yana atlarsın.'],
+    ['Donan Su', 'Elazığ’da Buzluk Mağarası ve Hazar Gölü bir donar bir erir: buzken yürü, suyken dal.'],
+    ['Günlük Meydan Okuma', 'Tek Can’da şehrin başına dönüş artık açıkça yazar; çıkışta hakkının biteceği söylenir.'],
+  ],
   karabuk: [
     ['İki Yeni Şehir', 'Karabük (Safranbolu) ve Aydın (Efes): ikisi de Çok Zor, kendi bulmaca ve zamanlamalarıyla.'],
     ['Günün Üçlüsü', 'Günlük Meydan Okuma, Günün Mücadelesi ve Günün Boss’u; her biri ayrı sıralamada.'],

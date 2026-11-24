@@ -94,6 +94,12 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 36 | Giresun · Kirazın Adını Verdiği Şehir | 28 | Orta | Zeytinlik damları, kale burçları, fındık bahçesinde nitro, sahilde kayıklar | Kiraz |
 | 37 | Tokat · Kalıptan Çıkan Desenler | 60 | Zor | Taşhan, kale halatları, yazma kalıplarının tokmakları, Zile surları | Yazma |
 | 38 | Denizli · Pamuk Kale’nin Beyaz Basamakları | 20 | Çok Zor | Horozlu meydan, Laodikeia sütunları, kaygan travertenler, Hierapolis tiyatrosu | Havlu |
+| 39 | Zonguldak · Denizin Dibi, Ocağın Derini | 67 | Zor | Maden ocağı, denizde yüzme, nefes, Cehennemağzı | Madenci Lambası |
+| 40 | Mersin · Gelgit, Kale ve Obruk | 33 | Orta | Gelgit suyu, Kızkalesi, Cennet ve Cehennem obrukları, Tarsus | Cezerye |
+| 41 | Karabük · Konak, Kanyon ve Çelik | 78 | Çok Zor | Safranbolu çarşısı, cam yol, haddehane tokmakları | Safran |
+| 42 | Aydın · Efes’in Sütunları | 09 | Çok Zor | Mermer Cadde, tiyatronun ritim sıraları, Didim, Nysa tüneli | İncir |
+| 43 | Balıkesir · Termal, Zeytin ve Kuşlar | 10 | Zor | Yükselen sıcak havayla uçuş, Şeytan Sofrası, Hasanboğuldu, Kuşcenneti | Höşmerim |
+| 44 | Elazığ · Süt Kalesi, Buzluk ve Hazar | 23 | Çok Zor | Saat gibi donup eriyen su, Harput Kalesi, yeraltında Buzluk Mağarası, Hazar’ın batık şehri | Orcik |
 
 ## Yolcular ve Şehir İnsanları
 

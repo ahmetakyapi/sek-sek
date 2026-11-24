@@ -4,7 +4,7 @@
  * verify-levels (geçilebilir mi) ve audit-difficulty (ne kadar hassas oyun istiyor) kullanır.
  */
 import type { LevelDef } from '../game/types'
-import { RHYTHM, RHYTHM_A, RHYTHM_B, TIDE_CYCLE, World, tidePhase, snapshot, restore, type Snapshot } from '../game/sim'
+import { FROST, FROST_CYCLE, RHYTHM, RHYTHM_A, RHYTHM_B, TIDE_CYCLE, World, tidePhase, snapshot, restore, type Snapshot } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 const DT = 1 / 120
@@ -94,6 +94,8 @@ export function runMacro(w: World, m: Macro, each: () => void) {
     hang = p.hang
     // suda yere basılmaz: makro kısa tutulur ki kulaç kulaç dallansın
     if (p.swim && t >= 0.5) break
+    // yükselen havada da: termalin içinden yana yana dallanılır
+    if (p.lift && t >= 0.35) break
     if (!w.player.grounded) air = true
     const jumping = m.jump > 0 || m.dashAt > 0
     if (m.wait === 0 && w.player.grounded && t > 0.05) {
@@ -124,6 +126,14 @@ function rhythmNear(w: World, x: number, y: number) {
   return false
 }
 
+/** oyuncunun 10 karo çevresinde donan su var mı */
+function frostNear(w: World, x: number, y: number) {
+  const cx = Math.floor(x / 16)
+  const cy = Math.floor(y / 16)
+  for (let ty = cy - 6; ty <= cy + 6; ty++) for (let tx = cx - 10; tx <= cx + 10; tx++) if (w.raw(tx, ty) === FROST) return true
+  return false
+}
+
 /** oyuncunun yakınında (12 karo yan, 9 karo dikey) gelgit havuzu var mı */
 function tideNear(w: World, x: number, y: number) {
   const cx = Math.floor(x / 16)
@@ -142,10 +152,12 @@ function key(s: Snapshot, w: World) {
   // sandıkların yeri durumun parçası: itilen sandık yolu değiştirir
   const crates = s.crates.map(([x, y]) => `${Math.round(x / 8)}.${Math.round(y / 16)}`).join(',')
   // halatta/teleferikte asılı ya da suda olmak ayrı durum: aynı yerde serbest düşen oyuncuyla birleşmesin
-  const held = p.hang ? `h${p.hang}` : p.swim ? `s${Math.round(p.vy / 60)}` : ''
+  const held = p.hang ? `h${p.hang}` : p.swim ? `s${Math.round(p.vy / 60)}` : p.lift ? `l${Math.round(p.vy / 50)}` : ''
   // nitroyla koşan oyuncu aynı yerde yürüyenle birleşmesin (yarım saniyelik dilimler)
   const boost = p.nitro > 0 ? `n${Math.ceil(p.nitro * 2)}` : ''
   // ritim blokları saate bağlı: yakında ritim bloğu varsa evre (takım + dörtte bir dilim) durumun parçası
+  // donan su saate bağlı: yakındaysa evre (buz/su + dörtte bir dilim) durumun parçası
+  const frost = w.hasFrost && frostNear(w, p.x, p.y) ? `f${Math.floor(s.clock / FROST_CYCLE.half) % 2}.${Math.floor(((s.clock % FROST_CYCLE.half) / FROST_CYCLE.half) * 4)}` : ''
   const beat = w.hasRhythm && rhythmNear(w, p.x, p.y) ? `${Math.floor(s.clock / RHYTHM.half) % 2}.${Math.floor(((s.clock % RHYTHM.half) / RHYTHM.half) * 4)}` : ''
   // gelgit saate bağlı: yakında gelgit havuzu varsa evre (yüksek, iniyor, alçak, yükseliyor) ve evrenin hangi yarısı
   // durumun parçası; dilimler evre sınırlarına oturur (dolu su ile inmeye başlayan su aynı anahtarı almaz). Gelgit suyunda
@@ -156,7 +168,7 @@ function key(s: Snapshot, w: World) {
   const coarse = nearTide && p.swim
   const pos = coarse ? [Math.round(p.x / 12), Math.round(p.y / 8), Math.round(p.vx / 60)] : [Math.round(p.x / 6), Math.round(p.y / 4), Math.round(p.vx / 40)]
   const swim = coarse ? `s${Math.round(p.vy / 120)}` : held
-  return [...pos, plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, swim, boost, beat, tide].join('|')
+  return [...pos, plats.join(','), phase, s.hasKey ? 1 : 0, s.switchOn ? 1 : 0, crates, swim, boost, beat, tide, frost].join('|')
 }
 
 export interface SolveResult {
@@ -290,7 +302,7 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
         if (hit && !goal) goal = { from: s, via: m }
         if (hit) won = true
         // yerde, halatta/teleferikte asılı ya da suda olan durum yeni dal olur (havada kalan olmaz)
-        if (w.deaths > deaths || w.complete || !(w.player.grounded || w.player.hang || w.player.swim)) continue
+        if (w.deaths > deaths || w.complete || !(w.player.grounded || w.player.hang || w.player.swim || w.player.lift)) continue
         if (mx(w.player.x) > mx(far.x)) far = { x: w.player.x, y: w.player.y }
         const ns = snapshot(w)
         const k = key(ns, w)

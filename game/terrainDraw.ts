@@ -11,7 +11,7 @@
  */
 import { CITY } from './art'
 import { cb, cbSpike } from './colorBlind'
-import { BLOCK_A, BLOCK_B, CRUMBLE, EMPTY, FAKE, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, SWIM, TURRET, WATER, WET, type World } from './sim'
+import { BLOCK_A, BLOCK_B, CRUMBLE, EMPTY, FAKE, FROST, ICE, ONEWAY, SOLID, SPIKE_DOWN, SPIKE_UP, SWIM, TURRET, WATER, WET, type World } from './sim'
 import { T, type CityKey } from './types'
 
 type Ctx = CanvasRenderingContext2D
@@ -81,6 +81,8 @@ const LOOK: Record<CityKey, Look> = {
   karabuk: { mat: 'brick', cap: 'grass' },
   // Efes: iri kesme mermer bloklar, üstü taş silme
   aydin: { mat: 'ashlar', cap: 'stone' },
+  balikesir: { mat: 'rock', cap: 'grass' },
+  elazig: { mat: 'ashlar', cap: 'snow' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 
@@ -210,6 +212,9 @@ const MASON = {
   rock: { bw: 34, bh: 23, wj: 0.5, wl: 40, jy: 1.5, lean: 5, r: 1.5, gap: 0.45, half: false, split: 0.22, chip: 0.25, tone: [0.34, 0.54, 0.62, 0.82, 0.9, 0.95] },
 }
 
+/** önbelleğe giren karo: donan su (Z) saate bağlıdır, önbelleğe girmez (buzu ve suyu render her karede çizer) */
+const tileOf = (w: World, tx: number, ty: number) => (w.raw(tx, ty) === FROST ? EMPTY : w.tile(tx, ty))
+
 export class TerrainHD {
   /** hücre önbelleği (anahtar: parça * 64 + bant; null: boş gök, çizilecek bir şey yok). Map sırası en son kullanılanı sona alır. */
   private cells = new Map<number, HTMLCanvasElement | null>()
@@ -241,7 +246,7 @@ export class TerrainHD {
   ) {
     this.rows = w.rows + BELOW
     const base = (tx: number, ty: number) => {
-      const t = w.tile(tx, ty)
+      const t = tileOf(w, tx, ty)
       return t === SOLID || t === TURRET || t === ICE || t === WET
     }
     // haritanın altında her sütun son satırı gibi sürer: katı sütun taş olarak iner, çukur ve su açık kalır
@@ -313,7 +318,7 @@ export class TerrainHD {
         const [x, y] = st.pop()!
         if (x < 0 || x >= cols || y < 0 || y >= w.rows) continue
         const k = y * cols + x
-        if (reach.has(k) || block(w.tile(x, y))) continue
+        if (reach.has(k) || block(tileOf(w, x, y))) continue
         reach.add(k)
         st.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1])
       }
@@ -322,7 +327,7 @@ export class TerrainHD {
     if (w.arrival) flood(Math.floor(w.arrival.x / T), Math.floor(w.arrival.y / T))
     for (let ty = 0; ty < w.rows; ty++)
       for (let tx = 0; tx < cols; tx++) {
-        if (w.tile(tx, ty) !== FAKE) continue
+        if (tileOf(w, tx, ty) !== FAKE) continue
         this.cave.add(ty * cols + tx)
         // ağzın ardındaki cep (büyük açık alanlar mağara sayılmaz)
         for (const [nx, ny] of [[tx + 1, ty], [tx - 1, ty], [tx, ty + 1], [tx, ty - 1]]) {
@@ -333,7 +338,7 @@ export class TerrainHD {
             const [x, y] = st.pop()!
             if (x < 0 || x >= cols || y < 0 || y >= w.rows) continue
             const k = y * cols + x
-            if (seen.has(k) || reach.has(k) || block(w.tile(x, y))) continue
+            if (seen.has(k) || reach.has(k) || block(tileOf(w, x, y))) continue
             seen.add(k)
             pocket.push(k)
             st.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1])
@@ -426,7 +431,7 @@ export class TerrainHD {
    */
   private drawAbove(c: Ctx, i: number, camX: number, camY: number) {
     const w = this.w
-    const pillar = (tx: number) => tx >= 0 && tx < w.cols && [0, 1, 2].every((ty) => w.tile(tx, ty) === SOLID)
+    const pillar = (tx: number) => tx >= 0 && tx < w.cols && [0, 1, 2].every((ty) => tileOf(w, tx, ty) === SOLID)
     const x0 = i * CHUNK
     let tx = x0
     while (tx < x0 + CHUNK) {
@@ -486,7 +491,7 @@ export class TerrainHD {
     for (let tx = i * CHUNK - 1; tx <= i * CHUNK + CHUNK; tx++)
       for (let ty = ty0; ty <= ty1; ty++) {
         const y = Math.min(ty, w.rows - 1)
-        if (w.tile(tx, y) !== EMPTY || this.cave.has(y * w.cols + tx)) return false
+        if (tileOf(w, tx, y) !== EMPTY || this.cave.has(y * w.cols + tx)) return false
       }
     return true
   }
@@ -608,7 +613,7 @@ export class TerrainHD {
   /** dışbükey köşe mi (dx, dy: köşenin baktığı yön): yalnız düz taşta; buz, ıslak taş ve tünel ağzı köşeli kalır */
   private nib(tx: number, ty: number, dx: number, dy: number): boolean {
     const w = this.w
-    if (ty <= 0 || tx <= 0 || tx >= w.cols - 1 || w.tile(tx, ty) !== SOLID) return false
+    if (ty <= 0 || tx <= 0 || tx >= w.cols - 1 || tileOf(w, tx, ty) !== SOLID) return false
     if (this.solid(tx + dx, ty) || this.solid(tx, ty + dy)) return false
     return !this.cave.has(ty * w.cols + tx + dx) && !this.cave.has((ty + dy) * w.cols + tx)
   }
@@ -692,7 +697,7 @@ export class TerrainHD {
     let any = false
     for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++)
-        if (solid(tx, ty) && w.tile(tx, ty) !== ICE) {
+        if (solid(tx, ty) && tileOf(w, tx, ty) !== ICE) {
           const tl = this.nib(tx, ty, -1, -1) ? NIB : 0
           const tr = this.nib(tx, ty, 1, -1) ? NIB : 0
           const br = this.nib(tx, ty, 1, 1) ? NIB : 0
@@ -751,7 +756,7 @@ export class TerrainHD {
       const line = new Path2D()
       for (let ty = r0; ty < r1; ty++)
         for (let tx = tx0; tx <= tx1; tx++) {
-          if (!solid(tx, ty) || solid(tx, ty - 1) || ty === 0 || w.tile(tx, ty) !== SOLID || this.inZone(tx) !== inside) continue
+          if (!solid(tx, ty) || solid(tx, ty - 1) || ty === 0 || tileOf(w, tx, ty) !== SOLID || this.inZone(tx) !== inside) continue
           this.dress(cap, lk.mat, tx, ty, patch, fleck, line)
         }
       if (cap === 'grass') {
@@ -787,7 +792,7 @@ export class TerrainHD {
       const hatch = new Path2D()
       for (let ty = r0; ty < r1; ty++)
         for (let tx = tx0; tx <= tx1; tx++) {
-          if (!solid(tx, ty) || w.tile(tx, ty) === ICE) continue
+          if (!solid(tx, ty) || tileOf(w, tx, ty) === ICE) continue
           const x = tx * T
           const y = ty * T
           if (!solid(tx - 1, ty)) {
@@ -828,7 +833,7 @@ export class TerrainHD {
     // ── ıslak taş: aynı örgü, üstünde su parıltısı (kaygan olduğu okunmalı)
     for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
-        if (w.tile(tx, ty) !== WET) continue
+        if (tileOf(w, tx, ty) !== WET) continue
         const x = tx * T
         const y = ty * T
         c.fillStyle = 'rgba(60,150,190,0.34)'
@@ -845,7 +850,7 @@ export class TerrainHD {
     // ── 2. buz: ayrı malzeme, mavi mürekkep
     for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
-        if (w.tile(tx, ty) !== ICE) continue
+        if (tileOf(w, tx, ty) !== ICE) continue
         const x = tx * T
         const y = ty * T
         const g = c.createLinearGradient(0, y, 0, y + T)
@@ -879,9 +884,9 @@ export class TerrainHD {
       let run = -1
       let kind = SOLID
       for (let tx = tx0; tx <= tx1 + 1; tx++) {
-        const open = tx <= tx1 && solid(tx, ty) && !solid(tx, ty - 1) && w.tile(tx, ty - 1) !== CRUMBLE && ty > 0
+        const open = tx <= tx1 && solid(tx, ty) && !solid(tx, ty - 1) && tileOf(w, tx, ty - 1) !== CRUMBLE && ty > 0
         // buz ve ıslak taş kendi örtüsünü taşır: koşu malzeme (ya da bölge) değişince bölünür
-        const t = open ? (w.tile(tx, ty) === ICE ? ICE : w.tile(tx, ty) === WET ? WET : SOLID) : EMPTY
+        const t = open ? (tileOf(w, tx, ty) === ICE ? ICE : tileOf(w, tx, ty) === WET ? WET : SOLID) : EMPTY
         if (run >= 0 && (t !== kind || this.inZone(tx) !== this.inZone(run) || this.seabed(tx, ty) !== this.seabed(run, ty))) {
           const lk = this.lookAt(this.inZone(run))
           // su altında kalan taban burç değildir: yosun tutmuş düz silme
@@ -956,10 +961,10 @@ export class TerrainHD {
     // ── 5. tahta iskele, diken, ok tuzağı yüzü
     for (let ty = r0; ty < r1; ty++)
       for (let tx = tx0; tx <= tx1; tx++) {
-        const t = w.tile(tx, ty)
+        const t = tileOf(w, tx, ty)
         const x = tx * T
         const y = ty * T
-        if (t === ONEWAY) this.plank(c, x, y, w.tile(tx - 1, ty) !== ONEWAY, w.tile(tx + 1, ty) !== ONEWAY, s.plank, tx)
+        if (t === ONEWAY) this.plank(c, x, y, tileOf(w, tx - 1, ty) !== ONEWAY, tileOf(w, tx + 1, ty) !== ONEWAY, s.plank, tx)
         else if ((t === SPIKE_UP || t === SPIKE_DOWN) && !this.hideSpikes) this.spikes(c, x, y, t === SPIKE_UP, cbSpike(s.spike), tx)
         else if (t === TURRET) {
           c.fillStyle = s.tileDark
