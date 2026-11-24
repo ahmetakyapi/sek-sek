@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { AIR, CHASE, EMPTY, FROST_CYCLE, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
+import { AIR, AUNT, CHASE, EMPTY, FROST_CYCLE, auntFacing, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -836,5 +836,66 @@ describe('donan su (Elazığ)', () => {
     // içinde yüzdüğü karo buz olmadı: kimse buzun içinde sıkışmaz
     const p = w.player
     expect(w.isSolid(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T))).toBe(false)
+  })
+})
+
+describe('havuz teyzesi (Afyon)', () => {
+  // sığ sıcak havuz; teyze ortada, oyuncu soldan gelir
+  const map = ['                    ', '                    ', ' P                  ', '####WWWW"WWWWW######', '####WWWWWWWWWW######', '####################']
+  it('saatle sağa sola bakar, dönmeden önce işaret verir; aynada ters', () => {
+    const a = auntFacing(0, 0)
+    expect(a.dir).toBe(1)
+    expect(auntFacing(AUNT.turn + 0.01, 0).dir).toBe(-1)
+    expect(auntFacing(0, 0, true).dir).toBe(-1)
+    expect(auntFacing(AUNT.turn - AUNT.warn / 2, 0).left).toBeLessThan(AUNT.warn)
+  })
+  it('baktığı yönde görünce bağırıp havlu fırlatır; duran oyuncuyu havlu vurur', () => {
+    const w = mk(map)
+    const e = w.enemies.find((x) => x.kind === 'aunt')!
+    expect(e).toBeTruthy()
+    // teyzeyi oyuncuya döndür: oyuncu solda, kenarda bekliyor
+    const off = e.phase0 ?? 0
+    let clock = 0
+    while (auntFacing(clock, off).dir !== -1 || auntFacing(clock, off).left < 2.4) clock += 0.05
+    w.clock = clock
+    // havuzun kenarına dek yürü (teyzeye 5 karo), orada dur
+    step(w, 0.38, { right: true })
+    expect(w.player.grounded).toBe(true)
+    let shrieks = 0
+    let towels = 0
+    for (let i = 0; i < 240 && !w.player.dead; i++) {
+      w.step(1 / 120, emptyInput())
+      for (const ev of w.events) if (ev.type === 'shriek') shrieks++
+      towels = Math.max(towels, w.projectiles.filter((q) => q.towel).length)
+      w.events.length = 0
+    }
+    expect(shrieks).toBeGreaterThanOrEqual(1)
+    expect(towels).toBeGreaterThanOrEqual(1)
+    expect(w.player.dead).toBe(true)
+  })
+  it('havlu suya değince söner: başı su altındaki oyuncuya ulaşmaz', () => {
+    const w = mk(map)
+    w.player.x = 5 * T
+    w.player.y = 4 * T
+    w.projectiles.push({ x: 5 * T, y: 1 * T, w: AUNT.towel.w, h: AUNT.towel.h, vx: 0, vy: 0, g: AUNT.towel.g, towel: true })
+    for (let i = 0; i < 120; i++) w.step(1 / 120, emptyInput())
+    expect(w.projectiles.some((q) => q.towel)).toBe(false)
+  })
+  it('sırtı dönükken ya da arada duvar varken görmez', () => {
+    const w = mk(map)
+    const e = w.enemies.find((x) => x.kind === 'aunt')!
+    const off = e.phase0 ?? 0
+    let clock = 0
+    while (auntFacing(clock, off).dir !== 1 || auntFacing(clock, off).left < 2.5) clock += 0.05
+    w.clock = clock
+    step(w, 0.8, { right: true })
+    expect(w.player.dead).toBe(false)
+    const wall = mk(map.map((r, y) => (y === 2 ? r.slice(0, 6) + '#' + r.slice(7) : r)))
+    const e2 = wall.enemies.find((x) => x.kind === 'aunt')!
+    let c2 = 0
+    while (auntFacing(c2, e2.phase0 ?? 0).dir !== -1 || auntFacing(c2, e2.phase0 ?? 0).left < 2.5) c2 += 0.05
+    wall.clock = c2
+    step(wall, 1.2)
+    expect(wall.player.dead).toBe(false)
   })
 })

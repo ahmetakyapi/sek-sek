@@ -113,6 +113,23 @@ export const frozenAt = (clock: number) => Math.floor(clock / FROST_CYCLE.half) 
  */
 export const THERMAL = { rise: 170, accel: 1500 }
 
+/**
+ * Havuz Teyzesi (`"`, Afyon'un termal oteli): sıcak suda durur, saate bağlı `turn` saniyede bir yön değiştirir; dönmeden
+ * `warn` saniye önce "Hı?" diye kıpırdar (işaret). Baktığı yönde `sight` piksel içinde, `rows` piksel yükseklik farkıyla ve
+ * arada katı bir şey yokken oyuncuyu görürse "Aaaa!" diye çığlık atar ve oyuncunun durduğu yere kavisli bir havlu fırlatır
+ * (`towel`: yatay hız, yerçekimi); havlu değen oyuncu bayraktan doğar, havlu suya ya da taşa düşünce söner. Bağırdıktan sonra
+ * `shriek` saniye soluklanır (yeniden fırlatmaz). Başı su altındaki oyuncuyu görmez (dalarak geçilir); sırtı dönükken yanından
+ * geçilir; ona değen yakalanır. Ezilmez, dash'le geçilmez.
+ */
+export const AUNT = { turn: 3.2, warn: 0.7, sight: 6 * 16, rows: 2.5 * 16, shriek: 1.2, towel: { speed: 150, g: 520, w: 10, h: 6 } }
+/** teyzenin verilen saatte baktığı yön ve dönmeye ne kaldığı (ofset haritadaki sütundan) */
+export function auntFacing(clock: number, offset: number, mirror = false): { dir: 1 | -1; left: number } {
+  const t = clock + offset
+  const k = Math.floor(t / AUNT.turn)
+  const d = (k % 2 === 0 ? 1 : -1) * (mirror ? -1 : 1)
+  return { dir: d as 1 | -1, left: AUNT.turn - (t - k * AUNT.turn) }
+}
+
 /** tam zamanında yay: yaya inerken zıplama basılıysa (tampon içinde) sekiş bu kat güçlü */
 export const PERFECT_SPRING = 1.22
 
@@ -293,7 +310,7 @@ export interface Platform extends Box {
   dy: number
 }
 
-export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie' | 'shark' | 'piranha'
+export type EnemyKind = 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie' | 'shark' | 'piranha' | 'aunt'
 
 export interface Enemy extends Box {
   kind: EnemyKind
@@ -309,6 +326,8 @@ export interface Enemy extends Box {
   timer: number
   /** bu adımdan önceki tepe (basma kuralı: oyuncu üstten mi geldi) */
   py?: number
+  /** havuz teyzesi: dönüş saatinin ofseti */
+  phase0?: number
 }
 
 export interface Crystal extends Box {
@@ -372,6 +391,8 @@ export interface Projectile extends Box {
   /** kavisli atış (boss): dikey hız ve yerçekimi */
   vy?: number
   g?: number
+  /** havuz teyzesinin havlusu: suya değince söner (dalan oyuncuya ulaşmaz) */
+  towel?: boolean
 }
 
 export interface Pickup extends Box {
@@ -595,8 +616,16 @@ export class World {
           case 'W':
           case 'y':
           case 'U':
-            // suda yüzen düşmanların karesi de derin sudur
+          case '"':
+            // suda yüzen düşmanların (ve havuz teyzesinin) karesi de derin sudur. Düşmanlar burada kurulur: switch'te
+            // ikinci bir `case 'y'` hiç çalışmaz (ilk eşleşen kazanır; 24 Kasım 2026'ya dek Esoli ve pirana hiç doğmuyordu)
             this.set(tx, ty, SWIM)
+            // Esoli (köpekbalığı): suda devriye, yüzeni görünce titreyip uyarır, sonra hamle yapar; ezilmez, kaçılır
+            if (ch === 'y') this.enemies.push({ ...enemy('shark', px - 6, py + 2, 28, 12), timer: 1 })
+            // pirana: kısa mesafede çevik gidip gelir; basılır ya da dash'le vurulur
+            else if (ch === 'U') this.enemies.push({ ...enemy('piranha', px + 3, py + 4, 10, 8), phase: ox * 1.3 })
+            // havuz teyzesi: suyun içinde durur, saatle sağa sola bakar (ofset asıl haritadaki sütundan: aynada aynı ritim)
+            else if (ch === '"') this.enemies.push({ ...enemy('aunt', px, py - 4, 16, 18), phase0: (ox * 0.71) % AUNT.turn })
             break
           case '>':
           case '<':
@@ -635,14 +664,6 @@ export class World {
             break
           case 'x':
             this.enemies.push(enemy('spiky', px + 2, py + 7, 12, 9))
-            break
-          case 'y':
-            // Esoli (köpekbalığı): suda devriye, yüzeni görünce titreyip uyarır, sonra hamle yapar; ezilmez, kaçılır
-            this.enemies.push({ ...enemy('shark', px - 6, py + 2, 28, 12), timer: 1 })
-            break
-          case 'U':
-            // pirana: kısa mesafede çevik gidip gelir; basılır ya da dash'le vurulur
-            this.enemies.push({ ...enemy('piranha', px + 3, py + 4, 10, 8), phase: ox * 1.3 })
             break
           case 'j':
             // Ordu saksağanı: dalda bekler, altından geçene dalar
@@ -1932,6 +1953,19 @@ export class World {
           }
           break
         }
+        case 'aunt': {
+          // yönü ve "Hı?" işareti saatten; çığlıktan sonra bir süre bağırır (çizim), kural değişmez
+          const f = auntFacing(this.clock, e.phase0 ?? 0, !!this.level.mirror)
+          e.dir = f.dir
+          if (e.state === 'charge') {
+            e.timer -= dt
+            if (e.timer <= 0) e.state = 'idle'
+            break
+          }
+          e.state = f.left < AUNT.warn ? 'windup' : 'idle'
+          if (!p.dead && this.auntSees(e)) this.throwTowel(e)
+          break
+        }
         case 'piranha': {
           // kısa mesafede çevik gidip gelir (2,5 karo), hafif dalgalanır; suyun dışına çıkmaz
           const nx = e.ox + Math.sin(e.phase * 2.4) * T * 2.5
@@ -2133,7 +2167,8 @@ export class World {
       }
       const cx = Math.floor((pr.x + pr.w / 2) / T)
       const cy = Math.floor((pr.y + pr.h / 2) / T)
-      if (cx < 0 || cx >= this.cols) return false
+      if (cx < 0 || cx >= this.cols || cy >= this.rows + 2) return false
+      if (pr.towel && this.tile(cx, cy) === SWIM) return false
       return !this.isSolid(cx, cy)
     })
   }
@@ -2207,6 +2242,11 @@ export class World {
       // inip kalkarken ya da zıplamanın tepesinde (hız ~0) de geçerli; alttan zıplayıp çarpan ölür
       const fromAbove = this.prevFeet <= (e.py ?? e.y) + 4 && p.vy > -150
       const stomp = fromAbove || (p.vy > 0 && p.y + p.h - e.y < 10)
+      // havuz teyzesine değen yakalanır (ezilmez)
+      if (e.kind === 'aunt') {
+        this.shriek(e)
+        return
+      }
       // Esoli ezilmez (kaçılır); diken sırtlı da öyle
       if (e.kind !== 'spiky' && e.kind !== 'shark' && (stomp || p.dashTime > 0)) {
         e.alive = false
@@ -2278,6 +2318,48 @@ export class World {
       this.complete = true
       this.events.push({ type: 'complete' })
     }
+  }
+
+  /** teyze oyuncuyu görüyor mu: baktığı yönde, menzilde, aynı katta, arada katı yok, oyuncunun başı su üstünde */
+  private auntSees(e: Enemy): boolean {
+    const p = this.player
+    const ex = e.x + e.w / 2
+    const ey = e.y + 4
+    const px = p.x + p.w / 2
+    const dx = px - ex
+    if (dx * e.dir < -4 || Math.abs(dx) > AUNT.sight || Math.abs(p.y + p.h / 2 - (e.y + e.h / 2)) > AUNT.rows) return false
+    if (this.tile(Math.floor(px / T), Math.floor((p.y + 2) / T)) === SWIM) return false
+    const step = Math.sign(dx) * 6
+    for (let x = ex; Math.abs(x - ex) < Math.abs(dx); x += step) if (this.isSolid(Math.floor(x / T), Math.floor(ey / T))) return false
+    return true
+  }
+
+  /**
+   * "Aaaa!": teyze çığlık atıp oyuncunun durduğu yere havlu fırlatır. Havlu sabit yatay hızla uçar; dikey hızı, oyuncunun şu anki
+   * yerine varacak kavisle seçilir (öngörü yok: koşan, zıplayan ya da dalan kaçar).
+   */
+  private throwTowel(e: Enemy) {
+    const p = this.player
+    const tw = AUNT.towel
+    const sx = e.x + e.w / 2 - tw.w / 2
+    const sy = e.y - 2
+    const dx = p.x + p.w / 2 - (sx + tw.w / 2)
+    const dy = p.y + p.h / 2 - (sy + tw.h / 2)
+    const time = Math.max(0.25, Math.abs(dx) / tw.speed)
+    const vy = Math.max(-260, Math.min(120, (dy - 0.5 * tw.g * time * time) / time))
+    e.state = 'charge'
+    e.timer = AUNT.shriek
+    this.projectiles.push({ x: sx, y: sy, w: tw.w, h: tw.h, vx: Math.sign(dx || e.dir) * tw.speed, vy, g: tw.g, towel: true })
+    this.events.push({ type: 'shriek', x: e.x + e.w / 2, y: e.y })
+  }
+
+  /** ona değen oyuncuyu teyze yakalar: "Aaaa!" (bayraktan doğar) */
+  private shriek(e: Enemy) {
+    if (this.player.dead) return
+    e.state = 'charge'
+    e.timer = AUNT.shriek
+    this.events.push({ type: 'shriek', x: e.x + e.w / 2, y: e.y })
+    this.kill()
   }
 
   kill() {

@@ -74,7 +74,7 @@ function helpEntries(level: LevelDef): Entry[] {
   return out
 }
 
-const BOX: Partial<Record<EnemyKind, [number, number]>> = { charger: [14, 12], fly: [12, 8], bat: [12, 8], spiky: [12, 9], magpie: [12, 9], shark: [28, 12], piranha: [10, 8] }
+const BOX: Partial<Record<EnemyKind, [number, number]>> = { charger: [14, 12], fly: [12, 8], bat: [12, 8], spiky: [12, 9], magpie: [12, 9], shark: [28, 12], piranha: [10, 8], aunt: [16, 18] }
 
 function enemyEntry(id: string, kind: EnemyKind, city: LevelDef['city'], note: string): Entry {
   const key = enemySpecies(kind, city)
@@ -113,6 +113,7 @@ export function bestiary(level: LevelDef): Entry[] {
   if (has('j')) out.push(enemyEntry('j', 'magpie', level.city, 'Daldan sana dalar: kanat çırpınca kaç'))
   if (has('y')) out.push(enemyEntry('y', 'shark', level.city, 'Esoli suda devriye gezer; titreyince hamle yapar, ezilmez: yolundan çekil'))
   if (has('U')) out.push(enemyEntry('U', 'piranha', level.city, 'Kısa mesafede gidip gelir: arayı kolla ya da üstüne bas'))
+  if (has('"')) out.push(enemyEntry('"', 'aunt', level.city, 'Havuzda sağa sola bakar; görürse çığlık atıp havlu fırlatır: sırtı dönükken ya da dalarak geç'))
   if (has('Y'))
     out.push({
       id: 'Y',

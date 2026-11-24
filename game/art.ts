@@ -356,6 +356,26 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'raven',
     animal: 'cat',
   },
+  afyon: {
+    // Afyon: kara volkanik kaya, kaplıca buharının beyazı, termal havuzun turkuazı ve kaymak sarısı
+    sky: ['#4a6aa8', '#a8c4e4', '#f6ead8'],
+    sun: { x: 0.66, y: 0.24, r: 14, color: '#fff2d4', glow: 'rgba(255,238,200,0.22)' },
+    far: '#a4aec4',
+    mid: '#6e7a8a',
+    near: '#3e4452',
+    tileTop: '#8a8478',
+    tile: '#5e5a54',
+    tileDark: '#34322e',
+    tileLight: '#aaa496',
+    plank: '#a07a50',
+    accent: '#3ab8c4',
+    water: ['#3aa8b4', '#1e6e7a', '#d4f2f4'],
+    spike: ['#3a3640', '#1c1a20'],
+    weather: 'dust',
+    enemyGround: 'lizard',
+    enemyFly: 'pigeon',
+    animal: 'cat',
+  },
   elazig: {
     // Elazığ: Harput’un bal rengi taşı, Buzluk’un buz mavisi, Hazar’ın lacivert suyu ve kayısı turuncusu
     sky: ['#3a4a7c', '#8ea4cc', '#eae2d6'],
@@ -1252,6 +1272,8 @@ export function buildLayers(city: CityKey): Layers {
       return aydinLayers(s, B)
     case 'balikesir':
       return balikesirLayers(s, B)
+    case 'afyon':
+      return afyonLayers(s, B)
     case 'elazig':
       return elazigLayers(s, B)
     case 'denizli':
@@ -3937,6 +3959,196 @@ function elazigLayers(s: CityStyle, B: number): Layers {
   }
 }
 
+/** Afyon: ufukta yayla ve Frig Vadisi'nin peri bacaları; ortada sarp kara volkanik kayanın tepesinde Afyon Kalesi,
+ *  eteğinde kubbeli kaplıcalar ve termal oteller, yükselen buhar; yanda Aslantaş; önde mermer ocağı, çınar ve söğüt */
+function afyonLayers(s: CityStyle, B: number): Layers {
+  // buhar bulutu: üst üste binen soluk diskler (aşağıda yoğun, yukarı inceler)
+  const steamCloud = (c: Ctx, x: number, y: number, h: number, seed: number) => {
+    const r = rng(seed)
+    for (let i = 0; i < h; i += 3) {
+      const k = i / h
+      const dx = Math.round(Math.sin(i * 0.18 + seed) * (2 + k * 5))
+      const rad = Math.round(2 + k * 5 + r() * 2)
+      disc(c, x + dx, y - i, rad, k < 0.5 ? 'rgba(250,250,252,0.5)' : 'rgba(250,250,252,0.32)')
+    }
+  }
+  return {
+    far: layer((c) => {
+      // Emir Dağları: soluk mavi sırt, önünde yayla
+      hills(c, '#c0c8dc', B - 168, 30, 2, 4501)
+      hills(c, s.far, B - 128, 18, 3, 4502)
+      // Frig Vadisi: tüf kayalar ve peri bacası gibi sivri kuleler (krem-pembe), tepelerinde koyu şapka
+      const r = rng(4503)
+      for (let x = 0; x < LAYER_W; x += 7 + Math.floor(r() * 12)) {
+        const t = (x / LAYER_W) * Math.PI * 2
+        if (Math.sin(t * 2 + 0.6) < 0.1) continue
+        const h = 10 + Math.floor(r() * 20)
+        const w = 3 + Math.floor(r() * 3)
+        const lean = (r() - 0.5) * 0.12
+        const base = B - 100
+        for (let i = 0; i < h; i++) {
+          // tabanı geniş, ucu yuvarlak sivri tüf kule; yer yer hafif eğik
+          const hw = Math.max(1, Math.round(w * Math.sqrt(1 - (i / h) ** 1.6)))
+          const cx = x + Math.round(i * lean * 4)
+          rect(c, cx - hw, base - i, hw * 2, 1, '#d8c4ae')
+          rect(c, cx + hw - 1, base - i, 1, 1, '#b8a08c')
+        }
+        // bazılarının tepesinde bazalt şapka
+        if (r() > 0.55) rect(c, x + Math.round(h * lean * 4) - 2, base - h - 1, 4, 2, '#6a5e5a')
+      }
+      rect(c, 0, B - 100, LAYER_W, B, '#b6b4c0')
+      rect(c, 0, B - 100, LAYER_W, 1, '#cfccd6')
+    }),
+    mid: layer((c) => {
+      const r = rng(4504)
+      const base = B - 58
+      rect(c, 0, base - 4, LAYER_W, B - base + 4, s.mid)
+      // Afyon Kalesi: ovadan birden yükselen sarp, kara volkanik kaya; dik yüzler ve kırık dişli sırt
+      const kx = 300
+      const ROCK = '#2c2a30'
+      const ROCK_L = '#4a4650'
+      const ROCK_D = '#1c1a20'
+      for (let x = -48; x <= 48; x++) {
+        const ax = Math.abs(x)
+        // dik yamaç: tepede dar düzlük (surun oturduğu), etek hızla genişler; yamaçta kırık dişler
+        const slope = ax < 15 ? 0 : (ax - 15) / 33
+        const jag = ((x * 53) % 9) - 4 + (((x >> 2) * 17) % 5)
+        const h = Math.max(0, Math.round(ax < 15 ? 92 + Math.abs(jag) * 0.3 : 92 * (1 - Math.pow(slope, 1.4) * 0.94) + jag * 0.9))
+        rect(c, kx + x, base - h, 1, h, x > 6 ? ROCK_D : ROCK)
+        // sol üstten ışık: sol yüzde açık kenar
+        if (x < 0 && h > 3) rect(c, kx + x, base - h, 1, 2, ROCK_L)
+        // kaya çatlakları: dikey sütunlar (bazalt), yer yer yatay kırık
+        if (x % 7 === 0 && h > 12) rect(c, kx + x, base - h + 6, 1, h - 10, x > 6 ? '#121016' : '#3a3640')
+        for (let ly = 18; ly < h - 6; ly += 17) if ((x + ly) % 9 < 5) rect(c, kx + x, base - ly + (((x + ly) * 3) % 4), 1, 1, '#4e4a56')
+      }
+      // tepedeki sur: dar sırta oturan burçlar ve mazgallı duvar, kayaya kaynaşmış kahverengi-gri taş
+      const WALL = '#8a7e70'
+      const WSH = '#5e544a'
+      const peak = base - 91
+      rect(c, kx - 18, peak - 9, 36, 10, WALL)
+      rect(c, kx + 8, peak - 9, 10, 10, WSH)
+      for (let x = kx - 18; x < kx + 18; x += 4) rect(c, x, peak - 12, 2, 3, WALL)
+      for (const tx of [kx - 22, kx - 3, kx + 14]) {
+        rect(c, tx, peak - 18, 8, 19, WALL)
+        rect(c, tx + 6, peak - 18, 2, 19, WSH)
+        for (let x = tx; x < tx + 8; x += 3) rect(c, x, peak - 20, 2, 2, WALL)
+        rect(c, tx + 3, peak - 13, 2, 3, '#2a2420')
+      }
+      // tepede bayrak
+      rect(c, kx + 1, peak - 30, 1, 12, '#3a3030')
+      rect(c, kx + 2, peak - 30, 6, 4, '#d0302a')
+      rect(c, kx + 4, peak - 29, 1, 1, '#ffffff')
+      // Aslantaş: Frig kaya mezarı; üçgen alınlıklı kaya yüzü, kapının iki yanında şaha kalkmış aslan kabartması
+      const ax = 108
+      for (let x = -26; x <= 26; x++) {
+        const h = Math.round(46 - Math.abs(x) * 0.5 - ((x * 29) % 5))
+        rect(c, ax + x, base - h, 1, h, x > 8 ? '#a89480' : '#c4ae98')
+        if (h > 3 && x < 8) rect(c, ax + x, base - h, 1, 1, '#dcc8b0')
+      }
+      rect(c, ax - 14, base - 30, 28, 30, '#b8a28c')
+      for (let i = 0; i < 7; i++) rect(c, ax - 14 + i * 2, base - 31 - i, 28 - i * 4, 1, '#ccb69e')
+      rect(c, ax - 3, base - 20, 6, 20, '#3a3028')
+      rect(c, ax - 3, base - 20, 6, 1, '#7a6a58')
+      for (const k of [-1, 1]) {
+        const lx = ax + k * 9
+        // aslan: gövde dik, ön ayaklar kapıya doğru, kabarık yele
+        rect(c, lx - 2, base - 22, 4, 14, '#8e7a66')
+        disc(c, lx - k, base - 23, 3, '#8e7a66')
+        rect(c, lx - k * 4, base - 21, 3, 2, '#8e7a66')
+        rect(c, lx - k * 4, base - 16, 3, 2, '#8e7a66')
+        rect(c, lx - 2, base - 8, 4, 8, '#8e7a66')
+        rect(c, lx + k * 2, base - 12, 2, 6, '#7a6656')
+        rect(c, lx - k * 2, base - 25, 1, 1, '#4a3a2e')
+      }
+      // kaplıca ve termal oteller: kayanın eteğinde kubbeli hamamlar, birkaç katlı otel blokları
+      const DOME = ['#e8e4dc', '#d8d2c6', '#f0ece4']
+      for (let x = 190; x < 450; x += 22 + Math.floor(r() * 10)) {
+        if (x > 262 && x < 340) continue
+        if (r() > 0.45) {
+          // hamam: alçak taş gövde, büyük kurşun kubbe, tepesinde yıldız penceresi
+          const w = 18
+          rect(c, x, base - 12, w, 12, '#d4c8b4')
+          rect(c, x + w - 2, base - 12, 2, 12, '#a89c88')
+          dome(c, x + w / 2, base - 12, 8, '#8a96a4')
+          disc(c, x + w / 2 - 2, base - 17, 2, '#a8b4c2', true)
+          for (let k = 0; k < 3; k++) rect(c, x + w / 2 - 4 + k * 4, base - 16, 1, 1, '#f6f2c8')
+          rect(c, x + w / 2 - 2, base - 7, 4, 7, '#4a3a2e')
+          steamCloud(c, x + w / 2, base - 26, 30 + Math.floor(r() * 16), x)
+        } else {
+          // termal otel: açık renk blok, sıra sıra balkon ve pencere
+          const w = 16 + Math.floor(r() * 6)
+          const h = 26 + Math.floor(r() * 16)
+          const col = DOME[Math.floor(r() * 3)]
+          rect(c, x, base - h, w, h, col)
+          rect(c, x + w - 2, base - h, 2, h, 'rgba(80,80,100,0.25)')
+          for (let wy = base - h + 3; wy < base - 5; wy += 5) {
+            rect(c, x + 1, wy + 3, w - 2, 1, '#9ab0c0')
+            for (let wx = x + 2; wx < x + w - 3; wx += 4) rect(c, wx, wy, 2, 3, '#3a7a8a')
+          }
+          rect(c, x - 1, base - h - 1, w + 2, 1, '#8a8a94')
+          if (r() > 0.5) steamCloud(c, x + w - 4, base - h - 4, 18, x + 7)
+        }
+      }
+      // Ulu Cami'nin minaresi: eski şehirde ince taş gövde
+      minaret(c, 470, base, 52, '#d8ccb8', 4)
+      for (let x = 482; x < LAYER_W - 6; x += 18 + Math.floor(r() * 8)) house(c, x, base, 14 + Math.floor(r() * 4), 12 + Math.floor(r() * 8), r() > 0.5 ? '#e4d8c4' : '#cdbca2', '#3a3040', r)
+      for (let x = 8; x < 70; x += 18 + Math.floor(r() * 8)) house(c, x, base, 14 + Math.floor(r() * 4), 12 + Math.floor(r() * 8), r() > 0.5 ? '#e4d8c4' : '#cdbca2', '#3a3040', r)
+      rect(c, 0, base + 18, LAYER_W, B - base, s.mid)
+    }),
+    near: layer((c) => {
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      const r = rng(4505)
+      // mermer ocağı: kesilmiş beyaz ve kaymaktaşı bloklar, gri damarlı; üst üste ve yan yana
+      const MARBLE = ['#f2f0ec', '#e6e2da', '#ece4d4']
+      for (const [x0, n] of [[20, 3], [250, 4], [470, 3]] as const) {
+        let x = x0
+        for (let i = 0; i < n; i++) {
+          const w = 14 + Math.floor(r() * 8)
+          const h = 9 + Math.floor(r() * 6)
+          const col = MARBLE[Math.floor(r() * 3)]
+          rect(c, x, base - h, w, h, col)
+          rect(c, x, base - h, w, 1, '#ffffff')
+          rect(c, x + w - 2, base - h + 1, 2, h - 1, '#b8b4ac')
+          for (let k = 0; k < 2; k++) {
+            const vy = base - h + 2 + Math.floor(r() * (h - 3))
+            for (let j = 0; j < w - 4; j += 2) rect(c, x + 1 + j, vy + ((j >> 1) % 2), 2, 1, '#a8a4a0')
+          }
+          // ikinci kat blok
+          if (i === 1) {
+            const w2 = w - 4
+            rect(c, x + 2, base - h - 8, w2, 8, MARBLE[(i + 1) % 3])
+            rect(c, x + 2, base - h - 8, w2, 1, '#ffffff')
+            rect(c, x + w2, base - h - 7, 2, 7, '#b8b4ac')
+          }
+          x += w + 1
+        }
+      }
+      // çınar: kalın, alacalı gövde, geniş yuvarlak taç
+      for (const x of [140, 400]) {
+        rect(c, x, base - 22, 5, 22, '#b4a48c')
+        for (let k = 0; k < 4; k++) rect(c, x + (k % 2) * 2, base - 20 + k * 5, 2, 2, '#ddd0b8')
+        rect(c, x - 4, base - 18, 5, 2, '#9a8a72')
+        disc(c, x + 2, base - 32, 13, '#4e7a3a')
+        disc(c, x - 8, base - 26, 8, '#5e8a44')
+        disc(c, x + 12, base - 27, 8, '#46703a')
+        disc(c, x - 2, base - 38, 7, '#6e9a50')
+        for (let i = 0; i < 8; i++) rect(c, x - 9 + i * 3, base - 34 + ((i * 7) % 10), 2, 1, i % 2 ? '#2e4a26' : '#8aae64')
+      }
+      // söğüt: çay kıyısında sarkık dallar
+      for (const x of [200, 340, 560]) {
+        rect(c, x + 6, base - 14, 3, 14, '#5a4a36')
+        disc(c, x + 7, base - 22, 9, '#6a8e4a')
+        disc(c, x + 4, base - 25, 5, '#86a65a')
+        for (let i = -9; i <= 9; i += 2) {
+          const len = 9 + Math.floor(r() * 7) - Math.abs(i) / 2
+          rect(c, x + 7 + i, base - 22 + Math.floor(Math.sqrt(Math.max(0, 81 - i * i)) * 0.6), 1, len, i % 4 ? '#7a9a52' : '#9ab866')
+        }
+      }
+    }),
+  }
+}
+
 /** Karabük: Küre Dağları’nın ormanı, kiremit çatılı ahşap Safranbolu konakları, öndeki haddehanenin bacaları ve dumanı */
 function karabukLayers(s: CityStyle, B: number): Layers {
   return {
@@ -4002,7 +4214,8 @@ function karabukLayers(s: CityStyle, B: number): Layers {
 const SNOWY: CityKey[] = ['sivas', 'ardahan', 'bayburt', 'erzurum']
 
 /** Haritadaki düşman türünün o şehirdeki hayvanı (enemyDraw ve rehber aynı adı kullanır). */
-export function enemySpecies(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie' | 'shark' | 'piranha', city: CityKey): string {
+export function enemySpecies(kind: 'ground' | 'fly' | 'hopper' | 'charger' | 'bat' | 'spiky' | 'magpie' | 'shark' | 'piranha' | 'aunt', city: CityKey): string {
+  if (kind === 'aunt') return 'aunt'
   if (kind === 'magpie') return 'magpie'
   if (kind === 'shark') return 'shark'
   if (kind === 'piranha') return 'piranha'
@@ -4017,5 +4230,5 @@ export const CREATURE_NAMES: Record<string, string> = {
   gull: 'Gökçekuş', bee: 'Arı', raven: 'Kuzgun', mosquito: 'Sivrisinek', frog: 'Kurbağa', hare: 'Tavşan', ram: 'Koç', bat: 'Yarasa',
   hedgehog: 'Kirpi', boar: 'Yaban Domuzu', crab: 'Yengeç', pigeon: 'Güvercin', goat: 'Keçi', scorpion: 'Akrep', wolf: 'Gökçekurt',
   snake: 'Yılan', lizard: 'Kertenkele', rat: 'Fare', wasp: 'Eşek Arısı', magpie: 'Saksağan', shark: 'Esoli', piranha: 'Pirana',
-  cat: 'Sokak Kedisi', flamingo: 'Flamingo', angora: 'Ankara Keçisi', vanCat: 'Van Kedisi', lion: 'Hitit Aslanı', cow: 'İnek', kangal: 'Kangal', horse: 'At', partridge: 'Keklik', turtle: 'Caretta Caretta',
+  cat: 'Sokak Kedisi', flamingo: 'Flamingo', angora: 'Ankara Keçisi', vanCat: 'Van Kedisi', lion: 'Hitit Aslanı', cow: 'İnek', kangal: 'Kangal', horse: 'At', partridge: 'Keklik', turtle: 'Caretta Caretta', aunt: 'Havuz Teyzesi',
 }

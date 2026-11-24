@@ -141,6 +141,8 @@ export const SCALES: Record<CityKey, Makam> = {
   agri: { root: 57, steps: [0,  2,  3,  5,  7,  9,  10,  12], meter: [2,  2,  2,  3], tempo: 0.15 },
   // Uşşak, ağır zeybek 9/8 (Balıkesir)
   balikesir: { root: 55, steps: [0, 2, 3, 5, 7, 8, 10, 12], meter: [2, 2, 2, 3], tempo: 0.19 },
+  // Hüzzam, Afyon zeybeği 9/8
+  afyon: { root: 53, steps: [0, 1, 4, 5, 7, 8, 11, 12], meter: [2, 2, 2, 3], tempo: 0.18 },
   // Kürdi, Harput havası 7/8 (Elazığ)
   elazig: { root: 50, steps: [0, 1, 3, 5, 7, 8, 10, 12], meter: [2, 2, 3], tempo: 0.17 },
 }

@@ -92,7 +92,7 @@ export const CITY_CODES = [
   'adana', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon',
   'sivas', 'van', 'erzurum', 'kayseri', 'hatay', 'eskisehir', 'ardahan', 'amasya', 'mugla', 'bayburt',
   'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak',
-  'mersin', 'karabuk', 'aydin', 'balikesir', 'elazig',
+  'mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon',
 ] as const satisfies readonly CityKey[]
 
 const V1_SYMBOLS = 25

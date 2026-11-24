@@ -153,6 +153,11 @@ const STEP = 1 / 120
 
 /** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
 const RELEASE_NOTES: Record<string, [string, string][]> = {
+  afyon: [
+    ['Yeni Şehir: Afyon', 'Kara kayanın kalesi, Frig Vadisi ve termal otelin içi: döner kapı, açık büfe, buhar odası.'],
+    ['Havuz Teyzeleri', 'Sıcak havuzdaki teyzeler sağa sola bakar; “Hı?” derse dönecek. Görürse “Aaaa!” deyip havlu fırlatır: sırtı dönükken geç ya da dal.'],
+    ['Su Düşmanları Geri Döndü', 'Zonguldak ve Karabük’ün sularındaki Esoli ve piranalar artık gerçekten yüzüyor.'],
+  ],
   balikesir: [
     ['İki Yeni Şehir', 'Balıkesir ve Elazığ: yükselen sıcak havayla kanatsız uçuş ve saat gibi donup eriyen su.'],
     ['Termal', 'Balıkesir’de tüylerin uçuştuğu sütuna gir: seni yukarı taşır, tepesinden yana atlarsın.'],
@@ -541,6 +546,7 @@ export default function Game() {
           statRef.current.playMs += dt * 1000
         }
         let drowned = false
+        let shrieked = false
         for (const e of w.events) {
           renderer.handle(e, w)
           soundRef.current?.sfx(e.type)
@@ -556,6 +562,11 @@ export default function Game() {
               // nefes azalıyor: kısa, kalan saniye azaldıkça sıklaşan titreşim; ilk üç saniyede bir de söz
               haptic(e.left === 1 ? [18, 50, 18, 50, 18] : e.left === 2 ? [18, 60, 18] : [18])
               if (e.left === 3) setQuip({ text: t('Nefesin azalıyor: yüzeye çık!'), key: Date.now() })
+              break
+            case 'shriek':
+              shrieked = true
+              setQuip({ text: t('Aaaa! Havlu geliyor!'), key: Date.now() })
+              haptic([20, 30, 20])
               break
             case 'drown':
               drowned = true
@@ -576,7 +587,7 @@ export default function Game() {
               const q = localize(w.level, langRef.current).quips
               // boğulma düşüşten ayrı anlaşılsın: neden olduğu ve ne yapılacağı yazar
               if (drowned) setQuip({ text: t('Nefesin bitti: başın suyun üstündeyken nefes dolar.'), key: Date.now() })
-              else if (Math.random() < 0.4) setQuip({ text: q[Math.floor(Math.random() * q.length)], key: Date.now() })
+              else if (!shrieked && Math.random() < 0.4) setQuip({ text: q[Math.floor(Math.random() * q.length)], key: Date.now() })
               break
             }
             case 'checkpoint': {

@@ -32,9 +32,16 @@ Değişen: $ARGUMENTS
 - `.env*`, sırlar, `tsconfig.tsbuildinfo` gibi üretilmiş dosyalar commit'e girmez (`git status` ile bak).
 - Kullanıcı ayrıca istemedikçe PR açılmaz.
 
+## Ara kayıt da derlenmeli
+
+Çalışma dalına her push Vercel'de **önizleme dağıtımı** başlatır. Derlenmeyen ara kayıt (`wip`) dağıtım listesinde ERROR olarak
+görünür (24 Kasım 2026: çizer ajanı boss çizimini eklemeden atılan ara kayıt). Push'tan önce, ara kayıt bile olsa,
+`npx tsc --noEmit` temiz olmalı. Derlenmiyorsa yerelde commit'le, push etme.
+
 ## 3. Canlıyı denetle
 
-- Dağıtım: `VERCEL_TOKEN` ortamdaysa `curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?app=sek-sek&limit=1"`
+- Dağıtım: son dağıtımlarda (çalışma dalının önizlemeleri dahil) ERROR var mı bak; varsa günlüğünü oku (`/v3/deployments/<uid>/events?builds=1`) ve düzelt.
+  `VERCEL_TOKEN` ortamdaysa `curl -s -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?app=sek-sek&limit=1"`
   ile en son dağıtımın `state`'i `READY` olana dek bekle (birkaç dakika). `ERROR` ise derleme günlüğüne bak, göç satırlarını (`uygulandı:`) da oku.
 - `https://sek-sek.vercel.app` açılıyor mu (`curl -sI`, 200). Yeni şehir ya da ekran varsa ilgili sayfa (`/sehir/<id>`) da açılsın.
 - Kullanıcıya kısa rapor: ne çıktı, hangi doğrulamalar geçti, canlıda ne görülür, bilinen eksik varsa açıkça.

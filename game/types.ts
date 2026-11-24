@@ -1,6 +1,6 @@
 export const T = 16
 
-export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis' | 'zonguldak' | 'mersin' | 'karabuk' | 'aydin' | 'balikesir' | 'elazig'
+export type CityKey = 'istanbul' | 'edirne' | 'kocaeli' | 'bursa' | 'canakkale' | 'izmir' | 'antalya' | 'ankara' | 'konya' | 'nevsehir' | 'adana' | 'gaziantep' | 'sanliurfa' | 'diyarbakir' | 'mardin' | 'malatya' | 'corum' | 'sinop' | 'ordu' | 'trabzon' | 'sivas' | 'van' | 'erzurum' | 'kayseri' | 'hatay' | 'eskisehir' | 'ardahan' | 'amasya' | 'mugla' | 'bayburt' | 'rize' | 'artvin' | 'kars' | 'agri' | 'giresun' | 'tokat' | 'denizli' | 'bitlis' | 'zonguldak' | 'mersin' | 'karabuk' | 'aydin' | 'balikesir' | 'elazig' | 'afyon'
 
 export interface Fact {
   title: string
@@ -42,6 +42,11 @@ export interface LevelDef {
   wind?: number
   /** kapalı dikenli çukurlar zehirli suya döner (öldüren suyla aynı kural, yeşil ve köpüren çizilir) */
   poison?: boolean
+  /**
+   * İç mekân (Afyon'un termal oteli): tavanı olan sütunlarda gök yerine iç duvar çizilir (çini lambri, krem duvar, kemerli
+   * pencere, lamba); tek yönlü tahtalar büfe masasıdır (üstünde yemek tepsileri), havuzların üstünde buhar tüter. Yalnız çizim.
+   */
+  indoor?: boolean
   /** Kaygan Dünya (zor mod): bütün zeminler buz gibi kayar */
   slippery?: boolean
   /** Çöken Dünya (zor mod): basılan her yüzey çatlak taş gibi çöker ve bir süre sonra geri gelir */
@@ -121,6 +126,7 @@ export type GameEvent =
   | { type: 'beat' }
   | { type: 'freeze' }
   | { type: 'thaw' }
+  | { type: 'shriek'; x: number; y: number }
   | { type: 'perfect' }
   | { type: 'key' }
   | { type: 'stamp' }

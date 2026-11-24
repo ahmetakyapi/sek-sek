@@ -1357,6 +1357,33 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     ],
     quips: ['The thermal let you go.', 'The pelican laughed.', 'Your höşmerim went cold.', 'The wind changed.'],
   },
+  afyon: {
+    subtitle: 'Black Castle, Clotted Cream and Hot Springs',
+    item: 'Kaymak',
+    nickname: 'Karahisar',
+    intro: 'From Afyon Castle atop its black rock to the rock monuments of the Phrygian Valley, then into the thermal hotel: the revolving door, the open buffet, the steam room and the aunties’ hot pool. Pass unseen, rise on the steam.',
+    note: 'This page of the notebook has fogged up, the ink puffed up in places: as if someone took it to the hot springs. In Afyon a castle sits on a black rock and hot water boils beneath it. On this road you will go inside the hotel too: do not dive into the buffet, and do not let the aunties in the pool see you.',
+    facts: [
+      { title: 'Afyon Castle', text: 'Afyon Castle stands on top of a steep black rock rising in the middle of the city. Karahisar, the name the city takes from it, means “black castle”; you climb to the top by hundreds of steps.' },
+      { title: 'Hot Springs', text: 'Afyon is one of Türkiye’s major thermal resorts. In hot springs such as Gazlıgöl and Ömer-Gecek, hot water wells up from deep underground.' },
+      { title: 'Phrygian Valley', text: 'In the Phrygian Valley, between Afyon, Eskişehir and Kütahya, stand monuments the Phrygians carved into the rock. At Aslantaş two giant lion reliefs guard the door of a tomb chamber.' },
+    ],
+    secret: { title: 'Kocatepe', text: 'The Great Offensive began on the morning of 26 August 1922 from Kocatepe in Afyon. Today a monument and a museum on the hill tell the story of that morning.' },
+    hints: [
+      'Welcome to Afyon! Climb to the castle on top of the black rock: wall-jump from side to side and do not stand on cracked stone.',
+      'The Phrygian Valley: the rocks are sharp and the gaps are deep. Climb to the head of Aslantaş with a wall-jump and a dash.',
+      'The thermal hotel: the revolving door has two wings that open in turn. At the open buffet the service trolley comes and goes: jump from the tables onto the trolley at the right moment.',
+      'The spa pool: the aunties look left and right and throw towels if they see you. “Hm?” means she is about to turn: pass while her back is turned or dive, since towels cannot go underwater.',
+      'The steam room: the hot steam carries you to the ceiling. Hang at the top of the steam and jump sideways.',
+    ],
+    npcs: [
+      { name: 'Zekai the Kaymak Maker', text: 'I skim my kaymak from water buffalo milk, slowly and patiently! Three plates of it went missing: one on top of the castle, one at the head of Aslantaş in the Phrygian Valley, one on the open buffet of the thermal hotel. Bring back the buffet one without eating it!' },
+      { name: 'Nadide the Castle Keeper', text: 'The castle is called Karahisar: the castle of the black rock. I never counted the steps, but my knees did! You climb to the top by jumping from wall to wall; do not dawdle on cracked stone.' },
+      { name: 'Sertaç the Doorman', text: 'Hold on! You cannot go into the pool with a phone, put on slippers and a swim cap. And the aunties are inside: if they see you they will scream the place down and throw towels at you! Pass while their backs are turned, or dive. Watch out for the service trolleys at the buffet too.' },
+      { name: 'Halit the Masseur', text: 'For forty years I have scrubbed backs in this spa; the hot water boils up from deep below and the steam hits the ceiling. When the second plume of steam lifts you to the top, look behind you, to the left: past the haze there is a dark doorway, and someone left a stamp inside.' },
+    ],
+    quips: ['Towel, bullseye!', 'You lingered at the buffet.', 'The steam let you go.', 'Your kaymak melted.'],
+  },
   elazig: {
     subtitle: 'Milk Castle, Buzluk and Hazar',
     item: 'Orcik',
@@ -1469,7 +1496,7 @@ export const CHARACTERS_EN: Record<'uktun' | 'memo', { role: string; bio: string
 }
 
 export const CREATURE_NAMES_EN: Record<string, string> = {
-  shark: 'Esoli', piranha: 'Piranha',
+  shark: 'Esoli', piranha: 'Piranha', aunt: 'Pool Auntie',
   gull: 'Gökçekuş', bee: 'Bee', raven: 'Raven', magpie: 'Magpie', mosquito: 'Mosquito', frog: 'Frog', hare: 'Hare', ram: 'Ram', bat: 'Bat',
   hedgehog: 'Hedgehog', boar: 'Wild Boar', crab: 'Crab', pigeon: 'Pigeon', goat: 'Goat', scorpion: 'Scorpion', wolf: 'Gökçekurt',
   snake: 'Snake', lizard: 'Lizard', rat: 'Rat', wasp: 'Wasp',

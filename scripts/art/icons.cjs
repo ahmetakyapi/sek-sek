@@ -147,7 +147,7 @@ window.sheet = () => {
             <canvas id="og-emblem" width="224" height="224" style="width:112px;height:112px;display:block"></canvas>
             <div class="font-display" style="margin-top:26px;font-size:124px;line-height:1;color:#f3f1ff;text-shadow:0 7px 0 #15123a;white-space:nowrap">Sek-Sek</div>
             <div style="margin-top:26px;font-family:var(--font-mono);font-weight:600;font-size:23px;line-height:1.4;color:#f3f1ff;white-space:nowrap">Gezgin’in yarım kalmış defterini tamamla.</div>
-            <div style="display:inline-block;margin-top:24px;padding:9px 18px 10px;font-family:var(--font-mono);font-weight:700;font-size:25px;line-height:1;color:#15123a;background:#ffcc66;border:4px solid #15123a;border-radius:12px;box-shadow:0 5px 0 #15123a">44 şehir · 132 hatıra</div>
+            <div style="display:inline-block;margin-top:24px;padding:9px 18px 10px;font-family:var(--font-mono);font-weight:700;font-size:25px;line-height:1;color:#15123a;background:#ffcc66;border:4px solid #15123a;border-radius:12px;box-shadow:0 5px 0 #15123a">45 şehir · 135 hatıra</div>
           </div>
         </div>`
       document.body.appendChild(el)

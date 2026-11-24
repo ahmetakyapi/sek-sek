@@ -832,6 +832,298 @@ const ENEMIES: Record<string, EnemyPainter> = {
     line(c, [6.6, -5.6, 8.6, -5.9], 0.4, INK, false)
     eye(c, 2.6, -3.5, 1.05, a.mood, a.t)
   },
+  // Havuz Teyzesi: termal havuzda belden aşağısı suda duran tombul teyze; çiçekli lila bone, üstünde katlı çizgili havlu,
+  // pembe yanak, fırfırlı puantiyeli mayo. Devriyede keyfinden gözleri yarı kapalı, sırıtır, başının üstünden keyif
+  // buharı tüter, elleriyle suyu okşar; işarette ("Hı?") burnu havada, bir gözü kısık, bir kaşı şüpheyle kalkık, eli
+  // kulağında; çığlıkta ("Aaaa!") ağzı kocaman, gözleri fal taşı, bir eli yanağında, öbür kolu havluyu ileri savurmuş
+  // (havlunun ucu elinden yeni çıkıyor, mermiyi render.ts çizer), bonedeki çiçekler zıplar. Kaş hiçbir durumda göze inmez.
+  // Birim: 12 = kutu eni; su çizgisi y ≈ -6 (kutunun alt 8 pikseli suda). Ezilmez: kalın hale. Her şey saate bağlı.
+  aunt: (c, a) => {
+    const SKIN = '#f6c9a4'
+    const SKIN_SH = '#d69a7a'
+    const SUIT = '#e8587a'
+    const SUIT_SH = '#b23a5a'
+    const CAP = '#c4a8ec'
+    const CAP_SH = '#8e72c0'
+    const TOWEL = '#fff4d4'
+    const TOWEL_SH = '#d8c48a'
+    const STRIPE = '#f2a02a'
+    const scream = a.st === 'charge'
+    const hm = a.st === 'windup'
+    const W = -6
+    // su halkaları: belinin çevresinde genişleyip sönen iki halka
+    const ring = (front: boolean) => {
+      if (halo) return
+      for (let k = 0; k < 2; k++) {
+        const ph = (a.t * (scream ? 1.6 : 0.7) + k * 0.5) % 1
+        c.beginPath()
+        c.ellipse(0.4, W, 6 + ph * 3.6, 1 + ph * 0.5, 0, front ? 0 : Math.PI, front ? Math.PI : TAU)
+        c.strokeStyle = `rgba(240,252,255,${(0.85 * (1 - ph)).toFixed(3)})`
+        c.lineWidth = 0.55
+        c.stroke()
+      }
+    }
+    ring(false)
+    c.save()
+    // suda hafifçe inip kalkar; çığlıkta titrer
+    c.translate(scream ? Math.sin(a.t * 70) * 0.25 : 0, Math.sin(a.t * 2.3) * 0.3 - 1)
+    const hx = 0.6
+    const hy = -10.4
+    const paddle = Math.sin(a.t * 3) * 0.5
+    const arm = (sx: number, sy: number, ex: number, ey: number, px: number, py: number, back: boolean) => {
+      line(c, [sx, sy, ex, ey, px, py], 1.5, back ? SKIN_SH : SKIN)
+      ell(c, px, py, 0.95, 1.05, back ? SKIN_SH : SKIN, back ? undefined : SKIN_SH)
+    }
+    // arka kol: çığlıkta eli yanağında, yoksa suyu okşar
+    if (scream) arm(-4, -7, -6.4, -8.2, hx - 3.9, hy + 1.6, true)
+    else arm(-4.2, -6.8, -6.6, -5.2, -7.4, W + 1 - paddle, true)
+    // gövde: yuvarlak omuzlar ten, altı puantiyeli mayo (fırfırlı yaka, ince askılar); suyun altında kısa kalır
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.3, -3.4)
+        c.quadraticCurveTo(-4.9, -7, -1.6, -7.7)
+        c.lineTo(2.8, -7.7)
+        c.quadraticCurveTo(6.1, -7, 5.5, -3.4)
+        c.quadraticCurveTo(0.6, -2.2, -4.3, -3.4)
+      },
+      SKIN,
+      SKIN_SH,
+    )
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.4, -3.5)
+        c.lineTo(-4.6, -5)
+        c.quadraticCurveTo(0.6, -6.3, 5.75, -5)
+        c.lineTo(5.6, -3.5)
+        c.quadraticCurveTo(0.6, -2.3, -4.4, -3.5)
+      },
+      SUIT,
+      SUIT_SH,
+    )
+    line(c, [-2.6, -5.7, -2.2, -7.6], 0.6, SUIT, false)
+    line(c, [3.6, -5.7, 3.2, -7.6], 0.6, SUIT, false)
+    for (let i = 0; i < 7; i++) dab(c, -3.9 + i * 1.5, -5.25 - Math.sin((i / 6) * Math.PI) * 0.75, 0.6, 0.42, '#fff0f4')
+    for (const [x, y] of [[-2.8, -4.2], [0.6, -4.3], [3.8, -4.2]] as const) dab(c, x, y, 0.42, 0.42, '#ffe0ea')
+    // baş: işarette burnu havaya kalkar (geriye yatar), çığlıkta öne atılır
+    c.save()
+    c.translate(hx, hy + 3)
+    c.rotate(hm ? -0.2 : scream ? 0.06 : Math.sin(a.t * 1.6) * 0.05)
+    c.translate(-hx, -hy - 3)
+    ell(c, hx, hy, 4.1, 3.8, SKIN, SKIN_SH)
+    // yüz baktığı yöne döner; işarette ortaya, arkaya bakmaya başlar
+    const f = hm ? 0.4 : scream ? 0.3 : 0.9
+    const e1 = hx - 0.3 + f
+    const e2 = hx + 1.9 + f
+    const ey = hy + 0.2
+    // bone: başın üstünü ve kulakları örter, alnın üstünde dalgalı kenar
+    shape(
+      c,
+      () => {
+        c.moveTo(hx - 3.2, hy + 2.4)
+        c.quadraticCurveTo(hx - 4.9, hy - 2.6, hx - 0.6, hy - 4.4)
+        c.quadraticCurveTo(hx + 3.8, hy - 4.6, hx + 4.1, hy - 1.2)
+        c.quadraticCurveTo(hx + 1.8, hy - 2.4, hx - 0.6 + f * 0.6, hy - 1.2)
+        c.quadraticCurveTo(hx - 1.8 + f * 0.6, hy + 0.4, hx - 1.9 + f * 0.6, hy + 2.6)
+      },
+      CAP,
+      CAP_SH,
+    )
+    // bonedeki lastik çiçekler: çığlıkta sırayla zıplar
+    const flower = (x: number, y: number, r: number, petal: string, ph: number) => {
+      const up = scream ? Math.abs(Math.sin(a.t * 18 + ph)) * 1.1 : 0
+      for (let i = 0; i < 5; i++) {
+        const an = (i / 5) * TAU + 0.3 + (scream ? a.t * 6 : 0)
+        ell(c, x + Math.cos(an) * r, y - up + Math.sin(an) * r, r * 0.75, r * 0.75, petal)
+      }
+      ell(c, x, y - up, r * 0.6, r * 0.6, '#ffd84a')
+    }
+    // katlı havlu: devriyede ve işarette başının üstünde durur; çığlıkta fırlatılmıştır
+    if (!scream) {
+      const tilt = hm ? 0.08 : Math.sin(a.t * 1.6) * 0.06
+      c.save()
+      c.translate(hx + 0.2, hy - 4.3)
+      c.rotate(tilt)
+      shape(c, () => c.roundRect(-2.6, -1.4, 5.2, 1.6, 0.7), TOWEL, TOWEL_SH)
+      line(c, [-2.3, -0.6, 2.3, -0.6], 0.4, STRIPE, false)
+      line(c, [2.2, -1.2, 2.9, -0.1], 0.35, TOWEL_SH, false)
+      c.restore()
+    }
+    flower(hx - 3.2, hy - 1.2, 0.95, '#ff8ab4', 0)
+    flower(hx + 2.6, hy - 2.6, 0.62, '#ffffff', 1.3)
+    if (scream) flower(hx - 0.4, hy - 3.8, 0.7, '#7ad8b0', 2.4)
+    if (!halo) dab(c, hx - 1.8, hy - 1.6, 0.9, 0.5, 'rgba(255,255,255,0.5)', -0.5)
+    // yanaklar: keyifte daha pembe
+    const blush = scream ? 'rgba(240,96,110,0.5)' : 'rgba(240,96,110,0.65)'
+    dab(c, e1 - 0.6, ey + 1.4, 0.95, 0.6, blush)
+    dab(c, e2 + 0.6, ey + 1.4, 0.8, 0.55, blush)
+    if (!halo) {
+      c.lineCap = 'round'
+      const brow = (x: number, y: number, tiltK: number) => {
+        c.moveTo(x - 0.75, y + 0.25 + tiltK)
+        c.quadraticCurveTo(x, y - 0.35, x + 0.75, y + 0.25 - tiltK)
+      }
+      if (scream) {
+        // fal taşı gözler
+        for (const ex of [e1, e2]) {
+          c.beginPath()
+          c.arc(ex, ey, 1, 0, TAU)
+          c.fillStyle = '#ffffff'
+          c.fill()
+          c.strokeStyle = INK
+          c.lineWidth = 0.35
+          c.stroke()
+          c.beginPath()
+          c.arc(ex + 0.1, ey, 0.3, 0, TAU)
+          c.fillStyle = INK
+          c.fill()
+        }
+        c.strokeStyle = '#5a3a3a'
+        c.lineWidth = 0.4
+        c.beginPath()
+        brow(e1, ey - 2, 0)
+        brow(e2, ey - 2, 0)
+        c.stroke()
+      } else if (hm) {
+        // şüpheci: arka göz kısık çizgi, ön göz yarım kapaklı ve arkaya bakar; ön kaş kalkık, arka kaş düz
+        c.strokeStyle = INK
+        c.lineWidth = 0.45
+        c.beginPath()
+        c.moveTo(e1 - 0.7, ey)
+        c.lineTo(e1 + 0.7, ey - 0.1)
+        c.stroke()
+        c.beginPath()
+        c.arc(e2, ey, 0.75, 0, Math.PI)
+        c.closePath()
+        c.fillStyle = '#ffffff'
+        c.fill()
+        c.stroke()
+        c.beginPath()
+        c.arc(e2 - 0.35, ey + 0.2, 0.32, 0, TAU)
+        c.fillStyle = INK
+        c.fill()
+        c.beginPath()
+        c.moveTo(e2 - 0.85, ey)
+        c.lineTo(e2 + 0.85, ey)
+        c.stroke()
+        c.strokeStyle = '#5a3a3a'
+        c.lineWidth = 0.4
+        c.beginPath()
+        c.moveTo(e1 - 0.75, ey - 1.45)
+        c.lineTo(e1 + 0.7, ey - 1.5)
+        brow(e2, ey - 2.5, 0.2)
+        c.stroke()
+      } else {
+        // keyifli: gülen, yarı kapalı gözler (yukarı kavisli kapak, altında bebeğin ucu)
+        for (const ex of [e1, e2]) {
+          c.beginPath()
+          c.ellipse(ex + 0.05, ey + 0.25, 0.42, 0.22, 0, 0, Math.PI)
+          c.fillStyle = INK
+          c.fill()
+          c.strokeStyle = INK
+          c.lineWidth = 0.5
+          c.beginPath()
+          c.moveTo(ex - 0.7, ey + 0.3)
+          c.quadraticCurveTo(ex, ey - 0.55, ex + 0.7, ey + 0.3)
+          c.stroke()
+        }
+        c.strokeStyle = '#5a3a3a'
+        c.lineWidth = 0.4
+        c.beginPath()
+        brow(e1, ey - 1.6, 0)
+        brow(e2, ey - 1.6, 0)
+        c.stroke()
+      }
+    }
+    // burun: işarette havada (yukarı kalkık ucu)
+    const nx = (e1 + e2) / 2 + 0.5
+    dab(c, nx, ey + 1.1, hm ? 0.6 : 0.5, 0.38, '#e49a7e')
+    dab(c, nx - 0.15, ey + 0.95, 0.18, 0.12, 'rgba(255,255,255,0.7)')
+    // ağız: keyifte geniş sırıtış, işarette yana büzülmüş, çığlıkta kocaman "Aaaa"
+    const mx = nx - 0.1
+    const my = ey + 2.3
+    if (!halo) {
+      if (scream) {
+        c.beginPath()
+        c.ellipse(mx, my + 0.6, 1.3, 1.7 + Math.sin(a.t * 30) * 0.1, 0, 0, TAU)
+        c.fillStyle = '#5a1420'
+        c.fill()
+        c.strokeStyle = '#c83a50'
+        c.lineWidth = 0.45
+        c.stroke()
+        dab(c, mx + 0.1, my + 1.6, 0.75, 0.4, '#ff8fa0')
+        c.fillStyle = '#fffaf0'
+        c.fillRect(mx - 0.7, my - 0.9, 1.4, 0.38)
+        // küçük dil sallanır (titrek çığlık)
+        dab(c, mx, my - 0.1 + Math.sin(a.t * 40) * 0.15, 0.3, 0.25, '#7a2030')
+      } else if (hm) {
+        c.beginPath()
+        c.moveTo(mx - 0.7, my + 0.1)
+        c.quadraticCurveTo(mx - 0.1, my - 0.25, mx + 0.4, my + 0.05)
+        c.strokeStyle = '#c83a50'
+        c.lineWidth = 0.5
+        c.stroke()
+        dab(c, mx + 0.55, my, 0.28, 0.32, '#c83a50')
+      } else {
+        c.beginPath()
+        c.moveTo(mx - 1.1, my - 0.35)
+        c.quadraticCurveTo(mx, my + 1, mx + 1.1, my - 0.35)
+        c.closePath()
+        c.fillStyle = '#7a2030'
+        c.fill()
+        c.strokeStyle = '#c83a50'
+        c.lineWidth = 0.4
+        c.stroke()
+        c.fillStyle = '#fffaf0'
+        c.fillRect(mx - 0.7, my - 0.3, 1.4, 0.3)
+      }
+    }
+    c.restore()
+    // keyif buharı: devriyede başının üstünden kıvrılarak yükselen iki tutam
+    if (!scream && !hm && !halo)
+      for (let k = 0; k < 2; k++) {
+        const ph = (a.t * 0.6 + k * 0.5) % 1
+        const x0 = hx - 1.6 + k * 3.4
+        const y0 = hy - 8 - ph * 3.6
+        c.globalAlpha = Math.sin(ph * Math.PI) * 0.85
+        line(c, [x0, y0 + 1.6, x0 + 0.7, y0 + 0.8, x0 - 0.3, y0, x0 + 0.4, y0 - 0.8], 0.5, '#ffffff', false)
+        c.globalAlpha = 1
+      }
+    // ön kol: devriyede suyu okşar, işarette eli kulağında, çığlıkta havluyu ileri ve yukarı savurmuş
+    if (scream) {
+      const sw = Math.sin(a.t * 9) * 0.35
+      arm(4.6, -7, 7.6, -10 + sw * 0.5, 9.8, -13.2 + sw, false)
+      // elinden yeni çıkan havlunun ucu: dalgalanarak ileri uçar
+      const fl = Math.sin(a.t * 24) * 0.6
+      shape(
+        c,
+        () => {
+          c.moveTo(9.4, -14)
+          c.quadraticCurveTo(11.2, -15.6 + fl, 13.2, -15 + fl)
+          c.lineTo(13.4, -13.2 - fl * 0.5)
+          c.quadraticCurveTo(11.6, -13 - fl * 0.5, 10.2, -12.4)
+        },
+        TOWEL,
+        TOWEL_SH,
+      )
+      line(c, [11, -14.6 + fl * 0.6, 11.4, -13 - fl * 0.3], 0.4, STRIPE, false)
+      line(c, [12.4, -14.9 + fl, 12.6, -13.2 - fl * 0.5], 0.4, STRIPE, false)
+      // savruluş çizgileri
+      if (!halo)
+        for (let i = 0; i < 3; i++) line(c, [5.6 + i * 1.2, -12.6 - i * 1.6, 7.2 + i * 1.3, -14.2 - i * 1.7], 0.35, 'rgba(30,20,40,0.45)', false)
+    } else if (hm) arm(4.6, -7, 6.8, -7.4, hx + 4.4, hy - 0.2, false)
+    else arm(4.6, -6.8, 6.8, -5.2, 7.8, W + 1 + paddle, false)
+    c.restore()
+    ring(true)
+    // çığlıkta iki yanda titreme çizgileri
+    if (scream && !halo)
+      for (let i = 0; i < 3; i++) {
+        const y = hy - 2 + i * 1.8
+        const x0 = hx - 5.6 - (i % 2) * 0.6
+        line(c, [x0, y, x0 - 1.6, y - 0.6], 0.4, INK, false)
+      }
+  },
   // Gökçekurt: gri-mavi post, dik sivri kulaklar, kabarık açık uçlu kuyruk, krem çene ve göğüs, keskin bakış;
   // dört ayak ritimle adımlar (çapraz eşler birlikte), saldırıda dişlerini gösterir
   wolf: (c, a) => {
@@ -918,6 +1210,8 @@ export function drawEnemy(
   const perched = e.kind === 'magpie' && (st === 'idle' || st === 'stun')
   const walks = e.kind === 'ground' || e.kind === 'spiky' || e.kind === 'charger'
   const swims = e.kind === 'shark' || e.kind === 'piranha'
+  // havuz teyzesi suda durur: gölgesi yok, öne eğilmez, ünlemi yok (balonunu render.ts çizer)
+  const aunt = e.kind === 'aunt'
   const a: Anim = {
     mood: st === 'stun' ? 'dizzy' : st === 'windup' || st === 'charge' ? 'angry' : 'stern',
     t,
@@ -939,9 +1233,9 @@ export function drawEnemy(
   c.lineCap = 'round'
   setInkWidth(INKW)
   try {
-    if (!flying && !swims && st !== 'air') groundShadow(c, e.w * 0.48)
+    if (!flying && !swims && !aunt && st !== 'air') groundShadow(c, e.w * 0.48)
     c.save()
-    if (st === 'windup') c.translate(Math.sin(t * 46) * 0.5, 0)
+    if (st === 'windup') c.translate(Math.sin(t * 46) * (aunt ? 0.25 : 0.5), 0)
     // köpekbalığı uzun ve yassı: boyuna göre ölçeklenir (10 birim = gövde boyu)
     let kx = e.kind === 'shark' ? e.h / 10 : e.w / 12
     let ky = kx
@@ -961,16 +1255,16 @@ export function drawEnemy(
       // yüzme dalgası: hafifçe süzülür; sersemken yan yatar
       c.translate(0, Math.sin(t * 3 + e.phase) * 0.4)
       if (st === 'stun') c.rotate(Math.sin(t * 4) * 0.12 + 0.12)
-    } else if (st === 'charge') c.rotate(e.kind === 'magpie' ? 0.42 : 0.17)
+    } else if (st === 'charge' && !aunt) c.rotate(e.kind === 'magpie' ? 0.42 : 0.17)
     else if (st === 'windup' && e.kind === 'charger') c.rotate(-0.1)
     // dikenli tür daha kalın ve sabit parlar: üstüne basılmaz
-    haloW = e.kind === 'spiky' || e.kind === 'shark' ? 0.75 : 0.45 + Math.sin(t * 5 + e.phase) * 0.12
+    haloW = e.kind === 'spiky' || e.kind === 'shark' || aunt ? 0.75 : 0.45 + Math.sin(t * 5 + e.phase) * 0.12
     halo = true
     paint(c, a)
     halo = false
     paint(c, a)
     c.restore()
-    if (st === 'windup') bang(c, top, t)
+    if (st === 'windup' && !aunt) bang(c, top, t)
     if (st === 'stun') stars(c, top - 0.5, t)
   } finally {
     halo = false
@@ -1664,6 +1958,63 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     // ceviz içleri ve tarçın
     for (const [x, y] of [[-1.6, -2.2], [1.8, -2.8], [0.2, -1.2]] as const) ell(c, x, y, 0.95, 0.7, '#9a6234', '#6a3e1c')
     for (const [x, y] of [[-3.6, -1.4], [-0.6, -3.6], [2.8, -1.4], [3.8, -2.2], [-2.6, -0.8], [1, -0.6]] as const) dab(c, x, y, 0.32, 0.32, '#7a3e1a')
+  },
+  // Kaymak: Afyon mandasının kalın kaymağı; mavi kenarlı tabakta rulo yapılmış dilim, ucunda kat kat sarmal, üstünde bal
+  afyon: (c) => {
+    // tabak: yassı oval, mavi kenar şeridi
+    ell(c, 0, 3.6, 7.2, 2.6, '#f4f6f8', '#b8c4d0')
+    if (!halo) {
+      c.beginPath()
+      c.ellipse(0, 3.6, 6.2, 2, 0, 0, TAU)
+      c.strokeStyle = '#4a7ab8'
+      c.lineWidth = 0.45
+      c.stroke()
+    }
+    // rulo: yatık silindir; gövdesi krem, kızarmış üst kabuğu açık sarı
+    shape(
+      c,
+      () => {
+        c.moveTo(-4.4, -2.8)
+        c.lineTo(3, -3.4)
+        c.quadraticCurveTo(6.4, -1.4, 3.6, 2.6)
+        c.lineTo(-4, 3)
+        c.quadraticCurveTo(-6.6, 0, -4.4, -2.8)
+      },
+      '#fbf3dc',
+      '#dcc89a',
+    )
+    dab(c, -1, -2.2, 3.4, 0.7, '#f2dfa8', -0.06)
+    // uçtaki sarmal: kat kat sarılmış kaymak
+    ell(c, 3.4, -0.4, 2.4, 3, '#fffaea', '#e4d4ac')
+    if (!halo) {
+      c.beginPath()
+      for (let a = 0; a < TAU * 2.2; a += 0.3) {
+        const rr = 0.25 + (a / (TAU * 2.2)) * 1.9
+        const px = 3.4 + Math.cos(a) * rr * 0.8
+        const py = -0.4 + Math.sin(a) * rr
+        if (a === 0) c.moveTo(px, py)
+        else c.lineTo(px, py)
+      }
+      c.strokeStyle = '#d4bc84'
+      c.lineWidth = 0.4
+      c.stroke()
+    }
+    // bal: rulonun üstünden akan altın şerit ve damla
+    shape(
+      c,
+      () => {
+        c.moveTo(-3.6, -3.1)
+        c.quadraticCurveTo(-1.2, -4.2, 1.6, -3.4)
+        c.quadraticCurveTo(1.2, -2, 0.4, -1.6)
+        c.quadraticCurveTo(0, 0.6, -0.8, -1.2)
+        c.quadraticCurveTo(-2.2, -2.2, -3.6, -3.1)
+      },
+      '#f2b42a',
+      '#c8841a',
+    )
+    ell(c, -0.5, 1.1, 0.75, 0.95, '#f2b42a', '#c8841a')
+    dab(c, -1.8, -3.3, 0.9, 0.35, 'rgba(255,240,180,0.9)', -0.2)
+    dab(c, -3.6, -1, 0.6, 1.2, 'rgba(255,255,255,0.7)', 0.2)
   },
   // Orcik: ipe dizili cevizin üstüne pestil (kayısı rengi) dökülmüş sucuk; tepede düğüm ve ilmek
   elazig: (c) => {

@@ -19,6 +19,10 @@ Bu yol gelgit (`A`, Mersin), yükselen hava (`V`, Balıkesir) ve donan su (`Z`, 
   Yakındaki oyuncuya ses de çalar (olay türü `game/types.ts` `GameEvent`).
 - **Kimse sıkışmaz.** Katılaşan karo oyuncunun içindeyse oyuncu çıkana dek boş kalır (`rhythmHold`, `frostHold`).
 - **Tuzak kurmaz.** Su altında beklenen süre nefesten (`AIR.max` 6 sn) kısa olur. Zorunlu yol nitro gibi isteğe bağlı şeye bağlanmaz.
+- **Kurucuda tek `case`.** `World` kurucusundaki `switch (ch)`'ta aynı karakter iki kez geçerse yalnız ilki çalışır: 24 Kasım 2026'ya
+  dek `y` (Esoli) ve `U` (pirana) suyu kuran `case`e takılıp hiç doğmuyordu. Suyun içinde duran şey suyu kuran `case` içinde
+  kurulur (`if (ch === …)`). Yeni karakter eklerken `grep -n "case '<ch>'" game/sim.ts` tek satır vermeli; şüphede
+  `new World(level).enemies` sayısına bak.
 - **Karo karakteri:** kullanılmayan bir harf seç (`game/sim.ts` kurucusundaki `case` listesine ve `lib/customLevel.ts` `SYMBOLS`'a bak).
   Tek tırnaklı dizgide sorun çıkaran `'` gibi karakterleri seçme.
 

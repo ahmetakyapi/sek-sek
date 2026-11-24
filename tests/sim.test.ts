@@ -87,6 +87,7 @@ describe('bölüm verisi', () => {
       ['Aydın', 9],
       ['Balıkesir', 10],
       ['Elazığ', 23],
+      ['Afyon', 3],
     ])
   })
 })
@@ -584,5 +585,15 @@ describe('rüzgâr', () => {
     const x0 = w.player.x
     for (let i = 0; i < 600; i++) w.step(1 / 120, emptyInput())
     expect(Math.abs(w.player.x - x0)).toBeLessThan(0.5)
+  })
+})
+
+describe('düşmanlar haritadan doğar', () => {
+  it('haritadaki her düşman karakteri oyunda bir düşman kurar (kurucuda ikinci case yutulmaz)', () => {
+    const KINDS = 'efhcuxjyU"'
+    for (const l of LEVELS) {
+      const n = l.map.reduce((a, r) => a + [...r].filter((c) => KINDS.includes(c)).length, 0)
+      expect(new World(l).enemies.length, l.id).toBe(n)
+    }
   })
 })

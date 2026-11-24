@@ -254,6 +254,12 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Fırından taze höşmerim çıktı.', 'Fresh höşmerim comes out of the oven.'],
     ['Bir pelikan kanat çırpmadan süzülüyor.', 'A pelican glides by without a single flap.'],
   ],
+  afyon: [
+    ['Kalenin tepesinde rüzgâr bayrağı sallıyor.', 'Up on the castle the wind shakes the flag.'],
+    ['Aslantaş’ın aslanları seni süzüyor.', 'The lions of Aslantaş look you over.'],
+    ['Büfeden taze sucuk kokusu geliyor.', 'The smell of fresh sucuk drifts from the buffet.'],
+    ['Havuzdan bir “aaaa!” yükseldi.', 'An “eeek!” rises from the pool.'],
+  ],
   elazig: [
     ['Harput’ta bir kürsübaşı sohbeti başladı.', 'A fireside gathering begins in Harput.'],
     ['Eğri minare bugün de eğri.', 'The leaning minaret is still leaning today.'],

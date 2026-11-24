@@ -83,6 +83,7 @@ const LOOK: Record<CityKey, Look> = {
   aydin: { mat: 'ashlar', cap: 'stone' },
   balikesir: { mat: 'rock', cap: 'grass' },
   elazig: { mat: 'ashlar', cap: 'snow' },
+  afyon: { mat: 'rock', cap: 'stone' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 

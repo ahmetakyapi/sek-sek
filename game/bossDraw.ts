@@ -2395,6 +2395,168 @@ const PAINT: Record<CityKey, Painter> = {
     dab(c, hx + 1.6, hy + 1.6, 1, 0.6, BLUSH)
     aura(c, mood, t, hx - 4.6, hy - 4, hx + 14, hy - 1)
   },
+  // Kaplıca Natırı: iri, tombul hamam natırı; başında pembe çizgili havlu türban, kırmızı-krem çizgili peştamal,
+  // ayağında tahta nalın, bir elinde keçe kese, ötekinde bakır hamam tası; arkasında hamam buharı tüter.
+  // Kayarken sabunlu mermerde öne eğilir, kesesini uzatır, ayağının altından köpük saçılır; atarken köpük topunu
+  // başının üstüne kaldırır; sıçrarken tasını başından aşağı döker. Yorgunken türbanı yana kayar
+  afyon: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const slide = b.state === 'attack' && b.move === 'charge'
+    const toss = b.move === 'throw' && b.state === 'warn'
+    const pour = b.move === 'hop' && (b.state === 'warn' || air)
+    const SKIN = '#f2bf98'
+    const SKIN_SH = '#c88a66'
+    const PEST = '#c8343a'
+    const PEST_SH = '#8e1e2a'
+    const TOWEL = '#f8f4ec'
+    const TOWEL_SH = '#cfc4b4'
+    const KESE = '#8a5a3a'
+    const TAS = '#e0a452'
+    const TAS_SH = '#9a6428'
+    // hamam buharı: başın ardında ağır ağır yükselen bulutlar
+    for (let i = 0; i < 3; i++) {
+      const k = frac(t * 0.35 + i / 3)
+      c.save()
+      c.globalAlpha *= 0.55 * Math.sin(k * Math.PI)
+      dab(c, -9 + i * 5 + Math.sin(t + i) * 1.5, -20 - k * 16, 2.4 + k * 2.6, 2 + k * 2, '#ffffff')
+      c.restore()
+    }
+    // kayarken ayağının altından saçılan sabun köpüğü
+    if (slide)
+      for (let i = 0; i < 6; i++) {
+        const k = frac(t * 3 + i / 6)
+        c.save()
+        c.globalAlpha *= 1 - k
+        fine(() => ell(c, -6 - k * 10 + (i % 2) * 2, -1.4 - k * 3 - (i % 3), 1 + (i % 3) * 0.5, 1 + (i % 3) * 0.5, '#f4fbff'))
+        c.restore()
+      }
+    c.save()
+    if (slide) c.rotate(0.14)
+    // nalınlar ve tombul baldırlar
+    for (const k of [-1, 1]) {
+      const x = k * 4 - 0.6
+      ell(c, x, -5, 2.4, 2.8, k < 0 ? SKIN_SH : SKIN, SKIN_SH)
+      poly(c, [x - 3, -2.4, x + 3.6, -2.4, x + 3.2, 0, x - 2.8, 0], '#a8743e', '#6e4622')
+      fine(() => poly(c, [x - 1.6, -3.6, x + 2.2, -3.6, x + 2.6, -2.2, x - 1.8, -2.2], '#5a3a5e'))
+    }
+    // arka kol: yanda tas tutar; tas dökerken başının üstüne kalkar (tas ve su o zaman başın önünde çizilir)
+    const backHand: [number, number] = pour ? [-2.6, -34] : out ? [-11, -5] : [-11.4, -9]
+    stroke(c, [-7, -17, pour ? -9 : -11, pour ? -25 : -13, backHand[0], backHand[1]], 3, SKIN_SH)
+    const tas = () => {
+      c.save()
+      c.translate(backHand[0] + (pour ? 1.4 : 0), backHand[1] + (pour ? -1 : 2))
+      c.rotate(pour ? 2.3 + Math.sin(t * 8) * 0.15 : 0.15)
+      fine(() => {
+        blob(
+          c,
+          () => {
+            c.moveTo(-3.6, -1.2)
+            c.lineTo(3.6, -1.2)
+            c.quadraticCurveTo(3.2, 2.6, 0, 2.8)
+            c.quadraticCurveTo(-3.2, 2.6, -3.6, -1.2)
+          },
+          TAS,
+          shade(TAS_SH, 0.8, -0.6),
+        )
+        ell(c, 0, -1.2, 3.6, 0.9, '#f2c87a')
+      })
+      stroke(c, [-2.4, 0.6, 2.2, 0.6], 0.4, '#fff0c0', false)
+      c.restore()
+      ell(c, backHand[0], backHand[1], 1.8, 1.8, SKIN_SH)
+    }
+    if (!pour) tas()
+    // omuzlar ve peştamal: koltuk altından dize, kırmızı üstüne krem çizgiler
+    ell(c, 0.6, -18.6, 8.2, 3.4, SKIN, SKIN_SH)
+    blob(
+      c,
+      () => {
+        c.moveTo(-8.4, -18)
+        c.quadraticCurveTo(-12.6, -13, -10.6, -6.8)
+        c.quadraticCurveTo(-9, -2.6, 0.4, -2.6)
+        c.quadraticCurveTo(9.8, -2.6, 11.2, -6.8)
+        c.quadraticCurveTo(13, -13, 8.6, -18)
+        c.closePath()
+      },
+      PEST,
+      shade(PEST_SH),
+    )
+    for (const [y, hw] of [[-16, 10], [-12.6, 11.4], [-9.2, 11.2], [-5.8, 9.8]] as const) {
+      stroke(c, [-hw + 0.6, y, hw + 0.6, y], 1.1, '#f4e2c4', false)
+      stroke(c, [-hw + 0.9, y + 1, hw + 0.3, y + 1], 0.35, '#2e4a8a', false)
+    }
+    // peştamalın sıkıştırılmış ucu
+    fine(() => poly(c, [5.4, -18.2, 8.6, -18, 7.6, -14.4], PEST, PEST_SH))
+    dab(c, -6, -14, 1.6, 3.4, 'rgba(255,255,255,0.16)')
+    // baş: yuvarlak, tombul yanaklı
+    const hx = 2.4
+    const hy = -23.6
+    dab(c, hx - 4.6, hy + 1.6, 1.6, 1.2, '#3a2a2a')
+    ell(c, hx, hy, 6, 5.6, SKIN, SKIN_SH)
+    ell(c, hx - 4.6, hy + 0.6, 1.3, 1.7, SKIN, SKIN_SH)
+    // havlu türban: başın üstünde kabarık sargı, pembe şeritli, önde kıvrım; yorgunken yana kayar
+    c.save()
+    c.translate(hx, hy - 3)
+    if (out) c.rotate(-0.3)
+    if (b.state === 'warn') c.translate(0, -Math.abs(Math.sin(t * 20)) * 0.6)
+    ell(c, -0.6, -1.2, 6.8, 3.4, TOWEL, TOWEL_SH)
+    ell(c, 0.4, -4.4, 4.6, 2.6, TOWEL, TOWEL_SH, -0.1)
+    stroke(c, [-6, -0.4, -1, -3.2, 5.6, -1.6], 0.7, '#f08aa0', false)
+    stroke(c, [-3.6, -4.2, 0.6, -6.2, 4.4, -4.8], 0.6, '#f08aa0', false)
+    fine(() => ell(c, 4.6, -2.6, 1.6, 2, TOWEL, TOWEL_SH, 0.5))
+    c.restore()
+    // tastan dökülen su: türbanın üstünden iki yana şarıl şarıl
+    if (pour) {
+      tas()
+      for (const k of [-1, 1]) {
+        const w = Math.sin(t * 14 + k) * 0.6
+        stroke(c, [0.4 + k * 0.6, -32.6, 1.4 + k * 4 + w, -30, 2 + k * 8.4 + w, -20], 1.3, 'rgba(150,220,248,0.9)', false)
+      }
+      for (let i = 0; i < 5; i++) {
+        const k = frac(t * 2.4 + i / 5)
+        c.save()
+        c.globalAlpha *= 1 - k
+        dab(c, 2 + (i % 2 ? 1 : -1) * (7 + k * 6), -24 + k * 20, 0.8, 1.1, '#9adcf8')
+        c.restore()
+      }
+    }
+    // yüz: iri gözler, düğme burun, benli yanak
+    if (mood === 'calm' || mood === 'sleep') {
+      c.strokeStyle = INK
+      c.lineWidth = 0.7
+      c.lineCap = 'round'
+      c.beginPath()
+      c.moveTo(hx + 0.2, hy - 2.6)
+      c.quadraticCurveTo(hx + 1.6, hy - 3.6, hx + 3, hy - 2.8)
+      c.moveTo(hx + 4.4, hy - 2.8)
+      c.quadraticCurveTo(hx + 5.6, hy - 3.6, hx + 6.6, hy - 2.6)
+      c.stroke()
+    }
+    eye(c, hx + 1.6, hy - 0.6, 1.7, mood, t)
+    eye(c, hx + 5.4, hy - 0.6, 1.5, mood, t)
+    ell(c, hx + 6.6, hy + 1.6, 1.3, 1.1, SKIN, SKIN_SH)
+    dab(c, hx + 0.2, hy + 2.2, 1.5, 0.9, BLUSH)
+    dab(c, hx + 6.4, hy + 3.2, 1.1, 0.7, BLUSH)
+    dab(c, hx - 0.6, hy + 3.4, 0.35, 0.35, '#3a2a2a')
+    mouth(c, hx + 4, hy + 3.4, 1.6, mood, t)
+    aura(c, mood, t, hx - 4.4, hy - 6, hx + 8.4, hy + 1)
+    // ön kol: kese eldiveni; kayarken ileri uzanır, atarken köpük topunu başının üstüne kaldırır
+    const hand: [number, number] = toss ? [11, -28] : slide ? [15.4, -14] : out ? [11.8, -5] : [11.6, -9.6]
+    stroke(c, [7.4, -17.4, toss ? 11.4 : slide ? 12 : 11, toss ? -22 : slide ? -15.4 : -13.6, hand[0], hand[1]], 3, SKIN)
+    if (toss) {
+      const s = 1 + Math.sin(t * 18) * 0.06
+      fine(() => puff(c, hand[0] + 0.4, hand[1] - 3.6, 2.8 * s, 2.4 * s, 8, 1.3, '#ffffff', '#bfe4f8'))
+      dab(c, hand[0] - 0.6, hand[1] - 4.6, 0.9, 0.6, '#e0f6ff')
+    }
+    fine(() => {
+      // kese: başparmaklı eldiven, pürüzlü keçe dokusu, bileğinde krem şerit
+      ell(c, hand[0] - 2.2, hand[1] - 0.4, 1.1, 1.6, KESE, '#5a3622', -0.5)
+      blob(c, () => c.ellipse(hand[0] + 0.3, hand[1] - 0.6, 2.4, 3, 0.2, 0, Math.PI * 2), KESE, shade('#5a3622', 0.7, -0.6))
+      for (const [dx, dy] of [[-0.6, -2], [0.9, -1.4], [-0.2, -0.2], [1.2, 0.4], [-0.8, 1], [0.5, -2.6]] as const) dab(c, hand[0] + dx, hand[1] + dy, 0.35, 0.25, '#b48058')
+      stroke(c, [hand[0] - 1.6, hand[1] + 2.2, hand[0] + 2, hand[1] + 2.6], 0.9, '#e8d8b4')
+    })
+    c.restore()
+  },
   // Buzluk Devi: Buzluk Mağarası’nın ağzından kopmuş dev; kaya bacaklar ve omuzlar, üstü mavi buz kristali, yüzünde
   // mavi parlayan gözler, çenesinden sarkıt sakal. Öfkelenince gözleri ve kristalleri parlar; yorulunca erir, damlar
   elazig: (c, b, mood, t) => {

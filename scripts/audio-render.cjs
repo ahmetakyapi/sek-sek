@@ -29,7 +29,9 @@ const CLIPS = process.env.TEL ? [
   // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
   ['erzurum-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
-  ['efektler', 40, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown','grab','swim','ui','key','pet','crystal','warp','perfect','nitro','switch','breath','drown','beat','shoot','freeze','thaw']; names.forEach((n,i)=>setAt(0.5+i,()=>s.sfx(n)))`],
+  // havuz teyzesinin çığlığı tek başına (ünlü tınısı, titreme): tepe ve tını ayrı ölçülsün
+  ['ciglik', 3, `s.setMusic('afyon'); s.musicOn=false; setAt(0.3, () => s.sfx('shriek'))`],
+  ['efektler', 41, `s.setMusic('izmir'); s.musicOn=false; const names=['jump','walljump','dash','land','collect','checkpoint','stomp','spring','death','crumble','charm','stamp','bossWake','bossSlam','bossHit','bossDown','complete','shoulder','bite','growl','tideUp','tideDown','grab','swim','ui','key','pet','crystal','warp','perfect','nitro','switch','breath','drown','beat','shoot','freeze','thaw','shriek']; names.forEach((n,i)=>setAt(0.5+i,()=>s.sfx(n)))`],
 ]
 ;(async () => {
   let bad = 0

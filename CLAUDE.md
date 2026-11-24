@@ -503,6 +503,12 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
   simgeli çubuk (son 2,5 sn kırmızı, içinde kalan saniye, ekran kenarı mavi nabız: `render.ts` `drawBreath`); boğulunca
   düşüş sözü yerine nedeni yazar. Yüzme pozu kurbağalama döngüsü (`heroDraw.ts` `swimStroke`, föyde "kulaç"). Havasız su tüneli zayıf oyuncu için ~2,5 sn'yi geçmesin; suya dokunan haritada
   verify-levels / respawn / items koş.
+- `"` havuz teyzesi (Afyon'un termal oteli; `sim.ts` AUNT, `auntFacing`, `auntSees`): karesi derin sudur. Saate bağlı 3,2 sn'de bir
+  döner, dönmeden 0,7 sn önce "Hı?" balonu (render `auntBubble`). Baktığı yönde 6 karo içinde, ±2,5 karo yükseklikte, arada katı
+  karo yoksa ve oyuncunun başı su üstündeyse görür: "Aaaa!" (`shriek` olayı) diye bağırıp oyuncunun durduğu yere kavisli havlu fırlatır
+  (`AUNT.towel`, öngörüsüz: koşan, zıplayan ya da dalan kaçar; havlu suya değince söner), 1,2 sn soluklanır. Havlu değen bayraktan
+  doğar; teyzeye değen de yakalanır, ezilmez.
+  Güvenli cevaplar: sırtı dönükken geç, araya katı bir şey al, dal, havluyu görünce kaç. Her teyzenin yanından geçmek için ~1,5 sn'lik pencere ya da dalış yolu bırak.
 - Suda yüzen düşmanlar (karesi derin su sayılır): `y` Esoli (köpekbalığı: devriye → yüzeni görünce titreyip uyarır → hamle →
   soluklanır; ezilmez, kaçılır), `U` pirana (±2,5 karo gidip gelir; basılır, dash'le vurulur).
 - Van'ın öldüren sularında gölün canavarı yüzer (`render.ts` drawLakeMonster): süs, zararsız; su katmanı alt yarısını örter.

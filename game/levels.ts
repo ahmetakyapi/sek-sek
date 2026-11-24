@@ -27,6 +27,7 @@ import { road as mersinRoad } from './cities/mersin'
 import { road as aydinRoad } from './cities/aydin'
 import { road as balikesirRoad } from './cities/balikesir'
 import { road as elazigRoad } from './cities/elazig'
+import { road as afyonRoad } from './cities/afyon'
 import { road as karabukRoad } from './cities/karabuk'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
@@ -1124,6 +1125,7 @@ const DECOR_CYCLE: Record<string, string> = {
   karabuk: 'ltz',
   balikesir: 'tlz',
   elazig: 'zlt',
+  afyon: 'tlz',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2499,6 +2501,41 @@ export const LEVELS: LevelDef[] = [
       'Hazar Gölü: göl donunca koş, erirken yüz. Göle uzanan yarın altından yalnız su eriyince dalınır; öbür yanda buz tutmuşsa erimesini bekle.',
     ],
     map: roadMap(elazigRoad),
+  },
+  {
+    id: 'afyon',
+    city: 'afyon',
+    name: 'Afyon',
+    nickname: 'Karahisar',
+    plate: 3,
+    subtitle: 'Kara Kale, Kaymak ve Kaplıca',
+    difficulty: 'Zor',
+    indoor: true,
+    note: 'Defterin bu sayfası buğulanmış, mürekkep yer yer kabarmış: sanki biri onu kaplıcaya götürmüş. Afyon’da kara bir kayanın tepesinde kale, altında sıcak su kaynar. Bu yolda otelin içine de gireceksin: büfeye dalma, havuzdaki teyzelere görünme.',
+    npcs: [
+      { name: 'Kaymakçı Zekai Usta', look: 'usta', text: 'Kaymağımı manda sütünden, sabırla toplarım! Üç tabak kaymak kayboldu: biri kalenin tepesinde, biri Frig Vadisi’nde Aslantaş’ın başında, biri de termal otelin açık büfesinde kaldı. Büfedekini yemeden getir!' },
+      { name: 'Kale Bekçisi Nadide', look: 'teyze', text: 'Kalenin adı Karahisar: kara kayanın kalesi. Basamakları saymadım ama dizlerim saydı! Tepeye duvardan duvara sekerek çıkılır; çatlak taşta oyalanma.' },
+      { name: 'Kapı Görevlisi Sertaç', look: 'genc', text: 'Dur bakalım! Havuza telefonla giremezsin, terlik giy, bone tak. Hele içeride teyzeler var: seni görürlerse çığlığı basıp havlu fırlatırlar! Arkaları dönükken geç ya da dal. Büfede de servis arabalarına dikkat.' },
+      { name: 'Masör Halit', look: 'amca', text: 'Kırk yıldır bu kaplıcada kese atarım; sıcak su yerin dibinden kaynar, buharı tavana vurur. Buhar odasında ikinci buharın tepesine çıkınca arkana, sola bak: buğunun ardında karanlık bir kapı var, içeride biri bir pul unutmuş.' },
+    ],
+    medals: [180, 245, 330],
+    quips: ['Havlu tam isabet!', 'Büfede oyalandın.', 'Buhar seni bıraktı.', 'Kaymağın eridi.'],
+    item: 'Kaymak',
+    intro: 'Kara kayanın tepesindeki Afyon Kalesi’nden Frig Vadisi’nin kaya anıtlarına, oradan termal otelin içine: döner kapı, açık büfe, buhar odası ve teyzelerin sıcak havuzu. Görünmeden geç, buharla yüksel.',
+    facts: [
+      { title: 'Afyon Kalesi', text: 'Afyon Kalesi şehrin ortasında yükselen sarp, kara bir kayanın tepesindedir. Şehre adını veren Karahisar, “kara kale” demektir; tepeye yüzlerce basamakla çıkılır.' },
+      { title: 'Kaplıcalar', text: 'Afyon, Türkiye’nin önemli termal turizm merkezlerindendir. Gazlıgöl ve Ömer-Gecek gibi kaplıcalarında sıcak su yerin derinliklerinden kaynar.' },
+      { title: 'Frig Vadisi', text: 'Afyon, Eskişehir ve Kütahya arasındaki Frig Vadisi’nde Friglerin kayaya oyduğu anıtlar durur. Aslantaş’ta iki dev aslan kabartması bir mezar odasının kapısını bekler.' },
+    ],
+    secret: { title: 'Kocatepe', text: 'Büyük Taarruz, 26 Ağustos 1922 sabahı Afyon’daki Kocatepe’den başladı. Tepede bugün bir anıt ve müze bu sabahı anlatır.' },
+    hints: [
+      'Afyon’a hoş geldin! Kara kayanın tepesindeki kaleye çık: duvardan duvara sek, çatlak taşta durma.',
+      'Frig Vadisi: kayalar sivri, aralar derin. Aslantaş’ın başına duvar sekmesi ve dash’le çık.',
+      'Termal otel: döner kapı iki kanatlı, sırayla açılır. Açık büfede servis arabası gelip gider: masalardan arabaya doğru anda atla.',
+      'Kaplıca havuzu: teyzeler sağa sola bakar, görürse havlu fırlatır. “Hı?” derse dönecek: sırtı dönükken geç ya da dal; havlu suya giremez.',
+      'Buhar odası: sıcak buhar seni tavana taşır. Buharın tepesinde asılı kal, yana atla.',
+    ],
+    map: roadMap(afyonRoad),
   },
 ]
 

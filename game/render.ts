@@ -12,7 +12,7 @@ import { cb, cbc, type CbMode } from './colorBlind'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
 import type { Player } from './sim'
-import { AIR, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, DOOR, EMPTY, FROST_CYCLE, ICE, NITRO, PHYS, THERMAL, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, TIDE_CYCLE, WATER, hammerState, tideFill, tidePhase, type World } from './sim'
+import { AIR, BLOCK_A, BLOCK_B, BOSS_GATE, CABLE, CRUMBLE, CRYSTAL_RECHARGE, ONEWAY, DOOR, EMPTY, FROST_CYCLE, ICE, NITRO, PHYS, THERMAL, RHYTHM, RHYTHM_A, RHYTHM_B, ROPE, SPIKE_UP, SWIM, TIDE_CYCLE, WATER, hammerState, tideFill, tidePhase, type World } from './sim'
 import { T, type CityKey, type GameEvent } from './types'
 
 interface Particle {
@@ -699,6 +699,7 @@ export class Renderer {
     b.save()
     b.translate(-cx, -cy)
     if (w.hasTide) this.drawTideBeds(b, w, cx)
+    if (w.level.indoor) this.drawInterior(b, w, cx)
     this.drawDecor(b, w, cx, cy)
     b.restore()
 
@@ -921,6 +922,8 @@ export class Renderer {
       const x = d.tx * T
       const y = d.ty * T
       if (x < cx - 48 || x > cx + this.viewW + 48 || y < cy - 48 || y > cy + this.viewH + 48) continue
+      // otelin içinde sokak feneri ve ağaç olmaz (duvarda lamba var)
+      if (w.level.indoor && (d.ch === 'l' || d.ch === 't') && this.roomOf(w).top[d.tx] >= 0) continue
       const bot = y + T
       switch (d.ch) {
         case 'l': {
@@ -1399,6 +1402,40 @@ export class Renderer {
         rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
         for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#5e7a3a')
         for (let i = 0; i < 8; i++) rect(b, x - 6 + i * 4, bot - 29, 2, 1, i % 2 ? '#f4f0e6' : '#5e7a3a')
+        break
+      }
+      case 'afyon': {
+        // kaymakçı: tepside kaymak tabakları (rulo kaymak, üstünde bal), bal kavanozları; tentede sucuk dizisi
+        rect(b, x - 4, bot - 8, 26, 8, '#7a5236')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a7250')
+        rect(b, x - 3, bot - 10, 16, 2, '#c8ccd4')
+        rect(b, x - 3, bot - 10, 16, 1, '#eef0f4')
+        for (const dx of [-2, 3, 8]) {
+          rect(b, x + dx - 1, bot - 11, 6, 1, '#f4f6f8')
+          rect(b, x + dx - 1, bot - 11, 1, 1, '#4a7ab8')
+          rect(b, x + dx + 4, bot - 11, 1, 1, '#4a7ab8')
+          rect(b, x + dx, bot - 13, 4, 2, '#fbf3dc')
+          rect(b, x + dx, bot - 13, 4, 1, '#f2dfa8')
+          rect(b, x + dx + 3, bot - 13, 1, 2, '#e4d4ac')
+          rect(b, x + dx + 1, bot - 14, 2, 1, '#f2b42a')
+        }
+        for (const dx of [15, 20]) {
+          rect(b, x + dx, bot - 14, 4, 6, '#f2a82a')
+          rect(b, x + dx, bot - 14, 1, 6, '#ffd060')
+          rect(b, x + dx, bot - 15, 4, 1, '#d04a3a')
+          rect(b, x + dx + 1, bot - 12, 2, 2, '#fff4d8')
+        }
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#3ab8c4')
+        for (let i = 0; i < 4; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.3 + i * 1.5) * 0.7)
+          const cx = x + 1 + i * 6 + sw
+          rect(b, cx, bot - 29, 1, 1, '#e8dcc0')
+          rect(b, cx - 1, bot - 28, 3, 7, '#8a2a24')
+          rect(b, cx - 1, bot - 28, 1, 7, '#a8443a')
+          rect(b, cx, bot - 21, 1, 1, '#5a1a18')
+        }
         break
       }
       case 'elazig': {
@@ -2206,6 +2243,32 @@ export class Renderer {
         rect(b, x + 8, bot - 22, 1, 1, '#2a2420')
         break
       }
+      case 'afyon': {
+        // termal otelin kaplıca çeşmesi: mermer havuz başı, kurşun kubbeli küçük köşk, lüleden akan sıcak su ve tüten buhar
+        rect(b, x - 1, bot - 4, 18, 4, '#e6e2da')
+        rect(b, x - 1, bot - 4, 18, 1, '#ffffff')
+        rect(b, x + 15, bot - 3, 2, 3, '#b8b4ac')
+        rect(b, x, bot - 3, 16, 1, '#3ab8c4')
+        rect(b, x + 2, bot - 18, 12, 14, '#ece6da')
+        rect(b, x + 2, bot - 18, 2, 14, '#fffaf0')
+        rect(b, x + 12, bot - 18, 2, 14, '#bcb4a6')
+        rect(b, x + 5, bot - 14, 6, 7, '#5a6878')
+        disc(b, x + 8, bot - 14, 3, '#5a6878', true)
+        rect(b, x + 7, bot - 10, 2, 1, '#d8a050')
+        rect(b, x + 8, bot - 9, 1, 5, 'rgba(160,226,240,0.85)')
+        rect(b, x + 1, bot - 19, 14, 1, '#a8a094')
+        disc(b, x + 8, bot - 19, 6, '#8a96a4', true)
+        rect(b, x + 5, bot - 23, 2, 1, '#a8b4c2')
+        rect(b, x + 8, bot - 29, 1, 4, '#f2c14e')
+        for (let i = 0; i < 3; i++) {
+          const k = (this.t * 0.5 + i / 3) % 1
+          const sx = x + 3 + i * 5 + Math.round(Math.sin(this.t * 1.6 + i * 2) * 1.5)
+          const sy = bot - 6 - Math.round(k * 26)
+          const r = 1 + Math.round(k * 2)
+          disc(b, sx, sy, r, `rgba(250,250,252,${(0.6 * (1 - k)).toFixed(2)})`)
+        }
+        break
+      }
       case 'elazig': {
         // Harput Ulu Camii'nin eğri minaresi: kalın tuğla gövde sağa yatık, tuğla örgü kuşakları, kısa külah
         rect(b, x, bot - 3, 16, 3, '#8a7462')
@@ -2768,6 +2831,150 @@ export class Renderer {
       }
   }
 
+  /** iç mekânın sütunları (dünya başına bir kez): tavanın altı (ilk boş satır); tavansız sütun -1 */
+  private room: { w: World | null; top: Int16Array } = { w: null, top: new Int16Array(0) }
+
+  /** çini lambrinin deseni (16x16, bir kez çizilir): turkuaz zemin, beyaz baklavalar şaşırtmalı; dünya koordinatına oturur */
+  private tilePat: CanvasPattern | null = null
+  private tilePattern(b: Ctx): CanvasPattern | string {
+    if (this.tilePat) return this.tilePat
+    if (typeof document === 'undefined') return '#2f8f9a'
+    const cv = document.createElement('canvas')
+    cv.width = T
+    cv.height = T
+    const c = cv.getContext('2d')
+    if (!c) return '#2f8f9a'
+    c.fillStyle = '#2f8f9a'
+    c.fillRect(0, 0, T, T)
+    c.fillStyle = '#e8f6f4'
+    for (const [ox, oy] of [[0, 0], [8, 8]]) {
+      c.fillRect(ox + 3, oy + 2, 2, 1)
+      c.fillRect(ox + 2, oy + 3, 4, 1)
+      c.fillRect(ox + 3, oy + 4, 2, 1)
+    }
+    this.tilePat = b.createPattern(cv, 'repeat')
+    return this.tilePat ?? '#2f8f9a'
+  }
+
+  private roomOf(w: World) {
+    if (this.room.w === w) return this.room
+    const top = new Int16Array(w.cols).fill(-1)
+    for (let tx = 0; tx < w.cols; tx++) {
+      if (!w.isSolid(tx, 0)) continue
+      let r = 1
+      while (r < w.rows && w.isSolid(tx, r)) r++
+      if (r < w.rows - 4) top[tx] = r
+    }
+    this.room = { w, top }
+    return this.room
+  }
+
+  /**
+   * Termal otelin içi (LevelDef.indoor): tavanlı sütunlarda gök yerine duvar. Krem sıva, altta turkuaz çini lambri (beyaz
+   * baklava), ahşap pervaz; aralıklı kemerli pencere (dışarıda buhar) ve tavandan sarkan lamba. Büfe masalarında (altı su
+   * olmayan tek yönlü tahta) yemek tepsileri, havuz yüzünde buhar. Otelin içinde sokak feneri ve ağaç süsü çizilmez. Arka tampona, saate bağlı (her Hz'de aynı), yalnız görünen sütunlar.
+   */
+  private drawInterior(b: Ctx, w: World, cx: number) {
+    const { top } = this.roomOf(w)
+    const x0 = Math.max(0, Math.floor(cx / T) - 1)
+    const x1 = Math.min(w.cols - 1, Math.ceil((cx + this.viewW) / T) + 1)
+    const t = w.clock
+    for (let tx = x0; tx <= x1; tx++) {
+      if (top[tx] < 0) continue
+      const x = tx * T
+      const y0 = top[tx] * T
+      // duvar haritanın dibine dek: taş, seki ve su önde çizilir (araya giren seki altında gök kalmaz)
+      const y1 = w.rows * T
+      rect(b, x, y0, T, y1 - y0, '#eadcc0')
+      // sıva dokusu: birkaç ince yatay iz
+      for (let k = 0; k < 4; k++) rect(b, x + ((tx * 5 + k * 7) % 9), y0 + 9 + k * 23 + (tx % 3) * 4, 4, 1, 'rgba(160,130,90,0.12)')
+      // tavan pervazı
+      rect(b, x, y0, T, 3, '#8a6a48')
+      rect(b, x, y0 + 3, T, 1, '#c8a060')
+      // çini lambri: bütün odada aynı hizada (yürünen satırın iki karo üstü), zemine dek
+      const wy = Math.max(y0 + 4, (w.rows - 7) * T)
+      b.fillStyle = this.tilePattern(b)
+      b.fillRect(x, wy, T, y1 - wy)
+      rect(b, x, wy, T, 2, '#c8a060')
+      // tavan lambası
+      if (tx % 7 === 1) {
+        rect(b, x + 7, y0 + 4, 1, 7, '#5a4a3a')
+        rect(b, x + 4, y0 + 11, 7, 3, '#e8b04a')
+        rect(b, x + 5, y0 + 14, 5, 1, 'rgba(255,232,170,0.9)')
+        rect(b, x + 2, y0 + 15, 11, 4, 'rgba(255,232,170,0.18)')
+      }
+      // büfe masası: tek yönlü tahtanın üstünde tepsi ve yemek
+      for (let ty = top[tx]; ty < w.rows; ty++) {
+        // havuzun üstündeki ızgara masa değildir (altı su)
+        if (w.raw(tx, ty) !== ONEWAY || w.isSolid(tx, ty - 1) || w.tile(tx, ty + 1) === SWIM) continue
+        const by = ty * T
+        rect(b, x + 1, by - 2, T - 2, 2, '#c8ccd4')
+        rect(b, x + 1, by - 1, T - 2, 1, '#9aa0aa')
+        switch (tx % 5) {
+          case 0: // sucuk dilimleri
+            for (const dx of [3, 7, 11]) rect(b, x + dx, by - 4, 3, 2, '#b8402e')
+            break
+          case 1: // rulo kaymak, bal
+            rect(b, x + 4, by - 5, 8, 3, '#fff8e8')
+            rect(b, x + 9, by - 5, 2, 1, '#e8a43a')
+            break
+          case 2: // simit
+            rect(b, x + 4, by - 5, 7, 3, '#b87a3a')
+            rect(b, x + 6, by - 4, 3, 1, '#c8ccd4')
+            break
+          case 3: // ince belli çay bardakları
+            for (const dx of [4, 9]) {
+              rect(b, x + dx, by - 6, 3, 4, '#c8502a')
+              rect(b, x + dx, by - 6, 3, 1, '#f4e6c0')
+            }
+            break
+          default: // lokum
+            for (const dx of [4, 8]) rect(b, x + dx, by - 4, 3, 2, '#f2a8c0')
+            rect(b, x + 6, by - 6, 3, 2, '#fff4f4')
+        }
+      }
+    }
+    // kemerli pencereler: duvarlardan sonra (iki karo genişliğinde, komşu sütunun duvarı üstüne binmesin); oda yeterince yüksekse
+    for (let tx = x0; tx <= x1; tx++) {
+      if (tx % 9 !== 3 || top[tx] < 0 || top[tx + 1] < 0) continue
+      const y0 = top[tx] * T
+      const wt = y0 + T + 2
+      const wh = Math.min((w.rows - 7) * T - wt - T, 3 * T)
+      if (wh < T * 2) continue
+      const wx = tx * T + 6
+      const ww = 2 * T - 12
+      rect(b, wx - 2, wt - 2, ww + 4, wh + 4, '#8a6a48')
+      rect(b, wx, wt, ww, wh, '#bfe2ee')
+      // kemer: üst köşeler pervaz renginde yuvarlatılır
+      rect(b, wx, wt, 3, 2, '#8a6a48')
+      rect(b, wx + ww - 3, wt, 3, 2, '#8a6a48')
+      rect(b, wx, wt + 2, 1, 2, '#8a6a48')
+      rect(b, wx + ww - 1, wt + 2, 1, 2, '#8a6a48')
+      rect(b, wx + 3, wt + 3, ww - 6, 2, '#d8eef4')
+      // dışarıda geçen buhar bulutu
+      const sx = (t * 5 + tx * 13) % (ww + 8)
+      rect(b, Math.round(wx - 4 + sx), wt + wh - 10, 7, 3, 'rgba(255,255,255,0.75)')
+      rect(b, wx + Math.floor(ww / 2), wt, 1, wh, '#8a6a48')
+      rect(b, wx, wt + Math.floor(wh / 2), ww, 1, '#8a6a48')
+    }
+    // sıcak havuz: yüzeyden tüten buhar (tavanlı sütunlarda)
+    for (let tx = x0; tx <= x1; tx++) {
+      if (top[tx] < 0) continue
+      for (let ty = top[tx]; ty < w.rows; ty++) {
+        if (w.tile(tx, ty) !== SWIM || w.tile(tx, ty - 1) === SWIM) continue
+        for (let k = 0; k < 2; k++) {
+          const ph = (t * 0.7 + tx * 0.37 + k * 0.5) % 1
+          const yy = ty * T - 2 - ph * 14
+          const xx = tx * T + 3 + k * 7 + Math.round(Math.sin(t * 2 + tx + k) * 2)
+          b.globalAlpha = 0.5 * (1 - ph)
+          rect(b, xx, Math.round(yy), 3, 2, '#ffffff')
+          b.globalAlpha = 1
+        }
+        break
+      }
+    }
+  }
+
   /**
    * Yükselen hava (V): sütunun içi sıcak, yarı saydam bir hava; içinde yukarı akan çizgiler, tüyler ve kuru yapraklar.
    * Sütunun tepesinde dalgalı bir kenar: oyuncu nereye dek taşınacağını görür. Hepsi saatten (her Hz'de aynı).
@@ -3048,6 +3255,23 @@ export class Renderer {
     }
     // oklar
     for (const pr of w.projectiles) {
+      if (pr.towel) {
+        // havuz teyzesinin havlusu: dönerek uçan, pembe-beyaz çizgili, saçaklı katlı havlu (dönüş saatten ve konumdan)
+        const px = Math.round(pr.x + pr.w / 2)
+        const py = Math.round(pr.y + pr.h / 2)
+        const spin = Math.floor((this.t * 14 + pr.x * 0.05) % 4)
+        const flat = spin === 0 || spin === 2
+        const hw = flat ? 6 : 3
+        const hh = flat ? 3 : 5
+        rect(b, px - hw - 1, py - hh - 1, hw * 2 + 2, hh * 2 + 2, '#1a1424')
+        rect(b, px - hw, py - hh, hw * 2, hh * 2, '#fff4f4')
+        if (flat) for (let i = -hw + 1; i < hw; i += 3) rect(b, px + i, py - hh, 1, hh * 2, '#f08aa8')
+        else for (let j = -hh + 1; j < hh; j += 3) rect(b, px - hw, py + j, hw * 2, 1, '#f08aa8')
+        // saçak ve arkasında kısa iz
+        rect(b, flat ? px + hw : px - 1, flat ? py - 1 : py + hh, flat ? 2 : 3, flat ? 3 : 2, '#ffffff')
+        rect(b, px - Math.sign(pr.vx) * (hw + 4), py, 3, 1, 'rgba(255,255,255,0.45)')
+        continue
+      }
       if (pr.w > 6) {
         // boss’un savurduğu: şehrin vurgu renginde top, arkasında iz
         const px = Math.round(pr.x + pr.w / 2)
@@ -3749,6 +3973,37 @@ export class Renderer {
     if (w.stampBox && !w.stampTaken) drawThing(c, 'stamp', X(w.stampBox.x + 6), Y(w.stampBox.y + 6 + Math.sin(t * 2) * 1.5), sc, t, { accent })
     if (w.charmBox && !w.charmTaken) drawThing(c, 'charm', X(w.charmBox.x + 5), Y(w.charmBox.y + 5), sc, t)
     for (const e of w.enemies) if (e.alive && seen(e.x)) drawEnemy(c, enemySpecies(e.kind, this.city), e, X(e.x + e.w / 2), Y(e.y + e.h), sc, e.dir > 0 ? 1 : -1, t)
+    // havuz teyzesi: dönmeden önce "Hı?", görünce "Aaaa!" (konuşma balonu başının üstünde)
+    for (const e of w.enemies)
+      if (e.kind === 'aunt' && seen(e.x) && e.state !== 'idle') this.auntBubble(X(e.x + e.w / 2), Y(e.y) - sc * 6, e.state === 'charge' ? (this.lang === 'en' ? 'Eeek!' : 'Aaaa!') : (this.lang === 'en' ? 'Hm?' : 'Hı?'), e.state === 'charge')
+  }
+
+  /** teyzenin balonu: beyaz, mürekkep hatlı, kuyruğu aşağı; çığlıkta büyük ve titrek */
+  private auntBubble(x: number, y: number, text: string, loud: boolean) {
+    const c = this.ctx
+    const sc = this.scale
+    const size = Math.round(sc * (loud ? 7 : 5.5))
+    c.save()
+    c.font = `800 ${size}px ${this.popFont()}`
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    const w = c.measureText(text).width + sc * 6
+    const h = size + sc * 4
+    const jx = loud ? Math.sin(this.t * 60) * sc * 0.6 : 0
+    c.translate(x + jx, y - h / 2)
+    c.fillStyle = '#fffaf0'
+    c.strokeStyle = '#1a1424'
+    c.lineWidth = Math.max(1.5, sc * 0.7)
+    c.beginPath()
+    c.roundRect(-w / 2, -h / 2, w, h, h / 2)
+    c.moveTo(-sc * 2, h / 2)
+    c.lineTo(0, h / 2 + sc * 3)
+    c.lineTo(sc * 2, h / 2)
+    c.fill()
+    c.stroke()
+    c.fillStyle = loud ? '#d8342a' : '#1a1424'
+    c.fillText(text, 0, 0)
+    c.restore()
   }
 
   private drawCratesHD(w: World, cx: number, cy: number) {
@@ -4885,7 +5140,8 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   karabuk: 'AYDIN',
   aydin: 'BALIKESİR',
   balikesir: 'ELAZIĞ',
-  elazig: null,
+  elazig: 'AFYON',
+  afyon: null,
 }
 
 function hexA(hex: string, a: number) {

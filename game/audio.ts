@@ -31,9 +31,11 @@ const TRIM: Record<Inst, number> = { ney: 1.5, kanun: 1.4, keys: 1.5, pad: 1.25,
 const SFX_TRIM = 2
 
 /** Rhodes benzeri (piyano, çan) ve ney için armonik dizi (sinüs paylarının genliği); bir kez kurulur */
-const WAVES: Record<'rhodes' | 'ney', number[]> = {
+const WAVES: Record<'rhodes' | 'ney' | 'voice', number[]> = {
   rhodes: [0, 1, 0.36, 0.12, 0.08, 0.04, 0.025, 0.012],
   ney: [0, 1, 0.2, 0.11, 0.045, 0.02],
+  // "a" ünlüsü (tiz kadın sesi, temel ~600 Hz): ikinci ve üçüncü harmonik birinci ve ikinci formanta (~850, ~1300 Hz) düşer
+  voice: [0, 0.55, 1, 0.62, 0.34, 0.22, 0.14, 0.08, 0.05],
 }
 
 /** çalgı başına stereo yeri (-1 sol, 1 sağ) ve yankıya giden pay */
@@ -68,7 +70,7 @@ export class Sound {
   private reverb: ConvolverNode | null = null
   /** efektlerin kısa odası */
   private sfxVerb: ConvolverNode | null = null
-  private waves: Partial<Record<'rhodes' | 'ney', PeriodicWave>> = {}
+  private waves: Partial<Record<'rhodes' | 'ney' | 'voice', PeriodicWave>> = {}
   /** sekişen yankı: girişi ve iki gecikmesi (sağ-sol); süresi bestenin temposuna göre */
   private echoIn: GainNode | null = null
   private echoTaps: DelayNode[] = []
@@ -268,7 +270,7 @@ export class Sound {
   }
 
   /** armonik diziden periyodik dalga (önbellekli): tek osilatörle zengin, yumuşak tını */
-  private wave(kind: 'rhodes' | 'ney'): PeriodicWave {
+  private wave(kind: 'rhodes' | 'ney' | 'voice'): PeriodicWave {
     let w = this.waves[kind]
     if (!w) {
       const imag = new Float32Array(WAVES[kind])
@@ -338,6 +340,51 @@ export class Sound {
     f.connect(g)
     g.connect(this.sfxBus ?? this.master)
     src.start(t, Math.random() * 0.5, dur + 0.05)
+  }
+
+  /**
+   * Teyze çığlığı: "a" ünlüsünün armonikleriyle (WAVES.voice) iki hafif akortsuz ses, perde yükselip tepede titrer ve düşer
+   * (komik "Aaaa!"), ağızdan çıkan nefes için üst formantta hafif gürültü. Kare ya da testere dalga yok; efekt yolundan geçer.
+   */
+  private scream(t: number) {
+    const ac = this.ac
+    if (!ac || !this.sfxBus) return
+    const dur = 0.62
+    const out = ac.createGain()
+    out.gain.setValueAtTime(0.0001, t)
+    out.gain.exponentialRampToValueAtTime(0.11, t + 0.04)
+    out.gain.setValueAtTime(0.11, t + dur * 0.6)
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    out.connect(this.sfxBus)
+    // titreme: 7 Hz'lik perde salınımı (yaşlı teyze vibratosu)
+    const lfo = ac.createOscillator()
+    lfo.frequency.value = 7.5
+    const depth = ac.createGain()
+    depth.gain.value = 22
+    lfo.connect(depth)
+    const voices: OscillatorNode[] = []
+    for (const det of [0, 9]) {
+      const o = ac.createOscillator()
+      o.setPeriodicWave(this.wave('voice'))
+      // "A-aaa-a": kalkış, tepe, düşüş
+      o.frequency.setValueAtTime(520, t)
+      o.frequency.exponentialRampToValueAtTime(820, t + 0.12)
+      o.frequency.setValueAtTime(820, t + 0.32)
+      o.frequency.exponentialRampToValueAtTime(600, t + dur)
+      o.detune.value = det
+      depth.connect(o.frequency)
+      const g = ac.createGain()
+      g.gain.value = det ? 0.45 : 0.7
+      o.connect(g)
+      g.connect(out)
+      voices.push(o)
+    }
+    for (const x of [lfo, ...voices]) {
+      x.start(t)
+      x.stop(t + dur + 0.05)
+    }
+    // nefes: üst formant çevresinde hafif gürültü
+    this.noise(dur * 0.9, 0.025, 2600, t, 2, 'bandpass')
   }
 
   /** şehrin makamından derece → MIDI (efektler şehrin dizisinde çalar) */
@@ -434,6 +481,10 @@ export class Sound {
         // gelgit dönüyor: dalga hışırtısı ve makamdan bir çan (yükselecekse tiz, çekilecekse pes)
         this.noise(0.9, 0.03, 900, now, 0.5, 'lowpass')
         return this.chime(this.scaleNote(name === 'tideUp' ? 4 : 0, name === 'tideUp' ? 1 : 0), 0.05, now + 0.15, 0.7)
+      case 'shriek':
+        // havuz teyzesi: "Aaaa!" diye çığlık (ünlü tınısında ses, titrek), ardından havlunun savruluşu
+        this.scream(now)
+        return this.noise(0.22, 0.05, 1400, now + 0.35, 0.6, 'lowpass')
       case 'freeze':
         // su donuyor: tiz, çıtırdayan kısa buz sesi ve makamdan tiz bir çan
         this.noise(0.25, 0.03, 3200, now, 0.4, 'lowpass')
