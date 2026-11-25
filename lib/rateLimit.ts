@@ -35,6 +35,8 @@ export const LIMITS = {
   mapPublishIp: { action: 'harita-yayin-ip', max: 30, windowSec: 60 * 60 },
   // yayındaki haritayı güncelleme / silme: oyuncu başına
   mapEdit: { action: 'harita-duzenle', max: 60, windowSec: 60 * 60 },
+  // salt okunur yolcu profili (Skor Tablosu'ndaki ayrıntı): IP başına geniş bir tavan, adları taramayı keser
+  profile: { action: 'profil', max: 600, windowSec: 60 * 60 },
 } satisfies Record<string, Limit>
 
 const digest = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 32)

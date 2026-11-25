@@ -57,6 +57,8 @@ const SCREENS = {
   'skorlar-arkadaslar': [{ ...SAVE, player: { id: '00000000-0000-4000-8000-000000000001', name: 'Deniz', token: 'x'.repeat(40) }, friends: ['ahmet', 'esra'] }, ['Skorlar', 'tab:Arkadaşlar']],
   'skorlar-arkadas-yok': [{ ...SAVE, friends: [] }, ['Skorlar', 'tab:Arkadaşlar']],
   'skorlar-ara': [SAVE, ['Skorlar', 'tab:Şehirler', "eval:document.querySelector('.sb-search input').focus()", 'type:Del', 'wait:600']],
+  // yolcu ayrıntısı: satıra basınca açılan çekmece (profil örnek veriyle)
+  'skorlar-yolcu': [{ ...SAVE, player: { id: '00000000-0000-4000-8000-000000000001', name: 'Deniz', token: 'x'.repeat(40) }, friends: ['ahmet'] }, ['Skorlar', 'tab:Şehirler', "eval:document.querySelectorAll('.sb-click')[3]?.click()", 'wait:600']],
   'skorlar-gunluk': [SAVE, ['Skorlar', 'tab:Günlük']],
   'skorlar-speedrun': [SAVE, ['Skorlar', 'tab:Speedrun']],
   'skorlar-modlar': [SAVE, ['Skorlar', 'tab:Modlar']],
@@ -113,6 +115,8 @@ const SCREENS = {
   'yaris-daveti': [SAVE, [], '?yaris=konya~ahmet'],
 }
 
+/** yolcu ayrıntısının örnek profili (GET /api/players/profile) */
+const PROFILE = (name) => ({ name, since: '2026-09-14T10:00:00.000Z', hero: 'memo', kit: { head: 'yok', face: 'yok', back: 'yok' }, scarf: 'erguvan', title: 'Yolcu', cities: Object.fromEntries(LEVEL_IDS.slice(0, 31).map((id, i) => [id, { id, timeMs: 60000 + i * 1300, deaths: i % 4, items: 3 - (i % 3), plays: 2, rank: 1 + ((i * 7) % 30), medal: ['altin', 'gumus', 'bronz', null][i % 4], full: i % 4 === 0, stamp: true, charm: i % 2 === 0, boss: true }])), earned: ['firstCity'], pins: ['firstCity'], totals: { keeps: 70, stamps: 31, charms: 16, bosses: 31, golds: 8, seals: 2 }, trioDays: 3, streak: 2, podium: {}, recent: [], runs: 90, playMs: 9000000 })
 const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'Elif Su', 'Mert', 'Zeynep', 'Baran', 'Ada'].map((name, i) => ({ name, timeMs: 52000 + i * 4300, deaths: i % 7, items: 3 - (i % 3), minDeaths: i % 5, maxItems: 3, plays: 1 + (i % 6), cities: 28 - i * 2, keeps: 84 - i * 6, stamps: 28 - i * 2, charms: 20 - i, bosses: 28 - i * 2, found: 132 - i * 9, rank: i + 1, total: 11, me: name === 'Deniz', hero: i % 2 ? 'memo' : 'uktun' }))
 
 ;(async () => {
@@ -128,6 +132,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
       const page = await ctx.newPage()
       await page.route('**/api/scores**', (r) => (r.request().method() === 'POST' ? r.fulfill({ json: { ok: true, first: true, improved: true, better: { time: true, deaths: true, items: true }, bestMs: 73400, rank: 3, total: 11 } }) : r.fulfill({ json: { scores: rows(), total: 11 } })))
       await page.route('**/api/players/**', (r) => r.fulfill({ status: 401, json: {} }))
+      await page.route('**/api/players/profile**', (r) => r.fulfill({ json: { profile: PROFILE(new URL(r.request().url()).searchParams.get('name') || 'x') } }))
       let note = ''
       try {
         // ?debug güncelleme notunu susturur; notun kendisi ölçülürken parametresiz açılır

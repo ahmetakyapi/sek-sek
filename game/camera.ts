@@ -35,9 +35,9 @@ export const CAM = {
    */
   dashFollow: 0.0015 ** 3,
   /** dash itmesi: kadraj dash yönünün tersine bu kadar (dünya pikseli) yaslanıp yumuşakça döner; rastgele titreme yok */
-  kick: 1.1,
-  /** olay sarsıntılarının (ölüm, boss, sert iniş) genlik çarpanı: düşük kortizol, ekran sarsılır ama yormaz */
-  shakeGain: 0.65,
+  kick: 0.4,
+  /** olay sarsıntılarının (ölüm, boss, sert iniş) genlik çarpanı: düşük kortizol, ekran yormaz (sarsıntı ayarı varsayılan kapalı) */
+  shakeGain: 0.35,
   /** sarsıntının saniyede kalan oranı (üstel sönme; 6'lık sarsıntı ~0,3 sn'de belli belirsizleşir) */
   shakeKeep: 0.00004,
   kickTime: 0.22,

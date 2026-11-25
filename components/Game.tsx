@@ -2086,8 +2086,8 @@ export default function Game() {
   useEffect(() => {
     const r = rendererRef.current
     if (!r) return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    r.shakeScale = (save.shake ?? !reduce) ? (save.shakePower ?? 1) : 0
+    // ekran sarsıntısı varsayılan kapalı (25 Kasım 2026, kullanıcı kararı: göz yormasın); ayardan açılır
+    r.shakeScale = (save.shake ?? false) ? (save.shakePower ?? 1) : 0
   }, [save.shake, save.shakePower, ready])
   // Kolaylıklar (cihaz ayarı): hayalet görünürlüğü, dash halkası, kamera yakınlığı, titreşim, büyük yazı
   useEffect(() => {
@@ -2188,7 +2188,6 @@ export default function Game() {
   )
 
   // ayarlar tek yerde: Mola ve Ayarlar ekranı aynı listeyi gösterir; her seçeneğin altında ne işe yaradığı yazar
-  const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   // ayarlar üç grupta: molada sekmeli (sağ sütun kısa kalır), Ayarlar ekranında hepsi bir arada
   const soundSet = (
     <>
@@ -2215,7 +2214,7 @@ export default function Game() {
       <Toggle label={t('Hayalet Koşu')} hint={t('En iyi koşunun hayaleti yanında koşar.')} on={save.ghost} onChange={() => patch({ ghost: !save.ghost })} />
       <Toggle label={t('Devam Ederken Geri Sayım')} hint={t('Moladan dönünce 3-2-1 sayılır.')} on={save.countdown !== false} onChange={() => patch({ countdown: save.countdown === false })} />
       <Toggle label={t('Ara Süreler')} hint={t('Her bayrakta rekoruna göre farkın.')} on={save.splits !== false} onChange={() => patch({ splits: save.splits === false })} />
-      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran sarsılır.')} on={save.shake ?? !reduceMotion} onChange={() => patch({ shake: !(save.shake ?? !reduceMotion) })} />
+      <Toggle label={t('Ekran Sarsıntısı')} hint={t('Vuruşta ve boss inişinde ekran hafifçe sarsılır (varsayılan kapalı).')} on={save.shake ?? false} onChange={() => patch({ shake: !(save.shake ?? false) })} />
       <div>
         <Toggle label={t('Rahat Mod')} tag={save.relaxed ? t('Skor Yazılmaz') : undefined} hint={t('Oyun yavaş akar; skor yazılmaz.')} on={save.relaxed} onChange={() => patch({ relaxed: !save.relaxed })} />
         {save.relaxed && <Choice label={t('Oyun Hızı')} value={save.relaxedSpeed ?? 0.8} options={[0.6, 0.7, 0.8, 0.9].map((v) => ({ v, label: `%${Math.round(v * 100)}` }))} onChange={(v) => patch({ relaxedSpeed: v })} />}

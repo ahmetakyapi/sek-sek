@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ItemIcon } from '@/components/HudBits'
+import PlayerDrawer from '@/components/PlayerDrawer'
 import { MedalBadge, SectionTitle, displayName, medalFor, ic } from '@/components/ui'
 import { CHALLENGES } from '@/game/challenges'
 import { BOSSES } from '@/game/boss'
@@ -100,6 +101,7 @@ export function Board({
   friends,
   onFriend,
   search = '',
+  title = '',
 }: {
   kind: BoardKind
   level?: string
@@ -119,6 +121,8 @@ export function Board({
   onFriend?: (name: string) => void
   /** yolcu adı araması (adın bir parçası) */
   search?: string
+  /** tablonun adı: yolcu ayrıntısının bağlam şeridinde */
+  title?: string
 }) {
   const t = useT()
   const [raceMsg, setRaceMsg] = useState<{ name: string; text: string } | null>(null)
@@ -130,6 +134,7 @@ export function Board({
   const [limit, setLimit] = useState(0)
   const [more, setMore] = useState(false)
   const [prevRank, setPrevRank] = useState<number | null>(null)
+  const [pick, setPick] = useState<Row | null>(null)
   const meRow = useRef<HTMLElement | null>(null)
   const setMe = (el: HTMLElement | null) => {
     meRow.current = el
@@ -287,24 +292,57 @@ export function Board({
   const top3 = [1, 2, 3].map((k) => rows.find((r) => r.rank === k)).filter((r): r is Row => !!r)
   const podiumOn = !compact && !search && top3.length === 3
 
+  /** satıra ya da kürsüye basınca yolcu ayrıntısı (dar listede, ör. bölüm sonu, ad profil bağlantısıdır) */
+  const open = (r: Row) => (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input')) return
+    setPick(r)
+  }
+  const raceBtn = (r: Row, cls: string, label: React.ReactNode) =>
+    race && !r.me ? (
+      <button
+        className={`pixel-btn ${cls}`}
+        disabled={!!racing}
+        aria-label={t('{name} ile Yarış', { name: r.name })}
+        title={t('Hayaletiyle yan yana koş')}
+        onClick={async () => {
+          setRacing(r.name)
+          const err = await race(r.name)
+          setRacing('')
+          setRaceMsg(err ? { name: r.name, text: err } : null)
+        }}
+      >
+        {racing === r.name ? '…' : label}
+      </button>
+    ) : null
+  const nameEl = (r: Row, cls: string) =>
+    compact ? (
+      <a data-nav href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`sb-link ${cls} underline-offset-4 hover:underline`}>
+        {r.name}
+      </a>
+    ) : (
+      <button data-nav type="button" className={`sb-link sb-name ${cls}`} onClick={() => setPick(r)} aria-label={t('{name} · Ayrıntı', { name: r.name })} aria-haspopup="dialog">
+        {r.name}
+      </button>
+    )
+
   return (
     <>
       {strip && (
-        <div className="sb-me sticky top-0 z-[5] -mx-1 mb-1.5 flex min-h-[48px] flex-wrap items-center gap-x-3 gap-y-1 border-2 border-gold/70 bg-panel px-3 py-1.5 short:min-h-[40px]" role="status">
+        <div className="sb-me sticky top-0 z-[5] mb-1.5 flex min-h-[46px] flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 short:min-h-[38px]" role="status">
           {mine ? (
             <>
-              <span className="text-[13px] font-bold text-gold">{t('Senin Sıran')}</span>
-              <span className="font-display text-[22px] leading-none tabular-nums text-cream">
+              <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-muted">{t('Senin Sıran')}</span>
+              <span className="font-display text-[20px] leading-none tabular-nums text-cream">
                 #{mine.rank}
-                <span className="ml-1 text-[13px] text-muted">/ {mine.total}</span>
+                <span className="ml-1 text-[12px] text-muted">/ {mine.total}</span>
               </span>
-              {mine.rank === 1 ? <span className="text-[13px] font-semibold text-gold">{t('Lider Sensin')}</span> : gapText(mine) && <span className="text-[13px] tabular-nums text-cream/85">{gapText(mine)}</span>}
+              {mine.rank === 1 ? <span className="text-[13px] font-semibold text-gold">{t('Lider Sensin')}</span> : gapText(mine) && <span className="text-[13px] tabular-nums text-muted">{gapText(mine)}</span>}
               {delta !== 0 && (
                 <span className="text-[13px] font-bold tabular-nums" style={{ color: delta > 0 ? '#8fe3a1' : '#ff9d8a' }} title={t('Son bakışından beri')}>
                   {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}
                 </span>
               )}
-              <button className="pixel-btn ml-auto min-h-[36px] px-3 py-1 text-[13px]" onClick={jumpToMe}>
+              <button className="sb-jump ml-auto" onClick={jumpToMe}>
                 {ic(t('↓ Kendine Git'))}
               </button>
             </>
@@ -315,44 +353,37 @@ export function Board({
       )}
       {/* podyum: ilk üç (ikinci, birinci, üçüncü sırayla); dar ve alçak ekranda gizli, orada ilk üç listede kalır */}
       {podiumOn && (
-        <div className="sb-podium mt-7 grid grid-cols-3 items-end gap-2 max-sm:hidden short:hidden" role="list" aria-label={t('İlk Üç')}>
+        <div className="sb-podium mt-6 grid grid-cols-3 items-end gap-3 max-sm:hidden short:hidden" role="list" aria-label={t('İlk Üç')}>
           {[1, 0, 2].map((k) => {
             const r = top3[k]
             const [big] = cells(r)
             return (
-              <div key={r.name} role="listitem" ref={r.me ? setMe : undefined} className={`sb-step flex min-w-0 flex-col items-center px-2 text-center ${r.me ? 'me' : ''}`} style={{ ['--podium' as string]: PODIUM[k], ['--h' as string]: ['72px', '54px', '44px'][k], animationDelay: `${[120, 0, 220][k]}ms` }}>
-                <span className="relative">
-                  <span className="sb-crown" aria-hidden>
-                    {k === 0 ? '♛' : ''}
-                  </span>
-                  <span className="block scale-[1.25]">
+              <div key={r.name} role="listitem" ref={r.me ? setMe : undefined} onClick={open(r)} className={`sb-step ${k === 0 ? 'first' : ''} ${r.me ? 'me' : ''}`} style={{ ['--podium' as string]: PODIUM[k], ['--h' as string]: ['40px', '28px', '20px'][k], animationDelay: `${[120, 0, 220][k]}ms` }}>
+                <span className="sb-step-face">
+                  {k === 0 && (
+                    <span className="sb-crown" aria-hidden>
+                      ♛
+                    </span>
+                  )}
+                  <span className="sb-step-pic">
                     <Avatar name={r.name} hero={r.hero} />
                   </span>
+                  <span className="sb-step-medal" aria-label={t(PODIUM_NAME[k])}>
+                    {k + 1}
+                  </span>
                 </span>
-                <a data-nav href={`/oyuncu/${encodeURIComponent(r.name)}`} className="sb-link mt-2.5 max-w-full truncate text-[15px] font-semibold leading-tight text-cream underline-offset-4 hover:underline">
-                  {r.name}
-                </a>
-                <span className="mt-1 whitespace-nowrap font-display text-[20px] leading-none text-cream">{big}</span>
-                {race && !r.me && (
-                  <button
-                    className="pixel-btn mt-1.5 min-h-[32px] px-2.5 py-0.5 text-[12px]"
-                    disabled={!!racing}
-                    aria-label={t('{name} ile Yarış', { name: r.name })}
-                    title={t('Hayaletiyle yan yana koş')}
-                    onClick={async () => {
-                      setRacing(r.name)
-                      const err = await race(r.name)
-                      setRacing('')
-                      setRaceMsg(err ? { name: r.name, text: err } : null)
-                    }}
-                  >
-                    {racing === r.name ? '…' : <>◌&nbsp;{t('Yarış')}</>}
-                  </button>
-                )}
+                {nameEl(r, 'mt-2 max-w-full truncate text-[15px] font-semibold leading-tight text-cream')}
+                <span className="mt-1 whitespace-nowrap font-display text-[21px] leading-none text-cream">{big}</span>
+                <span className="mt-1.5 flex min-h-[32px] items-center gap-1.5">
+                  {raceBtn(r, 'min-h-[32px] px-2.5 py-0.5 text-[12px]', <>◌&nbsp;{t('Yarış')}</>)}
+                  {!compact && (
+                    <span className="sb-more" aria-hidden>
+                      {t('Ayrıntı')} ›
+                    </span>
+                  )}
+                </span>
                 {raceMsg?.name === r.name && <span className="mt-1 text-[12px] text-muted">{raceMsg.text}</span>}
-                <span className="sb-plinth mt-2 flex w-full items-start justify-center pt-1.5 font-display text-[20px] text-ink" aria-label={t(PODIUM_NAME[k])}>
-                  {k + 1}
-                </span>
+                <span className="sb-plinth" aria-hidden />
               </div>
             )
           })}
@@ -369,11 +400,12 @@ export function Board({
           return (
             <li key={`${r.name}-${r.rank}`} ref={r.me && !(podiumOn && r.rank <= 3) ? setMe : undefined} className={`sb-row ${gap ? 'mt-2 border-t-2 border-dashed border-line/70 pt-2' : ''} ${podiumOn && r.rank <= 3 ? 'sm:hidden short:block' : ''}`} style={{ animationDelay: `${Math.min(i, 8) * 28}ms` }}>
               <div
-                className={`grid items-center gap-x-2 border-l-4 px-2.5 ${compact ? 'grid-cols-[2.25rem_minmax(0,1fr)_auto]' : 'grid-cols-[2rem_minmax(0,1fr)_auto] sm:grid-cols-[2.25rem_2.5rem_minmax(0,1fr)_auto] sm:gap-x-2.5 short:grid-cols-[2.25rem_minmax(0,1fr)_auto]'} ${compact ? 'py-1.5' : 'py-2 sm:py-2.5 short:py-1.5'} ${r.me ? 'bg-accent/20 outline outline-2 outline-accent/60' : podium ? 'bg-panel-2/80' : i % 2 ? 'bg-panel-2/25' : 'bg-panel-2/55'}`}
-                style={{ borderLeftColor: podium ?? 'transparent' }}
+                onClick={compact ? undefined : open(r)}
+                className={`sb-item grid items-center gap-x-2 px-2.5 ${compact ? 'grid-cols-[2.25rem_minmax(0,1fr)_auto] py-1.5' : 'sb-click grid-cols-[2rem_minmax(0,1fr)_auto] py-2 sm:grid-cols-[2.25rem_2.5rem_minmax(0,1fr)_auto] sm:gap-x-3 sm:py-2.5 short:grid-cols-[2.25rem_minmax(0,1fr)_auto] short:py-1.5'} ${r.me ? 'me' : ''} ${i % 2 ? 'odd' : ''}`}
+                style={podium ? { ['--podium' as string]: podium } : undefined}
               >
                 <span
-                  className={`flex items-center justify-center justify-self-center font-display leading-none ${podium ? 'h-8 w-8 rounded-full text-[16px] text-ink' : 'text-[17px] text-muted'}`}
+                  className={`flex items-center justify-center justify-self-center font-display leading-none ${podium ? 'h-7 w-7 rounded-full text-[15px] text-ink sm:h-8 sm:w-8 sm:text-[16px]' : 'text-[16px] text-muted'}`}
                   style={podium ? { background: podium, boxShadow: '0 0 0 2px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.18)' } : undefined}
                   aria-label={podium ? t(PODIUM_NAME[r.rank - 1]) : t('{n}. sıra', { n: r.rank })}
                 >
@@ -386,10 +418,8 @@ export function Board({
                 )}
                 <span className="min-w-0">
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <a data-nav href={`/oyuncu/${encodeURIComponent(r.name)}`} className={`sb-link min-w-0 font-semibold truncate leading-tight text-cream underline-offset-4 hover:underline ${compact ? '' : 'text-[16px]'}`}>
-                      {r.name}
-                    </a>
-                    {r.me && <span className="shrink-0 border border-gold/70 bg-gold/10 px-1.5 text-[12px] font-bold leading-snug text-gold">{t('Sen')}</span>}
+                    {nameEl(r, `min-w-0 truncate text-left font-semibold leading-tight text-cream ${compact ? '' : 'text-[16px]'}`)}
+                    {r.me && <span className="shrink-0 rounded-sm border border-gold/70 bg-gold/10 px-1.5 text-[12px] font-bold leading-snug text-gold">{t('Sen')}</span>}
                     {onFriend && !r.me && (
                       <button
                         className={`sb-star -my-2 flex h-11 w-9 shrink-0 items-center justify-center text-[17px] leading-none ${friends?.includes(r.name) ? 'text-gold' : 'text-muted hover:text-cream'}`}
@@ -403,50 +433,31 @@ export function Board({
                   </span>
                   <span className={`mt-1 flex flex-wrap gap-1 ${compact ? 'max-h-[22px] overflow-hidden' : ''}`}>
                     {sub.split(' · ').map((part) => (
-                      <span key={part} className="whitespace-nowrap border border-line/80 bg-ink/40 px-1.5 py-px text-[13px] leading-snug text-cream/75">
+                      <span key={part} className="sb-chip">
                         {part}
                       </span>
                     ))}
-                    {behind && !compact && <span className="whitespace-nowrap border border-accent/50 bg-accent/10 px-1.5 py-px text-[13px] leading-snug text-accent-2">{behind}</span>}
+                    {behind && !compact && <span className="sb-chip sb-chip-gap">{behind}</span>}
                   </span>
                 </span>
-                {/* sağ blok sabit sütunlu: rozet, değer ve Yarış düğmesi her satırda aynı hizada */}
-                <span className={`grid items-center gap-x-2 ${race ? 'grid-cols-[1.25rem_minmax(4.5rem,auto)_2.75rem] sm:grid-cols-[1.25rem_minmax(5.5rem,auto)_4.75rem]' : 'grid-cols-[1.25rem_minmax(4.5rem,auto)] sm:grid-cols-[1.25rem_minmax(5.5rem,auto)]'}`}>
+                {/* sağ blok sabit sütunlu: rozet, değer, Yarış düğmesi ve ayrıntı oku her satırda aynı hizada */}
+                <span className={`grid items-center gap-x-2 ${race ? 'grid-cols-[1.25rem_minmax(4.5rem,auto)_2.75rem] sm:grid-cols-[1.25rem_minmax(5.5rem,auto)_4.75rem]' : 'grid-cols-[1.25rem_minmax(4.5rem,auto)] sm:grid-cols-[1.25rem_minmax(5.5rem,auto)]'} ${compact ? '' : race ? 'sm:pr-5' : 'pr-4 sm:pr-5'}`}>
                   <span className="flex justify-center">{medal && <MedalBadge medal={medal} />}</span>
                   <span className="flex flex-col items-end gap-1.5">
                     <span className={`whitespace-nowrap text-right font-display leading-none text-cream ${compact ? 'text-[19px]' : 'text-[22px]'}`}>{big}</span>
                     {fill !== null && (
-                      <span className="block h-1.5 w-full min-w-[4.5rem] bg-ink/70 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]" aria-hidden>
-                        <span className="block h-full" style={{ width: `${Math.round(Math.min(1, fill) * 100)}%`, background: podium ?? 'var(--color-accent, #e07a3f)' }} />
+                      <span className="block h-1.5 w-full min-w-[4.5rem] overflow-hidden rounded-full bg-ink/70" aria-hidden>
+                        <span className="block h-full rounded-full" style={{ width: `${Math.round(Math.min(1, fill) * 100)}%`, background: podium ?? 'var(--color-accent)' }} />
                       </span>
                     )}
                   </span>
-                  {race &&
-                    (r.me ? (
-                      <span />
-                    ) : (
-                      <button
-                        className="pixel-btn min-h-[44px] w-full justify-center px-1.5 py-1 font-mono text-[13px]"
-                        disabled={!!racing}
-                        aria-label={t('{name} ile Yarış', { name: r.name })}
-                        title={t('Hayaletiyle yan yana koş')}
-                        onClick={async () => {
-                          setRacing(r.name)
-                          const err = await race(r.name)
-                          setRacing('')
-                          setRaceMsg(err ? { name: r.name, text: err } : null)
-                        }}
-                      >
-                        {racing === r.name ? (
-                          '…'
-                        ) : (
-                          <>
-                            ◌<span className="max-sm:hidden">&nbsp;{t('Yarış')}</span>
-                          </>
-                        )}
-                      </button>
-                    ))}
+                  {race && (r.me ? <span /> : raceBtn(r, 'min-h-[44px] w-full justify-center px-1.5 py-1 font-mono text-[13px]', <>◌<span className="max-sm:hidden">&nbsp;{t('Yarış')}</span></>))}
                 </span>
+                {!compact && (
+                  <span className={`sb-chev ${race ? 'max-sm:hidden' : ''}`} aria-hidden>
+                    ›
+                  </span>
+                )}
               </div>
               {raceMsg?.name === r.name && <p className="px-2 pt-1 text-right text-[13px] text-muted">{raceMsg.text}</p>}
             </li>
@@ -461,6 +472,17 @@ export function Board({
           </button>
         )}
       </div>
+      {pick && (
+        <PlayerDrawer
+          row={pick}
+          board={title || t('Sıralama')}
+          value={cells(pick)[0]}
+          onClose={() => setPick(null)}
+          friend={friends?.includes(pick.name)}
+          onFriend={onFriend ? () => onFriend(pick.name) : undefined}
+          onRace={race ? () => race(pick.name) : undefined}
+        />
+      )}
     </>
   )
 }
@@ -629,6 +651,28 @@ export default function ScoreBoard({
               : ''
   const friendFilter = tab !== 'koleksiyon' && tab !== 'arkadaslar' && hasFriends
   const boardKind: BoardKind = tab === 'speedrun' ? (sort === 'tur' || sort === 'aynatur' ? sort : 'yuzde') : tab === 'gunluk' ? (sort === 'm' ? 'gunluk-m' : sort === 'b' ? 'gunluk-b' : 'gunluk') : tab === 'modlar' ? (sort === 'rush' ? 'bossrush' : 'kural') : tab === 'arkadaslar' ? 'genel' : tab
+  const boardTitle =
+    tab === 'city' || (tab === 'speedrun' && !sort)
+      ? displayName(LEVELS[idx])
+      : tab === 'genel'
+        ? t('Genel Sıralama')
+        : tab === 'arkadaslar'
+          ? t('Arkadaşların')
+          : tab === 'speedrun'
+            ? sort === 'tur'
+              ? t('Tam Tur')
+              : t('Ayna Tam Tur')
+            : tab === 'gunluk'
+              ? sort === 'm'
+                ? t('Günün Mücadelesi')
+                : sort === 'b'
+                  ? t('Günün Boss’u')
+                  : t(dRule.name)
+              : tab === 'modlar'
+                ? sort === 'rush'
+                  ? t('Boss Rush')
+                  : `${LEVELS[idx].name} · ${t(DAILY_RULES[ruleNow]?.name ?? '')}`
+                : t('Koleksiyoncular')
   const names = tab === 'arkadaslar' ? friends : onlyFriends && tab !== 'koleksiyon' ? friends : undefined
 
   return (
@@ -736,7 +780,7 @@ export default function ScoreBoard({
         <div className="min-w-0 flex-1 basis-[260px] short:hidden">
           {tab !== 'gunluk' && (
             <SectionTitle
-              title={tab === 'city' || (tab === 'speedrun' && !sort) ? displayName(LEVELS[idx]) : tab === 'genel' ? t('Genel Sıralama') : tab === 'arkadaslar' ? t('Arkadaşların') : tab === 'speedrun' ? (sort === 'tur' ? t('Tam Tur') : t('Ayna Tam Tur')) : t('Koleksiyoncular')}
+              title={boardTitle}
               note={tab === 'city' ? lv.subtitle : undefined}
             />
           )}
@@ -787,6 +831,7 @@ export default function ScoreBoard({
             me={me}
             names={names}
             search={search}
+            title={boardTitle}
             friends={friends}
             onFriend={onFriend}
             onRace={tab === 'city' && onRace && canRace?.(idx) ? (name) => onRace(idx, name) : undefined}

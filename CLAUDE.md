@@ -159,9 +159,12 @@ durur), altın odak halkası, hedef en az 56 px (alçak ekranda 48), hareketi az
 `sm` mola (`plainRun` onayı aynen: `setPauseHero`), Mağaza, Düello ve Co-op kurulumunda oyuncu başına (`stack`, `tone` oyuncunun rengi). Yeni yolcu seçeneği gerekirse yalnız buraya yaz. İlk açılıştaki "Karakterini Seç"
 ekranı biyografili kendi büyük kartlarıyla kalır.
 
-**Sıralama ve profil arayüzü.** `components/ScoreBoard.tsx`: yedi sekme (Genel, Şehirler, Günlük, Modlar, Speedrun, Koleksiyon, Arkadaşlar; seçili sekme `seksek:board:tab`te hatırlanır), yolcu araması (`q`, adın parçası) ve sayfalama (`lim`, en çok 100) API'de;
-satırda yolcu portresi (`hero`, `public/portreler`), liderle fark ("lidere +3,2 sn"), yapışkan "Senin Sıran" şeridi (son bakışa göre ▲▼ `seksek:rank:*`, "Kendine Git"), ok tuşlarıyla satır gezintisi. `components/ProfileView.tsx` oyun içi (Defter → Profil, `lib/profile.ts` `profileFromSave`)
-ve herkese açık `/oyuncu/<ad>` sayfasında aynı: kimlik kartı (portre + kombin + atkı), özet şeridi, vitrin (`save.pins`, en çok üç başarım; Defter → Başarımlar'da ☆ ile sabitlenir, bulutla gider), şehir ızgarası (süre, madalya, %100, sıra). Sunucu sayfası şehir satırlarını skor tablosundan, toplananları bulut kaydından alır.
+**Sıralama ve profil arayüzü (25 Kasım 2026).** `components/ScoreBoard.tsx`: yedi sekme (Genel, Şehirler, Günlük, Modlar, Speedrun, Koleksiyon, Arkadaşlar; seçili sekme `seksek:board:tab`te hatırlanır), yolcu araması (`q`, adın parçası) ve sayfalama (`lim`, en çok 100) API'de;
+satır (`.sb-item`): sıra (ilk üç renkli madalyon), portre (`hero`, `public/portreler`; telefonda gizli), ad + sakin çipler (ikincil değerler, "lidere +3,2 sn"), sağda büyük ana değer + doluluk çubuğu, sağ kenarda `›`. Podyum alçak, yumuşak basamaklar (büyük portre, taç, sıra rozeti, "Ayrıntı ›").
+Satırın ve kürsünün tamamı **yolcu ayrıntısını** açar (ad bir `button`dır: `data-nav`, ok tuşları + Enter; dar listede, `compact`, ad hâlâ `/oyuncu/<ad>` bağlantısı): `components/PlayerDrawer.tsx`, ekranı değiştirmeden yandan (telefonda alttan) çekmece (portal, `role="dialog"`, odak içinde döner, Esc/Geri/arka plan kapatır, odak satıra döner):
+portre + kombin, ad, unvan, atkı, katılım, bağlam şeridi (tablonun adı `Board title`, sıra, ana değer), yol halkası, toplam süre, başarım, seri, altı özet sayı, en iyi dört şehir, vitrin; altta "Profili Aç" (oyunda yeni sekmede), "◌ Hayaletiyle Yarış" (süre sıralı şehir tablosunda) ve ☆ arkadaş.
+Veri salt okunur `GET /api/players/profile?name=` (`lib/profileServer.ts` `loadProfile`: `/oyuncu/[ad]` sayfasıyla aynı işlev; IP başına saatte 600, `LIMITS.profile`; 20 sn istemci önbelleği; testi `tests/scores.test.ts` "yolcu profili"). Yapışkan "Senin Sıran" şeridi sade (son bakışa göre ▲▼ `seksek:rank:*`, "Kendine Git").
+`components/ProfileView.tsx` oyun içi (Defter → Profil, `lib/profile.ts` `profileFromSave`) ve herkese açık `/oyuncu/<ad>` sayfasında aynı: kimlik kartı atkı tonunda (`--tint`, `tintOf`; büyük portre, unvan, atkı, katılım, turnuva kürsüleri, yol halkası + çubuk + toplam süre), özet sayılar (`TotalsGrid`, çubuklu), vitrin (`save.pins`, en çok üç başarım; Defter → Başarımlar'da ☆ ile sabitlenir, bulutla gider) ve "Şehir Şehir" tablosu: süzgeç Hepsi / Altın / %100 / Eksik (sayılarıyla), sıralama Plaka / Süre / Sıra, satır plaka · şehir (%100 rozeti) · toplananlar · madalya + süre · sıra; geçilmemiş şehirler tek satırda plaka bulutu. Tablo dar kapta (`@container`, 520 px) iki satırlı düzene geçer; herkese açık sayfada geniş ekranda kendi alanında kayar (kimlik yapışkan). Sunucu sayfası şehir satırlarını skor tablosundan, toplananları bulut kaydından alır.
 
 **Günlük Meydan Okuma: tek hak.** Başlayınca `save.dailyTry` bugünün günü olur (bulutla birleşir); o gün bir daha
 başlanmaz, yarıda bırakmak da hakkı bitirir. Koşu içinde "Baştan Başla", Tek Can düşüşü ve süre sınırı şehrin başına
@@ -386,7 +389,7 @@ sınırlıdır (429 + Retry-After); göç `0008_seksek_rate`. Yeni sunucu ucu k�
 - **Kimlik:** oturum `verifyPlayer` ile doğrulanır; istemcinin yazdığı `playerId` hiçbir şeye anahtar olmaz (hız sınırı da
   doğrulanmış kimliğe: `playerKey(me.id)`, oturumsuz istek `ipKey`). Satır her zaman `me.id` ile yazılır/silinir.
 - **Hız sınırı:** kötüye kullanılabilen her uç `lib/rateLimit.ts` LIMITS'te (giriş, kayıt, ad değiştirme, skor, hayalet,
-  bulut kaydı, yayın, beğeni, oynanma). Yeni uç → LIMITS'e ekle, testte sınırı sına.
+  bulut kaydı, yayın, beğeni, oynanma, salt okunur profil). Yeni uç → LIMITS'e ekle, testte sınırı sına.
 - **Girdi:** gövdeyi okumadan `content-length`, sonra metin uzunluğu; sayılar `Number.isInteger` + alt/üst sınır; dizgiler
   uzunlukla; bulut kaydında `__proto__`/`constructor` anahtarları JSON.parse'ta düşer. Ham `sql```te değer hep parametre
   (`${…}`); tablo/sütun adı kullanıcıdan gelmez. Hata yanıtı genel Türkçe cümle, ayrıntı (yığın, SQL) dönmez.
@@ -418,7 +421,7 @@ Metin `[TR, EN]` çiftidir; `{rol}` (Haritacı / Telefoncu) ve `«Uktun’a||Mem
 Metin kuralı: her karakterin sesi kendi mesleği ve şehri; aynı cümle iki karakterde geçmez (test bekler); kişi adı uydurma. Kanıt: `npx vitest run tests/story.test.ts tests/cloud.test.ts`, `ONLY=hikaye node scripts/audit-menus.cjs`.
 
 **Ayarlar ve erişilebilirlik.** Efekt ve müzik ses düzeyi (`sfxVol`, `musicVol`), Ekran Sarsıntısı (`shake`; tanımsızsa
-işletim sisteminin "hareketi azalt" tercihi, çizimde `renderer.shakeScale`), Ara Süreler (`splits`; rekor koşunun bayrak
+kapalı: 25 Kasım 2026 kullanıcı kararı, göz yormasın; çizimde `renderer.shakeScale`), Ara Süreler (`splits`; rekor koşunun bayrak
 süreleri `splitTimes`, harita sürümüyle), Rahat Mod hızı (`relaxedSpeed` %60-90), tuş atama (`keys`; Esc, P, R sabit).
 Oyun kolu titreşimi `haptic()` içinde (`vibrationActuator`). **Kolaylıklar** (Ayarlar → Kolaylıklar, cihaz ayarı: buluta gitmez, fizik değişmez): hayalet görünürlüğü (`ghostAlpha`), kamera yakınlığı (`camZoom` → `renderer.userZoom`), sarsıntı şiddeti (`shakePower`), titreşim yoğunluğu (`hapticPower` → `setHapticScale`), Dash Göstergesi (`dashMeter`), Basılı Tut Zıplama (`holdJump`: yalnız girdi, yere inişte `jumpPressed`), Büyük Yazı (`bigText`, panel `zoom`). **Renk körü paleti** (Ayarlar → Kolaylıklar, `save.colorBlind`: yok / kırmızı-yeşil / mavi-sarı; cihaz ayarı, yalnız çizim): `game/colorBlind.ts` `cbc(hex)` kritik renkleri (diken, tehlike, düşman halesi, A/B blok ve plaka, nefes ve boss süre uyarıları, ok tuzağı) Okabe-Ito tabanlı güvenli renge çevirir, mod kapalıyken tek karşılaştırma; süzgeç ya da katman yok. Renge ikinci işaret: blokta daire (A) / üçgen (B), öldüren suda çizgili yüzey, diken ucunda açık nokta, kalın düşman halesi, madalya rozetinde 1-2-3 (`.cb-mark`); arayüz `:root[data-cb]` CSS değişkenleri. Önizleme `components/CbPreview.tsx`. Yeni kritik renk eklersen `cbc` ile sar, tabloya yaz ve `tests/colorBlind.test.ts` çiftine ekle (Machado simülasyonunda ΔE ≥ 30). `CB=kirmizi-yesil node scripts/verify-perf.cjs` ile ölç. Tuş ipuçları ve rehber atanan tuşu gösterir.
 
@@ -539,6 +542,8 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 - Dost hayvan ile düşman aynı tür olmasın (kedi dostsa düşman kedi olmaz). Düşmanlar kırmızı hatla parlar.
   Şehre özgü düşman: Ordu saksağanı (`j`), dalda tüner, altından geçene uyarıp dalar.
 - Konuşma ve tabela sözü ekranın altına kutu olarak değil, konuşanın başının üstüne baloncuk olarak çizilir (karakteri kapatmaz).
+  Tabela balonu ahşap tabela görünümünde, "Tabela" başlıklı; uzun söz cümle cümle numaralı adımlara bölünür, yapılacak eylem
+  (iki noktadan sonrası, ünlemle biten cümle) kalın ve altın renkli (`render.ts` `drawDialog`, 25 Kasım 2026). Şehir insanının adı renkli etikette.
   Oynanış sırasında çıkan yazılar (bayrak sözü, ölüm lafı) üstte HUD'ın altında, küçük ve soluk durur; oynanış alanına girmez.
 - **Renk (Alacakaranlık teması).** Tokenlar `app/globals.css` `@theme`: koyu zeminde yazı ve çizgi için `accent` / `accent-2`
   (açık çivit, en az 4.5:1), dolu düğme zemini için `accent-deep` ve üstünde beyaz yazı. Mavi üstüne koyu yazı yazılmaz.

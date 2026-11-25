@@ -1272,54 +1272,168 @@ blockquote {
 }
 
 /* ── Profil (components/ProfileView.tsx) ─────────────────────────────────────────────
-   Kimlik kartı, özet şeridi, vitrin ve şehir ızgarası; oyun içinde (Defter) ve /oyuncu/<ad> sayfasında aynı.
-   `.pf-fit`: ebeveynin yüksekliğine sığar, yalnız şehir listesi kayar. */
+   Kimlik kartı (atkı tonunda: `--tint`), özet şeridi, vitrin ve "Şehir Şehir" tablosu; oyun içinde (Defter) ve
+   /oyuncu/<ad> sayfasında aynı. `.pf-fit`: ebeveynin yüksekliğine sığar, yalnız şehir tablosu kayar. */
 .pf {
   display: grid;
   gap: 12px;
+  --tint: var(--color-teal);
 }
+/* max-content: kırpan kimlik kartı (overflow: hidden) sabit yükseklikli sütunda ezilmesin; sığmazsa sütun kayar */
 .pf-side {
   display: grid;
+  grid-auto-rows: max-content;
   align-content: start;
   gap: 10px;
   min-width: 0;
 }
 .pf-main {
   min-width: 0;
+  container-type: inline-size;
 }
 .pf-card {
-  border: 2px solid var(--color-line);
-  background: rgb(14 13 34 / 0.4);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(34 31 74 / 0.75), rgb(14 13 34 / 0.5));
+  box-shadow: inset 0 0 0 2px var(--color-line);
   padding: 10px 12px;
 }
 .pf-ident {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  border-color: color-mix(in srgb, var(--color-gold) 55%, transparent);
-  box-shadow: inset 0 3px 0 0 var(--color-gold);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-gold) 9%, transparent), transparent 70%), rgb(14 13 34 / 0.4);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tint) 30%, transparent), transparent 60%),
+    linear-gradient(180deg, rgb(43 39 96 / 0.9), rgb(18 16 48 / 0.9));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--tint) 45%, var(--color-line)),
+    inset 0 4px 0 0 var(--tint);
 }
 .pf-portrait {
   flex: none;
-  width: 84px;
-  border: 2px solid var(--color-line);
-  background: var(--color-panel-2);
+  width: 112px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tint) 35%, #2a2660), #15133a 75%);
+  box-shadow:
+    0 0 0 3px rgb(14 13 34 / 0.7),
+    0 0 0 5px color-mix(in srgb, var(--tint) 70%, transparent);
+}
+.pf-name {
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--color-cream);
+  overflow-wrap: anywhere;
+}
+.pf-title {
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--color-gold) 80%, transparent);
+  background: color-mix(in srgb, var(--color-gold) 12%, transparent);
+  padding: 1px 9px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--color-gold);
+}
+.pf-ident-foot {
+  display: flex;
+  grid-column: 1 / -1;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 6px 10px 6px 6px;
+  background: rgb(14 13 34 / 0.45);
+}
+.pf-ring {
+  position: relative;
+  display: block;
+  --ring: var(--color-gold);
+}
+.pf-ring svg circle:last-child {
+  transition: stroke-dasharray 600ms ease-out;
+}
+.pf-ring-in {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding-top: 31%;
+  font-family: var(--font-title), system-ui, sans-serif;
+  color: var(--color-cream);
+  line-height: 1;
+}
+.pf-ring-in small {
+  font-size: 10px;
+  color: var(--color-muted);
 }
 .pf-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.pf-actions > * {
+.pf-actions > :not(p) {
   min-height: 44px;
 }
 .pf-totals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
-  border: 2px solid var(--color-line);
-  background: color-mix(in srgb, var(--color-line) 70%, transparent);
+  gap: 6px;
+}
+.pf-tot {
+  min-width: 0;
+  border-radius: 9px;
+  padding: 8px 9px 7px;
+  background: linear-gradient(180deg, rgb(34 31 74 / 0.85), rgb(23 21 56 / 0.85));
+  box-shadow: inset 0 0 0 1.5px var(--color-line);
+}
+.pf-tot-k {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.pf-tot-v {
+  margin-top: 3px;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-cream);
+  font-variant-numeric: tabular-nums;
+}
+.pf-tot-v small {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.pf-tot-full {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-gold) 70%, transparent);
+}
+.pf-tot-full .pf-tot-v {
+  color: var(--color-gold);
+}
+.pf-bar {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: rgb(14 13 34 / 0.8);
+  overflow: hidden;
+}
+.pf-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-2));
+}
+.pf-tot-full .pf-bar > span {
+  background: var(--color-gold);
 }
 .pf-h {
   font-family: var(--font-title), system-ui, sans-serif;
@@ -1327,42 +1441,165 @@ blockquote {
   line-height: 1.2;
   color: var(--color-accent-2);
 }
-.pf-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-  margin-top: 8px;
-  align-content: start;
+.pf-pin {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9px;
+  padding: 7px 6px;
+  text-align: center;
+  background: color-mix(in srgb, var(--color-gold) 9%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-gold) 55%, transparent);
 }
-@media (min-width: 640px) {
-  .pf-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.pf-pin-ic {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-gold);
+  color: var(--color-ink);
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 17px;
+}
+@media (max-height: 500px) {
+  .pf-pin {
+    flex-direction: row;
+    text-align: left;
   }
 }
-.pf-city {
+/* Şehir Şehir: başlık + süzgeç/sıralama, tablo (başlık satırı yapışkan) */
+.pf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.pf-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pf-seg > button {
+  min-height: 36px;
+  padding-inline: 10px;
+  font-size: 13px;
+}
+@media (pointer: coarse) {
+  .pf-seg > button {
+    min-height: 44px;
+  }
+}
+.pf-count {
+  margin-left: 2px;
+  font-size: 11px;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+/* position: relative: içteki ekran okuyucu metinleri (sr-only, mutlak konumlu) kayan tablonun içinde kalır; yoksa
+   tablonun dışındaki kaydırma kabını uzatıyordu (geçilmemiş şehirlerin plaka bulutu) */
+.pf-table {
+  position: relative;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: rgb(14 13 34 / 0.35);
+  box-shadow: inset 0 0 0 2px var(--color-line);
+  overflow: hidden;
+}
+.pf-rows {
   display: grid;
-  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+}
+.pf-row {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) 6.2rem 5.6rem 3.2rem;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
-  border: 2px dashed color-mix(in srgb, var(--color-line) 80%, transparent);
-  background: rgb(14 13 34 / 0.25);
+  min-height: 40px;
+  padding: 4px 12px;
+  border-top: 1px solid rgb(55 51 122 / 0.55);
 }
-/* giriş animasyonları yalnız ekran açılırken (`:root[data-enter]`): sekme geçişinde satırlar yeniden kaymaz */
-:root[data-enter] .pf-city {
-  animation: pf-in 220ms ease-out both;
+.pf-rows > .pf-row:nth-child(even) {
+  background: rgb(34 31 74 / 0.3);
 }
-.pf-city-done {
-  border-style: solid;
-  border-color: var(--color-line);
-  background: var(--color-panel-2);
+.pf-rows > .pf-row:hover {
+  background: rgb(123 135 255 / 0.12);
 }
-.pf-city[data-full='1'] {
-  border-color: color-mix(in srgb, var(--color-gold) 65%, var(--color-line));
+.pf-row[data-full='1'] {
+  box-shadow: inset 3px 0 0 var(--color-gold);
+}
+.pf-row-h {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 30px;
+  border-top: 0;
+  background: #1c1a45;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.pf-tag {
+  flex: none;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-gold) 80%, transparent);
+  background: color-mix(in srgb, var(--color-gold) 12%, transparent);
+  padding: 0 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--color-gold);
+}
+.pf-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pf-col-sm {
+  display: none;
+}
+.pf-time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 16px;
+  color: var(--color-cream);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pf-rank {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-accent-2);
+  font-variant-numeric: tabular-nums;
+}
+.pf-rest {
+  border-top: 1px dashed var(--color-line);
+  padding: 9px 12px 11px;
+}
+.pf-ghost-plate {
+  position: relative;
+  min-width: 28px;
+  border-radius: 4px;
+  border: 1px dashed color-mix(in srgb, var(--color-muted) 45%, transparent);
+  padding: 1px 4px;
+  text-align: center;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
 }
 .pf-empty {
-  border: 2px dashed var(--color-line);
-  padding: 12px;
+  padding: 14px;
   font-size: 14px;
   color: var(--color-muted);
 }
@@ -1374,6 +1611,51 @@ blockquote {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+/* giriş animasyonları yalnız ekran açılırken (`:root[data-enter]`): sekme geçişinde satırlar yeniden kaymaz */
+:root[data-enter] .pf-rows > .pf-row {
+  animation: pf-in 220ms ease-out both;
+}
+@container (max-width: 520px) {
+  .pf-row {
+    grid-template-columns: 2.4rem minmax(0, 1fr) auto 2.6rem;
+    gap: 8px;
+    min-height: 46px;
+    padding-inline: 10px;
+  }
+  .pf-col-lg {
+    display: none;
+  }
+  .pf-col-sm {
+    display: block;
+    margin-top: 3px;
+  }
+}
+/* herkese açık sayfa: geniş ekranda iki sütun, kimlik yapışkan; şehir tablosu kendi alanında kayar */
+@media (min-width: 900px) {
+  .pf:not(.pf-fit) {
+    grid-template-columns: minmax(300px, 350px) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+  .pf:not(.pf-fit) .pf-side {
+    position: sticky;
+    top: 76px;
+  }
+  .pf:not(.pf-fit) .pf-table {
+    max-height: calc(100dvh - 230px);
+    min-height: 320px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+@media (min-width: 640px) {
+  .pf:not(.pf-fit) .pf-portrait {
+    width: 128px;
+  }
+  .pf:not(.pf-fit) .pf-name {
+    font-size: 32px;
   }
 }
 .pf-fit {
@@ -1391,38 +1673,47 @@ blockquote {
   flex: 1 1 0;
   min-height: 0;
 }
-.pf-fit .pf-grid {
+.pf-fit .pf-table {
   flex: 1 1 0;
-  min-height: 84px;
+  min-height: 60px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-right: 4px;
+}
+.pf-fit .pf-portrait {
+  width: 84px;
+}
+.pf-fit .pf-ident {
+  padding: 12px;
+  gap: 10px 12px;
+}
+.pf-fit .pf-name {
+  font-size: 24px;
 }
 @media (max-width: 639px) {
   .pf-portrait {
-    width: 56px;
+    width: 76px;
   }
   .pf-ident {
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 10px;
+  }
+  .pf-name {
+    font-size: 24px;
+  }
+  .pf-fit .pf-portrait {
+    width: 56px;
+  }
+  .pf-fit .pf-name {
+    font-size: 20px;
   }
   .pf-fit .pf-showcase {
     padding: 6px 10px;
   }
 }
-@media (min-width: 900px) {
-  .pf:not(.pf-fit) {
-    grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
-    align-items: start;
-  }
-  .pf:not(.pf-fit) .pf-side {
-    position: sticky;
-    top: 76px;
-  }
-}
 @media (min-width: 900px) and (min-height: 600px), (max-height: 500px) {
   .pf-fit {
     display: grid;
-    grid-template-columns: minmax(250px, 330px) minmax(0, 1fr);
+    grid-template-columns: minmax(270px, 340px) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
   .pf-fit .pf-side {
@@ -1438,10 +1729,16 @@ blockquote {
   .pf-fit .pf-showcase p:last-child {
     display: none;
   }
+  .pf-fit .pf-ident {
+    padding: 8px 10px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pf-city {
+  .pf-rows > .pf-row {
     animation: none;
+  }
+  .pf-ring svg circle:last-child {
+    transition: none;
   }
 }
 
@@ -1538,16 +1835,82 @@ blockquote {
   }
   .pf-fit .pf-totals {
     grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 3px;
   }
-  .pf-fit .pf-totals > div {
-    padding-block: 5px;
-    padding-inline: 2px;
+  .pf-fit .pf-tot {
+    padding: 5px 2px 4px;
+    text-align: center;
+  }
+  .pf-fit .pf-tot-k span {
+    display: none;
+  }
+  .pf-fit .pf-tot-v {
+    font-size: 16px;
+  }
+  .pf-fit .pf-bar {
+    display: none;
   }
   .pf-fit .pf-stats {
     display: none;
   }
   .pf-fit .pf-actions > * {
     min-height: 40px;
+  }
+  .pf-fit .pf-ident-foot,
+  .pf-fit .pf-row-h {
+    display: none;
+  }
+  .pf-fit .pf-tools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+  }
+  .pf-fit .pf-tools .seg {
+    flex: none;
+  }
+}
+/* oyun içinde sütunlar eşit biter: yan sütun esnek kolon, son öbek (vitrin) dibe yaslanır */
+.pf-fit .pf-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pf-fit .pf-side > * {
+  flex: none;
+}
+.pf-fit .pf-showcase {
+  margin-top: auto;
+}
+@media (max-width: 639px), (max-height: 800px) {
+  .pf-fit .pf-pin {
+    padding: 3px 4px;
+  }
+  .pf-fit .pf-pin-ic {
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+  }
+}
+@media (max-height: 500px) {
+  .pf-fit .pf-ident-foot,
+  .pf-fit .pf-row-h {
+    display: none;
+  }
+  .pf-fit .pf-head {
+    flex-wrap: nowrap;
+  }
+  .pf-fit .pf-tools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .pf-fit .pf-tools .seg {
+    flex: none;
+  }
+  .pf-fit .pf-h {
+    flex: none;
   }
 }
 
@@ -1733,41 +2096,194 @@ blockquote {
   background: linear-gradient(180deg, rgb(34 31 74 / 0.7), rgb(14 13 34 / 0.45));
   box-shadow: inset 0 0 0 2px var(--color-line);
 }
-/* Skor Tablosu podyumu: ilk üç basamakta (yükseklik --h, renk --podium); basamaklar alttan yükselir */
+/* Skor Tablosu podyumu: ilk üç alçak, yumuşak basamakta (yükseklik --h, renk --podium); büyük portre, taç, ad ve değer.
+   Basamağın tamamı yolcu ayrıntısını açar (Board `open`). */
+.sb-step {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 10px 0;
+  border-radius: 14px 14px 0 0;
+  text-align: center;
+  cursor: pointer;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--podium) 13%, transparent), color-mix(in srgb, var(--podium) 4%, transparent) 75%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--podium) 30%, transparent);
+  transition: background-color 150ms, box-shadow 150ms, transform 150ms;
+}
+.sb-step:hover,
+.sb-step:focus-within {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--podium) 70%, transparent);
+  background-color: rgb(255 255 255 / 0.03);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sb-step:hover { transform: translateY(-2px); }
+}
+.sb-step.me {
+  box-shadow: inset 0 0 0 2px var(--color-accent-2);
+}
 :root[data-enter] .sb-step {
   animation: sb-rise 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
-.sb-plinth {
-  height: var(--h);
-  border-radius: 8px 8px 0 0;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 38%),
-    var(--podium);
-  box-shadow:
-    inset 0 -4px 0 rgb(0 0 0 / 0.18),
-    0 0 0 2px rgb(14 13 34 / 0.6);
+.sb-step-face {
+  position: relative;
+  display: block;
 }
-.sb-step.me .sb-plinth {
-  box-shadow:
-    inset 0 -4px 0 rgb(0 0 0 / 0.18),
-    0 0 0 3px var(--color-accent-2);
+.sb-step-pic {
+  display: block;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px #15133a, 0 0 0 5px var(--podium);
+}
+.sb-step.first .sb-step-pic {
+  width: 68px;
+  height: 68px;
+}
+.sb-step-pic > span {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 26px !important;
+}
+.sb-step-medal {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--podium);
+  color: var(--color-ink);
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 14px;
+  box-shadow: 0 0 0 2px #15133a;
+}
+.sb-plinth {
+  display: block;
+  align-self: stretch;
+  height: var(--h);
+  margin: 10px -10px 0;
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--podium) 55%, transparent), color-mix(in srgb, var(--podium) 18%, transparent));
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.25);
 }
 .sb-crown {
   position: absolute;
   left: 50%;
-  top: -22px;
+  top: -18px;
   z-index: 1;
   translate: -50% 0;
   color: var(--color-gold);
-  font-size: 18px;
+  font-size: 20px;
   text-shadow: 0 2px 0 #0e0d22;
   line-height: 1;
+}
+.sb-more {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+  transition: color 150ms;
+}
+.sb-step:hover .sb-more,
+.sb-step:focus-within .sb-more {
+  color: var(--color-accent-2);
 }
 @keyframes sb-rise {
   from { opacity: 0; transform: translateY(18px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .sb-step { animation: none; }
+}
+/* Skor satırı: sıra, portre, ad + çipler, sağda ana değer; satırın tamamı ayrıntıyı açar (sağda ok) */
+.sb-item {
+  position: relative;
+  border-radius: 10px;
+  background: rgb(34 31 74 / 0.55);
+  box-shadow: inset 3px 0 0 var(--podium, transparent);
+  transition: background-color 120ms, box-shadow 120ms;
+}
+.sb-item.odd {
+  background: rgb(34 31 74 / 0.3);
+}
+.sb-item.me {
+  background: rgb(123 135 255 / 0.18);
+  box-shadow: inset 3px 0 0 var(--podium, var(--color-accent-2)), inset 0 0 0 2px rgb(123 135 255 / 0.55);
+}
+.sb-click {
+  cursor: pointer;
+}
+.sb-click:hover,
+.sb-click:focus-within {
+  background: rgb(123 135 255 / 0.14);
+  box-shadow: inset 3px 0 0 var(--podium, var(--color-accent-2)), inset 0 0 0 1.5px rgb(180 188 255 / 0.45);
+}
+.sb-chev {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  translate: 0 -50%;
+  font-size: 22px;
+  line-height: 1;
+  color: rgb(196 193 232 / 0.45);
+  transition: color 120ms, translate 120ms;
+}
+.sb-click:hover .sb-chev,
+.sb-click:focus-within .sb-chev {
+  color: var(--color-accent-2);
+  translate: 3px -50%;
+}
+.sb-name {
+  display: block;
+  cursor: pointer;
+}
+.sb-click:hover .sb-name {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgb(180 188 255 / 0.6);
+}
+.sb-chip {
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgb(14 13 34 / 0.45);
+  padding: 0 8px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.sb-chip-gap {
+  color: var(--color-accent-2);
+  background: rgb(123 135 255 / 0.12);
+}
+/* "Senin Sıran" şeridi: sade, ince altın kenar */
+.sb-me {
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgb(255 204 102 / 0.1), rgb(23 21 56 / 0.96) 45%), var(--color-panel);
+  box-shadow: inset 3px 0 0 var(--color-gold), inset 0 0 0 1.5px rgb(255 204 102 / 0.35);
+}
+.sb-jump {
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent-2);
+  background: rgb(123 135 255 / 0.12);
+  box-shadow: inset 0 0 0 1.5px rgb(123 135 255 / 0.45);
+}
+.sb-jump:hover {
+  background: rgb(123 135 255 / 0.22);
+  color: var(--color-cream);
+}
+.sb-jump:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .sb-jump { min-height: 44px; }
 }
 /* Mücadele kartı: madalya çizgisi (altın, gümüş, bronz işaretleri ve rekorun) */
 .medal-track {
@@ -2050,4 +2566,247 @@ blockquote {
   .set-wide .set-pad {
     display: none;
   }
+}
+
+/* ── Yolcu ayrıntısı (components/PlayerDrawer.tsx): Skor Tablosu'ndan yandan (telefonda alttan) açılan çekmece ── */
+.pd-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  --tint: var(--color-teal);
+}
+.pd-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(8 7 22 / 0.62);
+}
+.pd-sheet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  width: min(440px, 100%);
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(130% 60% at 0% 0%, color-mix(in srgb, var(--tint) 22%, transparent), transparent 55%),
+    linear-gradient(180deg, #221f50, #141233);
+  box-shadow:
+    -3px 0 0 0 var(--color-line),
+    -18px 0 40px rgb(0 0 0 / 0.45);
+  padding-top: env(safe-area-inset-top);
+}
+:root[data-enter] .pd-sheet,
+.pd-sheet {
+  animation: pd-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pd-in {
+  from { transform: translateX(32px); opacity: 0; }
+}
+@media (max-width: 639px) {
+  .pd-sheet {
+    top: auto;
+    left: 0;
+    width: 100%;
+    max-height: 90dvh;
+    border-radius: 16px 16px 0 0;
+    box-shadow:
+      0 -3px 0 0 var(--color-line),
+      0 -18px 40px rgb(0 0 0 / 0.45);
+    animation-name: pd-up;
+  }
+  @keyframes pd-up {
+    from { transform: translateY(40px); opacity: 0; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd-sheet { animation: none; }
+}
+.pd-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 16px 12px;
+}
+.pd-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pd-portrait {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tint) 35%, #2a2660), #15133a 75%);
+  box-shadow:
+    0 0 0 3px rgb(14 13 34 / 0.7),
+    0 0 0 5px color-mix(in srgb, var(--tint) 70%, transparent);
+}
+.pd-name {
+  padding-top: 2px;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 26px;
+  line-height: 1.05;
+  color: var(--color-cream);
+  overflow-wrap: anywhere;
+}
+.pd-close {
+  min-height: 40px;
+  padding-inline: 10px;
+  font-size: 14px;
+}
+.pd-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgb(14 13 34 / 0.55);
+  box-shadow: inset 0 0 0 1.5px var(--color-line);
+}
+.pd-rank {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+}
+.pd-rank small {
+  overflow: hidden;
+  max-width: 11rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+.pd-rank b {
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--color-cream);
+}
+.pd-value {
+  white-space: nowrap;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-cream);
+  font-variant-numeric: tabular-nums;
+}
+.pd-sec {
+  margin-top: 14px;
+}
+.pd-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pd-facts {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.pd-facts dt {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.pd-facts dd {
+  margin-top: 2px;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--color-cream);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pd-facts dd small {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.pd-best {
+  display: grid;
+  margin-top: 6px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1.5px var(--color-line);
+}
+.pd-best > li {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto 2.6rem;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 10px;
+}
+.pd-best > li + li {
+  border-top: 1px solid rgb(55 51 122 / 0.55);
+}
+.pd-pin {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 10px 3px 3px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-cream);
+  background: color-mix(in srgb, var(--color-gold) 9%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-gold) 55%, transparent);
+}
+.pd-note {
+  margin-top: 14px;
+  border: 2px dashed var(--color-line);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+.pd-skel {
+  display: inline-block;
+  border-radius: 8px;
+  background: rgb(55 51 122 / 0.45);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.pd-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 2px solid var(--color-line);
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  background: rgb(14 13 34 / 0.6);
+}
+.pd-btn {
+  display: inline-flex;
+  flex: 1 1 auto;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 12px;
+  font-size: 14px;
+}
+.pd-foot .pd-btn:focus-visible,
+.pd-close:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+@media (max-height: 500px) {
+  .pd-portrait { width: 64px; height: 64px; }
+  .pd-name { font-size: 22px; }
+  .pd-scroll { padding: 10px 14px 8px; }
+  .pd-foot { padding-block: 8px max(8px, env(safe-area-inset-bottom)); }
+  .pd-btn { min-height: 38px; }
+}
+@media (max-width: 639px) {
+  .pd-portrait { width: 76px; height: 76px; }
+  .pd-name { font-size: 23px; }
 }

@@ -27,6 +27,7 @@ const loginApi = await import('../app/api/players/login/route')
 const playersApi = await import('../app/api/players/route')
 const meApi = await import('../app/api/players/me/route')
 const saveApi = await import('../app/api/players/save/route')
+const profileApi = await import('../app/api/players/profile/route')
 
 const sha = (t: string) => createHash('sha256').update(t).digest('hex')
 const P = [
@@ -465,6 +466,29 @@ describe('güvenlik', () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined()
     const g = (await (await saveApi.GET(new NextRequest('http://x/api/players/save', { headers: { cookie: `seksek_oturum=${H.id}.${H.token}` } }))).json()) as { data: Record<string, unknown> }
     expect(JSON.stringify(g.data)).not.toContain('polluted')
+  })
+
+  it('yolcu profili: salt okunur GET, ad büyük/küçük harf duyarsız; olmayan ad 404, boş ya da uzun ad 400; IP başına saatte 600', async () => {
+    const prof = (name: string, ip = nextIp()) => profileApi.GET(new NextRequest(`http://x/api/players/profile?name=${encodeURIComponent(name)}`, { headers: { 'x-forwarded-for': ip } }))
+    const r = await prof('cemre')
+    expect(r.status).toBe(200)
+    const { profile } = (await r.json()) as { profile: { name: string; cities: Record<string, { timeMs: number; rank: number }>; totals: { charms: number } } }
+    expect(profile.name).toBe('Cemre')
+    expect(profile.cities.konya).toMatchObject({ timeMs: 75000, rank: 1 })
+    // hesaba kayıtlı defterden (koleksiyon testi): iki nazar
+    expect(profile.totals.charms).toBe(2)
+    // şifre özeti, oturum ya da kimlik sızmaz
+    const text = JSON.stringify(profile)
+    expect(text).not.toContain(P[2].id)
+    expect(text).not.toMatch(/password|token/i)
+    expect((await prof('kimseyok')).status).toBe(404)
+    expect((await prof('')).status).toBe(400)
+    expect((await prof('x'.repeat(33))).status).toBe(400)
+    const ip = nextIp()
+    for (let i = 0; i < 600; i++) await prof('kimseyok', ip)
+    const lim = await prof('cemre', ip)
+    expect(lim.status).toBe(429)
+    expect(lim.headers.get('Retry-After')).toBeTruthy()
   })
 })
 

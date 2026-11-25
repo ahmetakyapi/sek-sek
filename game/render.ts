@@ -189,8 +189,8 @@ export class Renderer {
     this.canvas.width = devW
     this.canvas.height = devH
     const portrait = cssH > cssW
-    // dikeyde ~13 tile genişlik, yatayda ~15 tile yükseklik
-    const target = portrait ? Math.min(devW / (13 * T), devH / (20 * T)) : Math.min(devW / (20 * T), devH / (13 * T))
+    // 25 Kasım 2026: kamera bir tık yakın (karakter kolay seçilsin): yatayda ~18x12, dikeyde ~12 karo
+    const target = portrait ? Math.min(devW / (12 * T), devH / (19 * T)) : Math.min(devW / (18 * T), devH / (12 * T))
     // yatayda en yakın tam sayı: karakter masaüstünde de okunur kalsın
     this.scale = Math.max(1, portrait ? Math.floor(target * this.zoom * this.userZoom) : Math.round(target * this.zoom * this.userZoom))
     // bir piksel fazla: kamera kesirli kayarken kenarda boşluk kalmasın
@@ -310,8 +310,8 @@ export class Renderer {
     const bands = Array.from({ length: N }, (_, i) => {
       const [r, g, bl] = at(i / (N - 1)).match(/\d+/g)!.map(Number)
       const L = r * 0.3 + g * 0.59 + bl * 0.11
-      const warm = Math.max(0, i / (N - 1) - 0.45) * 0.45
-      return [r, g, bl].map((v, j) => Math.max(0, Math.min(255, Math.round((L + (v - L) * 1.3) * 0.96 * (1 - warm) + glow[j] * warm))))
+      const warm = Math.max(0, i / (N - 1) - 0.55) * 0.35
+      return [r, g, bl].map((v, j) => Math.max(0, Math.min(255, Math.round((L + (v - L) * 1.45) * 0.95 * (1 - warm) + glow[j] * warm))))
     })
     const B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
     const img = c.createImageData(cv.width, cv.height)
@@ -698,9 +698,15 @@ export class Renderer {
 
     // parallax katmanlar
     if (this.layers) {
+      // katmanlar kesirli konuma, yumuşak örneklenerek çizilir: tam piksele yuvarlanınca kamera kesirli kayarken her
+      // katman 4-5 ekran pikseli adımlarla ve farklı hızlarda zıplıyordu, zemin pürüzsüz aktığı için ekran sallanıyor
+      // gibi görünüyordu (25 Kasım 2026). Tampon ekrana (hdX - cx) kadar ötelenerek basıldığından o pay eklenir
+      const fx = hdX - cx
+      const fyOff = hdY - cy
+      b.imageSmoothingEnabled = true
       const drawLayer = (cv: HTMLCanvasElement, f: number, fy: number) => {
-        const y = layerY(fy)
-        let x = -Math.round((cx * f) % LAYER_W)
+        const y = GROUND_Y - camRef - (hdY - camRef) * fy - LAYER_H + 22 + fyOff
+        let x = -((hdX * f) % LAYER_W) + fx
         if (x > 0) x -= LAYER_W
         for (; x < this.viewW; x += LAYER_W) b.drawImage(cv, x, y)
         if (y + LAYER_H < this.viewH) {
@@ -710,16 +716,14 @@ export class Renderer {
       }
       drawLayer(this.layers.far, 0.12, 0.08)
       // hava perspektifi: uzak katman gökyüzünün rengine yaslanır
-      b.fillStyle = hexA(s.sky[2], 0.2)
+      b.fillStyle = hexA(s.sky[2], 0.07)
       b.fillRect(0, 0, this.viewW, this.viewH)
       if (this.city === 'istanbul') this.drawBosphorus(b, layerY(0.13) + LAYER_H - 70, cx)
       drawLayer(this.layers.mid, 0.25, 0.18)
-      b.fillStyle = hexA(s.sky[2], 0.1)
+      b.fillStyle = hexA(s.sky[2], 0.04)
       b.fillRect(0, 0, this.viewW, this.viewH)
       drawLayer(this.layers.near, 0.45, 0.32)
-      // yakın katman da hafifçe geri çekilir: oyuncunun bastığı zemin öne çıksın
-      b.fillStyle = hexA(s.sky[2], 0.05)
-      b.fillRect(0, 0, this.viewW, this.viewH)
+      b.imageSmoothingEnabled = false
     }
 
     this.drawAmbient(b, dt, cx, cy, w)
@@ -4924,7 +4928,7 @@ export class Renderer {
     }
     // iz kopyası düz boyda çizilir (incelmesi basılırken)
     const snap = !!h.snap
-    drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: h.moving, sx: snap ? 1 : h.sx, sy: snap ? 1 : h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc, flow: h.flow })
+    drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: h.moving, sx: (snap ? 1 : h.sx) * HERO_WIDE, sy: snap ? 1 : h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc, flow: h.flow })
     g.restore()
     return oy
   }
@@ -4954,7 +4958,7 @@ export class Renderer {
     if (this.t - e.at > 1 / 12 || e.at > this.t || e.flip !== h.flip) {
       const g = e.cv.getContext('2d')!
       g.clearRect(0, 0, W, H)
-      drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: false, sx: 1, sy: 1 })
+      drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: false, sx: HERO_WIDE, sy: 1 })
       e.at = this.t
       e.flip = h.flip
     }
@@ -5506,32 +5510,64 @@ export class Renderer {
     const W = this.canvas.width
     const small = this.canvas.height / u < 520 || this.canvas.width / u < 500
     // okunaklı: gövde 13/15 px, satır aralığı geniş, satır en çok ~42 harf
-    const size = Math.round((small ? 13 : 15) * u)
+    const size = Math.round((small ? 14 : 16) * u)
     const nameSize = Math.round((small ? 11.5 : 13) * u)
-    const pad = Math.round((small ? 9 : 11) * u)
-    const lh = Math.round(size * 1.42)
-    const maxW = Math.min(W - 24 * u, (small ? 260 : 340) * u)
-    const body = `400 ${size}px ${this.textFont()}`
-    // satırlara böl (genişlik tam metne göre: yazı akarken baloncuk büyümez)
-    c.font = body
-    const lines: string[] = []
-    let cur = ''
-    for (const word of d.text.split(' ')) {
-      const tryLine = cur ? `${cur} ${word}` : word
-      if (c.measureText(tryLine).width > maxW - pad * 2 && cur) {
-        lines.push(cur)
-        cur = word
-      } else cur = tryLine
-    }
-    if (cur) lines.push(cur)
-    let tw = Math.max(...lines.map((l) => c.measureText(l).width))
-    if (d.name) {
+    const pad = Math.round((small ? 10 : 13) * u)
+    const lh = Math.round(size * 1.4)
+    const maxW = Math.min(W - 24 * u, (small ? 290 : 400) * u)
+    const body = `500 ${size}px ${this.textFont()}`
+    const bold = `700 ${size}px ${this.textFont()}`
+    const sign = d.kind === 'sign'
+    // tabela: cümle cümle maddeler; yapılacak eylem (iki noktadan sonrası, ünlemle biten cümle) kalın ve renkli.
+    // Uzun boss tabelası tek paragraf hâlinde okunmuyordu (25 Kasım 2026)
+    const loc = this.lang === 'en' ? 'en' : 'tr'
+    // noktalı virgülle ayrılan adım kendi cümlesi olur: büyük harfle başlar, noktayla biter
+    const paras = sign
+      ? d.text
+          .split(/(?<=[.;!?])\s+/)
+          .filter(Boolean)
+          .map((q) => q.charAt(0).toLocaleUpperCase(loc) + q.slice(1).replace(/;$/, '.'))
+      : [d.text]
+    const bullets = sign && paras.length > 1
+    const indent = bullets ? Math.round(size * 1.35) : 0
+    type Line = { words: { w: string; hi: boolean }[]; first: boolean; gap: boolean; n: number }
+    const lines: Line[] = []
+    paras.forEach((para, pi) => {
+      const colon = para.lastIndexOf(':')
+      const loud = sign && para.endsWith('!')
+      let pos = 0
+      let cur: Line = { words: [], first: true, gap: pi > 0, n: 0 }
+      let curW = 0
+      for (const word of para.split(' ')) {
+        const hi = sign && (loud || (colon >= 0 && pos > colon))
+        pos += word.length + 1
+        c.font = hi ? bold : body
+        const ww = c.measureText(word + ' ').width
+        if (curW + ww > maxW - pad * 2 - indent && cur.words.length) {
+          lines.push(cur)
+          cur = { words: [], first: false, gap: false, n: 0 }
+          curW = 0
+        }
+        cur.words.push({ w: word, hi })
+        cur.n += word.length + 1
+        curW += ww
+      }
+      if (cur.words.length) lines.push(cur)
+    })
+    // tabelanın başlığı (simgeyle): balon ne olduğunu ilk bakışta söyler
+    const title = d.name ?? (sign ? (this.lang === 'en' ? 'Signpost' : 'Tabela') : undefined)
+    const iconW = sign ? Math.round(nameSize * 1.5) : 0
+    const lineW = (l: Line) => l.words.reduce((a, q) => ((c.font = q.hi ? bold : body), a + c.measureText(q.w + ' ').width), 0) + indent
+    const paraGap = bullets ? Math.round(size * 0.35) : 0
+    let tw = Math.max(...lines.map(lineW))
+    if (title) {
       c.font = `700 ${nameSize}px ${this.popFont()}`
-      tw = Math.max(tw, c.measureText(d.name).width)
+      tw = Math.max(tw, c.measureText(title).width + iconW + (sign ? 0 : nameSize))
     }
     const bw = Math.ceil(tw + pad * 2)
-    const head = d.name ? Math.round(nameSize * 1.5) : 0
-    const bh = Math.ceil(pad * 2 + head + lines.length * lh - (lh - size))
+    const head = title ? Math.round(nameSize * 2) : 0
+    const gaps = lines.filter((l) => l.gap).length * paraGap
+    const bh = Math.ceil(pad * 2 + head + lines.length * lh - (lh - size) + gaps)
     const tail = Math.round(8 * u)
     const tipX = (ax - cx) * sc
     const tipY = (ay - cy) * sc
@@ -5545,58 +5581,135 @@ export class Renderer {
     // daktilo: saniyede ~130 harf; kutu yazılan satır kadar büyür (genişlik baştan tam: titremez, boş kâğıt kalmaz)
     const typed = Math.floor((this.t - this.dlgAt) * 130)
     let started = 0
+    let startedGaps = 0
     for (let i = 0, at = 0; i < lines.length; i++) {
-      if (typed > at) started = i + 1
-      at += lines[i].length + 1
+      if (typed > at) {
+        started = i + 1
+        if (lines[i].gap) startedGaps += paraGap
+      }
+      at += lines[i].n
     }
-    const shownH = Math.ceil(pad * 2 + head + Math.max(1, started) * lh - (lh - size))
+    const shownH = Math.ceil(pad * 2 + head + Math.max(1, started) * lh - (lh - size) + startedGaps)
     // balon konuşanın üstündeyse alt kenarı sabit kalır (yukarı büyür), altındaysa üst kenarı
     const above = tipY - tail > by + bh - 1
     const top = above ? by + bh - shownH : by
-    const sign = d.kind === 'sign'
-    const fill = sign ? '#3a2a1e' : '#fffaf0'
-    const line = sign ? '#c79a62' : '#22161f'
     c.save()
     c.globalAlpha = k
     c.translate(0, (1 - k) * 6 * u)
-    // yumuşak gölge, sonra kâğıt ve kuyruk tek dış hatla
-    c.fillStyle = 'rgba(10,6,20,0.28)'
+    const r = 10 * u
+    // yumuşak gölge
+    c.fillStyle = 'rgba(10,6,20,0.3)'
     c.beginPath()
-    c.roundRect(bx + 3 * u, top + 4 * u, bw, shownH, 9 * u)
+    c.roundRect(bx + 3 * u, top + 5 * u, bw, shownH, r)
     c.fill()
     c.lineJoin = 'round'
-    c.lineWidth = Math.max(1.5, 2 * u)
-    c.strokeStyle = line
-    c.fillStyle = fill
-    const tx = Math.max(bx + 14 * u, Math.min(bx + bw - 14 * u, tipX))
-    c.beginPath()
-    c.roundRect(bx, top, bw, shownH, 9 * u)
-    if (above && tipX > bx && tipX < bx + bw) {
-      c.moveTo(tx - 6 * u, top + shownH - 1)
-      c.lineTo(tipX, tipY + Math.min(reach, 4 * u))
-      c.lineTo(tx + 6 * u, top + shownH - 1)
+    c.lineWidth = Math.max(2, 2.5 * u)
+    const tx = Math.max(bx + 16 * u, Math.min(bx + bw - 16 * u, tipX))
+    const shape = () => {
+      c.beginPath()
+      c.roundRect(bx, top, bw, shownH, r)
+      if (above && tipX > bx && tipX < bx + bw) {
+        c.moveTo(tx - 7 * u, top + shownH - 1)
+        c.lineTo(tipX, tipY + Math.min(reach, 4 * u))
+        c.lineTo(tx + 7 * u, top + shownH - 1)
+      }
     }
-    c.stroke()
-    c.fill()
+    if (sign) {
+      // ahşap tabela: sıcak tahta geçişi, açık kenar, köşelerde çivi, tahta damarı
+      const g = c.createLinearGradient(0, top, 0, top + shownH)
+      g.addColorStop(0, '#5a3e28')
+      g.addColorStop(1, '#3a281b')
+      shape()
+      c.strokeStyle = '#1e140e'
+      c.lineWidth = Math.max(3, 4 * u)
+      c.stroke()
+      c.fillStyle = g
+      c.fill()
+      c.lineWidth = Math.max(1, 1.5 * u)
+      c.strokeStyle = 'rgba(240,200,130,0.55)'
+      c.beginPath()
+      c.roundRect(bx + 3 * u, top + 3 * u, bw - 6 * u, shownH - 6 * u, r - 3 * u)
+      c.stroke()
+      c.strokeStyle = 'rgba(20,12,8,0.18)'
+      for (let gy = top + 14 * u; gy < top + shownH - 8 * u; gy += 11 * u) {
+        c.beginPath()
+        c.moveTo(bx + 10 * u, gy)
+        c.bezierCurveTo(bx + bw * 0.35, gy + 2 * u, bx + bw * 0.65, gy - 2 * u, bx + bw - 10 * u, gy)
+        c.stroke()
+      }
+      c.fillStyle = '#c9a46a'
+      for (const [nx, ny] of [[bx + 8 * u, top + 8 * u], [bx + bw - 8 * u, top + 8 * u], [bx + 8 * u, top + shownH - 8 * u], [bx + bw - 8 * u, top + shownH - 8 * u]]) {
+        c.beginPath()
+        c.arc(nx, ny, 1.8 * u, 0, Math.PI * 2)
+        c.fill()
+      }
+    } else {
+      shape()
+      c.strokeStyle = '#22161f'
+      c.stroke()
+      c.fillStyle = '#fffaf0'
+      c.fill()
+    }
     c.textAlign = 'left'
     c.textBaseline = 'top'
     let y = top + pad
-    if (d.name) {
+    if (title) {
       c.font = `700 ${nameSize}px ${this.popFont()}`
-      c.fillStyle = sign ? '#f0d49a' : '#9a3e22'
-      c.fillText(d.name, bx + pad, y)
-      // adın altında ince çizgi: ad ile söz ayrışır
-      c.fillStyle = sign ? 'rgba(240,212,154,0.25)' : 'rgba(154,62,34,0.18)'
-      c.fillRect(bx + pad, y + nameSize + 3 * u, bw - pad * 2, Math.max(1, u))
+      if (sign) {
+        // küçük tabela simgesi: direk ve levha
+        const ix = bx + pad
+        const iy = y - 1 * u
+        c.fillStyle = '#c79a62'
+        c.fillRect(ix + nameSize * 0.45, iy + nameSize * 0.55, nameSize * 0.16, nameSize * 0.65)
+        c.beginPath()
+        c.roundRect(ix, iy, nameSize * 1.05, nameSize * 0.7, 2 * u)
+        c.fill()
+        c.fillStyle = '#3a281b'
+        c.fillRect(ix + nameSize * 0.2, iy + nameSize * 0.3, nameSize * 0.65, Math.max(1, 1.2 * u))
+        c.fillStyle = '#f0d49a'
+        c.fillText(title, ix + iconW, y)
+      } else {
+        // ad etiketi: renkli şerit içinde
+        const tw2 = c.measureText(title).width
+        c.fillStyle = '#9a3e22'
+        c.beginPath()
+        c.roundRect(bx + pad - 5 * u, y - 3 * u, tw2 + 10 * u, nameSize + 6 * u, 5 * u)
+        c.fill()
+        c.fillStyle = '#fffaf0'
+        c.fillText(title, bx + pad, y)
+      }
       y += head
     }
     let left = typed
-    c.font = body
-    c.fillStyle = sign ? '#fbf3e4' : '#221a28'
+    let step = 0
     for (const l of lines) {
       if (left <= 0) break
-      c.fillText(l.slice(0, left), bx + pad, y)
-      left -= l.length + 1
+      if (l.gap) y += paraGap
+      let x = bx + pad + indent
+      if (bullets && l.first) {
+        // adım numarası: altın daire
+        const rr = size * 0.52
+        const ccx = bx + pad + rr
+        const ccy = y + size * 0.5
+        c.fillStyle = '#f0b84a'
+        c.beginPath()
+        c.arc(ccx, ccy, rr, 0, Math.PI * 2)
+        c.fill()
+        c.fillStyle = '#3a281b'
+        c.font = `800 ${Math.round(size * 0.7)}px ${this.textFont()}`
+        c.textAlign = 'center'
+        c.fillText(String(++step), ccx, ccy - size * 0.36)
+        c.textAlign = 'left'
+      }
+      for (const q of l.words) {
+        if (left <= 0) break
+        const part = q.w.slice(0, left)
+        c.font = q.hi ? bold : body
+        c.fillStyle = q.hi ? (sign ? '#ffd36a' : '#9a3e22') : sign ? '#fbf3e4' : '#221a28'
+        c.fillText(part, x, y)
+        x += c.measureText(q.w + ' ').width
+        left -= q.w.length + 1
+      }
       y += lh
     }
     c.restore()
@@ -5677,6 +5790,9 @@ export function backingDpr(cssW: number, cssH: number, deviceDpr: number) {
  * yürünen en alçak aralığa sığar)
  */
 const HERO_SIZE = 32
+
+/** karakter yatayda bir tık dolgun çizilir: ince görünüyordu, uzaktan kolay seçilsin (25 Kasım 2026) */
+const HERO_WIDE = 1.14
 
 /** şehir insanları oyuncudan bir tık kısa */
 const NPC_SIZE = 30

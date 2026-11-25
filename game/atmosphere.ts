@@ -297,25 +297,25 @@ export class Atmosphere {
     // gölge: vinyet (köşeler) ve alt kenar ağırlığı, gölge renginde
     const vg = l.createRadialGradient(vw / 2, vh * 0.45, vh * 0.35, vw / 2, vh * 0.45, Math.max(vw, vh) * 0.78)
     vg.addColorStop(0, rgba(m.shade, 0))
-    vg.addColorStop(1, rgba(m.shade, 0.5))
+    vg.addColorStop(1, rgba(m.shade, 0.38))
     l.fillStyle = vg
     l.fillRect(0, 0, vw, vh)
     const bot = l.createLinearGradient(0, vh * 0.55, 0, vh)
     bot.addColorStop(0, rgba(m.shade, 0))
-    bot.addColorStop(1, rgba(m.shade, 0.42))
+    bot.addColorStop(1, rgba(m.shade, 0.3))
     l.fillStyle = bot
     l.fillRect(0, vh * 0.55, vw, vh * 0.45)
     // ışık: güneş parlaması, huzmeler, ufuk ışıltısı, fenerler (gölgenin üstüne biner)
     const R = vw * (m.sun ? 0.55 : 0.8)
     const g = l.createRadialGradient(sx, sy, 0, sx, sy, R)
-    g.addColorStop(0, rgba(m.key, 0.4 * p))
-    g.addColorStop(0.25, rgba(m.key, 0.14 * p))
+    g.addColorStop(0, rgba(m.key, 0.22 * p))
+    g.addColorStop(0.25, rgba(m.key, 0.07 * p))
     g.addColorStop(1, rgba(m.key, 0))
     l.fillStyle = g
     l.fillRect(0, 0, vw, vh)
     // genel ılık ton: ekranın üstü ışık renginde hafifçe ısınır
     const warm = l.createLinearGradient(0, 0, 0, vh * 0.6)
-    warm.addColorStop(0, rgba(m.key, 0.12 * (0.5 + 0.5 * p)))
+    warm.addColorStop(0, rgba(m.key, 0.05 * (0.5 + 0.5 * p)))
     warm.addColorStop(1, rgba(m.key, 0))
     l.fillStyle = warm
     l.fillRect(0, 0, vw, vh * 0.6)
@@ -328,8 +328,8 @@ export class Atmosphere {
         const ex = sx + Math.sin(a) * len
         const ey = sy + Math.cos(a) * len
         const lg = l.createLinearGradient(sx, sy, ex, ey)
-        lg.addColorStop(0, rgba(m.key, (0.1 + 0.07 * breath) * p))
-        lg.addColorStop(0.55, rgba(m.key, 0.04 * breath * p))
+        lg.addColorStop(0, rgba(m.key, (0.05 + 0.04 * breath) * p))
+        lg.addColorStop(0.55, rgba(m.key, 0.02 * breath * p))
         lg.addColorStop(1, rgba(m.key, 0))
         l.fillStyle = lg
         l.beginPath()
@@ -368,7 +368,7 @@ export class Atmosphere {
     c.save()
     if (W !== L.width) {
       c.globalCompositeOperation = 'soft-light'
-      c.fillStyle = rgba(this.mood.key, 0.28 * (0.6 + 0.4 * this.lightPower))
+      c.fillStyle = rgba(this.mood.key, 0.12 * (0.6 + 0.4 * this.lightPower))
       c.fillRect(0, 0, W, H)
       c.globalCompositeOperation = 'source-over'
       c.imageSmoothingEnabled = true
@@ -386,7 +386,9 @@ export class Atmosphere {
     const fg = this.foreground(vw, vh)
     let fx = -((camX * 1.35) % fg.width)
     if (fx > 0) fx -= fg.width
-    for (; fx < vw; fx += fg.width) f.drawImage(fg, Math.round(fx), vh - fg.height)
+    f.imageSmoothingEnabled = true
+    for (; fx < vw; fx += fg.width) f.drawImage(fg, fx, vh - fg.height)
+    f.imageSmoothingEnabled = false
   }
 
   /**
@@ -490,10 +492,12 @@ export function paintLayer(cv: HTMLCanvasElement, mood: Mood, depth: number, see
       B += (kb - B) * warm + (sb - B) * cool
       // doygunluk: boya pigmenti gibi canlı (uzak plan daha az)
       const L = R * 0.3 + G * 0.59 + B * 0.11
-      const sat = 1.18 + depth * 0.14
-      R = L + (R - L) * sat
-      G = L + (G - L) * sat
-      B = L + (B - L) * sat
+      const sat = 1.45 + depth * 0.15
+      // kontrast: orta tondan uzaklaşır (pus hissi kalkar, renkler net)
+      const con = 1.1 + depth * 0.06
+      R = 128 + (L + (R - L) * sat - 128) * con
+      G = 128 + (L + (G - L) * sat - 128) * con
+      B = 128 + (L + (B - L) * sat - 128) * con
       const n = 1 + grain[Math.floor(y / 2) * gw + Math.floor(x / 3)]
       d[k] = Math.max(0, Math.min(255, R * n))
       d[k + 1] = Math.max(0, Math.min(255, G * n))
@@ -559,11 +563,14 @@ export class Clouds {
   }
 
   draw(b: CanvasRenderingContext2D, vw: number, vh: number, t: number, cx: number) {
+    // kesirli konum, yumuşak örnekleme: bulut yavaş süzülürken piksel piksel zıplamasın
+    b.imageSmoothingEnabled = true
     const span = vw + 200
     for (const p of this.place) {
       const cv = this.sprites[p.s]
       const x = ((((p.x * span + t * p.v - cx * 0.04) % span) + span) % span) - 160
-      b.drawImage(cv, Math.round(x), Math.round(p.y * vh))
+      b.drawImage(cv, x, p.y * vh)
     }
+    b.imageSmoothingEnabled = false
   }
 }

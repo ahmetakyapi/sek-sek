@@ -250,7 +250,7 @@ const TAU = Math.PI * 2
 const SEAM_DASH = [1.2, 1]
 const NO_DASH: number[] = []
 /** başın çizim ölçeği: boyun dönüm noktasından; baş toplam boyun ~1/4,7'si (videodaki gibi gerçekçi oran) */
-const HEAD_K = 0.64
+const HEAD_K = 0.7
 /** ışığın düştüğü yerde ince vurgu, kumaş ve deri üstünde */
 const GLINT = 'rgba(255,238,210,0.4)'
 /** ayak altındaki temas gölgesi */
@@ -505,11 +505,11 @@ function fine(c: CanvasRenderingContext2D, x0: number, y0: number, cx: number, c
 function drawLeg(c: CanvasRenderingContext2D, s: Skin, hx: number, hy: number, t: number, k: number, near: boolean, foot: number) {
   const j = joint(hx, hy, t, THIGH, t - k, SHIN)
   const pants = near ? s.pants : s.pantsS
-  stroke(c, [hx, hy, j.kx, j.ky, j.ex, j.ey], 9, pants)
+  stroke(c, [hx, hy, j.kx, j.ky, j.ex, j.ey], 10.2, pants)
   // paça: bileğin üstünde bir kat kıvrılmış kenar (pantolondan biraz geniş)
   const lx = Math.sin(rad(t - k))
   const ly = Math.cos(rad(t - k))
-  stroke(c, [j.ex - lx * 3.6, j.ey - ly * 3.6, j.ex - lx * 1.2, j.ey - ly * 1.2], 9.8, pants)
+  stroke(c, [j.ex - lx * 3.6, j.ey - ly * 3.6, j.ex - lx * 1.2, j.ey - ly * 1.2], 11, pants)
   if (near) {
     // ön kenarda tek kademe gölge, yan dikiş (kesik), dizde kıvrım, paça katında ışık
     stroke(c, [hx + 1.8, hy + 1, j.kx + 1.8, j.ky, j.ex + 1.6 - lx * 3.6, j.ey - 1 - ly * 3.6], 2.4, s.pantsS, false)
@@ -553,7 +553,7 @@ function drawArm(c: CanvasRenderingContext2D, s: Skin, sx: number, sy: number, a
   const j = joint(sx, sy, a1, UPPER * reach, a2, FORE * reach)
   const dx = Math.sin(rad(a2))
   const dy = Math.cos(rad(a2))
-  stroke(c, [sx, sy, j.kx, j.ky, j.ex, j.ey], 7.6, near ? s.coat : s.coatS)
+  stroke(c, [sx, sy, j.kx, j.ky, j.ex, j.ey], 8.6, near ? s.coat : s.coatS)
   if (near) {
     // kol ağzı (koyu bant) ve ışığa bakan kenarda vurgu
     stroke(c, [j.ex - dx * 1.6, j.ey - dy * 1.6, j.ex + dx * 0.4, j.ey + dy * 0.4], 7, s.coatS, false)
