@@ -183,8 +183,9 @@ export function matchesQuery(query: string, texts: string[]): boolean {
   return words.every((w) => hay.includes(w))
 }
 
-export type ModeFilter = 'all' | 'solo' | 'together' | 'hard' | 'new' | 'ranked' | 'open'
-export const FILTERS: ModeFilter[] = ['all', 'solo', 'together', 'hard', 'new', 'ranked', 'open']
+/** Süzgeç çipleri: tek satıra sığan beş seçenek (zorluk ve "Yeni" kutucuğun rozetinde okunur, aramayla da bulunur) */
+export type ModeFilter = 'all' | 'solo' | 'together' | 'ranked' | 'open'
+export const FILTERS: ModeFilter[] = ['all', 'solo', 'together', 'ranked', 'open']
 
 export function passesFilter(f: ModeFilter, id: ModeId, open: boolean): boolean {
   const m = MODES[id]
@@ -195,10 +196,6 @@ export function passesFilter(f: ModeFilter, id: ModeId, open: boolean): boolean 
       return m.players === 1
     case 'together':
       return m.players === 2
-    case 'hard':
-      return m.heat === 3
-    case 'new':
-      return m.isNew
     case 'ranked':
       return m.ranked
     case 'open':

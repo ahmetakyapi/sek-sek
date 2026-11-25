@@ -255,7 +255,8 @@ export class TerrainHD {
     this.solid = (tx, ty) => base(tx, Math.min(ty, w.rows - 1))
     const st = CITY[city]
     const dk = hex(st.tileDark)
-    this.deep = [Math.round(dk[0] * 0.35 + 21 * 0.65), Math.round(dk[1] * 0.35 + 12 * 0.65), Math.round(dk[2] * 0.35 + 32 * 0.65)]
+    // derinlik serin ve koyu: şehrin koyu taşı lacivert-mor gölgeye çalar (boyalı sahnelerdeki gibi dip sakin, ışık üstte)
+    this.deep = [Math.round(dk[0] * 0.3 + 16 * 0.7), Math.round(dk[1] * 0.3 + 14 * 0.7), Math.round(dk[2] * 0.3 + 30 * 0.7)]
     this.tones = toneSet(st)
     const z2 = LOOK2[city]
     if (z2) {
@@ -626,7 +627,7 @@ export class TerrainHD {
     const y = Math.min(Math.max(ty, 0), this.rows - 1)
     const d = this.depth[y * this.w.cols + x] / 5
     if (d <= 1) return 0
-    return Math.min(0.56, (d - 1) * 0.12 + hash(tx >> 1, ty >> 1, 91) * 0.05)
+    return Math.max(0, Math.min(0.78, (d - 1.2) * 0.155 + hash(tx >> 1, ty >> 1, 91) * 0.05))
   }
 
   /**
@@ -638,10 +639,15 @@ export class TerrainHD {
     const m = r1 - r0
     const img = new ImageData(n, m)
     const [r, g, b] = this.deep
+    // komşularla yumuşatılır (3×3, ortası ağır): basamak ve çıkıntı dibinde karo karo kesik gölge kalmaz
+    const W = n + 2
+    const raw = new Float32Array(W * (m + 2))
+    for (let j = -1; j <= m; j++) for (let i = -1; i <= n; i++) raw[(j + 1) * W + i + 1] = this.dark(tx0 + i, r0 + j)
     let any = false
     for (let j = 0; j < m; j++)
       for (let i = 0; i < n; i++) {
-        const a = this.dark(tx0 + i, r0 + j)
+        const o0 = (j + 1) * W + i + 1
+        const a = (raw[o0] * 4 + raw[o0 - 1] + raw[o0 + 1] + raw[o0 - W] + raw[o0 + W]) / (raw[o0] > 0 ? 8 : 16)
         const o = (j * n + i) * 4
         img.data[o] = r
         img.data[o + 1] = g
@@ -725,7 +731,7 @@ export class TerrainHD {
           c.clip()
         }
         // derz: taşların arasından görünen koyu harç
-        c.fillStyle = mix(pal.tileDark, '#1c1226', 0.28)
+        c.fillStyle = mix(pal.tileDark, '#2a1814', 0.3)
         c.fillRect(Math.max(ax, tx0 * T), r0 * T, Math.min(bx, (tx1 + 1) * T) - Math.max(ax, tx0 * T), (r1 - r0) * T)
         if (lk.mat === 'strata' || lk.mat === 'earth' || lk.mat === 'coal') this.strata(c, lk.mat, ax, bx, my0, my1)
         else this.masonry(c, lk.mat, ax, bx, my0, my1, tones)
@@ -777,9 +783,9 @@ export class TerrainHD {
         c.globalAlpha = 0.42
         c.fill(fleck)
       } else {
-        c.strokeStyle = '#f4f9ff'
-        c.globalAlpha = 0.6
-        c.lineWidth = 0.9
+        c.strokeStyle = '#eef4ff'
+        c.globalAlpha = 0.34
+        c.lineWidth = 1.4
         c.stroke(line)
       }
       c.globalAlpha = 1
@@ -814,21 +820,19 @@ export class TerrainHD {
             dim.lineTo(x + T, y + T)
             wline(dim, x + T, y + T - 3.2, x, y + T - 3.2, 0.6, 16, true)
             dim.closePath()
-            // alt yüzde çapraz tarama
-            for (let k = 0; k < 5; k++) {
-              const hx = x + k * 3.4 + hash(tx, ty, k) * 1.2
-              hatch.moveTo(hx, y + T - 0.6)
-              hatch.lineTo(hx + 2.6, y + T - 4 - hash(tx, ty, k + 9) * 2)
-            }
+            // çıkıntının altı: ikinci, daha geniş ve soluk gölge (yumuşak geçiş)
+            hatch.moveTo(x, y + T)
+            hatch.lineTo(x + T, y + T)
+            wline(hatch, x + T, y + T - 6.5, x, y + T - 6.5, 0.8, 19, true)
+            hatch.closePath()
           }
         }
-      c.fillStyle = 'rgba(255,238,205,0.2)'
+      c.fillStyle = 'rgba(255,226,182,0.2)'
       c.fill(lit)
-      c.fillStyle = 'rgba(22,12,34,0.27)'
+      c.fillStyle = 'rgba(26,26,58,0.26)'
       c.fill(dim)
-      c.strokeStyle = 'rgba(22,12,34,0.36)'
-      c.lineWidth = 0.6
-      c.stroke(hatch)
+      c.fillStyle = 'rgba(26,26,58,0.09)'
+      c.fill(hatch)
     }
     c.restore()
 
@@ -905,9 +909,10 @@ export class TerrainHD {
       }
     }
 
-    // ── 4. mürekkep dış hat: kenar koşuları tek fırça darbesiyle; dışbükey köşeler yenmiş köşeyi izler
-    c.strokeStyle = INK
-    c.lineWidth = 1.25
+    // ── 4. dış hat: ince, sıcak koyu fırça (siyah mürekkep değil); kenar koşuları tek darbeyle, dışbükey köşeler yenmiş köşeyi izler
+    c.strokeStyle = mix(s.tileDark, '#24120c', 0.55)
+    c.globalAlpha = 0.85
+    c.lineWidth = 0.85
     c.beginPath()
     for (let ty = r0; ty <= r1; ty++) {
       for (const side of [0, 1]) {
@@ -959,6 +964,7 @@ export class TerrainHD {
       }
     }
     c.stroke()
+    c.globalAlpha = 1
 
     // ── 5. tahta iskele, diken, ok tuzağı yüzü
     for (let ty = r0; ty < r1; ty++)
@@ -1064,6 +1070,8 @@ export class TerrainHD {
     const glint = new Path2D()
     const facet = new Path2D()
     const hollow = new Path2D()
+    const dabL = new Path2D()
+    const dabD = new Path2D()
     const g = P.gap
     // sıra çizgisi: x boyunca yumuşak dalga (alt sıranın üstü ile üst sıranın altı aynı eğriyi izler)
     const lineY = (j: number, x: number) => j * P.bh + (lnoise(x / P.wl, j, 37) - 0.5) * 2 * P.jy
@@ -1093,6 +1101,19 @@ export class TerrainHD {
       dim.arcTo(ex - 0.4, ey - 0.4, dx + rr(3), dy - 0.4, rr(2))
       dim.lineTo(dx + rr(3) + 0.2, dy - 0.4)
       if (wd < 5 || hg < 4) return
+      const lerp = (u: number, v: number, t: number) => u + (v - u) * t
+      // fırça izi: taşın yönünde iki kısa, kıvrık darbe (ışıkta açık, gölgede koyu)
+      for (let k = 0; k < (wd < 20 ? 1 : 2); k++) {
+        if (wd < 20 && hash(k1, k2, 59) < 0.5) break
+        const u = 0.18 + hash(k1, k2, 60 + k) * 0.55
+        const v = k ? 0.62 + hash(k1, k2, 62) * 0.22 : 0.2 + hash(k1, k2, 63) * 0.2
+        const px = lerp(ax, bx, u)
+        const py = lerp(ay, dy, v)
+        const len = wd * (0.25 + hash(k1, k2, 64 + k) * 0.25)
+        const p = k ? dabD : dabL
+        p.moveTo(px, py)
+        p.quadraticCurveTo(px + len * 0.5, py - 0.9 + hash(k1, k2, 66 + k) * 1.8, px + len, py + (hash(k1, k2, 68 + k) - 0.5) * 1.2)
+      }
       // yüzey: çatlak, oyuk, keski izi; kayada kırılma düzlemi
       const d = hash(k1, k2, 34)
       if (d < 0.1) {
@@ -1168,17 +1189,34 @@ export class TerrainHD {
       c.fillStyle = tones[t]
       c.fill(fills[t])
     }
-    c.fillStyle = 'rgba(255,240,212,0.085)'
+    // boyalı hacim: her sıranın üstü ılık ışıkta, altı serin gölgede (sıra başına tek geçiş; taş taş yol çizmekten çok ucuz)
+    for (let j = Math.floor(y0 / P.bh) - 1; j * P.bh < y1; j++) {
+      const ry = j * P.bh
+      const grad = c.createLinearGradient(0, ry, 0, ry + P.bh)
+      grad.addColorStop(0, 'rgba(255,224,176,0.16)')
+      grad.addColorStop(0.3, 'rgba(255,224,176,0.05)')
+      grad.addColorStop(0.55, 'rgba(255,224,176,0)')
+      grad.addColorStop(0.75, 'rgba(34,36,74,0.05)')
+      grad.addColorStop(1, 'rgba(34,36,74,0.2)')
+      c.fillStyle = grad
+      c.fillRect(x0, ry, x1 - x0, P.bh)
+    }
+    c.fillStyle = 'rgba(255,236,200,0.05)'
     c.fill(facet)
-    c.fillStyle = 'rgba(26,14,36,0.3)'
+    c.lineWidth = 2.4
+    c.strokeStyle = 'rgba(255,232,190,0.07)'
+    c.stroke(dabL)
+    c.strokeStyle = 'rgba(30,22,40,0.08)'
+    c.stroke(dabD)
+    c.fillStyle = 'rgba(36,20,22,0.3)'
     c.fill(hollow)
-    c.lineWidth = 0.7
-    c.strokeStyle = 'rgba(255,238,205,0.26)'
+    c.lineWidth = 0.8
+    c.strokeStyle = 'rgba(255,232,192,0.24)'
     c.stroke(lit)
-    c.strokeStyle = 'rgba(26,14,36,0.32)'
+    c.strokeStyle = 'rgba(30,26,56,0.3)'
     c.stroke(dim)
     c.lineWidth = 0.5
-    c.strokeStyle = 'rgba(26,14,36,0.4)'
+    c.strokeStyle = 'rgba(36,20,26,0.34)'
     c.stroke(mark)
     c.strokeStyle = 'rgba(255,238,205,0.22)'
     c.stroke(glint)
@@ -1230,14 +1268,46 @@ export class TerrainHD {
       c.closePath()
       c.fill()
     }
+    // tabakanın hacmi: altı (bir alttakinin üstüne bindiği yer) serin gölgede, üstü ılık ışıkta; iki soluk, geniş darbe
+    c.save()
+    c.translate(0, -1.6)
+    c.lineWidth = 3.2
+    c.strokeStyle = 'rgba(34,28,58,0.12)'
+    c.stroke(seam)
+    c.restore()
+    c.save()
+    c.translate(0, 1.8)
+    c.lineWidth = 2.6
+    c.strokeStyle = 'rgba(255,226,180,0.1)'
+    c.stroke(seam)
+    c.restore()
     c.lineWidth = 0.6
-    c.strokeStyle = 'rgba(30,16,36,0.34)'
+    c.strokeStyle = 'rgba(40,22,26,0.3)'
     c.stroke(seam)
     c.strokeStyle = 'rgba(255,240,212,0.17)'
     c.stroke(glow)
     c.lineWidth = 0.5
-    c.strokeStyle = 'rgba(30,16,36,0.14)'
+    c.strokeStyle = 'rgba(40,22,26,0.12)'
     c.stroke(bed)
+    // fırça izi: tabaka boyunca uzanan kısa, geniş, soluk darbeler (açık ve koyu)
+    const dabL = new Path2D()
+    const dabD = new Path2D()
+    for (let gx = Math.floor(x0 / 11) - 1; gx * 11 < x1; gx++)
+      for (let gy = Math.floor(y0 / 5) - 1; gy * 5 < y1; gy++) {
+        const h = hash(gx, gy, 14)
+        if (h > 0.26) continue
+        const px = gx * 11 + hash(gx, gy, 15) * 8
+        const py = gy * 5 + hash(gx, gy, 16) * 3
+        const len = 5 + hash(gx, gy, 17) * 9
+        const p = h < 0.12 ? dabL : dabD
+        p.moveTo(px, py)
+        p.quadraticCurveTo(px + len * 0.5, py + (hash(gx, gy, 18) - 0.5) * 1.6, px + len, py + Math.sin((px + len) * 0.045) * 0.8)
+      }
+    c.lineWidth = 2
+    c.strokeStyle = 'rgba(255,232,190,0.08)'
+    c.stroke(dabL)
+    c.strokeStyle = 'rgba(40,24,30,0.08)'
+    c.stroke(dabD)
 
     // kömür damarı: kırık yüzler (açık kurşuni eşkenar dörtgen) ve tek tük beyaz parıltı
     if (seams.length) {
@@ -1369,51 +1439,66 @@ export class TerrainHD {
       }
       c.closePath()
     }
-    // temas gölgesi: örtünün biçimi, biraz aşağıda (tek kademe)
-    c.fillStyle = cap === 'snow' ? 'rgba(52,70,112,0.32)' : 'rgba(22,12,34,0.3)'
-    outline(cap === 'stone' ? 1.5 : 1.9)
+    // güneş alan üst sıra: örtünün altında, yüzeyden bir karo derine sönen ılık ışık
+    const sun = c.createLinearGradient(0, y, 0, y + T)
+    sun.addColorStop(0, cap === 'snow' ? 'rgba(220,236,255,0.16)' : 'rgba(255,214,160,0.2)')
+    sun.addColorStop(1, 'rgba(255,214,160,0)')
+    c.fillStyle = sun
+    c.fillRect(x0 + ra * 0.5, y, x1 - x0 - (ra + rb) * 0.5, T)
+    // temas gölgesi: örtünün biçimi, aşağıda iki soluk kat (yumuşak ortam gölgesi)
+    const shadowTint = cap === 'snow' ? '52,70,112' : '30,20,34'
+    c.fillStyle = `rgba(${shadowTint},0.14)`
+    outline(cap === 'stone' ? 2.6 : 3.2)
     c.fill()
-    c.fillStyle = color
+    c.fillStyle = `rgba(${shadowTint},0.2)`
+    outline(cap === 'stone' ? 1.2 : 1.5)
+    c.fill()
+    const body = cap === 'grass' ? mix(color, '#2e5a2c', 0.24) : color
+    c.fillStyle = body
     outline(0)
     c.fill()
-    // örtünün gölgede kalan alt yüzü ve ince alt hattı
-    c.strokeStyle = cap === 'snow' ? 'rgba(150,178,214,0.75)' : mix(color, s.tileDark, cap === 'grass' ? 0.42 : 0.4)
-    c.lineWidth = cap === 'snow' ? 1.2 : 0.95
+    // örtünün gölgede kalan alt yüzü: serin, yumuşak (siyah hat yok)
+    c.strokeStyle = cap === 'snow' ? 'rgba(140,168,210,0.8)' : mix(body, s.tileDark, cap === 'grass' ? 0.45 : 0.38, '#2a3a6a', 0.12)
+    c.lineWidth = cap === 'snow' ? 1.5 : 1.3
     c.beginPath()
-    c.moveTo(xs[xs.length - 1], y + ys[ys.length - 1] - 0.55)
-    under(c, -0.55)
+    c.moveTo(xs[xs.length - 1], y + ys[ys.length - 1] - 0.7)
+    under(c, -0.7)
     c.stroke()
-    c.strokeStyle = cap === 'snow' ? 'rgba(96,122,168,0.55)' : 'rgba(26,14,36,0.5)'
-    c.lineWidth = 0.5
+    // üst yüz ılık ışıkta: yürünen kenarın hemen altında açık bant
+    c.fillStyle = cap === 'snow' ? 'rgba(255,255,255,0.9)' : mix(body, '#fff2c4', cap === 'grass' ? 0.32 : 0.4)
+    c.globalAlpha = 0.75
     c.beginPath()
-    c.moveTo(xs[xs.length - 1], y + ys[ys.length - 1])
-    under(c, 0)
-    c.stroke()
+    c.moveTo(x0 + ra, y)
+    c.lineTo(x1 - rb, y)
+    wline(c, x1 - rb - 0.4, y + 1.5, x0 + ra + 0.4, y + 1.5, 0.35, 45, true)
+    c.closePath()
+    c.fill()
+    c.globalAlpha = 1
     if (cap === 'stone') {
-      // kapak taşlarının derzi: koyu çizgi, sağında ince ışık
+      // kapak taşlarının derzi: yumuşak koyu çizgi, sağında ince ışık
       const joint = new Path2D()
       const shine = new Path2D()
       for (let k = Math.floor(x0 / 11); k * 11 < x1; k++) {
         if (hash(k, ty, 45) < 0.22) continue
         const jx = k * 11 + hash(k, ty, 46) * 6
         if (jx < x0 + 2.5 || jx > x1 - 2.5) continue
-        joint.moveTo(jx, y + 0.7)
+        joint.moveTo(jx, y + 0.9)
         joint.lineTo(jx + (hash(k, ty, 47) - 0.5) * 0.8, y + 2.9)
         shine.moveTo(jx + 0.6, y + 1.1)
         shine.lineTo(jx + 0.6, y + 2.3)
       }
-      c.strokeStyle = 'rgba(26,14,36,0.42)'
-      c.lineWidth = 0.55
+      c.strokeStyle = 'rgba(40,24,28,0.3)'
+      c.lineWidth = 0.6
       c.stroke(joint)
-      c.strokeStyle = 'rgba(255,248,230,0.4)'
+      c.strokeStyle = 'rgba(255,248,230,0.35)'
       c.lineWidth = 0.45
       c.stroke(shine)
     }
-    // yürünen kenar: parlak çizgi
-    c.strokeStyle = cap === 'snow' ? '#ffffff' : cap === 'grass' ? mix(color, '#f4ffb8', 0.5) : mix(color, '#ffffff', 0.55)
-    c.lineWidth = 0.8
+    // yürünen kenar: ince, ılık parıltı (basılacak yer her zaman okunur)
+    c.strokeStyle = cap === 'snow' ? '#ffffff' : cap === 'grass' ? mix(color, '#f6ffc0', 0.55) : mix(color, '#fff6e0', 0.6)
+    c.lineWidth = 0.7
     c.beginPath()
-    wline(c, x0 + 0.8 + ra * 0.5, y + 1, x1 - 0.8 - rb * 0.5, y + 1, 0.2, 43)
+    wline(c, x0 + 0.8 + ra * 0.5, y + 0.6, x1 - 0.8 - rb * 0.5, y + 0.6, 0.2, 43)
     c.stroke()
     if (kind === WET) {
       // ıslak taş: örtünün üstünde su tabakası ve parıltılar (kaygan olduğu okunmalı)
@@ -1433,24 +1518,83 @@ export class TerrainHD {
       c.stroke()
       return
     }
+    // küçük ayrıntı: çakıl, yosun lekesi, kuru yaprak (yüzeye oturur, toplanan bir şeyle karışmayacak kadar küçük ve soluk)
+    const pebble = new Path2D()
+    const pebbleLit = new Path2D()
+    const moss = new Path2D()
+    const leafs: Path2D[] = [new Path2D(), new Path2D(), new Path2D()]
+    for (let tx = a; tx <= b; tx++) {
+      const x = tx * T
+      const r = hash(tx, ty, 74)
+      const px = x + 2.5 + hash(tx, ty, 75) * 11
+      if (cap === 'stone' && r < 0.22) {
+        const rx = 0.9 + hash(tx, ty, 76) * 1.1
+        const ry = rx * 0.62
+        pebble.moveTo(px + rx, y + 2.6)
+        pebble.ellipse(px, y + 2.6, rx, ry, 0, 0, Math.PI * 2)
+        pebbleLit.moveTo(px - rx * 0.1, y + 2.6 - ry * 0.35)
+        pebbleLit.ellipse(px - rx * 0.35, y + 2.6 - ry * 0.35, rx * 0.4, ry * 0.32, 0, 0, Math.PI * 2)
+      } else if (cap === 'stone' && r < 0.36) {
+        const rx = 1.6 + hash(tx, ty, 76) * 2
+        moss.moveTo(px + rx, y + 2.2)
+        moss.ellipse(px, y + 2.2, rx, 0.9, 0, 0, Math.PI * 2)
+      } else if (cap === 'grass' && r < 0.14) {
+        const ang = (hash(tx, ty, 77) - 0.5) * 1.6
+        const l = leafs[Math.floor(hash(tx, ty, 78) * 3)]
+        l.moveTo(px + Math.cos(ang) * 1.5, y + 1 + Math.sin(ang) * 1.5)
+        l.ellipse(px, y + 1, 1.5, 0.7, ang, 0, Math.PI * 2)
+      }
+    }
+    c.fillStyle = mix(s.tileDark, s.tile, 0.45)
+    c.fill(pebble)
+    c.fillStyle = 'rgba(255,240,214,0.5)'
+    c.fill(pebbleLit)
+    c.fillStyle = 'rgba(92,120,56,0.42)'
+    c.fill(moss)
+    const LEAF = ['#c9732e', '#a8502a', '#d8a63c']
+    for (let k = 0; k < 3; k++) {
+      c.fillStyle = LEAF[k]
+      c.fill(leafs[k])
+    }
     if (cap === 'grass') {
-      // çimen: düzensiz boyda, alçak, kıvrık tutamlar (yana yatar), yeşile çalar. Dik, sivri ve açık renkli
-      // çizgiler uzaktan diken gibi okunuyordu: tehlikeyle karışmasın. Tek tük minik çiçek.
-      const blades = new Path2D()
-      for (let k = Math.floor(x0 / 5.5); k * 5.5 < x1; k++) {
+      // çimen: kenardan sarkan tutamlar (koyu, sivrilen), üstte alçak, yana yatık yaprak öbekleri (dipte koyu, uçta ışık).
+      // Dik, sivri ve açık renkli çizgiler uzaktan diken gibi okunuyordu: tutamlar yana yatar, kısa kalır, yeşile çalar.
+      const hang = new Path2D()
+      for (let k = Math.floor(x0 / 3.2); k * 3.2 < x1; k++) {
+        const h = hash(k, ty, 55)
+        if (h > 0.6) continue
+        const x = k * 3.2 + hash(k, ty, 56) * 1.6
+        if (x < x0 + 1.2 || x > x1 - 1.2) continue
+        const base = y + thick(x) - 0.8
+        const len = 1.6 + h * 5.4
+        const lean = (hash(k, ty, 57) - 0.5) * 1.6
+        hang.moveTo(x - 1.1, base)
+        hang.quadraticCurveTo(x - 0.4 + lean * 0.3, base + len * 0.6, x + lean, base + len)
+        hang.quadraticCurveTo(x + 0.5 + lean * 0.3, base + len * 0.5, x + 1.1, base)
+        hang.closePath()
+      }
+      c.fillStyle = mix(body, s.tileDark, 0.32, '#22401e', 0.2)
+      c.fill(hang)
+      const dark = new Path2D()
+      const light = new Path2D()
+      for (let k = Math.floor(x0 / 4); k * 4 < x1; k++) {
         const r = hash(k, ty, 44)
-        const x = k * 5.5 + hash(k, ty, 50) * 3
-        if (x < x0 + 2.5 || x > x1 - 2.5) continue
-        if (r >= 0.42) {
-          const hgt = 1 + (r - 0.42) * 3.2
-          const n = r > 0.8 ? 3 : 2
+        const x = k * 4 + hash(k, ty, 50) * 2.4
+        if (x < x0 + 2 || x > x1 - 2) continue
+        if (r >= 0.3) {
+          const hgt = 1.4 + (r - 0.3) * 3.6
+          const n = r > 0.75 ? 4 : 3
           for (let m = 0; m < n; m++) {
-            const dx = (m - (n - 1) / 2) * 0.9
-            const lean = dx * 2.1 + (hash(k, ty, 51 + m) - 0.5) * 1.2
-            blades.moveTo(x + dx, y + 0.8)
-            blades.quadraticCurveTo(x + dx + lean * 0.3, y - hgt * 0.7, x + dx + lean, y - hgt * (m === 1 && n === 3 ? 1 : 0.78))
+            const dx = (m - (n - 1) / 2) * 0.95
+            const lean = dx * 2 + (hash(k, ty, 51 + m) - 0.5) * 1.4
+            const tip = hgt * (m === 1 ? 1 : 0.62 + hash(k, ty, 60 + m) * 0.25)
+            const p = m === 1 || m === 3 ? light : dark
+            p.moveTo(x + dx - 0.6, y + 1.2)
+            p.quadraticCurveTo(x + dx + lean * 0.25, y - tip * 0.6, x + dx + lean, y - tip)
+            p.quadraticCurveTo(x + dx + lean * 0.35 + 0.4, y - tip * 0.4, x + dx + 0.6, y + 1.2)
+            p.closePath()
           }
-        } else if (r < 0.06) {
+        } else if (r < 0.05) {
           const hue = ['#fff3dc', '#ffd866', '#f4a8bc'][Math.floor(hash(k, ty, 54) * 3)]
           c.strokeStyle = mix(color, '#1e3a1a', 0.5)
           c.lineWidth = 0.5
@@ -1459,19 +1603,31 @@ export class TerrainHD {
           c.lineTo(x + 0.3, y - 1.5)
           c.stroke()
           c.fillStyle = hue
-          c.strokeStyle = INK
-          c.lineWidth = 0.35
           c.beginPath()
           c.arc(x + 0.3, y - 2, 0.85, 0, Math.PI * 2)
           c.fill()
-          c.stroke()
+          c.fillStyle = 'rgba(120,70,40,0.6)'
+          c.beginPath()
+          c.arc(x + 0.3, y - 2, 0.3, 0, Math.PI * 2)
+          c.fill()
         }
       }
-      c.strokeStyle = mix(mix(color, '#3f7a3a', 0.55), '#1e3a1a', 0.25)
-      c.lineWidth = 0.7
-      c.globalAlpha = 0.85
-      c.stroke(blades)
-      c.globalAlpha = 1
+      c.fillStyle = mix(body, '#1e3a1a', 0.3)
+      c.fill(dark)
+      c.fillStyle = mix(body, '#e8f4a0', 0.3)
+      c.fill(light)
+    } else if (cap === 'snow') {
+      // kar: ışıkta tek tük parıltı
+      const glit = new Path2D()
+      for (let k = Math.floor(x0 / 6); k * 6 < x1; k++) {
+        if (hash(k, ty, 58) > 0.3) continue
+        const gx = k * 6 + hash(k, ty, 59) * 4
+        if (gx < x0 + 1 || gx > x1 - 1) continue
+        glit.moveTo(gx + 0.45, y + 2.2)
+        glit.arc(gx, y + 2.2, 0.45, 0, Math.PI * 2)
+      }
+      c.fillStyle = 'rgba(255,255,255,0.95)'
+      c.fill(glit)
     }
   }
 

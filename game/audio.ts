@@ -1,12 +1,15 @@
 import type { CityKey } from './types'
 import { SCALES, titleTheme, type Inst, type NoteEvent, type Song } from './music'
+import { CITY } from './art'
+import { Ambience, MENU_BED, bedOf, type Bed } from './ambience'
 
 /**
  * Tamamen sentezlenmiş ses: harici dosya yok. Müziğin notaları music.ts'te.
  *
- * Rahatlatıcı arka plan müziği (lo-fi): Rhodes benzeri elektrik piyano, sıcak alt bas, yumuşak bas davul, fırçalı kenar
- * vuruşu, kapalı zil; ezgide ney (alttan girer, nefesi duyulur) ve kanun (Karplus-Strong tel benzetimi, nota başına
- * önbellek; uzun notada tremolo). Tek adımlar hafif geç çalar (swing). Her çalgının stereoda yeri, oda yankısı payı ve
+ * Rahatlatıcı, "düşük kortizol" arka plan müziği: keçeli piyano gibi yumuşak Rhodes, sıcak alt bas, uzun soluklu dem
+ * (yaylı yatak), müzik kutusu çanı; ezgide ney (alttan girer, nefesi duyulur) ve kanun (Karplus-Strong tel benzetimi,
+ * nota başına önbellek; uzun notada tremolo). Bestede davul yok (davul yalnız boss katmanında). Altında şehrin havasına
+ * göre doğa sesi (game/ambience.ts). Tek adımlar çok hafif geç çalar. Her çalgının stereoda yeri, oda yankısı payı ve
  * tempoya bağlı sağ-sol sekişen yankı (noktalı sekizlik) payı var. Oyunun her yerinde tek beste çalar (jenerik, music.ts):
  * menüden şehre geçişte kesilmez, baştan da başlamaz. Boss uyanınca altta sakin bir dövüş katmanı (bestenin ölçü
  * köküne basan yumuşak davul ve tokmak, on altılık zil, kökte pedal bas, kanunda 3+3+2 ostinato) birkaç saniyede kabarır,
@@ -47,7 +50,7 @@ const MUFFLE_OPEN = 9500
  * piyano tek başına karışımın tepesini belirliyor (tepe/RMS 21 dB), kanun (-49 LUFS), dem (-43), kenar vuruşu (-53) ve zil
  * (-62) neredeyse duyulmuyordu: ritim ve doku kayboluyor, müzik sönük ve tekdüze geliyordu. Piyano kısıldı, onlar açıldı.
  */
-const TRIM: Record<Inst, number> = { ney: 1.2, kanun: 3.2, keys: 1.2, pad: 3.4, sub: 0.6, kick: 1.15, rim: 2.6, hat: 4.2, tom: 1.2 }
+const TRIM: Record<Inst, number> = { ney: 1.2, kanun: 3.2, keys: 1.2, pad: 3.4, bell: 2.2, sub: 0.6, kick: 1.15, rim: 2.6, hat: 4.2, tom: 1.2 }
 
 /** efektlerin müziğe göre payı: kısa ve seyrek oldukları için müzikten birkaç dB yukarıda durur */
 const SFX_TRIM = 2
@@ -64,7 +67,8 @@ const WAVES: Record<'rhodes' | 'ney' | 'voice', number[]> = {
 const CHANNEL: Record<Inst, { pan: number; wet: number; echo: number }> = {
   ney: { pan: 0.18, wet: 0.5, echo: 0.22 },
   kanun: { pan: 0.35, wet: 0.42, echo: 0.2 },
-  pad: { pan: 0, wet: 0.5, echo: 0 },
+  pad: { pan: 0, wet: 0.55, echo: 0 },
+  bell: { pan: 0.3, wet: 0.7, echo: 0.3 },
   keys: { pan: -0.12, wet: 0.42, echo: 0.07 },
   sub: { pan: 0, wet: 0.03, echo: 0 },
   kick: { pan: 0, wet: 0.05, echo: 0 },
@@ -125,6 +129,10 @@ export class Sound {
   private _musicVol = 1
   private _sfxVol = 1
   private sfxGain: GainNode | null = null
+  /** doğa sesi yatağı (rüzgâr, dalga, yağmur, kuş, cırcır; game/ambience.ts) ve onun ses düzeyi (müziğe bağlı) */
+  private amb: Ambience | null = null
+  private ambGain: GainNode | null = null
+  private bed: Bed = MENU_BED
 
   /** Kullanıcı etkileşiminden sonra çağrılmalı (mobil kilit) */
   unlock() {
@@ -153,9 +161,14 @@ export class Sound {
       this.master = this.ac.createGain()
       this.master.gain.value = 0.85
       this.master.connect(hp)
+      this.ambGain = this.ac.createGain()
+      this.ambGain.gain.value = this._musicOn ? this._musicVol : 0
+      this.ambGain.connect(this.master)
+      this.amb = new Ambience(this.ac, this.ambGain)
+      this.amb.set(this.bed)
       this.sfxBus = this.ac.createBiquadFilter()
       this.sfxBus.type = 'lowpass'
-      this.sfxBus.frequency.value = 3600
+      this.sfxBus.frequency.value = 3000
       this.sfxBus.Q.value = 0.7
       this.sfxGain = this.ac.createGain()
       this.sfxGain.gain.value = this._sfxVol * SFX_TRIM
@@ -165,7 +178,7 @@ export class Sound {
       this.sfxVerb = this.ac.createConvolver()
       this.sfxVerb.buffer = this.impulse(0.7)
       const sv = this.ac.createGain()
-      sv.gain.value = 0.2
+      sv.gain.value = 0.3
       this.sfxBus.connect(sv)
       sv.connect(this.sfxVerb)
       this.sfxVerb.connect(this.sfxGain)
@@ -220,9 +233,9 @@ export class Sound {
       this.musicGain.gain.value = this._musicOn ? MUSIC_VOL * this._musicVol : 0
       this.musicGain.connect(this.muffle)
       this.reverb = this.ac.createConvolver()
-      this.reverb.buffer = this.impulse(2.6)
+      this.reverb.buffer = this.impulse(3.6)
       const wet = this.ac.createGain()
-      wet.gain.value = 0.42
+      wet.gain.value = 0.5
       // yankının dönüşünde pesler kesilir: bas ve demin kuyruğu alt-ortayı bulandırmasın, oda yalnız ezgiyi sarsın
       const wetHp = this.ac.createBiquadFilter()
       wetHp.type = 'highpass'
@@ -306,6 +319,8 @@ export class Sound {
     if (!this.ac || !this.musicGain) return
     const v = !this._musicOn ? 0 : (this.ducked ? MUSIC_VOL * 0.45 : MUSIC_VOL) * this._musicVol
     this.musicGain.gain.setTargetAtTime(v, this.ac.currentTime, 0.12)
+    // doğa sesi müzikle birlikte açılır ve kısılır (molada yarıya iner)
+    this.ambGain?.gain.setTargetAtTime(this._musicOn ? this._musicVol * (this.ducked ? 0.5 : 1) : 0, this.ac.currentTime, 0.3)
   }
 
   /** oda yankısı: iki kanal ayrı gürültü (geniş stereo), erken yansımalar, yumuşak kuyruk */
@@ -657,13 +672,20 @@ export class Sound {
   setMusic(city: CityKey) {
     if (this.city !== city) this.intense = false
     this.city = city
+    this.setBed(bedOf(CITY[city].weather))
     this.play(titleTheme())
   }
 
   /** menülerin müziği: aynı jenerik (zaten çalıyorsa baştan başlamaz), boss katmanı söner */
   playTheme() {
     this.intense = false
+    this.setBed(MENU_BED)
     this.play(titleTheme())
+  }
+
+  private setBed(bed: Bed) {
+    this.bed = bed
+    this.amb?.set(bed)
   }
 
   /** müzik şu an çalıyor mu (Müzik Kutusu'nun çal/durdur düğmesi) */
@@ -752,6 +774,7 @@ export class Sound {
       return
     }
     this.followSfx()
+    this.amb?.tick()
     while (this.nextTime < this.ac.currentTime + 0.3) {
       // giriş bir kez çalar; döngü bestenin döndüğü yerden sürer
       const n = this.stepIdx
@@ -919,12 +942,12 @@ export class Sound {
         sway.connect(sg)
         sg.connect(lp.frequency)
         sway.start(t)
-        sway.stop(t + dur + 0.55)
+        sway.stop(t + dur + 1.25)
         const g = ac.createGain()
         g.gain.setValueAtTime(0.0001, t)
-        g.gain.linearRampToValueAtTime(vol * 1.4, t + Math.min(0.8, dur * 0.4))
+        g.gain.linearRampToValueAtTime(vol * 1.4, t + Math.min(1.5, dur * 0.45))
         g.gain.setValueAtTime(vol * 1.4, t + dur * 0.8)
-        g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.6)
+        g.gain.linearRampToValueAtTime(0.0001, t + dur + 1.2)
         lp.connect(g)
         g.connect(out)
         // akortsuz sesler sağa ve sola açılır: dem ortada değil, odanın iki yanından sarar (geniş, sıcak yatak)
@@ -942,7 +965,7 @@ export class Sound {
             o.detune.value = det
             o.connect(sides[k])
             o.start(t)
-            o.stop(t + dur + 0.65)
+            o.stop(t + dur + 1.25)
           })
         }
         return
@@ -963,13 +986,14 @@ export class Sound {
         const trem = ac.createOscillator()
         trem.frequency.value = 4.2 + w * 0.9
         const tg = ac.createGain()
-        tg.gain.value = vol * 0.1
+        tg.gain.value = vol * 0.05
         trem.connect(tg)
         tg.connect(g.gain)
         // yumuşak basılan nota daha boğuk, güçlüsü biraz parlak (piyanonun doğası)
         const lp = ac.createBiquadFilter()
         lp.type = 'lowpass'
-        const top = Math.min(5200, 1800 + vol * 9000)
+        // keçeli piyano: tizler kısık, vuruş yumuşak (düşük kortizol)
+        const top = Math.min(3600, 1300 + vol * 6000)
         lp.frequency.setValueAtTime(top, t)
         lp.frequency.exponentialRampToValueAtTime(Math.max(900, top * 0.45), t + 0.7)
         g.connect(lp)
@@ -1007,6 +1031,35 @@ export class Sound {
         for (const x of nodes) {
           x.start(t)
           x.stop(t + ring + 0.45)
+        }
+        return
+      }
+      case 'bell': {
+        // müzik kutusu / çelesta: saf sinüs gövde + iki uyumsuz kısmi (3,0 ve 5,4 kat; çan rengi) çabuk söner, gövde
+        // uzun çınlar; yumuşak tokmak (8 ms giriş), çok hafif titreme
+        const f = mtof(e.midi[0])
+        const ring = Math.max(1.6, dur * 1.4)
+        const g = ac.createGain()
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.linearRampToValueAtTime(vol, t + 0.008)
+        g.gain.exponentialRampToValueAtTime(vol * 0.35, t + 0.4)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + ring)
+        g.connect(this.spread(out, ((e.midi[0] % 7) - 3) / 3 * 0.4))
+        const nodes: OscillatorNode[] = []
+        for (const [mul, amp, decay] of [[1, 1, ring], [3.0, 0.18, 0.5], [5.4, 0.08, 0.25]] as const) {
+          const o = ac.createOscillator()
+          o.type = 'sine'
+          o.frequency.value = f * mul
+          const og = ac.createGain()
+          og.gain.setValueAtTime(amp, t)
+          og.gain.exponentialRampToValueAtTime(0.0001, t + decay)
+          o.connect(og)
+          og.connect(g)
+          nodes.push(o)
+        }
+        for (const x of nodes) {
+          x.start(t)
+          x.stop(t + ring + 0.05)
         }
         return
       }

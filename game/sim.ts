@@ -2602,7 +2602,7 @@ export class World {
 }
 
 /**
- * Toplama kutusu: karakter ekranda çarpışma kutusunun iki katına yakın boyda çizilir (render.ts HERO_SIZE 29, kutu 14).
+ * Toplama kutusu: karakter ekranda çarpışma kutusunun iki katına yakın boyda çizilir (render.ts HERO_SIZE 32, kutu 14).
  * Toplanan şeyler (hatıra, pul, nazar, anahtar, dash halkası, bayrak) çizilen gövdeye değince alınır; fizik ve tehlikeler
  * dar kutuyla kalır. Böylece omuz hizasındaki hatıra yürüyerek alınır, ancak bir kademe yukarıdaki için zıplanır.
  */

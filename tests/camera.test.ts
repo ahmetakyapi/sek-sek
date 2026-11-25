@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { CAM, approach, followTarget, hazardAhead, kickOffset, landingY, shakeOffset, stepCamera } from '../game/camera'
+import { CAM, approach, followTarget, hazardAhead, kickOffset, landingY, shakeOffset, stepCamera, spring } from '../game/camera'
 import { LEVELS } from '../game/levels'
 import { World } from '../game/sim'
 import { emptyInput } from '../game/types'
@@ -273,4 +273,33 @@ describe('yüzerken kadraj karakterle iner', () => {
     expect(rel).toBeGreaterThan(0.3)
     expect(rel).toBeLessThan(0.7)
   })
+
+  it('dikey yay: her Hz’de aynı yere varır, hızı sıçramaz, hedefi aşmaz', () => {
+    const run = (hz: number) => {
+      let x = 0
+      let v = 0
+      let peakJump = 0
+      let prevV = 0
+      let max = 0
+      for (let t = 0; t < 1; t += 1 / hz) {
+        ;[x, v] = spring(x, v, 100, 1 / hz, CAM.followY)
+        peakJump = Math.max(peakJump, Math.abs(v - prevV) * (hz / 60))
+        prevV = v
+        max = Math.max(max, x)
+      }
+      return { x, peakJump, max }
+    }
+    const ref = run(960)
+    for (const hz of [60, 120, 144, 240]) {
+      const r = run(hz)
+      expect(Math.abs(r.x - ref.x), `${hz} Hz`).toBeLessThan(0.5)
+      // kritik sönüm: 100 px'lik basamakta bile hedef aşılmaz
+      expect(r.max).toBeLessThanOrEqual(100.0001)
+    }
+    // birinci dereceden yaklaşım ilk karede hızı ~sıçratır; yayda ilk kare hızı küçük
+    const [, v1] = spring(0, 0, 100, 1 / 60, CAM.followY)
+    const firstOrder = (100 * (1 - Math.pow(CAM.followY, 1 / 60))) * 60
+    expect(v1).toBeLessThan(firstOrder * 0.35)
+  })
 })
+

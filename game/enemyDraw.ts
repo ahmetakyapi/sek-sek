@@ -5,7 +5,7 @@
  * nesnelerde (0, 0) kutunun merkezi. Düşmanlar mürekkep hattın dışında ince kırmızı haleyle parlar.
  * Ruh hâli boss’larla aynı okunur: titreme + ünlem (işaret), çatık kaş (saldırı), sarmal göz + yıldız (sersem).
  */
-import { INK, blob, setInkWidth, stroke } from './heroDraw'
+import { INK, blob, setInkWidth, setSoft, stroke } from './heroDraw'
 import { cbHalo, cbHaloScale, cbc } from './colorBlind'
 import type { Enemy, EnemyKind } from './sim'
 import type { CityKey } from './types'
@@ -22,6 +22,9 @@ const TAU = Math.PI * 2
 /** Hale geçişi: aynı çizim önce yalnız kalın kırmızı hatla, sonra asıl renkleriyle yapılır. */
 let halo = false
 let haloW = 0.5
+/** yumuşak boya kipi (heroDraw setSoft) bütün canlı ve nesnelerde açık; çizim bitince önceki değer geri gelir.
+ * Düşmanın kırmızı halesi `shape` / `line` içinde ayrı geçiştir, kipten etkilenmez. */
+let wasSoft = false
 
 const shade = (color: string) => ({ color, dx: 0.9, dy: -0.7 })
 
@@ -1232,6 +1235,7 @@ export function drawEnemy(
   c.lineJoin = 'round'
   c.lineCap = 'round'
   setInkWidth(INKW)
+  const prevSoft = setSoft(true)
   try {
     if (!flying && !swims && !aunt && st !== 'air') groundShadow(c, e.w * 0.48)
     c.save()
@@ -1268,6 +1272,7 @@ export function drawEnemy(
     if (st === 'stun') stars(c, top - 0.5, t)
   } finally {
     halo = false
+    setSoft(prevSoft)
     setInkWidth(HERO_INKW)
     c.restore()
   }
@@ -1724,6 +1729,7 @@ export function drawFriend(c: CanvasRenderingContext2D, animal: string, x: numbe
   c.lineCap = 'round'
   setInkWidth(INKW * 0.7)
   halo = false
+  const prevSoft = setSoft(true)
   try {
     groundShadow(c, 6)
     c.save()
@@ -1739,6 +1745,7 @@ export function drawFriend(c: CanvasRenderingContext2D, animal: string, x: numbe
       c.globalAlpha = 1
     }
   } finally {
+    setSoft(prevSoft)
     setInkWidth(HERO_INKW)
     c.restore()
   }
@@ -2807,9 +2814,11 @@ function begin(c: Ctx, x: number, y: number, sc: number) {
   c.lineCap = 'round'
   setInkWidth(INKW)
   halo = false
+  wasSoft = setSoft(true)
 }
 
 function end(c: Ctx) {
+  setSoft(wasSoft)
   setInkWidth(HERO_INKW)
   c.restore()
 }

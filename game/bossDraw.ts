@@ -10,7 +10,7 @@
  *   uyku     kapalı göz + burun balonu + Zzz
  */
 import type { Boss } from './boss'
-import { INK, blob, setInkWidth, stroke } from './heroDraw'
+import { INK, blob, setInkWidth, setSoft, stroke } from './heroDraw'
 import type { CityKey } from './types'
 
 type Ctx = CanvasRenderingContext2D
@@ -3888,9 +3888,11 @@ export function drawBoss(c: Ctx, city: CityKey, b: Boss, x: number, y: number, s
   c.scale(sc, sc)
   c.lineJoin = 'round'
   setInkWidth(BODY_INK)
+  const wasSoft = setSoft(true)
   try {
     paintBoss(c, city, b, t)
   } finally {
+    setSoft(wasSoft)
     setInkWidth(3.2)
     c.restore()
   }

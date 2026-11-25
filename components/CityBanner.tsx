@@ -76,7 +76,7 @@ export function Toggle({ label, on, onChange, hint, tag }: { label: string; on: 
           {tag && <span className="ml-2 whitespace-nowrap text-[12px] font-bold tracking-[0.06em] text-accent-2">{tag}</span>}
         </span>
         {/* alçak ekranda açıklama gizlenir: ayarlar kaydırmadan sığsın (adı başlık olarak kalır) */}
-        {hint && <span className="block text-[13px] leading-snug text-muted short:hidden">{hint}</span>}
+        {hint && <span className="toggle-hint block text-[13px] leading-snug text-muted short:hidden">{hint}</span>}
       </span>
       <span className="px-switch" data-on={on} />
     </button>

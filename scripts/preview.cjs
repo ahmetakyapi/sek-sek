@@ -8,6 +8,7 @@
  * yer:  start (varsayılan) · arrival (meydan yolunun başı) · arrival:+20 (varıştan 20 karo ileri)
  *       boss (arena, boss uyanmış) · x,y (karo koordinatı) · npc:2 (üçüncü kişinin yanı, diyalog açık)
  * seçenekler: --telefon (iPhone yatay) · --dikey (telefon dikey) · --memo · --en · --bekle=ms · --port=3100
+ *             --temel (zayıf cihaz kademesi: düz karakter, keskin arka plan; varsayılan zengin kademe, `?zengin`)
  */
 const { chromium, devices } = require('playwright')
 
@@ -28,7 +29,7 @@ const port = val('port', '3100')
   // KAYIT='{"looks":{...}}': kayda ek alan (ör. Mağaza görünümü)
   Object.assign(save, JSON.parse(process.env.KAYIT || '{}'))
   await pg.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
-  await pg.goto(`http://localhost:${port}/?debug&sehir=${city}`)
+  await pg.goto(`http://localhost:${port}/?debug${has('temel') ? '' : '&zengin'}&sehir=${city}`)
   await pg.waitForTimeout(3000)
   const tap = (l) => (opt.hasTouch ? l.tap() : l.click())
   await tap(pg.getByRole('button', { name: /Devam|Başla|Yolculu|Continue|Start/ }).first())

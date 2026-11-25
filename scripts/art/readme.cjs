@@ -29,7 +29,7 @@ async function open(b, { phone = false, lang = 'tr', city = '', save = {}, heigh
   pg.on('pageerror', (e) => console.log('SAYFA HATASI:', e.message))
   await pg.route('**/api/scores**', (r) => (r.request().method() === 'GET' ? r.fulfill({ json: { scores: SCORES } }) : r.fulfill({ json: { ok: true, improved: true, rank: 3 } })))
   await pg.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), { ...SAVE, lang, ...save })
-  await pg.goto(`${BASE}/?debug${city ? `&sehir=${city}` : ''}`)
+  await pg.goto(`${BASE}/?debug&zengin${city ? `&sehir=${city}` : ''}`)
   // geliştirme sunucusunun köşe rozeti görüntüye girmesin
   await pg.addStyleTag({ content: 'nextjs-portal{display:none!important}' })
   await pg.waitForTimeout(3500)
@@ -43,7 +43,7 @@ async function play(b, city, where, opt = {}) {
   await pg.tap_(pg.getByRole('button', { name: /Devam|Başla|Yolculu|Continue|Start/ }).first())
   await pg.waitForTimeout(800)
   if (opt.intro) return pg
-  await pg.tap_(pg.getByRole('button', { name: /▶/ }))
+  await pg.tap_(pg.getByRole('button', { name: /^(Başla|Start)$|▶/ }).first())
   await pg.waitForTimeout(1100)
   await pg.evaluate((where) => {
     const w = window.__mk.world()

@@ -26,6 +26,10 @@ const CLIPS = process.env.TEL ? [
   ['oyun-gecis', 10, `s.playTheme(); setAt(3, () => s.setMusic('istanbul'))`],
   // boss katmanı birkaç saniyede kabarır, dövüş bitince söner
   ['jenerik-boss', 24, `s.setMusic('erzurum'); setAt(1, () => s.setIntense(true)); setAt(18, () => s.setIntense(false))`],
+  // doğa sesi yatağı (game/ambience.ts): yağmurlu, karlı, sahil ve kuşlu şehirde müziğin altında
+  ['ortam-yagmur', 14, `s.setMusic('rize')`],
+  ['ortam-kar', 14, `s.setMusic('erzurum')`],
+  ['ortam-kus', 14, `s.setMusic('amasya')`],
   ['mola-bogukluk', 8, `s.setMusic('konya'); setAt(3, () => s.duck(true))`],
   // müziğin üstünde efektler: yan zincir müziği hafifçe eğer, efekt üstte duyulur
   ['efekt-muzik', 12, `s.setMusic('izmir'); ['collect','jump','checkpoint','dash','stomp','death','complete'].forEach((n,i)=>setAt(2+i*1.4,()=>s.sfx(n)))`],

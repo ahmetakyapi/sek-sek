@@ -328,10 +328,13 @@ export function ModesHub({
     editor: t('Kendi bölümünü ve boss’unu çiz, paylaş.'),
     community: t('Başka yolcuların çizdiği yolları oyna ve beğen.'),
   }
-  const shownIds = TILE_ORDER.filter((id) => matchesQuery(query, [modeName[id], tileDesc[id], MODES[id].tags]) && passesFilter(filter, id, open[id]))
+  // aramada kutucuğun rozeti de sayılır: "zor", "kolay", "yeni", "2 kişi" yazan da bulur (süzgeç çipi yerine)
+  const badgeWords = (id: TileId) => [t((['Kolay', 'Orta', 'Zor'] as const)[MODES[id].heat - 1]), t('{n} Kişi', { n: MODES[id].players }), MODES[id].isNew ? t('Yeni') : '']
+  const shownIds = TILE_ORDER.filter((id) => matchesQuery(query, [modeName[id], tileDesc[id], MODES[id].tags, ...badgeWords(id)]) && passesFilter(filter, id, open[id]))
   const vis = (id: TileId) => shownIds.includes(id)
-  const FILTER_LABEL: Record<ModeFilter, string> = { all: t('Hepsi'), solo: t('Solo'), together: t('Birlikte'), hard: t('Zor'), new: t('Yeni'), ranked: t('Sıralamalı'), open: t('Açık Olanlar') }
-  const dailyHint = dailyUsed && !playedToday ? t('Bugünkü koşunu yarıda bıraktın. Yarın yeni bir şehir seni bekliyor.') : t('Herkes aynı şehirde, aynı kuralla. Günde tek hak.')
+  const FILTER_LABEL: Record<ModeFilter, string> = { all: t('Hepsi'), solo: t('Solo'), together: t('Birlikte'), ranked: t('Sıralamalı'), open: t('Açık Olanlar') }
+  const dailyLine = dailyUsed && !playedToday ? t('Bugünkü koşunu yarıda bıraktın.') : playedToday ? `${t('Bugünkü Skorun')} ${formatTime(mark!.bestMs)}` : t('Günde tek hak')
+  const ruleFull = `${t(rule.name)}: ${t(rule.text)}${extraMissing(daily.rule, daily.day) > 0 ? ` ${t('Eksik her hatıra +{s} sn.', { s: extraMissing(daily.rule, daily.day) })}` : ''}`
   return (
     <Overlay>
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-5 short:py-3 wide:max-w-[min(1240px,100%)]">
@@ -379,7 +382,8 @@ export function ModesHub({
         {/* Geniş ve yüksek ekranda üst bölge (süzgeç, öneri, Bugün) sabit durur, yalnız mod ızgarası kayar; küçük ekranda hepsi birlikte kayar */}
         <div className="overlay-scroll -mx-1 mt-3 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 short:mt-2 wide:overflow-hidden">
           <div className="shrink-0">
-            <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            {/* süzgeç çipleri solda; Devam Et ve Sana Önerilen sağda tek, sakin bir şerit (yalnız süzgeç ve arama yokken) */}
+            <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Süzgeç')}>
                 {FILTERS.map((f) => (
                   <button key={f} type="button" className="mode-filter" aria-pressed={filter === f} onClick={() => setFilter(f)}>
@@ -387,147 +391,136 @@ export function ModesHub({
                   </button>
                 ))}
               </div>
-              {/* Devam Et ve Sana Önerilen: tek ince şerit, yalnız süzgeç ve arama yokken; kartlar eşit genişlikte, aynı hizada */}
               {!filtering && (cont || recs.length > 0) && (
-                <div className="flex min-w-0 flex-1 basis-[240px] items-center gap-2">
-                  {recs.length > 0 && <span className="shrink-0 text-[12px] font-bold text-gold max-sm:hidden">{t('Sana Önerilen')}</span>}
-                  <div className="grid min-w-0 flex-1 gap-1.5" style={{ gridTemplateColumns: `repeat(${(cont ? 1 : 0) + recs.length}, minmax(0, 1fr))` }}>
-                    {cont && (
-                      <button className="mode-rec cont flex min-w-0 items-center gap-1.5 px-2.5 text-left text-[13px] font-bold text-cream" onClick={cont.fn}>
-                        <span aria-hidden className="text-accent-2">
-                          ▶
-                        </span>
-                        <span className="truncate">
-                          {t('Devam Et')}: {cont.name}
-                        </span>
-                      </button>
-                    )}
-                    {recs.map((r) => (
-                      <button key={r.id} className="mode-rec flex min-w-0 items-center gap-1.5 px-2.5 text-left text-[13px] text-cream/85" onClick={() => activate(r.id)} title={`${t('Sana Önerilen')}: ${modeName[r.id]} · ${t(r.why, { n: trioN })}`}>
-                        <span aria-hidden className="text-gold">
-                          ★
-                        </span>
-                        <span className="truncate">
-                          <strong className="text-cream">{modeName[r.id]}</strong>
-                          <span className="max-2xl:hidden"> · {t(r.why, { n: trioN })}</span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                <div className="mode-strip ml-auto flex min-w-0 max-w-full items-center gap-1 px-1">
+                  {cont && (
+                    <button className="mode-strip-btn flex min-w-0 items-center gap-1.5 px-2.5 text-[13px] font-bold text-cream" onClick={cont.fn}>
+                      <span aria-hidden className="text-accent-2">
+                        ▶
+                      </span>
+                      <span className="truncate">
+                        {t('Devam Et')}: {cont.name}
+                      </span>
+                    </button>
+                  )}
+                  {cont && recs.length > 0 && <span aria-hidden className="h-4 w-px shrink-0 bg-line" />}
+                  {recs.length > 0 && <span className="shrink-0 pl-1.5 text-[12px] font-bold text-gold max-sm:hidden">{t('Sana Önerilen')}</span>}
+                  {recs.map((r) => (
+                    <button key={r.id} className="mode-strip-btn flex min-w-0 items-center gap-1 px-2 text-[13px] font-semibold text-cream/90" onClick={() => activate(r.id)} title={`${t('Sana Önerilen')}: ${modeName[r.id]} · ${t(r.why, { n: trioN })}`}>
+                      <span aria-hidden className="text-[11px] text-gold">
+                        ★
+                      </span>
+                      <span className="truncate">{modeName[r.id]}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-            {/* Bugün: üç kart. Günlük Meydan Okuma ana kart, Günün Üçlüsü ve Haftalık Turnuva yanında */}
-            <section hidden={!stripShown} className="stagger grid gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1fr)] wide:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
-              <div className="mode-card today flex min-w-0 flex-col justify-between gap-2 p-3 short:p-2.5 [--tone:var(--color-gold)]">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441,0_0_0_5px_rgba(217,164,65,0.15)]">
-                    <ItemIcon city={lv.city} taken size={30} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center justify-between gap-2 text-[12px] font-bold text-gold">
-                      <span className="truncate">{t('Günlük Meydan Okuma')}</span>
-                      <span className="shrink-0 font-semibold tabular-nums text-muted max-sm:hidden">
-                        {t('Bugünkü Skorun')} {playedToday ? formatTime(mark!.bestMs) : '—'} · 🔥 {streak || '—'}
-                      </span>
-                    </p>
-                    <p className="truncate font-display text-[22px] leading-tight text-cream short:text-lg">{displayName(lv)}</p>
+            {/* Bugün: üç sade kart. Her biri tek satır özet + Oyna; ayrıntı (kural, parkurlar) kartın içinde ya da ipucunda */}
+            <section hidden={!stripShown} aria-label={t('Bugün')}>
+              <h3 className="mb-1.5 flex items-center gap-2 text-gold">
+                <span aria-hidden className="text-[11px]">
+                  ✦
+                </span>
+                <span className="font-display text-[15px] tracking-wide text-cream">{t('Bugün')}</span>
+                <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-gold to-transparent opacity-45" />
+              </h3>
+              <div className="stagger grid gap-2 lg:grid-cols-3 wide:grid-cols-3">
+                <div className="mode-card today flex min-w-0 flex-col gap-2 p-3 short:p-2.5 [--tone:var(--color-gold)]">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#d9a441]">
+                      <ItemIcon city={lv.city} taken size={26} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center justify-between gap-2 text-[12px] font-bold text-gold">
+                        <span className="truncate">{t('Günlük Meydan Okuma')}</span>
+                        {streak > 0 && <span className="shrink-0 tabular-nums text-cream/80">🔥 {streak}</span>}
+                      </p>
+                      <p className="truncate font-display text-[20px] leading-tight text-cream short:text-lg">{displayName(lv)}</p>
+                    </div>
+                  </div>
+                  <p className="flex min-w-0 items-center gap-1.5 text-[13px] leading-snug text-cream/85" title={ruleFull}>
+                    <span className="shrink-0 text-accent-2">
+                      <RuleIcon rule={daily.rule} size={15} />
+                    </span>
+                    <span className="truncate">
+                      <strong className="text-accent-2">{t(rule.name)}</strong>
+                      <span className="text-muted"> · {dailyLine}</span>
+                    </span>
+                  </p>
+                  <div className="mt-auto flex items-center gap-1.5">
+                    <button className={`pixel-btn primary hit flex-1 justify-center px-4 ${dailyUsed ? '' : 'cta'}`} onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed} title={dailyUsed ? undefined : ruleFull}>
+                      {dailyUsed ? t('Yarın Yeni Şehir') : ic(t('▶ Oyna'))}
+                    </button>
+                    <button className="pixel-btn hit hit-sq justify-center text-[14px]" onClick={onDailyBoard} aria-label={`${t('Günlük Meydan Okuma')}: ${t('Sıralama')}`} title={t('Sıralama')}>
+                      🏆
+                    </button>
                   </div>
                 </div>
-                <p className="flex items-start gap-1.5 text-[13px] leading-snug text-cream/85">
-                  <span className="mt-0.5 shrink-0 text-accent-2">
-                    <RuleIcon rule={daily.rule} size={15} />
-                  </span>
-                  <span className="line-clamp-2">
-                    <strong className="text-accent-2">{t(rule.name)}:</strong> {t(rule.text)}
-                    {extraMissing(daily.rule, daily.day) > 0 && <span className="text-gold"> {t('Eksik her hatıra +{s} sn.', { s: extraMissing(daily.rule, daily.day) })}</span>}
-                  </span>
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button className={`pixel-btn primary hit justify-center px-6 ${dailyUsed ? '' : 'cta'}`} onClick={onDaily} disabled={dailyUsed} autoFocus={!dailyUsed}>
-                    {dailyUsed ? t('Yarın Yeni Şehir') : ic(t('▶ Oyna'))}
-                  </button>
-                  <button className="pixel-btn hit justify-center px-3" onClick={onDailyBoard}>
-                    {t('Sıralama')}
-                  </button>
-                  <span className={`min-w-0 flex-1 basis-[160px] text-[12px] leading-snug text-muted short:hidden ${dailyUsed && !playedToday ? '' : 'lg:hidden'}`}>{dailyHint}</span>
-                </div>
-              </div>
-              {/* Günün Üçlüsü: meydan okuma, günün mücadelesi ve günün boss'u; üçü de bitince gün sayılır */}
-              <div className="mode-card flex min-w-0 flex-col justify-between gap-2 p-3 short:p-2.5 [--tone:var(--color-gold)]">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <p className="text-[12px] font-bold text-gold">{t('Günün Üçlüsü')}</p>
-                  <NewBadge />
-                  <span className="ml-auto flex items-center gap-1" role="img" aria-label={t('{n}/3 bitti', { n: trioN })}>
-                    {([[parts.meydan, t('Meydan Okuma')], [parts.mini, t('Mücadele')], [parts.boss, t('Boss')]] as [boolean, string][]).map(([done, label]) => (
-                      <span key={label} className={`flex items-center gap-1 border px-1.5 text-[11px] font-bold leading-[18px] ${done ? 'border-gold/70 bg-gold/15 text-gold' : 'border-line bg-ink/40 text-muted'}`}>
-                        <span aria-hidden>{done ? '✓' : '○'}</span>
-                        {label}
-                      </span>
-                    ))}
-                  </span>
-                </div>
-                <div className="grid gap-1.5">
+                {/* Günün Üçlüsü: meydan okuma, günün mücadelesi ve günün boss'u; üçü de bitince gün sayılır */}
+                <div className="mode-card flex min-w-0 flex-col gap-1.5 p-3 short:p-2.5 [--tone:var(--color-gold)]">
+                  <p className="flex items-center justify-between gap-2 text-[12px] font-bold text-gold">
+                    <span className="truncate">
+                      {t('Günün Üçlüsü')}
+                      {trio && trio.days > 0 ? <span className="font-semibold text-muted"> · {t('{n} Üçlü', { n: trio.days })}</span> : null}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1 text-cream/80" role="img" aria-label={t('{n}/3 bitti', { n: trioN })} title={trioN === 3 ? t('Üçlü tamam! Yarın yenisi gelir.') : t('Üçünü de bitir: gün sayılır, başarım açılır.')}>
+                      {[parts.meydan, parts.mini, parts.boss].map((done, k) => (
+                        <span key={k} aria-hidden className={`h-2 w-2 rounded-full ${done ? 'bg-gold' : 'bg-white/15'}`} />
+                      ))}
+                      <span className="ml-0.5 tabular-nums">{trioN}/3</span>
+                    </span>
+                  </p>
                   {(
                     [
-                      { id: 'daily-mini' as const, city: miniLv.city, name: t(miniC.name), sub: miniLv.name, best: miniBest, play: onMini, board: () => onBoard('gunluk', 'm'), label: t('Günün Mücadelesi') },
-                      { id: 'daily-boss' as const, city: bossLv.city, name: lng === 'en' ? bossDef.nameEn : bossDef.name, sub: bossLv.name, best: bossBest, play: onBoss, board: () => onBoard('gunluk', 'b'), label: t('Günün Boss’u') },
+                      { id: 'daily-mini' as const, name: t(miniC.name), sub: miniLv.name, best: miniBest, play: onMini, board: () => onBoard('gunluk', 'm'), label: t('Mücadele'), full: t('Günün Mücadelesi') },
+                      { id: 'daily-boss' as const, name: lng === 'en' ? bossDef.nameEn : bossDef.name, sub: bossLv.name, best: bossBest, play: onBoss, board: () => onBoard('gunluk', 'b'), label: t('Boss'), full: t('Günün Boss’u') },
                     ] as const
                   ).map((c) => (
-                    <div key={c.id} className={`flex min-w-0 items-center gap-2 rounded-md border px-2 py-1 ${c.best !== undefined ? 'border-gold/60 bg-gold/10' : 'border-line bg-ink/40'}`}>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#221f4a] shadow-[0_0_0_2px_#37337a]">
-                        <ItemIcon city={c.city} taken={c.best !== undefined} size={24} />
+                    <div key={c.id} className="flex min-w-0 items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[14px] leading-tight" title={`${c.full} · ${c.sub} · ${t('Serbest tekrar')}`}>
+                        <span className={`text-[12px] font-bold ${c.best !== undefined ? 'text-gold' : 'text-muted'}`}>
+                          {c.best !== undefined ? '✓ ' : ''}
+                          {c.label}
+                        </span>{' '}
+                        <span className="font-semibold text-cream">{c.name}</span>
+                        {c.best !== undefined && <span className="text-[12px] tabular-nums text-muted"> · {formatTime(c.best)}</span>}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[12px] leading-tight">
-                          <strong className="text-gold">{c.label}</strong>
-                          <span className="text-muted"> · {c.best !== undefined ? `${c.sub} · ★ ${formatTime(c.best)}` : `${c.sub} · ${t('Serbest tekrar')}`}</span>
-                        </span>
-                        <span className="block truncate font-display text-[15px] leading-tight text-cream">{c.name}</span>
-                      </span>
-                      <button className="pixel-btn primary hit justify-center px-3 text-[13px]" onClick={go(c.id, c.play)}>
+                      <button className="pixel-btn primary hit justify-center px-3 text-[13px]" onClick={go(c.id, c.play)} aria-label={`${c.full}: ${t('Oyna')}`}>
                         {ic(t('▶ Oyna'))}
                       </button>
-                      <button className="pixel-btn hit hit-sq justify-center text-[14px]" onClick={c.board} aria-label={`${c.label}: ${t('Sıralama')}`} title={t('Sıralama')}>
+                      <button className="pixel-btn hit hit-sq justify-center text-[14px]" onClick={c.board} aria-label={`${c.full}: ${t('Sıralama')}`} title={t('Sıralama')}>
                         🏆
                       </button>
                     </div>
                   ))}
                 </div>
-                <p className="truncate text-[12px] leading-snug text-muted short:hidden">
-                  {trioN === 3 ? t('Üçlü tamam! Yarın yenisi gelir.') : t('Üçünü de bitir: gün sayılır, başarım açılır.')}
-                  {trio && trio.days > 0 ? ` · ${t('{n} Üçlü', { n: trio.days })}` : ''}
-                </p>
-              </div>
-              {/* Haftalık Turnuva */}
-              <button className="mode-card flex min-w-0 flex-col justify-between gap-1.5 p-3 text-left short:p-2.5 [--tone:var(--color-gold)]" onClick={go('tournament', onTournament)}>
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-bold text-gold">{t('Haftalık Turnuva')}</span>
-                  <span className="text-[12px] font-bold tabular-nums text-cream/80">{tTotal ? formatTime(tTotal) : t('{n}/3 bitti', { n: tDone })}</span>
-                </span>
-                <span className="flex flex-col gap-1 short:hidden">
-                  {tIds.map((id) => {
-                    const c = CHALLENGES.find((x) => x.id === id)
-                    const lvl = LEVELS.find((l) => l.id === c?.level)
-                    const done = tournament?.week === week && tournament.best[id] !== undefined
-                    return lvl && c ? (
-                      <span key={id} className={`flex min-w-0 items-center gap-1.5 rounded-md border px-2 py-0.5 ${done ? 'border-gold/60 bg-gold/10' : 'border-line bg-ink/40'}`}>
-                        <ItemIcon city={lvl.city} taken={done} size={16} />
-                        <span className="min-w-0 flex-1 truncate text-[13px] leading-tight text-cream/85">{t(c.name)}</span>
-                        {done && (
-                          <span aria-hidden className="text-[12px] font-bold text-gold">
-                            ✓
+                {/* Haftalık Turnuva: üç parkur alt alta (biten ✓), kartın tamamı turnuvayı açar */}
+                <button className="mode-card flex min-w-0 flex-col gap-1.5 p-3 text-left short:p-2.5 [--tone:var(--color-gold)]" onClick={go('tournament', onTournament)} title={winner ? t('Geçen hafta: {name}', { name: winner.name }) : t('Aynı üç parkur, toplam süre sıralanır.')}>
+                  <span className="flex items-center justify-between gap-2 text-[12px] font-bold">
+                    <span className="text-gold">{t('Haftalık Turnuva')}</span>
+                    <span className="tabular-nums text-cream/80">{tTotal ? formatTime(tTotal) : t('{n}/3 bitti', { n: tDone })}</span>
+                  </span>
+                  <span className="flex flex-col gap-0.5 text-[14px] leading-snug">
+                    {tIds.map((id) => {
+                      const c = CHALLENGES.find((x) => x.id === id)
+                      const done = tournament?.week === week && tournament.best[id] !== undefined
+                      return c ? (
+                        <span key={id} className={`flex min-w-0 items-center gap-1.5 ${done ? 'text-gold' : 'text-cream/85'}`}>
+                          <span aria-hidden className={`w-3 shrink-0 text-center text-[11px] ${done ? '' : 'text-muted'}`}>
+                            {done ? '✓' : '○'}
                           </span>
-                        )}
-                      </span>
-                    ) : null
-                  })}
-                </span>
-                <span className="flex items-center justify-between gap-2 text-[12px]">
-                  <span className="truncate text-muted">{winner ? t('Geçen hafta: {name}', { name: winner.name }) : t('Aynı üç parkur, toplam süre sıralanır.')}</span>
-                  <span className="shrink-0 text-[13px] font-bold text-gold">{t('Turnuvaya Gir')} ›</span>
-                </span>
-              </button>
+                          <span className="truncate">{t(c.name)}</span>
+                        </span>
+                      ) : null
+                    })}
+                  </span>
+                  <span className="mt-auto flex items-center justify-between gap-2 text-[12px]">
+                    <span className="truncate text-muted">{winner ? t('Geçen hafta: {name}', { name: winner.name }) : t('Toplam süre sıralanır')}</span>
+                    <span className="shrink-0 text-[13px] font-bold text-gold">{t('Turnuvaya Gir')} ›</span>
+                  </span>
+                </button>
+              </div>
             </section>
           </div>
 
@@ -844,11 +837,13 @@ function TileGroup({ label, glyph, tone, className = '', cols, children }: { lab
 }
 
 /**
- * Modun kutucuğu: soldaki çizim (aile renginde madalyon), ad, ne yapıldığını söyleyen cümle, rozetler (zorluk, kaç kişi, Yeni) ve durum.
- * Kutucuğun tamamı modu açar (tek tıklama); `extra` aynı modun ikinci yolları (Parkurlar, Kâbus, Çifte, Aynalı)
- * küçük düğmeler olarak kutucuğun içinde durur. Kilitli kutucuk da odaklanır (nasıl açılacağı okunur) ama açılmaz.
+ * Modun kutucuğu: soldaki çizim (aile renginde madalyon), ad, ne yapıldığını söyleyen cümle ve tek satır durum.
+ * Tek rozet: iki kişilik modda "2 Kişi", öbürlerinde zorluk; "Yeni" çizimin altında küçük etiket. Durum ve ilerleme aynı satırda.
+ * Kutucuğun tamamı modu açar (tek tıklama); `chips` aynı modun ikinci yolları (Parkurlar, Kâbus, Çifte, Aynalı) ve `extra`
+ * (🏆 sıralama) başlık satırının sağında küçük düğmelerdir. Sayı tuşu rozeti yalnız üstüne gelince ya da klavye ızgaradayken görünür.
+ * Kilitli kutucuk da odaklanır (nasıl açılacağı okunur) ama açılmaz.
  */
-function ModeTile({ id, tone, title, desc, status, art, onClick, href, locked = false, progress, extra, chips }: { id: ModeId; tone: string; title: string; desc: string; status: string; art: React.ReactNode; onClick?: () => void; /** sayfa bağlantısı (düzenleyici, topluluk) */ href?: string; locked?: boolean; progress?: number; /** başlık satırının sağında: sıralama kısayolu */ extra?: React.ReactNode; /** rozetlerin yanında: aynı modun ikinci yolları (Kâbus, Çifte, Parkurlar, Aynalı) */ chips?: React.ReactNode }) {
+function ModeTile({ id, tone, title, desc, status, art, onClick, href, locked = false, progress, extra, chips }: { id: ModeId; tone: string; title: string; desc: string; status: string; art: React.ReactNode; onClick?: () => void; /** sayfa bağlantısı (düzenleyici, topluluk) */ href?: string; locked?: boolean; progress?: number; /** başlık satırının sağında: sıralama kısayolu */ extra?: React.ReactNode; /** başlık satırında 🏆'nin solunda: aynı modun ikinci yolları (Kâbus, Çifte, Parkurlar, Aynalı) */ chips?: React.ReactNode }) {
   const t = useT()
   const m = MODES[id]
   const heat = (['Kolay', 'Orta', 'Zor'] as const)[m.heat - 1]
@@ -863,28 +858,38 @@ function ModeTile({ id, tone, title, desc, status, art, onClick, href, locked = 
       ) : (
         <button data-tile={id} className="absolute inset-0 z-0" onClick={onClick} aria-disabled={locked || undefined} aria-label={`${title}: ${desc} ${status}`} aria-keyshortcuts={num ? String(num) : undefined} />
       )}
-      <span className="mode-art pointer-events-none relative flex h-[60px] w-[60px] shrink-0 items-center justify-center">
+      <span className="mode-art pointer-events-none relative flex h-[52px] w-[52px] shrink-0 items-center justify-center">
         {art}
-        {num && <kbd className="mode-kbd absolute -left-1 -top-1">{num}</kbd>}
+        {num && <kbd className="mode-kbd absolute -left-1.5 -top-1.5">{num}</kbd>}
+        {m.isNew && (
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+            <NewBadge />
+          </span>
+        )}
       </span>
       <span className="pointer-events-none flex min-w-0 flex-1 flex-col">
-        <span className="flex items-center justify-between gap-1.5">
-          <span className="truncate font-display text-[17px] leading-tight text-cream">{title}</span>
-          {extra && <span className="pointer-events-auto relative z-10 flex shrink-0 gap-1">{extra}</span>}
+        {/* dar kutucukta ikinci yollar ve 🏆 adın altına iner: ad kısalmaz */}
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          <span className="min-w-0 font-display text-[17px] leading-tight text-cream">{title}</span>
+          {(chips || extra) && (
+            <span className="pointer-events-auto relative z-10 ml-auto flex shrink-0 gap-1">
+              {chips}
+              {extra}
+            </span>
+          )}
         </span>
         <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-cream/80">{desc}</span>
-        <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <span className="mode-badge" data-heat={m.heat}>
-            {t(heat)}
-          </span>
-          <span className="mode-badge">{t('{n} Kişi', { n: m.players })}</span>
-          {m.isNew && <NewBadge />}
-          {chips && <span className="pointer-events-auto relative z-10 ml-auto flex shrink-0 gap-1">{chips}</span>}
-        </span>
-        <span className="mt-1 flex items-center gap-2">
+        <span className="mt-1.5 flex min-w-0 items-center gap-2">
+          {m.players === 2 ? (
+            <span className="mode-badge shrink-0">{t('{n} Kişi', { n: m.players })}</span>
+          ) : (
+            <span className="mode-badge shrink-0" data-heat={m.heat}>
+              {t(heat)}
+            </span>
+          )}
           <span className={`min-w-0 truncate text-[12px] font-bold ${locked ? 'text-muted' : 'text-[var(--tone)]'}`}>{locked ? `🔒 ${status}` : status}</span>
           {progress !== undefined && (
-            <span className="ml-auto h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-white/15" aria-hidden>
+            <span className="ml-auto h-1.5 w-10 shrink-0 overflow-hidden rounded-full bg-white/15 xl:w-14" aria-hidden>
               <span className="block h-full rounded-full bg-[var(--tone)]" style={{ width: `${Math.round(progress * 100)}%` }} />
             </span>
           )}

@@ -5,18 +5,27 @@ paths:
   - "game/terrainDraw.ts"
   - "game/render.ts"
   - "game/art.ts"
+  - "game/atmosphere.ts"
   - "components/Figures.tsx"
 ---
 
 # Çizim dili
 
-- Oynanan her şey vektördür: mürekkep dış hat (`INK`), düz renk, tek kademe gölge, ışık sol üstten.
-  `blob()` (dolu şekil + dış hat + gölge) ve `stroke()` (uzuv, çizgi) ortak fırçalardır; yeni çizim bunlarla yapılır.
+- Oynanan her şey vektördür ve **boyalı** görünür (25 Kasım 2026, kullanıcı kararı): siyah kalın mürekkep yerine dolgunun
+  kendi koyu-sıcak tonundan ince dış hat, yumuşak hacim (sol üstten ılık ışık, gölgede serin-mor, iki kademe), ince kenar
+  ışığı, ayak altında yumuşak temas gölgesi. `blob()` ve `stroke()` ortak fırçalardır; `heroDraw.ts` içindeki `soft` bayrağı
+  boyalı görünümü açar (karakter, şehir insanı ve ona geçen çizimler). Yüzde göz, kaş, ağız koyu kalır (okunurluk). Siyah
+  `INK` yalnız tehlikede kalır: diken, ok tuzağı (oynanışta keskin okunsun). Gradyan, `filter`, `shadowBlur` yerine düz
+  yarı saydam katmanlarla hacim ver (ucuz ve boyalı durur).
+- Zemin (`terrainDraw.ts`): sıra başına ılık-serin hacim, sıcak koyu harç ve ince hat, derinlikte koyulaşan ve sadeleşen
+  doku, sol yüz ılık / sağ yüz serin; yürünen kenarın altında açık ışık bandı her ekranda okunur. Hücre çizim süresi
+  `node scripts/art/terrain.cjs --olc` ile ölçülür (25 Kasım: ~1,35 ms/hücre); taş taş yol çizmek bütçeyi aşar.
 - Birimler: karakterler 100 birim boyunda (ayak tabanı orta noktası 0,0); boss’lar dünya pikselinde
   (gövde kutusunun taban ortası 0,0; `setInkWidth` dış hattı ona göre inceltir); zemin dünya pikselinde, parça parça önbellekte.
 - Ruh hâli bütün boss’larda aynı okunur: öfkeli kaş (saldırı), titreme (işaret), sarmal göz + yıldız (yorgun), kapalı göz (uyku).
-- Çizim sırası (`render.ts`): arka tampon (gök, parallax, süs) → HD zemin → ön tampon (su, nesne, canlı, parçacık) →
-  boss → karakterler → yazılar. Piksel katmanlar tam piksele, HD katmanlar kesirli kameraya çizilir.
+- Çizim sırası (`render.ts`): arka tampon (gök, bulut, parallax, süs; yumuşak büyütülür) → HD zemin → ön tampon (su, nesne,
+  canlı, parçacık; keskin büyütülür) → boss → karakterler → atmosfer (ışık, renk tonu, süzülenler, vinyet, ön plan otları) →
+  yazılar. Düşük çözünürlüklü katmanlar tam piksele, HD katmanlar kesirli kameraya çizilir.
 - Fizik sabit adımlıdır; çizim `capture()` / `blend()` ile adımlar arasında ara değerlenir. Yeni hareketli nesne
   eklersen ikisine de ekle, yoksa yüksek tazeleme hızında titrer.
 - Çizimde her şey saate bağlıdır: kare başına `Math.random()` titremesi ya da `Math.random() < p` yok (`shakeOffset`,
@@ -38,3 +47,19 @@ paths:
 - `node scripts/art/creatures.cjs out.png`: düşmanlar (her durum), dost hayvanlar, hatıralar ve ortak nesneler.
 - `node scripts/preview.cjs <şehir> [start|arrival|boss|npc:0] out.png [--telefon|--dikey|--memo|--en]`: oyunun içinden.
 - Şehir kartları: `node scripts/art/banners.cjs <şehir>` (görünüm değişince yeniden üret).
+
+## Atmosfer: el boyaması, sıcak, sinematik (25 Kasım 2026, kullanıcı kararı)
+
+Referans kullanıcının paylaştığı el boyaması oyun videosu (KAYNAK: `.claude/skills/reference-to-game/KAYNAK.md`). Hedef:
+altın saat ışığı, puslu uzak plan, doygun ama yumuşak renk, koyu ve bulanık ön plan, havada süzülen yaprak ve ışık zerresi.
+
+- `game/atmosphere.ts`: `moodOf(CITY)` şehrin ışığını paletinden türetir (ışık rengi, gölge rengi, güneş yeri, güç;
+  karda ve yağmurda serin ve kısık). `paintLayer` arka plan katmanını şehir yüklenirken bir kez boyar (kenar ışığı, tepede
+  ılık dipte gölge, doygunluk, fırça dokusu). `Clouds` boyalı bulutlar. `Atmosphere.draw` her kare: düşük çözünürlüklü ışık
+  haritası (`screen`), `soft-light` + `multiply` renk tonu, üç derinlikte süzülenler (önceden çizilmiş imgeler), vinyet, ön
+  plan otları. Kare başına tam ekran karışım sayısı sabit (dört): yenisini eklemeden önce `verify-perf` ile ölç.
+- Oynanış okunur kalır: ışık ve ton zeminin üst kenarını, dikenleri, düşmanın kırmızı halesini bastırmaz; ön plan otları
+  yalnız ekranın alt %16'sında ve kümeler arasında boşlukla durur.
+- `ctx.filter` yalnız kurulumda (önceden çizilen imgeye bulanıklık) kullanılır, kare içinde asla.
+- Yeni şehir paleti: gök soluk beyaza değil ılık ufka insin; katmanlar iki üç tonla çizilsin (tek düz renk blok boyalı durmaz).
+

@@ -1,6 +1,6 @@
 # Sek-Sek · Claude için çalışma rehberi
 
-Türkiye’nin 46 şehrini (iki defter: 30 + 16) gezen platform oyunu (piksel arka plan, elle çizilmiş görünümlü karakter ve zemin). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
+Türkiye’nin 46 şehrini (iki defter: 30 + 16) gezen platform oyunu (el boyaması görünüm: boyalı arka plan, sıcak sinematik ışık, yumuşak hacimli vektör karakter ve zemin; davulsuz sakin müzik ve doğa sesi). Next.js 16 + React 19.2 + Tailwind v4, kendi canvas motoru,
 Neon/Drizzle skor tablosu, Vercel’de `main`den otomatik yayın: https://sek-sek.vercel.app
 
 Bu dosya oyunu “vibe coding” ile geliştirirken hızlı ve güvenli kalmak içindir: önce burayı oku, sonra koda dokun.
@@ -35,7 +35,8 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   assists.ts     kolaylık yamaları: birleşmiş haritaya en son yazılır (araya bayrak, çukura basamak); kayarsa hata verir
   content.en.ts  bütün bölüm metinlerinin İngilizcesi
   art.ts         şehir paletleri, arka plan katmanları (piksel), düşman türü seçimi, canlı adları
-  render.ts      iki düşük çözünürlüklü tampon (arka: gök, parallax, süs · ön: su, nesne, canlı, parçacık), arada HD zemin; adımlar arası ara değerleme, kesirli kamera
+  render.ts      iki düşük çözünürlüklü tampon (arka: gök, bulut, parallax, süs; yumuşak büyütülür · ön: su, nesne, canlı, parçacık), arada HD zemin, en üstte atmosfer; adımlar arası ara değerleme, kesirli kamera
+  atmosphere.ts  el boyaması atmosfer (25 Kasım 2026, kullanıcı kararı; kuralı `.claude/rules/cizim.md` "Atmosfer"): şehrin ışığı `moodOf`, katmanlara boya hacmi `paintLayer`, boyalı bulutlar `Clouds`, her kare ışık haritası (güneş, huzme, fener halesi), renk tonu, üç derinlikte süzülenler (yaprak, kar, taç yaprağı, ışık zerresi), vinyet, bulanık ön plan otları
   camera.ts      kamera hesabı (DOM'suz): takip, boss kadrajı, saate bağlı yaklaşım ve sarsıntı; kare hızından bağımsız (tests/camera.test.ts)
   terrainDraw.ts elle çizilmiş zemin ve duvarlar: şehre göre taş örgüsü, mürekkep dış hat, üst örtü (taş, çimen, kar); küçük hücrelerde önbelleklenir, kamera varmadan kare bütçesiyle önceden çizilir
   bossDraw.ts    30 boss’un vektör çizimi (ruh hâli: öfkeli, titrek, sersem, uykuda)
@@ -43,8 +44,9 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   characters.ts  Uktun ve Memo kimliği (ad, rol, hikâye)
   heroDraw.ts    elle çizilmiş görünümlü karakterler ve şehir insanları (kasket, yazma, kalfa, kalpak, saz, değnek): vektör eğri, mürekkep hat + gölge, eklem açılı poz ve sürekli koşu döngüsü; ana tuvalde ekran çözünürlüğünde çizilir
   portraitDraw.ts vesikalık portreler (vektör, heroDraw fırçalarıyla; sekiz kılık, atkı rengi parametreli). Sunucu kartı için public/portreler/<kılık>.png: `node scripts/art/portraits.cjs` (çizim ya da LOOKS değişince yeniden üret)
-  audio.ts       WebAudio: rahatlatıcı arka plan müziği çalgıları (Rhodes benzeri piyano `keys`, alt bas `sub`, yumuşak davul `kick`/`rim`/`hat`, ney, kanun Karplus-Strong, dem), swing, çalgı başına stereo ve yankı, ana sınırlayıcı; **her yerde tek beste, jenerik** (24 Kasım 2026, kullanıcı kararı: şehre özgü şarkı yok): `setMusic(city)` yalnız efektlerin makamını seçer, jenerik çalıyorsa baştan başlatmaz (menü ↔ oyun kesintisiz); boss'ta bestenin ölçü köklerine (`Song.roots`) basan sakin dövüş katmanı (`setIntense`, on altılık zil), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında (`SCALES`), kısık; müzik yolu: çalgı dengesi `TRIM`, çamur kesimi + varlık rafı, hafif bant doygunluğu (aşırı örneklemesiz), yapıştırıcı sıkıştırma, `MUSIC_MAKEUP`, kendi tepe sınırlayıcısı ve efekt çalınca ~3 dB eğilen yan zincir (efektin zamanlanmış bitişinden, ölçersiz; müzik ~−17 LUFS). Ses değişince `node scripts/audio-render.cjs` + `python3 scripts/audio-render-analiz.py`
-  music.ts       tek beste veri olarak: jenerik (Re minör, Hicaz renkli La7♭9, ~76 BPM sekizlik; giriş (bir kez) → A piyano → A′ ney + davul → B yarım tempo → A″ ney/kanun soru-cevap → nefes → C köprü → A4 (motif başka ritimle, doruk) → B′ (karara inen son) → nefes, 64 ölçülük döngü; ikinci turda ezgiyi kanun alır (`NoteEvent.pass`); ses yürütmeli akorlar `voiceLead`, kararda dörtlü geciktirme, ney süslemeleri, kanun tremolosu) ve efektlerin şehir makamları `SCALES`
+  audio.ts       WebAudio, "düşük kortizol" (25 Kasım 2026, kullanıcı kararı; kuralı `.claude/rules/ses.md`): keçeli piyano gibi yumuşak Rhodes (`keys`), alt bas `sub`, uzun soluklu dem `pad` (yaylı yatak), müzik kutusu çanı `bell`, ney, kanun Karplus-Strong; bestede davul yok (`kick`/`rim`/`hat`/`tom` yalnız boss katmanında), geniş yankı (3,6 sn); **her yerde tek beste, jenerik** (24 Kasım 2026, kullanıcı kararı: şehre özgü şarkı yok): `setMusic(city)` efektlerin makamını ve doğa sesi yatağını seçer, jenerik çalıyorsa baştan başlatmaz (menü ↔ oyun kesintisiz); boss'ta bestenin ölçü köklerine (`Song.roots`) basan sakin dövüş katmanı (`setIntense`), molada boğuklaşma, efekt/müzik düzeyi (`setVolumes`); efektler piyanoyla aynı tınıda (`chime`) ve şehrin makamında (`SCALES`), kısık; müzik yolu: çalgı dengesi `TRIM`, çamur kesimi + varlık rafı, hafif bant doygunluğu, yapıştırıcı sıkıştırma, `MUSIC_MAKEUP`, kendi tepe sınırlayıcısı ve efekt çalınca ~3 dB eğilen yan zincir (müzik ~−17 LUFS). Ses değişince `node scripts/audio-render.cjs` + `python3 scripts/audio-render-analiz.py`
+  ambience.ts    doğa sesi yatağı: şehrin `weather`ından `bedOf` (rüzgâr, dalga, yağmur, kuş, cırcır), menüde `MENU_BED`; süzülmüş gürültü döngüleri ve sentez cıvıltı, müzik düzeyine bağlı, kısık
+  music.ts       tek beste veri olarak: jenerik (Re minör, Hicaz renkli La7♭9, ~64 BPM sekizlik, davulsuz; her ölçüde dem, seyrek müzik kutusu çanı; giriş (bir kez) → A piyano → A′ ney → B → A″ ney/kanun soru-cevap → nefes → C köprü → A4 (motif başka ritimle, doruk) → B′ (karara inen son) → nefes, 64 ölçülük döngü; ikinci turda ezgiyi kanun alır (`NoteEvent.pass`); ses yürütmeli akorlar `voiceLead`, kararda dörtlü geciktirme, ney süslemeleri, kanun tremolosu) ve efektlerin şehir makamları `SCALES`
   flagMoments.ts her bayrakta şehrin kısa sözü (TR/EN), bayrak bildiriminde görünür
   ghost.ts       hayalet koşu kaydı (saniyede 15 örnek); saklaması lib/ghost.ts, sunucusu app/api/ghosts (skor tablosundan "◌ Yarış")
   challenges.ts  mücadele haritaları: Zor şehirlerin bayrak aralığından her açılışta kesilen kısa parkurlar (madalya `gold` / `par`dan)
@@ -99,9 +101,12 @@ Her bölüm, eskisi de yenisi de, şu iskeletle kurulur. Yeni şehir ya da yeni 
 5. **Aynı mantık herkese.** Zorluk etikete uyar (Kolay: yürü + zıpla yeter; Orta: bir dash ya da duvar sekmesi;
    Zor: ikisi + zamanlama) ama hiçbir yerde kıl payı atlayış, kör atlayış ya da uzun cezalı tekrar olmaz.
    Fizik sabit adımlıdır (1/120 sn): her ekranda, her tazeleme hızında oyun aynı işler; hız ayarı fiziğe değil çizime yapılır.
-6. **Görsel dil.** Oynanan her şey (karakterler, şehir insanları, boss’lar, zemin ve duvar) vektör çizgiyle, mürekkep
-   dış hatla, ekran çözünürlüğünde çizilir (`heroDraw`, `bossDraw`, `terrainDraw`). Düşmanlar, dost hayvanlar ve toplananlar da vektördür (`enemyDraw`). Yeni karakter, canlı ya da kaplama piksel
-   sprite olarak eklenmez; piksel kalan yalnız arka plan katmanları ve süslerdir. Işık sol üstten, gölge tek kademe.
+6. **Görsel dil.** El boyaması, sıcak, sinematik (25 Kasım 2026, kullanıcı kararı; referans video, kuralı `.claude/rules/cizim.md`).
+   Oynanan her şey (karakterler, şehir insanları, boss’lar, zemin ve duvar, düşmanlar, dost hayvanlar, toplananlar) vektördür,
+   ekran çözünürlüğünde çizilir (`heroDraw`, `bossDraw`, `terrainDraw`, `enemyDraw`): kendi renginin koyusundan ince hat, yumuşak
+   hacim, kenar ışığı. Siyah mürekkep yalnız tehlikede (diken, ok tuzağı). Yeni karakter, canlı ya da kaplama piksel sprite
+   olarak eklenmez; arka plan katmanları düşük çözünürlükte çizilir ama `paintLayer` ile boyanır ve yumuşak büyütülür; üstüne
+   atmosfer biner (`game/atmosphere.ts`: ışık, renk tonu, bulut, süzülenler, ön plan). Işık sol üstten.
 7. **Kanıt.** `verify-prelude` (meydan yolu) → `verify-levels` (bütün bölüm; hatıra, bayrak, pul, nazar, çıkış) →
    `verify-respawn` (hangi bayrakta, hangi düğme durumuyla ölünürse ölünsün çıkışa varılır) → `bossbot` (boss; zayıf
    oyuncu botu dahil) → `audit-difficulty` (zayıf oyuncu geçer) → `verify-items` (zayıf oyuncu her şeyi alır, aldığı yerden çıkar)
@@ -185,22 +190,30 @@ fizik yalnız SLIPPERY_OK / CRUMBLE_OK şehirlerinde açılır: yeni şehir ya d
 `--hepsi` bütün şehirleri dener, yavaştır: şehirleri ayrı süreçlerde koş). Haritası değişen şehirde yeniden koş. Kanıt (21 Kasım 2026, `BUDGET=5000`): Ağır Yerçekimi 27/40 şehir, Kısa Dash 39/40 (Malatya yok), Af Yok 40/40; kanıtlanamayanlar kapalı kalır, bütçeyi artırıp yeniden denenebilir. Deprem yalnız görüntüdür
 (`view.quake` → `renderer.quake`, sarsıntı ayarı kapalıysa etkisiz) ve her şehirde açıktır. Önizleme: `rage-quake` (globals.css).
 
-**Modlar ekranı (21 Kasım 2026, "premium" yenileme).** Üst bölge: başlık + arama + Geri; altında süzgeç çipleri ve aynı satırda tek ince "Sana Önerilen" / Devam Et şeridi (pil biçimli düğmeler;
-neden metni yalnız 2xl'de); altında "Bugün" üç kart: Günlük Meydan Okuma (ana kart: şehir, kural, Oyna / Sıralama, skor ve seri başlık satırında), Günün Üçlüsü (üç adım çipi, Günün Mücadelesi ve Günün Boss'u
-alt alta kompakt satırlar: Oyna + 🏆) ve Haftalık Turnuva (üç parkur satırı). Geniş ve yüksek ekranda (`wide`) bu üst bölge sabittir, yalnız mod ızgarası kendi alanında kayar (alt kenarda hafif solma, `.mode-grid`);
+**Modlar ekranı (21 Kasım 2026 premium yenileme, 25 Kasım 2026 sadeleşti).** Hiyerarşi: başlık > Bugün > aileler. Üst bölge: başlık + arama + Geri; altında tek satır: solda beş süzgeç çipi,
+sağda tek, sakin şerit (`.mode-strip`: "▶ Devam Et: …" ve "Sana Önerilen ★ ad" metin düğmeleri, `.mode-strip-btn`; neden metni ipucunda). Altında "Bugün" başlıklı üç sade kart, her biri tek satır özet + Oyna:
+Günlük Meydan Okuma (şehir, kural adı · skor ya da "Günde tek hak", seri 🔥; Oyna + 🏆; kuralın tam metni ipucunda), Günün Üçlüsü (üç nokta + n/3; Mücadele ve Boss birer satır: ad, ✓ ve süre, Oyna + 🏆) ve
+Haftalık Turnuva (üç parkur alt alta ✓/○, "Turnuvaya Gir ›"; kartın tamamı açar). Geniş ve yüksek ekranda (`wide`) bu üst bölge sabittir, yalnız mod ızgarası kendi alanında kayar (alt kenarda hafif solma, `.mode-grid`);
 küçük ekranda hepsi tek kaydırma alanındadır (ızgara orada `shrink-0`: `min-h-0` verme, taşan içerik tıklanamaz olur). Izgara ailelere göre gruplu, her aile ince başlıklı (`TileGroup`: şekil + ad + çizgi, şekil renk körü için ikinci işaret):
 Yol (Kurallı Koşu, Mücadeleler, Ayna Yolu, Speedrun; çivit) · Meydan Okuma (Boss Rush, Maraton, Kovalamaca, Sinir Bozucu; kiremit `--color-coral`) · Birlikte (Düello, Co-op; turkuaz) · Üret (Bölüm Düzenleyici, Topluluk Haritaları; altın) ·
-Keşfet ve Dinlen (Gezgin Turu, Sakin Gezi, Hikâye Gezisi; açık çivit `accent-2`). Gruplar DOM'da bu sırada durur; sayı tuşları `TILE_ORDER` sırasına bağlıdır (DOM sırasına değil). `ModeTile`: aile renginde madalyonlu çizim (`.mode-art`, sol üstte sayı tuşu),
-ad, en çok iki satır açıklama, rozetler (zorluk, kişi, Yeni; ikinci yollar `chips`: Kâbus, Çifte, Parkurlar, Aynalı) ve durum + ince ilerleme çubuğu; başlık satırının sağında yalnız 🏆 (`extra`). Kutucuğun tamamı modu açar (`href` ile sayfa);
+Keşfet ve Dinlen (Gezgin Turu, Sakin Gezi, Hikâye Gezisi; açık çivit `accent-2`). Gruplar DOM'da bu sırada durur; sayı tuşları `TILE_ORDER` sırasına bağlıdır (DOM sırasına değil). `ModeTile` sade: aile renginde madalyonlu çizim
+(`.mode-art`; "Yeni" altında küçük etiket; sayı tuşu rozeti sol üstte yalnız üstüne gelince ya da klavye ızgaradayken görünür), başlık satırı (ad; sağda ikinci yollar `chips`: Kâbus, Çifte, Parkurlar, Aynalı ve 🏆 `extra`),
+en çok iki satır açıklama ve tek durum satırı: **tek rozet** (iki kişilik modda "2 Kişi", öbürlerinde zorluk Kolay/Orta/Zor) + durum + ince ilerleme çubuğu. Kutucuğun tamamı modu açar (`href` ile sayfa);
 üstüne gelince bir adım yükselir (yalnız transform, hareketi azalt açıksa yerinde). Kilitli kutucuk kesik çizgili, çizimi soluk ve nasıl açılacağını söyler. Derinlik gradyan + iç parıltıyla gelir: `filter`, `backdrop-filter` ve büyük gölge yok.
-Düğme boyu fareyle 36 px, dokunmatikte (`pointer: coarse`) 44 px (`.hit`, `.mode-filter`, `.mode-rec`). Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun.
-Bulma araçları (`lib/modeHints.ts`, saf ve testli: `tests/extras.test.ts` "Modlar ekranı"): üstte arama (ad, açıklama ve `tags`; Türkçe harf farkı yok, `/` odaklar, Esc önce temizler sonra bırakır) ve süzgeç çipleri
-(Hepsi, Solo, Birlikte, Zor, Yeni, Sıralamalı, Açık Olanlar); eşleşmeyen kutucuk gizlenir, hiçbiri kalmazsa "Eşleşen Mod Yok". `MODES` kataloğu her mod için zorluk rozeti (Kolay/Orta/Zor), kişi sayısı,
-sıralama, `isNew` ("Yeni" rozeti: yeni mod gelince `true`, sonraki sürümde kapat) ve `howto` adımlarını tutar; **yeni mod eklerken** `ModeId`, `TILE_ORDER`, `NAME`, `MODES` ve `ModesHub` kutucuğunu (doğru `TileGroup` içine) birlikte yaz.
+Düğme boyu fareyle 36 px, dokunmatikte (`pointer: coarse`) 44 px (`.hit`, `.mode-filter`, `.mode-strip`). Sol sütun gibi ekranı daraltan dikey bölüm kurma: yer kaplayan her şey dolu ve işlevli olsun. Yeni bilgi eklerken önce ipucuna
+(`title`) ya da Nasıl Oynanır kartına koy; kutucuğa ikinci rozet ya da ikinci durum satırı ekleme.
+Bulma araçları (`lib/modeHints.ts`, saf ve testli: `tests/extras.test.ts` "Modlar ekranı"): üstte arama (ad, açıklama, `tags` ve kutucuğun rozeti: "zor", "yeni", "2 kişi" yazan da bulur; Türkçe harf farkı yok, `/` odaklar,
+Esc önce temizler sonra bırakır) ve süzgeç çipleri (Hepsi, Solo, Birlikte, Sıralamalı, Açık Olanlar); eşleşmeyen kutucuk gizlenir, hiçbiri kalmazsa "Eşleşen Mod Yok". `MODES` kataloğu her mod için zorluk (`heat`), kişi sayısı,
+sıralama, `isNew` ("Yeni" etiketi: yeni mod gelince `true`, sonraki sürümde kapat) ve `howto` adımlarını tutar; **yeni mod eklerken** `ModeId`, `TILE_ORDER`, `NAME`, `MODES` ve `ModesHub` kutucuğunu (doğru `TileGroup` içine) birlikte yaz.
 Kutucuk sırası sabit: ilk dokuzu 1-9 tuşlarıyla odaklanır, oklar kutucuklar arasında gezer (`neighbor`), Enter açar; kilitli kutucuk odaklanır ama açılmaz (`aria-disabled`). "Sana Önerilen" (`recommend`: en çok iki mod;
-hiç oynamamışa günlük + Co-op, yeni bitirene Kurallı Koşu, boss yenene Boss Rush, Üçlü yarımsa Üçlü…) Devam Et ile yan yana durur, süzgeç açıkken gizlenir, Devam Et'teki modu önermez; ana menüde Modlar kutucuğu aynı öneriyi
+hiç oynamamışa günlük + Co-op, yeni bitirene Kurallı Koşu, boss yenene Boss Rush, Üçlü yarımsa Üçlü…) Devam Et ile aynı şeritte durur, süzgeç açıkken gizlenir, Devam Et'teki modu önermez; ana menüde Modlar kutucuğu aynı öneriyi
 alt yazıda söyler ve ekran açılana dek "Yeni" yazar. Bir moda ilk girişte kısa "Nasıl Oynanır" kartı (`HowToCard`) bir kez çıkar (`seksek:modeIntro`, yalnız bu tarayıcıda; Geri sayılmaz, "Anladım, Başla" sayılır);
 `audit-menus` o anahtarı önceden doldurur (yalnız `modlar-nasil` ekranı boş açar).
+
+**Ayarlar ekranı (25 Kasım 2026).** `screen === 'controls'`, sayfa kaymaz. 1280 px ve üstü geniş ekranda üç sütun (`settingsWide` iki sütun + tuş atama bloğu): 1. Ses, Oynanış, Ekran ve Kontroller (son öbek `mt-auto`);
+2. Kolaylıklar (seçimler tek kartta satır satır, altında üç anahtar) ve dibinde dokunmatik / oyun kolu tuşları (`.set-pad`); 3. Klavye, İki Kişilik, ipucu. Rehberi Yeniden Göster ve Ana Ekrana Ekle başlıkta, dilin yanında.
+900-1279 px'te iki sekme (Oyun: iki sütun; Kontroller: Klavye | İki Kişilik, altında dokunmatik ve oyun kolu). Kart açıklamaları en çok iki satır ve kısa; 760 px'ten alçak geniş ekranda kart açıklaması ve renk körü önizlemesi,
+700 px'ten alçakta ses açıklaması gizlenir (`.set-wide` kuralları globals.css). Yeni ayar eklerken üç boyutta (1280×720, 1512×860, 1024×640) panelin içi de kaymamalı: `ONLY=ayarlar node scripts/audit-menus.cjs` + ekran görüntüsü.
 
 **Öfke Parkurları.** `game/rageCourses.ts` RAGE_COURSES: elle çizilmiş uzun, çok zor parkurlar (mücadele altyapısı: `Challenge.map`,
 madalya `par`dan, skor `mucadele:<id>`, ALL_CHALLENGES ile aranır; turnuvaya girmez). Modlar → Sinir Bozucu → Parkurlar.
@@ -578,8 +591,9 @@ yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır
 
 Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte aynı akar; kasma bir kez düzeltildi, geri gelmesin:
 
-- **Zamana bağla, kareye değil.** Kameranın yaklaşımı `approach()` (üstel, `Math.pow(keep, dt)`), sarsıntı `shakeOffset(t)`
-  (zamanla dalgalanır). Kare başına `Math.random()` ile titreme ya da `Math.random() < p` ile olasılık yazma: yüksek Hz'de
+- **Zamana bağla, kareye değil.** Kameranın yatay yaklaşımı `approach()` (üstel, `Math.pow(keep, dt)`), dikeyi kritik sönümlü
+  yay `spring()` (kapalı biçim: inişte, basamakta kadraj hızı sıçramaz, hedefi aşmaz; 25 Kasım 2026), sarsıntı `shakeOffset(t)`
+  (zamanla dalgalanır, üstel söner, olaylarda `CAM.shakeGain` ile kısık: düşük kortizol). Kare başına `Math.random()` ile titreme ya da `Math.random() < p` ile olasılık yazma: yüksek Hz'de
   daha çok titrer, daha çok parçacık yağar. Olasılık için `this.chance(p)` (60 Hz karşılığı, saniyede aynı sıklık).
 - **Kare içinde ağır iş yok.** 120 Hz'de bütün kare 8 ms'dir. Pahalı çizim (zemin) önceden, küçük parçalar hâlinde ve
   süre bütçesiyle yapılır (`terrainDraw.ts` WARM_MS). Yeni önbellekli çizim eklersen aynı yolu izle.

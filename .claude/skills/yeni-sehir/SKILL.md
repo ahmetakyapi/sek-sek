@@ -36,9 +36,9 @@ Sırayla yaz. Tip denetimi her eksik `Record<CityKey,…>` kaydını tek tek gö
 | `game/content.en.ts` | `LEVELS_EN[<id>]`: aynı alanların İngilizcesi, aynı sayıda |
 | `game/cities/<id>.ts` | taslak ana yol (tek parça: P, 5 `?`, 4 `n`, 3 C, $, F, E). Haritayı ajan doldurur |
 | `game/finales/<id>.ts` + `finales/index.ts` | taslak meydan yolu (1 `?`, 1 `n`, 1 `!`, hints/hintsEn, npcs/npcsEn) ve `PRELUDES` kaydı |
-| `game/art.ts` | `CITY[<id>]` paleti; `buildLayers` içinde geçici `case` (çizer ajanı kendi katmanını yazar) |
+| `game/art.ts` | `CITY[<id>]` paleti; `buildLayers` içinde geçici `case` (çizer ajanı kendi katmanını yazar). `weather` hem süzülenleri (yaprak, kar, taç yaprağı, toz zerresi: `game/atmosphere.ts`) hem doğa sesini (`game/ambience.ts` `bedOf`) seçer; `sky` + `sun` şehrin ışığını (`moodOf`: altın saat, gölge rengi) verir: güneşli şehirde `sun` ver, huzmeler ondan düşer |
 | `game/boss.ts` · `game/bossLines.ts` | `BOSSES` (ad TR/EN, can, hareket sırası, hız, kademe, kutu, taunt TR/EN) · üç laf |
-| `game/flagMoments.ts` · `game/features.ts` · `game/music.ts` | dört bayrak sözü (TR/EN) · şehrin özellik satırı · makam (`SCALES`) |
+| `game/flagMoments.ts` · `game/features.ts` · `game/music.ts` | dört bayrak sözü (TR/EN) · şehrin özellik satırı · makam (`SCALES`; beste tektir, şehre şarkı yazılmaz; ses dili `.claude/rules/ses.md`) |
 | `game/terrainDraw.ts` | `LOOK` (zemin malzemesi + örtü) |
 | `game/render.ts` | `NEXT_CITY`: bir önceki son şehrin değeri yeni şehrin adı olur, yeni son şehir `null` |
 | `components/TurkeyMap.tsx` | `COORDS` [boylam, enlem] |
@@ -81,6 +81,10 @@ bot da çözücüyle aynı durumlarda karar vermeli.
 - Dev sunucusu: önce eski sunucuyu kapat (`pkill -f "next dev"`; gerekirse `ps aux | grep next-server` ile bulunan süreç),
   sonra `npx next dev -p 3100`. Günlükte `EADDRINUSE` varsa sayfa **eski kodu** gösterir: şehir görseli Aydın gibi başka bir şehirden çıkar.
 - `node scripts/preview.cjs <id> start|arrival|boss|x,y out.png` çıktısını Read ile aç. Saate bağlı mekaniği iki ayrı anda çek (`--bekle=900`, `--bekle=3300`).
+- **Boyalı görünüm** (25 Kasım 2026, `.claude/rules/cizim.md` "Atmosfer"): katmanlar şehir yüklenirken `paintLayer` ile
+  boyanır (kenar ışığı, hacim, fırça dokusu), üstüne ışık, renk tonu, bulut, süzülenler ve ön plan otları biner. Ekran
+  görüntüsünde bak: gök çok soluk ya da her şey gri kaldıysa `sky` paletini doygunlaştır (ufuk beyaza değil ılık renge
+  insin); arka plan katmanını düz tek renk bloklarla değil, açık-koyu iki üç tonla çiz (boya hacmi tonlardan gelir).
 - `node scripts/art/banners.cjs <id>` (şehir kartı ve kartpostal görseli). Çıkan `public/sehirler/<id>.webp`'yi aç, gerçekten o şehir mi bak.
 - `node scripts/art/icons.cjs --og` (paylaşım görselindeki sayılar). Yanında değişen ikon PNG'leri gereksizse `git checkout` ile geri al.
 - "Yolda Neler Değişti" notu: `mapVersion` bir eksik bir kayıtla, `?debug` olmadan aç. Yeni şehirler ve "Bu Sürümde" satırları görünmeli.

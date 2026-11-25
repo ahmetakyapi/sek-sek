@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SCALES, titleTheme, voiceLead, type NoteEvent } from '../game/music'
+import { MENU_BED, bedOf } from '../game/ambience'
+import { CITY } from '../game/art'
 
 const BAR = 8
 const s = titleTheme()
@@ -34,12 +36,13 @@ describe('müzik: jenerik (oyunun tek bestesi)', () => {
     expect(Math.max(...s.events.map((e) => e.vol))).toBeLessThanOrEqual(0.3)
   })
 
-  it('form: giriş bir kez, 64 ölçülük döngü (~3,4 dk), tempo sakin', () => {
+  it('form: giriş bir kez, 64 ölçülük döngü (~4 dk), tempo sakin', () => {
     expect(s.loop).toBe(4 * BAR)
     expect(s.length).toBe((4 + 64) * BAR)
     const bpm = 60 / s.step / 2
-    expect(bpm).toBeGreaterThanOrEqual(68)
-    expect(bpm).toBeLessThanOrEqual(80)
+    // düşük kortizol (25 Kasım 2026): ~64 BPM
+    expect(bpm).toBeGreaterThanOrEqual(58)
+    expect(bpm).toBeLessThanOrEqual(70)
     const loopSec = (s.length - s.loop) * s.step
     expect(loopSec).toBeGreaterThan(200)
     // ölçü başına bir bas kökü: boss katmanı bestenin armonisine basar
@@ -148,5 +151,32 @@ describe('oyun efektleri', () => {
     // müzik efektin altında: efekt payı müzikten yüksek tanımlı
     const sfxTrim = Number(/SFX_TRIM = ([\d.]+)/.exec(src)![1])
     expect(sfxTrim).toBeGreaterThan(1)
+  })
+
+  it('düşük kortizol: bestede davul yok, dem her ölçüde, müzik kutusu çanı seyrek ve yüksekte', () => {
+    expect(s.events.some((e) => ['kick', 'rim', 'hat', 'tom'].includes(e.inst))).toBe(false)
+    const bars = s.length / BAR
+    const padBars = new Set(s.events.filter((e) => e.inst === 'pad').map((e) => Math.floor(e.at / BAR)))
+    expect(padBars.size).toBe(bars)
+    const bells = s.events.filter((e) => e.inst === 'bell')
+    expect(bells.length).toBeGreaterThan(bars * 0.4)
+    expect(bells.length).toBeLessThan(bars * 2.5)
+    for (const e of bells) expect(e.midi[0]).toBeGreaterThanOrEqual(74)
+    expect(s.swing).toBeLessThanOrEqual(0.08)
+  })
+})
+
+describe('doğa sesi yatağı', () => {
+  it('her şehrin havası bir yatak verir; karda ve fırtınada kuş, yağmursuz yerde yağmur yok', () => {
+    for (const c of Object.values(CITY)) {
+      const b = bedOf(c.weather)
+      for (const v of Object.values(b)) {
+        expect(v).toBeGreaterThanOrEqual(0)
+        expect(v).toBeLessThanOrEqual(1)
+      }
+      if (c.weather === 'snow' || c.weather === 'storm') expect(b.birds).toBe(0)
+      if (c.weather !== 'rain') expect(b.rain).toBe(0)
+    }
+    expect(MENU_BED.birds).toBeGreaterThan(0)
   })
 })

@@ -4,10 +4,11 @@ import { drawChaseDog, drawEnemy, drawFriend, drawKeepsake, drawThing } from './
 import { CHARACTERS, type CharacterDef } from './characters'
 import type { Boss } from './boss'
 import { drawBoss } from './bossDraw'
-import { INK, LOOKS, POSES, airPoseInto, climbPose, copyPose, drawHero, gaitInto, handPos, lerpPoseInto, newPose, swimStroke, type Look, type Pose } from './heroDraw'
+import { INK, LOOKS, POSES, setPainted, airPoseInto, climbPose, copyPose, drawHero, gaitInto, handPos, lerpPoseInto, newPose, strideLength, swimStroke, type Look, type Pose } from './heroDraw'
 import { idlePose, landInto } from './stance'
 import { NO_KIT, type Kit } from './accessories'
 import { TerrainHD } from './terrainDraw'
+import { Atmosphere, Clouds, paintLayer } from './atmosphere'
 import { cb, cbc, type CbMode } from './colorBlind'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
 import { GHOST_HZ, type GhostRun } from './ghost'
@@ -46,6 +47,9 @@ interface Ghost {
   flip: boolean
   pose: Pose
   rot: number
+  /** bir kez çizilmiş görüntüsü ve ayak çizgisi (render.ts drawScratch) */
+  img: HTMLCanvasElement | null
+  oy: number
 }
 
 interface Ambient {
@@ -84,6 +88,11 @@ export class Renderer {
   private nitroAt: [number, number] | null = null
   private streakN = 0
   private ambient: Ambient[] = []
+  /** el boyaması ışık, renk tonu, süzülenler ve ön plan (game/atmosphere.ts) */
+  private atmo: Atmosphere | null = null
+  private clouds: Clouds | null = null
+  /** bu karede görünen fenerlerin ışık merkezleri (dünya tamponu pikseli; x, y çiftleri): atmosferde sıcak hale */
+  private lamps: number[] = []
   private shake = 0
   private flash = 0
   /** son dash itmesi: başladığı an ve yönü (kickOffset) */
@@ -259,6 +268,13 @@ export class Renderer {
         }
       }
     this.layers = buildLayers(this.city)
+    this.atmo = new Atmosphere(this.city, CITY[this.city])
+    this.npcCache.clear()
+    this.clouds = w0Indoor(world) ? null : new Clouds(this.city, CITY[this.city], this.atmo.mood)
+    // boya hacmi: kenar ışığı, tepede ılık, dipte gölge, fırça dokusu (katman başına bir kez)
+    paintLayer(this.layers.far, this.atmo.mood, 0, 11)
+    paintLayer(this.layers.mid, this.atmo.mood, 0.5, 23)
+    paintLayer(this.layers.near, this.atmo.mood, 1, 37)
     this.world = world
     this.terrain = null
     this.particles = []
@@ -281,7 +297,7 @@ export class Renderer {
   private skyCache: { key: string; cv: HTMLCanvasElement } | null = null
 
   private skyCanvas(sky: [string, string, string]) {
-    const key = `${this.viewW}x${this.viewH}:${sky.join()}`
+    const key = `${this.viewW}x${this.viewH}:${sky.join()}:${this.atmo?.mood.key.join() ?? ''}`
     if (this.skyCache?.key === key) return this.skyCache.cv
     const cv = document.createElement('canvas')
     cv.width = this.viewW
@@ -289,7 +305,14 @@ export class Renderer {
     const c = cv.getContext('2d')!
     const N = 12
     const at = (t: number) => (t < 0.6 ? mixHex(sky[0], sky[1], t / 0.6) : mixHex(sky[1], sky[2], (t - 0.6) / 0.4))
-    const bands = Array.from({ length: N }, (_, i) => at(i / (N - 1)).match(/\d+/g)!.map(Number))
+    // boyalı gök: bantlar biraz daha doygun, ufuk şehrin ışık rengine ısınır (game/atmosphere.ts)
+    const glow: number[] = this.atmo?.mood.key ?? [255, 210, 160]
+    const bands = Array.from({ length: N }, (_, i) => {
+      const [r, g, bl] = at(i / (N - 1)).match(/\d+/g)!.map(Number)
+      const L = r * 0.3 + g * 0.59 + bl * 0.11
+      const warm = Math.max(0, i / (N - 1) - 0.45) * 0.45
+      return [r, g, bl].map((v, j) => Math.max(0, Math.min(255, Math.round((L + (v - L) * 1.3) * 0.96 * (1 - warm) + glow[j] * warm))))
+    })
     const B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
     const img = c.createImageData(cv.width, cv.height)
     const d = img.data
@@ -579,6 +602,8 @@ export class Renderer {
   /** alpha: son fizik adımından bu yana geçen sürenin adıma oranı (0..1); her tazeleme hızında akıcı çizim için */
   render(w: World, dt: number, alpha = 1) {
     this.t += dt
+    // boyalı karakter, boss ve canlılar yalnız zengin kademede (kare sonunda önizlemeler için yeniden açılır)
+    setPainted(this.tier === 2)
     this.frameDt = dt
     // gelgit saati de iki fizik adımı (1/120 sn) arasına çekilir: su yüzü her tazeleme hızında akıcı iner çıkar
     this.tideT = w.clock - (1 - alpha) / 120
@@ -617,11 +642,13 @@ export class Renderer {
       this.camX = this.cam.x
       this.camY = this.cam.y
     }
-    this.shake = Math.max(0, this.shake - dt * 18)
+    // sarsıntı üstel söner (doğrusal sönme kuyrukta birden kesiliyordu); düşük kortizol (25 Kasım 2026): olayların
+    // sarsıntısı CAM.shakeGain kadar kısık
+    this.shake = this.shake < 0.05 ? 0 : this.shake * Math.pow(CAM.shakeKeep, dt)
     if (this.quake) this.shake = Math.max(this.shake, 2.2)
     // küçük ekranda büyütme oranı yüksek: aynı sarsıntı ekranda daha büyük görünür, orana göre küçülür
     const small = Math.min(1, this.viewW / 420)
-    let [sx, sy] = shakeOffset(this.t, this.shake * this.shakeScale * small)
+    let [sx, sy] = shakeOffset(this.t, this.shake * (this.quake ? 1 : CAM.shakeGain) * this.shakeScale * small)
     const kk = kickOffset(this.t - this.kick.t) * CAM.kick * this.shakeScale * small
     sx -= this.kick.dx * kk
     sy -= this.kick.dy * kk
@@ -653,6 +680,8 @@ export class Renderer {
       b.restore()
     }
 
+    this.clouds?.draw(b, this.viewW, this.viewH, this.t, cx)
+
     const lh = w.rows * T
     // katmanların tabanı bölümün zemin çizgisine (satır 20) oturur, dikeyde parallax
     const camRef = camYRange(lh, this.viewW, this.viewH)[1]
@@ -681,21 +710,22 @@ export class Renderer {
       }
       drawLayer(this.layers.far, 0.12, 0.08)
       // hava perspektifi: uzak katman gökyüzünün rengine yaslanır
-      b.fillStyle = hexA(s.sky[2], 0.22)
+      b.fillStyle = hexA(s.sky[2], 0.2)
       b.fillRect(0, 0, this.viewW, this.viewH)
       if (this.city === 'istanbul') this.drawBosphorus(b, layerY(0.13) + LAYER_H - 70, cx)
       drawLayer(this.layers.mid, 0.25, 0.18)
-      b.fillStyle = hexA(s.sky[2], 0.16)
+      b.fillStyle = hexA(s.sky[2], 0.1)
       b.fillRect(0, 0, this.viewW, this.viewH)
       drawLayer(this.layers.near, 0.45, 0.32)
       // yakın katman da hafifçe geri çekilir: oyuncunun bastığı zemin öne çıksın
-      b.fillStyle = hexA(s.sky[2], 0.12)
+      b.fillStyle = hexA(s.sky[2], 0.05)
       b.fillRect(0, 0, this.viewW, this.viewH)
     }
 
     this.drawAmbient(b, dt, cx, cy, w)
 
     // dünya, arka: süsler zeminin arkasında kalır
+    this.lamps.length = 0
     b.save()
     b.translate(-cx, -cy)
     if (w.hasTide) this.drawTideBeds(b, w, cx)
@@ -714,7 +744,9 @@ export class Renderer {
     }
 
     const c = this.ctx
-    c.imageSmoothingEnabled = false
+    // arka tampon yumuşak büyütülür: piksel katmanlar boya gibi yumuşar, uzak plan hafifçe odak dışında kalır
+    c.imageSmoothingEnabled = this.tier === 2
+    c.imageSmoothingQuality = 'medium'
     c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
 
     // zemin ve duvarlar: ekran çözünürlüğünde, elle çizilmiş
@@ -762,21 +794,18 @@ export class Renderer {
       f.fillRect(0, 0, this.viewW, this.viewH)
     }
 
-    // vinyet: ekran oranına göre elips; dikey ekranda üstü karartıp bulanık göstermesin
-    f.save()
-    const vw = this.viewW
-    const vh = this.viewH
-    f.translate(vw / 2, vh / 2)
-    f.scale(1, vh / vw)
-    const vg = f.createRadialGradient(0, 0, vw * 0.42, 0, 0, vw * 0.78)
-    vg.addColorStop(0, 'rgba(0,0,0,0)')
-    vg.addColorStop(1, 'rgba(10,6,20,0.28)')
-    f.fillStyle = vg
-    f.fillRect(-vw / 2, -vw / 2, vw, vw)
-    f.restore()
-
     // Van gölünün canavarı ön tampondan (su) önce: su gövdesinin altını örter, hörgüçler sudan çıkar
     if (this.lakeRuns.length) this.drawLakeMonster(hdX, hdY)
+    // atmosferin ışık örtüsü (ışık, ılık ton, vinyet, fener halesi) düşük çözünürlükte kurulur; temel kademede ön
+    // tampona biner (ek tam ekran karışım yok), zengin kademede karakterlerin de üstüne tam çözünürlükte basılır
+    if (this.atmo) {
+      this.atmo.light(this.viewW, this.viewH, this.t, this.nightK, this.lamps)
+      if (this.tier < 2) {
+        this.atmo.foreLow(f, this.viewW, this.viewH, cx)
+        this.atmo.overlay(f, this.viewW, this.viewH)
+      }
+    }
+    c.imageSmoothingEnabled = false
     c.drawImage(this.fbuf, 0, 0, this.viewW, this.viewH, -offX, -offY, this.viewW * this.scale, this.viewH * this.scale)
 
     this.drawRopesHD(w, hdX, hdY)
@@ -788,10 +817,80 @@ export class Renderer {
     if (this.dashMeter) this.drawDashMeter(w, hdX, hdY)
     this.drawBreath(w, hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
+    // ışık, renk tonu, süzülenler, vinyet ve ön plan: dünyanın üstünde, yazıların altında
+    if (this.atmo) {
+      if (this.tier === 2) this.atmo.overlay(this.ctx, this.canvas.width, this.canvas.height)
+      this.atmo.front(this.ctx, this.canvas.width, this.canvas.height, this.t, hdX, hdY, this.scale, this.dpr, this.nightK, this.tier === 2)
+    }
     if (this.dark) this.drawDarkness(w, hdX, hdY)
     this.drawLabels(w, hdX, hdY)
     unblend()
+    setPainted(true)
+    // kademe sayfa başına bir kez, ilk yarım saniyeden sonra (arka tampon dolu) ölçülür
+    if (Renderer.probed === null) {
+      if (this.t > 0.5) this.probeTier()
+    } else this.tier = Renderer.probed
+    this.judgeTier()
   }
+
+  /**
+   * Kalite kademesi (25 Kasım 2026): boyalı görünümün pahalı iki parçası (arka planı yumuşak büyütmek, tam
+   * çözünürlükte ışık örtüsü ve ılık yumuşak ışık) yalnız boyamayı rahat yapan cihazda açılır: 1 temel (her cihaz),
+   * 2 zengin. Karar bir kez ölçümle verilir (`probeTier`): JavaScript süresi boyamayı görmez (tarayıcı onu ayrı
+   * süreçte yapar), bu yüzden tam ekran yumuşak çizim yapılıp tek piksel okunarak boyama bitirilir. Zengin kademede
+   * kare aralığı 2 sn boyunca ortalama 25 ms'yi aşarsa kademe iner ve o sayfada bir daha çıkmaz.
+   */
+  private tier: 1 | 2 = 1
+  private tierSum = 0
+  private tierN = 0
+
+  private probeTier() {
+    // tanıtım görselleri (şehir kartı, README) yazılımla boyayan tarayıcıda çekilir: `?zengin` zengin kademeyi zorlar
+    if (typeof location !== 'undefined' && /[?&]zengin\b/.test(location.search)) {
+      this.tier = Renderer.probed = 2
+      Renderer.forced = true
+      return
+    }
+    // ayrı, geçici bir tuvalde: ekrandaki kare bozulmaz
+    const W = this.canvas.width
+    const H = this.canvas.height
+    const cv = document.createElement('canvas')
+    cv.width = W
+    cv.height = H
+    const c = cv.getContext('2d')!
+    c.imageSmoothingEnabled = true
+    c.imageSmoothingQuality = 'medium'
+    c.getImageData(0, 0, 1, 1)
+    const t0 = performance.now()
+    for (let i = 0; i < 4; i++) {
+      c.globalCompositeOperation = i % 2 ? 'soft-light' : 'source-over'
+      c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, 0, 0, W, H)
+    }
+    c.getImageData(0, 0, 1, 1)
+    const ms = (performance.now() - t0) / 4
+    cv.width = cv.height = 0
+    Renderer.probed = ms < 2.5 ? 2 : 1
+    this.tier = Renderer.probed
+  }
+
+  /** sayfa başına bir kez ölçülen kademe (null: henüz ölçülmedi) */
+  private static probed: 1 | 2 | null = null
+  /** `?zengin` ile zorlandı: kare aralığına bakılıp inilmez */
+  private static forced = false
+
+  private judgeTier() {
+    if (this.tier < 2 || Renderer.forced) return
+    this.tierSum += this.frameDt
+    this.tierN++
+    if (this.tierSum < 2) return
+    const slow = this.tierSum / this.tierN > 0.025
+    this.tierSum = this.tierN = 0
+    if (slow) {
+      this.tier = 1
+      Renderer.probed = 1
+    }
+  }
+
 
   private drawBosphorus(b: Ctx, y: number, cx: number) {
     const s = CITY.istanbul
@@ -855,45 +954,19 @@ export class Renderer {
       }
       return
     }
+    // kar, yaprak, taç yaprağı ve toz artık atmosferde (ekran çözünürlüğünde, üç derinlikte) süzülür
+    if (s.weather !== 'rain' && s.weather !== 'storm') return
     for (const a of this.ambient) {
       a.phase += dt
-      let color = 'rgba(255,255,255,0.8)'
-      switch (s.weather) {
-        case 'snow':
-          a.vx = Math.sin(a.phase * 1.3) * 8
-          a.vy = 14 + a.size * 6
-          break
-        case 'storm':
-          a.vx = -90 - a.size * 40 + wind * 0.2
-          a.vy = 30 + a.size * 10
-          break
-        case 'dust':
-          a.vx = 6 + Math.sin(a.phase) * 4
-          a.vy = Math.sin(a.phase * 0.7) * 3
-          color = 'rgba(255,230,180,0.5)'
-          break
-        case 'petals':
-          a.vx = 10 + Math.sin(a.phase * 2) * 10
-          a.vy = 8 + Math.cos(a.phase * 1.5) * 4
-          color = a.size > 1 ? 'rgba(255,240,245,0.9)' : 'rgba(255,190,120,0.9)'
-          break
-        case 'rain':
-          a.vx = -30
-          a.vy = 180 + a.size * 40
-          color = 'rgba(190,215,235,0.55)'
-          break
-        case 'leaves':
-          a.vx = 12 + Math.sin(a.phase * 2) * 8
-          a.vy = 6 + Math.cos(a.phase) * 4
-          color = 'rgba(220,170,80,0.7)'
-          break
-      }
+      const rain = s.weather === 'rain'
+      a.vx = rain ? -30 : -90 - a.size * 40 + wind * 0.2
+      a.vy = rain ? 180 + a.size * 40 : 30 + a.size * 10
       a.x += a.vx * dt
       a.y += a.vy * dt
       const px = (((a.x - cx * 0.6) % W) + W) % W
       const py = (((a.y - cy * 0.6) % Hh) + Hh) % Hh
-      if (s.weather === 'rain') rect(b, px, py, 1, 4 + a.size * 2, color)
-      else rect(b, px, py, a.size, a.size, color)
+      if (rain) rect(b, px, py, 1, 4 + a.size * 2, 'rgba(190,215,235,0.55)')
+      else rect(b, px, py, a.size, a.size, 'rgba(255,255,255,0.8)')
     }
     if (s.weather === 'storm') {
       // ikinci, daha yoğun kar katmanı
@@ -929,6 +1002,7 @@ export class Renderer {
         case 'l': {
           // sokak feneri: ayak, direk, camlı fener, şapka; bayrak direğiyle (kırmızı bez, altın topuz) karışmasın
           const K = '#2a2236'
+          this.lamps.push(x + 8 - cx, bot - 35 - cy)
           disc(b, x + 8, bot - 35, 13, 'rgba(255,210,120,0.09)')
           disc(b, x + 8, bot - 35, 8, 'rgba(255,210,120,0.12)')
           rect(b, x + 5, bot - 2, 6, 2, K)
@@ -1047,7 +1121,7 @@ export class Renderer {
       // oyuncuya döner; hafifçe nefes alır
       const br = 2 + 4 * (0.5 + 0.5 * Math.sin(this.t * 2.2 + i * 1.7))
       const pose: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]], blink: (this.t + i * 1.3) % 3.8 < 0.12 }
-      this.heroes.push({ look, pose, x: n.x + T / 2, y: n.y + T, flip: w.player.x < n.x, alpha: 1, ghost: false, moving: false, sx: 1, sy: 1, size: NPC_SIZE })
+      this.heroes.push({ look, pose, x: n.x + T / 2, y: n.y + T, flip: w.player.x < n.x, alpha: 1, ghost: false, moving: false, sx: 1, sy: 1, size: NPC_SIZE, cache: i })
       // "konuşacak" işareti; konuşma açıkken baloncuk kendisi görünür, işaret çekilir
       const near = w.nearNpc === i
       if (near && this.dialog?.kind === 'npc') return
@@ -3775,7 +3849,8 @@ export class Renderer {
       sx = 1 - up * 0.75
       sy = 1 + up
     } else if (pose === 1) {
-      const cyc = (x * 15) / 8 / PHYS.run
+      // sola koşarken yol ters yönde birikir: evre yine ileri aksın
+      const cyc = (code >= 8 ? -x : x) / ((strideLength(1) * HERO_SIZE) / 100)
       body = gaitInto(this.ghostPose, cyc - Math.floor(cyc), Math.min(1.6, Math.abs(vx) / PHYS.run))
     } else {
       // bekleme pozu: oyuncuyla aynı kod; kıpırdamadan geçen süre kayıttan geriye sayılır (en çok 12 sn)
@@ -4779,23 +4854,111 @@ export class Renderer {
 
   /** Karakterler büyütülmüş ana tuvalde, ekran çözünürlüğünde: oyun dünyası piksel, karakter elle çizilmiş */
   private drawHeroes(cx: number, cy: number) {
-    const c = this.ctx
-    const sc = this.scale
     for (const h of this.heroes) {
-      c.save()
-      c.globalAlpha = h.alpha
-      // hayalet koşu soluk (saydam, gri atkı): canvas filter hero'nun her çizgisinde ayrı çalışır ve kare kaçırtır, kullanılmaz
-      if (h.rot) {
-        const px = (h.x - cx) * sc
-        const py = (h.y - (h.pivot ?? 0) - cy) * sc
-        c.translate(px, py)
-        c.rotate(h.flip ? -h.rot : h.rot)
-        c.translate(-px, -py)
+      if (h.cache !== undefined) {
+        this.drawCached(h, cx, cy)
+        continue
       }
-      drawHero(c, h.look, h.pose, (h.x - cx) * sc, (h.y - cy) * sc, (h.size ?? HERO_SIZE) * sc, h.flip, this.t, { moving: h.moving, sx: h.sx, sy: h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc, flow: h.flow })
-      c.restore()
+      this.drawScratch(h, cx, cy)
     }
     this.heroes = []
+  }
+
+  /** karakterlerin ara tuvalleri (sırayla kullanılır) */
+  private scratch: HTMLCanvasElement[] = []
+  private scratchN = 0
+
+  /**
+   * Karakter önce kendi boyunda küçük bir ara tuvale çizilir, sonra tek seferde basılır. Boyalı fırça şekil başına
+   * kırpma yapar; kırpma büyük ana tuval üzerinde pahalıdır (yazılımla boyayan tarayıcıda tek karakter ~8 ms tutuyordu,
+   * verify-perf), küçük tuvalde ucuzdur. Dönüş (yüzme, telde salınma) ara tuvalin içinde yapılır.
+   */
+  private drawScratch(h: HeroDraw, cx: number, cy: number) {
+    const c = this.ctx
+    const sc = this.scale
+    // dash izi kopyası: doğduğu an bir kez çizilir, ömrü boyunca hazır görüntü solup incelerek basılır
+    if (h.snap) {
+      const g = h.snap
+      if (!g.img) {
+        g.img = document.createElement('canvas')
+        g.oy = this.paintHero(h, g.img)
+      }
+      const W = g.img.width
+      const fx = (h.x - cx) * sc
+      const fy = (h.y - cy) * sc
+      c.globalAlpha = h.alpha
+      c.setTransform(h.sx, 0, 0, h.sy, fx, fy)
+      c.drawImage(g.img, -W / 2, -g.oy)
+      c.setTransform(1, 0, 0, 1, 0, 0)
+      c.globalAlpha = 1
+      return
+    }
+    let cv = this.scratch[this.scratchN % 3]
+    if (!cv) cv = this.scratch[this.scratchN % 3] = document.createElement('canvas')
+    this.scratchN++
+    const oy = this.paintHero(h, cv)
+    // hayalet koşu soluk (saydam, gri atkı): canvas filter kullanılmaz (kare kaçırtır)
+    c.globalAlpha = h.alpha
+    c.drawImage(cv, Math.round((h.x - cx) * sc - cv.width / 2), Math.round((h.y - cy) * sc - oy))
+    c.globalAlpha = 1
+  }
+
+  /** karakteri kendi boyundaki tuvale çizer (ayak tabanı tuvalin ortasında, dönen ayak çizgisi); ayak çizgisini döndürür */
+  private paintHero(h: HeroDraw, cv: HTMLCanvasElement) {
+    const sc = this.scale
+    const px = (h.size ?? HERO_SIZE) * sc
+    const W = Math.ceil(px * 2)
+    const H = Math.ceil(px * 2)
+    const oy = Math.round(px * 1.45)
+    if (cv.width !== W || cv.height !== H) {
+      cv.width = W
+      cv.height = H
+    } else cv.getContext('2d')!.clearRect(0, 0, W, H)
+    const g = cv.getContext('2d')!
+    g.save()
+    if (h.rot) {
+      const py = oy - (h.pivot ?? 0) * sc
+      g.translate(W / 2, py)
+      g.rotate(h.flip ? -h.rot : h.rot)
+      g.translate(-W / 2, -py)
+    }
+    // iz kopyası düz boyda çizilir (incelmesi basılırken)
+    const snap = !!h.snap
+    drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: h.moving, sx: snap ? 1 : h.sx, sy: snap ? 1 : h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc, flow: h.flow })
+    g.restore()
+    return oy
+  }
+
+  /** şehir insanlarının önbelleği: sıra → tuval, çizildiği an, yönü ve boyu */
+  private npcCache = new Map<number, { cv: HTMLCanvasElement; at: number; flip: boolean; px: number }>()
+
+  /**
+   * Duran şehir insanı saniyede 12 kez kendi küçük tuvaline çizilir, arada hazır görüntü basılır. Boyalı karakter
+   * çizimi şekil başına birkaç kırpılmış dolgu yapar; ekranda dört beş insan varken her karede yeniden çizmek
+   * yazılımla boyayan cihazda kareyi kaçırtıyordu (verify-perf, Erzurum). Nefes ve göz kırpma bu hızda da akıcı okunur.
+   */
+  private drawCached(h: HeroDraw, cx: number, cy: number) {
+    const sc = this.scale
+    const px = (h.size ?? HERO_SIZE) * sc
+    const W = Math.ceil(px * 1.5)
+    const H = Math.ceil(px * 1.4)
+    const oy = Math.round(px * 1.28)
+    let e = this.npcCache.get(h.cache!)
+    if (!e || e.px !== px) {
+      const cv = document.createElement('canvas')
+      cv.width = W
+      cv.height = H
+      e = { cv, at: -1, flip: h.flip, px }
+      this.npcCache.set(h.cache!, e)
+    }
+    if (this.t - e.at > 1 / 12 || e.at > this.t || e.flip !== h.flip) {
+      const g = e.cv.getContext('2d')!
+      g.clearRect(0, 0, W, H)
+      drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: false, sx: 1, sy: 1 })
+      e.at = this.t
+      e.flip = h.flip
+    }
+    this.ctx.drawImage(e.cv, Math.round((h.x - cx) * sc - W / 2), Math.round((h.y - cy) * sc - oy))
   }
 
   /** asılma ve yüzme pozlarının evresi (oyuncu başına): yalnız hareket ederken ilerler */
@@ -4891,21 +5054,30 @@ export class Renderer {
 
   /**
    * Oyuncunun (ve co-op eşinin) bu karedeki pozu. Her şey fizik durumundan ve saatten türer, kare hızından bağımsızdır:
-   * koşu hızla adımlanır, havada poz dikey hıza göre sürekli akar (yükseliş → tepe → düşüş), inişin çöküşü düşüşün
-   * sertliğiyle derinleşir, ters yöne basınca fren pozu, duvarda yüz duvara döner ve eller duvara değer. Dash yöne göre
-   * döner (yatay: öne yatar, yukarı: roket, aşağı: ayakla iner) ve bitince kısa bir toparlanmayla dikilir. Teleferikte
-   * gövde ilerleme hızına göre sarkaç gibi geride kalır, durunca salınıp oturur. Atkı, saç ve savrulma hedefi gecikmeyle izler.
+   * koşu adımı katedilen yoldan ilerler (ayak kaymaz), kalkışta itiş ve kısa bir esneme, havada poz dikey hıza göre
+   * akar (yükseliş → tepe → düşüş), yere yaklaşırken bacaklar inişe uzanır, iniş sönümlü yayla çöker ve hafifçe uzar.
+   * Ters yöne basınca fren pozu; yön değişince gövde kâğıt gibi daralıp döner. Duvarda yüz duvara döner, el ve taban
+   * duvara sürtünür; duvardan sekişte arka bacak iter, ardışık sekmelerde kollar sırayla atılır. Dash kısa bir
+   * toplanmayla başlar, yöne göre ayrı pozla (yatay, çapraz yukarı, yukarı, çapraz aşağı, aşağı) uzar, bitince gövde
+   * hafif bir salınımla dikilir. Kip değişince poz son çizilen pozdan yumuşakça geçer (tek karede sıçrayan poz yok).
+   * Teleferikte gövde sarkaç gibi geride kalır. Atkı, saç ve savrulma hedefi gecikmeyle izler.
    */
   private heroAnim(p: Player, self: boolean) {
     let a = this.anims.get(p)
     if (!a) {
-      a = { flow: 0, lift: 0, hair: 0, ang: 0, angV: 0, cvx: 0, px: p.x, rec: 0, recPose: POSES.dash, recRot: 0, recK: [1, 1], airMax: 0, hard: 0.5, grounded: p.grounded, out: newPose(), tmp: newPose(), idleT: 0, landT: 9 }
+      a = {
+        flow: 0, lift: 0, hair: 0, ang: 0, angV: 0, cvx: 0, px: p.x, rec: 0, recPose: POSES.dash, recRot: 0, recK: [1, 1], airMax: 0, hard: 0.5, grounded: p.grounded,
+        out: newPose(), tmp: newPose(), from: newPose(), prev: newPose(), idleT: 0, landT: 9, ph: 0, mode: 'idle', xf: 1, xfDur: 0, airT: 0, jumped: false, wall: 0, pvy: p.vy,
+        wjT: 9, wjN: 0, dashT: 0, vflip: p.facing < 0, turnT: 9, acc: 0, lvx: p.vx, stopT: 9,
+      }
       this.anims.set(p, a)
     }
     const dt = Math.min(0.1, this.frameDt)
     const ease = (tau: number) => 1 - Math.exp(-dt / tau)
     const dashing = p.dashTime > 0
     const hold = dashing ? null : this.holdPose(p)
+    // geçen karede çizilen poz: kip değişirse geçiş buradan başlar (yeni poz aynı tampona yazılmadan önce saklanır)
+    copyPose(a.prev, a.out)
     // iniş sertliği: havadaki en büyük düşüş hızından
     if (!p.grounded) a.airMax = Math.max(a.airMax, p.vy)
     else if (!a.grounded) {
@@ -4914,6 +5086,19 @@ export class Renderer {
       a.landT = 0
     }
     if (p.grounded) a.landT += dt
+    // kalkış: yerden zıplayarak mı koptu (yürüyüp kenardan düşmek kalkış sayılmaz)
+    if (a.grounded && !p.grounded) a.jumped = p.vy < -120
+    a.airT = p.grounded ? 0 : a.airT + dt
+    // duvardan sekme: önceki karede duvara yaslıydı, şimdi duvardan uzağa doğru hızla yükseliyor
+    if (a.wall !== 0 && !p.grounded && a.pvy > -150 && p.vy < -200 && Math.sign(p.vx) === -a.wall) {
+      a.wjT = 0
+      a.wjN++
+    } else a.wjT += dt
+    a.wall = p.grounded || p.hang ? 0 : p.wallDir
+    a.pvy = p.vy
+    // ivme (yön ve hızlanma eğimi için), kısa gecikmeyle
+    if (dt > 0) a.acc += ((p.vx - a.lvx) / dt - a.acc) * ease(0.05)
+    a.lvx = p.vx
     // bekleme süresi: yerde, duran ve dash atmayan oyuncu için
     a.idleT = p.grounded && Math.abs(p.vx) < 5 && p.dashTime <= 0 ? a.idleT + dt : 0
     const look = (self ? this.accessory : this.partnerAcc).look
@@ -4922,6 +5107,7 @@ export class Renderer {
     a.cvx += ((dt > 0 ? (p.x - a.px) / dt : 0) - a.cvx) * ease(0.06)
     a.px = p.x
     let pose: Pose
+    let mode: AnimMode
     let rot = 0
     let pivot = 0
     let dx = 0
@@ -4932,30 +5118,42 @@ export class Renderer {
     let brake = false
     let flowT = Math.min(1.3, Math.hypot(p.vx, p.vy * 0.6) / PHYS.run)
     if (dashing) {
+      mode = 'dash'
+      a.dashT = a.mode === 'dash' ? a.dashT + dt : 0
       const [ddx, ddy] = p.dashDir
       if (ddx !== 0) flip = ddx < 0
       const fx = Math.abs(ddx)
       // kalkışta en çok gerilir, sonuna doğru toparlanır (yön boyunca uzar, hacim korunur)
       const u = Math.min(1, p.dashTime / PHYS.dashTime)
       const st = 0.08 + 0.14 * u
+      let target: Pose
       if (Math.abs(ddy) < 0.35) {
-        pose = POSES.dash
+        target = POSES.dash
         rot = 0.2 + 0.18 * u
         kx = 1 + st
         ky = 1 - st * 0.7
       } else {
-        pose = ddy < 0 ? POSES.rocket : POSES.stomp
-        rot = ddy < 0 ? Math.atan2(fx, -ddy) : Math.atan2(-fx, ddy) * 0.8
+        // yukarı: roket, çapraz yukarı: yöne uzanan kol · aşağı: ayakla, çapraz aşağı: kayan tekme
+        if (ddy < 0) target = fx > 0.3 ? POSES.dashUp : POSES.rocket
+        else target = fx > 0.3 ? POSES.dashDown : POSES.stomp
+        rot = ddy < 0 ? Math.atan2(fx, -ddy) * (fx > 0.3 ? 0.85 : 1) : Math.atan2(-fx, ddy) * 0.8
         kx = 1 - st * 0.7
         ky = 1 + st
       }
+      // ilk birkaç kare: gövde top gibi toplanır, sonra yöne fırlar (görsel; dash fizikte zaten başladı)
+      const g = 1 - smooth01(a.dashT / DASH_GATHER)
+      pose = g > 0 ? lerpPoseInto(a.tmp, target, POSES.gather, g * 0.85) : target
+      kx += (1.08 - kx) * g
+      ky += (0.9 - ky) * g
+      rot *= 1 - 0.5 * g
       pivot = DASH_PIVOT
       flowT = 1.4
       a.rec = DASH_RECOVER
-      a.recPose = pose
+      a.recPose = target
       a.recRot = rot
       a.recK = [kx, ky]
     } else if (hold) {
+      mode = 'hold'
       pose = hold.pose
       rot = hold.rot
       pivot = hold.pivot
@@ -4975,49 +5173,123 @@ export class Renderer {
       }
     } else if (!p.grounded) {
       if (p.wallDir !== 0 && p.vy > 0) {
-        // yüz duvara döner, eller duvara değer (gövde duvardan biraz geri çizilir)
-        pose = POSES.wall
+        // yüz duvara döner, el ve taban duvara yaslanır (gövde duvardan biraz geri çizilir); kayarken el ve taban
+        // duvara sürtünüp titrer, gövde hafifçe sarsılır (saate bağlı)
+        mode = 'wall'
+        pose = copyPose(a.out, POSES.wall)
+        const sl = Math.min(1, p.vy / PHYS.wallSlideMax)
+        const j = Math.sin(this.t * 41) * sl
+        const j2 = Math.sin(this.t * 29 + 1.3) * sl
+        pose.arms[1][0] += j * 3
+        pose.arms[1][1] += j * 4
+        pose.arms[0][1] += j2 * 3
+        pose.legs[1][0] += j2 * 2.5
+        pose.tilt = (pose.tilt ?? 0) - 0.03 * sl + j * 0.01
         flip = p.wallDir < 0
-        dx = -p.wallDir * 2.5
+        dx = -p.wallDir * (2.5 + j2 * 0.15)
+        flowT = 0.35
       } else {
+        mode = 'air'
         pose = airPoseInto(a.out, p.vy, this.t)
+        // ileri giderken gövde gidiş yönüne yatar, geri giderken dikleşir
+        const fwd = Math.max(-1, Math.min(1.5, (p.vx * p.facing) / PHYS.run))
+        pose.tilt = (pose.tilt ?? 0) + 0.07 * fwd
+        // kalkış: arka bacak iter, kollar yukarı savrulur; ilk anlar sonra yükseliş pozuna akar
+        if (a.jumped && a.airT < AIR_LAUNCH) lerpPoseInto(pose, pose, POSES.launch, 1 - smooth01(a.airT / AIR_LAUNCH))
+        // duvardan sekme: itiş pozu kısa tutulur, sonra havaya akar; ardışık sekmelerde kollar sırayla atılır
+        if (a.wjT < 0.32) lerpPoseInto(pose, pose, a.wjN % 2 ? POSES.kick2 : POSES.kick, 1 - smooth01((a.wjT - 0.09) / 0.23))
+        // yere yaklaşırken (düşüşte) bacaklar inişe uzanır, kollar öne açılır
+        if (p.vy > 60) {
+          const reach = 8 + p.vy * 0.1
+          const g = this.groundBelow(p)
+          if (g < reach) lerpPoseInto(pose, pose, POSES.preland, smooth01(1 - g / reach) * Math.min(1, (p.vy - 60) / 120))
+        }
         // yükselişte incelip uzar (kalkışta en çok), hızlı düşüşte hafifçe uzar; tepede (asılı an) yuvarlaklaşır
         const up = Math.max(0, Math.min(1, -p.vy / PHYS.jumpV)) * 0.14
         const down = Math.max(0, Math.min(1, (p.vy - 150) / 150)) * 0.07
         const apex = Math.max(0, 1 - Math.abs(p.vy) / 110)
         kx = 1 - (up + down) * 0.75 + 0.05 * apex
         ky = 1 + up + down - 0.04 * apex
+        // kalkışın ilk iki karesi: çömelmeden fırlıyormuş gibi kısa bir basılma (sonra esneme)
+        if (a.jumped && a.airT < 0.045) {
+          const q = 1 - a.airT / 0.045
+          kx += 0.1 * q
+          ky -= 0.16 * q
+        }
       }
     } else {
       const speed = Math.abs(p.vx)
       if (speed > 35 && Math.sign(p.vx) !== p.facing && !p.swim) {
         // fren: eski yöne bakar, geriye yaslanıp kayar
+        mode = 'brake'
         pose = POSES.brake
         flip = p.vx < 0
         brake = true
-      } else if (speed > 8) pose = gaitInto(a.out, ((p.runTime * 15) / 8) % 1, Math.min(1.6, speed / PHYS.run), look?.rs)
-      else {
+      } else if (speed > 8) {
+        mode = 'run'
+        const k = Math.min(1.6, speed / PHYS.run)
+        // ilk adım: dururken yakın bacak yerden kalkar; inişte öne uzanan yakın bacağın topuğu değer
+        if (a.mode !== 'run') a.ph = a.mode === 'air' || a.mode === 'wall' ? 0.02 : 0.36
+        a.ph = (a.ph + (speed * dt) / ((strideLength(k, look?.rs) * HERO_SIZE) / 100)) % 1
+        pose = gaitInto(a.out, a.ph, k, look?.rs)
+        // hızlanırken gövde öne eğilir
+        pose.tilt = (pose.tilt ?? 0) + 0.1 * Math.max(0, Math.min(1, (a.acc * p.facing) / PHYS.accelGround))
+      } else {
+        mode = 'idle'
         // bekleme: seçili duruş, nefes, göz kırpma ve bir süre kıpırdamayınca küçük hareketler (bakınma, ayak oynatma, esneme, el sallama)
         pose = idlePose(a.out, look?.st, a.idleT, this.t + (self ? 0 : 1.9))
+        // durunca gövde biraz öne gider, hafifçe geri gelip oturur (denge)
+        if (a.mode === 'run') a.stopT = 0
+        if (a.stopT < 0.6) pose.tilt = (pose.tilt ?? 0) + 0.11 * Math.exp(-a.stopT / 0.13) * Math.cos((a.stopT * Math.PI * 2) / 0.42)
       }
-      if (a.landT < 0.4 && !brake) {
-        // iniş: dizler çöker, sertlikle derinleşir, sonra sönümlü yay gibi hafifçe uzar (squash ve stretch; hacim korunur)
-        const sq = Math.exp(-a.landT / 0.08) * Math.cos((a.landT * Math.PI * 2) / 0.26) * a.hard
-        if (sq > 0) pose = landInto(a.tmp, pose, sq)
-        kx = 1 + 0.2 * sq
-        ky = 1 - 0.16 * sq
+      if (a.landT < 0.5 && !brake) {
+        // iniş: sönümlü yay; yere değdiği an düz başlar, ~45 ms'de en derine çöker (sertlikle derinleşir), sonra
+        // hafifçe uzayıp oturur (squash ve stretch; hacim korunur). Koşarak inişte çöküş daha sığ.
+        const sq = a.hard * 1.85 * Math.exp(-11 * a.landT) * Math.sin(26 * a.landT) * (mode === 'run' ? 0.6 : 1)
+        if (sq > 0) pose = landInto(a.tmp, pose, Math.min(1, sq))
+        kx = 1 + 0.18 * sq
+        ky = 1 - 0.15 * sq
       }
     }
-    // dash bitti: gövde birkaç kare içinde dikilir, dönüş ve esneme söner
+    a.stopT += dt
+    // dash bitti: gövde birkaç kare içinde dikilir; dönüş dikin biraz ötesine salınıp oturur, esneme söner
     if (!dashing) a.rec = Math.max(0, a.rec - dt)
     if (!dashing && !hold && a.rec > 0) {
-      const k = (a.rec / DASH_RECOVER) ** 2
+      const r = a.rec / DASH_RECOVER
+      const k = smooth01(r)
       pose = lerpPoseInto(a.tmp, pose, a.recPose, k)
-      rot += a.recRot * k
+      rot += a.recRot * (k - 0.2 * Math.sin(Math.PI * r) * (1 - r))
       pivot = DASH_PIVOT
       kx += (a.recK[0] - 1) * k
       ky += (a.recK[1] - 1) * k
     }
+    // kip değişti: son çizilen pozdan yeni poza yumuşak geçiş (dash'ten çıkışı yukarıdaki toparlanma taşır)
+    if (mode !== a.mode) {
+      const d = XFADE[mode]
+      a.xfDur = a.mode === 'dash' ? 0 : a.mode === 'air' && mode !== 'wall' ? Math.min(d, 0.07) : d
+      a.xf = 0
+      copyPose(a.from, a.prev)
+      a.mode = mode
+    }
+    if (a.xf < a.xfDur) {
+      a.xf += dt
+      pose = lerpPoseInto(a.tmp, a.from, pose, smooth01(a.xf / a.xfDur))
+    }
+    // yön değişimi: gövde kâğıt gibi daralıp döner (önce eski yöne bakarak daralır, sonra yeni yönde açılır);
+    // dash anında döner, yalnız açılması görünür
+    if (flip !== a.vflip && a.turnT >= TURN_IN) {
+      a.turnT = dashing ? TURN_IN : 0
+      if (dashing) a.vflip = flip
+    }
+    if (a.turnT < TURN_IN + TURN_OUT) {
+      a.turnT += dt
+      if (a.turnT < TURN_IN) kx *= 1 - TURN_K * smooth01(a.turnT / TURN_IN)
+      else {
+        a.vflip = flip
+        kx *= 1 - TURN_K + TURN_K * smooth01((a.turnT - TURN_IN) / TURN_OUT)
+      }
+    } else a.vflip = flip
+    flip = a.vflip
     // gecikmeli izleme: atkı hızla açılır, yavaş söner; saç ve savrulma kısa gecikmeyle
     a.flow += (flowT - a.flow) * ease(flowT > a.flow ? 0.05 : 0.22)
     a.lift += ((pose.lift ?? 0) - a.lift) * ease(0.09)
@@ -5029,6 +5301,19 @@ export class Renderer {
     pose = a.out
     const moving = hold ? hold.moving : Math.abs(p.vx) > 40 || !p.grounded
     return { pose, rot, pivot, dx, dy, flip, kx, ky, moving, flow: a.flow, brake }
+  }
+
+  /** ayak tabanından aşağıdaki ilk katı zemine (ya da tek yönlü tahtaya) uzaklık, dünya pikseli; üç karoda yoksa 99 */
+  private groundBelow(p: Player): number {
+    const w = this.world
+    if (!w) return 99
+    const foot = p.y + p.h
+    const tx0 = Math.floor((p.x + 1) / T)
+    const tx1 = Math.floor((p.x + p.w - 1) / T)
+    const ty0 = Math.floor(foot / T)
+    for (let ty = ty0; ty <= ty0 + 2; ty++)
+      for (let tx = tx0; tx <= tx1; tx++) if (w.isSolid(tx, ty) || w.tile(tx, ty) === ONEWAY) return Math.max(0, ty * T - foot)
+    return 99
   }
 
   /** Co-op eşi: oyuncuyla aynı pozlar (iz ve toz yok); dash hakkı bitince atkısı soluklaşır */
@@ -5055,7 +5340,7 @@ export class Renderer {
     if (m && p.dashTime > 0) {
       const last = this.ghosts[this.ghosts.length - 1]
       if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= GHOST_GAP) {
-        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: m.flip, pose: copyPose(newPose(), m.pose), rot: m.rot })
+        this.ghosts.push({ x: p.x, y: p.y, life: GHOST_LIFE, flip: m.flip, pose: copyPose(newPose(), m.pose), rot: m.rot, img: null, oy: 0 })
         if (this.ghosts.length > GHOST_MAX) this.ghosts.shift()
       }
     }
@@ -5064,7 +5349,7 @@ export class Renderer {
       if (Math.hypot(p.x - g.x, p.y - g.y) < GHOST_GAP * 0.6) continue
       // iz eskidikçe hem solar hem incelir: hız hissi kuyruğa doğru sivrilir
       const k = g.life / GHOST_LIFE
-      this.heroes.push({ look, pose: g.pose, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory, rot: g.rot, pivot: DASH_PIVOT, flow: 1.4 })
+      this.heroes.push({ look, pose: g.pose, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory, rot: g.rot, pivot: DASH_PIVOT, flow: 1.4, snap: g })
     }
     // hız çizgileri: dash boyunca gövdenin arkasında kısa, parlak çizgiler (mesafeye göre; kare hızından bağımsız)
     if (p.dashTime > 0 && !p.dead) {
@@ -5350,6 +5635,11 @@ export class Renderer {
  * Konuşma baloncuğunun yeri (ekran pikseli): önce konuşanın üstüne (kuyruğu ona dönük), ekrandan ve üstteki HUD'dan
  * taşmadan. Böyle yerleşince karakterin kutusuyla çakışıyorsa (yukarıda yer yok) karakterin yanına, boş tarafa geçer.
  */
+/** iç mekân bölümünde gök (ve bulut) görünmez */
+function w0Indoor(w: World) {
+  return !!w.level.indoor
+}
+
 export function placeBubble(
   o: { tipX: number; tipY: number; bw: number; bh: number; tail: number; W: number; H: number; top: number; edge: number; gap: number },
   hero: { x0: number; y0: number; x1: number; y1: number },
@@ -5381,11 +5671,15 @@ export function backingDpr(cssW: number, cssH: number, deviceDpr: number) {
   return Math.max(1, Math.min(deviceDpr, Math.sqrt(PIXEL_BUDGET / Math.max(1, cssW * cssH))))
 }
 
-/** karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar) */
-const HERO_SIZE = 29
+/**
+ * karakterin dünya pikseli cinsinden boyu (çarpışma kutusu 12x14; kafa kutunun üstüne taşar). 25 Kasım 2026: karakter
+ * küçük başlı, uzun bacaklı orana geçti (boyun ~1/4,7'si baş); telefonda okunsun diye 29'dan 32'ye (tam iki karo:
+ * yürünen en alçak aralığa sığar)
+ */
+const HERO_SIZE = 32
 
 /** şehir insanları oyuncudan bir tık kısa */
-const NPC_SIZE = 27
+const NPC_SIZE = 30
 
 interface HeroDraw {
   look: Look
@@ -5408,6 +5702,10 @@ interface HeroDraw {
   pivot?: number
   /** atkının savrulması (0 sarkık .. 1,4 dash), gecikmeli izler */
   flow?: number
+  /** şehir insanının sırası: duran insan önbellekten basılır (`drawCached`) */
+  cache?: number
+  /** dash izi kopyası: bir kez çizilir, sonra hazır görüntüsü basılır */
+  snap?: Ghost
 }
 
 /** oyuncu başına çizim durumu (render.ts heroAnim): gecikmeler, sarkaç, dash toparlanması, iniş sertliği */
@@ -5435,10 +5733,50 @@ interface HeroAnim {
   /** kıpırdamadan geçen süre (bekleme duruşunun canlı hareketleri) ve inişten beri geçen süre (sönümlü yay) */
   idleT: number
   landT: number
+  /** koşu döngüsünün evresi (katedilen yoldan ilerler) */
+  ph: number
+  /** poz kipi ve kip değişince geçişin başladığı poz, geçen süre ve geçiş süresi */
+  mode: AnimMode
+  from: Pose
+  prev: Pose
+  xf: number
+  xfDur: number
+  /** havada geçen süre, zıplayarak mı kalktı, önceki karede yaslandığı duvar ve dikey hız */
+  airT: number
+  jumped: boolean
+  wall: number
+  pvy: number
+  /** son duvar sekmesinden beri geçen süre ve sekme sayısı (ardışık sekmelerde poz sırayla değişir) */
+  wjT: number
+  wjN: number
+  /** dash başladığından beri geçen süre */
+  dashT: number
+  /** çizilen yön ve dönüşün başından beri geçen süre */
+  vflip: boolean
+  turnT: number
+  /** yatay ivme (yumuşatılmış) ve önceki yatay hız */
+  acc: number
+  lvx: number
+  /** koşudan durmaya geçtiğinden beri geçen süre (denge salınımı) */
+  stopT: number
 }
 
+/** poz kipleri: kip değişince poz son çizilen pozdan yumuşakça geçer */
+type AnimMode = 'idle' | 'run' | 'brake' | 'air' | 'wall' | 'dash' | 'hold'
+/** kipe girerken geçiş süresi (sn) */
+const XFADE: Record<AnimMode, number> = { idle: 0.16, run: 0.1, brake: 0.07, air: 0.08, wall: 0.09, dash: 0.03, hold: 0.1 }
+const smooth01 = (u: number) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u))
+/** dash'in başındaki görsel toplanma süresi (sn) */
+const DASH_GATHER = 0.035
+/** zıplamada kalkış pozunun süresi (sn) */
+const AIR_LAUNCH = 0.13
+/** yön değişiminde daralma ve açılma süreleri (sn) */
+const TURN_IN = 0.03
+const TURN_OUT = 0.065
+/** dönüşte gövdenin en çok daralma oranı (çok daralırsa çubuk gibi görünüp hata sanılır) */
+const TURN_K = 0.4
 /** dash'in ardından gövdenin toparlanma süresi (sn) */
-const DASH_RECOVER = 0.13
+const DASH_RECOVER = 0.2
 /** dash ve toparlanmada gövdenin döndüğü nokta: ayak tabanından yukarı (dünya px) */
 const DASH_PIVOT = 14
 

@@ -32,7 +32,7 @@ Bu yol gelgit (`A`, Mersin), yükselen hava (`V`, Balıkesir) ve donan su (`Z`, 
 |---|---|
 | `game/sim.ts` | karo kodu (`export const X = <sıradaki sayı>`), sabitler (belgeli), kurucuda `case`, `has<Mekanik>` bayrağı. `tile()` karonun **o anki** fizik hâlini verir (ICE/SWIM/EMPTY…), ham hâli için `isX()`. Oyuncu durumu gerekiyorsa `Player`e alan + `freshPlayer`. Snapshot oyuncuyu kopyalar. Dünya durumu eklersen `snapshot`/`restore`a da ekle. `updatePlayer` içinde etkisi. Köpek (Kovalamaca) bekleyecekse `buildChaseCalm` |
 | `game/types.ts` | yeni olaylar (`GameEvent`) |
-| `game/audio.ts` · `scripts/audio-render.cjs` | olayın sesi (`sfx` switch, kısık, makamdan) · efekt listesine ekle |
+| `game/audio.ts` · `scripts/audio-render.cjs` | olayın sesi (`sfx` switch, kısık, makamdan, yumuşak: `.claude/rules/ses.md` düşük kortizol) · efekt listesine ekle. Mekanik sürekli bir ses yapıyorsa (şelale, rüzgâr) efekt değil doğa sesi yatağıdır: `game/ambience.ts` |
 | `scripts/solver.ts` | saate bağlıysa yakındaki evre `key`e girer (`frostNear` / `rhythmNear` kalıbı). Oyuncu yeni bir "karar verilebilir" durumdaysa (suda, termalde) `runMacro` kısa keser, dal açma koşulu ve `held` anahtarı onu sayar |
 | `scripts/verify-enemies.ts` | `rest()`: botun karar verdiği durumlar çözücüyle aynı olmalı |
 | `game/terrainDraw.ts` | zemin önbelleği saate bağlı karoyu çizmez: `tileOf` yeni karoyu `EMPTY` sayar (dinamik karo render'da çizilir) |

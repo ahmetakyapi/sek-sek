@@ -4,8 +4,10 @@ import type { CityKey } from './types'
  * Besteli müzik: notalar burada veri olarak durur, sesi audio.ts çalar. DOM'suz, testlenebilir.
  *
  * Oyunun her yerinde (menü, şehir, boss, Co-op, Yarış, Müzik Kutusu) tek beste çalar: jenerik. Re minör, B'de ve
- * kadansta Hicaz rengi (La7♭9), ~76 BPM sekizlik ızgara, swing. Form: giriş (bir kez) → A (piyano söyler) → A′ (ney +
- * fırça davul, kanun uzun notalara cevap verir, ney üstten çarpar) → B (ney, yarım tempo davul, kanun arpeji) → A″ (ney
+ * kadansta Hicaz rengi (La7♭9), ~64 BPM sekizlik ızgara, hafif sallantı. "Düşük kortizol" (25 Kasım 2026, kullanıcı
+ * isteği): davul yok; uzun soluklu dem (yaylı yatak) her ölçüyü sarar, müzik kutusu çanı (`bell`) akorun tepesinden
+ * seyrek notalar serper, piyano keçeli piyano gibi yumuşak. Form: giriş (bir kez) → A (piyano söyler) → A′ (ney,
+ * kanun uzun notalara cevap verir, ney üstten çarpar) → B (ney, kanun arpeji) → A″ (ney
  * sorar, kanun oktav yukarıdan cevaplar) → nefes → C (köprü: piyano, ikinci yarıda ney) → A4 (motif başka ritimle, doruk
  * yukarıda, kanun üçlü aşağıdan karşı ezgi) → B′ (karara inen yeni son) → nefes (motifin başı yavaşça anılır) → A'ya
  * döner. 64 ölçülük döngü (~3,4 dk); döngünün ikinci turunda ezgiyi A'da ve nefeste kanun, köprüde ney alır (`pass`):
@@ -13,7 +15,7 @@ import type { CityKey } from './types'
  * çözülür. Boss katmanı audio.ts'te, bestenin ölçü köklerine (`roots`) basar.
  */
 
-export type Inst = 'ney' | 'kanun' | 'keys' | 'pad' | 'sub' | 'kick' | 'rim' | 'hat' | 'tom'
+export type Inst = 'ney' | 'kanun' | 'keys' | 'pad' | 'bell' | 'sub' | 'kick' | 'rim' | 'hat' | 'tom'
 
 export interface NoteEvent {
   /** başladığı adım */
@@ -284,8 +286,6 @@ interface Section {
   ch: string[]
   /** bölümün genel gücü: seyrek bölümler kısık */
   dyn: number
-  /** davul: yok, tam (ikide ve dörtte kenar vuruşu) ya da yarım tempo (yalnız üçte) */
-  drums: 'none' | 'full' | 'half'
 }
 
 /** ezginin notaları bölüm başından adımla; `fresh`: ölçünün ilk notası ya da sustan sonra (ney alttan kayarak girer) */
@@ -340,7 +340,7 @@ function titleSong(): Song {
       ev.push({ at: at0 + 3, dur: 2, inst: 'keys', midi: v.slice(1), vol: 0.05 * vol * human() })
       ev.push({ at: at0 + 5, dur: 3, inst: 'keys', midi: v.slice(1), vol: 0.06 * vol * human() })
     }
-    ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2]], vol: 0.024 * vol })
+    ev.push({ at: at0, dur: BAR, inst: 'pad', midi: [v[0], v[2], v[3] ?? v[1]], vol: 0.034 * vol })
     const root = lift(ch.root)
     ev.push({ at: at0, dur: 3, inst: 'sub', midi: [root], vol: 0.13 * vol })
     if (style !== 'arp') {
@@ -350,26 +350,6 @@ function titleSong(): Song {
         ev.push({ at: at0 + 6, dur: 2, inst: 'sub', midi: [lift(approach(CHORD[next].root, pcs))], vol: 0.075 * vol })
       }
     } else ev.push({ at: at0 + 4, dur: 4, inst: 'sub', midi: [root], vol: 0.07 * vol })
-  }
-  /**
-   * fırça davul. Tam: bas davul birde ve "üç-ve"de, kenar vuruşu ikide ve dörtte; yarım tempo (B): kenar vuruşu yalnız
-   * üçte, ezgi uzun perdelerde nefes alır. Tek ölçülerde hayalet vuruş, dört ölçüde bir kıpırtı, bölüm sonunda dolgu.
-   */
-  const drums = (at0: number, i: number, fill: boolean, vol: number, half: boolean) => {
-    const rim = (a: number, v: number) => ev.push({ at: at0 + a, dur: 1, inst: 'rim', midi: [], vol: v * vol * human() })
-    ev.push({ at: at0, dur: 1, inst: 'kick', midi: [], vol: 0.2 * vol * human() })
-    if (!half || i % 2) ev.push({ at: at0 + 5, dur: 1, inst: 'kick', midi: [], vol: (half ? 0.09 : 0.12) * vol * human() })
-    if (half) {
-      rim(4, 0.08)
-      if (i % 2) rim(7, 0.02)
-    } else {
-      rim(2, 0.07)
-      rim(6, fill ? 0.06 : 0.07)
-      if (i % 2) rim(3, 0.022)
-    }
-    if (i % 4 === 3 && !fill) ev.push({ at: at0 + 7, dur: 1, inst: 'kick', midi: [], vol: 0.07 * vol })
-    if (fill) (half ? [[5, 0.035], [6, 0.05], [7, 0.065]] : [[7, 0.05]]).forEach(([a, v]) => rim(a, v))
-    for (let k = 0; k < (fill ? 6 : BAR); k++) ev.push({ at: at0 + k, dur: 1, inst: 'hat', midi: [], vol: (k % 2 ? 0.017 : half && k % 4 ? 0.022 : 0.028) * vol * human() })
   }
   /** ney: ölçü başında ve uzun notada alttan kayarak girer; `grace` ile bazı uzun notalara üstten çarpar (tohumdan, hep aynı) */
   const ney = (ns: Note[], at0: number, vol: number, arc: (b: number) => number, grace = false, pass?: 0 | 1) => {
@@ -398,6 +378,15 @@ function titleSong(): Song {
     ev.push({ at: at0 + f.at + 2, dur: Math.max(2, f.dur - 2), inst: 'kanun', midi: [f.n + 12], vol, trem: true })
   }
 
+  /** müzik kutusu çanı: akorun tonlarından, tohumla seçilmiş (her döngüde aynı), yüksek ve uzun çınlayan */
+  const bells = (name: string, at0: number, breath: boolean, i: number, vol: number) => {
+    const v = voiceLead(null, CHORD[name].tones, 74, 93)
+    if (breath) {
+      ev.push({ at: at0 + 1, dur: 6, inst: 'bell', midi: [v[v.length - 1]], vol: 0.04 * vol })
+      ev.push({ at: at0 + 5, dur: 3, inst: 'bell', midi: [v[1 + (i % 2)]], vol: 0.03 * vol })
+    } else if (i % 2 === 1 || rand() < 0.4) ev.push({ at: at0 + 4 + (i % 2) * 2, dur: 4 - (i % 2) * 2, inst: 'bell', midi: [v[(i * 3) % v.length]], vol: 0.03 * vol * human() })
+  }
+
   // giriş: kırık akorlar, dem kabarır; kanun temanın başını uzaktan anar
   INTRO.forEach((name, i) => comp(name, i * BAR, 'arp', INTRO[i + 1] ?? 'Dm', 0.8 + i * 0.07))
   ;[[81, 2], [86, 2], [84, 1], [81, 1], [79, 2]].reduce((s, [n, d]) => {
@@ -409,15 +398,15 @@ function titleSong(): Song {
   const loop = bar * BAR
 
   const plan: Section[] = [
-    { k: 'A', mel: TITLE_A, ch: CHORDS_A, dyn: 0.9, drums: 'none' },
-    { k: 'A2', mel: TITLE_A, ch: CHORDS_A, dyn: 1, drums: 'full' },
-    { k: 'B', mel: TITLE_B, ch: CHORDS_B, dyn: 0.97, drums: 'half' },
-    { k: 'A3', mel: TITLE_A, ch: CHORDS_A, dyn: 1, drums: 'full' },
-    { k: 'nefes', mel: [], ch: BREATH_1, dyn: 0.75, drums: 'none' },
-    { k: 'C', mel: TITLE_C, ch: CHORDS_C, dyn: 0.85, drums: 'none' },
-    { k: 'A4', mel: TITLE_A4, ch: CHORDS_A4, dyn: 1.02, drums: 'full' },
-    { k: 'B2', mel: TITLE_B2, ch: CHORDS_B2, dyn: 0.97, drums: 'half' },
-    { k: 'nefes2', mel: [], ch: BREATH_2, dyn: 0.7, drums: 'none' },
+    { k: 'A', mel: TITLE_A, ch: CHORDS_A, dyn: 0.9 },
+    { k: 'A2', mel: TITLE_A, ch: CHORDS_A, dyn: 1 },
+    { k: 'B', mel: TITLE_B, ch: CHORDS_B, dyn: 0.97 },
+    { k: 'A3', mel: TITLE_A, ch: CHORDS_A, dyn: 1 },
+    { k: 'nefes', mel: [], ch: BREATH_1, dyn: 0.75 },
+    { k: 'C', mel: TITLE_C, ch: CHORDS_C, dyn: 0.85 },
+    { k: 'A4', mel: TITLE_A4, ch: CHORDS_A4, dyn: 1.02 },
+    { k: 'B2', mel: TITLE_B2, ch: CHORDS_B2, dyn: 0.97 },
+    { k: 'nefes2', mel: [], ch: BREATH_2, dyn: 0.7 },
   ]
   plan.forEach((sec, si) => {
     const nextSec = plan[(si + 1) % plan.length]
@@ -431,10 +420,9 @@ function titleSong(): Song {
       const lastBar = i === bars - 1
       const style = breath ? 'arp' : sec.k === 'A' || sec.k === 'C' ? 'soft' : 'full'
       comp(sec.ch[i], at0, style, next, breath ? 0.8 * sec.dyn : arcOf(i), lastBar && sec.ch[i] === 'Dm')
-      // A'nın ilk ölçülerinde zil yavaşça girer
-      if (sec.drums !== 'none') drums(at0, i, lastBar, arcOf(i) * (sec.k === 'A2' && i < 2 ? 0.6 + i * 0.2 : 1), sec.drums === 'half')
-      // davulsuz bölümün sonunda kenar vuruşu davulun girişini haber verir
-      if ((sec.k === 'A' || sec.k === 'C') && lastBar) ev.push({ at: at0 + 6, dur: 1, inst: 'rim', midi: [], vol: 0.035 }, { at: at0 + 7, dur: 1, inst: 'rim', midi: [], vol: 0.05 })
+      // müzik kutusu: akorun tepesinden iki oktav yukarıda seyrek çan; ezgili bölümde ölçünün ikinci yarısında tek nota,
+      // nefeste iki nota (ezgi yokken çan söyler)
+      bells(sec.ch[i], at0, breath, i, arcOf(i))
       if (sec.k === 'B' && i % 2 === 0) arp(sec.ch[i], at0)
       if (sec.k === 'B2' && i % 2 === 1 && !lastBar) arp(sec.ch[i], at0)
       // nefes: kanun son ölçüde başın ilk notasını uzaktan anar
@@ -524,8 +512,8 @@ function titleSong(): Song {
     }
     bar += bars
   })
-  const step = 60 / 76 / 2
-  return song('title', step, bar * BAR, ev, BAR, roots, 0.16, loop, step * 1.5)
+  const step = 60 / 64 / 2
+  return song('title', step, bar * BAR, ev, BAR, roots, 0.06, loop, step * 1.5)
 }
 
 function song(id: string, step: number, length: number, events: NoteEvent[], bar: number, roots: number[], swing: number, loop: number, echo: number): Song {

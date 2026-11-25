@@ -20,7 +20,7 @@ const save = { character: 'uktun', skippedName: true, seenStory: true, mapVersio
     for (const [w, h, out] of [[800, 420, `public/sehirler/${id}.png`], [720, 590, `assets/cities/${id}.png`]]) {
       const pg = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
       await pg.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
-      await pg.goto(`http://localhost:3100/?debug&sehir=${id}`)
+      await pg.goto(`http://localhost:3100/?debug&zengin&sehir=${id}`)
       await pg.waitForTimeout(2500)
       await pg.getByRole('button', { name: /Devam|Başla|Yolculu/ }).first().click()
       await pg.waitForTimeout(600)

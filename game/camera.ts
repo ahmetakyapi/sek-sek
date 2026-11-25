@@ -35,7 +35,11 @@ export const CAM = {
    */
   dashFollow: 0.0015 ** 3,
   /** dash itmesi: kadraj dash yönünün tersine bu kadar (dünya pikseli) yaslanıp yumuşakça döner; rastgele titreme yok */
-  kick: 1.6,
+  kick: 1.1,
+  /** olay sarsıntılarının (ölüm, boss, sert iniş) genlik çarpanı: düşük kortizol, ekran sarsılır ama yormaz */
+  shakeGain: 0.65,
+  /** sarsıntının saniyede kalan oranı (üstel sönme; 6'lık sarsıntı ~0,3 sn'de belli belirsizleşir) */
+  shakeKeep: 0.00004,
   kickTime: 0.22,
   /** önünde engel (çukur, diken, su) varken bakış payı bu oranla büyür: atlanacak yer kadrajda */
   hazardLead: 0.6,
@@ -57,11 +61,28 @@ export interface CamState {
   look?: number
   /** ölü bölgenin çapası: karakter ortası bu noktadan pencere kadar uzaklaşınca çapa onu izler */
   anchor?: number
+  /** dikey yay takibinin hızı (dünya pikseli / sn): zıplama, iniş ve basamakta kadraj sıçramaz */
+  vy?: number
 }
 
 /** Üstel yaklaşım: kaç karede çağrılırsa çağrılsın aynı sürede aynı yere varır. */
 export function approach(cur: number, target: number, dt: number, keep: number) {
   return cur + (target - cur) * (1 - Math.pow(keep, dt))
+}
+
+/**
+ * Kritik sönümlü yay (25 Kasım 2026; dikey takip): kamera hedefe salınmadan, hızı sürekli değişerek yaklaşır. Birinci
+ * dereceden yaklaşımda hedef değişince kameranın hızı bir anda sıçrıyor (inişte, basamakta, yüksek yere çıkınca kadraj
+ * "tık" diye kımıldıyordu). `keep` üstel yaklaşımdaki oranla aynı anlamda: ω = 2·(−ln keep) seçilir, sabit hızda giden
+ * hedefin gerisinde kalma payı birinci derecedekiyle aynıdır (2v/ω = v/λ). Adım kapalı biçimde hesaplanır (hedef adım
+ * boyunca sabit): kare hızından bağımsız. [yeni konum, yeni hız] döndürür.
+ */
+export function spring(cur: number, vel: number, target: number, dt: number, keep: number): [number, number] {
+  const w = -2 * Math.log(keep)
+  const c1 = cur - target
+  const c2 = vel + w * c1
+  const e = Math.exp(-w * dt)
+  return [target + (c1 + c2 * dt) * e, (c2 - w * (c1 + c2 * dt)) * e]
 }
 
 /**
@@ -254,15 +275,21 @@ export function clampCam(w: World, x: number, y: number, vw: number, vh: number)
   return [Math.max(0, Math.min(w.cols * T - vw, x)), Math.max(lo, Math.min(hi, y))]
 }
 
-/** Bir karelik kamera adımı: hedefi seçer, saate bağlı yaklaşır, sınıra çeker. */
+/** Bir karelik kamera adımı: hedefi seçer, saate bağlı yay ile yaklaşır, sınıra çeker. */
 export function stepCamera(w: World, cam: CamState, dt: number, vw: number, vh: number) {
   const boss = bossFrame(w, vw, vh)
   const [tx, ty] = boss ?? followTarget(w, vw, vh, cam, dt)
   // nitroda takip hızla orantılı hızlanır: gecikme aynı kalır, karakter ekranda kaymaz (dash'teki gibi)
   const keep = w.player.dashTime > 0 ? CAM.dashFollow : w.player.nitro > 0 ? CAM.follow ** NITRO.speed : CAM.follow
+  // yatay takip birinci dereceden: dash'te karakter ekranda yerinde kalır (yay hızlanana dek öne kayıyor, dash
+  // bitince aşıyordu); yatayda başlangıç ve duruş zaten bakış payı ve ölü bölgeyle yumuşak
   const x = approach(cam.x, tx, dt, boss ? CAM.boss : keep)
   // düşerken dikey takip yatay kadar çevik: kadraj inişin gerisinde kalmaz
   const falling = !w.player.grounded && w.player.vy > PHYS.fallMax * 0.5
-  const y = approach(cam.y, ty, dt, boss ? CAM.bossY : falling ? CAM.follow : CAM.followY)
-  ;[cam.x, cam.y] = clampCam(w, x, y, vw, vh)
+  const [y, vy] = spring(cam.y, cam.vy ?? 0, ty, dt, boss ? CAM.bossY : falling ? CAM.follow : CAM.followY)
+  const [cx, cy] = clampCam(w, x, y, vw, vh)
+  // sınıra dayanınca hız söner (kenarda birikip sonra fırlamasın)
+  cam.vy = cy === y ? vy : 0
+  cam.x = cx
+  cam.y = cy
 }
