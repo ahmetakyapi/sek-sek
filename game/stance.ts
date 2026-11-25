@@ -16,16 +16,22 @@ const smooth = (u: number) => u * u * (3 - 2 * u)
 
 /** taban duruşlar: [uzak bacak, yakın bacak, uzak kol, yakın kol] eklem açıları */
 const BASE: Record<string, { legs: [[number, number], [number, number]]; arms: [[number, number], [number, number]] }> = {
-  rahat: { legs: [[-7, 3], [7, 3]], arms: [[8, 14], [-8, 10]] },
+  // rahat: ağırlık uzak bacakta (düz), yakın diz gevşek öne bükük; kollar gövdeden ayrık, dirsekte yumuşak bükük.
+  // Kalça öne, omuzlar geriye, baş hafif öne eğik (profilde S eğrisi: `TILT`, `HEAD`)
+  rahat: { legs: [[-5, 2], [10, 24]], arms: [[-14, -4], [12, 30]] },
   // eller belde: dirsekler geriye açık, ön kollar beli tutar; ayaklar biraz açık
-  bel: { legs: [[-11, 4], [11, 4]], arms: [[-34, 62], [-28, 70]] },
+  bel: { legs: [[-11, 4], [9, 8]], arms: [[-34, 62], [-28, 70]] },
   // kollar bağlı: dirsekler öne açık, ön kollar göğse doğru geri döner (profilde kavuşturulmuş kol)
   bagli: { legs: [[-4, 3], [9, 6]], arms: [[30, -95], [42, -100]] },
   // eller cepte: dirsekler hafif geride, eller kalça cebinde
-  cep: { legs: [[-5, 3], [6, 3]], arms: [[-10, 34], [-14, 40]] },
+  cep: { legs: [[-6, 2], [5, 12]], arms: [[-10, 34], [-14, 40]] },
   // düşünceli: yakın elin üstünde çene, uzak kol karnın önünden yakın dirseği tutar
   cene: { legs: [[-4, 3], [8, 5]], arms: [[24, -88], [80, 205]] },
 }
+
+/** taban duruşun üst gövde eğimi (- geriye: kalça önde, omuz geride) ve başın öne eğilmesi */
+const TILT: Record<string, number> = { rahat: -0.05, bel: -0.03, cep: -0.03, bagli: 0.015, cene: 0.03 }
+const HEAD: Record<string, number> = { rahat: 0.05, bel: 0.03, cep: 0.045, bagli: 0.02, cene: -0.05 }
 
 /** hareketlerin süresi (sn) ve ardışık hareketler arasındaki boşluk */
 const DUR: Record<IdleMove, number> = { bak: 3.4, tik: 3.2, esne: 3.4, sal: 1.9, sek: 2.4 }
@@ -48,15 +54,15 @@ export function idlePose(out: Pose, stance: string | undefined, idleT: number, t
   const br = 2 + 5 * (0.5 + 0.5 * Math.sin(t * 2.6))
   const wide = def.base === 'bel'
   out.legs[0][0] = b.legs[0][0]
-  out.legs[0][1] = wide ? 4 + br * 0.3 : br
+  out.legs[0][1] = b.legs[0][1] + (wide ? br * 0.3 : br - 2)
   out.legs[1][0] = b.legs[1][0]
-  out.legs[1][1] = wide ? 4 + br * 0.3 : br
+  out.legs[1][1] = b.legs[1][1] + (wide ? br * 0.3 : br - 2)
   out.arms[0][0] = b.arms[0][0]
   out.arms[0][1] = b.arms[0][1]
   out.arms[1][0] = b.arms[1][0]
   out.arms[1][1] = b.arms[1][1]
   out.lean = 0
-  out.tilt = def.base === 'bagli' ? 0.015 : def.base === 'cene' ? 0.03 : 0
+  out.tilt = TILT[def.base] ?? 0
   out.bob = 0
   // hafif esinti: saç ve atkı dururken de oynar
   out.hair = 0.1 + 0.08 * Math.sin(t * 1.3)
@@ -64,7 +70,12 @@ export function idlePose(out: Pose, stance: string | undefined, idleT: number, t
   out.ground = true
   out.reach = 1
   // düşünceli: baş hafif kalkık, gözler yukarı-ileri
-  out.head = def.base === 'cene' ? -0.05 : 0
+  out.head = HEAD[def.base] ?? 0
+  out.twist = 0
+  // tabanlar yere düz basar (koşudan kalan topuk-parmak açısı taşınmaz); gevşek yakın ayağın burnu hafifçe yere değer
+  const feet = out.feet ?? (out.feet = [0, 0])
+  feet[0] = 0
+  feet[1] = b.legs[1][1] > 10 ? 4 : 0
   out.gaze = def.base === 'cene' ? 0.5 : 0
   out.mouth = undefined
   out.mood = undefined

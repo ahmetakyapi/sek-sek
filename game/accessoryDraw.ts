@@ -150,6 +150,12 @@ export function drawHeadItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
       blob(c, () => tail(1), '#d83a5a', { color: '#a82444', dx: -1, dy: -0.6 })
       blob(c, () => loop(-1), '#ec4a68', { color: '#b82a4c', dx: -1.8, dy: -0.8 })
       blob(c, () => loop(1), '#ec4a68', { color: '#b82a4c', dx: -1.8, dy: -0.8 })
+      // kulakların içinde düğüme doğru toplanan kumaş kıvrımları (gölge tonu) ve sırtlarında ışık
+      for (const sd of [-1, 1]) {
+        g.fine(bx + sd * 2.2, by - 0.6, bx + sd * 5.6, by - 2.2, bx + sd * 9.2, by - 3.4, 0.7, '#a82444')
+        g.fine(bx + sd * 2.2, by + 0.8, bx + sd * 5.4, by + 1.6, bx + sd * 8.6, by + 1.4, 0.6, '#a82444')
+        g.fine(bx + sd * 4, by - 4.6 + lift * 0.6, bx + sd * 7.4, by - 5.6 + lift * 0.8, bx + sd * 9.8, by - 4.2 + lift * 0.8, 0.8, 'rgba(255,214,222,0.7)')
+      }
       for (const [dx, dy] of [[-7, -2.6], [-4.4, 0.4], [7, -3], [5, 1]]) g.dot(bx + dx, by + dy, 0.95, '#fff4f2')
       blob(c, () => g.ell(bx, by, 2.2, 2.4), '#d83a5a', { color: '#a82444', dx: -0.8, dy: -0.6 })
       g.fine(bx - 1.1, by - 1.4, bx - 0.4, by - 1.8, bx + 0.4, by - 1.6, 0.6, GLOSS)
@@ -809,7 +815,8 @@ export function drawHeroBack(c: CanvasRenderingContext2D, id: AccessoryId, tx: n
   switch (id) {
     case 'kanat': {
       // melek kanadı: omuz kürek kemiğinden çıkar, yukarı ve geriye süzülür; koşarken çırpar, dururken hafif nefes alır
-      const flap = Math.sin(t * (flow > 0.5 ? 15 : 2.2)) * (flow > 0.5 ? 0.2 : 0.06) - lift * 0.18
+      // koşarken çırpar, adımın salınımını (sw) biraz geriden izler; dururken hafif nefes alır
+      const flap = Math.sin(t * (flow > 0.5 ? 15 : 2.2)) * (flow > 0.5 ? 0.14 : 0.06) - lift * 0.18 + sw * 0.07
       for (const near of [false, true]) {
         c.save()
         c.translate(tx - 8.4, ty - 19)

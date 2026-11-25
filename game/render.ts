@@ -269,6 +269,7 @@ export class Renderer {
       }
     this.layers = buildLayers(this.city)
     this.atmo = new Atmosphere(this.city, CITY[this.city])
+    this.levelAt = this.t
     this.npcCache.clear()
     this.clouds = w0Indoor(world) ? null : new Clouds(this.city, CITY[this.city], this.atmo.mood)
     // boya hacmi: kenar ışığı, tepede ılık, dipte gölge, fırça dokusu (katman başına bir kez)
@@ -831,21 +832,21 @@ export class Renderer {
     unblend()
     setPainted(true)
     // kademe sayfa başına bir kez, ilk yarım saniyeden sonra (arka tampon dolu) ölçülür
-    if (Renderer.probed === null) {
-      if (this.t > 0.5) this.probeTier()
-    } else this.tier = Renderer.probed
+    if (Renderer.probed === null) this.probeTier()
+    else this.tier = Renderer.probed
     this.judgeTier()
   }
 
   /**
    * Kalite kademesi (25 Kasım 2026): boyalı görünümün pahalı iki parçası (arka planı yumuşak büyütmek, tam
    * çözünürlükte ışık örtüsü ve ılık yumuşak ışık) yalnız boyamayı rahat yapan cihazda açılır: 1 temel (her cihaz),
-   * 2 zengin. Karar bir kez ölçümle verilir (`probeTier`): JavaScript süresi boyamayı görmez (tarayıcı onu ayrı
-   * süreçte yapar), bu yüzden tam ekran yumuşak çizim yapılıp tek piksel okunarak boyama bitirilir. Zengin kademede
+   * 2 zengin. Karar bir kez verilir (`probeTier`: yazılımla boyayan tarayıcı temel, GPU'lu cihaz zengin). Zengin kademede
    * kare aralığı 2 sn boyunca ortalama 25 ms'yi aşarsa kademe iner ve o sayfada bir daha çıkmaz.
    */
   private tier: 1 | 2 = 1
   private tierSum = 0
+  /** şehrin yüklendiği an (kademe yargısı ilk saniyeleri saymaz) */
+  private levelAt = 0
   private tierN = 0
 
   private probeTier() {
@@ -855,25 +856,21 @@ export class Renderer {
       Renderer.forced = true
       return
     }
-    // ayrı, geçici bir tuvalde: ekrandaki kare bozulmaz
-    const W = this.canvas.width
-    const H = this.canvas.height
-    const cv = document.createElement('canvas')
-    cv.width = W
-    cv.height = H
-    const c = cv.getContext('2d')!
-    c.imageSmoothingEnabled = true
-    c.imageSmoothingQuality = 'medium'
-    c.getImageData(0, 0, 1, 1)
-    const t0 = performance.now()
-    for (let i = 0; i < 4; i++) {
-      c.globalCompositeOperation = i % 2 ? 'soft-light' : 'source-over'
-      c.drawImage(this.buf, 0, 0, this.viewW, this.viewH, 0, 0, W, H)
+    // GPU'su olan her cihaz zengin kademeyle başlar; yalnız yazılımla boyayan tarayıcı (SwiftShader, llvmpipe) temel
+    // kademede kalır. Eskiden tam ekran çizim + piksel okumasıyla ölçülüyordu: piksel okuma GPU'lu cihazda da birkaç ms
+    // tutuyor, güçlü Mac'ler bile temel kademeye düşüp arka planı keskin piksel ve titreşimli görüyordu (25 Kasım 2026).
+    // Gerçekten zorlanan cihaz `judgeTier` ile iner
+    let soft = true
+    try {
+      const gl = document.createElement('canvas').getContext('webgl')
+      const info = gl?.getExtension('WEBGL_debug_renderer_info')
+      const name = gl ? String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER)) : ''
+      soft = !gl || /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name)
+      gl?.getExtension('WEBGL_lose_context')?.loseContext()
+    } catch {
+      soft = true
     }
-    c.getImageData(0, 0, 1, 1)
-    const ms = (performance.now() - t0) / 4
-    cv.width = cv.height = 0
-    Renderer.probed = ms < 2.5 ? 2 : 1
+    Renderer.probed = soft ? 1 : 2
     this.tier = Renderer.probed
   }
 
@@ -883,7 +880,8 @@ export class Renderer {
   private static forced = false
 
   private judgeTier() {
-    if (this.tier < 2 || Renderer.forced) return
+    // şehir yüklendikten sonraki ilk 3 sn sayılmaz (zemin önbelleği ısınırken kareler doğal olarak ağır)
+    if (this.tier < 2 || Renderer.forced || this.t - this.levelAt < 3) return
     this.tierSum += this.frameDt
     this.tierN++
     if (this.tierSum < 2) return
@@ -1124,7 +1122,7 @@ export class Renderer {
       const look = w.level.npcs[i]?.look ?? 'amca'
       // oyuncuya döner; hafifçe nefes alır
       const br = 2 + 4 * (0.5 + 0.5 * Math.sin(this.t * 2.2 + i * 1.7))
-      const pose: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], br], [POSES.idle.legs[1][0], br]], blink: (this.t + i * 1.3) % 3.8 < 0.12 }
+      const pose: Pose = { ...POSES.idle, legs: [[POSES.idle.legs[0][0], POSES.idle.legs[0][1] + br - 2], [POSES.idle.legs[1][0], POSES.idle.legs[1][1] + br - 2]], blink: (this.t + i * 1.3) % 3.8 < 0.12 }
       this.heroes.push({ look, pose, x: n.x + T / 2, y: n.y + T, flip: w.player.x < n.x, alpha: 1, ghost: false, moving: false, sx: 1, sy: 1, size: NPC_SIZE, cache: i })
       // "konuşacak" işareti; konuşma açıkken baloncuk kendisi görünür, işaret çekilir
       const near = w.nearNpc === i
@@ -4937,7 +4935,7 @@ export class Renderer {
   private npcCache = new Map<number, { cv: HTMLCanvasElement; at: number; flip: boolean; px: number }>()
 
   /**
-   * Duran şehir insanı saniyede 12 kez kendi küçük tuvaline çizilir, arada hazır görüntü basılır. Boyalı karakter
+   * Duran şehir insanı saniyede 30 (temel kademede 12) kez kendi küçük tuvaline çizilir, arada hazır görüntü basılır. Boyalı karakter
    * çizimi şekil başına birkaç kırpılmış dolgu yapar; ekranda dört beş insan varken her karede yeniden çizmek
    * yazılımla boyayan cihazda kareyi kaçırtıyordu (verify-perf, Erzurum). Nefes ve göz kırpma bu hızda da akıcı okunur.
    */
@@ -4955,7 +4953,8 @@ export class Renderer {
       e = { cv, at: -1, flip: h.flip, px }
       this.npcCache.set(h.cache!, e)
     }
-    if (this.t - e.at > 1 / 12 || e.at > this.t || e.flip !== h.flip) {
+    // zengin kademede saniyede 30 (nefes ve göz kırpma akıcı), temelde 12 kez tazelenir
+    if (this.t - e.at > (this.tier === 2 ? 1 / 30 : 1 / 12) || e.at > this.t || e.flip !== h.flip) {
       const g = e.cv.getContext('2d')!
       g.clearRect(0, 0, W, H)
       drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: false, sx: HERO_WIDE, sy: 1 })

@@ -107,6 +107,12 @@ export function driftAt(kind: Kind, t: number, m: { phase: number; speed: number
   }
 }
 
+/**
+ * Ön plan otlarının kayma oranı: dünyayla (1) neredeyse aynı. 1,35 iken göz ucunda dünyadan hızlı kayıp koşarken baş
+ * döndürüyordu (25 Kasım 2026, kullanıcı: "motion sickness gibi")
+ */
+const FORE_PAR = 1.04
+
 const LEAF_COLORS = ['#e8742a', '#d8452a', '#f0a830', '#b8582a', '#e8c040']
 const PETAL_COLORS = ['#ffe0ea', '#ffc8d8', '#fff4f4', '#ffd2a8']
 
@@ -205,7 +211,7 @@ export class Atmosphere {
     const key = `${W}x${H}`
     const hit = this.fores.get(key)
     if (hit) return hit
-    const h = Math.round(H * 0.16)
+    const h = Math.round(H * 0.12)
     const w = Math.round(W * 1.5)
     const cv = document.createElement('canvas')
     cv.width = w
@@ -384,7 +390,7 @@ export class Atmosphere {
    */
   foreLow(f: Ctx, vw: number, vh: number, camX: number) {
     const fg = this.foreground(vw, vh)
-    let fx = -((camX * 1.35) % fg.width)
+    let fx = -((camX * FORE_PAR) % fg.width)
     if (fx > 0) fx -= fg.width
     f.imageSmoothingEnabled = true
     for (; fx < vw; fx += fg.width) f.drawImage(fg, fx, vh - fg.height)
@@ -398,7 +404,8 @@ export class Atmosphere {
   front(c: Ctx, W: number, H: number, t: number, camX: number, camY: number, scale: number, dpr: number, night: number, rich: boolean) {
     // süzülenler: üç derinlik; ekranın etrafında sarılır, kamerayla derinliğine göre kayar
     const css = dpr
-    const par = [0.25, 0.55, 1.3]
+    // kameradan hızlı kayan şey göz ucunda baş döndürür: en yakın katman bile dünyadan hızlı değil
+    const par = [0.2, 0.45, 0.85]
     const sizes = [3, 5, 11]
     const blurs = [0, 1, 4]
     const alphas = [0.55, 0.8, 0.55]
@@ -436,7 +443,7 @@ export class Atmosphere {
     // ön plan siluetleri: kameradan hızlı kayar (alan derinliği)
     if (!rich) return
     const fg = this.foreground(W, H)
-    let fx = -((camX * scale * 1.35) % fg.width)
+    let fx = -((camX * scale * FORE_PAR) % fg.width)
     if (fx > 0) fx -= fg.width
     const fy = H - fg.height
     for (; fx < W; fx += fg.width) c.drawImage(fg, Math.round(fx), fy)

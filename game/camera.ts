@@ -23,9 +23,9 @@ export const CAM = {
   /** bakış payı ekranın en çok bu oranı: dar (telefon) ekranda dönüşte kadraj savrulmasın */
   leadMax: 0.07,
   /** bakış payı dönüşte yavaşça kayar (sn başına kalan oran): joystick titrese de kamera savrulmaz */
-  leadKeep: 0.06,
+  leadKeep: 0.12,
   /** aşağı bakış da yumuşakça açılır ve kapanır */
-  lookKeep: 0.08,
+  lookKeep: 0.2,
   /** ölü bölge: karakter kadrajın ortasındaki bu genişlikte (ekran oranı) kaldıkça kamera kımıldamaz */
   window: 0.035,
   /**
@@ -41,8 +41,9 @@ export const CAM = {
   /** sarsıntının saniyede kalan oranı (üstel sönme; 6'lık sarsıntı ~0,3 sn'de belli belirsizleşir) */
   shakeKeep: 0.00004,
   kickTime: 0.22,
-  /** önünde engel (çukur, diken, su) varken bakış payı bu oranla büyür: atlanacak yer kadrajda */
-  hazardLead: 0.6,
+  /** önünde engel (çukur, diken, su) varken bakış payı bu oranla büyür: atlanacak yer kadrajda (25 Kasım 2026: yarıya indi,
+   *  engebeli yolda kadraj ileri geri salınıyordu; bakış ve aşağı bakış daha yavaş açılıp kapanır) */
+  hazardLead: 0.3,
   /** engel aranan uzaklık (karo, baktığı yönde) */
   hazardScan: 7,
   /** tırmanırken (halat, duvar, yükseliş) kadraj ekranın bu oranı kadar yukarı açılır */
