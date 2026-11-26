@@ -63,6 +63,8 @@ interface Ambient {
 }
 
 const GROUND_Y = 20 * T
+/** Arka plan katmanında ekranın tepesine denk gelen en alçak satır (uzak plan imgeleri bunun altına çizilir). */
+const LAYER_TOP = 125
 
 /** bayraktaki beş köşeli yıldız (5x5) */
 const STAR = ['..#..', '..#..', '#####', '.###.', '.#.#.']
@@ -693,6 +695,11 @@ export class Renderer {
     // katmanların tabanı bölümün zemin çizgisine (satır 20) oturur, dikeyde parallax
     const camRef = camYRange(lh, this.viewW, this.viewH)[1]
     const layerY = (f: number) => Math.round(GROUND_Y - camRef - (cy - camRef) * f) - LAYER_H + 22
+    // uzak ve orta katman kadraja göre aşağı iner: kamera yakınlaşınca (25 Kasım 2026) 16:9 ekranda katmanın yalnız alt
+    // ~120 pikseli görünüyor, Ilgaz'ın karlı tepesi ve Nemrut'un tümülüsü ekranın üstünde kalıyordu. Ekranın tepesine
+    // katmanın LAYER_TOP satırı denk gelsin; uzun ekranda (4:3, dikey) kayma sıfıra iner. En çok 30 piksel; orta katman
+    // bunun 0,6'sı kadar iner: tabanındaki göl ve dere (Bingöl'ün yüzen adaları) yakın katmanın arkasına gömülmesin
+    const drop = Math.max(0, Math.min(30, LAYER_H - 22 - (GROUND_Y - camRef) - LAYER_TOP))
     if (s.sun) {
       const sunX = this.viewW * s.sun.x
       const sunY = layerY(0.05) + LAYER_H * 0.2 + s.sun.y * 60
@@ -711,8 +718,8 @@ export class Renderer {
       const fx = hdX - cx
       const fyOff = hdY - cy
       b.imageSmoothingEnabled = true
-      const drawLayer = (cv: HTMLCanvasElement, f: number, fy: number) => {
-        const y = GROUND_Y - camRef - (hdY - camRef) * fy - LAYER_H + 22 + fyOff
+      const drawLayer = (cv: HTMLCanvasElement, f: number, fy: number, dy: number) => {
+        const y = GROUND_Y - camRef - (hdY - camRef) * fy - LAYER_H + 22 + fyOff + dy
         let x = -((hdX * f) % LAYER_W) + fx
         if (x > 0) x -= LAYER_W
         for (; x < this.viewW; x += LAYER_W) b.drawImage(cv, x, y)
@@ -721,15 +728,15 @@ export class Renderer {
           b.fillRect(0, y + LAYER_H, this.viewW, this.viewH - y - LAYER_H)
         }
       }
-      drawLayer(this.layers.far, 0.12, 0.08)
+      drawLayer(this.layers.far, 0.12, 0.08, drop)
       // hava perspektifi: uzak katman gökyüzünün rengine yaslanır
       b.fillStyle = hexA(s.sky[2], 0.07)
       b.fillRect(0, 0, this.viewW, this.viewH)
-      if (this.city === 'istanbul') this.drawBosphorus(b, layerY(0.13) + LAYER_H - 70, cx)
-      drawLayer(this.layers.mid, 0.25, 0.18)
+      if (this.city === 'istanbul') this.drawBosphorus(b, layerY(0.13) + drop + LAYER_H - 70, cx)
+      drawLayer(this.layers.mid, 0.25, 0.18, Math.round(drop * 0.6))
       b.fillStyle = hexA(s.sky[2], 0.04)
       b.fillRect(0, 0, this.viewW, this.viewH)
-      drawLayer(this.layers.near, 0.45, 0.32)
+      drawLayer(this.layers.near, 0.45, 0.32, 0)
       b.imageSmoothingEnabled = false
     }
 

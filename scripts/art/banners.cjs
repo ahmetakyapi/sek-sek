@@ -2,7 +2,7 @@
  * Şehir görselleri: oyunun kendi tuvalinden alınır (arayüz katmanı girmez).
  *   public/sehirler/<id>.webp  800x420  (şehir kartları, bölüm başlığı)
  *   assets/cities/<id>.png     720x590  (skor kartpostalı)
- * Önce `npm run dev -- -p 3100`, sonra: node scripts/art/banners.cjs [şehir ...]
+ * Önce `npm run dev -- -p 3100`, sonra: node scripts/art/banners.cjs [şehir ...] [--port=3100]
  */
 const { chromium } = require('playwright')
 const fs = require('fs')
@@ -10,7 +10,9 @@ const path = require('path')
 const { execFileSync } = require('child_process')
 
 const root = path.join(__dirname, '..', '..')
-const ids = process.argv.slice(2)
+const args = process.argv.slice(2)
+const ids = args.filter((a) => !a.startsWith('--'))
+const port = (args.find((a) => a.startsWith('--port=')) || '--port=3100').split('=')[1]
 const save = { character: 'uktun', skippedName: true, seenStory: true, mapVersion: 99, migrated: true, accountVersion: 2, sfx: false, music: false, keyHints: false, unlocked: 99, touch: 'off' }
 
 ;(async () => {
@@ -20,7 +22,7 @@ const save = { character: 'uktun', skippedName: true, seenStory: true, mapVersio
     for (const [w, h, out] of [[800, 420, `public/sehirler/${id}.png`], [720, 590, `assets/cities/${id}.png`]]) {
       const pg = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
       await pg.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
-      await pg.goto(`http://localhost:3100/?debug&zengin&sehir=${id}`)
+      await pg.goto(`http://localhost:${port}/?debug&zengin&sehir=${id}`)
       await pg.waitForTimeout(2500)
       await pg.getByRole('button', { name: /Devam|Başla|Yolculu/ }).first().click()
       await pg.waitForTimeout(600)

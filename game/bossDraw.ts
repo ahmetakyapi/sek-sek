@@ -2095,7 +2095,7 @@ const PAINT: Record<CityKey, Painter> = {
   },
   // Kızkalesi Yılanı (Kızkalesi efsanesi): hasır meyve sepetinden S çizerek yükselen yeşil yılan, sarı karın,
   // sepette üzüm salkımı ve portakal. Saldırırken boynunu öne atar, yorulunca sepetin kenarına sarkar
-  // Yılan Saçlı Kabartma: Apollon Tapınağı'ndaki taş kabartma canlanmış. Yuvarlak mermer madalyon, saç yerine kıvrılan yılanlar:
+  // Didim Medusası: Apollon Tapınağı'ndaki taş kabartma canlanmış. Yuvarlak mermer madalyon, saç yerine kıvrılan yılanlar:
   // işarette yılanlar titrer, saldırıda dikilir, yorulunca sarkar; gözler öfkelenince kızarır, yorulunca taş kesilir
   aydin: (c, _b, mood, t) => {
     const fury = mad(mood)

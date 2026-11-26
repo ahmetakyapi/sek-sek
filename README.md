@@ -2,9 +2,9 @@
 
 # Sek-Sek · Şehir Şehir Anadolu
 
-**Gezgin’in yarım kalmış defterini tamamla. Otuz sekiz şehir, yüz on dört hatıra, iki defter, tek yolculuk.**
+**Gezgin’in yarım kalmış defterini tamamla. Kırk sekiz şehir, yüz kırk dört hatıra, iki defter, tek yolculuk.**
 
-İstanbul’dan Bayburt’a, her şehri kendi sesi, tadı ve insanıyla aşan bir platform oyunu.<br>
+İstanbul’dan Kastamonu’ya, her şehri kendi sesi, tadı ve insanıyla aşan, el boyaması görünümlü sakin bir platform oyunu.<br>
 Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 [**▶ Hemen Oyna · sek-sek.vercel.app**](https://sek-sek.vercel.app)
@@ -19,31 +19,34 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 
 <img src="docs/img/hammers.gif" alt="Gaziantep Bakırcılar Çarşısı'nda inip kalkan bakırcı tokmakları" width="420" align="right">
 
-- **38 Şehir, İki Defter.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
-  Gaziantep’te ritimle inen bakırcı tokmakları, Ardahan’da buz delikleri, Bayburt’ta karşı rüzgâr. İkinci defterde
-  Rize’de derede yüzme, Artvin’de köy teleferikleri, Kars’ta kale halatları, Ağrı Dağı’nın zirvesi; dönüş yolunda Giresun’un kayıkları, Tokat’ın yazma kalıpları ve Pamukkale’nin kaygan travertenleri.
-- **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir
-  **gizli pul** deftere gizli bir sayfa ekler.
-- **Konuşan Şehir.** Simitçiden vapur kaptanına, mırracıdan kangal sahibine 30’u aşkın şehir insanı.
+- **48 Şehir, İki Defter.** Trabzon’da ritimle zıplayan horon halkası, Konya’da dönen sema halkaları, Kapadokya’da binince yükselen balonlar,
+  Gaziantep’te ritimle inen bakırcı tokmakları, Bayburt’ta karşı rüzgâr. İkinci defterde Rize’de derede yüzme, Artvin’de köy
+  teleferikleri, Mersin’de gelgit, Balıkesir’de yükselen sıcak hava, Elazığ’da saat gibi donup eriyen su, Afyon’un havuz teyzeleri,
+  Bingöl’ün batan yüzen adaları, Adıyaman’da Nemrut’un taş başları ve Kastamonu’da içine gireni aşağı çeken şelaleler.
+- **El Boyaması Görünüm.** Boyalı arka planlar, altın saat ışığı, havada süzülen yapraklar; karakterler, boss’lar ve zemin
+  ekran çözünürlüğünde vektör çizilir. Müzik davulsuz ve sakin (keçeli piyano, ney, kanun, müzik kutusu), altında şehrin doğa sesi.
+- **Gerçek Bilgiler.** Her hatıra o şehre dair doğrulanmış bir bilgi kartı açar; her şehirde saklı bir **gizli pul** ve
+  meydan yolunda bir **nazar boncuğu** var.
+- **Konuşan Şehir.** Simitçiden vapur kaptanına 200’ü aşkın şehir insanı; Hikâye Gezisi’nde onlarla sohbet edip defter sayfası kazanırsın.
   Dost hayvanları sevebilirsin; kırmızı hatla parlayan canlılar tehlikelidir.
-- **Bulmacalar.** Anahtar ve kapı, basınç plakasıyla yer değiştiren bloklar, sahte duvarlar, dash halkalarıyla havada ikinci dash.
-- **Artbook Havası.** Işıkla boyanmış portreler, kilim çerçeveler, defter kâğıdı kartlar, paylaşılabilir kartpostallar.
-- **Skor Tablosu.** Beş sekme: genel sıralama, şehir şehir (süre, en az düşüş, en çok hatıra), Günlük Meydan Okuma,
-  koleksiyoncular (hatıra, gizli pul, nazar boncuğu) ve Speedrun (%100, Tam Tur, Ayna Tam Tur). Kendi satırın ilk sıralarda olmasa da görünür.
-- **Modlar.** Günlük Meydan Okuma (herkese aynı şehir ve kural, günlük sıralama, gün serisi), iki kişilik Düello
-  (yan yana bölünmüş ekranda ya da sırayla, rakibin hayaletiyle), Boss Rush, Maraton (rastgele üç şehir arka arkaya)
-  ve Co-op (iki kişi aynı ekranda, aynı şehirde).
-- **Sinir Bozucu.** On sekiz zor mod (Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Karanlık Yol, Baş Aşağı, Ay Yerçekimi,
-  Fırtına, Görünmez Dikenler, Kaos…), her biri bitirdiğin her şehirde ayrı rekor; ayrıca elle çizilmiş dokuz Öfke Parkuru
-  (dikenli bacalar, ritim köprüleri, tokmak koridorları). Hikâyeye ve ilerlemeye dokunmaz.
-- **Zamanlama.** Saatle belirip kaybolan ritim blokları, inerken zıplayınca yüksek seken "tam zamanında" yaylar, nitro tüpleri.
-- **Bölüm Düzenleyici.** 600 sütuna dek harita, fırça, dikdörtgen, kova, seçim ve kopyala-yapıştır, hazır parçalar
-  (boss arenası, ritim köprüsü, tokmak koridoru…), şablonlar; kendi tabela ve şehir insanı sözlerin, 38 boss'tan istediğin.
-  Çözücüyle sına, bağlantıyla paylaş, topluluğa yayınla.
-- **Şehir Ustaları.** Her şehrin esnafı küçük bir görev verir (düşmeden bitir, altın madalya, gizli köşeler…); usta mührü
-  Mağaza’nda para sayılır.
-- **Güncelleme hiçbir şeyi silmez.** Bir şehrin haritası yenilense de rekorun, hatıraların ve sıralaman durur; hangi
-  şehirlerin yenilendiği açılışta listelenir, listede "Yenilendi" rozetiyle görünür.
+- **Boss’lar.** Her şehrin sonunda o şehrin bir ayrıntısından doğan bir boss: Galata Martısı, Diyojen’in Fıçısı, Nemrut’un Taş Kartalı,
+  Taşköprü Sarımsağı… Kural hep aynı: işareti gör, saldırıdan kaç, yorulunca üstüne bas.
+- **Mücadeleler.** Zor şehirlerin en sıkı kesitleri, elle çizilmiş Usta Parkurları ve onların üstünde yeni Efsane Parkurları;
+  altın, gümüş, bronz madalya ve parkur başına sıralama. Haftalık Turnuva ve Günün Üçlüsü.
+- **Modlar.** Günlük Meydan Okuma, Düello (yan yana bölünmüş ekran), Co-op (iki kişi aynı ekranda; kurtarma, eşi fırlatma),
+  Boss Rush, Maraton, Kovalamaca, Ayna Yolu, Speedrun, Sakin Gezi, Gezgin Turu ve Hikâye Gezisi.
+- **Sinir Bozucu.** Yirmi üç zor mod (Cehennem Yolu, Kaygan Dünya, Ters Tuşlar, Çöken Dünya, Ağır Yerçekimi, Af Yok…) ve elle
+  çizilmiş Öfke Parkurları. Hikâyeye ve ilerlemeye dokunmaz.
+- **Mağaza.** İki yolcuyu ayrı giydir: saç, ten, göz, kıyafet rengi ve deseni, ifade, bekleme duruşu, koşu tarzı, baş, yüz ve
+  sırt aksesuarları, atkı rengi. Karakteri 360° döndürüp önden ve arkadan bak.
+- **Skor Tablosu.** Genel, şehirler, günlük, modlar, Speedrun, koleksiyon ve arkadaşlar; yolcuya tıklayınca profil ayrıntısı,
+  rakibin hayaletiyle yarış.
+- **Bölüm Düzenleyici.** 600 sütuna dek harita, oyunun kendi görünüşünde çizim, hazır parçalar, şablonlar, boss tasarımcısı;
+  çözücüyle sına, bağlantıyla paylaş, topluluğa yayınla.
+- **Erişilebilirlik.** Renk körü paleti, büyük yazı, kamera yakınlığı, ekran sarsıntısı varsayılan kapalı, Rahat Mod, tuş atama,
+  dokunmatik ve oyun kolu.
+- **Güncelleme hiçbir şeyi silmez.** Bir şehrin haritası yenilense de rekorun, hatıraların ve sıralaman durur; giriş yapınca ilerlemen
+  buluta yedeklenir.
 
 <br clear="right">
 
@@ -156,21 +159,24 @@ npm run dev
 | `npm run typecheck` | TypeScript |
 | `npm test` | Fizik, mekanik ve bölüm verisi testleri (vitest) |
 | `npm run verify:levels` | Her bölümü gerçek fizik motoruyla oynayan çözücü: çıkış, her hatıra, bayrak, anahtar ve gizli pul ulaşılabilir mi |
+| `bash scripts/verify-all.sh <şehir>` | Bir şehrin bütün doğrulama zinciri: meydan yolu, yeniden doğuş, boss botu, zayıf oyuncu, düşmanlar |
+| `npx tsx scripts/city-check.ts <şehir>` | Şehir oyunun her köşesine kayıtlı mı (metin, çizim, madalya, görsel) |
 | `npm run build` | Üretim derlemesi |
 
-Claude ya da başka bir ajanla çalışıyorsan önce **[CLAUDE.md](CLAUDE.md)**: kurallar, proje haritası, yeni şehir
-ekleme adımları ve öğrenilmiş tasarım tuzakları orada. Bölüm tasarımı için `.claude/agents/level-designer.md`.
+Claude ya da başka bir ajanla çalışıyorsan önce **[CLAUDE.md](CLAUDE.md)**: altın kurallar, kısa proje haritası ve hangi iş için
+hangi yetenek. Konu kuralları `.claude/rules/`, iş yolları `.claude/skills/` altında (yeni şehir, yeni mekanik, yeni mod, yeni parkur…).
+Yeni şehrin iskeleti tek komutla kurulur: `npx tsx scripts/new-city.ts <id> --zorluk Orta`.
 
 ```text
 game/          DOM'suz oyun çekirdeği: fizik (sim), bölümler, çizim, ses, karakterler, portreler, İngilizce metinler
 components/    React arayüzü: bütün ekranlar, artbook, şehir rehberi, diyalog, HUD, dokunmatik kontroller
 lib/           kayıt ve harita sürümü, TR/EN, paylaşım, veritabanı
 app/           / oyun · /hakkinda · /skor paylaşım sayfası · /skor/kart kartpostal · /api skor ve oyuncu
-scripts/       verify-levels çözücü, migrate, art/ (portre, çizim föyleri, şehir kartları, harita üreteçleri)
-tests/         fizik ve mekanik testleri
+scripts/       çözücü ve doğrulama botları, new-city iskelet, migrate, art/ (portre, çizim föyleri, şehir kartları, harita üreteçleri)
+tests/         vitest: fizik, mekanik, boss, kamera, kayıt, skor API'si, hikâye, mücadeleler
 ```
 
-Her şey kodla üretilir: harici sprite ya da ses dosyası yoktur. Müzik her şehrin makamında, oynarken WebAudio ile çalınır.
+Her şey kodla üretilir: harici sprite ya da ses dosyası yoktur. Müzik ve doğa sesi oynarken WebAudio ile üretilir.
 
 **Teknoloji:** Next.js 16 · React 19.2 · TypeScript · Tailwind CSS v4 · kendi canvas motoru (120 Hz sabit adım) ·
 Neon + Drizzle · Vercel.

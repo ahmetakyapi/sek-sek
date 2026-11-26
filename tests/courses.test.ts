@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_CHALLENGES, LEGEND_UNLOCK, MASTER_COURSES, courseOpen, goldOf } from '../game/challenges'
+import { ALL_CHALLENGES, LEGEND_UNLOCK, MASTER_COURSES, challengeLevel, courseOpen, goldOf } from '../game/challenges'
 import { LEVELS } from '../game/levels'
+import { minTimeMs } from '../lib/antiCheat'
 
 describe('Usta ve Efsane Parkurları', () => {
   it('kimlikler tekil, haritalar düzgün', () => {
@@ -21,6 +22,10 @@ describe('Usta ve Efsane Parkurları', () => {
       expect(c.par).toBeGreaterThan(5)
       expect(goldOf(c)).toBe(c.gold ?? Math.ceil(c.par * 0.85))
     }
+  })
+
+  it('altın süre hile önleme alt sınırının en az 1,3 katı (dürüst altın koşusu reddedilmez)', () => {
+    for (const c of ALL_CHALLENGES) expect(goldOf(c) * 1000, c.id).toBeGreaterThanOrEqual(minTimeMs(challengeLevel(c)) * 1.3)
   })
 
   it('Efsane Parkuru şehir + üç Usta Parkuruyla açılır', () => {

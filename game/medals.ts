@@ -38,7 +38,7 @@ export const BOSS_TIME: Record<string, number> = {
   afyon: 83,
   bingol: 89,
   adiyaman: 21,
-  kastamonu: 120,
+  kastamonu: 50,
 }
 
 const up5 = (s: number) => Math.ceil(s / 5) * 5

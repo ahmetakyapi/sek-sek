@@ -15,6 +15,7 @@ export const NATURE_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 26.0,
+    gold: 20,
     map: [
       '                                                                                                                                                      ',
       '                                                                                                                                                      ',
@@ -52,6 +53,7 @@ export const NATURE_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 26.1,
+    gold: 21,
     map: [
       '                                                                                                             ###                                                ',
       '                                                                                                             ###                                                ',
@@ -88,6 +90,7 @@ export const NATURE_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 20.7,
+    gold: 19,
     map: [
       '                                                                                                                                                      ',
       '                                                                                                                                                      ',
@@ -125,6 +128,7 @@ export const NATURE_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 21.4,
+    gold: 21,
     map: [
       '                                                                                                                                                      ',
       '                                                                                                                                                      ',

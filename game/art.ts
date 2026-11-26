@@ -4241,36 +4241,42 @@ function adiyamanLayers(s: CityStyle, B: number): Layers {
       // Toros sırtları: gün doğumunun pembesine bürünmüş, arkada daha soluk
       hills(c, '#d6aab0', B - 140, 22, 2, 5101)
       hills(c, '#c0949e', B - 122, 14, 3, 5102)
-      // Nemrut Dağı: geniş omuzlu kütle, sol yamaç ışıkta, sağ yamaç gölgede
-      const cx = 360
-      const top = B - 146
-      for (let x = -190; x <= 190; x++) {
-        const ax = Math.abs(x)
-        const y = Math.round(top + 18 + ax * 0.3 + Math.sin(x * 0.11) * 2 + Math.sin(x * 0.37) * 1.2)
-        rect(c, cx + x, y, 1, B - y, x < -20 ? '#b08a92' : x < 30 ? '#a07e8a' : '#8c6c7c')
-        if (x < -10 && (x * 7) % 11 === 0) rect(c, cx + x, y + 2, 1, 6 + (ax % 7), '#c49ca0')
+      // Nemrut Dağı katman boyunca iki kez (doğu ve batı terası): uzak katman 0,12 hızla kaydığından tek tümülüs
+      // bölümün yarısında kadraj dışında kalıyordu; 320 piksel arayla kamera hemen her yerde birini görür
+      const wrap = (x: number) => ((x % LAYER_W) + LAYER_W) % LAYER_W
+      const nemrut = (cx: number, terrace: -1 | 1) => {
+        // geniş omuzlu kütle, sol yamaç ışıkta, sağ yamaç gölgede; katman kenarından taşan yamaç öbür uca sarar
+        const top = B - 146
+        for (let x = -150; x <= 150; x++) {
+          const ax = Math.abs(x)
+          const y = Math.round(top + 18 + ax * 0.3 + Math.sin(x * 0.11) * 2 + Math.sin(x * 0.37) * 1.2)
+          rect(c, wrap(cx + x), y, 1, B - y, x < -20 ? '#b08a92' : x < 30 ? '#a07e8a' : '#8c6c7c')
+          if (x < -10 && (x * 7) % 11 === 0) rect(c, wrap(cx + x), y + 2, 1, 6 + (ax % 7), '#c49ca0')
+        }
+        // tümülüs: tepede yığma çakıl konisi, ışıklı sol yüz, ince çakıl benekleri
+        for (let x = -42; x <= 42; x++) {
+          const y = Math.round(top + Math.abs(x) * 0.42 + (Math.abs(x) > 34 ? (Math.abs(x) - 34) * 0.5 : 0))
+          rect(c, cx + x, y, 1, top + 24 - y, x < -6 ? '#e4c8b0' : x < 10 ? '#d2b6a2' : '#b49a90')
+          if ((x * 13) % 5 === 0) rect(c, cx + x, y + 3 + ((x * 7) % 9 + 9) % 9, 1, 1, x < 0 ? '#f4dcc4' : '#9a8078')
+        }
+        rect(c, cx - 3, top, 6, 1, '#f6e2cc')
+        // teras: sırt sırta oturan taş heykeller (başsız gövdeler), önlerinde yere düşmüş başlar
+        const tx = terrace < 0 ? cx - 92 : cx + 26
+        const ty = top + 40
+        rect(c, tx - 6, ty, 74, 3, '#c8a49c')
+        rect(c, tx - 6, ty, 74, 1, '#e8cec0')
+        for (let i = 0; i < 5; i++) {
+          const bx = tx + i * 13
+          const bh = 10 + ((i * 5) % 4)
+          rect(c, bx, ty - bh, 8, bh, '#d4b4a6')
+          rect(c, bx, ty - bh, 3, bh, '#ecd2c0')
+          rect(c, bx + 7, ty - bh, 1, bh, '#9a7c80')
+          rect(c, bx - 1, ty - 3, 10, 3, '#b8968e')
+        }
+        for (let i = 0; i < 4; i++) head(c, tx + 3 + i * 16, ty + 9, 5, '#f0d6c4', '#d0b0a4', '#8e7078')
       }
-      // tümülüs: tepede yığma çakıl konisi, ışıklı sol yüz, ince çakıl benekleri
-      for (let x = -42; x <= 42; x++) {
-        const y = Math.round(top + Math.abs(x) * 0.42 + (Math.abs(x) > 34 ? (Math.abs(x) - 34) * 0.5 : 0))
-        rect(c, cx + x, y, 1, top + 24 - y, x < -6 ? '#e4c8b0' : x < 10 ? '#d2b6a2' : '#b49a90')
-        if ((x * 13) % 5 === 0) rect(c, cx + x, y + 3 + ((x * 7) % 9 + 9) % 9, 1, 1, x < 0 ? '#f4dcc4' : '#9a8078')
-      }
-      rect(c, cx - 3, top, 6, 1, '#f6e2cc')
-      // doğu terası: sırt sırta oturan taş heykeller (başsız gövdeler), önlerinde yere düşmüş başlar
-      const tx = cx - 92
-      const ty = top + 40
-      rect(c, tx - 6, ty, 74, 3, '#c8a49c')
-      rect(c, tx - 6, ty, 74, 1, '#e8cec0')
-      for (let i = 0; i < 5; i++) {
-        const bx = tx + i * 13
-        const bh = 10 + ((i * 5) % 4)
-        rect(c, bx, ty - bh, 8, bh, '#d4b4a6')
-        rect(c, bx, ty - bh, 3, bh, '#ecd2c0')
-        rect(c, bx + 7, ty - bh, 1, bh, '#9a7c80')
-        rect(c, bx - 1, ty - 3, 10, 3, '#b8968e')
-      }
-      for (let i = 0; i < 4; i++) head(c, tx + 3 + i * 16, ty + 9, 5, '#f0d6c4', '#d0b0a4', '#8e7078')
+      nemrut(70, 1)
+      nemrut(390, -1)
       // önde yumuşak vadi sırtları
       hills(c, s.far, B - 92, 8, 3, 5103)
       // Fırat: vadinin dibinden akan yeşil su; parlak üst kenar, ışıltılar
@@ -4445,12 +4451,13 @@ function kastamonuLayers(s: CityStyle, B: number): Layers {
   }
   return {
     far: layer((c) => {
-      // Ilgaz Dağları: arkada mavi-mor, önde gri-mavi; ikisinde de geniş kar örtüsü
-      hills(c, '#b4c0d6', B - 146, 34, 2, 3701)
-      snowCaps(c, '#f8f8fc', B - 146, 34, 2, 3701)
-      snowCaps(c, '#dfe6f2', B - 146 + 3, 34, 2, 3701)
-      hills(c, '#94a8c0', B - 122, 22, 3, 3702)
-      snowCaps(c, '#eef2f8', B - 122, 22, 3, 3702)
+      // Ilgaz Dağları: arkada mavi-mor, önde gri-mavi; ikisinde de geniş kar örtüsü. Karlı tepeler katmanın 140. satırının
+      // altında kalır: oyunun kadrajında ekranın üstündeki göstergelerin altında görünsünler
+      hills(c, '#b4c0d6', B - 126, 34, 2, 3701)
+      snowCaps(c, '#f8f8fc', B - 126, 34, 2, 3701)
+      snowCaps(c, '#dfe6f2', B - 126 + 3, 34, 2, 3701)
+      hills(c, '#94a8c0', B - 112, 22, 3, 3702)
+      snowCaps(c, '#eef2f8', B - 112, 22, 3, 3702)
       // ormanlı ön sırt: sık karaçam tepeleri
       hills(c, s.far, B - 100, 10, 4, 3703)
       const r = rng(3704)

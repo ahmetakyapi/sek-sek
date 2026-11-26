@@ -192,13 +192,21 @@ export interface SolveResult {
   path: Macro[]
   /** grabs istenirse: her toplanabilir şeyin (C0, C1…, $, !, K) alındığı anın durumu, şey başına en çok üç; oradan çıkışa varılıyor mu diye sınanır */
   grabs: Map<string, Snapshot[]>
+  /** çıkışa varılan en kısa oyun süresi (sn; order 'time' ile en hızlı makro yolu, yoksa ilk bulunan yolun süresi), varılmadıysa Infinity */
+  best: number
 }
 
 /** exitOnly: yalnızca çıkışa giden yol aranır (anahtar kapısı varsa anahtar da, çünkü yol ona bağlı) */
 /** start: aramayı bu durumdan başlat (bayraktan yeniden doğuş denetimi için) */
 /** trace: çıkışa giden yolu da döndür (verify-enemies yol gösterici olarak kullanır); kapalıyken hiçbir şey saklanmaz */
+/**
+ * order: 'time' süreye göre en iyi öncelikli arar (aynı duruma daha geç varan atılır, en iyi süreyi aşan dal açılmaz): en hızlı
+ * makro yolu; yalnız exitOnly ile. speed (px/sn): öncelik süre + çıkışa kuş uçuşu uzaklık / speed (A*); 0 ya da yoksa yalnız süre.
+ * revisit: order 'time' ile anahtar başına en çok kaç varış saklanır (varsayılan 1).
+ * speed en yüksek hızdan (dash 285) küçükse tahmin iyimser olmayabilir: daha hızlı biter, en iyi süreyi biraz kaçırabilir.
+ */
 /** goal: çıkış yerine bu koşulu sağlayan ilk yere varmak yeter (yere basılı durumda sınanır); arama (x, y) noktasına yakın durumlardan açılır */
-export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot; trace?: boolean; grabs?: boolean; goal?: { x: number; y: number; reached: (w: World) => boolean } } = {}): SolveResult {
+export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boolean; budget?: number; start?: Snapshot; trace?: boolean; grabs?: boolean; goal?: { x: number; y: number; reached: (w: World) => boolean }; order?: 'time'; speed?: number; revisit?: number } = {}): SolveResult {
   const w = new World(level)
   w.enemies.length = 0
   w.turrets.length = 0
@@ -219,11 +227,19 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   const links = new Map<Snapshot, { from: Snapshot; via: Macro }>()
   let goal: { from: Snapshot; via: Macro } | null = null
   const seen = new Set<string>([key(start, w)])
-  const queue: (Snapshot & { pr?: number })[] = [start]
+  // süre sırası: anahtar başına en erken varış; kuyruktan çıkan durum daha erken varışla geçildiyse atlanır
+  const byTime = opts.order === 'time'
+  // revisit: anahtar başına en çok bu kadar varış (birbirinden en az 0,4 sn arayla); anahtarda olmayan saate bağlı şeyler
+  // (rüzgâr esintisi, uzaktaki platformun evresi, çöken taş) yüzünden en erken varış çıkmaza düşebilir
+  const revisit = opts.revisit ?? 1
+  const earliest = new Map<string, number[]>([[key(start, w), [start.time]]])
+  let best = Infinity
+  const queue: (Snapshot & { pr?: number; k?: string })[] = [start]
   // hedefli tur: eksik kalan bir hedefe en yakın durumlar önce açılır
   let target: { x: number; y: number } | null = opts.goal ?? null
   const pool: Snapshot[] = []
-  const pri = (q: Snapshot) => (target ? -Math.hypot(q.player.x - target.x, q.player.y - target.y) : mx(q.player.x) - q.player.y * 0.3 + ((mx(q.player.x) * 7 + q.player.y * 13) % 40))
+  const toExit = (q: Snapshot) => (opts.speed ? Math.hypot(q.player.x - w.exit.x, q.player.y - w.exit.y) / opts.speed : 0)
+  const pri = (q: Snapshot) => (byTime ? -(q.time + toExit(q)) : target ? -Math.hypot(q.player.x - target.x, q.player.y - target.y) : mx(q.player.x) - q.player.y * 0.3 + ((mx(q.player.x) * 7 + q.player.y * 13) % 40))
   const push = (q: Snapshot & { pr?: number }, keep = true) => {
     if (keep) pool.push(q)
     q.pr = pri(q)
@@ -268,7 +284,11 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   const loop = (budget: number, done: () => boolean) => {
     let n = 0
     while (queue.length && n < budget && !done()) {
-      const s = pop()
+      const s = pop() as Snapshot & { k?: string }
+      if (byTime) {
+        if (s.time + toExit(s) >= best) break
+        if (revisit === 1 && s.k !== undefined && earliest.get(s.k)![0] < s.time) continue
+      }
       expanded++
       n++
       for (const m of ms) {
@@ -302,14 +322,24 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
             if (list.length < 3) grabs.set(g, [...list, snapshot(w)])
           }
         const hit = w.complete || (opts.goal !== undefined && w.deaths === deaths && w.player.grounded && opts.goal.reached(w))
-        if (hit && !goal) goal = { from: s, via: m }
-        if (hit) won = true
+        if (hit && (!goal || (byTime && w.time < best))) goal = { from: s, via: m }
+        if (hit) {
+          won = true
+          best = Math.min(best, w.time)
+        }
         // yerde, halatta/teleferikte asılı ya da suda olan durum yeni dal olur (havada kalan olmaz)
         if (w.deaths > deaths || w.complete || !(w.player.grounded || w.player.hang || w.player.swim || w.player.lift)) continue
         if (mx(w.player.x) > mx(far.x)) far = { x: w.player.x, y: w.player.y }
         const ns = snapshot(w)
         const k = key(ns, w)
-        if (!seen.has(k)) {
+        if (byTime) {
+          if (ns.time + toExit(ns) >= best) continue
+          const at = earliest.get(k) ?? []
+          if (revisit === 1 ? at.length && at[0] <= ns.time : at.length >= revisit || at.some((t) => Math.abs(t - ns.time) < 0.4)) continue
+          earliest.set(k, revisit === 1 ? [ns.time] : [...at, ns.time])
+          if (opts.trace) links.set(ns, { from: s, via: m })
+          push(Object.assign(ns, { k }), false)
+        } else if (!seen.has(k)) {
           seen.add(k)
           if (opts.trace) links.set(ns, { from: s, via: m })
           push(ns)
@@ -317,12 +347,12 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
       }
     }
   }
-  loop(opts.budget ?? 15000, allDone)
+  loop(opts.budget ?? 15000, byTime ? () => false : allDone)
   const goals = () =>
     opts.exitOnly
       ? !won ? [w.exit] : []
       : [...w.pickups.filter((p) => !picks.has(p.index)), ...w.checkpoints.filter((c) => !cps.has(c.index)), ...(!stamp && w.stampBox ? [w.stampBox] : []), ...(!charm && w.charmBox ? [w.charmBox] : []), ...(!gotKey && w.keyBox ? [w.keyBox] : []), ...(!won ? [w.exit] : [])]
-  for (const g of goals()) {
+  for (const g of byTime ? [] : goals()) {
     target = { x: g.x, y: g.y }
     queue.length = 0
     for (const q of [...pool]) push(q, false)
@@ -330,5 +360,5 @@ export function solve(level: LevelDef, opts: { moves?: MoveSet; exitOnly?: boole
   }
   const path: Macro[] = []
   if (opts.trace) for (let g = goal as { from: Snapshot; via: Macro } | null | undefined; g; g = links.get(g.from)) path.unshift(g.via)
-  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals, path, grabs }
+  return { world: w, won, stamp, charm, gotKey, picks, cps, expanded, ms: Date.now() - t0, far, arrivals, path, grabs, best }
 }

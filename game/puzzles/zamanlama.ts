@@ -16,6 +16,7 @@ export const TIMING_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 29.7,
+    gold: 25,
     map: [
       '                                                                                                      ##########################                                          ',
       '                                                                                                      ##########################                                          ',
@@ -53,6 +54,7 @@ export const TIMING_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 22.1,
+    gold: 21,
     map: [
       '                                                                                                                                         ',
       '                                                                                                                                         ',
@@ -90,6 +92,7 @@ export const TIMING_COURSES: Challenge[] = [
     from: 0,
     to: 0,
     par: 25.8,
+    gold: 19,
     map: [
       '                                                                       ######                                               ',
       '                                                                       ######                                               ',

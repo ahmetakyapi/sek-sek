@@ -33,7 +33,7 @@ Parkurlar `CHALLENGES`e girmez: turnuva, Günün Mücadelesi ve Gezgin Turu seç
 ## 3. Kanıt ve madalya
 
 1. `npx tsx scripts/verify-challenges.ts <id>` OK (büyük parkurda `BUDGET=40000`); yazdırdığı süre `par` olur (bir ondalık).
-2. Madalya elle yazılmaz: altın `goldOf` = `par` × 0,85 (Usta ve Efsane), gümüş ×1,5, bronz ×2,2. Usta koşusu ölçülürse `gold` alanına yaz (koşu × 1,08, yukarı).
+2. Madalya: `npx tsx scripts/fast-time.ts <id>` (en hızlı makro yolu; büyük parkurda `BUDGET=40000`, "bütçe" yazmamalı) → yazdırdığı `öneri` (hızlı süre × 1,15, yukarı) `gold` alanına. `par` altına dayanmaz (çözücünün ilk bulduğu yol, en hızlısı değil). Gümüş ×1,5, bronz ×2,2 altından türer. Yol düşman ya da okla ölüyorsa (`yol N kez ölür`) × 1,3 kullan; varamazsa `SPEED=120` dene. Ölçülmüş usta koşusu (× 1,08) daha sıkıysa o kalır. `tests/courses.test.ts` altının hile önleme alt sınırının 1,3 katından büyük olduğunu bekler.
 3. Hile önleme alt sınırı haritadan hesaplanır (`minScoreMs`); ayrı iş yok. `npx vitest run tests/courses.test.ts tests/antiCheat.test.ts`.
 4. Görsel: Modlar → Mücadeleler listesinde başlık, kart görseli (`CourseScene`), kilit metni; `ONLY=mucadeleler node scripts/audit-menus.cjs` (sunucu açıkken).
 

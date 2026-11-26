@@ -76,14 +76,19 @@ alt yazıda söyler ve ekran açılana dek "Yeni" yazar. Bir moda ilk girişte k
 `audit-menus` o anahtarı önceden doldurur (yalnız `modlar-nasil` ekranı boş açar).
 
 **Öfke Parkurları.** `game/rageCourses.ts` RAGE_COURSES: elle çizilmiş uzun, çok zor parkurlar (mücadele altyapısı: `Challenge.map`,
-madalya `par`dan, skor `mucadele:<id>`, ALL_CHALLENGES ile aranır; turnuvaya girmez). Modlar → Sinir Bozucu → Parkurlar.
+madalya `gold`dan (`fast-time`), skor `mucadele:<id>`, ALL_CHALLENGES ile aranır; turnuvaya girmez). Modlar → Sinir Bozucu → Parkurlar.
 `level` görünüşü veren şehirdir, parkur o şehir bitince açılır. Kanıt `npx tsx scripts/verify-challenges.ts`.
 
 **Mücadele haritaları.** `game/challenges.ts` CHALLENGES: şehir + bayrak aralığı (`from`, `to`) + `par` (çözücünün süresi).
 Harita şehirden kesildiği için şehir haritası değişince kesit de değişir: Zor şehre dokununca `npx tsx scripts/verify-challenges.ts`
-koş, süre çok oynadıysa `par`ı güncelle. **Madalya** (23 Kasım 2026, sıkılaştı): çözücü kaba adımlarla koşar, usta oyuncu `par`ın ~%70'inde biter;
-altın `gold` alanı (ölçülmüş usta koşusu × 1,08, yukarı yuvarlanır), yoksa `goldOf` (kesit ve Usta Parkuru `par` × 0,85, Öfke Parkuru `par`); gümüş altın × 1,5,
-bronz × 2,2 (`challengeMedals`). Yeni bir usta koşusu ölçülünce `gold`a yaz. **Efsane Parkurları** (26 Kasım 2026, yeni kademe): `game/puzzles/efsane.ts`, `tier: 'efsane'`, listenin sonunda kendi başlığıyla; görünüş şehri + `LEGEND_UNLOCK` (3) Usta Parkuru bitince açılır (`courseOpen`), altın `par` × 0,85. Yeni parkur yolu `/yeni-parkur`. **Usta Parkurları** `game/puzzles/` (zamanlama.ts, bulmaca.ts, doga.ts → `MASTER_COURSES`):
+koş, süre çok oynadıysa `par`ı güncelle. **Madalya** (26 Kasım 2026, elden geçti): `par` çözücünün *ilk bulduğu* yolun süresidir, en hızlısı değil (parkurdan parkura
+gerçek hızlı koşunun 1,2-2 katı); madalya ona dayanmaz. Altın = en hızlı makro süresi × 1,15, yukarı yuvarlanır:
+`npx tsx scripts/fast-time.ts <id>` (çözücünün makrolarıyla süreye göre A* arama, `solve` `order: 'time'`; büyük parkurda
+`BUDGET=40000`, bütçe dolarsa "bütçe" yazar; varamazsa `SPEED=120` dene: daha hızlı ama en iyi süreyi kaçırabilir; sandıklı ve
+raylı büyük parkurda o da yetmeyebilir, o zaman `gold` yazılmaz) → `gold` alanı. Yol düşman ya da okla ölüyorsa (`yol N kez ölür`)
+gerçek koşu beklemek zorundadır: × 1,3 kullan. Ölçülmüş bir insan koşusu (× 1,08) bundan sıkıysa o korunur, ama `par`ın
+0,6'sından küçük elle değer şüphelidir. Altın hile önleme alt sınırının (`minTimeMs`) en az 1,3 katı (`tests/courses.test.ts`).
+`gold` yoksa `goldOf` (kesit ve Usta Parkuru `par` × 0,85, Öfke Parkuru `par`); gümüş altın × 1,5, bronz × 2,2 (`challengeMedals`). **Efsane Parkurları** (26 Kasım 2026, yeni kademe): `game/puzzles/efsane.ts`, `tier: 'efsane'`, listenin sonunda kendi başlığıyla; görünüş şehri + `LEGEND_UNLOCK` (3) Usta Parkuru bitince açılır (`courseOpen`), altın `fast-time` × 1,15. Yeni parkur yolu `/yeni-parkur`. **Usta Parkurları** `game/puzzles/` (zamanlama.ts, bulmaca.ts, doga.ts → `MASTER_COURSES`):
 elle çizilmiş zamanlama/bulmaca bölümleri, Mücadeleler listesinde kesitlerin altında kendi başlığıyla; ALL_CHALLENGES'tadır ama CHALLENGES'ta değil
 (turnuva, Günün Mücadelesi ve Gezgin Turu haftalık seçimi kaymasın). Liste ekranı geniş ekranda iki sütun (sol ve sağ dengeli, sıralama kendi alanında kayar). Skoru `mucadele:<id>` anahtarıyla aynı tabloda (genel sıralamaya girmez), en iyisi `save.challenges`.
 

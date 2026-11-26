@@ -12,7 +12,7 @@ Kural her şehirde aynıdır ve değişmez: **işaret → saldırı → yorgunlu
 yorgunken yandan dokunmak zararsızdır; basış ya da dash can götürür. Hareketler saate ve oyuncunun durumuna (yeri, hızı)
 bağlıdır, rastgelelik yoktur: aynı girdi aynı dövüşü verir.
 
-- **Ad (kullanıcı kararı, 26 Kasım 2026):** boss adı yaygın Türkçe sözcüklerle kurulur ve kişi adı taşımaz ("Ferhat’ın Kazması" değil "Dağ Delen Kazma", "Kafkasör Boğası" değil "Yayla Boğası"). Şehir adı ya da herkesin bildiği yer adı olabilir ("Malatya Kayısısı"); halk masalı varlıkları (Tepegöz, Şahmaran, Ayaz Ata) kişi sayılmaz.
+- **Ad (kullanıcı kararı, 26 Kasım 2026):** boss adı yaygın Türkçe sözcüklerle kurulur. Efsane, masal, mit ve kurgu adları ve onların nitelikleri kalır (Nemrut’un Taş Kartalı, Didim Medusası, Diyojen’in Fıçısı, Karagöz’ün Gölgesi, Tepegöz, Şahmaran, Ayaz Ata); bir kişiye ait eşya adı kurulmaz ("Ferhat’ın Kazması" değil "Dağ Delen Kazma"). Az bilinen yerel sözcük yerine yaygın olanı seç ("Kafkasör Boğası" değil "Yayla Boğası", "Hadde Çekici" değil "Dev Çekiç"). Şehir ya da yer adı olabilir ("Malatya Kayısısı").
 - Yeni boss: `BOSSES` (ad TR/EN, can ≥ 3, `moves` sırası, hız, `tier`, kutu, nasıl yenileceğini söyleyen `taunt` TR/EN) +
   `bossDraw.ts` içinde `PAINT[şehir]`. Şehrin bir ayrıntısından doğar; şehrin dost hayvanıyla aynı tür olmaz.
 - Hareketler: `charge` (toslar, duvarda sersemler) · `dive` (gölgesi düşer, dalar) · `hop` (üç sıçrar, yorulur) ·
