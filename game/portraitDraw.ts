@@ -2064,11 +2064,12 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   c.translate(-PORTRAIT_W / 2, -PORTRAIT_H)
   background(c, look)
   if (opts.face) {
-    // yalnız yüz: kaştan çeneye kare kırpım (küçük gösterge pulu)
-    const f = PORTRAIT_W / 60
+    // yalnız baş: saçın tepesinden çeneye kare kırpım (küçük gösterge pulu). 26 Kasım 2026: kırpım genişledi, alın,
+    // saç ve baş aksesuarı (fiyonk, şapka) kesilmiyordu, yüz kutuyu dolduruyordu
+    const f = PORTRAIT_W / 78
     c.translate(PORTRAIT_W / 2, PORTRAIT_H / 2)
     c.scale(f, f)
-    c.translate(-53, -(s.hat && s.hat !== 'yazma' ? 53 : 56))
+    c.translate(-53, -(s.hat && s.hat !== 'yazma' ? 49 : 51))
     boost = Math.max(1, 0.62 / (k * f))
   } else {
     const [f, cx, top] = frame(s, acc)

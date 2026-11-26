@@ -36,7 +36,7 @@ game/            DOM'suz oyun çekirdeği (testlenebilir)
   content.en.ts  bütün bölüm metinlerinin İngilizcesi
   art.ts         şehir paletleri, arka plan katmanları (piksel), düşman türü seçimi, canlı adları
   render.ts      iki düşük çözünürlüklü tampon (arka: gök, bulut, parallax, süs; yumuşak büyütülür · ön: su, nesne, canlı, parçacık), arada HD zemin, en üstte atmosfer; adımlar arası ara değerleme, kesirli kamera
-  atmosphere.ts  el boyaması atmosfer (25 Kasım 2026, kullanıcı kararı; kuralı `.claude/rules/cizim.md` "Atmosfer"): şehrin ışığı `moodOf`, katmanlara boya hacmi `paintLayer`, boyalı bulutlar `Clouds`, her kare ışık haritası (güneş, huzme, fener halesi), renk tonu, üç derinlikte süzülenler (yaprak, kar, taç yaprağı, ışık zerresi), vinyet, bulanık ön plan otları
+  atmosphere.ts  el boyaması atmosfer (25 Kasım 2026, kullanıcı kararı; kuralı `.claude/rules/cizim.md` "Atmosfer"): şehrin ışığı `moodOf`, katmanlara boya hacmi `paintLayer`, boyalı bulutlar `Clouds`, her kare ışık haritası (güneş, huzme, fener halesi), renk tonu, üç derinlikte süzülenler (yaprak, kar, taç yaprağı, ışık zerresi), vinyet
   camera.ts      kamera hesabı (DOM'suz): takip, boss kadrajı, saate bağlı yaklaşım ve sarsıntı; kare hızından bağımsız (tests/camera.test.ts)
   terrainDraw.ts elle çizilmiş zemin ve duvarlar: şehre göre taş örgüsü, mürekkep dış hat, üst örtü (taş, çimen, kar); küçük hücrelerde önbelleklenir, kamera varmadan kare bütçesiyle önceden çizilir
   bossDraw.ts    30 boss’un vektör çizimi (ruh hâli: öfkeli, titrek, sersem, uykuda)
@@ -106,7 +106,7 @@ Her bölüm, eskisi de yenisi de, şu iskeletle kurulur. Yeni şehir ya da yeni 
    ekran çözünürlüğünde çizilir (`heroDraw`, `bossDraw`, `terrainDraw`, `enemyDraw`): kendi renginin koyusundan ince hat, yumuşak
    hacim, kenar ışığı. Siyah mürekkep yalnız tehlikede (diken, ok tuzağı). Yeni karakter, canlı ya da kaplama piksel sprite
    olarak eklenmez; arka plan katmanları düşük çözünürlükte çizilir ama `paintLayer` ile boyanır ve yumuşak büyütülür; üstüne
-   atmosfer biner (`game/atmosphere.ts`: ışık, renk tonu, bulut, süzülenler, ön plan). Işık sol üstten.
+   atmosfer biner (`game/atmosphere.ts`: ışık, renk tonu, bulut, süzülenler). Işık sol üstten.
 7. **Kanıt.** `verify-prelude` (meydan yolu) → `verify-levels` (bütün bölüm; hatıra, bayrak, pul, nazar, çıkış) →
    `verify-respawn` (hangi bayrakta, hangi düğme durumuyla ölünürse ölünsün çıkışa varılır) → `bossbot` (boss; zayıf
    oyuncu botu dahil) → `audit-difficulty` (zayıf oyuncu geçer) → `verify-items` (zayıf oyuncu her şeyi alır, aldığı yerden çıkar)
@@ -601,8 +601,8 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
   (zamanla dalgalanır, üstel söner, olaylarda `CAM.shakeGain` ile kısık: düşük kortizol). Kare başına `Math.random()` ile titreme ya da `Math.random() < p` ile olasılık yazma: yüksek Hz'de
   daha çok titrer, daha çok parçacık yağar. Olasılık için `this.chance(p)` (60 Hz karşılığı, saniyede aynı sıklık).
 - **Kare temposu ve göz yorgunluğu (26 Kasım 2026).** Yüksek Hz ekranda (≥90 Hz) kareler düzensizse çizim sabit yarı hıza iner
-  (`Game.tsx` kare temposu kilidi; fizik etkilenmez). Tam ekran beyaz parıltı en çok %4, sarsıntı varsayılan kapalı, ön plan dünyadan
-  hızlı kaymaz (`atmosphere.ts` `FORE_PAR`), koşu sekmesi boyun ~%6'sı (`heroDraw.ts` `RUN`), dash izi atkı renginde siluet.
+  (`Game.tsx` kare temposu kilidi; fizik etkilenmez). Tam ekran beyaz parıltı en çok %4, sarsıntı varsayılan kapalı, alt kenarda
+  ön plan otu yok, koşu sekmesi boyun ~%6'sı (`heroDraw.ts` `RUN`), dash izi atkı renginde siluet.
   Kalite kademesi yazılımla boyayan tarayıcıyı WebGL'den tanır (`probeTier`), GPU'lu cihaz zengin kademede başlar.
 - **Kare içinde ağır iş yok.** 120 Hz'de bütün kare 8 ms'dir. Pahalı çizim (zemin) önceden, küçük parçalar hâlinde ve
   süre bütçesiyle yapılır (`terrainDraw.ts` WARM_MS). Yeni önbellekli çizim eklersen aynı yolu izle.

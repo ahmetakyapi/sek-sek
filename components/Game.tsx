@@ -2354,21 +2354,24 @@ export default function Game() {
     </>
   ) : (
     <>
-      <div className="mt-1 grid divide-y-2 divide-line/60">{soundSet}</div>
+      {/* ses tek kartta (düzey çubuklarıyla); altında öbür ayarlar iki sütunlu sıkı kutucuklar; tuş atama ve tam ekran sütunun dibinde */}
+      <div className="mt-2 grid divide-y-2 divide-line/60 border-2 border-line bg-ink/30 px-2">{soundSet}</div>
       <CompactToggles.Provider value>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {controlSet}
           {gameSet}
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2 side:mt-auto side:pt-2">
           {screen === 'pause' && (
-            <button type="button" className="flex w-full items-center justify-between gap-2 border-2 border-line bg-ink/30 px-2.5 py-2 text-left text-[13px] font-semibold text-cream hover:bg-panel-2/60 short:py-1.5" onClick={() => setPauseKeys(true)}>
-              {t('Tuşları Değiştir')}
-              <span aria-hidden>⌨</span>
+            <button type="button" className="pixel-btn min-h-[40px] min-w-0 justify-between gap-2 px-2.5 py-2 text-left text-[13px] short:min-h-[36px] short:py-1.5" onClick={() => setPauseKeys(true)}>
+              <span className="truncate">{t('Tuşları Değiştir')}</span>
+              <span aria-hidden className="text-accent-2">⌨</span>
             </button>
           )}
           {canFull && (
-            <button type="button" className="flex w-full items-center justify-between gap-2 border-2 border-line bg-ink/30 px-2.5 py-2 text-left text-[13px] font-semibold text-cream hover:bg-panel-2/60 short:py-1.5" onClick={fullscreen}>
-              {t('Tam Ekran')}
-              <span aria-hidden>⛶</span>
+            <button type="button" className="pixel-btn min-h-[40px] min-w-0 justify-between gap-2 px-2.5 py-2 text-left text-[13px] short:min-h-[36px] short:py-1.5" onClick={fullscreen}>
+              <span className="truncate">{t('Tam Ekran')}</span>
+              <span aria-hidden className="text-accent-2">⛶</span>
             </button>
           )}
         </div>
@@ -2445,18 +2448,20 @@ export default function Game() {
   const nextMedal = cityMedal === 'altin' ? null : cityMedal === 'gumus' ? 0 : cityMedal === 'bronz' ? 1 : 2
   const cityCard = (
     <div className="mt-3 border-2 border-line bg-ink/40 px-3 py-2.5 short:hidden">
-      <SectionTitle title={t('Bu Şehirde')} />
-      <div className="mt-2 flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
+        <SectionTitle title={t('Bu Şehirde')} className="min-w-0 flex-1" />
+        <span className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[13px] ${save.bosses[level.id] ? 'text-gold' : 'text-muted'}`}>
+          {save.bosses[level.id] ? t('Boss Yenildi') : t('Boss Bekliyor')}
+          <BossFigure city={level.city} className={`h-7 w-8 ${save.bosses[level.id] ? '' : 'opacity-40 brightness-0'}`} />
+        </span>
+      </div>
+      <div className="mt-1.5 flex items-center gap-1.5">
         {[0, 1, 2].map((k) => (
           <ItemIcon key={k} city={level.city} taken={hud.items[k] || !!cityBest?.items[k]} size={24} />
         ))}
         <span className="mx-1 h-5 w-px bg-line" />
         <ThingIcon kind="stamp" taken={!!save.stamps[level.id]} size={24} />
         <ThingIcon kind="charm" taken={!!save.charms[level.id]} size={24} />
-        <span className="ml-auto flex items-center gap-1.5 text-[13px] text-muted">
-          {save.bosses[level.id] ? t('Boss Yenildi') : t('Boss Bekliyor')}
-          <BossFigure city={level.city} className={`h-8 w-9 ${save.bosses[level.id] ? '' : 'opacity-40 brightness-0'}`} />
-        </span>
       </div>
       <p className={`mt-2 flex flex-wrap items-center gap-x-2 text-[13px] text-muted ${modeLabel ? 'hidden' : ''}`}>
         {cityBest && !cityBest.stale ? (
@@ -2556,27 +2561,27 @@ export default function Game() {
             </div>
           )}
           {cpToast && Date.now() - cpToast.at < 3200 && (
-            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(var(--safe-top)+112px)]' : 'top-[calc(var(--safe-top)+60px)]'}`}>
+            <div key={cpToast.at} className={`rise pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4 ${toast ? 'top-[calc(var(--safe-top)+116px)] [@media(max-height:500px)]:top-[calc(var(--safe-top)+104px)]' : 'top-[calc(var(--safe-top)+66px)] sm:top-[calc(var(--safe-top)+74px)] [@media(max-height:500px)]:top-[calc(var(--safe-top)+58px)]'}`} role="status">
               {cpToast.flag ? (
-                // bayrak: küçük kart, solda kırmızı bayrak rozeti; başlık + ara süre, altında şehrin sözü (okunaklı, soluk değil)
-                <div className="flex max-w-[min(90vw,400px)] items-start gap-2.5 rounded-xl bg-[#17142f]/85 py-1.5 pl-1.5 pr-3 text-left shadow-[0_3px_0_rgba(0,0,0,0.3)] ring-1 ring-[#e30a17]/55">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e30a17] font-display text-[14px] text-white">⚑</span>
+                // bayrak: opak koyu kart, solda kırmızı bayrak rozeti; başlık + ara süre çipi, altında şehrin sözü (tam opak krem)
+                <div className="game-note flex max-w-[min(92vw,440px)] items-center gap-3 py-2 pl-2 pr-3.5 text-left !shadow-[0_0_0_1.5px_rgba(227,10,23,0.7),0_4px_0_rgba(8,7,22,0.5),0_10px_24px_rgba(8,7,22,0.35)]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e30a17] text-[17px] leading-none text-white shadow-[inset_0_-2px_0_rgba(0,0,0,0.25)]" aria-hidden>⚑</span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-2 font-display text-[14px] leading-tight text-cream">
-                      {t('Checkpoint')}
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-display text-[16px] leading-tight text-cream">
+                      {t('Checkpoint Alındı')}
                       {cpToast.delta != null && (
-                        <span className={`rounded-full px-1.5 font-mono text-[12px] font-bold tabular-nums ${cpToast.delta <= 0 ? 'bg-[#7ad88a]/15 text-[#8ee49c]' : 'bg-[#f08a80]/15 text-[#f6a198]'}`} title={t('Rekor Koşuya Göre')}>
+                        <span className={`rounded-md px-1.5 py-px font-mono text-[13px] font-bold leading-snug tabular-nums ${cpToast.delta <= 0 ? 'bg-[#1f4a2c] text-[#a6f0b2]' : 'bg-[#5a2328] text-[#ffc0b8]'}`} title={t('Rekor Koşuya Göre')}>
                           {cpToast.delta <= 0 ? '−' : '+'}
-                          {(Math.abs(cpToast.delta) / 1000).toFixed(2)}
+                          {(Math.abs(cpToast.delta) / 1000).toFixed(2)} {t('sn')}
                         </span>
                       )}
                     </span>
-                    <span className="block text-[13px] leading-snug text-cream/85 [text-wrap:pretty]">{cpToast.text}</span>
+                    <span className="mt-0.5 block text-[14px] leading-snug text-cream [text-wrap:pretty]">{cpToast.text}</span>
                   </span>
                 </div>
               ) : (
-                // düz bilgi notu (kural, baştan başlama, mod): başlıksız, sakin
-                <p className="max-w-[min(90vw,440px)] rounded-xl bg-[#17142f]/80 px-3 py-1.5 text-center text-[13px] leading-snug text-cream/90 shadow-[0_3px_0_rgba(0,0,0,0.3)] ring-1 ring-white/10 [text-wrap:balance]">{cpToast.text}</p>
+                // düz bilgi notu (kural, baştan başlama, mod): başlıksız, aynı okunurlukta
+                <p className="game-note max-w-[min(92vw,460px)] px-3.5 py-2 text-center text-[14px] font-semibold leading-snug text-cream [text-wrap:balance]">{cpToast.text}</p>
               )}
             </div>
           )}
@@ -3254,26 +3259,29 @@ export default function Game() {
       {screen === 'pause' && resumeN === null && (
         <Overlay dim blur>
           <div className="rise pixel-panel overlay-scroll max-h-[calc(100dvh-32px)] w-full max-w-md overflow-x-clip overflow-y-auto px-6 pb-5 short:max-w-[min(820px,100%)] short:pb-3 wide:max-w-[min(900px,100%)] wide:px-8 wide:pb-7">
-            <CityBanner level={level} eyebrow={t('Mola')} height={110} short={64} />
-            {/* geniş ekranda ve yatay telefonda: solda süre ve eylemler, sağda ayarlar (kaydırmadan) */}
+            <CityBanner level={level} eyebrow={t('Mola')} height={104} short={60} />
+            {/* geniş ekranda ve yatay telefonda: solda süre ve eylemler, sağda ayarlar (kaydırmadan); iki sütun aynı hizada biter */}
             <div className="side:grid side:grid-cols-2 side:gap-8 short:gap-5">
               {/* dar ekranda (dikey telefon) ayarlar ayrı görünümdür: Mola tek bakışta sığar */}
-              <div className={`min-w-0 ${pauseSet ? 'hidden side:block' : ''}`}>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  {[
-                    [formatTime(hud.time * 1000), t('Süre')],
-                    [String(hud.deaths), t('Düşüş')],
-                    [`${hud.items.filter(Boolean).length}/3`, t('Hatıra')],
-                  ].map(([v, k]) => (
-                    <div key={k} className="border-2 border-line bg-ink/40 py-2">
-                      <p className="font-display text-xl leading-none text-cream tabular-nums">{v}</p>
-                      <p className="mt-1 text-[12px] text-muted">{k}</p>
+              <div className={`min-w-0 flex-col ${pauseSet ? 'hidden side:flex' : 'flex'}`}>
+                {/* koşunun özeti: tek ince şerit (süre öne çıkar) */}
+                <dl className="grid grid-cols-[1.4fr_1fr_1fr] divide-x-2 divide-line/70 border-2 border-line bg-ink/40">
+                  {(
+                    [
+                      [t('Süre'), formatTime(hud.time * 1000)],
+                      [t('Düşüş'), String(hud.deaths)],
+                      [t('Hatıra'), `${hud.items.filter(Boolean).length}/3`],
+                    ] as const
+                  ).map(([k, v], i) => (
+                    <div key={k} className="flex flex-col items-center justify-center px-2 py-1.5 short:py-1">
+                      <dt className="text-[11px] font-bold tracking-[0.1em] text-muted">{k.toLocaleUpperCase(lang)}</dt>
+                      <dd className={`font-display leading-tight tabular-nums ${i === 0 ? 'text-[20px] text-gold' : 'text-[18px] text-cream'}`}>{v}</dd>
                     </div>
                   ))}
-                </div>
-                <button className="pixel-btn primary mt-4 w-full justify-center py-3 text-lg short:mt-2.5 short:py-2" onClick={resume} autoFocus>
+                </dl>
+                <button className="pixel-btn primary mt-3 w-full justify-center py-3 text-lg short:mt-2 short:py-2" onClick={resume} autoFocus aria-keyshortcuts="Escape">
                   {ic(t("▶ Devam Et"))}
-                  <span className="ml-2 text-[12px] font-normal opacity-80 [@media(pointer:coarse)]:hidden">Esc</span>
+                  <span className="key-cap ml-1 !bg-black/25 !text-white/85" aria-hidden>Esc</span>
                 </button>
                 {exitAsk ? (
                   <div className="mt-3 border-2 border-accent bg-ink/50 px-3 py-3 short:mt-2 short:py-2" role="alertdialog" aria-label={t('Çıkış Onayı')}>
@@ -3288,28 +3296,35 @@ export default function Game() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 short:mt-2.5 short:grid-cols-4 short:gap-2">
+                  // dört eylem tek boy: simge, ad ve kısa açıklama, sağda tuş rozeti (aynı hizada; ad tek satır)
+                  <div className="mt-3 grid grid-cols-2 gap-2.5 short:mt-2 short:gap-2">
                     {(
                       [
-                        ['⚑', t('Checkpoint’e Dön'), 'R', pauseRetry],
-                        ['↺', t('Baştan Başla'), 'Shift + R', pauseRestart],
-                        ['⌖', t('Şehirler'), 'S', () => leaveRun('map')],
-                        ['⌂', t('Ana Menü'), 'M', () => leaveRun('title')],
+                        ['⚑', t('Checkpoint'), t('Son bayraktan'), 'R', t('Checkpoint’e Dön'), pauseRetry],
+                        ['↺', t('Baştan Başla'), t('Şehrin başından'), '⇧R', t('Baştan Başla'), pauseRestart],
+                        ['⌖', t('Şehirler'), t('Şehir listesi'), 'S', t('Şehirler'), () => leaveRun('map')],
+                        ['⌂', t('Ana Menü'), t('Koşudan çık'), 'M', t('Ana Menü'), () => leaveRun('title')],
                       ] as const
-                    ).map(([icon, label, key, act]) => (
-                      <button key={label} className="pixel-btn min-h-[56px] flex-col justify-center gap-0.5 px-1 py-2 text-[13px] disabled:opacity-45 short:min-h-[48px]" onClick={act} disabled={act === pauseRetry && noCheckpoint} title={act === pauseRetry && noCheckpoint ? t('Bu kuralda checkpoint yok') : undefined}>
-                        <span className="text-lg leading-none" aria-hidden>{icon}</span>
-                        {label}
-                        <span className="text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">{key}</span>
-                      </button>
-                    ))}
+                    ).map(([icon, label, sub, key, name, act]) => {
+                      const off = act === pauseRetry && noCheckpoint
+                      return (
+                        <button key={name} className="pixel-btn h-[54px] min-w-0 justify-start gap-2 px-2.5 py-1.5 text-left disabled:opacity-45 short:h-11 [@media(max-height:700px)]:h-11" onClick={act} disabled={off} aria-label={name} aria-keyshortcuts={key === '⇧R' ? 'Shift+R' : key} title={off ? t('Bu kuralda checkpoint yok') : `${name} (${key === '⇧R' ? 'Shift + R' : key})`}>
+                          <span className="grid h-7 w-7 shrink-0 place-items-center bg-ink/45 text-[16px] leading-none text-accent-2" aria-hidden>{icon}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[14px] font-semibold leading-tight text-cream">{label}</span>
+                            <span className="block truncate text-[12px] font-normal leading-tight text-muted short:hidden [@media(max-height:700px)]:hidden">{sub}</span>
+                          </span>
+                          <span className="key-cap shrink-0" aria-hidden>{key}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
                 {modeCard}
                 {cityCard}
                 {plainRun && (
                   <div className="mt-3 border-2 border-line bg-ink/40 px-3 py-2.5 short:mt-2 short:py-2">
-                    <span className="mb-1.5 block text-[14px] font-semibold text-cream/80 short:hidden">{t('Yolcu')}</span>
+                    <SectionTitle title={t('Yolcu')} tone="var(--color-teal)" className="mb-2 short:hidden [@media(max-height:700px)]:hidden" />
                     <HeroPicker
                       size="sm"
                       value={hero.id}
@@ -3345,21 +3360,24 @@ export default function Game() {
                     )}
                   </div>
                 )}
-                <div className="mt-3 flex gap-2 short:mt-2">
-                  <button className="pixel-btn min-h-[44px] flex-1 justify-center py-2 text-[13px]" onClick={openPhoto}>
-                    {ic(t('◉ Fotoğraf Kipi'))} <span className="ml-1 text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">F</span>
+                {/* sütunun son öbeği dibe yaslanır: iki sütun aynı hizada biter */}
+                <div className="mt-3 flex gap-2 side:mt-auto side:pt-3 short:mt-2 short:pt-2">
+                  <button className="pixel-btn min-h-[44px] min-w-0 flex-1 justify-center gap-2 px-2 py-2 text-[13px]" onClick={openPhoto} aria-keyshortcuts="F">
+                    <span className="truncate">{ic(t('◉ Fotoğraf Kipi'))}</span>
+                    <span className="key-cap" aria-hidden>F</span>
                   </button>
                   {plainRun && (
-                    <button className="pixel-btn min-h-[44px] flex-1 justify-center py-2 text-[13px]" aria-pressed={save.ghost} onClick={toggleGhost}>
-                      {save.ghost ? t('◌ Hayalet: Açık') : t('◌ Hayalet: Kapalı')} <span className="ml-1 text-[11px] font-normal text-muted [@media(pointer:coarse)]:hidden">G</span>
+                    <button className="pixel-btn min-h-[44px] min-w-0 flex-1 justify-center gap-2 px-2 py-2 text-[13px]" aria-pressed={save.ghost} onClick={toggleGhost} aria-keyshortcuts="G">
+                      <span className="truncate">{save.ghost ? t('◌ Hayalet: Açık') : t('◌ Hayalet: Kapalı')}</span>
+                      <span className="key-cap" aria-hidden>G</span>
                     </button>
                   )}
-                  <button className="pixel-btn min-h-[44px] flex-1 justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
+                  <button className="pixel-btn min-h-[44px] min-w-0 flex-1 justify-center px-2 py-2 text-[13px] side:hidden" onClick={() => setPauseSet(true)}>
                     {ic(t('⚙ Ayarlar'))}
                   </button>
                 </div>
               </div>
-              <div className={`min-w-0 side:mt-0 side:block ${pauseSet ? '' : 'hidden'}`}>
+              <div className={`min-w-0 flex-col side:flex ${pauseSet ? 'flex' : 'hidden'}`}>
                 {/* dar ekranda tek geri düğmesi: tuş atamadayken Ayarlar'a, değilken Mola'ya döner */}
                 {!pauseKeys && (
                   <button className="pixel-btn back-btn mb-3 w-full justify-center py-2 text-[13px] side:hidden" onClick={() => setPauseSet(false)}>
@@ -3920,22 +3938,23 @@ function Hud({ level, hud, hero, scarf, kit, showGoal, penaltyFor, label, onPaus
       className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 px-3"
       style={{ paddingTop: 'var(--safe-top)', paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))' }}
     >
-      <div className="flex min-w-0 items-center gap-2.5 bg-ink/80 py-1.5 pl-1.5 pr-2.5 [box-shadow:0_0_0_2px_rgba(61,53,80,0.8)]">
+      {/* iki kart aynı boyda (telefonda 44 px, geniş ekranda 52 px), koyu ve neredeyse opak: oyunun üstünde net okunur */}
+      <div className="hud-card flex h-11 min-w-0 items-center gap-2.5 px-1.5 max-[399px]:shrink-0 min-[400px]:pr-3 sm:h-[52px] sm:pl-[5px]">
         <span className="hidden min-[400px]:block">
           <PortraitFace id={hero} scarf={scarf} accessory={kit} />
         </span>
-        <span className="plate text-[15px] sm:text-lg">
+        <span className="plate shrink-0 text-[15px] sm:text-[17px]">
           <span>{String(level.plate).padStart(2, "0")}</span>
         </span>
-        <div className="min-w-0 leading-tight">
-          <p className="truncate font-display text-[15px] text-cream sm:text-lg">{level.name}</p>
-          <p className={`truncate text-[12px] font-bold tracking-[0.06em] ${label ? 'text-accent-2' : 'text-muted'}`}>{(label ?? level.nickname ?? t(level.difficulty)).toLocaleUpperCase(lng)}</p>
+        <div className="min-w-0 leading-tight max-[399px]:hidden">
+          <p className="truncate font-display text-[15px] leading-none text-cream sm:text-[18px]">{level.name}</p>
+          <p className={`mt-1 truncate text-[11px] font-bold leading-none tracking-[0.08em] sm:text-[12px] ${label ? 'text-accent-2' : 'text-cream/70'}`}>{(label ?? level.nickname ?? t(level.difficulty)).toLocaleUpperCase(lng)}</p>
         </div>
       </div>
       <div className="pointer-events-auto flex shrink-0 items-center gap-2">
-        <div className="flex items-center gap-2 bg-ink/80 px-2 py-2 text-sm font-semibold tabular-nums text-cream [box-shadow:0_0_0_2px_rgba(61,53,80,0.8)] sm:gap-3 sm:px-3">
+        <div className="hud-card flex h-11 items-center gap-1.5 px-2 text-[14px] font-semibold tabular-nums text-cream min-[400px]:gap-2 min-[400px]:px-2.5 sm:h-[52px] sm:gap-3 sm:px-3.5">
           {showGoal && (
-            <span key={hud.goal} className="rise whitespace-nowrap border-r-2 border-line pr-2 text-[13px] font-bold text-gold sm:pr-3 sm:text-[13px]" role="status">
+            <span key={hud.goal} className="rise flex h-full items-center whitespace-nowrap border-r border-white/15 pr-2 text-[13px] font-bold text-gold sm:pr-3" role="status">
               {t(GOAL_TEXT[hud.goal])}
             </span>
           )}
@@ -3944,15 +3963,15 @@ function Hud({ level, hud, hero, scarf, kit, showGoal, penaltyFor, label, onPaus
               <ItemIcon key={i} city={level.city} taken={v} />
             ))}
           </span>
-          <span aria-label={t("Düşüş")}>✕ {hud.deaths}</span>
+          <span aria-label={t("Düşüş")} className="whitespace-nowrap text-cream/90"><span aria-hidden className="text-cream/60">✕</span> {hud.deaths}</span>
           {/* süre başlık fontunda (net rakamlar); yanındaki nokta şu an hangi madalya süresinin içinde olduğunu gösterir */}
-          <span aria-label={t("Süre")} className="hidden items-center gap-1.5 font-display text-[19px] leading-none min-[380px]:flex sm:text-[21px]">
-            {pace && <span className="h-2.5 w-2.5 rounded-full shadow-[0_0_0_1.5px_rgba(14,13,34,0.9)]" style={{ background: pace }} title={t('Madalya Temposu')} />}
+          <span aria-label={t("Süre")} className="hidden items-center justify-end gap-1.5 font-display text-[19px] leading-none min-[380px]:flex sm:min-w-[3.6em] sm:border-l sm:border-white/15 sm:pl-3 sm:text-[22px]">
+            {pace && <span className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_0_1.5px_rgba(14,13,34,0.9)]" style={{ background: pace }} title={t('Madalya Temposu')} />}
             {formatTime(shown).slice(0, -2)}
           </span>
           {penalty > 0 && <span className="hidden font-display text-[14px] leading-none text-accent-2 min-[380px]:inline">+{Math.round(penalty / 1000)}</span>}
         </div>
-        <button className="pixel-btn h-11 w-11 justify-center p-0" aria-label="Mola" onClick={onPause}>
+        <button className="pixel-btn h-11 w-11 justify-center p-0 sm:h-[52px] sm:w-[52px]" aria-label="Mola" onClick={onPause}>
           ❚❚
         </button>
       </div>

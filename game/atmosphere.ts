@@ -7,7 +7,6 @@
  *  2. Renk tonu: şehrin ışık renginde `soft-light` dolgu + gölge renginde vinyet (köşeler ve alt kenar ağırlaşır).
  *  3. Süzülen şeyler: yaprak, taç yaprağı, kar, toz zerresi, ateş böceği; üç derinlikte, ekran çözünürlüğünde,
  *     önceden çizilmiş küçük imgelerle (kare başına yol çizimi yok). En öndekiler büyük ve bulanıktır (alan derinliği).
- *  4. Ön plan siluetleri: alt kenarda koyu, bulanık otlar ve eğrelti; kameradan hızlı kayar, oynanış alanına girmez.
  *
  * Her şey saate bağlıdır (kare hızından bağımsız); rastgelelik yalnız kurulurken, tohumlu.
  */
@@ -20,7 +19,7 @@ type Kind = 'leaf' | 'petal' | 'snow' | 'mote' | 'firefly'
 export interface Mood {
   /** ana ışığın rengi (güneş, ufuk ışıltısı, renk tonu) */
   key: [number, number, number]
-  /** gölge rengi (vinyet, ön plan) */
+  /** gölge rengi (vinyet, alt kenar) */
   shade: [number, number, number]
   /** güneşin ekrandaki yeri (oran); güneşsiz şehirde gökten yayılan ışık */
   sun: { x: number; y: number } | null
@@ -107,27 +106,18 @@ export function driftAt(kind: Kind, t: number, m: { phase: number; speed: number
   }
 }
 
-/**
- * Ön plan otlarının kayma oranı: dünyayla (1) neredeyse aynı. 1,35 iken göz ucunda dünyadan hızlı kayıp koşarken baş
- * döndürüyordu (25 Kasım 2026, kullanıcı: "motion sickness gibi")
- */
-const FORE_PAR = 1.04
-
 const LEAF_COLORS = ['#e8742a', '#d8452a', '#f0a830', '#b8582a', '#e8c040']
 const PETAL_COLORS = ['#ffe0ea', '#ffc8d8', '#fff4f4', '#ffd2a8']
 
 export class Atmosphere {
-  private city: CityKey
   private lightCv: HTMLCanvasElement
   private l: Ctx
   private mites: Mite[] = []
   private sprites = new Map<string, HTMLCanvasElement>()
-  private fores = new Map<string, HTMLCanvasElement>()
 
   readonly mood: Mood
 
   constructor(city: CityKey, style: CityStyle) {
-    this.city = city
     this.mood = moodOf(style)
     this.lightCv = document.createElement('canvas')
     this.l = this.lightCv.getContext('2d')!
@@ -203,82 +193,6 @@ export class Atmosphere {
       }
     }
     this.sprites.set(key, cv)
-    return cv
-  }
-
-  /** ön plan: koyu, bulanık otlar ve eğrelti şeridi (bir kez çizilir; ekran boyu değişince yeniden) */
-  private foreground(W: number, H: number): HTMLCanvasElement {
-    const key = `${W}x${H}`
-    const hit = this.fores.get(key)
-    if (hit) return hit
-    const h = Math.round(H * 0.12)
-    const w = Math.round(W * 1.5)
-    const cv = document.createElement('canvas')
-    cv.width = w
-    cv.height = h
-    const c = cv.getContext('2d')!
-    c.filter = `blur(${Math.max(1, Math.round(H / 300))}px)`
-    const r = rng(this.city.length * 131 + 7)
-    const sh = this.mood.shade
-    const dark = rgba(mix(sh, [16, 10, 8], 0.88), 1)
-    const mid = rgba(mix(mix(sh, [16, 10, 8], 0.7), this.mood.key, 0.14), 1)
-    // kümeler arasında boşluk: alt kenar boydan boya kapanmaz
-    let x = r() * w * 0.2
-    while (x < w) {
-      const cw = w * (0.05 + r() * 0.07)
-      const tall = h * (0.45 + r() * 0.5)
-      // eğrelti yaprakları: kavisli sap, iki yanında küçülen yaprakçıklar
-      for (let k = 0; k < 7; k++) {
-        const bx = x + r() * cw
-        const len = tall * (0.55 + r() * 0.5)
-        const dir = r() < 0.5 ? -1 : 1
-        const bend = (0.5 + r() * 0.7) * dir
-        c.fillStyle = k % 3 === 0 ? mid : dark
-        c.strokeStyle = c.fillStyle
-        c.lineWidth = Math.max(1.5, h * 0.015)
-        const at = (u: number) => [bx + Math.sin(u * 1.2) * len * 0.5 * bend, h + 2 - Math.sin(u * 1.35) * len] as const
-        c.beginPath()
-        for (let u = 0; u <= 1.0001; u += 0.1) {
-          const [px, py] = at(u)
-          if (u === 0) c.moveTo(px, py)
-          else c.lineTo(px, py)
-        }
-        c.stroke()
-        for (let u = 0.12; u < 1; u += 0.075) {
-          const [px, py] = at(u)
-          const [qx, qy] = at(u + 0.02)
-          const ang = Math.atan2(qy - py, qx - px)
-          const leaf = len * 0.22 * (1 - u * 0.7)
-          for (const side of [-1, 1]) {
-            c.save()
-            c.translate(px, py)
-            c.rotate(ang + side * 1.1)
-            c.beginPath()
-            c.ellipse(leaf * 0.55, 0, leaf * 0.62, leaf * 0.26, 0, 0, Math.PI * 2)
-            c.fill()
-            c.restore()
-          }
-        }
-      }
-      // dibinde sık ot: ince, sivri yapraklar ve yuvarlak çalı gövdesi (sap aralarını kapatır)
-      c.fillStyle = dark
-      for (let k = 0; k < 26; k++) {
-        const bx = x - cw * 0.1 + r() * cw * 1.2
-        const bh = tall * (0.25 + r() * 0.45)
-        const lean = (r() - 0.5) * bh * 0.8
-        const bw = Math.max(2, h * 0.025)
-        c.beginPath()
-        c.moveTo(bx - bw, h + 2)
-        c.quadraticCurveTo(bx + lean * 0.4, h - bh * 0.55, bx + lean, h - bh)
-        c.quadraticCurveTo(bx + lean * 0.4 + bw * 0.5, h - bh * 0.5, bx + bw, h + 2)
-        c.fill()
-      }
-      c.beginPath()
-      c.ellipse(x + cw / 2, h + 2, cw * 0.6, tall * 0.28, 0, Math.PI, 0)
-      c.fill()
-      x += cw + w * (0.12 + r() * 0.22)
-    }
-    this.fores.set(key, cv)
     return cv
   }
 
@@ -385,21 +299,9 @@ export class Atmosphere {
   }
 
   /**
-   * Ön plan otları düşük çözünürlüklü tampona (temel kademe): zaten bulanık olduklarından büyütme fark edilmez, kare
-   * başına tam çözünürlükte geniş bir şerit basılmaz. camX dünya pikseli.
-   */
-  foreLow(f: Ctx, vw: number, vh: number, camX: number) {
-    const fg = this.foreground(vw, vh)
-    let fx = -((camX * FORE_PAR) % fg.width)
-    if (fx > 0) fx -= fg.width
-    f.imageSmoothingEnabled = true
-    for (; fx < vw; fx += fg.width) f.drawImage(fg, fx, vh - fg.height)
-    f.imageSmoothingEnabled = false
-  }
-
-  /**
    * Önde süzülenler (ana tuval, cihaz pikseli; temel kademede yalnız orta derinlik); zengin kademede (`rich`) ek olarak en uzak ve en yakın katman, ışık zerrelerinin
-   * parlayan (`lighter`) karışımı ve tam çözünürlükte ön plan otları.
+   * parlayan (`lighter`) karışımı. (Alt kenardaki koyu ön plan otları 26 Kasım 2026'da kaldırıldı: taşın üstünde gereksiz
+   * leke gibi duruyordu.)
    */
   front(c: Ctx, W: number, H: number, t: number, camX: number, camY: number, scale: number, dpr: number, night: number, rich: boolean) {
     // süzülenler: üç derinlik; ekranın etrafında sarılır, kamerayla derinliğine göre kayar
@@ -439,14 +341,6 @@ export class Atmosphere {
       }
     }
     c.globalAlpha = 1
-
-    // ön plan siluetleri: kameradan hızlı kayar (alan derinliği)
-    if (!rich) return
-    const fg = this.foreground(W, H)
-    let fx = -((camX * scale * FORE_PAR) % fg.width)
-    if (fx > 0) fx -= fg.width
-    const fy = H - fg.height
-    for (; fx < W; fx += fg.width) c.drawImage(fg, Math.round(fx), fy)
   }
 }
 

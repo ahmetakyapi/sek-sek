@@ -8,6 +8,7 @@ import { INK, LOOKS, POSES, setPainted, airPoseInto, climbPose, copyPose, drawHe
 import { idlePose, landInto } from './stance'
 import { NO_KIT, type Kit } from './accessories'
 import { TerrainHD } from './terrainDraw'
+import { drawPortrait } from './portraitDraw'
 import { Atmosphere, Clouds, paintLayer } from './atmosphere'
 import { cb, cbc, type CbMode } from './colorBlind'
 import { CAM, camYRange, clampCam, kickOffset, shakeOffset, stepCamera, type CamState } from './camera'
@@ -88,7 +89,7 @@ export class Renderer {
   private nitroAt: [number, number] | null = null
   private streakN = 0
   private ambient: Ambient[] = []
-  /** el boyaması ışık, renk tonu, süzülenler ve ön plan (game/atmosphere.ts) */
+  /** el boyaması ışık, renk tonu ve süzülenler (game/atmosphere.ts) */
   private atmo: Atmosphere | null = null
   private clouds: Clouds | null = null
   /** bu karede görünen fenerlerin ışık merkezleri (dünya tamponu pikseli; x, y çiftleri): atmosferde sıcak hale */
@@ -807,7 +808,6 @@ export class Renderer {
     if (this.atmo) {
       this.atmo.light(this.viewW, this.viewH, this.t, this.nightK, this.lamps)
       if (this.tier < 2) {
-        this.atmo.foreLow(f, this.viewW, this.viewH, cx)
         this.atmo.overlay(f, this.viewW, this.viewH)
       }
     }
@@ -823,7 +823,7 @@ export class Renderer {
     if (this.dashMeter) this.drawDashMeter(w, hdX, hdY)
     this.drawBreath(w, hdX, hdY)
     this.drawSwimHD(w, hdX, hdY)
-    // ışık, renk tonu, süzülenler, vinyet ve ön plan: dünyanın üstünde, yazıların altında
+    // ışık, renk tonu, süzülenler ve vinyet: dünyanın üstünde, yazıların altında
     if (this.atmo) {
       if (this.tier === 2) this.atmo.overlay(this.ctx, this.canvas.width, this.canvas.height)
       this.atmo.front(this.ctx, this.canvas.width, this.canvas.height, this.t, hdX, hdY, this.scale, this.dpr, this.nightK, this.tier === 2)
@@ -5493,9 +5493,11 @@ export class Renderer {
     // çapa: konuşan kişinin başı ya da tabelanın tepesi; yanından ayrılınca baloncuk kalkar
     let ax: number
     let ay: number
+    let look: Look | null = null
     if (d.kind === 'npc') {
       const n = w.npcs.find((q) => q.index === w.nearNpc)
       if (!n) return
+      look = w.level.npcs[w.nearNpc]?.look ?? 'amca'
       ax = n.x + T / 2
       ay = n.y + T - NPC_SIZE - 3
     } else {
@@ -5538,6 +5540,9 @@ export class Renderer {
       : [d.text]
     const bullets = sign && paras.length > 1
     const indent = bullets ? Math.round(size * 1.35) : 0
+    // şehir insanının balonunda solda küçük vesikalık: kimin konuştuğu ilk bakışta belli (26 Kasım 2026)
+    const pw = look ? Math.round((small ? 40 : 50) * u) : 0
+    const ox = pw ? pw + Math.round(10 * u) : 0
     type Line = { words: { w: string; hi: boolean }[]; first: boolean; gap: boolean; n: number }
     const lines: Line[] = []
     paras.forEach((para, pi) => {
@@ -5551,7 +5556,7 @@ export class Renderer {
         pos += word.length + 1
         c.font = hi ? bold : body
         const ww = c.measureText(word + ' ').width
-        if (curW + ww > maxW - pad * 2 - indent && cur.words.length) {
+        if (curW + ww > maxW - pad * 2 - indent - ox && cur.words.length) {
           lines.push(cur)
           cur = { words: [], first: false, gap: false, n: 0 }
           curW = 0
@@ -5572,10 +5577,10 @@ export class Renderer {
       c.font = `700 ${nameSize}px ${this.popFont()}`
       tw = Math.max(tw, c.measureText(title).width + iconW + (sign ? 0 : nameSize))
     }
-    const bw = Math.ceil(tw + pad * 2)
+    const bw = Math.ceil(tw + pad * 2 + ox)
     const head = title ? Math.round(nameSize * 2) : 0
     const gaps = lines.filter((l) => l.gap).length * paraGap
-    const bh = Math.ceil(pad * 2 + head + lines.length * lh - (lh - size) + gaps)
+    const bh = Math.max(pw + pad * 2, Math.ceil(pad * 2 + head + lines.length * lh - (lh - size) + gaps))
     const tail = Math.round(8 * u)
     const tipX = (ax - cx) * sc
     const tipY = (ay - cy) * sc
@@ -5597,7 +5602,7 @@ export class Renderer {
       }
       at += lines[i].n
     }
-    const shownH = Math.ceil(pad * 2 + head + Math.max(1, started) * lh - (lh - size) + startedGaps)
+    const shownH = Math.max(pw + pad * 2, Math.ceil(pad * 2 + head + Math.max(1, started) * lh - (lh - size) + startedGaps))
     // balon konuşanın üstündeyse alt kenarı sabit kalır (yukarı büyür), altındaysa üst kenarı
     const above = tipY - tail > by + bh - 1
     const top = above ? by + bh - shownH : by
@@ -5652,11 +5657,32 @@ export class Renderer {
         c.fill()
       }
     } else {
+      // krem kâğıt: üstte ılık açık, altta bir ton koyu; ince sıcak koyu hat
+      const g = c.createLinearGradient(0, top, 0, top + shownH)
+      g.addColorStop(0, '#fffcf4')
+      g.addColorStop(1, '#f4ead8')
       shape()
-      c.strokeStyle = '#22161f'
+      c.strokeStyle = '#3a2430'
       c.stroke()
-      c.fillStyle = '#fffaf0'
+      c.fillStyle = g
       c.fill()
+      // konuşanın vesikalığı (konuşma başına bir kez çizilir, önbellekten basılır)
+      if (look && pw) {
+        const pk = `${look}:${pw}`
+        if (this.dlgFace?.key !== pk) {
+          const cv = document.createElement('canvas')
+          cv.width = cv.height = pw
+          drawPortrait(cv.getContext('2d')!, look, pw, pw, 0, { face: true, still: true })
+          this.dlgFace = { key: pk, cv }
+        }
+        const px0 = bx + pad
+        const py0 = top + pad
+        c.fillStyle = '#d9a441'
+        c.beginPath()
+        c.roundRect(px0 - 2 * u, py0 - 2 * u, pw + 4 * u, pw + 4 * u, 8 * u)
+        c.fill()
+        c.drawImage(this.dlgFace.cv, px0, py0)
+      }
     }
     c.textAlign = 'left'
     c.textBaseline = 'top'
@@ -5681,10 +5707,10 @@ export class Renderer {
         const tw2 = c.measureText(title).width
         c.fillStyle = '#9a3e22'
         c.beginPath()
-        c.roundRect(bx + pad - 5 * u, y - 3 * u, tw2 + 10 * u, nameSize + 6 * u, 5 * u)
+        c.roundRect(bx + pad + ox - 5 * u, y - 3 * u, tw2 + 10 * u, nameSize + 6 * u, 5 * u)
         c.fill()
         c.fillStyle = '#fffaf0'
-        c.fillText(title, bx + pad, y)
+        c.fillText(title, bx + pad + ox, y)
       }
       y += head
     }
@@ -5693,7 +5719,7 @@ export class Renderer {
     for (const l of lines) {
       if (left <= 0) break
       if (l.gap) y += paraGap
-      let x = bx + pad + indent
+      let x = bx + pad + indent + ox
       if (bullets && l.first) {
         // adım numarası: altın daire
         const rr = size * 0.52
@@ -5715,13 +5741,24 @@ export class Renderer {
         c.font = q.hi ? bold : body
         c.fillStyle = q.hi ? (sign ? '#ffd36a' : '#9a3e22') : sign ? '#fbf3e4' : '#221a28'
         c.fillText(part, x, y)
+        this.caretX = x + c.measureText(part).width + 1
         x += c.measureText(q.w + ' ').width
         left -= q.w.length + 1
       }
       y += lh
     }
+    // yazı akarken satır sonunda yanıp sönen imleç (söz bitince kalkar)
+    const total = lines.reduce((a, l) => a + l.n, 0)
+    if (typed < total && Math.floor(this.t * 4) % 2 === 0) {
+      c.fillStyle = sign ? '#ffd36a' : '#9a3e22'
+      c.fillRect(this.caretX, y - lh + size * 0.1, Math.max(1.5, 2 * u), size * 0.9)
+    }
     c.restore()
   }
+
+  /** konuşma balonundaki vesikalığın önbelleği ve imlecin son yeri */
+  private dlgFace: { key: string; cv: HTMLCanvasElement } | null = null
+  private caretX = 0
 
   private textFamily: string | null = null
 

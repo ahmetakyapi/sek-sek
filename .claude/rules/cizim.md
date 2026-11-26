@@ -24,7 +24,7 @@ paths:
   (gövde kutusunun taban ortası 0,0; `setInkWidth` dış hattı ona göre inceltir); zemin dünya pikselinde, parça parça önbellekte.
 - Ruh hâli bütün boss’larda aynı okunur: öfkeli kaş (saldırı), titreme (işaret), sarmal göz + yıldız (yorgun), kapalı göz (uyku).
 - Çizim sırası (`render.ts`): arka tampon (gök, bulut, parallax, süs; yumuşak büyütülür) → HD zemin → ön tampon (su, nesne,
-  canlı, parçacık; keskin büyütülür) → boss → karakterler → atmosfer (ışık, renk tonu, süzülenler, vinyet, ön plan otları) →
+  canlı, parçacık; keskin büyütülür) → boss → karakterler → atmosfer (ışık, renk tonu, süzülenler, vinyet) →
   yazılar. Düşük çözünürlüklü katmanlar tam piksele, HD katmanlar kesirli kameraya çizilir.
 - Fizik sabit adımlıdır; çizim `capture()` / `blend()` ile adımlar arasında ara değerlenir. Yeni hareketli nesne
   eklersen ikisine de ekle, yoksa yüksek tazeleme hızında titrer.
@@ -51,15 +51,15 @@ paths:
 ## Atmosfer: el boyaması, sıcak, sinematik (25 Kasım 2026, kullanıcı kararı)
 
 Referans kullanıcının paylaştığı el boyaması oyun videosu (KAYNAK: `.claude/skills/reference-to-game/KAYNAK.md`). Hedef:
-altın saat ışığı, puslu uzak plan, doygun ama yumuşak renk, koyu ve bulanık ön plan, havada süzülen yaprak ve ışık zerresi.
+altın saat ışığı, puslu uzak plan, doygun ama yumuşak renk, havada süzülen yaprak ve ışık zerresi. Alt kenara koyu ön plan
+otu konmaz (26 Kasım 2026, kullanıcı: taşın üstünde gereksiz leke).
 
 - `game/atmosphere.ts`: `moodOf(CITY)` şehrin ışığını paletinden türetir (ışık rengi, gölge rengi, güneş yeri, güç;
   karda ve yağmurda serin ve kısık). `paintLayer` arka plan katmanını şehir yüklenirken bir kez boyar (kenar ışığı, tepede
   ılık dipte gölge, doygunluk, fırça dokusu). `Clouds` boyalı bulutlar. `Atmosphere.draw` her kare: düşük çözünürlüklü ışık
-  haritası (`screen`), `soft-light` + `multiply` renk tonu, üç derinlikte süzülenler (önceden çizilmiş imgeler), vinyet, ön
-  plan otları. Kare başına tam ekran karışım sayısı sabit (dört): yenisini eklemeden önce `verify-perf` ile ölç.
-- Oynanış okunur kalır: ışık ve ton zeminin üst kenarını, dikenleri, düşmanın kırmızı halesini bastırmaz; ön plan otları
-  yalnız ekranın alt %16'sında ve kümeler arasında boşlukla durur.
+  haritası (`screen`), `soft-light` + `multiply` renk tonu, üç derinlikte süzülenler (önceden çizilmiş imgeler), vinyet. Kare başına tam ekran karışım sayısı sabit (dört): yenisini eklemeden önce `verify-perf` ile ölç.
+- Oynanış okunur kalır: ışık ve ton zeminin üst kenarını, dikenleri, düşmanın kırmızı halesini bastırmaz. Kameradan hızlı
+  kayan katman eklenmez (göz ucunda baş döndürür).
 - `ctx.filter` yalnız kurulumda (önceden çizilen imgeye bulanıklık) kullanılır, kare içinde asla.
 - Yeni şehir paleti: gök soluk beyaza değil ılık ufka insin; katmanlar iki üç tonla çizilsin (tek düz renk blok boyalı durmaz).
 
