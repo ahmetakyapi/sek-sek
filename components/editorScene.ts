@@ -979,6 +979,18 @@ export function drawTile(c: CanvasRenderingContext2D, ch: string, x: number, y: 
         c.fillRect(x + (dx - 1) * u, y + 5 * u, 3 * u, u)
       }
       break
+    case ';':
+      // şelale: yarı saydam turkuaz perde, aşağı akan beyaz şeritler ve aşağı oklar
+      c.fillStyle = 'rgba(150,218,226,0.5)'
+      c.fillRect(x, y, s, s)
+      c.fillStyle = 'rgba(255,255,255,0.85)'
+      for (const dx of [3, 8, 12]) c.fillRect(x + dx * u, y + ((dx * 3) % 5) * u, u, 7 * u)
+      c.fillStyle = '#2f8fa6'
+      for (const dx of [5, 11]) {
+        c.fillRect(x + dx * u, y + 6 * u, u, 6 * u)
+        c.fillRect(x + (dx - 1) * u, y + 11 * u, 3 * u, u)
+      }
+      break
     case 'b':
       c.fillStyle = look.cream
       c.fillRect(x, y + 3 * u, s, u)

@@ -23,7 +23,7 @@ export const MIN_W = 40
 export const MAX_W = 600
 /** facts üç kart: daha fazla hatıranın bilgi kartı olmaz */
 export const MAX_ITEMS = 3
-/** sandık çözücünün durum sayısını katlar (CLAUDE.md: şehir başına en çok iki) */
+/** sandık çözücünün durum sayısını katlar (.claude/rules/bolumler.md: şehir başına en çok iki) */
 export const MAX_CRATES = 2
 /** yalnız bir tane olabilen simgeler: yenisi konunca düzenleyici eskisini kaldırır */
 export const SINGLES = ['P', 'E', '$', '!', 'K'] as const
@@ -36,7 +36,7 @@ export const SINGLES = ['P', 'E', '$', '!', 'K'] as const
 export const SYMBOLS = [
   ' ', '#', '=', '^', 'v', 'I', 'i', 'X', '~', 'S', 'F', 'C', 'e', 'f', '>', '<', 'P', 'E', 't', 'l', 'w', 'b', 'L', 'R', 'W',
   '$', '!', 'K', 'D', '%', '*', 'p', '_', '[', ']', 'M', 'N', '|', ':', 'B', 'Y', 'h', 'c', 'u', 'x', 'j',
-  'T', '?', 'n', 'O', '{', '}', 'Q', 'G', 'A', 'V', 'Z', '+',
+  'T', '?', 'n', 'O', '{', '}', 'Q', 'G', 'A', 'V', 'Z', '+', ';',
 ] as const
 export type Sym = (typeof SYMBOLS)[number]
 
@@ -92,7 +92,7 @@ export const CITY_CODES = [
   'adana', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon',
   'sivas', 'van', 'erzurum', 'kayseri', 'hatay', 'eskisehir', 'ardahan', 'amasya', 'mugla', 'bayburt',
   'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak',
-  'mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon', 'bingol',
+  'mersin', 'karabuk', 'aydin', 'balikesir', 'elazig', 'afyon', 'bingol', 'adiyaman', 'kastamonu',
 ] as const satisfies readonly CityKey[]
 
 const V1_SYMBOLS = 25

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { kitKey, type Kit } from '@/game/accessories'
 import type { CharacterId } from '@/game/characters'
 import { drawHero } from '@/game/heroDraw'
+import { drawHeroTurn } from '@/game/heroTurn'
 import { demoPose, newDemo, type DemoMode } from '@/game/stance'
 
 interface ScarfColor {
@@ -13,15 +14,23 @@ interface ScarfColor {
 
 /** kendiliğinden dönüş hızı (radyan/sn): bir tur ~9 sn */
 const SPIN = (Math.PI * 2) / 9
-/** bırakınca yan görünüşe oturan yayın sertliği (kritik sönümlü, 1/sn): ~0,7 sn'de yerine oturur */
+/** dört görüş: yan (sağa), ön, yan (sola), arka; her biri çeyrek tur */
+const Q = Math.PI / 2
+/** bırakınca en yakın görüşe oturan yayın sertliği (kritik sönümlü, 1/sn): ~0,7 sn'de yerine oturur */
 const SETTLE = 6.5
 /** sürüklemede piksel başına dönüş: önizlemenin genişliği kadar sürükleme ~1 tur */
 const DRAG_TURN = Math.PI * 2
-/** ok tuşunun bir adımı: yarım tur, bir yan görünüşten öbürüne */
-const KEY_STEP = Math.PI
-/** görünen açı yan görünüşlerde biraz oyalanır, önden/arkadan çabuk geçer (çizim yan görünüştür: ince hâl kısa sürsün) */
-const DWELL = 0.24
-const shown = (a: number) => a - DWELL * Math.sin(2 * a)
+/** ok tuşunun bir adımı: çeyrek tur, bir görüşten sonrakine */
+const KEY_STEP = Q
+/** görünen açı her görüşte biraz oyalanır, geçişte çabuk akar (geçiş sıkıştırma + çapraz geçiştir: kısa sürsün) */
+const DWELL = 0.5
+const shown = (a: number) => a - (DWELL / 4) * Math.sin(4 * a)
+/** geçişte en dar an: gövde genişliğinin bu kadarı dolu kalır (kağıt inceliği yok) */
+const NARROW = 0.62
+const smooth = (e0: number, e1: number, x: number) => {
+  const u = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)))
+  return u * u * (3 - 2 * u)
+}
 
 /**
  * Kritik sönümlü yayın kapalı biçimi: x hedefe uzaklık, v hız; dt ne olursa olsun aynı yol (kare hızından bağımsız).
@@ -34,11 +43,12 @@ function springStep(x: number, v: number, w: number, dt: number): [number, numbe
 
 /**
  * Mağazanın döner sahnesi: karakter seçilen kombin ve görünümle canlı durur (oyundaki poz kodu: game/stance.ts) ve 360
- * derece döndürülür. Çizim yan görünüştür; dönüş onun sahte 3B'sidir: yatay ölçek `cos(açı)` ile daralır, 90°'de yön
- * çevrilir, arkası dönükken gövde biraz koyulaşır, önü dönükken ılık ışık alır, gölge elipsi daralır, sahne tablasının
+ * derece döndürülür. Dört gerçek görüş var: yan (sağa; oyundaki çizim), ön ve arka (game/heroTurn.ts: portre yüzü, sırt
+ * eşyası arkadan tam), yan (sola). Görüşler arasında kısa bir yatay sıkıştırma (en dar anda gövdenin %62'si) ve çapraz
+ * geçiş olur; arkası dönükken gövde biraz koyulaşır, önü dönükken ılık ışık alır, gölge elipsi daralır, sahne tablasının
  * çivileri aynı açıyla döner. Fareyle ya da parmakla yatay sürüklenir (dikey sürükleme sayfayı kaydırır), odaktayken
- * ←/→ döndürür, Home baştaki yan görünüşe döner. Bırakınca yay en yakın yan görünüşe oturtur; `spin` açıkken yavaşça kendi
- * döner. Her şey saate bağlı; hareket azaltma seçiliyse kendiliğinden dönmez, yay beklemeden oturur.
+ * ←/→ çeyrek tur döndürür, Home baştaki yan görünüşe döner. Bırakınca yay en yakın görüşe oturtur; `spin` açıkken yavaşça
+ * kendi döner. Her şey saate bağlı; hareket azaltma seçiliyse kendiliğinden dönmez, yay beklemeden oturur.
  */
 export default function HeroTurntable({ hero, kit, scarf, mode, spin, onStopSpin, label, className = '' }: { hero: CharacterId; kit: Kit; scarf: ScarfColor | null; mode: DemoMode; spin: boolean; /** ok tuşu kendiliğinden dönüşü durdurur */ onStopSpin: () => void; label: string; className?: string }) {
   const box = useRef<HTMLDivElement>(null)
@@ -50,12 +60,12 @@ export default function HeroTurntable({ hero, kit, scarf, mode, spin, onStopSpin
   const turn = useRef({ a: 0, v: 0, target: 0, drag: false, px: 0, pa: 0, pt: 0, spin, settle: true, dirty: true })
   turn.current.spin = spin
 
-  // dönüş kapanınca en yakın yan görünüşe otur
+  // dönüş kapanınca en yakın görüşe otur
   useEffect(() => {
     const s = turn.current
     // (ok tuşu durdurduysa hedefi zaten koymuştur: hedef açıdan ayrıysa dokunma)
     if (!spin && !s.drag && s.target === s.a) {
-      s.target = Math.round(s.a / Math.PI) * Math.PI
+      s.target = Math.round(s.a / Q) * Q
       s.settle = true
     }
     s.dirty = true
@@ -68,6 +78,8 @@ export default function HeroTurntable({ hero, kit, scarf, mode, spin, onStopSpin
     const c = cv.getContext('2d')!
     const layer = document.createElement('canvas')
     const lc = layer.getContext('2d')!
+    const layer2 = document.createElement('canvas')
+    const lc2 = layer2.getContext('2d')!
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const demo = newDemo()
     const s = turn.current
@@ -114,17 +126,28 @@ export default function HeroTurntable({ hero, kit, scarf, mode, spin, onStopSpin
         cv.height = h
       }
       // katman her kurulumda yenidir (tuval ise eski boyunu korur): ayrı denetlenir
-      if (layer.width !== w || layer.height !== h) {
-        layer.width = w
-        layer.height = h
+      for (const L of [layer, layer2]) {
+        if (L.width !== w || L.height !== h) {
+          L.width = w
+          L.height = h
+        }
       }
       last = now
       const t = (now - t0) / 1000
       const k = kitRef.current
       const d = demoPose(demo, still ? 'dur' : mode, t, k.look?.st, k.look?.rs)
-      const phi = shown(s.a)
-      const cos = Math.cos(phi)
-      const sin = Math.sin(phi)
+      // görünen açı → iki komşu görüş ve aralarındaki geçiş payı
+      const u = shown(s.a) / Q
+      const i0 = Math.floor(u)
+      const f = u - i0
+      const e = 1 - Math.abs(2 * f - 1)
+      const sx = 1 - (1 - NARROW) * e * e * (3 - 2 * e)
+      const topA = smooth(0.38, 0.62, f)
+      const baseA = 1 - smooth(0.5, 0.62, f)
+      const viewOf = (i: number) => ((i % 4) + 4) % 4
+      // gölge ve ışık için ağırlıklı görüş: yan görüşte geniş, önde/arkada dar; arka koyu, ön ılık
+      const wOf = (v: number) => (v % 2 === 0 ? 1 : 0)
+      const wide = wOf(viewOf(i0)) * (1 - topA) + wOf(viewOf(i0 + 1)) * topA
       // büyük sahnede altta düğme şeridi, üstte parçanın adı var: karakter ikisinin arasına sığar (boyu ~ size)
       const big = w > 200 * dpr
       const ground = big ? h - 54 * dpr : h * 0.9
@@ -186,22 +209,31 @@ export default function HeroTurntable({ hero, kit, scarf, mode, spin, onStopSpin
       const lift = room * Math.tanh((d.dy * size) / room)
       c.fillStyle = `rgba(10,9,26,${0.5 - Math.min(0.25, d.dy * 0.3)})`
       c.beginPath()
-      c.ellipse(cx, ground, size * 0.24 * (1 - d.dy * 0.35) * (0.55 + 0.45 * Math.abs(cos)), size * 0.04, 0, 0, Math.PI * 2)
+      c.ellipse(cx, ground, size * 0.24 * (1 - d.dy * 0.35) * (0.72 + 0.28 * wide) * sx, size * 0.04, 0, 0, Math.PI * 2)
       c.fill()
 
-      // karakter: ayrı katmanda çizilir, arkası dönükken koyulaşır, önü dönükken ılık ışık alır
-      lc.clearRect(0, 0, w, h)
-      const sx = Math.max(0.1, Math.abs(cos))
-      drawHero(lc, hero, d.pose, cx, ground - lift, size, cos < 0, t, { moving: d.moving, flow: d.flow, sx: d.kx * sx, sy: d.ky, scarf: scarf?.color, scarfS: scarf?.shade, acc: k })
-      const back = Math.max(0, -sin)
-      const face = Math.max(0, sin)
-      if (back > 0.01 || face > 0.01) {
-        lc.globalCompositeOperation = 'source-atop'
-        lc.fillStyle = back > 0.01 ? `rgba(18,14,44,${0.34 * back})` : `rgba(255,222,170,${0.09 * face})`
-        lc.fillRect(0, 0, w, h)
-        lc.globalCompositeOperation = 'source-over'
+      // karakter: her görüş ayrı katmanda çizilir, arkası dönükken koyulaşır, önü dönükken ılık ışık alır
+      const paint = (g: CanvasRenderingContext2D, v: number) => {
+        g.clearRect(0, 0, w, h)
+        const o = { moving: d.moving, flow: d.flow, sx: d.kx * sx, sy: d.ky, scarf: scarf?.color, scarfS: scarf?.shade, acc: k }
+        if (v === 0 || v === 2) drawHero(g, hero, d.pose, cx, ground - lift, size, v === 2, t, o)
+        else drawHeroTurn(g, hero, v === 1 ? 'front' : 'back', d.pose, cx, ground - lift, size, t, o)
+        g.globalCompositeOperation = 'source-atop'
+        g.fillStyle = v === 3 ? 'rgba(18,14,44,0.16)' : v === 1 ? 'rgba(255,222,170,0.07)' : 'rgba(0,0,0,0)'
+        if (v === 1 || v === 3) g.fillRect(0, 0, w, h)
+        g.globalCompositeOperation = 'source-over'
       }
-      c.drawImage(layer, 0, 0)
+      if (baseA > 0.001) {
+        paint(lc, viewOf(i0))
+        c.globalAlpha = baseA
+        c.drawImage(layer, 0, 0)
+      }
+      if (topA > 0.001) {
+        paint(lc2, viewOf(i0 + 1))
+        c.globalAlpha = topA
+        c.drawImage(layer2, 0, 0)
+      }
+      c.globalAlpha = 1
 
       // erişilebilirlik: kaydırıcının değeri (yalnız değişince)
       const deg = Math.round((((-s.a * 180) / Math.PI) % 360 + 360) % 360)
@@ -251,18 +283,18 @@ export default function HeroTurntable({ hero, kit, scarf, mode, spin, onStopSpin
     // durmuş parmak fırlatmaz
     if (performance.now() - s.pt > 90) s.v = 0
     s.v = Math.max(-12, Math.min(12, s.v))
-    s.target = Math.round((s.a + s.v * 0.18) / Math.PI) * Math.PI
+    s.target = Math.round((s.a + s.v * 0.18) / Q) * Q
     s.dirty = true
   }
   const onKey = (e: React.KeyboardEvent) => {
     const s = turn.current
     const dir = e.key === 'ArrowLeft' ? 1 : e.key === 'ArrowRight' ? -1 : 0
     if (dir) {
-      // bir basış yarım tur: öbür yan görünüşe yayla döner (ince ön/arka hâlde durmaz); basılı tutunca döner durur
+      // bir basış çeyrek tur: sonraki görüşe yayla döner; basılı tutunca döner durur
       e.preventDefault()
       e.stopPropagation()
       const from = s.spin ? s.a : s.target
-      const next = Math.round(from / Math.PI) * Math.PI + dir * KEY_STEP
+      const next = Math.round(from / Q) * Q + dir * KEY_STEP
       if (Math.abs(next - s.a) <= KEY_STEP * 1.5) s.target = next
       if (s.spin) {
         s.v = 0

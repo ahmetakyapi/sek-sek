@@ -1,7 +1,7 @@
 import type { CityRoad } from './types'
 
 /**
- * Bitlis ana yolu, dört parça (TASLAK):
+ * Bitlis ana yolu, dört parça:
  *  1. Dere kenarı taş evler: damdan dama; ilk aralık kuru yerde, sonrakiler derenin üstünde. Taş köprüde bir bekçi.
  *  2. Bitlis Kalesi: kayadan sarkan ilk halatın altı kuru yer (tutun, tırman, kayaya atla); sonra dikenli çukurun
  *     üstünde halattan halata. Kalenin tepesindeki burca dördüncü halatla çıkılır: Ferit Usta'nın tabağı orada (C).

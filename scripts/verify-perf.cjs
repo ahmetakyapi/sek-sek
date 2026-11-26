@@ -1,5 +1,5 @@
 /**
- * Performans kanıtı (kalıcı kural, CLAUDE.md "Akıcılık"): üretim derlemesinde gerçek oynanış (koşu, zıplama, dash)
+ * Performans kanıtı (kalıcı kural, .claude/rules/akicilik.md): üretim derlemesinde gerçek oynanış (koşu, zıplama, dash)
  * sırasında kare kaçıyor mu? Retina masaüstü (DPR 2) ve DPR 3 telefonda 8 sn oynar, kare aralıklarını ölçer.
  * İlk saniye (ısınma) sayılmaz. Karelerin %2'sinden fazlası 25 ms'yi aşar ya da p95 20 ms'yi geçerse FAIL.
  * Geliştirme sunucusu (React geliştirme modu) yavaştır ve yanıltır: üretim derlemesiyle koş.

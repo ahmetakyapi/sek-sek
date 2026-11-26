@@ -1575,7 +1575,12 @@ function drawHead(c: CanvasRenderingContext2D, s: Skin, x: number, y: number, bl
   }
   if (kit.face === 'gozluk') drawGlasses(c, hx, hy)
   if (kit.face === 'gunes') drawShades(c, hx, hy)
-  drawFaceItem(c, kit.face, heroHead(hx, hy), { t, moving, hair, lift })
+  if (kit.face !== 'yok') {
+    const hf = heroHead(hx, hy)
+    // sakallı yüzde yanak parçası sakalın üstüne çıkar
+    if (s.trim || s.beard) hf.beard = true
+    drawFaceItem(c, kit.face, hf, { t, moving, hair, lift })
+  }
   // topuz: başlık takılıysa altta kalır
   drawHairTop(c, s.back ?? 'none', heroHead(hx, hy), { t, moving, hair, lift }, s, COVERS_HEAD.has(acc) || (!!s.hat && s.hat !== 'yazma' && !ON_HEAD.has(acc)))
   // başa takılan aksesuar kılığın şapkasının yerine geçer; yazma örtüdür, kalır ve başlık üstüne oturur
@@ -2604,6 +2609,30 @@ export function drawHero(c: CanvasRenderingContext2D, look: Look, pose: Pose, x:
   drawArm(c, s, tx + 4 + twist(na[0]) + tw * 2.8, sY, na[0], na[1], true, armReach(pose, 1))
   c.restore()
   c.restore()
+  soft = wasSoft
+}
+
+/**
+ * Sırt eşyası tek başına (Mağaza döner sahnesi, heroTurn.ts): oyundaki yan çizimin aynısı, gövdesiz. `back` sırta
+ * takılan kısım (pelerin, heybe, bağlama, sırt aksesuarı ya da rol eşyası), `front` askı ve öne düşen kısım.
+ */
+export function drawBackGear(c: CanvasRenderingContext2D, look: Look, kit: Kit, part: 'back' | 'front', tx: number, ty: number, t: number, sw: number, flow: number, lift: number) {
+  const wasSoft = soft
+  soft = painted
+  const role = kit.back === 'yok' ? LOOKS[look].role : undefined
+  if (part === 'back') {
+    if (kit.back === 'pelerin') drawCape(c, tx, ty, t, flow, lift)
+    if (kit.back === 'heybe') drawBag(c, tx, ty, sw)
+    if (kit.back === 'saz') drawBackSaz(c, tx, ty, sw)
+    drawHeroBack(c, kit.back, tx, ty, t, sw, flow, lift)
+    if (role === 'tube') drawTube(c, tx, ty, sw)
+  } else {
+    if (role === 'tube') drawRoleStrap(c, tx, ty, '#6a3e24')
+    if (role === 'satchel') drawSatchel(c, tx, ty, sw)
+    if (kit.back === 'heybe') drawStrap(c, tx, ty)
+    if (kit.back === 'saz') drawSazStrap(c, tx, ty)
+    drawHeroBackFront(c, kit.back, tx, ty)
+  }
   soft = wasSoft
 }
 

@@ -376,6 +376,46 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'bee',
     animal: 'horse',
   },
+  adiyaman: {
+    // Adıyaman: Nemrut'ta gün doğumu (morumsu gök, pembe orta, turuncu ufuk), kireçtaşı zemin, Fırat'ın yeşili, isot kızılı
+    sky: ['#5e6aa8', '#d88e94', '#fbc896'],
+    sun: { x: 0.24, y: 0.34, r: 16, color: '#fff0c4', glow: 'rgba(255,186,128,0.32)' },
+    far: '#b48c9a',
+    mid: '#8a8e58',
+    near: '#4e6236',
+    tileTop: '#ecd4a8',
+    tile: '#d4b284',
+    tileDark: '#8a6644',
+    tileLight: '#f4e2c0',
+    plank: '#8a5a36',
+    accent: '#d8562e',
+    water: ['#3a8a78', '#22605a', '#cfeee2'],
+    spike: ['#4a3a34', '#241a18'],
+    weather: 'dust',
+    enemyGround: 'scorpion',
+    enemyFly: 'wasp',
+    animal: 'horse',
+  },
+  kastamonu: {
+    // Kastamonu: serin sabah, Ilgaz karaçamı yeşili, kale taşının gri-bejı, kanyon suyunun yeşil-mavisi, hasır sarısı
+    sky: ['#4a78a8', '#9cc0d8', '#f2dcb4'],
+    sun: { x: 0.72, y: 0.24, r: 13, color: '#fff2d0', glow: 'rgba(255,232,190,0.22)' },
+    far: '#8ea2b8',
+    mid: '#4a7a5a',
+    near: '#2a4e3a',
+    tileTop: '#c4b8a0',
+    tile: '#9a907c',
+    tileDark: '#5a5244',
+    tileLight: '#ddd2ba',
+    plank: '#7e5a36',
+    accent: '#d8a84a',
+    water: ['#2e8a8e', '#1a5e66', '#d2eef0'],
+    spike: ['#3a3a3e', '#1c1c20'],
+    weather: 'leaves',
+    enemyGround: 'boar',
+    enemyFly: 'raven',
+    animal: 'cow',
+  },
   afyon: {
     // Afyon: kara volkanik kaya, kaplıca buharının beyazı, termal havuzun turkuazı ve kaymak sarısı
     sky: ['#4a6aa8', '#a8c4e4', '#f6ead8'],
@@ -1294,6 +1334,10 @@ export function buildLayers(city: CityKey): Layers {
       return balikesirLayers(s, B)
     case 'bingol':
       return bingolLayers(s, B)
+    case 'adiyaman':
+      return adiyamanLayers(s, B)
+    case 'kastamonu':
+      return kastamonuLayers(s, B)
     case 'afyon':
       return afyonLayers(s, B)
     case 'elazig':
@@ -4165,6 +4209,371 @@ function afyonLayers(s: CityStyle, B: number): Layers {
         for (let i = -9; i <= 9; i += 2) {
           const len = 9 + Math.floor(r() * 7) - Math.abs(i) / 2
           rect(c, x + 7 + i, base - 22 + Math.floor(Math.sqrt(Math.max(0, 81 - i * i)) * 0.6), 1, len, i % 4 ? '#7a9a52' : '#9ab866')
+        }
+      }
+    }),
+  }
+}
+
+/** Adıyaman: gün doğumunda Nemrut Dağı, tepesinde çakıl tümülüs, terasta taş heykeller ve dibine düşmüş başları; Fırat vadisi;
+ * Cendere'nin tek kemerli Roma köprüsü ve sütunları, Perre'nin kaya mezarları, düz damlı evler; önde tütün dizileri ve fıstık ağaçları */
+function adiyamanLayers(s: CityStyle, B: number): Layers {
+  // Nemrut'un taş başı: sivri külahlı (tiara) yüz, sol yüz ılık, sağ yüz gölge; h: yüz boyu
+  const head = (c: Ctx, x: number, base: number, h: number, lit: string, mid: string, dark: string) => {
+    const w = Math.max(3, Math.round(h * 0.7))
+    rect(c, x, base - h, w, h, mid)
+    rect(c, x, base - h, Math.max(1, Math.round(w * 0.4)), h, lit)
+    rect(c, x + w - 1, base - h, 1, h, dark)
+    const cap = Math.round(h * 0.9)
+    for (let i = 0; i < cap; i++) {
+      const k = i / cap
+      const iw = Math.max(1, Math.round(w * (1 - k * 0.8)))
+      rect(c, x + Math.round((w - iw) * 0.35), base - h - 1 - i, iw, 1, i % 3 === 0 ? dark : k < 0.5 ? mid : lit)
+    }
+    if (h >= 5) {
+      rect(c, x + 1, base - h + Math.round(h * 0.35), 1, 1, dark)
+      rect(c, x + w - 2, base - h + Math.round(h * 0.35), 1, 1, dark)
+      rect(c, x + Math.floor(w / 2), base - h + Math.round(h * 0.45), 1, Math.max(1, Math.round(h * 0.25)), dark)
+    }
+  }
+  return {
+    far: layer((c) => {
+      // Toros sırtları: gün doğumunun pembesine bürünmüş, arkada daha soluk
+      hills(c, '#d6aab0', B - 140, 22, 2, 5101)
+      hills(c, '#c0949e', B - 122, 14, 3, 5102)
+      // Nemrut Dağı: geniş omuzlu kütle, sol yamaç ışıkta, sağ yamaç gölgede
+      const cx = 360
+      const top = B - 146
+      for (let x = -190; x <= 190; x++) {
+        const ax = Math.abs(x)
+        const y = Math.round(top + 18 + ax * 0.3 + Math.sin(x * 0.11) * 2 + Math.sin(x * 0.37) * 1.2)
+        rect(c, cx + x, y, 1, B - y, x < -20 ? '#b08a92' : x < 30 ? '#a07e8a' : '#8c6c7c')
+        if (x < -10 && (x * 7) % 11 === 0) rect(c, cx + x, y + 2, 1, 6 + (ax % 7), '#c49ca0')
+      }
+      // tümülüs: tepede yığma çakıl konisi, ışıklı sol yüz, ince çakıl benekleri
+      for (let x = -42; x <= 42; x++) {
+        const y = Math.round(top + Math.abs(x) * 0.42 + (Math.abs(x) > 34 ? (Math.abs(x) - 34) * 0.5 : 0))
+        rect(c, cx + x, y, 1, top + 24 - y, x < -6 ? '#e4c8b0' : x < 10 ? '#d2b6a2' : '#b49a90')
+        if ((x * 13) % 5 === 0) rect(c, cx + x, y + 3 + ((x * 7) % 9 + 9) % 9, 1, 1, x < 0 ? '#f4dcc4' : '#9a8078')
+      }
+      rect(c, cx - 3, top, 6, 1, '#f6e2cc')
+      // doğu terası: sırt sırta oturan taş heykeller (başsız gövdeler), önlerinde yere düşmüş başlar
+      const tx = cx - 92
+      const ty = top + 40
+      rect(c, tx - 6, ty, 74, 3, '#c8a49c')
+      rect(c, tx - 6, ty, 74, 1, '#e8cec0')
+      for (let i = 0; i < 5; i++) {
+        const bx = tx + i * 13
+        const bh = 10 + ((i * 5) % 4)
+        rect(c, bx, ty - bh, 8, bh, '#d4b4a6')
+        rect(c, bx, ty - bh, 3, bh, '#ecd2c0')
+        rect(c, bx + 7, ty - bh, 1, bh, '#9a7c80')
+        rect(c, bx - 1, ty - 3, 10, 3, '#b8968e')
+      }
+      for (let i = 0; i < 4; i++) head(c, tx + 3 + i * 16, ty + 9, 5, '#f0d6c4', '#d0b0a4', '#8e7078')
+      // önde yumuşak vadi sırtları
+      hills(c, s.far, B - 92, 8, 3, 5103)
+      // Fırat: vadinin dibinden akan yeşil su; parlak üst kenar, ışıltılar
+      const river = B - 80
+      rect(c, 0, river, LAYER_W, B - river, '#4e8e7c')
+      rect(c, 0, river, LAYER_W, 1, '#f4dcc0')
+      rect(c, 0, river + 1, LAYER_W, 3, '#6aa490')
+      for (let i = 0; i < 30; i++) rect(c, (i * 79) % LAYER_W, river + 4 + ((i * 11) % 9), 3 + (i % 4) * 2, 1, i % 3 ? 'rgba(250,220,190,0.5)' : 'rgba(220,244,236,0.55)')
+      // kıyı bahçeleri: suyun kenarında koyu yeşil benekler
+      const r = rng(5104)
+      rect(c, 0, river + 15, LAYER_W, B - river, '#7a8a52')
+      for (let x = 0; x < LAYER_W; x += 3) rect(c, x, river + 13 - Math.floor(r() * 3), 3, 3, r() > 0.5 ? '#5a7a4a' : '#6e8a52')
+    }),
+    mid: layer((c) => {
+      const r = rng(5105)
+      const base = B - 58
+      rect(c, 0, base - 3, LAYER_W, B - base + 3, s.mid)
+      // Cendere Çayı: köprünün altından akan yeşil su
+      const bx = 180
+      rect(c, bx - 70, base - 6, 140, 9, '#3e8676')
+      rect(c, bx - 70, base - 6, 140, 1, '#d8f0e4')
+      for (let i = 0; i < 10; i++) rect(c, bx - 62 + i * 13, base - 3 + (i % 3), 4, 1, 'rgba(230,248,240,0.6)')
+      // kıyı kayaları: köprünün iki ayağı
+      for (const k of [-1, 1]) {
+        for (let i = 0; i < 18; i++) rect(c, bx + k * (40 + i) - (k < 0 ? 1 : 0), base - 18 + Math.round(i * 0.6), 1, 22 - Math.round(i * 0.6), k < 0 ? '#a89070' : '#8a7458')
+      }
+      // tek kemer: kireçtaşı bloklar, iç kenarı gölgede, kemer taşları belli; üstte hafif kamburlu köprü yolu
+      const R = 40
+      const Ri = 33
+      for (let x = -48; x <= 48; x++) {
+        const deck = Math.round(base - R - 6 + Math.abs(x) * 0.08)
+        const outer = Math.abs(x) <= R ? Math.round(base - Math.sqrt(R * R - x * x)) : base
+        const inner = Math.abs(x) < Ri ? Math.round(base - Math.sqrt(Ri * Ri - x * x)) : base
+        const col = x < -16 ? '#e4d2ae' : x < 18 ? '#d4c09a' : '#b8a27e'
+        rect(c, bx + x, deck, 1, inner - deck, col)
+        if (Math.abs(x) < R + 1) rect(c, bx + x, outer, 1, Math.max(1, inner - outer), x < 0 ? '#c8b28c' : '#a89272')
+        if (Math.abs(x) < Ri) rect(c, bx + x, inner, 1, 1, '#6e5a44')
+        if (x % 6 === 0 && Math.abs(x) < R) rect(c, bx + x, outer, 1, inner - outer, '#9a8466')
+      }
+      for (let x = -48; x <= 48; x += 7) rect(c, bx + x, base - R - 5, 1, 6, 'rgba(120,96,70,0.35)')
+      rect(c, bx - 48, base - R - 8, 97, 2, '#ece0c4')
+      rect(c, bx - 48, base - R - 6, 97, 1, '#9a8466')
+      // sütunlar: iki uçta ikişer olmalıydı, biri eksik; yivli gövde, kaide, başlık
+      for (const px of [bx - 46, bx - 38, bx + 42]) {
+        const ph = 26
+        const y0 = base - R - 8 - ph
+        rect(c, px - 1, base - R - 10, 6, 2, '#d8c8a8')
+        rect(c, px, y0, 4, ph, '#ecdcbc')
+        rect(c, px, y0, 1, ph, '#fff4dc')
+        rect(c, px + 3, y0, 1, ph, '#b8a282')
+        rect(c, px + 2, y0 + 2, 1, ph - 4, 'rgba(140,116,90,0.3)')
+        rect(c, px - 1, y0 - 2, 6, 2, '#d8c8a8')
+      }
+      // Perre: katmanlı kireçtaşı yar, kayaya oyulmuş kapı biçimli mezarlar
+      const px0 = 290
+      const px1 = 440
+      for (let x = px0; x < px1; x++) {
+        const t = (x - px0) / (px1 - px0)
+        const h = Math.round(40 + Math.sin(t * Math.PI) * 18 + Math.sin(x * 0.4) * 2)
+        rect(c, x, base - h, 1, h, t < 0.35 ? '#d8bc94' : t < 0.7 ? '#c8aa82' : '#ac906c')
+        for (let ly = base - h + 6; ly < base; ly += 7) rect(c, x, ly, 1, 1, 'rgba(110,80,50,0.28)')
+        rect(c, x, base - h, 1, 1, '#f0dcb8')
+      }
+      for (const [tx, ty] of [[304, -30], [326, -42], [350, -28], [372, -46], [396, -32], [418, -24]] as const) {
+        rect(c, tx - 1, base + ty - 1, 9, 11, '#e8d4ae')
+        rect(c, tx, base + ty, 7, 10, '#4a3428')
+        rect(c, tx + 1, base + ty + 1, 5, 9, '#36261e')
+        for (let i = 0; i < 3; i++) rect(c, tx - 1 + i, base + ty - 2 - i, 9 - i * 2, 1, '#e8d4ae')
+      }
+      // düz damlı kerpiç-taş evler, ince minareli Ulu Cami
+      const WALL = ['#d8c09a', '#c8ac86', '#e2cca6']
+      for (let x = 456; x < LAYER_W - 6; x += 22 + Math.floor(r() * 8)) {
+        if (x > 548 && x < 572) continue
+        const w = 16 + Math.floor(r() * 6)
+        const h = 12 + Math.floor(r() * 10)
+        rect(c, x, base - h, w, h, WALL[Math.floor(r() * 3)])
+        rect(c, x, base - h, 2, h, '#f0dcb8')
+        rect(c, x + w - 2, base - h, 2, h, 'rgba(90,60,40,0.3)')
+        rect(c, x - 1, base - h - 2, w + 2, 2, '#9a7a58')
+        rect(c, x + 3, base - h + 4, 3, 4, '#4a3a30')
+        if (w > 18) rect(c, x + w - 7, base - h + 4, 3, 4, '#4a3a30')
+        rect(c, x + Math.floor(w / 2) - 1, base - 7, 3, 7, '#5a3e2a')
+        // damda kuruyan isot: kızıl benekler
+        if (r() > 0.5) for (let k = 0; k < 4; k++) rect(c, x + 2 + k * 3, base - h - 3, 2, 1, k % 2 ? '#c83a24' : '#e0502e')
+      }
+      const mx = 560
+      rect(c, mx - 9, base - 18, 22, 18, '#dcc6a0')
+      disc(c, mx + 2, base - 18, 9, '#8e98a2', true)
+      rect(c, mx - 4, base - 25, 3, 2, '#b4bec8')
+      rect(c, mx + 14, base - 52, 5, 52, '#e8d6b4')
+      rect(c, mx + 14, base - 52, 2, 52, '#f6e8cc')
+      rect(c, mx + 13, base - 38, 7, 2, '#c4ae8a')
+      for (let i = 0; i < 9; i++) rect(c, mx + 14 + Math.round(i * 0.3), base - 53 - i, 5 - Math.round(i * 0.55), 1, '#7a8692')
+      rect(c, mx + 16, base - 65, 1, 3, '#f2c14e')
+      // köprü ile yar arasında servi ve kavaklar
+      for (const x of [252, 268, 446]) {
+        for (let y = 0; y < 30; y++) {
+          const w = Math.round(Math.sin((y / 30) * Math.PI) * 3)
+          rect(c, x - w, base - y, w * 2 + 1, 1, y % 4 === 0 ? '#7a8a4a' : '#5a6e3a')
+        }
+      }
+      rect(c, 0, base + 18, LAYER_W, B - base, s.mid)
+    }),
+    near: layer((c) => {
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      const r = rng(5106)
+      // kuru ot ve kekik tutamları
+      for (let x = 0; x < LAYER_W; x += 2) {
+        const h = 2 + Math.floor(r() * 5)
+        rect(c, x, base - h, 1, h, x % 6 ? '#6e7a40' : '#a09450')
+      }
+      // tütün dizileri: iki direk, üstte sırık, iplere dizilmiş sararan yapraklar (taze yeşil, sarı, kahve)
+      const LEAF = ['#b89a4a', '#9a7a38', '#7e8a3e', '#c4a656', '#8a6a30']
+      for (const fx of [36, 268, 500]) {
+        rect(c, fx, base - 34, 2, 34, '#5a3e26')
+        rect(c, fx + 58, base - 34, 2, 34, '#5a3e26')
+        rect(c, fx, base - 35, 60, 2, '#6e4c2e')
+        rect(c, fx, base - 35, 60, 1, '#8e6a44')
+        for (let k = 0; k < 7; k++) {
+          const sx = fx + 6 + k * 8
+          const len = 12 + ((k * 7) % 8)
+          rect(c, sx, base - 33, 1, len, '#d8ccb0')
+          for (let j = 1; j < len - 1; j += 3) {
+            const col = LEAF[(k * 3 + j) % LEAF.length]
+            rect(c, sx - 1, base - 32 + j, 3, 2, col)
+            rect(c, sx - 1, base - 32 + j, 1, 1, 'rgba(255,240,200,0.3)')
+          }
+        }
+      }
+      // tütün tarlası: geniş yapraklı fideler, tepede pembe çiçek
+      for (let x = 110; x < 250; x += 9) {
+        const h = 10 + Math.floor(r() * 6)
+        rect(c, x, base - h, 1, h, '#5e7a34')
+        for (let j = 2; j < h; j += 4) {
+          rect(c, x - 4, base - j - 1, 4, 2, '#6e9a3e')
+          rect(c, x + 1, base - j - 3, 4, 2, '#5a8434')
+        }
+        rect(c, x - 1, base - h - 2, 3, 2, '#e88aa0')
+      }
+      // fıstık ve ceviz ağaçları: yuvarlak, iki tonlu taç
+      for (const x of [16, 344, 430, 600]) {
+        rect(c, x, base - 14, 3, 14, '#5a4030')
+        disc(c, x + 1, base - 22, 10, '#5e7a3e')
+        disc(c, x - 2, base - 25, 6, '#7e9a4e')
+        disc(c, x + 5, base - 19, 5, '#4e6a34')
+        for (let i = 0; i < 5; i++) rect(c, x - 5 + i * 3, base - 24 + ((i * 5) % 7), 1, 1, i % 2 ? '#c84a5a' : '#e8d8a8')
+      }
+    }),
+  }
+}
+
+/** Kastamonu: Ilgaz'ın karlı doruklarının önünde karaçam ormanı, kayalık tepede burçlu Kastamonu Kalesi, Nasrullah'ın
+ * çıkmalı konakları ve kurşun kubbeli camisi; önde Horma Kanyonu'nun yarları, kayaya çakılmış ahşap yol ve şelale */
+function kastamonuLayers(s: CityStyle, B: number): Layers {
+  // karaçam: kat kat üçgen dal kümeleri, sol yanı ışıkta; h: boy
+  const pine = (c: Ctx, x: number, base: number, h: number, lit: string, dark: string, deep: string) => {
+    rect(c, x, base - Math.round(h * 0.25), 2, Math.round(h * 0.25), '#4a3626')
+    const tiers = Math.max(3, Math.round(h / 7))
+    for (let t = 0; t < tiers; t++) {
+      const y0 = base - Math.round(h * 0.18) - Math.round((t * h * 0.82) / tiers)
+      const tw = Math.round((h * 0.34) * (1 - t / (tiers + 1)))
+      const th = Math.round(h * 0.82 / tiers) + 3
+      for (let i = 0; i < th; i++) {
+        const w = Math.round((tw * (i + 1)) / th)
+        const yy = y0 - th + i
+        rect(c, x + 1 - w, yy, w, 1, lit)
+        rect(c, x + 1, yy, w + 1, 1, i === th - 1 ? deep : dark)
+      }
+    }
+    rect(c, x, base - h - 1, 2, 2, lit)
+  }
+  return {
+    far: layer((c) => {
+      // Ilgaz Dağları: arkada mavi-mor, önde gri-mavi; ikisinde de geniş kar örtüsü
+      hills(c, '#b4c0d6', B - 146, 34, 2, 3701)
+      snowCaps(c, '#f8f8fc', B - 146, 34, 2, 3701)
+      snowCaps(c, '#dfe6f2', B - 146 + 3, 34, 2, 3701)
+      hills(c, '#94a8c0', B - 122, 22, 3, 3702)
+      snowCaps(c, '#eef2f8', B - 122, 22, 3, 3702)
+      // ormanlı ön sırt: sık karaçam tepeleri
+      hills(c, s.far, B - 100, 10, 4, 3703)
+      const r = rng(3704)
+      for (let x = 0; x < LAYER_W; x += 3 + Math.floor(r() * 3)) {
+        const tt = (x / LAYER_W) * Math.PI * 2
+        const y = Math.round(B - 100 - 10 * (0.6 * Math.sin(tt * 4) + 0.2)) + Math.floor(r() * 6)
+        for (let i = 0; i < 9; i++) rect(c, x - Math.floor(i / 2), y + i, 1 + i, 1, i % 3 === 2 ? '#5e7a7a' : '#6e8a88')
+      }
+      rect(c, 0, B - 86, LAYER_W, B, '#6e8a88')
+      for (let x = 0; x < LAYER_W; x += 2 + Math.floor(r() * 3)) {
+        const y = B - 90 + Math.floor(r() * 8)
+        for (let i = 0; i < 7; i++) rect(c, x - Math.floor(i / 2), y + i, 1 + i, 1, i % 2 ? '#587470' : '#64807c')
+      }
+    }),
+    mid: layer((c) => {
+      const r = rng(3705)
+      const base = B - 58
+      rect(c, 0, base - 3, LAYER_W, B - base + 3, s.mid)
+      // karaçam ormanı: solda sık, sağda seyrek
+      for (let x = 4; x < 220; x += 9 + Math.floor(r() * 7)) pine(c, x, base + 2, 26 + Math.floor(r() * 16), '#5e8a62', '#3e664a', '#2e5038')
+      // kale tepesi: kayalık, katman katman; sol yamaç ışıkta
+      const kx = 320
+      for (let x = -100; x <= 100; x++) {
+        const ax = Math.abs(x)
+        const h = Math.round(Math.max(0, 48 - ax * 0.1 - (ax > 50 ? (ax - 50) * 1.15 : 0) + Math.sin(x * 0.5) * 2 + ((x * 17) % 5)))
+        if (h <= 0) continue
+        rect(c, kx + x, base - h, 1, h, x < -30 ? '#8e8c82' : x < 20 ? '#7e7c74' : '#66645e')
+        for (let ly = base - h + 9; ly < base; ly += 10) if ((x + ly) % 9 < 6) rect(c, kx + x, ly, 1, 1, '#5e584e')
+        if (x % 5 === 0 && h > 6) rect(c, kx + x, base - h, 1, 2, '#5e8a4a')
+      }
+      // yamaçta tutunmuş çalılar ve genç çamlar
+      for (const [dx, dy] of [[-84, 8], [-62, 18], [-40, 30], [-18, 22], [30, 26], [56, 14], [78, 6], [-70, 4], [44, 34]] as const) {
+        disc(c, kx + dx, base - dy, 3, '#3e6440')
+        disc(c, kx + dx - 1, base - dy - 1, 2, '#4e744a')
+      }
+      // surlar ve burçlar: kesme taş, mazgal dişleri, en yüksek burçta bayrak
+      const wy = base - 48
+      rect(c, kx - 46, wy - 10, 92, 10, '#c4b8a0')
+      rect(c, kx - 46, wy - 10, 92, 2, '#ddd2ba')
+      for (let x = kx - 46; x < kx + 46; x += 4) rect(c, x, wy - 13, 2, 3, '#c4b8a0')
+      for (let y = wy - 8; y < wy; y += 3) rect(c, kx - 46, y, 92, 1, 'rgba(90,80,64,0.22)')
+      for (const [tx, th, tw] of [[kx - 50, 22, 12], [kx - 6, 32, 14], [kx + 38, 20, 12]] as const) {
+        rect(c, tx, wy - th, tw, th, '#cbbfa6')
+        rect(c, tx, wy - th, 3, th, '#e2d8c0')
+        rect(c, tx + tw - 2, wy - th, 2, th, '#968a74')
+        for (let x = tx; x < tx + tw; x += 4) rect(c, x, wy - th - 3, 2, 3, '#cbbfa6')
+        rect(c, tx + Math.floor(tw / 2) - 1, wy - th + 7, 2, 4, '#3e362e')
+      }
+      rect(c, kx + 1, wy - 46, 1, 11, '#4a3e34')
+      rect(c, kx + 2, wy - 46, 6, 4, '#d8302a')
+      rect(c, kx + 4, wy - 45, 1, 2, '#f4f0e6')
+      // Nasrullah konakları: beyaz sıva, koyu ahşap kirişler, çıkma üst kat, kiremit çatı
+      for (let x = 430; x < 580; x += 26 + Math.floor(r() * 6)) {
+        const w = 20 + Math.floor(r() * 4)
+        rect(c, x + 2, base - 14, w - 4, 14, '#ece2cc')
+        rect(c, x, base - 28, w, 14, '#f2e8d4')
+        rect(c, x, base - 28, 3, 14, '#fffaf0')
+        for (let k = 0; k <= w - 1; k += 5) rect(c, x + k, base - 28, 1, 14, '#5e4430')
+        rect(c, x, base - 15, w, 1, '#5e4430')
+        rect(c, x + 3, base - 25, 3, 5, '#3a4250')
+        rect(c, x + w - 7, base - 25, 3, 5, '#3a4250')
+        rect(c, x + Math.floor(w / 2) - 2, base - 8, 4, 8, '#5e4430')
+        for (let i = 0; i < 6; i++) rect(c, x - 2 + i, base - 29 - i, w + 4 - i * 2, 1, i % 2 ? '#a8462e' : '#bc5a3a')
+      }
+      // Nasrullah Camii: kurşun kubbe, ince minare
+      const mx = 596
+      rect(c, mx - 12, base - 18, 24, 18, '#e2d8c2')
+      disc(c, mx, base - 18, 10, '#8a96a6', true)
+      rect(c, mx - 5, base - 26, 3, 2, '#b0bccc')
+      rect(c, mx + 14, base - 54, 5, 54, '#ece4d0')
+      rect(c, mx + 14, base - 54, 2, 54, '#fbf6ea')
+      rect(c, mx + 13, base - 40, 7, 2, '#c8bea8')
+      for (let i = 0; i < 9; i++) rect(c, mx + 14 + Math.round(i * 0.3), base - 55 - i, 5 - Math.round(i * 0.55), 1, '#7a8696')
+      rect(c, mx + 16, base - 67, 1, 3, '#f2c14e')
+      for (let x = 616; x < LAYER_W; x += 10) pine(c, x, base + 2, 30, '#5e8a62', '#3e664a', '#2e5038')
+      rect(c, 0, base + 18, LAYER_W, B - base, s.mid)
+    }),
+    near: layer((c) => {
+      const base = B - 24
+      rect(c, 0, base, LAYER_W, 40, s.near)
+      const r = rng(3706)
+      // Horma Kanyonu: iki yanda dik yar, dikey çatlaklar, yosun; sağ yarda kayaya çakılmış ahşap yol
+      const cliff = (x0: number, x1: number, peak: number) => {
+        for (let x = x0; x < x1; x++) {
+          const t = (x - x0) / (x1 - x0)
+          const h = Math.round(peak * (0.75 + 0.25 * Math.sin(t * Math.PI)) + Math.sin(x * 0.7) * 2)
+          rect(c, x, base - h, 1, h, t < 0.3 ? '#7e7464' : t < 0.75 ? '#6a6256' : '#544e46')
+          if ((x * 7) % 9 === 0) rect(c, x, base - h + 4, 1, h - 6, '#4a443c')
+          rect(c, x, base - h, 1, 2, '#5e8a4a')
+          if ((x * 5) % 7 === 0) rect(c, x, base - h + 6 + (x % 13), 1, 3, '#4e7a40')
+        }
+      }
+      cliff(0, 70, 64)
+      cliff(560, LAYER_W, 58)
+      // şelale: yarın kenarından dökülen beyaz su, dipte köpük ve yeşil göl
+      const wx = 50
+      for (let y = base - 60; y < base; y++) {
+        rect(c, wx - 4, y, 9, 1, '#e4f2f4')
+        rect(c, wx - 2 + ((y * 5) % 5) - 2, y, 1, 2, '#ffffff')
+        rect(c, wx + 3, y, 2, 1, '#b4d8dc')
+      }
+      rect(c, wx - 18, base - 3, 50, 5, '#2e8a8e')
+      rect(c, wx - 18, base - 3, 50, 1, '#d2eef0')
+      for (let i = 0; i < 7; i++) disc(c, wx - 8 + i * 3, base - 3 - (i % 2), 2, '#f4fbfc')
+      // ahşap yol: kayaya tutturulmuş tahtalar, ince dikmeler ve korkuluk
+      const by = base - 30
+      rect(c, 560, by, 80, 3, '#9a6e44')
+      rect(c, 560, by, 80, 1, '#c49a6a')
+      for (let x = 562; x < LAYER_W; x += 6) rect(c, x, by, 1, 3, '#6a4a2e')
+      for (let x = 564; x < LAYER_W; x += 12) {
+        rect(c, x, by - 8, 1, 8, '#7a5634')
+        rect(c, x + 1, by + 3, 1, 6, '#5a3e26')
+      }
+      rect(c, 560, by - 8, 80, 1, '#8a6440')
+      // karaçamlar ve eğrelti otları
+      for (let x = 70; x < 560; x += 2) {
+        const h = 2 + Math.floor(r() * 4)
+        rect(c, x, base - h, 1, h, x % 6 ? '#3e6a44' : '#4e7a4e')
+      }
+      for (const x of [110, 150, 300, 340, 480, 520]) pine(c, x, base + 1, 46 + Math.floor(r() * 14), '#4e7a52', '#2e543c', '#1e3e2c')
+      for (const x of [200, 410]) {
+        for (let k = -3; k <= 3; k++) {
+          for (let i = 0; i < 6; i++) rect(c, x + k * 2 + Math.round(k * i * 0.25), base - i - 1, 1, 1, k % 2 ? '#5e8a4e' : '#6e9a58')
         }
       }
     }),

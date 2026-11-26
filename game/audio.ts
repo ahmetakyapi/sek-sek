@@ -575,6 +575,11 @@ export class Sound {
         // yüzen ada gömüldü: pes bir "blop" ve kabarcık hışırtısı
         this.tone(180 * vary, 0.18, 'sine', 0.06, -90, now)
         return this.noise(0.35, 0.03, 600, now + 0.05, 0.6, 'lowpass')
+      case 'splash':
+        // şelaleye girildi: süzülmüş su şırıltısı (alçak geçiren, yumuşak) ve makamdan inen iki küçük çan damlası
+        this.noise(0.42, 0.035, 1500 * vary, now, 0.5, 'lowpass')
+        this.chime(this.scaleNote(4, 1), 0.035, now + 0.04, 0.35)
+        return this.chime(this.scaleNote(2, 1), 0.03, now + 0.13, 0.45)
       case 'freeze':
         // su donuyor: tiz, çıtırdayan kısa buz sesi ve makamdan tiz bir çan
         this.noise(0.25, 0.03, 3200, now, 0.4, 'lowpass')

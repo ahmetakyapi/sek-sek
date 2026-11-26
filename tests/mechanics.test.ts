@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVELS, bossLevel } from '../game/levels'
-import { AIR, AUNT, CHASE, EMPTY, FROST_CYCLE, SINK, auntFacing, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
+import { AIR, AUNT, CHASE, EMPTY, FALLS, FROST_CYCLE, SINK, auntFacing, NITRO, PHYS, RHYTHM, SWIM, TIDE_CYCLE, World, restore, snapshot, tideFill, tidePhase } from '../game/sim'
+import { solve } from '../scripts/solver'
 import { T, emptyInput, type Input } from '../game/types'
 
 /** İkinci defterin mekanikleri: halat (L), teleferik halatı (R), derin su (W). */
@@ -806,6 +807,121 @@ describe('yükselen hava (Balıkesir)', () => {
     step(w, 0.8, { right: true })
     expect(w.player.grounded).toBe(true)
     expect(w.player.y + w.player.h).toBe(4 * T)
+  })
+})
+
+describe('şelale (Kastamonu)', () => {
+  // dört karo genişliğinde, yirmi karo yüksek şelale; oyuncu tepesinde, sağında duvar
+  const tall = (fill: string) => [`   ${fill.slice(0, 3)}P#`, ...Array.from({ length: 20 }, () => `   ${fill}#`), '########']
+  /** w karo şelale, altı öldüren boşluk; iki yanda zemin. Çıkış (E) sağda */
+  const pit = (width: number, exit = false) => {
+    const mid = ';'.repeat(width)
+    const rows = Array.from({ length: 8 }, () => '          ' + mid + '          ')
+    rows[6] = ' P        ' + mid + (exit ? '      E   ' : '          ')
+    rows.push('##########' + ' '.repeat(width) + '##########', '##########' + ' '.repeat(width) + '##########')
+    return rows
+  }
+  /** kenara gelince zıplar; dash verilirse zıplamadan o kadar sonra sağa dash atar */
+  const leap = (w: World, dash?: number) => {
+    step(w, 0.5)
+    let jt = -1
+    for (let i = 0; i < 400 && w.deaths === 0; i++) {
+      const edge = jt < 0 && w.player.x + w.player.w >= 10 * T - 1
+      if (edge) jt = i
+      w.step(1 / 120, { ...emptyInput(), right: true, jump: jt >= 0, jumpPressed: edge, dashPressed: dash !== undefined && jt >= 0 && i === jt + Math.round(dash * 120) })
+    }
+  }
+
+  it('fizikte boşluktur; içine gireni aşağı iter (düşüş hızı serbest düşüşü aşar), girişte bir kez su sıçrar', () => {
+    const w = mk(tall(';;;;'))
+    const free = mk(tall('    '))
+    expect(w.hasFalls).toBe(true)
+    expect(w.tile(5, 6)).toBe(EMPTY)
+    expect(w.isFalls(5, 6)).toBe(true)
+    let splash = 0
+    for (let i = 0; i < 60; i++) {
+      for (const x of [w, free]) x.step(1 / 120, emptyInput())
+      splash += w.events.filter((e) => e.type === 'splash').length
+      w.events.length = 0
+    }
+    expect(w.player.falls).toBe(true)
+    expect(splash).toBe(1)
+    expect(w.player.y).toBeGreaterThan(free.player.y + 4)
+    step(w, 0.1)
+    expect(w.player.vy).toBeGreaterThan(PHYS.fallMax + 20)
+    expect(w.player.vy).toBeLessThanOrEqual(PHYS.fallMax * FALLS.fallMax + 1)
+  })
+
+  it('içeride zıplama yarıya iner', () => {
+    const height = (fill: string) => {
+      const w = mk([...Array.from({ length: 5 }, () => `   ${fill}  `), `  P${fill}  `, '########'])
+      step(w, 0.3)
+      step(w, 0.3, { right: true })
+      step(w, 0.1)
+      expect(w.player.grounded).toBe(true)
+      const y0 = w.player.y
+      let top = y0
+      for (let i = 0; i < 90; i++) {
+        w.step(1 / 120, { ...emptyInput(), jump: true, jumpPressed: i === 0 })
+        top = Math.min(top, w.player.y)
+      }
+      return y0 - top
+    }
+    const out = height('   ')
+    const inside = height(';;;')
+    expect(out).toBeGreaterThan(40)
+    expect(inside / out).toBeGreaterThan(0.35)
+    expect(inside / out).toBeLessThan(0.6)
+  })
+
+  it('ıslak kaya: şelalede duvarda kayılmaz, duvardan sekilmez (dışarıda sekilir)', () => {
+    const jumps = (fill: string) => {
+      const w = mk(tall(fill))
+      let n = 0
+      let walled = 0
+      for (let i = 0; i < 100; i++) {
+        w.step(1 / 120, { ...emptyInput(), right: true, jump: i % 12 < 6, jumpPressed: i > 20 && i % 12 === 0 })
+        n += w.events.filter((e) => e.type === 'walljump').length
+        if (i > 20 && w.player.wallDir !== 0) walled++
+        w.events.length = 0
+      }
+      return { n, walled }
+    }
+    const inFalls = jumps(';;;;')
+    expect(inFalls.n).toBe(0)
+    expect(inFalls.walled).toBe(0)
+    const dry = jumps('    ')
+    expect(dry.n).toBeGreaterThan(0)
+    expect(dry.walled).toBeGreaterThan(0)
+  })
+
+  it('altı öldüren boşlukta: iki karoluk şelale koşarak atlanır, üç karoluk düşürür, zıplayıp yatay dash ile geçilir', () => {
+    const two = mk(pit(2))
+    leap(two)
+    expect(two.deaths).toBe(0)
+    const three = mk(pit(3))
+    leap(three)
+    expect(three.deaths).toBe(1)
+    for (const d of [0.05, 0.12, 0.2, 0.28]) {
+      const w = mk(pit(3))
+      leap(w, d)
+      expect(w.deaths).toBe(0)
+    }
+  })
+
+  it('çözücü şelaleyi geçer (zıpla + dash dalı) ve anlık görüntü şelale durumunu taşır', () => {
+    const level = { ...LEVELS[0], map: pit(3, true), wind: 0 }
+    expect(solve(level, { exitOnly: true, budget: 6000 }).won).toBe(true)
+    const w = mk(tall(';;;;'))
+    step(w, 0.3)
+    expect(w.player.falls).toBe(true)
+    const s = snapshot(w)
+    const w2 = mk(tall(';;;;'))
+    restore(w2, s)
+    expect(w2.player.falls).toBe(true)
+    step(w, 0.2)
+    step(w2, 0.2)
+    expect(w2.player.y).toBeCloseTo(w.player.y, 5)
   })
 })
 

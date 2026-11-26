@@ -477,6 +477,11 @@ export class Renderer {
         else this.burst(p.x + p.w / 2, p.y + 4, 5, 'rgba(235,252,255,0.8)', 30, 1)
         break
       }
+      case 'splash':
+        // şelaleye girildi: açık turkuaz ve beyaz damlalar
+        this.burst(e.x, e.y, 7, '#e8fbff', 60, 1)
+        this.burst(e.x, e.y, 4, 'rgba(160,226,232,0.85)', 45, 1)
+        break
       case 'breath':
         // nefes azalıyor: ağızdan kabarcık kaçar, gösterge bir kez nabız atar
         this.breathPulse = 1
@@ -773,6 +778,7 @@ export class Renderer {
     this.drawCrumbles(f, w, cx, cy)
     if (w.hasLift) this.drawLift(f, w, cx, cy)
     this.drawWater(f, w, cx, cy)
+    if (w.hasFalls) this.drawFalls(f, w, cx, cy)
     if (w.hasFrost) this.drawFrost(f, w, cx, cy)
     if (w.hasTide) this.drawTide(f, w, cx)
     this.drawEntities(f, w)
@@ -1545,6 +1551,66 @@ export class Renderer {
         const bz = this.t * 3
         rect(b, x + 6 + Math.round(Math.cos(bz) * 6), bot - 24 + Math.round(Math.sin(bz * 1.7) * 2), 1, 1, '#2a1a12')
         rect(b, x + 12 + Math.round(Math.sin(bz * 0.8) * 5), bot - 22 + Math.round(Math.cos(bz * 1.3) * 2), 1, 1, '#f2c040')
+        break
+      }
+      case 'adiyaman': {
+        // çiğköfteci: bakır tepside isotlu çiğ köfte yığını ve marul yaprakları, kasede kızıl isot, limonlar; isot kızılı tente
+        rect(b, x - 4, bot - 8, 26, 8, '#7a4e30')
+        rect(b, x - 4, bot - 8, 26, 1, '#9a6c48')
+        rect(b, x - 3, bot - 10, 16, 2, '#c8843a')
+        rect(b, x - 3, bot - 10, 16, 1, '#e8a85a')
+        rect(b, x - 1, bot - 13, 11, 3, '#b8432c')
+        rect(b, x + 1, bot - 15, 7, 2, '#a83a26')
+        rect(b, x + 1, bot - 15, 3, 1, '#d8664a')
+        for (const dx of [0, 3, 6]) rect(b, x + dx, bot - 12, 1, 1, '#7a2418')
+        rect(b, x - 3, bot - 12, 3, 2, '#7cc04a')
+        rect(b, x + 10, bot - 12, 3, 2, '#6aa83e')
+        rect(b, x - 3, bot - 12, 1, 1, '#b8e88a')
+        rect(b, x + 14, bot - 11, 5, 3, '#e8dcc8')
+        rect(b, x + 15, bot - 12, 3, 1, '#c8301e')
+        rect(b, x + 14, bot - 11, 5, 1, '#d84a2a')
+        for (const dx of [20, 22]) {
+          rect(b, x + dx, bot - 10, 2, 2, '#f2dc3a')
+          rect(b, x + dx, bot - 10, 1, 1, '#fff4a0')
+        }
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x + 25, bot - 31, 1, 23, '#5a3c26')
+        for (let i = 0; i < 8; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#c8402a')
+        // tentede sallanan kuru biber dizisi
+        for (let i = 0; i < 3; i++) {
+          const sw = Math.round(Math.sin(this.t * 1.3 + i * 1.9) * 0.7)
+          const cx = x + 2 + i * 9 + sw
+          rect(b, cx, bot - 29, 1, 1, '#e8dcc0')
+          for (let k = 0; k < 4; k++) rect(b, cx - (k % 2), bot - 28 + k * 2, 2, 2, k % 2 ? '#a82a1e' : '#d0402a')
+        }
+        break
+      }
+      case 'kastamonu': {
+        // etli ekmekçi: kubbeli taş fırın, ağzında kor; önünde uzun kürekte bir metrelik etli ekmek; tezgâhta dilimler
+        rect(b, x - 4, bot - 8, 26, 8, '#6a4c34')
+        rect(b, x - 4, bot - 8, 26, 1, '#8a6a4a')
+        rect(b, x + 8, bot - 20, 14, 12, '#c4b8a0')
+        disc(b, x + 15, bot - 20, 7, '#c4b8a0', true)
+        rect(b, x + 8, bot - 20, 2, 12, '#ddd2ba')
+        disc(b, x + 13, bot - 22, 3, '#ddd2ba', true)
+        rect(b, x + 20, bot - 20, 2, 12, '#968a74')
+        for (const [dx, dy] of [[11, -16], [17, -13], [13, -11]] as const) rect(b, x + dx, bot + dy, 3, 1, 'rgba(90,80,64,0.35)')
+        rect(b, x + 12, bot - 14, 7, 6, '#2a1a14')
+        disc(b, x + 15, bot - 14, 3, '#2a1a14', true)
+        const glow = Math.floor(this.t * 5) % 2
+        rect(b, x + 13, bot - 10, 5, 2, glow ? '#f28a2a' : '#e8642a')
+        rect(b, x + 14, bot - 11, 2, 1, '#ffd060')
+        rect(b, x + 21, bot - 30, 3, 9, '#8a7c6a')
+        const k = (this.t * 0.6) % 1
+        disc(b, x + 22 + Math.round(Math.sin(this.t * 1.5) * 1.5), bot - 32 - Math.round(k * 8), 1 + Math.round(k * 2), `rgba(240,240,244,${(0.55 * (1 - k)).toFixed(2)})`)
+        // kürekte uzun etli ekmek
+        rect(b, x - 6, bot - 11, 18, 1, '#8a6440')
+        rect(b, x - 5, bot - 13, 15, 2, '#e2a85a')
+        rect(b, x - 4, bot - 13, 13, 1, '#a8482a')
+        for (const dx of [-3, 1, 5]) rect(b, x + dx, bot - 13, 1, 1, '#c8603a')
+        rect(b, x - 6, bot - 31, 1, 23, '#5a3c26')
+        rect(b, x - 6, bot - 31, 8, 1, '#5a3c26')
+        for (let i = 0; i < 2; i++) rect(b, x - 7 + i * 4, bot - 32, 4, 3, i % 2 ? '#f4f0e6' : '#d8a84a')
         break
       }
       case 'elazig': {
@@ -2401,6 +2467,50 @@ export class Renderer {
           rect(b, bx, by, 2, 1, '#f2c040')
           rect(b, bx + 1, by, 1, 1, '#2a1a12')
           rect(b, bx, by - 1, 1, 1, 'rgba(240,248,255,0.8)')
+        }
+        break
+      }
+      case 'adiyaman': {
+        // Nemrut'tan düşmüş taş baş: kireçtaşı yüz, sivri külah (tiara), iri gözler ve burun; yanına yaslanmış, dibinde çakıl
+        rect(b, x - 1, bot - 2, 18, 2, '#9a8468')
+        for (let i = 0; i < 5; i++) rect(b, x + i * 4, bot - 3, 2, 1, '#c8b08c')
+        rect(b, x + 2, bot - 16, 12, 14, '#dcc6a2')
+        rect(b, x + 2, bot - 16, 4, 14, '#f0dfbe')
+        rect(b, x + 12, bot - 16, 2, 14, '#a88e6e')
+        for (let i = 0; i < 12; i++) {
+          const w = Math.max(2, 12 - Math.round(i * 0.85))
+          rect(b, x + 2 + Math.round(i * 0.55), bot - 17 - i, w, 1, i % 4 === 0 ? '#b49a78' : i < 6 ? '#dcc6a2' : '#e8d4b0')
+        }
+        rect(b, x + 2, bot - 17, 12, 1, '#a88e6e')
+        rect(b, x + 4, bot - 12, 3, 1, '#7a6248')
+        rect(b, x + 9, bot - 12, 3, 1, '#7a6248')
+        rect(b, x + 5, bot - 11, 1, 1, '#4a3a2e')
+        rect(b, x + 10, bot - 11, 1, 1, '#4a3a2e')
+        rect(b, x + 7, bot - 11, 2, 4, '#c4ac88')
+        rect(b, x + 8, bot - 11, 1, 4, '#a88e6e')
+        rect(b, x + 6, bot - 5, 4, 1, '#8a7258')
+        rect(b, x + 4, bot - 8, 1, 4, '#a88e6e')
+        rect(b, x + 13, bot - 9, 1, 3, '#e0a03a')
+        rect(b, x + 3, bot - 23, 2, 1, '#e0a03a')
+        break
+      }
+      case 'kastamonu': {
+        // Hasırcılar Çarşısı'nın sepeti: örgülü hasır gövde, kulp; içinde Taşköprü sarımsakları
+        rect(b, x + 1, bot - 12, 14, 12, '#d8b464')
+        for (let ky = bot - 12; ky < bot; ky += 2) rect(b, x + 1, ky, 14, 1, '#b88e40')
+        for (let kx = x + 2; kx < x + 15; kx += 3) for (let ky = bot - 12; ky < bot; ky += 4) rect(b, kx, ky + ((kx - x) % 2) * 2, 1, 2, '#ecd08a')
+        rect(b, x + 1, bot - 12, 1, 12, '#ecd08a')
+        rect(b, x + 14, bot - 12, 1, 12, '#9a7432')
+        rect(b, x, bot - 13, 16, 2, '#a88038')
+        for (const [dx, h] of [[3, 3], [7, 4], [11, 3]] as const) {
+          disc(b, x + dx + 1, bot - 14, 2, '#f4eee4', true)
+          rect(b, x + dx, bot - 14, 1, 1, '#ffffff')
+          rect(b, x + dx + 2, bot - 15, 1, 1, '#a86aa8')
+          rect(b, x + dx + 1, bot - 15 - h, 1, h - 1, '#d8c49a')
+        }
+        for (let i = 0; i < 8; i++) {
+          const ang = (i / 7) * Math.PI
+          rect(b, x + 8 - Math.round(Math.cos(ang) * 8), bot - 13 - Math.round(Math.sin(ang) * 10), 1, 1, i % 2 ? '#a88038' : '#c89a4a')
         }
         break
       }
@@ -3366,6 +3476,75 @@ export class Renderer {
   }
 
   /**
+   * Şelale (`;`): yarı saydam açık turkuaz su perdesi; içinde aşağı akan beyaz ve turkuaz şeritler (sütuna göre kaymış, ayrı
+   * hızlarda), sol kenarda ılık parıltı, sağ kenarda serin gölge (ışık sol üstten). Tepede kayadan dökülen parlak dudak, dipte
+   * kabaran köpük ve yukarı süzülen sis. Hepsi ara değerlenmiş saatten (`tideT`: her Hz'de aynı, titremez); karo sabit
+   * olduğundan capture/blend gerekmez. Kare başına nesne ayrılmaz, döngü görünür alanla sınırlı.
+   */
+  private drawFalls(b: Ctx, w: World, cx: number, cy: number) {
+    const x0 = Math.floor(cx / T) - 1
+    const x1 = Math.ceil((cx + this.viewW) / T) + 1
+    const y0 = Math.max(0, Math.floor(cy / T) - 1)
+    const y1 = Math.min(w.rows - 1, Math.ceil((cy + this.viewH) / T) + 1)
+    const t = this.tideT
+    for (let tx = x0; tx <= x1; tx++)
+      for (let ty = y0; ty <= y1; ty++) {
+        if (!w.isFalls(tx, ty)) continue
+        const x = tx * T
+        const y = ty * T
+        const top = !w.isFalls(tx, ty - 1)
+        const bottom = !w.isFalls(tx, ty + 1)
+        const leftEdge = !w.isFalls(tx - 1, ty)
+        const rightEdge = !w.isFalls(tx + 1, ty)
+        // dibinde su varsa perde su yüzeyine dek iner (yüzey karonun 6 px altında çizilir), köpük oraya biner
+        const below = bottom ? w.tile(tx, ty + 1) : EMPTY
+        const h = bottom && (below === SWIM || below === WATER) ? T + 6 : T
+        // su perdesi: iki kademe (ortası daha dolu), kenarlarda ışık ve gölge
+        rect(b, x, y, T, h, 'rgba(150,218,226,0.46)')
+        rect(b, x + 3, y, T - 6, h, 'rgba(206,242,244,0.22)')
+        if (leftEdge) rect(b, x, y, 1, h, 'rgba(255,250,232,0.65)')
+        if (rightEdge) rect(b, x + T - 1, y, 1, h, 'rgba(70,140,168,0.5)')
+        // aşağı akan şeritler: her biri kendi hızında, sütuna göre kaymış (karo sınırında kesintisiz: konum dünya y'sinden)
+        for (let k = 0; k < 6; k++) {
+          const lane = (tx * 7 + k * 5) % 15
+          const speed = 120 + ((tx * 11 + k * 29) % 5) * 22
+          const len = 5 + ((k + tx) % 3) * 2
+          const period = 3 * T
+          const head = (t * speed + (tx * 41 + k * 67)) % period
+          // şeridin başı sütun boyunca period aralıklarla tekrar eder: bu karoya düşen parçayı çiz
+          const off = (((head - y) % period) + period) % period
+          for (const sy of [y + off - period, y + off]) {
+            const a = Math.max(y, sy - len)
+            const z = Math.min(y + T, sy)
+            if (z > a) rect(b, x + 1 + Math.min(lane, 13), a, k % 3 === 0 ? 2 : 1, z - a, k % 2 ? 'rgba(255,255,255,0.62)' : 'rgba(214,248,250,0.5)')
+          }
+        }
+        if (top) {
+          // kayadan dökülen dudak: kalın, parlak ve hafif dalgalı
+          rect(b, x, y, T, 2, 'rgba(240,253,255,0.7)')
+          for (let i = 0; i < T; i += 2) rect(b, x + i, y + 2 + Math.round(1 + Math.sin(t * 5 + (x + i) * 0.5)), 2, 1, 'rgba(255,255,255,0.55)')
+        }
+        if (bottom) {
+          // dipte köpük: kabarıp sönen tümsekler (biraz yana taşar) ve yukarı süzülen sis
+          const by = y + h
+          for (let i = -4; i < T + 4; i += 3) {
+            const puff = 1.5 + Math.sin(t * 6 + (x + i) * 0.7) * 1.2 + Math.sin(t * 2.3 + i) * 0.6
+            const ph = Math.max(1, Math.round(puff + (i < 0 || i >= T ? -1 : 1)))
+            rect(b, x + i, by - ph - 1, 3, ph + 1, 'rgba(250,255,255,0.8)')
+          }
+          rect(b, x - 2, by - 1, T + 4, 1, 'rgba(232,251,255,0.65)')
+          for (let k = 0; k < 3; k++) {
+            const m = (t * 0.7 + k * 0.33 + (tx % 5) * 0.21) % 1
+            const mx = x + 2 + ((k * 6 + tx * 3) % 12) + Math.round(Math.sin(t * 1.3 + k) * 2)
+            b.globalAlpha = 0.4 * (1 - m)
+            rect(b, mx, Math.round(by - 3 - m * 14), 3, 2, '#ffffff')
+          }
+          b.globalAlpha = 1
+        }
+      }
+  }
+
+  /**
    * Donan su (Z): buzken açık mavi buz (kenarı beyaz, içinde kabarcık), erimeden önce çatlaklar büyür ve yanıp söner;
    * suyken suyu drawWater çizer, donmadan önce yüzeyde kırağı çizgisi belirir. Hepsi saatten (her Hz'de aynı).
    */
@@ -3691,7 +3870,7 @@ export class Renderer {
         const py = Math.round(pr.y + pr.h / 2)
         disc(b, px - Math.sign(pr.vx) * 3, py - (pr.vy ? Math.sign(pr.vy) * 2 : 0), 2, 'rgba(255,255,255,0.3)')
         disc(b, px, py, 4, '#120f1a')
-        // Kara Elmas Devi kömür savurur: kara topak, kor gibi kenar
+        // Kömür Devi kömür savurur: kara topak, kor gibi kenar
         disc(b, px, py, 3, this.bossCity === 'zonguldak' ? '#2a2630' : s.accent)
         if (this.bossCity === 'zonguldak') rect(b, px - 1, py + 1, 3, 1, '#f2a12e')
         rect(b, px - 2, py - 2, 2, 1, 'rgba(255,255,255,0.7)')
@@ -6003,7 +6182,9 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   balikesir: 'ELAZIĞ',
   elazig: 'AFYON',
   afyon: 'BİNGÖL',
-  bingol: null,
+  bingol: 'ADIYAMAN',
+  adiyaman: 'KASTAMONU',
+  kastamonu: null,
 }
 
 function hexA(hex: string, a: number) {

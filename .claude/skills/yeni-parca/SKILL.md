@@ -14,12 +14,14 @@ argument-hint: "<şehir> <ne eklenecek>"
 - Eski şehir: ana harita `game/levels.ts`, imza bölümü `scripts/art/sig.py` → `game/signatures.ts`, ek parça `game/extensions.ts`
   (`python3 scripts/art/newcities.py && python3 scripts/art/sig.py && python3 scripts/art/sync.py`).
 - Meydan yolu: `game/finales/<id>.ts`. Yasak karakterler `C K $ D P E @ & Q G`, tam bir `!`.
-- Haritayı **`level-designer`** ajanı çizebilir. Görev tanımına şunları yaz: şehir, parçanın fikri, tabela ve kişi sırası, zorluk, bütün doğrulama listesi.
+- Haritayı **`level-designer`** ajanı çizebilir. Görev tanımına şunları yaz: şehir, parçanın fikri, tabela ve kişi sırası, zorluk, bütün doğrulama listesi,
+  kullanılan mekaniğin kesin kuralı (`.claude/rules/bolumler.md`'den kopyala) ve "metin değişikliğini öner, `levels.ts`'e dokunma".
+  Mekanik oyunda yoksa önce `yeni-mekanik`.
   Birden çok şehir ayrı ajanlarla paralel çalışabilir. Ortak dosyalara (`levels.ts`, `render.ts`, `boss.ts`) yalnız ana oturum dokunur.
 
 ## 2. Kurallar
 
-`CLAUDE.md` "Bölüm ölçütleri" ve "Tasarım tuzakları": platform ≤ 2 karo, boşluk ≤ 3, bayraklar arası 12-75 karo, baş payı 2 karo,
+`CLAUDE.md` "Bölüm ölçütleri" ve `.claude/rules/bolumler.md` "Tasarım tuzakları": platform ≤ 2 karo, boşluk ≤ 3, bayraklar arası 12-75 karo, baş payı 2 karo,
 tünel ağzı 2 karo, ok hattında bayrak/tabela yok, gizli köşe görünür girişli, her şeyi zayıf oyuncu alır ve aldığı yerden çıkar.
 Yeni `?` ya da `n` eklenince metin sırası kayar. Doğru sıraya TR (`levels.ts`) ve EN (`content.en.ts` ya da imza dosyası) metnini yaz.
 
@@ -34,6 +36,7 @@ Yeni `?` ya da `n` eklenince metin sırası kayar. Doğru sıraya TR (`levels.ts
 | Ayna Yolu (ilk defter) | `npx tsx scripts/verify-mirror.ts <id>` |
 | Harita sürümü | elle sayı artırılmaz: `lib/mapVersion.ts` haritanın özetinden üretir, oyuncuya "Yenilendi" rozeti kendiliğinden çıkar |
 | Kayıt denetimi | `npx tsx scripts/city-check.ts <id>` (metin sayıları, toplananlar) |
+| Metin ve harita | `npx tsx scripts/check-text.ts <id>`: tabela sayısı ve sırası, metinde geçen mekanik o parçada var mı. Kaldırılan mekaniğin sözü eski tabelada, kişide, `intro`da, `features.ts`te kalmasın |
 
 Boss değiştiyse: `npx tsx scripts/bossbot.ts <id>` (dört bot yenmeli) → `BOSS_TIME`, kural için `.claude/rules/boss.md`.
 

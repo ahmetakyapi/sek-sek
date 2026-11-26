@@ -254,6 +254,18 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Fırından taze höşmerim çıktı.', 'Fresh höşmerim comes out of the oven.'],
     ['Bir pelikan kanat çırpmadan süzülüyor.', 'A pelican glides by without a single flap.'],
   ],
+  adiyaman: [
+    ['Çiğ köftenin isotu burnunu yakıyor.', 'The isot pepper of the çiğ köfte tickles your nose.'],
+    ['Cendere’nin kemeri suyun üstünde gerinmiş.', 'The arch of Cendere stretches over the water.'],
+    ['Perre’nin kaya kapıları sessizce bakıyor.', 'The rock doors of Perre watch in silence.'],
+    ['Nemrut’ta rüzgâr taş başların arasında ıslık çalıyor.', 'On Nemrut the wind whistles between the stone heads.'],
+  ],
+  kastamonu: [
+    ['Fırından etli ekmeğin kokusu yayılıyor.', 'The smell of etli ekmek drifts from the oven.'],
+    ['Kalenin burcundan şehir avucunda.', 'From the castle tower the city fits in your palm.'],
+    ['Ilgaz’ın çamlarından kar dökülüyor.', 'Snow slips from the pines of Ilgaz.'],
+    ['Şelalenin serpintisi yüzünü serinletiyor.', 'The spray of the waterfall cools your face.'],
+  ],
   bingol: [
     ['Çarşıda bal kavanozları güneşte parlıyor.', 'Jars of honey shine in the sun at the bazaar.'],
     ['Şelalenin serin buğusu yüzüne değiyor.', 'The cool mist of the waterfall brushes your face.'],

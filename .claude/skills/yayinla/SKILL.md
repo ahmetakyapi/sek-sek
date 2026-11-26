@@ -17,9 +17,9 @@ Değişen: $ARGUMENTS
 3. Değişen şehirler: `bash scripts/verify-all.sh <id ...>` ya da ayrı süreçlerde paralel (`xargs -P`).
    Yeni ya da değişen şehirde ayrıca `verify-chase`, `audit-difficulty`, `audit-clearance` ve `npx tsx scripts/city-check.ts <id>`.
    Fizik, çözücü ya da ortak harita kodu değiştiyse bütün şehirler (`bash scripts/verify-all.sh`; uzun sürer, arka planda).
-4. `npm run build`. Sunucuda dosya okuyan yeni yer ya da ağır paket eklendiyse fonksiyon boyutunu ölç (`CLAUDE.md` "Yayın boyutu").
+4. `npm run build`. Sunucuda dosya okuyan yeni yer ya da ağır paket eklendiyse fonksiyon boyutunu ölç (`.claude/rules/yayin.md` "Yayın boyutu").
 5. Görsel değişiklikte ekran görüntüsü (`scripts/preview.cjs`, `scripts/audit-menus.cjs`). Çizim ya da kamera değiştiyse üretim derlemesinde `verify-perf`.
-6. API değiştiyse `tests/scores.test.ts` / `tests/maps.test.ts` ve `CLAUDE.md` "Güvenlik" sırası.
+6. API değiştiyse `tests/scores.test.ts` / `tests/maps.test.ts` ve `.claude/rules/sunucu.md` "Güvenlik" sırası.
 
 ## 2. Tek commit
 

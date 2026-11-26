@@ -2778,6 +2778,95 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     line(c, [-4, 1, -3, 1.8, -2, 1], 0.35, '#b8a888', false)
     dab(c, -4, -2.4, 0.4, 1.2, '#ffffff')
   },
+  // Çiğ Köfte: kıvırcık marul yaprağında elle sıkılmış iki parmak izli çiğ köfte, yanında limon dilimi
+  adiyaman: (c) => {
+    // marul yaprağı: dalgalı kenarlı geniş yaprak, ortasında açık damar
+    shape(
+      c,
+      () => {
+        c.moveTo(-7, 2.6)
+        c.quadraticCurveTo(-7.6, -1.6, -4.6, -3.6)
+        c.quadraticCurveTo(-3.6, -5.2, -1.6, -4.4)
+        c.quadraticCurveTo(0.4, -6, 2.4, -4.6)
+        c.quadraticCurveTo(4.6, -5.4, 5.6, -3.2)
+        c.quadraticCurveTo(7.8, -2, 7, 1)
+        c.quadraticCurveTo(7.4, 3.4, 5, 4.4)
+        c.quadraticCurveTo(0, 6.4, -4.6, 5)
+        c.quadraticCurveTo(-7.6, 4.6, -7, 2.6)
+      },
+      '#7cc04a',
+      '#4a8a2e',
+    )
+    dab(c, -3.6, -2.6, 2.4, 0.9, 'rgba(200,240,150,0.7)', -0.3)
+    line(c, [-5.8, 3.6, -1, 1.4, 5.4, -1.8], 0.45, '#c8eea0', false)
+    // iki sıkım: uzun, yassı, üstünde parmak oyukları; isotlu koyu kızıl
+    for (const [x, y, rot] of [[-2.4, 0.4, -0.25], [2.4, 1, 0.2]] as const) {
+      ell(c, x, y, 3.4, 1.9, '#b8432c', '#7a2418', rot)
+      for (const k of [-1.4, 0, 1.4]) dab(c, x + k * Math.cos(rot), y + 0.5 + k * Math.sin(rot), 0.5, 0.75, 'rgba(110,30,20,0.45)', rot)
+      dab(c, x - 1.6, y - 0.9, 1.2, 0.4, 'rgba(255,180,140,0.6)', rot)
+      for (const [dx, dy] of [[-0.8, -0.2], [1.2, -0.6], [0.4, 0.8]] as const) dab(c, x + dx, y + dy, 0.22, 0.22, '#e8d4a0')
+    }
+    // limon dilimi: yarım daire, sarı kabuk, açık dilimler
+    shape(
+      c,
+      () => {
+        c.moveTo(3.2, -3)
+        c.arc(5.6, -3, 2.4, Math.PI, 0)
+        c.closePath()
+      },
+      '#f6e266',
+      '#c8a828',
+    )
+    dab(c, 5.6, -3.7, 1.7, 0.9, '#fff6c0')
+    if (!halo) {
+      c.strokeStyle = '#e8c840'
+      c.lineWidth = 0.3
+      c.beginPath()
+      for (const a of [-2.3, -1.57, -0.8]) {
+        c.moveTo(5.6, -3)
+        c.lineTo(5.6 + Math.cos(a) * 1.9, -3 + Math.sin(a) * 1.9)
+      }
+      c.stroke()
+    }
+  },
+  // Etli Ekmek: taş fırından çıkmış uzun ince pide dilimi, kızarmış kenar, üstü kıymalı, birkaç tereyağı parıltısı
+  kastamonu: (c) => {
+    // hamur: çapraz uzanan uzun dilim, kabarık kızarmış kenar, uçları yuvarlak
+    c.save()
+    c.rotate(-0.36)
+    shape(
+      c,
+      () => {
+        c.moveTo(-7.6, -2.8)
+        c.quadraticCurveTo(-9.6, 0, -7.6, 3)
+        c.lineTo(7.6, 3)
+        c.quadraticCurveTo(9.6, 0, 7.6, -2.8)
+        c.closePath()
+      },
+      '#e6aa5c',
+      '#a8662a',
+    )
+    dab(c, -3.6, -2.1, 3.8, 0.6, 'rgba(255,228,170,0.85)')
+    // kıymalı iç: kızıl kahve dolgu, tane tane et, yeşil biber
+    shape(
+      c,
+      () => {
+        c.moveTo(-6.8, -1.4)
+        c.lineTo(6.8, -1.4)
+        c.quadraticCurveTo(7.8, 0.3, 6.8, 1.8)
+        c.lineTo(-6.8, 1.8)
+        c.quadraticCurveTo(-7.8, 0.3, -6.8, -1.4)
+      },
+      '#a8482a',
+      '#6e2a18',
+    )
+    for (let i = 0; i < 9; i++) dab(c, -6 + i * 1.5, -0.5 + (i % 3) * 0.75, 0.62, 0.45, i % 3 === 1 ? '#6a2414' : '#c8603a')
+    for (const [x, y] of [[-4.4, 0.9], [0.6, -0.4], [4.6, 0.9]] as const) dab(c, x, y, 0.55, 0.32, '#7ab040')
+    for (const x of [-2.4, 2.8]) dab(c, x, -0.9, 0.7, 0.24, 'rgba(255,240,200,0.85)')
+    // kenardaki fırın izi: kızarmış benekler
+    for (const x of [-5.6, -1.6, 3.4, 6.2]) dab(c, x, 2.5, 0.55, 0.26, '#8a4a1e')
+    c.restore()
+  },
 }
 
 /** bilinmeyen şehir: altın yıldız */

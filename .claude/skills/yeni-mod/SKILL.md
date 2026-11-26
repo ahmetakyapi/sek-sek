@@ -8,7 +8,8 @@ argument-hint: "<modun adı ve fikri>"
 
 Mod: $ARGUMENTS
 
-Kalıcı kural: mod ilerlemeye, şehir rekoruna ve deftere dokunmaz (`CLAUDE.md` "Yeni mod", "Modlar ekranı", "Her moda sıralama").
+Kalıcı kural: mod ilerlemeye, şehir rekoruna ve deftere dokunmaz (`.claude/rules/modlar.md` "Yeni mod", "Modlar ekranı";
+`.claude/rules/sunucu.md` "Her moda sıralama"). Modlar ekranının düzen kuralları (tek rozet, tek durum satırı, aile grupları) `modlar.md`'de.
 Önce benzer bir modu örnek al: tek şehirde kurallı koşu için Kurallı Koşu / Sinir Bozucu (`lib/extras.ts` `DAILY_RULES`),
 şehirler zinciri için Boss Rush / Maraton (`rushRef`), kesit için Mücadeleler (`challengeRef`), sakin gezinti için Sakin Gezi (`customRef` + `LevelDef.calm`).
 
@@ -47,5 +48,9 @@ Kalıcı kural: mod ilerlemeye, şehir rekoruna ve deftere dokunmaz (`CLAUDE.md`
 - `npx tsc --noEmit --noUnusedLocals --noUnusedParameters`, `npm test`.
 - `scripts/audit-menus.cjs` `SCREENS`'e yeni ekranlar; sunucu açıkken `ONLY=<ekran> node scripts/audit-menus.cjs`: dört boyutta taşma yok.
 - Oyun içinden ekran görüntüsü (Playwright betiği ya da `scripts/preview.cjs`) ve Mola'yı açıp Devam Et / Çıkış'ı dene.
-- Sürüm notu: `components/Game.tsx` `RELEASE_NOTES` (yeni şehirle geliyorsa) ve `CLAUDE.md`'ye kısa bölüm.
+- `ONLY=modlar node scripts/audit-menus.cjs`: yeni kutucuk Modlar ekranını da taşırabilir (beş boyutta).
+- Fizik bayrağı eklediysen `*_OK` listesindeki her şehirde `npx tsx scripts/verify-rage.ts <kip> <şehir>` (şehirleri ayrı süreçlerde, `xargs -P`).
+- Sürüm notu: `components/Game.tsx` `RELEASE_NOTES` (yeni şehirle geliyorsa). Kuralı `.claude/rules/modlar.md`'ye kısa bölüm olarak yaz
+  (CLAUDE.md'ye yalnız "Konu kuralları" tablosunda gerekiyorsa bir sözcük); yeni dosya açtıysan kuralın `paths:` listesine ekle.
+- Kodu ajana yazdırıyorsan: ajan `Game.tsx`, `Modes.tsx`, `lib/extras.ts` gibi paylaşılan dosyada `Write` değil `Edit` kullanır.
 - Yayın için `yayinla` yeteneği.

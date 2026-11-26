@@ -1,7 +1,7 @@
 import type { Prelude } from './types'
 
 /**
- * İshak Paşa Sarayı (TASLAK): zemin katta selamlık koridoru, üstte harem galerileri; katlar arası halatla çıkılır.
+ * İshak Paşa Sarayı: zemin katta selamlık koridoru, üstte harem galerileri; katlar arası halatla çıkılır.
  * Bir plaka bütün kapıları çevirir: turuncu (selamlık) açılır, mavi (harem) kapanır ya da tersi. İki kilit:
  *  1. Plaka turuncu kapıyı açar ama öndeki mavi kapıyı kapatır; geri çevirecek plaka yukarıda, harem galerisinde.
  *     Halattan çık, bas, yanındaki açık ağızdan aşağı düş, geç (halattan aşağı inilebilir ama şart değil).

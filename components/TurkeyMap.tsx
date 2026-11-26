@@ -141,6 +141,8 @@ const COORDS: Record<string, [number, number]> = {
   elazig: [39.22, 38.67],
   afyon: [30.54, 38.76],
   bingol: [40.5, 38.88],
+  adiyaman: [38.28, 37.76],
+  kastamonu: [33.78, 41.38],
 }
 
 const W = 640

@@ -146,6 +146,10 @@ export const SCALES: Record<CityKey, Makam> = {
   balikesir: { root: 55, steps: [0, 2, 3, 5, 7, 8, 10, 12] },
   // Hüseyni, Bingöl dağ havası 10/8
   bingol: { root: 52, steps: [0, 2, 3, 5, 7, 9, 10, 12] },
+  // Kürdi, Adıyaman halayı (Adıyaman)
+  adiyaman: { root: 55, steps: [0, 1, 3, 5, 7, 8, 10, 12] },
+  // Uşşak, Kastamonu türküsü (Kastamonu)
+  kastamonu: { root: 57, steps: [0, 2, 3, 5, 7, 8, 10, 12] },
   // Hüzzam, Afyon zeybeği 9/8
   afyon: { root: 53, steps: [0, 1, 4, 5, 7, 8, 11, 12] },
   // Kürdi, Harput havası 7/8 (Elazığ)

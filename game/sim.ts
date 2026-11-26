@@ -40,6 +40,11 @@ export const TIDE = 20
 export const FROST = 21
 /** yükselen hava (V, Balıkesir'in termalleri): geçilir; gövdesinin ortası içinde olan oyuncuyu yukarı taşır */
 export const LIFT = 22
+/**
+ * şelale (`;`, Kastamonu'nun Ilgarini ve Horma kanyonu şelaleleri): geçilir; gövdesinin ortası içinde olan oyuncuyu aşağı
+ * iter (FALLS). Islak kaya: içindeyken duvara tutunulmaz, duvardan sekilmez. Saate bağlı değildir. Dibinde genellikle havuz (W).
+ */
+export const WATERFALL = 23
 
 /* ── Fizik sabitleri (dünya pikseli / saniye) ───────────────── */
 /** dash halkası harcandıktan sonra yeniden dolma süresi (sn) */
@@ -112,6 +117,15 @@ export const frozenAt = (clock: number) => Math.floor(clock / FROST_CYCLE.half) 
  * tepesine varan oyuncu hız kaybedip geri süzülür: tepede asılı kalır, oradan yana atlar. Aşağı basılıyken itmez (inilir).
  */
 export const THERMAL = { rise: 170, accel: 1500 }
+
+/**
+ * Şelale (`;`): yükselen havanın tersi. Gövdenin ortası içindeyken yerçekimi `gravity` katı, yukarı giderken `up` katıdır
+ * (zıplama yüksekliği ~yarıya iner: 312²/(2·980·2) ≈ 25 px, dışarıda ~50 px), düşüş hızı `fallMax` katına dek çıkar.
+ * Duvar sekmesi ve duvarda kayma yok (ıslak kaya). Yatay hareket ve dash serbest: yatay dash dikey hızı sıfırlar, şelale
+ * dash süresince itmez. Doğru cevap şelaleyi yatay dash'le ya da üstünden atlayarak geçmek ya da dibindeki havuza inmektir.
+ * Ölçü: üstünden koşarak atlanan 3 karoluk şelale ~33 px'te yere iner; altı öldüren boşluksa en çok 2 karo genişlik.
+ */
+export const FALLS = { gravity: 1.8, up: 2, fallMax: 1.6 }
 
 /**
  * Havuz Teyzesi (`"`, Afyon'un termal oteli): sıcak suda durur, saate bağlı `turn` saniyede bir yön değiştirir; dönmeden
@@ -298,6 +312,8 @@ export interface Player extends Box {
   air: number
   /** yükselen havanın içinde (gövdenin ortası V karosunda): yukarı taşınıyor */
   lift: boolean
+  /** şelalenin içinde (gövdenin ortası `;` karosunda): aşağı itiliyor, duvardan sekilmez */
+  falls: boolean
 }
 
 export interface Platform extends Box {
@@ -515,6 +531,8 @@ export class World {
   hasFrost = false
   /** haritada yükselen hava var mı */
   hasLift = false
+  /** haritada şelale var mı */
+  hasFalls = false
   /** haritada yüzen ada var mı */
   hasFloat = false
   /** donduğu an oyuncunun içinde kalan donan su karoları: oyuncu çıkana dek su */
@@ -624,6 +642,10 @@ export class World {
           case 'V':
             this.set(tx, ty, LIFT)
             this.hasLift = true
+            break
+          case ';':
+            this.set(tx, ty, WATERFALL)
+            this.hasFalls = true
             break
           case 'W':
           case 'y':
@@ -960,6 +982,7 @@ export class World {
       nitro: 0,
       air: AIR.max,
       lift: false,
+      falls: false,
     }
   }
 
@@ -981,6 +1004,8 @@ export class World {
     if (t === FROST) return this.frozen && !this.frostHold.has(ty * this.cols + tx) ? ICE : SWIM
     // yükselen hava fizikte boşluktur (itişi updatePlayer verir)
     if (t === LIFT) return EMPTY
+    // şelale de fizikte boşluktur (aşağı itişi updatePlayer verir)
+    if (t === WATERFALL) return EMPTY
     return t
   }
 
@@ -995,6 +1020,10 @@ export class World {
 
   isLift(tx: number, ty: number): boolean {
     return this.raw(tx, ty) === LIFT
+  }
+
+  isFalls(tx: number, ty: number): boolean {
+    return this.raw(tx, ty) === WATERFALL
   }
 
   /** haritadaki ham karo (gelgit karosu TIDE olarak kalır) */
@@ -1229,7 +1258,7 @@ export class World {
 
   /**
    * Köpeğin beklediği yerler: hareketli platformun bütün yolu (yatayda 3, yukarıda 4, aşağıda 2 karo payla), tokmakların
-   * çevresi, plakalar (5 karo), ritim blokları ve gelgit havuzları (3 karo payla). Bunlar zamanlama ya da geri dönüş ister;
+   * çevresi, plakalar (5 karo), ritim blokları, gelgit havuzları, donan su, yükselen hava ve şelale (3 karo payla). Bunlar zamanlama ya da geri dönüş ister;
    * köpek orada bekleyeni cezalandırmaz.
    */
   private buildChaseCalm() {
@@ -1251,12 +1280,13 @@ export class World {
         if (t === RHYTHM_A || t === RHYTHM_B) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 3 * T, 3 * T)
       }
     for (const q of this.tidePools) pad(q.x0 * T, q.top, q.x1 * T + T, q.bottom, 3 * T, 4 * T, T)
-    // donan su (bekleyip geçilir) ve yükselen hava (köpek uçamaz): çevresinde köpek oturur
+    // donan su (bekleyip geçilir), yükselen hava (köpek uçamaz) ve şelale (iten su; dibindeki havuzdan yüzüp çıkan
+    // cezalanmasın): çevresinde köpek oturur
     for (let ty = 0; ty < this.rows; ty++)
       for (let tx = 0; tx < this.cols; tx++) {
         const t = this.tiles[ty * this.cols + tx]
         if (t === FROST) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 4 * T, 2 * T)
-        else if (t === LIFT) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 4 * T, 3 * T)
+        else if (t === LIFT || t === WATERFALL) pad(tx * T, ty * T, tx * T + T, ty * T + T, 3 * T, 4 * T, 3 * T)
       }
   }
 
@@ -1508,6 +1538,10 @@ export class World {
       p.swim = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === SWIM
       // yükselen hava: gövdenin ortası termalde ve aşağı basılmıyorsa (aşağı basan termalden süzülüp iner)
       p.lift = this.hasLift && !p.swim && iy <= 0 && this.raw(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === LIFT
+      // şelale: gövdenin ortası şelalede (suda değilken); girişte bir kez su sıçrar
+      const inFalls = this.hasFalls && !p.swim && this.raw(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === WATERFALL
+      if (inFalls && !p.falls) this.events.push({ type: 'splash', x: p.x + p.w / 2, y: p.y + p.h / 2 })
+      p.falls = inFalls
       if (p.nitro > 0) p.nitro = Math.max(0, p.nitro - dt)
       const run = p.nitro > 0 ? PHYS.run * NITRO.speed : PHYS.run
       const target = p.swim ? ix * PHYS.swimRun : ix * run + wind * (p.grounded ? (ix !== 0 ? PHYS.windGround : 0) : PHYS.windAir)
@@ -1528,8 +1562,10 @@ export class World {
       const moon = this.level.lowGravity && !p.swim
       if (moon) g *= MOON.gravity
       if (this.level.heavy && !p.swim) g *= HEAVY.gravity
+      // şelale aşağı iter: yukarı hız hızla söner, düşüş daha hızlıdır
+      if (p.falls) g *= p.vy < 0 ? FALLS.up : FALLS.gravity
       if (p.lift) p.vy = Math.max(-THERMAL.rise, p.vy - THERMAL.accel * dt)
-      else p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1), p.vy + g * dt)
+      else p.vy = Math.min(p.swim ? PHYS.swimSink : PHYS.fallMax * (moon ? MOON.fall : 1) * (p.falls ? FALLS.fallMax : 1), p.vy + g * dt)
       if (p.swim) {
         p.canDash = true
         // kulaç: her zıplama basışı; başı yüzeye yakınsa sudan sıçrayarak çıkar
@@ -1544,7 +1580,8 @@ export class World {
 
       // duvar
       p.wallDir = 0
-      if (!p.grounded) {
+      // şelalede ıslak kaya: duvara tutunulmaz, duvardan sekilmez
+      if (!p.grounded && !p.falls) {
         if (this.boxHitsSolid(p.x - 1, p.y + 2, 1, p.h - 4)) p.wallDir = -1
         else if (this.boxHitsSolid(p.x + p.w, p.y + 2, 1, p.h - 4)) p.wallDir = 1
         if (p.wallDir !== 0 && ix === p.wallDir && p.vy > PHYS.wallSlideMax) p.vy = PHYS.wallSlideMax

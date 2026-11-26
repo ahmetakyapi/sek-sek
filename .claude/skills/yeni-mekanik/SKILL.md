@@ -40,11 +40,20 @@ Bu yol gelgit (`A`, Mersin), yükselen hava (`V`, Balıkesir) ve donan su (`Z`, 
 | `lib/customLevel.ts` · `components/Editor.tsx` · `components/editorScene.ts` | `SYMBOLS` **sonuna** ekle (eski kodlar bozulmaz). Palete `TileDef` ekle (kısayol harfi boşsa `key`siz). `drawTile`'a önizleme çizimi |
 | `tests/mechanics.test.ts` | davranış testi (küçük harita, `mk` + `step`): değişim, uyarı, sıkışmama, tasarım kuralı |
 | `tests/customLevel.test.ts` | kod gidip gelir, eski simgelerin sırası değişmez |
-| `CLAUDE.md` "Tasarım tuzakları" + harita (`sim.ts` satırı) | kural, sabitler, tasarım ölçüsü (ör. "termalin en üst V satırı, inilecek taşın yürüme satırından en az bir satır yukarıda") |
+| `lib/ui.en.ts` | palet karosunun adı ve açıklamasının İngilizcesi (düzenleyici `t()` ile çevirir) |
+| `scripts/check-text.ts` `MECHS` | mekaniğin sözcükleri (TR, küçük harf) → karosu: metin "şelaleye girme" diyorsa haritada `;` aranır. Testi `tests/checkText.test.ts` |
+| `.claude/rules/bolumler.md` "Tasarım tuzakları" + lejant · `CLAUDE.md` kısa harita (`sim.ts` satırı) | kural, sabitler, tasarım ölçüsü (ör. "termalin en üst V satırı, inilecek taşın yürüme satırından en az bir satır yukarıda") |
+
+## Şehre devir (mekanik bitince)
+
+Şehrin haritası mekanik bittikten sonra çizilir (`yeni-sehir`). `level-designer` ajanına mekaniği tek paragrafta, tahmin bırakmadan ver:
+karakter, sabitler (süre, hız, mesafe, döngü), uyarı süresi, oyuncunun güvenli cevapları, çözücünün onu nasıl gördüğü (durum sayar mı,
+dal açar mı, "aşağı" basmadığı için ne yapamaz) ve `bolumler.md`'ye yazdığın tasarım ölçüsü. Aynı paragrafı `yeni-sehir` görev tanımına kopyala.
 
 ## Kanıt
 
-1. `npx tsc --noEmit --noUnusedLocals --noUnusedParameters` ve `npx vitest run tests/mechanics.test.ts tests/customLevel.test.ts`
+1. `npx tsc --noEmit --noUnusedLocals --noUnusedParameters` ve `npx vitest run tests/mechanics.test.ts tests/customLevel.test.ts tests/checkText.test.ts`;
+   ses eklediysen `node scripts/audio-render.cjs` (sessiz, NaN ya da patlayan efekt FAIL)
 2. Mekaniğin kullanıldığı şehirde bütün zincir (`yeni-sehir` 3. adım). Mekaniği kullanmayan şehirlerin çözücü anahtarı değişmemeli
    (yeni anahtar parçası mekanik yokken boş dizgi).
 3. `npm test` (camera, perf, sim testleri bütün şehirleri dolaşır).

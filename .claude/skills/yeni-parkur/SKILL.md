@@ -23,10 +23,12 @@ Parkurlar `CHALLENGES`e girmez: turnuva, Günün Mücadelesi ve Gezgin Turu seç
 - 24 satır ASCII, bütün satırlar aynı uzunlukta; `from: 0, to: 0`, `map: [...]`. Tam bir `P`, en az bir `E`, bayrak `F`.
 - Parkurda toplanan, konuşan ve final işareti yok: `C $ ! n ? @ & Q G` yasak (`K` anahtar bulmacası serbest). `tests/courses.test.ts` bekler.
 - Her parkur **tek fikir** işler: önce güvenli yerde öğret (dibi taş), sonra dikenin / derin suyun üstünde sına, sonda ikinci bir mekanikle birleştir. Efsane'de birleşim baştan gelir, dinlenme azdır.
-- CLAUDE.md "Tasarım tuzakları" aynen geçerli: platform ≤ 2 karo, boşluk ≤ 3, bayraklar arası ≤ 75 karo, baş payı 2 karo, kapalı alan duvarı tepeye dek,
+- `.claude/rules/bolumler.md` "Tasarım tuzakları" aynen geçerli: platform ≤ 2 karo, boşluk ≤ 3, bayraklar arası ≤ 75 karo, baş payı 2 karo, kapalı alan duvarı tepeye dek,
   ok hattında bayrak yok, raylı platform çiftleri eşit aralık + ters faz, sandık en çok iki. Zor ama adil: kıl payı ya da kör atlayış, uzun cezalı tekrar yok.
 - Çözücü düşman ve boss'u görmez, "aşağı" tuşuna basmaz; dönen platform ve tokmak durum sayısını katlar: yavaşsa sadeleştir.
 - Haritayı `level-designer` ajanı çizebilir; her ajan yalnız kendi dosyasına dokunur (paralel çalışır), `index.ts` ve `challenges.ts`'e ana oturum dokunur.
+  Aynı tema dosyasına (ör. `doga.ts`) iki ajan yazacaksa ikisi de `Write` değil `Edit` kullanır: biri öbürünün parkurunu silmesin.
+  Görev tanımına kademe, kimlik, ölçü, kullanılacak mekaniklerin kesin kuralı (`.claude/rules/bolumler.md`) ve 3. adımdaki kanıtı yaz.
 
 ## 3. Kanıt ve madalya
 

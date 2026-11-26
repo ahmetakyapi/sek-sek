@@ -1,7 +1,7 @@
 import type { Prelude } from './types'
 
 /**
- * Nemrut kraterinin içi (TASLAK): soğuk göller ve sıcak gözeler. Krater duvarları tepeye dek çıkar, altlarından su
+ * Nemrut kraterinin içi: soğuk göller ve sıcak gözeler. Krater duvarları tepeye dek çıkar, altlarından su
  * yolu geçer; su yollarını renkli kapaklar keser. Plakalar kıyıda ve göldeki kayanın üstündedir.
  *  1. Soğuk göl: turuncu kapak kapalı. Kıyıdaki plakaya bas (turuncu açılır, mavi belirir), dal, duvarın altından yüz.
  *  2. Sıcak gözeler: kaynar suyun üstünde iki halat; halattan halata.

@@ -85,6 +85,10 @@ const LOOK: Record<CityKey, Look> = {
   elazig: { mat: 'ashlar', cap: 'snow' },
   afyon: { mat: 'rock', cap: 'stone' },
   bingol: { mat: 'rock', cap: 'grass' },
+  // Nemrut ve Perre: güneşte ısınmış katman katman kireçtaşı, üstü Fırat vadisinin kuru çimeni
+  adiyaman: { mat: 'strata', cap: 'grass' },
+  // Kastamonu Kalesi: iri, düzensiz kale taşı örgüsü, üstü Ilgaz ormanının çimeni
+  kastamonu: { mat: 'cyclop', cap: 'grass' },
   bayburt: { mat: 'rock', cap: 'snow' },
 }
 

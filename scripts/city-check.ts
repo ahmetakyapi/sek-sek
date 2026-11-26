@@ -3,7 +3,7 @@
  * söyler. Tip denetimi `Record<CityKey, …>` tablolarını (art, boss, bossDraw, enemyDraw, music, flagMoments, terrainDraw,
  * finales, NEXT_CITY) zaten yakalar; bu betik tipin göremediklerine bakar: CI matrisi, madalya süreleri, şehir görselleri,
  * hikâye diyalogları, İngilizce metin, harita koordinatı, düzenleyici kodu, eski şehir sırası, plaka testi, README, haritanın
- * toplanabilirleri ve metin sayıları. Yeni şehirde (`/yeni-sehir`) her adımdan sonra koş; FAIL kalan şehir bitmemiştir.
+ * toplanabilirleri, metin sayıları ve iskeletten kalan TASLAK işaretleri (scripts/new-city.ts). Yeni şehirde (`/yeni-sehir`) her adımdan sonra koş; FAIL kalan şehir bitmemiştir.
  *
  *   npx tsx scripts/city-check.ts balikesir elazig     (argümansız: bütün şehirler)
  */
@@ -14,6 +14,10 @@ import { LEVELS_EN } from '../game/content.en'
 import { PRELUDES } from '../game/finales'
 import { talkOf } from '../game/stories'
 import { BOSS_TIME, SOLVER_TIME } from '../game/medals'
+import { BOSSES } from '../game/boss'
+import { BOSS_LINES } from '../game/bossLines'
+import { FEATURES } from '../game/features'
+import { FLAG_MOMENTS } from '../game/flagMoments'
 import { CITY_CODES } from '../lib/customLevel'
 import { MAP_VERSION } from '../lib/storage'
 
@@ -25,6 +29,22 @@ const storage = read('lib/storage.ts')
 const simTest = read('tests/sim.test.ts')
 const readme = read('README.md')
 const allNames = LEVELS.flatMap((l) => l.npcs.map((n) => n.name))
+const medals = read('game/medals.ts')
+const bossAt = medals.indexOf('export const BOSS_TIME')
+/** scripts/new-city.ts'in iskelet işareti: kalan her yer doldurulmamış demektir */
+const DRAFT = 'TASLAK'
+const DRAFT_FILES: ((id: string) => string)[] = [
+  (id) => `game/cities/${id}.ts`,
+  (id) => `game/finales/${id}.ts`,
+  (id) => `game/stories/${id}.ts`,
+  () => 'game/art.ts',
+  () => 'game/bossDraw.ts',
+  () => 'game/enemyDraw.ts',
+  () => 'game/music.ts',
+  () => 'game/terrainDraw.ts',
+  () => 'components/Game.tsx',
+  () => 'README.md',
+]
 
 const ids = process.argv.slice(2)
 const list = ids.length ? LEVELS.filter((l) => ids.includes(l.id)) : LEVELS
@@ -68,8 +88,27 @@ for (const l of list) {
   // Hikâye Gezisi: en az iki diyaloglu kişi
   need(l.npcs.filter((n) => talkOf(n.name)).length >= 2, 'game/stories: en az iki şehir insanına diyalog yaz')
   // madalya ve hile önleme
-  need(SOLVER_TIME[l.id] > 0, 'medals.ts SOLVER_TIME yok (npx tsx scripts/solver-time.ts <id>)')
-  need(BOSS_TIME[l.id] > 0, 'medals.ts BOSS_TIME yok (bossbot "insan paylı" süresi)')
+  const draftLine = (src: string) => new RegExp(`\\n  ${l.id}: [\\d.]+, // ${DRAFT}`).test(src)
+  need(SOLVER_TIME[l.id] > 0 && !draftLine(medals.slice(0, bossAt)), `medals.ts SOLVER_TIME ${SOLVER_TIME[l.id] ? 'taslak' : 'yok'} (npx tsx scripts/solver-time.ts ${l.id})`)
+  need(BOSS_TIME[l.id] > 0 && !draftLine(medals.slice(bossAt)), `medals.ts BOSS_TIME ${BOSS_TIME[l.id] ? 'taslak' : 'yok'} (bossbot "insan paylı" süresi)`)
+  // iskeletten kalan TASLAK (scripts/new-city.ts): metin tabloları ve kaynak satırları
+  const draftData = Object.entries({
+    'levels.ts': l,
+    'content.en.ts': LEVELS_EN[l.id],
+    'finales (metin)': { h: PRELUDES[l.city]?.hints, he: PRELUDES[l.city]?.hintsEn, n: PRELUDES[l.city]?.npcs, ne: PRELUDES[l.city]?.npcsEn },
+    'stories': l.npcs.map((x) => talkOf(x.name)),
+    'flagMoments.ts': FLAG_MOMENTS[l.city],
+    'features.ts': FEATURES[l.id],
+    'boss.ts': BOSSES[l.city],
+    'bossLines.ts': BOSS_LINES[l.city],
+  })
+    .filter(([, v]) => JSON.stringify(v ?? '').includes(DRAFT))
+    .map(([k]) => k)
+  need(!draftData.length, `taslak metin kaldı: ${draftData.join(', ')}`)
+  const draftSrc = DRAFT_FILES.map((f) => [f, existsSync(join(root, f(l.id))) ? read(f(l.id)) : ''] as const)
+    .filter(([f, src]) => src.split('\n').some((ln) => ln.includes(DRAFT) && (f(l.id).includes(l.id) || ln.includes(l.id) || ln.includes(l.name))))
+    .map(([f]) => f(l.id))
+  need(!draftSrc.length, `taslak kod/çizim kaldı: ${draftSrc.join(', ')}`)
   // kayıtlar
   need(new RegExp(`\\b${l.id}: \\[`).test(map), 'components/TurkeyMap.tsx COORDS koordinatı yok')
   need(new RegExp(`level: \\[[^\\]]*\\b${l.id}\\b`).test(ci), '.github/workflows/ci.yml matrisinde yok')

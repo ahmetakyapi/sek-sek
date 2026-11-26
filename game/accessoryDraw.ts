@@ -29,12 +29,16 @@ export interface HeadFrame {
   brim: number
   /** tepesi yüksek başlıkların (aşçı, kovboy) boy çarpanı: portre kadrajına sığsın diye kısalır */
   crown: number
+  /** yanakta sakal var (Memo): yanağa takılan parça (yara bandı) sakalın üstüne çıkar */
+  beard?: boolean
 }
 
 /** oyundaki karakterin başı (heroDraw drawHead: hx, hy) */
 export const heroHead = (hx: number, hy: number): HeadFrame => ({ cx: hx, cy: hy + 1.3, sx: 1, sy: 1, f: 9.3, e: 4.3, fw: 0.5, mx: 10.8, mw: 3.3, mouth: 8.7, chin: 12.7, brim: -13.3, crown: 1 })
 /** vesikalık portrenin başı (portraitDraw koordinatı) */
 export const PORTRAIT_HEAD: HeadFrame = { cx: 52.2, cy: 55.6, sx: 1.9, sy: 1.9, f: 1.15, e: 4.75, fw: 1, mx: 1, mw: 4.5, mouth: 7, chin: 13.4, brim: -12.6, crown: 0.62 }
+/** sakallı yüzün portre başı */
+export const PORTRAIT_HEAD_BEARD: HeadFrame = { ...PORTRAIT_HEAD, beard: true }
 
 export interface Anim {
   t: number
@@ -728,8 +732,9 @@ export function drawFaceItem(c: CanvasRenderingContext2D, id: AccessoryId, H: He
     case 'yarabandi': {
       // yara bandı: yakın yanakta çapraz, ortasında pembe ped ve delikler
       const P = H.fw < 1
-      const a = P ? near - 2.2 : near - 3.2
-      const b = P ? 6.8 : 7
+      // sakallı yüzde (Memo) yanağın sakalsız üst kısmına, elmacık kemiğine çıkar
+      const a = P ? near - 2.2 : near - (H.beard ? 2.6 : 3.2)
+      const b = P ? (H.beard ? 5.4 : 6.8) : H.beard ? 3.7 : 7
       const ang = P ? -0.5 : -0.45
       c.save()
       c.translate(g.x(a), g.y(b))
@@ -1035,45 +1040,90 @@ function kiteBody(c: CanvasRenderingContext2D, w: number, h: number) {
 export function drawHeroBack(c: CanvasRenderingContext2D, id: AccessoryId, tx: number, ty: number, t: number, sw: number, flow: number, lift: number): boolean {
   switch (id) {
     case 'gitar': {
-      // gitar: sırtta çapraz; sekiz biçimli bal rengi gövde kalçanın gerisinden görünür, sap ve burguluk omzun arkasında
+      // gitar: bağlamadan ayrı okunsun diye geniş, sekiz biçimli kiraz kırmızısı gövde krem kenarlı, büyük ses deliği
+      // gül süslü, siyah pena koruyucu; kısa sap ve geniş burguluk (3 + 3). Sırtta yatık durur: gövde kalçanın gerisinde
+      // aşağıda, sap omzun arkasından geriye çıkar (bağlamanın uzun, ince, dik sapının tersine)
       c.save()
-      c.translate(tx - 12, ty + 1)
-      c.rotate(-0.62 + sw * 0.03)
-      stroke(c, [0, -8, 0, -48], 3, '#6a4228')
-      blob(c, () => c.roundRect(-2.6, -56, 5.2, 9, 1.6), '#4a2c18', { color: '#2e1a0e', dx: -0.8, dy: 0 })
-      for (const y of [-54, -51.4, -48.8]) {
-        g0(c, -3.4, y, 0.9)
-        g0(c, 3.4, y, 0.9)
-      }
+      c.translate(tx - 11, ty + 3)
+      c.rotate(-0.95 + sw * 0.03)
+      // sap: kısa ve kalın, koyu gül ağacı klavye, metal perdeler
+      stroke(c, [0, -10, 0, -36], 4, '#3a2418')
       c.beginPath()
-      for (const y of [-14, -19, -24, -29, -34, -39, -44]) {
-        c.moveTo(-1.4, y)
-        c.lineTo(1.4, y)
+      for (const y of [-15, -19.5, -23.6, -27.4, -30.8, -33.8]) {
+        c.moveTo(-1.8, y)
+        c.lineTo(1.8, y)
       }
-      c.strokeStyle = '#e0c088'
-      c.lineWidth = 0.5
+      c.strokeStyle = '#d8d4cc'
+      c.lineWidth = 0.55
       c.stroke()
+      // burguluk: geniş kürek, iki yanda üçer burgu
       blob(
         c,
         () => {
-          c.moveTo(0, -12)
-          c.bezierCurveTo(-6.4, -12, -6.4, -4, -3.6, -2.6)
-          c.bezierCurveTo(-9.4, 0, -9, 12, 0, 12)
-          c.bezierCurveTo(9, 12, 9.4, 0, 3.6, -2.6)
-          c.bezierCurveTo(6.4, -4, 6.4, -12, 0, -12)
+          c.moveTo(-2.4, -35.6)
+          c.lineTo(-3.8, -46)
+          c.quadraticCurveTo(0, -48.4, 3.8, -46)
+          c.lineTo(2.4, -35.6)
         },
-        '#e09a48',
-        { color: '#a8622a', dx: -2.2, dy: -1 },
+        '#2a1a12',
+        { color: '#160c08', dx: -0.8, dy: 0 },
       )
+      for (const y of [-38.6, -41.6, -44.6]) {
+        g0(c, -4.8, y, 1)
+        g0(c, 4.8, y, 1)
+      }
+      // gövde: belirgin belli, geniş alt bölme
+      const body = () => {
+        c.moveTo(0, -13)
+        c.bezierCurveTo(-8.4, -13, -8.8, -4.6, -5, -2.4)
+        c.bezierCurveTo(-12.6, 0.6, -12.2, 14.6, 0, 14.6)
+        c.bezierCurveTo(12.2, 14.6, 12.6, 0.6, 5, -2.4)
+        c.bezierCurveTo(8.8, -4.6, 8.4, -13, 0, -13)
+      }
+      blob(c, body, '#c4382c', { color: '#7e1c1a', dx: -2.6, dy: -1.2 })
+      // krem kenar bandı (binding)
+      c.save()
       c.beginPath()
-      c.arc(0, -1.6, 2.4, 0, TAU)
-      c.fillStyle = '#3a2214'
-      c.fill()
-      c.strokeStyle = '#7a4a24'
-      c.lineWidth = 0.7
+      body()
+      c.closePath()
+      c.strokeStyle = '#f2e2c0'
+      c.lineWidth = 0.9
       c.stroke()
-      blob(c, () => c.roundRect(-2.6, 5.4, 5.2, 1.6, 0.6), '#5a361e')
-      stroke(c, [-5.6, -8, -6.6, 2, -4.6, 9], 1, 'rgba(255,236,200,0.6)', false)
+      c.restore()
+      // ortası açık sunburst: göğüs tahtasının merkezinde ılık turuncu
+      c.beginPath()
+      c.ellipse(0, 4.4, 6.2, 6.6, 0, 0, TAU)
+      c.fillStyle = 'rgba(255,170,90,0.35)'
+      c.fill()
+      // pena koruyucu (siyah, ses deliğinin altında yanda)
+      c.beginPath()
+      c.moveTo(2.2, 1.6)
+      c.quadraticCurveTo(7.4, 2.4, 6.6, 8.6)
+      c.quadraticCurveTo(3.4, 7.2, 2.6, 4.6)
+      c.closePath()
+      c.fillStyle = '#1e1416'
+      c.fill()
+      // ses deliği ve gülü
+      c.beginPath()
+      c.arc(0, -1, 3.1, 0, TAU)
+      c.fillStyle = '#1e120c'
+      c.fill()
+      c.beginPath()
+      c.arc(0, -1, 4, 0, TAU)
+      c.strokeStyle = '#f2e2c0'
+      c.lineWidth = 0.6
+      c.stroke()
+      // köprü ve teller
+      blob(c, () => c.roundRect(-3.4, 8, 6.8, 1.8, 0.7), '#2a1a12')
+      c.beginPath()
+      for (const x of [-0.9, 0, 0.9]) {
+        c.moveTo(x, 8.4)
+        c.lineTo(x * 0.8, -36)
+      }
+      c.strokeStyle = 'rgba(240,236,226,0.6)'
+      c.lineWidth = 0.3
+      c.stroke()
+      stroke(c, [-8.6, 1.4, -9.4, 8, -6.6, 12.4], 1, 'rgba(255,226,200,0.55)', false)
       c.restore()
       return true
     }
@@ -1512,17 +1562,17 @@ export function drawPortraitBack(c: CanvasRenderingContext2D, id: AccessoryId): 
         c.bezierCurveTo(-18, -10, -18, 14, 0, 14)
         c.bezierCurveTo(18, 14, 18, -10, 7, -16)
         c.bezierCurveTo(13, -20, 13, -36, 0, -36)
-      }, '#e09a48', { color: '#a8622a', dx: -3, dy: -1.4 })
-      stroke(c, [0, -34, 0, -92], 5, '#6a4228')
+      }, '#c4382c', { color: '#7e1c1a', dx: -3, dy: -1.4 })
+      stroke(c, [0, -34, 0, -92], 5.4, '#3a2418')
       c.beginPath()
       for (let y = -42; y > -90; y -= 6.4) {
         c.moveTo(-2.2, y)
         c.lineTo(2.2, y)
       }
-      c.strokeStyle = '#e0c088'
+      c.strokeStyle = '#d8d4cc'
       c.lineWidth = 0.8
       c.stroke()
-      blob(c, () => c.roundRect(-4, -106, 8, 15, 2.6), '#4a2c18', { color: '#2e1a0e', dx: -1.2, dy: 0 })
+      blob(c, () => c.roundRect(-4, -106, 8, 15, 2.6), '#2a1a12', { color: '#160c08', dx: -1.2, dy: 0 })
       for (const y of [-103, -98.6, -94.2]) {
         g0(c, -5.4, y, 1.4)
         g0(c, 5.4, y, 1.4)
@@ -1545,11 +1595,12 @@ export function drawPortraitBack(c: CanvasRenderingContext2D, id: AccessoryId): 
       return true
     }
     case 'balon': {
-      // kalp balon: başın solunda yukarıda; ip omzun arkasına iner
-      stroke(c, [22, 96, 20, 70, 20, 44], 1, '#f4ece0', false)
+      // kalp balon: sol üst köşede, saçın üstünde boş kalan yerde (kadrajın içinde, sol kenarda kesilmez); ip omzun arkasına iner
+      stroke(c, [24, 96, 21, 64, 19.5, 31], 1, '#f4ece0', false)
       c.save()
-      c.translate(19, 30)
-      c.rotate(-0.16)
+      c.translate(18.5, 21)
+      c.rotate(-0.12)
+      c.scale(0.72, 0.72)
       blob(c, () => {
         c.moveTo(0, 15)
         c.bezierCurveTo(-20, 2.4, -15, -15, 0, -6)

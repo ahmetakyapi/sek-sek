@@ -134,6 +134,11 @@ const STEP = 1 / 120
 
 /** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
 const RELEASE_NOTES: Record<string, [string, string][]> = {
+  adiyaman: [
+    ['İki Yeni Şehir', 'Adıyaman ve Kastamonu: Nemrut’un taş başları, Cendere Köprüsü, kale burcu ve içine gireni aşağı çeken şelaleler.'],
+    ['Efsane Parkurları', 'Mücadelelere yeni kademe ve dört yeni Usta Parkuru: termal, donan buz, yüzen ada ve havuz teyzesi.'],
+    ['Mağaza Yenilendi', 'Karakteri 360° döndür; yeni saçlar, renkler, desenler, ifadeler ve on iki yeni aksesuar.'],
+  ],
   bingol: [
     ['Yeni Şehir: Bingöl', 'Bin göl, Çır Şelalesi, arılı yayla ve Solhan’ın üstüne basınca batan yüzen adaları.'],
     ['Okunur Yazılar', 'Konuşma balonları yazıldıkça büyür; hatıra, nazar ve checkpoint bildirimleri yenilendi.'],

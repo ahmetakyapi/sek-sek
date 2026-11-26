@@ -12,6 +12,7 @@ Kural her şehirde aynıdır ve değişmez: **işaret → saldırı → yorgunlu
 yorgunken yandan dokunmak zararsızdır; basış ya da dash can götürür. Hareketler saate ve oyuncunun durumuna (yeri, hızı)
 bağlıdır, rastgelelik yoktur: aynı girdi aynı dövüşü verir.
 
+- **Ad (kullanıcı kararı, 26 Kasım 2026):** boss adı yaygın Türkçe sözcüklerle kurulur ve kişi adı taşımaz ("Ferhat’ın Kazması" değil "Dağ Delen Kazma", "Kafkasör Boğası" değil "Yayla Boğası"). Şehir adı ya da herkesin bildiği yer adı olabilir ("Malatya Kayısısı"); halk masalı varlıkları (Tepegöz, Şahmaran, Ayaz Ata) kişi sayılmaz.
 - Yeni boss: `BOSSES` (ad TR/EN, can ≥ 3, `moves` sırası, hız, `tier`, kutu, nasıl yenileceğini söyleyen `taunt` TR/EN) +
   `bossDraw.ts` içinde `PAINT[şehir]`. Şehrin bir ayrıntısından doğar; şehrin dost hayvanıyla aynı tür olmaz.
 - Hareketler: `charge` (toslar, duvarda sersemler) · `dive` (gölgesi düşer, dalar) · `hop` (üç sıçrar, yorulur) ·
@@ -45,3 +46,11 @@ bağlıdır, rastgelelik yoktur: aynı girdi aynı dövüşü verir.
   Yeni boss lafsız eklenmez. Nasıl yenileceğini üç yer söyler ve üçü de aynı kuralı anlatır: arenadaki tabela (`taunt`),
   boss uyanınca çıkan üç adım (İşareti Gör → Saldırıdan Kaç → Yorulunca Üstüne Bas) ve yorgunken üstündeki "Şimdi Bas!" oku.
 - Komedi çizimdedir (yorulunca dil dışarı, ter; vurulunca ezilme; yenilince beyaz bayrak), kuralda değil: süreler ve temas değişmez.
+
+## CLAUDE.md'den taşınanlar (26 Kasım 2026)
+
+**Boss değiştirmek.** `game/boss.ts` (BOSSES: can, hareket sırası, hız; BOSS: süreler) → `npx tsx scripts/bossbot.ts <id>`
+(bot ve zayıf oyuncu botu yenmeli). Çizimi `game/bossDraw.ts`. Kural her şehirde aynı kalsın: işaret → saldırı → yorgunluk → üstüne bas.
+Zorluk kademeyle gelir (`BossDef.tier`; ayrıntı `.claude/rules/boss.md`): Kolay şehirlerin boss'u kademe 1, Orta 2, Zor ve
+Çok Zor 3 (16 Kasım 2026: boss'lar zorlaştı, yorgunluk kısaldı); kademe 2-3 boss'lar öngörülü nişan alır, dört kez sıçrar/atar, inişte şok dalgası
+yollar, Çok Zor'da duvardan sekip yeniden toslar, iki kez dalar, sahte kabarır. Can artırmak zorluk değildir.

@@ -4,7 +4,7 @@ description: Sek-Sek bölüm tasarımcısı. Bir şehrin haritasını yeni bir b
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
-Sen bu oyunun bölüm tasarımcısısın. Önce `CLAUDE.md`’yi oku: "Bölüm ölçütleri (kalıcı kural)" bağlayıcıdır,
+Sen bu oyunun bölüm tasarımcısısın. Önce `CLAUDE.md`’yi ve `.claude/rules/bolumler.md`’yi oku: "Bölüm ölçütleri (kalıcı kural)" bağlayıcıdır,
 "Tasarım tuzakları" öğrenilmiş hatalardır.
 
 Her bölüm şu iskelettedir: ana yol → meydan kapısı (@) → meydan yolu (şehre özgü bulmaca / meydan okuma + saklı
@@ -30,6 +30,9 @@ Yöntem:
    bulunamıyorsa hedefli tura güvenme: haritayı sadeleştir. Sonra `npx tsx scripts/verify-respawn.ts <id>`
    (her bayraktan yeniden doğunca çıkışa varılmalı) ve `npx tsx scripts/audit-difficulty.ts <id>` (zayıf oyuncu geçmeli).
 6. Yeni tabela ya da kişi eklediysen Türkçe metnin yanına İngilizcesini de yaz (`hintsEn` / `npcsEn`, `content.en.ts`,
-   `signatures.ts`).
+   `signatures.ts`). Harita bitince `npx tsx scripts/check-text.ts <id>`: metinde geçen mekanik (rüzgâr, gelgit, halat…)
+   haritada yoksa metni değil haritayı mı değiştireceğini ana oturuma sor; ortak dosyadaki metin için öneri yaz.
+7. Görev tanımında kullanacağın mekaniğin kuralı yoksa `.claude/rules/bolumler.md` "Tasarım tuzakları"nda ara; orada da yoksa
+   tahmin etme, raporda sor. Başka bir ajanla paylaştığın dosyada `Write` değil `Edit` kullan.
 
 Commit atma; ana oturuma değişen dosyaları ve doğrulayıcı çıktısını üç satırda bildir. Doğrulayamadığın şeyi açıkça yaz.

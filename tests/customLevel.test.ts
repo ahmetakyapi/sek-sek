@@ -269,3 +269,20 @@ describe('donan su (Z) ve yükselen hava (V) karoları', () => {
     expect(SYMBOLS.indexOf('A')).toBeLessThan(SYMBOLS.indexOf('V'))
   })
 })
+
+describe('şelale (;) karosu', () => {
+  it('listenin sonundadır, kod gidip gelir ve harita sürüm 2 kodlanır; eski simgelerin sırası değişmez', () => {
+    expect(SYMBOLS[SYMBOLS.length - 1]).toBe(';')
+    expect(SYMBOLS.indexOf('+')).toBe(SYMBOLS.length - 2)
+    expect(SYMBOLS.length).toBeLessThanOrEqual(64)
+    const map = SAMPLE_MAP.map((r, y) => (y >= 12 && y < 20 ? r.slice(0, 30) + ';;' + r.slice(32) : r))
+    expect(validateMap(map)).toBeNull()
+    const code = encodeMap(map, 'istanbul')
+    const back = decodeMap(code)
+    expect('error' in back).toBe(false)
+    if (!('error' in back)) expect(back.map).toEqual(map)
+    // şelalesiz örnek haritanın kodu değişmedi (sürüm 1 kalır)
+    expect(decodeMap(encodeMap(SAMPLE_MAP, 'istanbul'))).toMatchObject({ map: SAMPLE_MAP })
+    expect(customLevel(map, 'istanbul').map.some((r) => r.includes(';'))).toBe(true)
+  })
+})

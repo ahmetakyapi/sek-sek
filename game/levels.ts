@@ -29,6 +29,8 @@ import { road as balikesirRoad } from './cities/balikesir'
 import { road as elazigRoad } from './cities/elazig'
 import { road as afyonRoad } from './cities/afyon'
 import { road as bingolRoad } from './cities/bingol'
+import { road as adiyamanRoad } from './cities/adiyaman'
+import { road as kastamonuRoad } from './cities/kastamonu'
 import { road as karabukRoad } from './cities/karabuk'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
@@ -1128,6 +1130,8 @@ const DECOR_CYCLE: Record<string, string> = {
   elazig: 'zlt',
   afyon: 'tlz',
   bingol: 'ztl',
+  adiyaman: 'tzl',
+  kastamonu: 'lzt',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2486,7 +2490,7 @@ export const LEVELS: LevelDef[] = [
       { name: 'Balıkçı Bahri', look: 'amca', text: 'Hazar Gölü’nün dibinde eski bir şehir varmış, dalgıçlar surlarını görmüş. Göl donunca karşıya yürünür, erirken yüzülür; acele eden ortada kalır. Meydan kapısı göl kıyısında.' },
     ],
     medals: [190, 260, 350],
-    quips: ['Buz seni tutmadı.', 'Buzluk Devi homurdandı.', 'Orcik dondu.', 'Göl seni yuttu.'],
+    quips: ['Buz seni tutmadı.', 'Buz Devi homurdandı.', 'Orcik dondu.', 'Göl seni yuttu.'],
     item: 'Orcik',
     intro: 'Harput’ta Süt Kalesi’nden Ulu Cami’nin eğri minaresine, Buzluk Mağarası’nın yeraltı buzundan Hazar Gölü’nün donan sularına. Bu yolda su saat gibi donar ve erir: zamanı kolla.',
     facts: [
@@ -2572,6 +2576,74 @@ export const LEVELS: LevelDef[] = [
       'Göl zinciri: batan ada bir süre sonra yine çıkar. Kıyıda bekle, sırayı gör, sonra durmadan geç.',
     ],
     map: roadMap(bingolRoad),
+  },
+  {
+    id: 'adiyaman',
+    city: 'adiyaman',
+    name: 'Adıyaman',
+    nickname: 'Hısn-ı Mansur',
+    plate: 2,
+    subtitle: 'Nemrut’un Taş Başları',
+    difficulty: 'Orta',
+    note: 'Defterin bu sayfasına biraz isot bulaşmış, mürekkep kızıla çalıyor. Adıyaman’da bir kral dağın tepesine kendi mezarını yaptırmış, tanrıların başlarını yanına dizmiş; başlar zamanla yere düşmüş. Bu yolda bir taş başı itip yol açacaksın: nazik ol, iki bin yaşında.',
+    npcs: [
+      { name: 'Çiğköfteci Remzi Usta', look: 'usta', text: 'Çiğ köfteyi isotla, bulgurla, sabırla yoğururum; bir saat yoğurmadan tadı gelmez! Üç dürüm kayboldu: biri Cendere Köprüsü’nün kemerinin tepesinde, biri Perre’nin kaya mezarlarının önünde, biri de Nemrut’un taş başlarının yanında kaldı.' },
+      { name: 'Tütüncü Sevda Nine', look: 'teyze', text: 'Adıyaman’ın tütünü güneşte kurur, ben de onunla! Cendere’nin kemeri tek parça taştır, iki bin yıla yakın ayakta. Raylı taş gidip gelir: kemere o taşla çık, acele edersen suya düşersin.' },
+      { name: 'Fotoğrafçı Melike', look: 'genc', text: 'Perre’nin kayalarına kapı gibi mezarlar oyulmuş, ben her birini çektim. En sondaki karanlık ağzın içine kimse bakmaz; ben baktım, içerde biri bir pul bırakmış.' },
+      { name: 'Nemrut Bekçisi Mahmut Amca', look: 'amca', text: 'Gün doğarken Nemrut’ta taş başlar kızarır, insanın içi titrer! Yamaçtaki yarık geniştir, havada dash atmadan geçilmez. Yolu kapatan devrik başı it, ardındaki basamağa çık. Meydan kapısı tümülüsün öbür yanında.' },
+    ],
+    medals: [150, 210, 290],
+    quips: ['Taş baş üstüne devrildi.', 'Yarık seni yuttu.', 'Fırat seni serinletti.', 'Çiğ köfte acı geldi.'],
+    item: 'Çiğ Köfte',
+    intro: 'Adıyaman’ın çarşısından Cendere Köprüsü’ne, Perre’nin kaya mezarlarından Nemrut Dağı’nın tepesine. Yarığı dash’le geç, devrik taş başları it, gün doğumuna yetiş.',
+    facts: [
+      { title: 'Nemrut Dağı', text: 'Kommagene Kralı I. Antiokhos, MÖ 1. yüzyılda Nemrut Dağı’nın tepesine yapay bir tümülüs yaptırdı. Çevresindeki dev heykellerin başları zamanla yere düştü; alan UNESCO Dünya Mirası listesindedir.' },
+      { title: 'Cendere Köprüsü', text: 'Cendere Çayı üstündeki tek kemerli Roma köprüsü, MS 2. yüzyılın sonunda imparator Septimius Severus ve ailesi adına yapıldı ve bugün de ayaktadır.' },
+      { title: 'Perre Antik Kenti', text: 'Kommagene Krallığı’nın önemli kentlerinden Perre’de kayalara oyulmuş çok sayıda mezar ve bir çeşme bulunur.' },
+    ],
+    secret: { title: 'Arsameia', text: 'Kahta yakınındaki Arsameia’da, Kral Mithridates’in Herakles’le tokalaştığı büyük bir kabartma vardır. Kabartmanın altından kayaya oyulmuş uzun bir tünel iner.' },
+    hints: [
+      'Adıyaman’a hoş geldin! Çarşıdan geç, Cendere’ye yürü. Tezgâhların üstünden atlayabilirsin.',
+      'Cendere Köprüsü: raylı taş kemerle kıyı arasında gidip gelir. Taş yanına gelince bin, kemerin tepesine çık.',
+      'Perre’nin kaya mezarları: basamaklar duvarlara oyulmuş. Duvardan duvara sekerek yukarı tırman.',
+      'Nemrut’un eteği: yamaçta geniş bir yarık var. Koşarak zıpla, havada dash at.',
+      'Tümülüsün başları: devrik taş başı yürüyerek it, çukura düşür, üstünden geç. Geçitteki de aynı.',
+    ],
+    map: roadMap(adiyamanRoad),
+  },
+  {
+    id: 'kastamonu',
+    city: 'kastamonu',
+    name: 'Kastamonu',
+    nickname: 'Kastamon',
+    plate: 37,
+    subtitle: 'Kale, Hasır ve Şelaleler',
+    difficulty: 'Zor',
+    note: 'Defterin bu sayfası nemli, kenarı sanki şelale serpintisine tutulmuş. Kastamonu’da kale şehri yukarıdan izler, ormanın içinde kanyonlar saklanır. Bu yolda şelalelerin içine girme: su seni aşağı çeker. Üstünden atla, yandan dolaş.',
+    npcs: [
+      { name: 'Etli Ekmekçi Halis Usta', look: 'usta', text: 'Etli ekmeği taş fırında, ince açarım; bir metre boyunda çıkar! Üç dilim kayboldu: biri kalenin burcunda, biri Ilgaz’ın çamlarının tepesinde, biri de Horma Kanyonu’nun ahşap yolunun ucunda kaldı.' },
+      { name: 'Hasırcı Nurhan Teyze', look: 'teyze', text: 'Hasırcılar Çarşısı’nda saz örerim, kırk yıldır! Kalenin duvarları diktir: duvardan duvara sekersen burca varırsın. Çatlak taşa uzun basma, altında boşluk var.' },
+      { name: 'Ormancı Nevzat', look: 'amca', text: 'Ilgaz’da kar ağır yağar, çamların dalı yere eğilir. Karlı yamacın en büyük çamının ardındaki kayaya bak: karanlık bir oyuk var, biri içine bir pul bırakmış.' },
+      { name: 'Rehber Ece', look: 'genc', text: 'Horma’da yol kayaya çakılmış tahtadır, aşağıda kanyon gürler. Şelalelerin içine girme, su seni dibe çeker! Üstünden atla ya da yatay dash’le geç. Meydan kapısı kanyonun çıkışında.' },
+    ],
+    medals: [180, 245, 330],
+    quips: ['Şelale seni dibe çekti.', 'Çatlak taş çöktü.', 'Kar ayağını kaydırdı.', 'Etli ekmek soğudu.'],
+    item: 'Etli Ekmek',
+    intro: 'Nasrullah Meydanı’nın konaklarından Kastamonu Kalesi’nin burcuna, Ilgaz’ın karlı ormanından Horma Kanyonu’nun şelalelerine. Şelaleye girme: su seni aşağı çeker.',
+    facts: [
+      { title: 'Kastamonu Kalesi', text: 'Şehrin üstündeki kayalığa kurulan Kastamonu Kalesi Bizans döneminde yapıldı, Candaroğulları ve Osmanlı döneminde onarıldı.' },
+      { title: 'Horma Kanyonu', text: 'Küre Dağları Milli Parkı’ndaki Horma Kanyonu’nda yürüyüş yolu kayalara tutturulmuş ahşap iskelelerle kanyon boyunca ilerler.' },
+      { title: 'Ilgaz Dağı', text: 'Kastamonu ile Çankırı arasındaki Ilgaz Dağı, karaçam ve sarıçam ormanlarıyla bir milli parktır; kışın kayak merkezi olur.' },
+    ],
+    secret: { title: 'Şapka İnkılabı', text: 'Atatürk, Ağustos 1925’te Kastamonu’ya yaptığı gezide halka şapkayla göründü ve Şapka İnkılabı’nı burada duyurdu.' },
+    hints: [
+      'Kastamonu’ya hoş geldin! Nasrullah Meydanı’ndan geç, konakların saçaklarına atla.',
+      'Kastamonu Kalesi: duvarlar dik. Duvardan duvara sekerek burca çık; çatlak taşta durma.',
+      'Ilgaz’ın ormanı: karlı yamaç kaygan. Önceden yavaşla, çamların dallarına atla.',
+      'Ilıca Şelalesi: şelalenin içinde su seni aşağı çeker, zıplaman kısalır. Üstünden atla ya da yatay dash’le geç.',
+      'Horma Kanyonu: ahşap yol şelalelerin arasından geçer. Şelaleye girmeden tahtadan tahtaya atla.',
+    ],
+    map: roadMap(kastamonuRoad),
   },
 ]
 

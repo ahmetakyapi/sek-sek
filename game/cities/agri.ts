@@ -1,7 +1,7 @@
 import type { CityRoad } from './types'
 
 /**
- * Ağrı ana yolu (TASLAK), dört parça: Doğubayazıt damları (karşı rüzgârda damdan dama) → İshak Paşa Sarayı
+ * Ağrı ana yolu, dört parça: Doğubayazıt damları (karşı rüzgârda damdan dama) → İshak Paşa Sarayı
  * (halat: güvenli zeminde tutun-tırman, avlunun dikenleri üstünde halattan halata, sonuncudan dash ile terasa;
  * kilim sarayın damında, delikten çıkan halatın tepesinde) → Meteor Çukuru (dipsiz çukurda iki tel; pul karşı
  * yamaçta telin bittiği yerin altındaki taş kovukta) → Ağrı Dağı yamacı (buz basamakları, halat + dash, duvar sekmesiyle baca, tel, zirve kampı).

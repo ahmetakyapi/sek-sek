@@ -23,3 +23,9 @@ paths:
   Fiil gerekiyorsa "dash at". Dünyadaki nesne kendi adıyla kalır (bayrak, tabela, hatıra, nazar boncuğu); terim, işlevin adıdır.
   Zaten yerleşmiş Türkçe karşılıklar (Bölüm, Ayarlar, Mola, Süre, Düşüş, Hayalet Koşu, Rahat Mod) değiştirilmez.
 - Çerçeve hikâye: defter, sahafta bulunan bir **Gezgin**'in yol defteridir ("Yol Defteri"); "dede" anlatısı kullanılmaz.
+
+## CLAUDE.md'den taşınanlar (26 Kasım 2026)
+
+**Metin eklemek.** Arayüzde Türkçe metni `t('…')` ile yaz, İngilizcesini `lib/ui.en.ts`’e ekle. Bölüm metni
+`levels.ts`’e, İngilizcesi `content.en.ts`’e. Başlık ve düğmeler Title Case, paragraflar cümle düzeni; tek kelimelik
+yetim satır bırakma.

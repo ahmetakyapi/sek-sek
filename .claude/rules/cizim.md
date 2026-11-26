@@ -7,6 +7,7 @@ paths:
   - "game/art.ts"
   - "game/atmosphere.ts"
   - "components/Figures.tsx"
+  - "game/enemyDraw.ts"
 ---
 
 # Çizim dili
@@ -29,7 +30,7 @@ paths:
 - Fizik sabit adımlıdır; çizim `capture()` / `blend()` ile adımlar arasında ara değerlenir. Yeni hareketli nesne
   eklersen ikisine de ekle, yoksa yüksek tazeleme hızında titrer.
 - Çizimde her şey saate bağlıdır: kare başına `Math.random()` titremesi ya da `Math.random() < p` yok (`shakeOffset`,
-  `this.chance(p)`); pahalı çizim kare içinde tek seferde yapılmaz, önbelleğe bütçeyle önceden çizilir (CLAUDE.md "Akıcılık").
+  `this.chance(p)`); pahalı çizim kare içinde tek seferde yapılmaz, önbelleğe bütçeyle önceden çizilir (`.claude/rules/akicilik.md`).
 - Tuval piksel bütçesiyle çizilir (`backingDpr`, `PIXEL_BUDGET`); yeni tam ekran katman, `filter` ya da büyük gölge eklemeden
   önce `node scripts/verify-perf.cjs` ile ölç (üretim derlemesinde).
 - Yeni piksel sprite ekleme: karakter, insan, boss, zemin, düşman, dost hayvan ve toplananlar vektördür
@@ -63,3 +64,11 @@ otu konmaz (26 Kasım 2026, kullanıcı: taşın üstünde gereksiz leke).
 - `ctx.filter` yalnız kurulumda (önceden çizilen imgeye bulanıklık) kullanılır, kare içinde asla.
 - Yeni şehir paleti: gök soluk beyaza değil ılık ufka insin; katmanlar iki üç tonla çizilsin (tek düz renk blok boyalı durmaz).
 
+## CLAUDE.md'den taşınanlar (26 Kasım 2026)
+
+## Öğrenilmiş kurallar
+
+- Konuşma ve tabela sözü ekranın altına kutu olarak değil, konuşanın başının üstüne baloncuk olarak çizilir (karakteri kapatmaz).
+  Tabela balonu ahşap tabela görünümünde, "Tabela" başlıklı; uzun söz cümle cümle numaralı adımlara bölünür, yapılacak eylem
+  (iki noktadan sonrası, ünlemle biten cümle) kalın ve altın renkli (`render.ts` `drawDialog`, 25 Kasım 2026). Şehir insanının adı renkli etikette.
+  Oynanış sırasında çıkan yazılar (bayrak sözü, ölüm lafı) üstte HUD'ın altında, küçük ve soluk durur; oynanış alanına girmez.

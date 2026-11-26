@@ -6,7 +6,7 @@
  * Birim: 100 x 119'luk çerçeve (64:76), yüz hafifçe sağa dönük; kılığa göre saç, sakal, başlık ve yaka değişir.
  */
 import { COVERS_HEAD, NO_KIT, ON_HEAD, type AccessoryId, type Kit } from './accessories'
-import { PORTRAIT_HEAD, drawFaceItem, drawHeadItem, drawPortraitBack, drawPortraitBackFront } from './accessoryDraw'
+import { PORTRAIT_HEAD, PORTRAIT_HEAD_BEARD, drawFaceItem, drawHeadItem, drawPortraitBack, drawPortraitBackFront } from './accessoryDraw'
 import { INK, LOOKS, blob, drawPattern, resolveSkin, setInkWidth, setShadeBox, setSoft, stroke, type Look } from './heroDraw'
 import { drawHairBack, drawHairTop } from './hairDraw'
 import type { Expr, Front } from './looks'
@@ -2213,124 +2213,47 @@ function frontPath(c: Ctx, front: Front | 'parted') {
   else shortHairPath(c)
 }
 
-/**
- * Portreyi (w x h) kutusuna çizer: kutuyu doldurur, taban ortalanır. t: saniye (nefes, saç, göz kırpma).
- * Fon dahil bütün kutu boyanır; çerçeveyi çağıran çizer.
- */
-export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number, opts: PortraitOpts = {}) {
-  const kit = opts.acc ?? NO_KIT
+/** başın çizimi için ortak durum: kılık, kombin, saç biçimi, ifade, canlılık */
+interface HeadCtx {
+  look: Look
+  s: Skin
+  kit: Kit
+  acc: AccessoryId
+  t: number
+  sway: number
+  shut: boolean
+  front: Front | 'parted'
+  fem: boolean
+  ex: Expr
+  hairAn: { t: number; moving: boolean; hair: number; lift: number }
+}
+
+function headCtx(look: Look, s: Skin, kit: Kit, t: number, sway: number, shut: boolean): HeadCtx {
   const acc = kit.head
-  const s1: Skin = resolveSkin(look, kit.look, opts.scarf, opts.scarfS)
-  // başa takılan aksesuar kılığın şapkasının yerine geçer (yazma kalır, başlık üstüne oturur)
-  const s: Skin = ON_HEAD.has(acc) && s1.hat && s1.hat !== 'yazma' ? { ...s1, hat: undefined } : s1
-  const live = !opts.still
-  const breath = live ? Math.sin(t * 1.9) * 0.5 : 0
-  const sway = live ? Math.sin(t * 1.3) * 0.9 : 0
-  const tilt = live ? Math.sin(t * 0.7) * 0.012 : 0
-  const shut = live && (t + 3.2) % 4.2 > 4.06
-
-  // yumuşak boya kipi: oyundaki karakterle aynı fırça (koyu-sıcak ince hat, ılık ışık, serin gölge)
-  const wasSoft = setSoft(true)
-  // gölge bandı portrenin birimine göre: kökeni sol üstte (karakterin kutusu tabana göredir, alt yarı ters gölgelenirdi)
-  setShadeBox([-60, -80, 220, 280])
-  c.save()
-  c.beginPath()
-  c.rect(0, 0, w, h)
-  c.clip()
-  const k = Math.max(w / PORTRAIT_W, h / PORTRAIT_H)
-  c.translate(w / 2, h)
-  c.scale(k, k)
-  c.translate(-PORTRAIT_W / 2, -PORTRAIT_H)
-  background(c, look, s)
-  if (opts.face) {
-    // yalnız baş: saçın tepesinden çeneye kare kırpım (küçük gösterge pulu). 26 Kasım 2026: kırpım genişledi, alın,
-    // saç ve baş aksesuarı (fiyonk, şapka) kesilmiyordu, yüz kutuyu dolduruyordu
-    // görünen alanın ortasına (kare kutuda kadrajın alt 100 birimi) saçın tepesinden çeneye ~86 birim (başlıkta 96) sığar
-    const tall = (!!s.hat && s.hat !== 'yazma') || ON_HEAD.has(acc)
-    const f = PORTRAIT_W / (tall ? 96 : 86)
-    c.translate(PORTRAIT_W / 2, PORTRAIT_H - h / k / 2)
-    c.scale(f, f)
-    c.translate(-53, -(tall ? 42 : 47))
-    boost = Math.max(1, 0.62 / (k * f))
-  } else {
-    const [f, cx, top] = frame(s, acc)
-    c.translate(PORTRAIT_W / 2, 3.5)
-    c.scale(f, f)
-    c.translate(-cx, -top)
-    boost = Math.max(1, 0.62 / (k * f))
-  }
-  ink(MID_INKW)
-
-  const fem = !!s.fem || s.hat === 'yazma'
   // dağınık saçın sivri tutamları başlığın altından taşmasın: başlıkla kısa saç görünür
   const front0 = frontOfPortrait(look, s)
   const front = (front0 === 'messy' || front0 === 'wave') && (COVERS_HEAD.has(acc) || (!!s.hat && s.hat !== 'yazma')) ? 'short' : front0
-  const ex: Expr = s.expr ?? 'ozgun'
-  const hairAn = { t, moving: false, hair: sway * 0.3, lift: 0 }
-  // baş ve boyun: omuzların yarısı kadar oynar, çok hafif yana eğilir
-  const head = () => {
-    c.translate(52, 92 + breath * 0.5)
-    c.rotate(tilt)
-    c.translate(-52, -92)
-  }
-  // sırttaki bağlama ve pelerin her şeyin arkasında (uzun saç üstlerine düşer)
-  if (kit.back === 'saz' || kit.back === 'pelerin' || BEHIND_ALL.has(kit.back)) {
-    c.save()
-    c.translate(0, breath + BODY_DY)
-    ink(INKW)
-    if (kit.back === 'saz') sazBack(c)
-    else if (kit.back === 'pelerin') capeBack(c)
-    else drawPortraitBack(c, kit.back)
-    ink(MID_INKW)
-    c.restore()
-  }
-  // uzun saç omuzların arkasına düşer; Mağaza saçları (at kuyruğu, örgü, küt kesim) da başın arkasında
+  return { look, s, kit, acc, t, sway, shut, front, fem: !!s.fem || s.hat === 'yazma', ex: s.expr ?? 'ozgun', hairAn: { t, moving: false, hair: sway * 0.3, lift: 0 } }
+}
+
+/** başın arkasına düşen saç (uzun, dalgalı; at kuyruğu, örgü, küt kesim): omuzlardan önce */
+function hairBehind(c: Ctx, h: HeadCtx) {
+  const { s, sway } = h
   if (s.back === 'long' || s.back === 'wavy') {
-    c.save()
-    head()
     if (s.back === 'wavy') wavyHairBack(c, s, sway)
     else longHairBack(c, s, sway)
-    c.restore()
-  } else if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob') {
-    c.save()
-    head()
-    drawHairBack(c, s.back, PORTRAIT_HEAD, hairAn, s)
-    c.restore()
-  }
+  } else if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob') drawHairBack(c, s.back, PORTRAIT_HEAD, h.hairAn, s)
+}
 
-  // omuzlar: nefesle hafifçe iner kalkar
-  c.save()
-  c.translate(0, breath + BODY_DY)
-  propBack(c, s)
-  if (kit.back === 'heybe') bagBack(c)
-  else if (!BEHIND_ALL.has(kit.back)) drawPortraitBack(c, kit.back)
-  ink(INKW)
-  shoulders(c, look, s)
-  ink(MID_INKW)
-  if (look === 'genc') hoodie(c, s)
-  else collar(c, look, s)
-  propFront(c, s)
-  if (kit.back === 'heybe') bagStrap(c)
-  if (kit.back === 'saz') sazStrap(c)
-  if (kit.back === 'pelerin') capeClasp(c)
-  drawPortraitBackFront(c, kit.back)
-  c.restore()
+/** boyun (yazmanın arkası dahil): atkıdan önce */
+function neckPart(c: Ctx, h: HeadCtx) {
+  if (h.s.hat === 'yazma') yazmaBack(c, h.s)
+  neck(c, h.s, h.fem)
+}
 
-  c.save()
-  head()
-  if (s.hat === 'yazma') yazmaBack(c, s)
-  neck(c, s, fem)
-  c.restore()
-
-  if (!s.bare) {
-    c.save()
-    c.translate(0, breath + 1.5 + BODY_DY)
-    scarf(c, s)
-    c.restore()
-  }
-
-  c.save()
-  head()
+/** baş: ten, yüz, sakal, ön saç, yüz ve baş aksesuarı */
+function headPart(c: Ctx, h: HeadCtx) {
+  const { look, s, kit, acc, t, sway, shut, front, fem, ex, hairAn } = h
   const skull = () => headPath(c, fem, look === 'genc')
   ink(FACE_INKW)
   blob(c, skull, s.skin)
@@ -2381,7 +2304,7 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     if (kit.face === 'gozluk') glasses(c)
     if (kit.face === 'gunes') shades(c)
     if (kit.face === 'kayak') goggles(c)
-    drawFaceItem(c, kit.face, PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
+    drawFaceItem(c, kit.face, s.trim || s.beard ? PORTRAIT_HEAD_BEARD : PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
     yazmaFront(c, s)
     if (ON_HEAD.has(acc)) {
       c.save()
@@ -2396,7 +2319,7 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     if (kit.face === 'gozluk') glasses(c)
     if (kit.face === 'gunes') shades(c)
     if (kit.face === 'kayak') goggles(c)
-    drawFaceItem(c, kit.face, PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
+    drawFaceItem(c, kit.face, s.trim || s.beard ? PORTRAIT_HEAD_BEARD : PORTRAIT_HEAD, { t, moving: false, hair: 0, lift: 0 })
     drawHairTop(c, s.back ?? 'none', PORTRAIT_HEAD, hairAn, s, COVERS_HEAD.has(acc) || (!!s.hat && !ON_HEAD.has(acc)))
     hat(c, s)
     if (ON_HEAD.has(acc)) {
@@ -2406,6 +2329,113 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
       c.restore()
     }
   }
+}
+
+/**
+ * Portreyi (w x h) kutusuna çizer: kutuyu doldurur, taban ortalanır. t: saniye (nefes, saç, göz kırpma).
+ * Fon dahil bütün kutu boyanır; çerçeveyi çağıran çizer.
+ */
+export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number, opts: PortraitOpts = {}) {
+  const kit = opts.acc ?? NO_KIT
+  const acc = kit.head
+  const s1: Skin = resolveSkin(look, kit.look, opts.scarf, opts.scarfS)
+  // başa takılan aksesuar kılığın şapkasının yerine geçer (yazma kalır, başlık üstüne oturur)
+  const s: Skin = ON_HEAD.has(acc) && s1.hat && s1.hat !== 'yazma' ? { ...s1, hat: undefined } : s1
+  const live = !opts.still
+  const breath = live ? Math.sin(t * 1.9) * 0.5 : 0
+  const sway = live ? Math.sin(t * 1.3) * 0.9 : 0
+  const tilt = live ? Math.sin(t * 0.7) * 0.012 : 0
+  const shut = live && (t + 3.2) % 4.2 > 4.06
+
+  // yumuşak boya kipi: oyundaki karakterle aynı fırça (koyu-sıcak ince hat, ılık ışık, serin gölge)
+  const wasSoft = setSoft(true)
+  // gölge bandı portrenin birimine göre: kökeni sol üstte (karakterin kutusu tabana göredir, alt yarı ters gölgelenirdi)
+  setShadeBox([-60, -80, 220, 280])
+  c.save()
+  c.beginPath()
+  c.rect(0, 0, w, h)
+  c.clip()
+  const k = Math.max(w / PORTRAIT_W, h / PORTRAIT_H)
+  c.translate(w / 2, h)
+  c.scale(k, k)
+  c.translate(-PORTRAIT_W / 2, -PORTRAIT_H)
+  background(c, look, s)
+  if (opts.face) {
+    // yalnız baş: saçın tepesinden çeneye kare kırpım (küçük gösterge pulu). 26 Kasım 2026: kırpım genişledi, alın,
+    // saç ve baş aksesuarı (fiyonk, şapka) kesilmiyordu, yüz kutuyu dolduruyordu
+    // görünen alanın ortasına (kare kutuda kadrajın alt 100 birimi) saçın tepesinden çeneye ~86 birim (başlıkta 96) sığar
+    const tall = (!!s.hat && s.hat !== 'yazma') || ON_HEAD.has(acc)
+    const f = PORTRAIT_W / (tall ? 96 : 86)
+    c.translate(PORTRAIT_W / 2, PORTRAIT_H - h / k / 2)
+    c.scale(f, f)
+    c.translate(-53, -(tall ? 42 : 47))
+    boost = Math.max(1, 0.62 / (k * f))
+  } else {
+    const [f, cx, top] = frame(s, acc)
+    c.translate(PORTRAIT_W / 2, 3.5)
+    c.scale(f, f)
+    c.translate(-cx, -top)
+    boost = Math.max(1, 0.62 / (k * f))
+  }
+  ink(MID_INKW)
+
+  const hc = headCtx(look, s, kit, t, sway, shut)
+  // baş ve boyun: omuzların yarısı kadar oynar, çok hafif yana eğilir
+  const head = () => {
+    c.translate(52, 92 + breath * 0.5)
+    c.rotate(tilt)
+    c.translate(-52, -92)
+  }
+  // sırttaki bağlama ve pelerin her şeyin arkasında (uzun saç üstlerine düşer)
+  if (kit.back === 'saz' || kit.back === 'pelerin' || BEHIND_ALL.has(kit.back)) {
+    c.save()
+    c.translate(0, breath + BODY_DY)
+    ink(INKW)
+    if (kit.back === 'saz') sazBack(c)
+    else if (kit.back === 'pelerin') capeBack(c)
+    else drawPortraitBack(c, kit.back)
+    ink(MID_INKW)
+    c.restore()
+  }
+  // uzun saç omuzların arkasına düşer; Mağaza saçları (at kuyruğu, örgü, küt kesim) da başın arkasında
+  c.save()
+  head()
+  hairBehind(c, hc)
+  c.restore()
+
+  // omuzlar: nefesle hafifçe iner kalkar
+  c.save()
+  c.translate(0, breath + BODY_DY)
+  propBack(c, s)
+  if (kit.back === 'heybe') bagBack(c)
+  else if (!BEHIND_ALL.has(kit.back)) drawPortraitBack(c, kit.back)
+  ink(INKW)
+  shoulders(c, look, s)
+  ink(MID_INKW)
+  if (look === 'genc') hoodie(c, s)
+  else collar(c, look, s)
+  propFront(c, s)
+  if (kit.back === 'heybe') bagStrap(c)
+  if (kit.back === 'saz') sazStrap(c)
+  if (kit.back === 'pelerin') capeClasp(c)
+  drawPortraitBackFront(c, kit.back)
+  c.restore()
+
+  c.save()
+  head()
+  neckPart(c, hc)
+  c.restore()
+
+  if (!s.bare) {
+    c.save()
+    c.translate(0, breath + 1.5 + BODY_DY)
+    scarf(c, s)
+    c.restore()
+  }
+
+  c.save()
+  head()
+  headPart(c, hc)
   c.restore()
 
   boost = 1
@@ -2413,4 +2443,152 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   setSoft(wasSoft)
   setShadeBox(null)
   c.restore()
+}
+
+/* ───────── Mağaza döner sahnesi: tam boy önden ve arkadan görünüşün başı (heroTurn.ts) ───────── */
+
+/** başın arkasındaki saç kütlesi (arkadan): kafatasını örter, ensede tutam tutam biter; uzun saç sırta dökülür */
+function backHairMass(c: Ctx, h: HeadCtx) {
+  const { s, sway } = h
+  const sw = sway * 0.6
+  const long = s.back === 'long' || s.back === 'wavy'
+  const bob = s.back === 'bob'
+  const curly = h.front === 'curly'
+  const buzz = h.front === 'buzz'
+  const path = () => {
+    c.moveTo(25.6, 58)
+    c.bezierCurveTo(19.5, 36, 31, 17, 52, 17)
+    c.bezierCurveTo(73, 17, 84.5, 36, 78.4, 58)
+    if (long) {
+      // sırta dökülen uzun saç: omuz arkasında genişler, uçları dört tutam
+      const wv = s.back === 'wavy' ? 3 : 0
+      c.bezierCurveTo(80 + wv, 74, 84 - wv, 92, 82 + sw, 112)
+      c.quadraticCurveTo(76 + sw, 110, 73 + sw, 118)
+      c.quadraticCurveTo(68 + sw, 112, 62 + sw, 116.5)
+      c.quadraticCurveTo(57 + sw, 111, 52 + sw, 118)
+      c.quadraticCurveTo(47 + sw, 111, 42 + sw, 116.5)
+      c.quadraticCurveTo(36 + sw, 112, 31 + sw, 118)
+      c.quadraticCurveTo(28 + sw, 110, 22 + sw, 112)
+      c.bezierCurveTo(20 + wv, 92, 24 - wv, 74, 25.6, 58)
+    } else if (bob) {
+      // küt kesim: çene hizasında düz biter
+      c.bezierCurveTo(80, 68, 81, 78, 79 + sw * 0.4, 84)
+      c.quadraticCurveTo(52, 88, 25 + sw * 0.4, 84)
+      c.bezierCurveTo(23, 78, 24, 68, 25.6, 58)
+    } else {
+      // kısa saç: ensede ince tutamlarla biter
+      c.quadraticCurveTo(77, 70, 67, 77)
+      c.quadraticCurveTo(64, 74.5, 61.5, 78.5)
+      c.quadraticCurveTo(57, 75, 52.5, 79)
+      c.quadraticCurveTo(48, 75, 43.5, 78.5)
+      c.quadraticCurveTo(41, 74.5, 37, 77)
+      c.quadraticCurveTo(27, 70, 25.6, 58)
+    }
+  }
+  blob(c, path, buzz ? mix(s.hairS, s.skinS, 0.35) : s.hair, { color: s.hairS, dx: -4, dy: -2 })
+  if (curly) {
+    // kıvırcık: dış hat boyunca küçük bukleler
+    for (let i = 0; i < 11; i++) {
+      const a = Math.PI * (1.05 + (i / 10) * 0.9)
+      blob(c, () => c.arc(52 + Math.cos(a) * 26, 44 + Math.sin(a) * 25, 5.4, 0, Math.PI * 2), s.hair, { color: s.hairS, dx: -1.5, dy: -1 })
+    }
+  }
+  if (buzz) return
+  // tepede tepe girdabı ve ondan inen tutam çizgileri; ışık sol üstte
+  c.save()
+  c.beginPath()
+  path()
+  c.closePath()
+  c.clip()
+  curve(c, 55, 29, 50, 26, 49, 31, 1, s.hairS)
+  const ends: ReadonlyArray<[number, number]> = long
+    ? [[28, 100], [37, 112], [47, 112], [57, 112], [67, 112], [76, 100]]
+    : bob
+      ? [[30, 80], [40, 84], [52, 85], [64, 84], [74, 80]]
+      : [[30, 66], [39, 75], [48, 76], [57, 76], [66, 75], [74, 66]]
+  for (const [x, y] of ends) curve(c, 52, 30, x + (x - 52) * 0.15, (30 + y) / 2, x + sw * (y > 90 ? 1 : 0), y, 0.9, s.hairS)
+  c.restore()
+  hairGloss(c, s, path, 40, 21)
+  hairRim(c, s, 70, 22, 81.5, 34, 79, 56)
+}
+
+/** arkadan at kuyruğu ya da örgü: tepenin arkasında bağlanır, sırtın ortasına iner */
+function backTail(c: Ctx, h: HeadCtx) {
+  const { s, sway } = h
+  const sw = sway * 1.2
+  if (h.s.back === 'tail') {
+    blob(c, () => {
+      c.moveTo(47, 46)
+      c.bezierCurveTo(42, 64, 44 + sw, 86, 49 + sw * 1.6, 106)
+      c.quadraticCurveTo(52 + sw * 1.8, 112, 55 + sw * 1.6, 106)
+      c.bezierCurveTo(60 + sw, 86, 62, 64, 57, 46)
+    }, s.hair, { color: s.hairS, dx: -2.4, dy: -1 })
+    curve(c, 50, 52, 48, 74, 51 + sw * 1.4, 100, 1.6, s.hairL)
+    curve(c, 54.6, 54, 56, 76, 53.4 + sw * 1.5, 102, 0.9, s.hairS)
+    blob(c, () => c.ellipse(52, 46, 5, 3, 0, 0, Math.PI * 2), '#e0566a')
+    return
+  }
+  // örgü: üç loblu halkalar sırtın ortasında
+  for (let i = 0; i < 7; i++) {
+    const y = 50 + i * 8
+    const x = 52 + sw * (i / 6) * 1.4
+    blob(c, () => c.ellipse(x, y, 6 - i * 0.3, 5.2, i % 2 ? 0.45 : -0.45, 0, Math.PI * 2), i % 2 ? s.hairS : s.hair, i % 2 ? undefined : { color: s.hairS, dx: -1.6, dy: -0.8 })
+  }
+  blob(c, () => c.ellipse(52 + sw * 1.5, 105, 3.6, 3.4, 0, 0, Math.PI * 2), '#e0566a')
+  curve(c, 52 + sw * 1.5, 108, 50 + sw * 1.6, 113, 52 + sw * 1.7, 117, 2.6, s.hair)
+}
+
+export interface TurnHeadOpts {
+  scarf?: string
+  scarfS?: string
+  acc?: Kit
+  /** baş salınımı (nefes, adım) */
+  sway?: number
+  blink?: boolean
+  /** çizgi kalınlığı çarpanı: tam boyda baş küçük çizilir, hat gövdeyle aynı ağırlıkta kalsın */
+  line?: number
+}
+
+/**
+ * Döner sahnenin başı, portre biriminde (fonsuz, omuzsuz; çağıran ölçekler: göz hattı PORTRAIT_HEAD.cy, orta 52).
+ * Önden: `behind` arka saç (gövdeden önce), `neck` boyun (atkıdan önce), `head` portre yüzü, saç ve aksesuarlar.
+ * Arkadan: `nape` ense, `back` başın arkası (saç kütlesi, kulaklar, at kuyruğu / örgü / topuz, baş aksesuarı aynalı).
+ */
+export function drawTurnHead(c: Ctx, look: Look, t: number, part: 'behind' | 'neck' | 'head' | 'nape' | 'back', opts: TurnHeadOpts = {}) {
+  const kit = opts.acc ?? NO_KIT
+  const s1: Skin = resolveSkin(look, kit.look, opts.scarf, opts.scarfS)
+  const s: Skin = ON_HEAD.has(kit.head) && s1.hat && s1.hat !== 'yazma' ? { ...s1, hat: undefined } : s1
+  const hc = headCtx(look, s, kit, t, opts.sway ?? 0, !!opts.blink)
+  const wasSoft = setSoft(true)
+  setShadeBox([-60, -80, 220, 280])
+  boost = opts.line ?? 1
+  ink(MID_INKW)
+  c.save()
+  if (part === 'behind') hairBehind(c, hc)
+  else if (part === 'neck' || part === 'nape') neckPart(c, hc)
+  else if (part === 'head') headPart(c, hc)
+  else {
+    // başın arkası: kulaklar saçın altından iki yana taşar
+    ear(c, s, 27.4)
+    c.save()
+    c.translate(104, 0)
+    c.scale(-1, 1)
+    ear(c, s, 27.4)
+    c.restore()
+    backHairMass(c, hc)
+    if (s.back === 'tail' || s.back === 'braid') backTail(c, hc)
+    const covered = COVERS_HEAD.has(kit.head)
+    // topuz, iki yandan örgü, yan örgü: önden çizimleri arkadan da aynı yerde durur (aynalı)
+    c.save()
+    c.translate(104.4, 0)
+    c.scale(-1, 1)
+    drawHairTop(c, s.back ?? 'none', PORTRAIT_HEAD, hc.hairAn, s, covered)
+    if (ON_HEAD.has(kit.head) && !drawHeadItem(c, kit.head, PORTRAIT_HEAD, { t, moving: false, hair: hc.sway * 0.25, lift: 0 })) headAcc(c, kit.head, hc.sway)
+    c.restore()
+  }
+  c.restore()
+  boost = 1
+  setInkWidth(HERO_INKW)
+  setSoft(wasSoft)
+  setShadeBox(null)
 }

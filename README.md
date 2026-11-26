@@ -102,6 +102,8 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 44 | Elazığ · Süt Kalesi, Buzluk ve Hazar | 23 | Çok Zor | Saat gibi donup eriyen su, Harput Kalesi, yeraltında Buzluk Mağarası, Hazar’ın batık şehri | Orcik |
 | 45 | Afyon · Kara Kale, Kaymak ve Kaplıca | 03 | Zor | Termal otel: döner kapı, açık büfe, buhar odası; havuz teyzelerine görünmeden geç | Kaymak |
 | 46 | Bingöl · Bin Göl ve Yüzen Adalar | 12 | Zor | Üstüne basınca batan yüzen adalar, Çır Şelalesi, arılı yayla | Bingöl Balı |
+| 47 | Adıyaman · Nemrut’un Taş Başları | 2 | Orta | Cendere Köprüsü, Perre’nin kaya mezarları, Nemrut’un yarığı ve devrik taş başlar | Çiğ Köfte |
+| 48 | Kastamonu · Kale, Hasır ve Şelaleler | 37 | Zor | İçine gireni aşağı çeken şelaleler, kale burcu, Ilgaz’ın karlı ormanı, Horma Kanyonu | Etli Ekmek |
 
 ## Yolcular ve Şehir İnsanları
 
