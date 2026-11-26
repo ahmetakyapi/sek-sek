@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { NO_KIT, kitKey, type Kit } from '@/game/accessories'
 import type { CharacterId } from '@/game/characters'
 import type { Look } from '@/game/heroDraw'
@@ -11,8 +11,35 @@ interface ScarfColor {
   shade: string
 }
 
+/** sunucuda useLayoutEffect uyarı verir; tarayıcıda boyamadan önce çalışsın diye o */
+const useBeforePaint = typeof window === 'undefined' ? useEffect : useLayoutEffect
+
+/**
+ * İlk karenin önbelleği: aynı kılık, atkı, kombin ve boyuttaki portre bir kez çizilir, sonra anında basılır. Sekmeler arası
+ * geçişte kartlar yeniden kurulunca tuval boş açılıp sonra dolmasın (yanıp sönme). En çok `CACHE_MAX` kare (en eskisi düşer).
+ */
+const CACHE_MAX = 120
+const firstFrames = new Map<string, HTMLCanvasElement>()
+function cachedFrame(key: string) {
+  const hit = firstFrames.get(key)
+  if (hit) {
+    firstFrames.delete(key)
+    firstFrames.set(key, hit)
+  }
+  return hit
+}
+function keepFrame(key: string, from: HTMLCanvasElement) {
+  const copy = document.createElement('canvas')
+  copy.width = from.width
+  copy.height = from.height
+  copy.getContext('2d')?.drawImage(from, 0, 0)
+  firstFrames.set(key, copy)
+  while (firstFrames.size > CACHE_MAX) firstFrames.delete(firstFrames.keys().next().value!)
+}
+
 /**
  * Portreyi tuvalde, cihaz çözünürlüğünde canlı tutar: nefes alır, saçı ve atkısı salınır, arada göz kırpar.
+ * İlk kare boyamadan önce çizilir (önbellekte varsa oradan basılır): tuval hiçbir karede boş görünmez.
  * Saniyede ~24 kare yeter; hareket azaltma seçiliyse tek kare çizilir, yalnız boyut değişince yenilenir.
  */
 function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null, kit: Kit = NO_KIT) {
@@ -23,7 +50,7 @@ function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null,
   kitRef.current = kit
   const color = scarf?.color
   const shade = scarf?.shade
-  useEffect(() => {
+  useBeforePaint(() => {
     const cv = ref.current
     if (!cv) return
     const c = cv.getContext('2d')!
@@ -31,8 +58,7 @@ function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null,
     let raf = 0
     let last = -1
     const t0 = performance.now()
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame)
+    const draw = (now: number) => {
       const dpr = Math.min(window.devicePixelRatio || 1, 3)
       const w = Math.round(cv.clientWidth * dpr)
       const h = Math.round(cv.clientHeight * dpr)
@@ -43,8 +69,24 @@ function usePortraitCanvas(look: Look, face: boolean, scarf?: ScarfColor | null,
         cv.width = w
         cv.height = h
       }
+      // ilk kare (t = 0): önbellekte varsa basılır, yoksa çizilip saklanır
+      const first = last < 0
       last = now
+      const id = first ? `${look}|${face ? 1 : 0}|${color ?? ''}|${shade ?? ''}|${key}|${still ? 1 : 0}|${w}x${h}` : ''
+      const hit = first ? cachedFrame(id) : undefined
+      if (hit) {
+        c.clearRect(0, 0, w, h)
+        c.drawImage(hit, 0, 0)
+        return
+      }
       drawPortrait(c, look, w, h, (now - t0) / 1000, { scarf: color, scarfS: shade, face, still, acc: kitRef.current })
+      if (first) keepFrame(id, cv)
+    }
+    // boyamadan önce: düzen burada hesaplanır, tuval ilk karede dolu
+    draw(t0)
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame)
+      draw(now)
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)

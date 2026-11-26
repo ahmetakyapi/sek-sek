@@ -21,6 +21,7 @@ const band = '#e0566a'
 export function drawHairBack(c: CanvasRenderingContext2D, back: Back, H: HeadFrame, an: Anim, tone: HairTones): boolean {
   const P = H.f > 4
   if (back === 'pigtails') return P ? drawPigtails(c, H, an, tone) : false
+  if (back === 'wavy') return P ? drawWavy(c, H, an, tone) : false
   if (back !== 'tail' && back !== 'braid' && back !== 'bob') return false
   const g = kit(c, H)
   const moving = an.moving
@@ -111,6 +112,9 @@ export function drawHairTop(c: CanvasRenderingContext2D, back: Back, H: HeadFram
   const P = H.f > 4
   // iki yandan örgü önden: kulakların arkasından omuzların önüne iner (başlık takılı olsa da görünür)
   if (back === 'pigtails') return P ? false : drawPigtails(c, H, an, tone)
+  // yan örgü: omzun önüne düşer, başlık takılı olsa da görünür
+  if (back === 'sidebraid') return drawSideBraid(c, H, an, tone)
+  if (back === 'buns') return hat ? false : drawBuns(c, H, an, tone)
   if (back !== 'bun' || hat) return false
   const g = kit(c, H)
   const bx = P ? -3.4 : 0.6
@@ -177,5 +181,136 @@ function drawPigtails(c: CanvasRenderingContext2D, H: HeadFrame, an: Anim, tone:
     braid(x0 + side * 0.6, 2.4, side * 0.06, 6, 4.6, 3, side * sw * 0.4, false)
     blob(c, () => g.ell(x0 + side * 0.2, 0.4, 2.4, 1.4), band)
   }
+  return true
+}
+
+/** halka halka örgü: (x0, y0)'dan (x1, y1)'e kavisle (ortası (mx, my)) iner; uçta bağ ve fırça gibi açılan saç */
+function braidAlong(c: CanvasRenderingContext2D, g: ReturnType<typeof kit>, tone: HairTones, x0: number, y0: number, mx: number, my: number, x1: number, y1: number, n: number, r0: number, swing: number) {
+  const at = (u: number): [number, number] => {
+    const v = 1 - u
+    return [v * v * x0 + 2 * v * u * mx + u * u * x1, v * v * y0 + 2 * v * u * my + u * u * y1]
+  }
+  const sh = { color: tone.hairS, dx: -1.2, dy: -0.8 }
+  // uç: bağın altında açılan tutam
+  const [ex, ey] = at(1)
+  const [px, py] = at(0.94)
+  const dx = ex - px
+  const dy = ey - py
+  const l = Math.hypot(dx, dy) || 1
+  const ux = dx / l
+  const uy = dy / l
+  blob(c, () => {
+    g.m(ex - uy * 2.2, ey + ux * 2.2)
+    g.q(ex + ux * 3 - uy * 3.2 + swing * 0.3, ey + uy * 3 + ux * 3.2, ex + ux * 5.6 - uy * 1.6 + swing * 0.5, ey + uy * 5.6 + ux * 1.6)
+    g.l(ex + ux * 3.6, ey + uy * 3.6)
+    g.l(ex + ux * 6.2 + uy * 0.8 + swing * 0.5, ey + uy * 6.2 - ux * 0.8)
+    g.l(ex + ux * 3.6 + uy * 1.6, ey + uy * 3.6 - ux * 1.6)
+    g.q(ex + ux * 3.4 + uy * 3.4, ey + uy * 3.4 - ux * 3.4, ex + uy * 2.2, ey - ux * 2.2)
+  }, tone.hair, sh)
+  for (let i = n - 1; i >= 0; i--) {
+    const [lx, ly] = at(i / n)
+    const rr = r0 * (1 - (i / n) * 0.28)
+    blob(c, () => g.ell(lx, ly, rr * 0.95, rr * 1.02, i % 2 ? 0.5 : -0.5), i % 2 ? tone.hairS : tone.hair, i % 2 ? undefined : sh)
+    g.fine(lx - rr * 0.55, ly - rr * 0.2, lx - rr * 0.2, ly - rr * 0.75, lx + rr * 0.35, ly - rr * 0.65, 0.8, tone.hairL)
+  }
+  // bağ: kurdele fiyonk
+  const bx = ex - ux * 0.6
+  const by = ey - uy * 0.6
+  for (const sd of [-1, 1]) blob(c, () => g.ell(bx - uy * sd * 2.4, by + ux * sd * 2.4, 2, 1.3, Math.atan2(ux, -uy)), band, { color: '#b03a4e', dx: -0.5, dy: -0.4 })
+  blob(c, () => g.ell(bx, by, 1.4, 1.4), '#c8445a')
+}
+
+/**
+ * Yan örgü: saç kulağın arkasında toplanır, tek kalın örgü omzun önüne düşer (kulak ve boyun açık).
+ * Profilde (oyun) yakın omzun üstünden göğse iner; önden (portre) yakın yanda omzun önüne düşer.
+ */
+function drawSideBraid(c: CanvasRenderingContext2D, H: HeadFrame, an: Anim, tone: HairTones): boolean {
+  const g = kit(c, H)
+  const P = H.f > 4
+  const moving = an.moving
+  const sw = an.hair * 2.4 + Math.sin(an.t * (moving ? 11 : 1.7)) * (moving ? 0.8 : 0.3)
+  const up = an.lift * 3
+  const sh = { color: tone.hairS, dx: -1.2, dy: -0.8 }
+  if (P) {
+    // kulağın arkasında toplanan tutam, enseden omzun üstüne
+    blob(c, () => {
+      g.m(-16.8, -5)
+      g.q(-19.8, 3, -15.6, 8.4)
+      g.q(-12.4, 9.6, -12.2, 6.6)
+      g.q(-13.6, 1, -13.4, -5)
+    }, tone.hair, sh)
+    g.fine(-17.4, -2, -17.8, 3, -15.4, 6.6, 1.2, tone.hairL)
+    braidAlong(c, g, tone, -14, 8, -12.4 - sw * 0.6, 16.4 - up * 0.3, -6 - sw, 25.6 - up, 6, 3.3, -sw)
+    return true
+  }
+  blob(c, () => {
+    g.m(-15.6, 3)
+    g.q(-19, 7, -17.4, 11.6)
+    g.q(-14, 13, -13.4, 9.6)
+    g.q(-13.2, 6, -13.8, 3.4)
+  }, tone.hair, sh)
+  braidAlong(c, g, tone, -15.6, 11.4, -17.4 + sw * 0.3, 19.6, -14 + sw * 0.5, 29, 5, 3.4, sw * 0.4)
+  return true
+}
+
+/** çift topuz: başın iki yanında, tepeye yakın iki yuvarlak topuz; profilde uzak olan gölgede ve geride */
+function drawBuns(c: CanvasRenderingContext2D, H: HeadFrame, an: Anim, tone: HairTones): boolean {
+  const g = kit(c, H)
+  const P = H.f > 4
+  const bob = Math.sin(an.t * (an.moving ? 11 : 1.8)) * (an.moving ? 0.5 : 0.15) - an.lift * 0.8
+  const bun = (bx: number, by: number, r: number, far: boolean) => {
+    blob(c, () => g.ell(bx, by, r, r * 0.94), far ? tone.hairS : tone.hair, far ? undefined : { color: tone.hairS, dx: -1.6, dy: -1.1 })
+    if (far) return
+    g.fine(bx - r * 0.7, by + 0.8, bx, by - r * 0.6, bx + r * 0.7, by + 0.4, 0.85, tone.hairS)
+    g.fine(bx - r * 0.45, by + 2.6, bx + 0.4, by + 1.1, bx + r * 0.6, by + 2.6, 0.75, tone.hairS)
+    g.fine(bx - r * 0.75, by - 1.2, bx - r * 0.35, by - r * 0.62, bx + 0.6, by - r * 0.7, 1.4, tone.hairL)
+    // altında ince kurdele
+    blob(c, () => g.ell(bx, by + r * 0.84, r * 0.64, 1.2), band)
+  }
+  if (P) {
+    bun(-12.2, -18.6 + bob * 0.8, 4.4, true)
+    bun(-0.8, -25 + bob, 5, false)
+    return true
+  }
+  for (const sd of [-1, 1]) bun(sd * 10.2, -18.8 + bob, 5.2, false)
+  return true
+}
+
+/**
+ * Dalgalı uzun saç (profil): başın arkasından sırta dökülür, dış hat dalga dalga, uçlar üç tutam; savruldukça uçlar
+ * gecikerek izler. Önden (portre) çizimi portraitDraw `wavyHairBack`.
+ */
+function drawWavy(c: CanvasRenderingContext2D, H: HeadFrame, an: Anim, tone: HairTones): boolean {
+  const g = kit(c, H)
+  const moving = an.moving
+  const fl = moving ? 1 : 0.3
+  const sw = an.hair * 3.4 + Math.sin(an.t * (moving ? 11 : 1.7)) * 0.5 * fl
+  const tp = Math.sin(an.t * (moving ? 11 : 1.7) - 1.4) * 1.5 * fl
+  const up = an.lift * 5.5
+  blob(c, () => {
+    g.m(-5, -21.3)
+    g.bz(-21, -21, -25 - sw * 0.3, -9, -21.6 - sw * 0.6, -1)
+    // dış hat: üç dalga
+    g.q(-26.4 - sw * 0.9, 5, -22.6 - sw * 1.1, 10.6 - up * 0.3)
+    g.q(-19.6 - sw * 1.2, 15, -24.4 - sw * 1.6, 20 - up * 0.6)
+    g.q(-28.2 - sw * 2 - tp, 25 - up * 0.8, -24.6 - sw * 2.2 - tp, 30.4 - up)
+    // uçlar: üç tutam, aralarında çentik
+    g.q(-21.4 - sw * 1.7, 27.6 - up * 0.8, -19 - sw * 1.6, 24.2 - up * 0.6)
+    g.q(-19.4 - sw * 1.8, 30 - up * 0.8, -15.2 - sw * 1.8 - tp, 33.8 - up)
+    g.q(-11.6 - sw * 1.3, 29.4 - up * 0.7, -11.6 - sw * 1.1, 24.4 - up * 0.5)
+    g.q(-9.6 - sw * 1.2, 28.6 - up * 0.6, -6.4 - sw * 1.2 - tp * 0.7, 30 - up * 0.8)
+    g.q(-3 - sw * 0.6, 24, -5.6, 17)
+    g.q(-2.4, 13, -4, 10)
+    g.l(1, 0.7)
+  }, tone.hair, { color: tone.hairS, dx: -3.2, dy: -1.2 })
+  // dalgayı izleyen S telleri (koyu) ve dalga sırtlarında ışık
+  g.fine(-17.4, -2, -21 - sw * 0.7, 5, -18 - sw * 0.9, 11 - up * 0.3, 0.9, tone.hairS)
+  g.fine(-18 - sw * 0.9, 11 - up * 0.3, -15.4 - sw * 1.1, 16, -19 - sw * 1.6, 24.2 - up * 0.6, 0.9, tone.hairS)
+  g.fine(-11, 6, -14.4 - sw * 0.6, 12, -11.6 - sw * 0.9, 17 - up * 0.4, 0.8, tone.hairS)
+  g.fine(-11.6 - sw * 0.9, 17 - up * 0.4, -9.4 - sw * 1, 21, -11.6 - sw * 1.1, 24.4 - up * 0.5, 0.8, tone.hairS)
+  g.fine(-20.4, -12, -23.6 - sw * 0.4, -5, -22.4 - sw * 0.7, 1, 2.2, tone.hairL)
+  g.fine(-23.6 - sw * 1, 6, -24.4 - sw * 1.1, 8.4, -22.8 - sw * 1.2, 11, 1.6, tone.hairL)
+  g.fine(-25.4 - sw * 1.8, 21.4 - up * 0.6, -26.2 - sw * 2, 24 - up * 0.8, -25.2 - sw * 2.1 - tp, 27 - up * 0.9, 1.3, tone.hairL)
+  g.fine(-15.6 - sw * 1.2, 22 - up * 0.6, -16.6 - sw * 1.6, 26.6 - up * 0.8, -15.6 - sw * 1.7 - tp * 0.6, 30.6 - up * 0.9, 1, tone.hairL)
   return true
 }

@@ -2849,3 +2849,37 @@ blockquote {
   .pd-portrait { width: 76px; height: 76px; }
   .pd-name { font-size: 23px; }
 }
+
+/* ── Mağaza (26 Kasım 2026) ──────────────────────────────────────────────────────────────────────────────
+   Döner sahne: gece zemini, üstten ılık ışık (ışık ve tabla tuvalde, components/HeroTurntable.tsx). Kartın durum hapı:
+   Takılı dolu altın, Senin turkuaz, fiyat alınabilirse altın çerçeveli. Kartlar yalnız transform ile bir adım yükselir;
+   sekme geçişinde giriş animasyonu yok (portreler ilk karede dolu: components/Portrait.tsx önbelleği). */
+.shop-stage {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgb(98 88 190 / 0.55), transparent 70%),
+    linear-gradient(180deg, #24205a 0%, #1a1740 62%, #121030 100%);
+}
+.shop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  border: 1.5px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: 999px;
+  padding: 0 0.5em;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+.shop-pill.bg-gold {
+  border-color: var(--color-gold);
+}
+.shop-card {
+  transition: border-color 120ms ease, background-color 120ms ease, transform 140ms ease;
+}
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .shop-card:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+}

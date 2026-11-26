@@ -30,6 +30,12 @@ export type AccessoryId =
   | 'nazar'
   | 'simit'
   | 'ucurtma'
+  | 'ressam'
+  | 'kep'
+  | 'burun'
+  | 'yarabandi'
+  | 'gitar'
+  | 'kaykay'
   // Uktun'a özgü
   | 'papatya'
   | 'lale'
@@ -47,6 +53,9 @@ export type AccessoryId =
   | 'yildizgoz'
   | 'kanat'
   | 'oya'
+  | 'kiraz'
+  | 'kalpboya'
+  | 'balon'
   // Memo'ya özgü
   | 'bandana'
   | 'kovboy'
@@ -63,6 +72,9 @@ export type AccessoryId =
   | 'jet'
   | 'kasket'
   | 'biyik'
+  | 'kaptan'
+  | 'kalin'
+  | 'kamp'
 
 /** kombini ayrı ayrı kurulan iki yolcu */
 export type Hero = 'uktun' | 'memo'
@@ -94,55 +106,67 @@ export interface Accessory {
  */
 export const ACCESSORIES: Accessory[] = [
   // baş
+  { id: 'kiraz', slot: 'head', name: 'Kiraz Tokası', nameEn: 'Cherry Hair Clip', price: 5, for: 'uktun' },
   { id: 'papatya', slot: 'head', name: 'Papatya Tacı', nameEn: 'Daisy Crown', price: 5, for: 'uktun' },
   { id: 'lale', slot: 'head', name: 'Lale Tokası', nameEn: 'Tulip Clip', price: 5, for: 'uktun' },
-  { id: 'kelebek', slot: 'head', name: 'Kelebek Tokası', nameEn: 'Butterfly Clip', price: 7, for: 'uktun' },
-  { id: 'fiyonk', slot: 'head', name: 'Puantiyeli Fiyonk', nameEn: 'Polka-Dot Bow', price: 7, for: 'uktun' },
-  { id: 'oya', slot: 'head', name: 'Oyalı Saç Bandı', nameEn: 'Needle-Lace Headband', price: 7, for: 'uktun' },
-  { id: 'kedikulak', slot: 'head', name: 'Kedi Kulağı Bandı', nameEn: 'Cat-Ear Headband', price: 8, for: 'uktun' },
-  { id: 'tavsan', slot: 'head', name: 'Tavşan Kulağı Bandı', nameEn: 'Bunny-Ear Headband', price: 8, for: 'uktun' },
-  { id: 'tac', slot: 'head', name: 'Altın Taç', nameEn: 'Golden Tiara', price: 11, for: 'uktun' },
-  { id: 'bandana', slot: 'head', name: 'Kırmızı Bandana', nameEn: 'Red Bandana', price: 7, for: 'memo' },
-  { id: 'kasket', slot: 'head', name: 'Tüvit Kasket', nameEn: 'Tweed Flat Cap', price: 7, for: 'memo' },
-  { id: 'kask', slot: 'head', name: 'Mühendis Kaskı', nameEn: 'Hard Hat', price: 8, for: 'memo' },
-  { id: 'asci', slot: 'head', name: 'Aşçı Başlığı', nameEn: 'Chef Hat', price: 9, for: 'memo' },
-  { id: 'melon', slot: 'head', name: 'Melon Şapka', nameEn: 'Bowler Hat', price: 10, for: 'memo' },
-  { id: 'kovboy', slot: 'head', name: 'Kovboy Şapkası', nameEn: 'Cowboy Hat', price: 12, for: 'memo' },
+  { id: 'kelebek', slot: 'head', name: 'Kelebek Tokası', nameEn: 'Butterfly Clip', price: 6, for: 'uktun' },
+  { id: 'fiyonk', slot: 'head', name: 'Puantiyeli Fiyonk', nameEn: 'Polka-Dot Bow', price: 6, for: 'uktun' },
+  { id: 'oya', slot: 'head', name: 'Oyalı Saç Bandı', nameEn: 'Needle-Lace Headband', price: 6, for: 'uktun' },
+  { id: 'kedikulak', slot: 'head', name: 'Kedi Kulağı Bandı', nameEn: 'Cat-Ear Headband', price: 7, for: 'uktun' },
+  { id: 'tavsan', slot: 'head', name: 'Tavşan Kulağı Bandı', nameEn: 'Bunny-Ear Headband', price: 7, for: 'uktun' },
+  { id: 'tac', slot: 'head', name: 'Altın Taç', nameEn: 'Golden Tiara', price: 10, for: 'uktun' },
+  { id: 'kaptan', slot: 'head', name: 'Kaptan Şapkası', nameEn: "Captain's Cap", price: 8, for: 'memo' },
+  { id: 'bandana', slot: 'head', name: 'Kırmızı Bandana', nameEn: 'Red Bandana', price: 6, for: 'memo' },
+  { id: 'kasket', slot: 'head', name: 'Tüvit Kasket', nameEn: 'Tweed Flat Cap', price: 6, for: 'memo' },
+  { id: 'kask', slot: 'head', name: 'Mühendis Kaskı', nameEn: 'Hard Hat', price: 7, for: 'memo' },
+  { id: 'asci', slot: 'head', name: 'Aşçı Başlığı', nameEn: 'Chef Hat', price: 8, for: 'memo' },
+  { id: 'melon', slot: 'head', name: 'Melon Şapka', nameEn: 'Bowler Hat', price: 9, for: 'memo' },
+  { id: 'kovboy', slot: 'head', name: 'Kovboy Şapkası', nameEn: 'Cowboy Hat', price: 11, for: 'memo' },
   { id: 'takke', slot: 'head', name: 'Nakışlı Takke', nameEn: 'Embroidered Skullcap', price: 6 },
-  { id: 'bere', slot: 'head', name: 'Ponponlu Bere', nameEn: 'Bobble Hat', price: 8 },
-  { id: 'kulaklik', slot: 'head', name: 'Kulaklık', nameEn: 'Headphones', price: 8 },
-  { id: 'hasir', slot: 'head', name: 'Hasır Şapka', nameEn: 'Straw Hat', price: 9 },
-  { id: 'fes', slot: 'head', name: 'Fes', nameEn: 'Fez', price: 14 },
+  { id: 'kep', slot: 'head', name: 'Spor Şapka', nameEn: 'Baseball Cap', price: 6 },
+  { id: 'ressam', slot: 'head', name: 'Ressam Beresi', nameEn: "Painter's Beret", price: 6 },
+  { id: 'bere', slot: 'head', name: 'Ponponlu Bere', nameEn: 'Bobble Hat', price: 7 },
+  { id: 'kulaklik', slot: 'head', name: 'Kulaklık', nameEn: 'Headphones', price: 7 },
+  { id: 'hasir', slot: 'head', name: 'Hasır Şapka', nameEn: 'Straw Hat', price: 8 },
+  { id: 'fes', slot: 'head', name: 'Fes', nameEn: 'Fez', price: 13 },
   { id: 'defne', slot: 'head', name: 'Altın Defne Tacı', nameEn: 'Golden Laurel', price: 0, seals: 10 },
   // yüz
+  { id: 'kalpboya', slot: 'face', name: 'Kalp Yanak Boyası', nameEn: 'Heart Face Paint', price: 4, for: 'uktun' },
   { id: 'pul', slot: 'face', name: 'Yıldız Yüz Pulu', nameEn: 'Star Face Sticker', price: 4, for: 'uktun' },
-  { id: 'kedi', slot: 'face', name: 'Kedi Gözlüğü', nameEn: 'Cat-Eye Glasses', price: 7, for: 'uktun' },
-  { id: 'kalpli', slot: 'face', name: 'Kalpli Gözlük', nameEn: 'Heart Sunglasses', price: 8, for: 'uktun' },
-  { id: 'yildizgoz', slot: 'face', name: 'Yıldız Gözlük', nameEn: 'Star Glasses', price: 9, for: 'uktun' },
+  { id: 'kedi', slot: 'face', name: 'Kedi Gözlüğü', nameEn: 'Cat-Eye Glasses', price: 6, for: 'uktun' },
+  { id: 'kalpli', slot: 'face', name: 'Kalpli Gözlük', nameEn: 'Heart Sunglasses', price: 7, for: 'uktun' },
+  { id: 'yildizgoz', slot: 'face', name: 'Yıldız Gözlük', nameEn: 'Star Glasses', price: 8, for: 'uktun' },
+  { id: 'kalin', slot: 'face', name: 'Kalın Çerçeve Gözlük', nameEn: 'Thick-Rimmed Glasses', price: 6, for: 'memo' },
   { id: 'biyik', slot: 'face', name: 'Burma Bıyık', nameEn: 'Curled Mustache', price: 6, for: 'memo' },
-  { id: 'bant', slot: 'face', name: 'Korsan Göz Bandı', nameEn: 'Eye Patch', price: 7, for: 'memo' },
-  { id: 'tek', slot: 'face', name: 'Tek Gözlük', nameEn: 'Monocle', price: 8, for: 'memo' },
-  { id: 'pilot', slot: 'face', name: 'Pilot Gözlüğü', nameEn: 'Aviator Shades', price: 9, for: 'memo' },
-  { id: 'vizor', slot: 'face', name: 'Siber Vizör', nameEn: 'Cyber Visor', price: 10, for: 'memo' },
+  { id: 'bant', slot: 'face', name: 'Korsan Göz Bandı', nameEn: 'Eye Patch', price: 6, for: 'memo' },
+  { id: 'tek', slot: 'face', name: 'Tek Gözlük', nameEn: 'Monocle', price: 7, for: 'memo' },
+  { id: 'pilot', slot: 'face', name: 'Pilot Gözlüğü', nameEn: 'Aviator Shades', price: 8, for: 'memo' },
+  { id: 'vizor', slot: 'face', name: 'Siber Vizör', nameEn: 'Cyber Visor', price: 9, for: 'memo' },
+  { id: 'yarabandi', slot: 'face', name: 'Yara Bandı', nameEn: 'Bandage', price: 2 },
+  { id: 'burun', slot: 'face', name: 'Palyaço Burnu', nameEn: 'Clown Nose', price: 3 },
   { id: 'cil', slot: 'face', name: 'Çil Çil', nameEn: 'Freckles', price: 3 },
   { id: 'nazar', slot: 'face', name: 'Nazar Boncuğu Pulu', nameEn: 'Evil-Eye Sticker', price: 5 },
   { id: 'gozluk', slot: 'face', name: 'Yuvarlak Gözlük', nameEn: 'Round Glasses', price: 6 },
-  { id: 'gunes', slot: 'face', name: 'Güneş Gözlüğü', nameEn: 'Sunglasses', price: 7 },
-  { id: 'kayak', slot: 'face', name: 'Kayak Gözlüğü', nameEn: 'Ski Goggles', price: 8 },
+  { id: 'gunes', slot: 'face', name: 'Güneş Gözlüğü', nameEn: 'Sunglasses', price: 6 },
+  { id: 'kayak', slot: 'face', name: 'Kayak Gözlüğü', nameEn: 'Ski Goggles', price: 7 },
   // sırt
-  { id: 'sepet', slot: 'back', name: 'Çiçek Sepeti', nameEn: 'Flower Basket', price: 10, for: 'uktun' },
-  { id: 'sal', slot: 'back', name: 'Kilim Şal', nameEn: 'Kilim Shawl', price: 10, for: 'uktun' },
-  { id: 'ayi', slot: 'back', name: 'Ayıcık Çanta', nameEn: 'Teddy Backpack', price: 11, for: 'uktun' },
-  { id: 'kanat', slot: 'back', name: 'Melek Kanadı', nameEn: 'Angel Wings', price: 13, for: 'uktun' },
-  { id: 'okluk', slot: 'back', name: 'Okluk', nameEn: 'Quiver', price: 9, for: 'memo' },
-  { id: 'kalkan', slot: 'back', name: 'Yuvarlak Kalkan', nameEn: 'Round Shield', price: 11, for: 'memo' },
-  { id: 'sirtcanta', slot: 'back', name: 'Sırt Çantası', nameEn: 'Backpack', price: 12, for: 'memo' },
-  { id: 'jet', slot: 'back', name: 'Jet Sırt Çantası', nameEn: 'Jetpack', price: 13, for: 'memo' },
-  { id: 'simit', slot: 'back', name: 'Simit Sırığı', nameEn: 'Simit Pole', price: 10 },
-  { id: 'ucurtma', slot: 'back', name: 'Uçurtma', nameEn: 'Kite', price: 10 },
-  { id: 'heybe', slot: 'back', name: 'Kilim Heybe', nameEn: 'Kilim Saddlebag', price: 11 },
-  { id: 'saz', slot: 'back', name: 'Sırtta Bağlama', nameEn: 'Bağlama on the Back', price: 11 },
-  { id: 'pelerin', slot: 'back', name: 'Pelerin', nameEn: 'Cape', price: 13 },
+  { id: 'balon', slot: 'back', name: 'Kalp Balon', nameEn: 'Heart Balloon', price: 8, for: 'uktun' },
+  { id: 'sepet', slot: 'back', name: 'Çiçek Sepeti', nameEn: 'Flower Basket', price: 9, for: 'uktun' },
+  { id: 'sal', slot: 'back', name: 'Kilim Şal', nameEn: 'Kilim Shawl', price: 9, for: 'uktun' },
+  { id: 'ayi', slot: 'back', name: 'Ayıcık Çanta', nameEn: 'Teddy Backpack', price: 10, for: 'uktun' },
+  { id: 'kanat', slot: 'back', name: 'Melek Kanadı', nameEn: 'Angel Wings', price: 12, for: 'uktun' },
+  { id: 'kamp', slot: 'back', name: 'Kamp Çantası', nameEn: 'Camping Pack', price: 10, for: 'memo' },
+  { id: 'okluk', slot: 'back', name: 'Okluk', nameEn: 'Quiver', price: 8, for: 'memo' },
+  { id: 'kalkan', slot: 'back', name: 'Yuvarlak Kalkan', nameEn: 'Round Shield', price: 10, for: 'memo' },
+  { id: 'sirtcanta', slot: 'back', name: 'Sırt Çantası', nameEn: 'Backpack', price: 11, for: 'memo' },
+  { id: 'jet', slot: 'back', name: 'Jet Sırt Çantası', nameEn: 'Jetpack', price: 12, for: 'memo' },
+  { id: 'kaykay', slot: 'back', name: 'Kaykay', nameEn: 'Skateboard', price: 8 },
+  { id: 'gitar', slot: 'back', name: 'Gitar', nameEn: 'Guitar', price: 10 },
+  { id: 'simit', slot: 'back', name: 'Simit Sırığı', nameEn: 'Simit Pole', price: 9 },
+  { id: 'ucurtma', slot: 'back', name: 'Uçurtma', nameEn: 'Kite', price: 9 },
+  { id: 'heybe', slot: 'back', name: 'Kilim Heybe', nameEn: 'Kilim Saddlebag', price: 10 },
+  { id: 'saz', slot: 'back', name: 'Sırtta Bağlama', nameEn: 'Bağlama on the Back', price: 10 },
+  { id: 'pelerin', slot: 'back', name: 'Pelerin', nameEn: 'Cape', price: 12 },
 ]
 
 /** yolcunun dükkânında görünen parçalar: ortaklar ve kendine özgüler */
@@ -166,7 +190,7 @@ export interface Kit {
 export const NO_KIT: Kit = { head: 'yok', face: 'yok', back: 'yok' }
 
 /** başı örten başlıklar: altında saç kısa kesim gibi görünür (uzun ve kıvırcık saç kendi hâlinde kalır) */
-export const COVERS_HEAD: ReadonlySet<AccessoryId> = new Set(['fes', 'bere', 'hasir', 'bandana', 'kovboy', 'asci', 'melon', 'kask', 'takke', 'kasket'])
+export const COVERS_HEAD: ReadonlySet<AccessoryId> = new Set(['fes', 'bere', 'hasir', 'bandana', 'kovboy', 'asci', 'melon', 'kask', 'takke', 'kasket', 'ressam', 'kep', 'kaptan'])
 
 /** başa takılan her şey (taç, toka, kulaklık dahil): kılığın şapkasının yerine geçer */
 export const ON_HEAD: ReadonlySet<AccessoryId> = new Set(ACCESSORIES.filter((a) => a.slot === 'head').map((a) => a.id))

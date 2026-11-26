@@ -25,6 +25,8 @@ export interface Challenge {
   gold?: number
   /** elle çizilmiş harita (Öfke Parkurları, game/rageCourses.ts): varsa şehirden kesilmez, `level` yalnız görünüşü verir */
   map?: string[]
+  /** zorluk kademesi: yoksa kesit ya da Usta Parkuru; 'efsane' Efsane Parkurları (game/puzzles/efsane.ts) */
+  tier?: 'efsane'
 }
 
 export const CHALLENGES: Challenge[] = [
@@ -56,7 +58,17 @@ export const ALL_CHALLENGES: Challenge[] = [...CHALLENGES, ...MASTER_COURSES, ..
 export { MASTER_COURSES, RAGE_COURSES }
 
 /** altın süre: ölçülmüş usta koşusu varsa o, yoksa çözücünün süresinden (kesit ve Usta Parkuru ×0,85; uzun Öfke Parkuru kendi süresi) */
-export const goldOf = (c: Challenge) => c.gold ?? Math.ceil(c.par * (c.map && !c.id.startsWith('usta-') ? 1 : 0.85))
+export const goldOf = (c: Challenge) => c.gold ?? Math.ceil(c.par * (c.map && !c.id.startsWith('usta-') && !c.tier ? 1 : 0.85))
+
+/** Efsane Parkurunu açmak için bitirilmesi gereken Usta Parkuru sayısı */
+export const LEGEND_UNLOCK = 3
+
+/** parkur açık mı: görünüş şehri bitmiş olmalı; Efsane Parkuru ayrıca en az LEGEND_UNLOCK Usta Parkuru ister (saf) */
+export function courseOpen(c: Challenge, finished: Set<string>, best: Record<string, number | undefined>): boolean {
+  if (!finished.has(c.level)) return false
+  if (c.tier !== 'efsane') return true
+  return MASTER_COURSES.filter((m) => !m.tier && best[m.id]).length >= LEGEND_UNLOCK
+}
 
 /** madalyalar (altın, gümüş, bronz; sn): gümüş altının 1,5 katı, bronz 2,2 katı */
 export function challengeMedals(c: Challenge): [number, number, number] {

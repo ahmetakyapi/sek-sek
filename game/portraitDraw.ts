@@ -1,5 +1,5 @@
 /**
- * Portreler: oyundaki karakterin vesikalığı. heroDraw.ts ile aynı dil (mürekkep dış hat, ışık sol üstten) ve aynı
+ * Portreler: oyundaki karakterin vesikalığı. heroDraw.ts ile aynı dil (sıcak koyu ince dış hat, ışık sol üstten; 26 Kasım 2026: daha temiz, parlak "premium" vesikalık) ve aynı
  * palet (LOOKS); yalnız yakından ve ayrıntılı: gölgeye ek olarak sağ kenarda sıcak kenar ışığı, saçta parlak
  * şeritler, gözde iki tonlu iris, kumaşta doku. Dış siluet kalın, yüzün içi ince hatla çizilir.
  * Kadraj vesikalık gibidir: baş tam, yüz kadrajı doldurur, boyun ve omuzların yalnız üstü görünür, fon sade.
@@ -7,7 +7,7 @@
  */
 import { COVERS_HEAD, NO_KIT, ON_HEAD, type AccessoryId, type Kit } from './accessories'
 import { PORTRAIT_HEAD, drawFaceItem, drawHeadItem, drawPortraitBack, drawPortraitBackFront } from './accessoryDraw'
-import { INK, LOOKS, blob, drawPattern, inkLine, resolveSkin, setInkWidth, setSoft, stroke, type Look } from './heroDraw'
+import { INK, LOOKS, blob, drawPattern, resolveSkin, setInkWidth, setShadeBox, setSoft, stroke, type Look } from './heroDraw'
 import { drawHairBack, drawHairTop } from './hairDraw'
 import type { Expr, Front } from './looks'
 
@@ -20,10 +20,10 @@ export const PORTRAIT_H = 119
 /** heroDraw'ın varsayılan dış hattı: çizim bitince geri yazılır */
 const HERO_INKW = 3.2
 /** dış siluet (omuzlar) kalın, saç ve yüzün dış hattı orta, yüzün içi ince */
-const INKW = 2.2
-const MID_INKW = 1.6
+const INKW = 1.7
+const MID_INKW = 1.25
 /** yüzün dış hattı siluetten ince */
-const FACE_INKW = 1.45
+const FACE_INKW = 1.15
 /** sağ kenardan vuran sıcak ışık */
 const RIM = 'rgba(255,220,170,0.8)'
 /** yüzün gölgeli kenarında daha yumuşak kenar ışığı */
@@ -57,7 +57,7 @@ const BACKDROP: Record<Look, [string, string]> = {
   ozan: ['#f4dc9e', '#d8a45c'],
 }
 
-function ell(c: Ctx, x: number, y: number, rx: number, ry: number, fill: string, rot = 0) {
+function ell(c: Ctx, x: number, y: number, rx: number, ry: number, fill: string | CanvasGradient, rot = 0) {
   c.beginPath()
   c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2)
   c.fillStyle = fill
@@ -88,10 +88,61 @@ const fade = (hex: string, a: number) => hex + Math.round(a * 255).toString(16).
 
 /** yumuşak kenarlı leke: iç içe üç elips */
 function soft(c: Ctx, x: number, y: number, rx: number, ry: number, fill: string, rot = 0) {
-  c.globalAlpha = 0.3
-  for (const k of [1.6, 1.15, 0.7]) ell(c, x, y, rx * k, ry * k, fill, rot)
-  c.globalAlpha = 1
+  // yumuşak radyal leke: ortası dolu, kenara doğru tamamen erir (allık, sıcaklık)
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, 1)
+  g.addColorStop(0, fill)
+  g.addColorStop(0.55, clear(fill, 0.55))
+  g.addColorStop(1, clear(fill, 0))
+  c.save()
+  c.translate(x, y)
+  c.rotate(rot)
+  c.scale(rx * 1.7, ry * 1.7)
+  c.beginPath()
+  c.arc(0, 0, 1, 0, Math.PI * 2)
+  c.fillStyle = g
+  c.fill()
+  c.restore()
 }
+
+const clearCache = new Map<string, string>()
+/** rengin (hex ya da rgba) aynı tonda, alfası k ile çarpılmış hâli */
+function clear(col: string, k: number): string {
+  const key = col + k
+  let v = clearCache.get(key)
+  if (v) return v
+  const [r, g, b, a] = rgba(col)
+  v = `rgba(${r},${g},${b},${+(a * k).toFixed(3)})`
+  clearCache.set(key, v)
+  return v
+}
+function rgba(col: string): [number, number, number, number] {
+  const m = /^#([0-9a-f]{6})$/i.exec(col)
+  if (m) {
+    const n = parseInt(m[1], 16)
+    return [n >> 16, (n >> 8) & 255, n & 255, 1]
+  }
+  const q = /rgba?\(([^)]+)\)/.exec(col)
+  if (!q) return [0, 0, 0, 1]
+  const p = q[1].split(',').map(Number)
+  return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]
+}
+const mixCache = new Map<string, string>()
+/** iki rengin karışımı (k: ikincinin payı) */
+function mix(a: string, b: string, k: number): string {
+  const key = a + b + k
+  let v = mixCache.get(key)
+  if (v) return v
+  const x = rgba(a)
+  const y = rgba(b)
+  const f = (i: number) => Math.round(x[i] + (y[i] - x[i]) * k)
+  v = `rgb(${f(0)},${f(1)},${f(2)})`
+  mixCache.set(key, v)
+  return v
+}
+/** portrede dış hat: siyah değil, sıcak koyu kahve; ince */
+const EDGE = 'rgba(88,40,42,0.78)'
+/** yüzün içindeki koyu çizgi (kirpik, ağız): siyah değil, koyu sıcak kahve */
+const LINE = '#3a1c24'
 
 /** kenar ışığı: şeklin sağ kenarında ince bir şerit; dış hat üstüne yeniden çekilir */
 function rim(c: Ctx, build: () => void, color = RIM, dx = -2.3, dy = 0.6) {
@@ -112,96 +163,52 @@ function rim(c: Ctx, build: () => void, color = RIM, dx = -2.3, dy = 0.6) {
   build()
   c.closePath()
   c.lineJoin = 'round'
-  c.strokeStyle = inkLine()
+  c.strokeStyle = EDGE
   c.lineWidth = inkw
   c.stroke()
 }
 
-/** fonda kahramanın şehrine çok silik bir gönderme: Uktun'a Boğaz silueti ve martılar, Memo'ya sur ve burç */
-function motif(c: Ctx, look: Look) {
-  if (look === 'uktun') {
-    c.fillStyle = 'rgba(74,88,150,0.2)'
-    c.beginPath()
-    // solda kule
-    c.moveTo(0, 120)
-    c.lineTo(0, 84)
-    c.lineTo(3.5, 84)
-    c.lineTo(3.5, 66)
-    c.lineTo(7, 57)
-    c.lineTo(10.5, 66)
-    c.lineTo(10.5, 84)
-    c.lineTo(16, 84)
-    c.lineTo(16, 120)
-    // sağda kubbe ve minare
-    c.moveTo(80, 120)
-    c.lineTo(80, 82)
-    c.quadraticCurveTo(87, 68, 94, 82)
-    c.lineTo(95.6, 82)
-    c.lineTo(95.6, 60)
-    c.lineTo(96.6, 55)
-    c.lineTo(97.6, 60)
-    c.lineTo(97.6, 82)
-    c.lineTo(100, 82)
-    c.lineTo(100, 120)
-    c.fill()
-    // martılar
-    c.strokeStyle = 'rgba(255,255,255,0.5)'
-    c.lineWidth = 0.9
-    c.lineCap = 'round'
-    c.beginPath()
-    for (const [x, y, k] of [[10, 17, 1], [88, 12, 0.8], [93, 22, 0.6]]) {
-      c.moveTo(x - 3.4 * k, y - 0.6 * k)
-      c.quadraticCurveTo(x - 1.6 * k, y - 2.4 * k, x, y)
-      c.quadraticCurveTo(x + 1.6 * k, y - 2.4 * k, x + 3.4 * k, y - 0.6 * k)
-    }
-    c.stroke()
-  }
-  if (look === 'memo') {
-    c.fillStyle = 'rgba(150,92,58,0.2)'
-    c.beginPath()
-    // sur: mazgallı duvar
-    c.moveTo(0, 120)
-    c.lineTo(0, 72)
-    for (let x = 0; x < 22; x += 5) {
-      c.lineTo(x, 68.5)
-      c.lineTo(x + 2.6, 68.5)
-      c.lineTo(x + 2.6, 72)
-      c.lineTo(x + 5, 72)
-    }
-    c.lineTo(22, 120)
-    // burç: duvardan yüksek, yuvarlak gövdeli
-    c.moveTo(78, 120)
-    c.lineTo(78, 72)
-    c.lineTo(83, 72)
-    c.lineTo(83, 58)
-    for (let x = 83; x < 99; x += 4.4) {
-      c.lineTo(x, 54.5)
-      c.lineTo(x + 2.4, 54.5)
-      c.lineTo(x + 2.4, 58)
-      c.lineTo(x + 4.4, 58)
-    }
-    c.lineTo(100, 120)
-    c.fill()
-    // mazgal deliği ve taş sıraları
-    c.fillStyle = 'rgba(150,92,58,0.22)'
-    c.fillRect(90.6, 63.5, 1.6, 5)
-    c.fillRect(83, 74, 17, 0.7)
-    c.fillRect(0, 80, 20, 0.7)
-  }
-}
+/** fonda yumuşak ışık lekeleri (bokeh): yerleri sabit, ışık sol üstten geldiği için orada yoğun */
+const BOKEH: ReadonlyArray<[number, number, number, number]> = [
+  [12, 18, 9, 0.16], [26, 6, 5, 0.12], [86, 16, 7, 0.1], [93, 44, 4.5, 0.08], [6, 52, 5.5, 0.1], [74, 4, 3.6, 0.12], [18, 36, 3, 0.1],
+]
 
-function background(c: Ctx, look: Look) {
-  const [mid, edge] = BACKDROP[look]
-  const g = c.createRadialGradient(44, 44, 6, 50, 60, 92)
-  g.addColorStop(0, mid)
+/**
+ * Fon: stüdyo perdesi gibi sade ama zengin. Kahramanlarda atkı renginden, şehir insanında kılığın tonundan türeyen
+ * yumuşak radyal geçiş (ışık sol üstte), başın arkasında ılık hale, silik ışık lekeleri ve hafif vinyet.
+ */
+function background(c: Ctx, look: Look, s: Skin) {
+  const hero = look === 'uktun' || look === 'memo'
+  const [m0, e0] = BACKDROP[look]
+  const mid = hero ? mix(s.scarf, '#fff8ee', 0.7) : m0
+  const edge = hero ? mix(s.scarf, '#2a2040', 0.12) : e0
+  const g = c.createRadialGradient(38, 34, 4, 50, 54, 96)
+  g.addColorStop(0, mix(mid, '#ffffff', 0.35))
+  g.addColorStop(0.45, mid)
   g.addColorStop(1, edge)
   c.fillStyle = g
   c.fillRect(0, 0, PORTRAIT_W, PORTRAIT_H)
-  motif(c, look)
+  // ışık lekeleri
+  for (const [x, y, r, a] of BOKEH) {
+    const b = c.createRadialGradient(x, y, 0, x, y, r)
+    b.addColorStop(0, `rgba(255,252,240,${a})`)
+    b.addColorStop(0.7, `rgba(255,252,240,${a * 0.6})`)
+    b.addColorStop(1, 'rgba(255,252,240,0)')
+    c.fillStyle = b
+    c.beginPath()
+    c.arc(x, y, r, 0, Math.PI * 2)
+    c.fill()
+  }
+  // başın arkasında ılık hale: yüz fondan yumuşakça ayrılır
+  const h = c.createRadialGradient(50, 46, 6, 50, 50, 46)
+  h.addColorStop(0, 'rgba(255,246,226,0.55)')
+  h.addColorStop(1, 'rgba(255,246,226,0)')
+  c.fillStyle = h
+  c.fillRect(0, 0, PORTRAIT_W, PORTRAIT_H)
   // vinyet: köşeler hafifçe koyulaşır, bakış yüze toplanır
-  const v = c.createRadialGradient(50, 56, 40, 50, 60, 96)
+  const v = c.createRadialGradient(50, 52, 44, 50, 58, 92)
   v.addColorStop(0, 'rgba(40,24,48,0)')
-  v.addColorStop(1, 'rgba(40,24,48,0.3)')
+  v.addColorStop(1, 'rgba(40,24,48,0.32)')
   c.fillStyle = v
   c.fillRect(0, 0, PORTRAIT_W, PORTRAIT_H)
 }
@@ -404,9 +411,9 @@ function scarf(c: Ctx, s: Skin) {
       c.moveTo(x, 80)
       c.lineTo(x + lean, 112)
     }
-    c.globalAlpha = 0.5
+    c.globalAlpha = 0.28
     c.strokeStyle = s.scarfS
-    c.lineWidth = 0.55
+    c.lineWidth = 0.5
     c.stroke()
     c.restore()
   }
@@ -475,38 +482,42 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   const ox = x + out * rx
   if ((ex === 'sevecen' || ex === 'kahkaha') && !shut) {
     // gülen göz: kapalı, yukarı kavisli
-    curve(c, x - rx - 0.4, y + 1.8, x, y - 5.4, x + rx + 0.4, y + 1.8, 2, INK)
-    for (let i = 0; i < lashes; i++) curve(c, ox - out * i * 1.4, y + 1.4 + i * 0.5, ox + out * (1 - i * 0.9), y + 0.6 + i * 0.5, ox + out * (1.9 - i * 1.2), y - 0.4 + i * 0.4, 0.7, INK)
+    curve(c, x - rx - 0.4, y + 1.8, x, y - 5.4, x + rx + 0.4, y + 1.8, 2, LINE)
+    for (let i = 0; i < lashes; i++) curve(c, ox - out * i * 1.4, y + 1.4 + i * 0.5, ox + out * (1 - i * 0.9), y + 0.6 + i * 0.5, ox + out * (1.9 - i * 1.2), y - 0.4 + i * 0.4, 0.7, LINE)
     return
   }
   if (shut) {
-    curve(c, x - rx, y + 0.4, x, y + 3, x + rx, y + 0.2, 1.4, INK)
-    for (let i = 0; i < lashes; i++) curve(c, ox - out * i * 1.4, y + 0.5 + i * 0.5, ox + out * (1 - i * 0.9), y + 1.2 + i * 0.5, ox + out * (1.7 - i * 1.2), y + 2.2 + i * 0.4, 0.7, INK)
+    curve(c, x - rx, y + 0.4, x, y + 3, x + rx, y + 0.2, 1.4, LINE)
+    for (let i = 0; i < lashes; i++) curve(c, ox - out * i * 1.4, y + 0.5 + i * 0.5, ox + out * (1 - i * 0.9), y + 1.2 + i * 0.5, ox + out * (1.7 - i * 1.2), y + 2.2 + i * 0.4, 0.7, LINE)
     return
   }
-  const ir = ry * 0.9
+  const ir = ry * 0.94
   c.save()
   c.beginPath()
   c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
   c.fillStyle = '#fffdf8'
   c.fill()
   c.clip()
-  // iris: koyu halka, altta ışık alan yarım ay, göz bebeği
-  ell(c, x + gx, y + 0.4, ir, ir * 1.04, s.iris)
-  ell(c, x + gx, y + ir * 0.46, ir * 0.78, ir * 0.56, 'rgba(255,200,130,0.5)')
-  ell(c, x + gx, y + ir * 0.66, ir * 0.5, ir * 0.3, 'rgba(255,232,180,0.45)')
+  // iris: üstte koyu, altta ışık alan parlak geçiş (cam gibi), ince koyu halka, iri göz bebeği
+  const ix = x + gx
+  const iy = y + 0.3
+  const g = c.createLinearGradient(0, iy - ir, 0, iy + ir)
+  g.addColorStop(0, mix(s.iris, '#1a1018', 0.45))
+  g.addColorStop(0.5, s.iris)
+  g.addColorStop(1, mix(s.iris, '#ffd49a', 0.5))
+  ell(c, ix, iy, ir, ir * 1.04, g)
   c.beginPath()
-  c.ellipse(x + gx, y + 0.4, ir - 0.3, ir * 1.04 - 0.3, 0, 0, Math.PI * 2)
-  c.strokeStyle = 'rgba(34,22,31,0.6)'
-  c.lineWidth = 0.75
+  c.ellipse(ix, iy, ir - 0.25, ir * 1.04 - 0.25, 0, 0, Math.PI * 2)
+  c.strokeStyle = 'rgba(30,16,24,0.55)'
+  c.lineWidth = 0.6
   c.stroke()
-  ell(c, x + gx, y + 0.3, ir * 0.5, ir * 0.56, INK)
-  // üst kapağın göz akına düşen gölgesi
-  ell(c, x, y - ry * 1.05, rx * 1.3, ry * 0.66, 'rgba(34,22,31,0.28)')
+  ell(c, ix, iy - 0.1, ir * 0.48, ir * 0.52, '#1c1018')
+  // üst kapağın göz akına düşen yumuşak gölge
+  ell(c, x, y - ry * 1.08, rx * 1.3, ry * 0.62, 'rgba(60,30,40,0.22)')
   c.restore()
-  // ışıltı: büyük sol üstte, küçük sağ altta
-  ell(c, x + gx - ir * 0.4, y - ir * 0.36, ir * 0.33, ir * 0.33, '#ffffff')
-  ell(c, x + gx + ir * 0.44, y + ir * 0.5, ir * 0.15, ir * 0.15, '#ffffff')
+  // iki parıltı: iri olan sol üstte, küçük sağ altta
+  ell(c, ix - ir * 0.36, iy - ir * 0.38, ir * 0.36, ir * 0.36, '#ffffff')
+  ell(c, ix + ir * 0.42, iy + ir * 0.42, ir * 0.17, ir * 0.17, 'rgba(255,255,255,0.9)')
   // üst göz kapağı: kıvrım ile kirpik çizgisi arasında hafif ton
   c.beginPath()
   c.moveTo(x - rx * 0.92, y - ry * 0.5)
@@ -519,7 +530,7 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   c.moveTo(x - rx - 0.9, y - 0.1)
   c.quadraticCurveTo(x - rx * 0.5, y - ry - 1.3, x + rx * 0.2, y - ry - 0.4)
   c.quadraticCurveTo(x + rx * 0.9, y - ry * 0.7, x + rx + 0.9, y - 0.4)
-  c.strokeStyle = INK
+  c.strokeStyle = LINE
   c.lineWidth = (lashes > 1 ? 1.5 : 1.35) * boost
   c.lineCap = 'round'
   c.lineJoin = 'round'
@@ -528,7 +539,7 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   for (let i = 0; i < lashes; i++) {
     const bx = ox - out * rx * [-0.1, 0.34, 0.72][i]
     const by = y - [0.3, ry * 0.7, ry * 1.0][i]
-    curve(c, bx, by, bx + out * 1, by - 0.2, bx + out * (2.1 - i * 0.35), by - 1.4 - i * 0.1, 0.6, INK)
+    curve(c, bx, by, bx + out * 1, by - 0.2, bx + out * (2.1 - i * 0.35), by - 1.4 - i * 0.1, 0.6, LINE)
   }
   // kapak kıvrımı, alt kapak ve altındaki hafif gölge
   curve(c, x - rx * 0.8, y - ry - 1.4, x - rx * 0.1, y - ry - 2.9, x + rx * 0.9, y - ry - 1.4, 0.8, s.skinS)
@@ -537,7 +548,7 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
   curve(c, x - rx * 0.6, y + ry * 1.3, x, y + ry * 1.62, x + rx * 0.7, y + ry * 1.3, 1.3, s.skinS)
   c.globalAlpha = 1
   // alt kirpik çizgisinin dış ucu: bakışı çerçeveler
-  curve(c, ox, y + 0.3, ox - out * rx * 0.12, y + ry * 0.62, ox - out * rx * 0.42, y + ry * 0.86, 0.75, INK)
+  curve(c, ox, y + 0.3, ox - out * rx * 0.12, y + ry * 0.62, ox - out * rx * 0.42, y + ry * 0.86, 0.75, LINE)
   // uykulu ve kurnaz bakış: üst kapak gözün yarısına (kurnazda üçte birine) iner
   if (ex === 'uykulu' || ex === 'kurnaz') {
     const ly = y - ry + ry * 2 * (ex === 'uykulu' ? 0.5 : 0.3)
@@ -548,7 +559,7 @@ function eye(c: Ctx, s: Skin, x: number, y: number, rx: number, ry: number, shut
     c.fillStyle = s.skin
     c.fillRect(x - rx - 3, y - ry - 6, rx * 2 + 6, ly - (y - ry - 6))
     c.restore()
-    curve(c, x - rx - 0.6, ly + 0.4, x, ly + 1.8, x + rx + 0.6, ly + 0.2, 1.5 * boost, INK)
+    curve(c, x - rx - 0.6, ly + 0.4, x, ly + 1.8, x + rx + 0.6, ly + 0.2, 1.5 * boost, LINE)
   }
 }
 
@@ -579,7 +590,7 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean, ex: Expr
   }
   // gözler: yüzün ortasında, badem biçimli; yakın göz iri, uzak göz dönük yüzde biraz dar
   // oyundaki yüzle aynı: küçük badem göz (videodaki gibi sade); şaşkında ve neşelide biraz iri
-  const ry = (fem ? 3.3 : 3) * (ex === 'saskin' ? 1.18 : ex === 'neseli' ? 1.08 : 1)
+  const ry = (fem ? 3.9 : 3.5) * (ex === 'saskin' ? 1.14 : ex === 'neseli' ? 1.05 : 1)
   if (ex === 'utangac') {
     // utangaç: yanaklar kızarır, üstünde kısa kızarıklık çizgileri
     soft(c, 38.6, 65, 5.4, 3, s.blush)
@@ -588,12 +599,13 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean, ex: Expr
   }
   // iki göz aynı boyda, aralarında bir göz genişliği; irisler aynı noktaya (kameraya) bakar (utangaç bakış yana kaçar)
   const gx = ex === 'utangac' ? -1.5 : 0.3
-  eye(c, s, 45.4, 55, 3.6, ry, shut, look === 'uktun' ? 2 : fem ? 1 : 0, gx, -1, ex)
-  eye(c, s, 63.4, 54.8, 3.4, ry, shut, look === 'uktun' ? 1 : 0, gx, 1, ex)
+  // göz kırpan: yakın göz gülerek kapanır
+  eye(c, s, 45.2, 55.2, fem ? 4.1 : 3.9, ry, shut, look === 'uktun' ? 2 : fem ? 1 : 0, gx, -1, ex === 'gozkirp' ? 'sevecen' : ex)
+  eye(c, s, 63.6, 55, fem ? 3.9 : 3.7, ry, shut, look === 'uktun' ? 1 : 0, gx, 1, ex)
   // kaşlar: gözün üstünde, yukarı kavisli (dostça); iç uç (buruna yakın) dolgun
   const th = look === 'uktun' ? 0.95 : fem ? 0.85 : look === 'memo' ? 1.35 : look === 'genc' ? 0.95 : 1.7
   // ifade kaşı oynatır: [yakın kaş yukarı, uzak kaş yukarı, yakın kaş iç ucu aşağı]
-  const [bl, br, inner] = ex === 'saskin' ? [-2.8, -2.8, 0] : ex === 'neseli' ? [-1.6, -1.6, 0] : ex === 'sevecen' || ex === 'utangac' ? [-1.2, -1.2, 0] : ex === 'kahkaha' ? [-2.2, -2.2, 0] : ex === 'uykulu' ? [2, 2, 0] : ex === 'kurnaz' ? [0.6, -3, 2.6] : [0, 0, 0]
+  const [bl, br, inner] = ex === 'saskin' ? [-2.8, -2.8, 0] : ex === 'neseli' ? [-1.6, -1.6, 0] : ex === 'sevecen' || ex === 'utangac' ? [-1.2, -1.2, 0] : ex === 'kahkaha' ? [-2.2, -2.2, 0] : ex === 'uykulu' ? [2, 2, 0] : ex === 'kurnaz' ? [0.6, -3, 2.6] : ex === 'kararli' ? [0.9, 0.6, 0.9] : ex === 'gozkirp' ? [0.8, -2.4, 0] : [0, 0, 0]
   brow(c, 51.8, 45.6 + bl + inner, 45.4, 41.2 + bl + inner * 0.2, 38, 46.4 + bl, th, s.brow)
   brow(c, 59.2, 45.3 + br, 64.2, 41.1 + br, 69.8, 45.6 + br, th, s.brow)
   if (th > 1.5) {
@@ -639,8 +651,8 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean, ex: Expr
   }
   if (look === 'genc') {
     // burun üstünde birkaç çil, yakın yanakta gamze
-    c.fillStyle = s.skinS
-    for (const [x, y] of [[50.6, 62.4], [52.8, 63.8], [63.6, 62.2], [65.4, 63.6], [48.6, 64]]) {
+    c.fillStyle = clear(s.skinS, 0.4)
+    for (const [x, y] of [[50.6, 62.6], [48.8, 63.8], [65, 62.6]]) {
       c.beginPath()
       c.arc(x, y, 0.5, 0, Math.PI * 2)
       c.fill()
@@ -649,8 +661,8 @@ function face(c: Ctx, look: Look, s: Skin, shut: boolean, fem: boolean, ex: Expr
   }
   if (look === 'uktun') {
     // çiller
-    c.fillStyle = s.skinS
-    for (const [x, y] of [[49.8, 61.6], [51.8, 63.4], [47.6, 63.6], [63, 61.8], [65, 63.2], [51, 59.8], [66.8, 61.4]]) {
+    c.fillStyle = clear(s.skinS, 0.55)
+    for (const [x, y] of [[49.6, 62.2], [51.6, 63.6], [47.8, 63.8], [64.4, 62], [66.4, 63.2]]) {
       c.beginPath()
       c.arc(x, y, 0.5, 0, Math.PI * 2)
       c.fill()
@@ -668,7 +680,7 @@ function mouth(c: Ctx, look: Look, s: Skin, ex: Expr = 'ozgun') {
       ell(c, 56.4, 77.8 + dy, 2.2, 1.5, '#e8707a')
       c.beginPath()
       c.ellipse(56.4, 75.6 + dy, 3.1, 3.9, 0, 0, Math.PI * 2)
-      c.strokeStyle = INK
+      c.strokeStyle = LINE
       c.lineWidth = 1.2 * boost
       c.stroke()
     } else if (ex === 'uykulu') {
@@ -693,12 +705,12 @@ function mouth(c: Ctx, look: Look, s: Skin, ex: Expr = 'ozgun') {
       ell(c, 56.6, 81 + dy, 4.6, 2.8, '#e8707a')
       c.restore()
       open()
-      c.strokeStyle = INK
+      c.strokeStyle = LINE
       c.lineWidth = 1.2 * boost
       c.lineJoin = 'round'
       c.stroke()
-      curve(c, 47.4, 69.6 + dy, 47.6, 70.6 + dy, 48.6, 71 + dy, 1.1, INK)
-      curve(c, 65.6, 69 + dy, 65.4, 70 + dy, 64.4, 70.4 + dy, 1.1, INK)
+      curve(c, 47.4, 69.6 + dy, 47.6, 70.6 + dy, 48.6, 71 + dy, 1.1, LINE)
+      curve(c, 65.6, 69 + dy, 65.4, 70 + dy, 64.4, 70.4 + dy, 1.1, LINE)
     } else if (ex === 'utangac') {
       // utangaç: küçük, hafif dalgalı kapalı gülüş
       c.beginPath()
@@ -710,6 +722,10 @@ function mouth(c: Ctx, look: Look, s: Skin, ex: Expr = 'ozgun') {
       c.lineCap = 'round'
       c.lineJoin = 'round'
       c.stroke()
+    } else if (ex === 'kararli') {
+      // kararlı: kapalı, kendinden emin kısa gülüş; bir köşe biraz kalkık
+      curve(c, 50.6, 74 + dy, 56.6, 77.4 + dy, 62.8, 72.2 + dy, 1.6, lip)
+      curve(c, 62.8, 72.2 + dy, 64.2, 72.8 + dy, 64, 74.4 + dy, 0.85, s.skinS)
     } else if (ex === 'kurnaz') {
       curve(c, 49.6, 75 + dy, 57, 78.4 + dy, 64.6, 70.6 + dy, 1.7, lip)
       curve(c, 64.6, 70.6 + dy, 66.4, 71.6 + dy, 65.8, 73.8 + dy, 0.9, s.skinS)
@@ -763,13 +779,13 @@ function mouth(c: Ctx, look: Look, s: Skin, ex: Expr = 'ozgun') {
     c.fillStyle = '#c8545e'
     c.fill()
     open()
-    c.strokeStyle = INK
+    c.strokeStyle = LINE
     c.lineWidth = 1.1
     c.lineJoin = 'round'
     c.stroke()
     // ağız kenarları, alt dudak ışığı ve altındaki gölge
-    curve(c, 47.8, 70.6, 48.2, 71.6, 49.2, 72, 1.2, INK)
-    curve(c, 64.2, 70, 64, 70.9, 62.9, 71.3, 1.2, INK)
+    curve(c, 47.8, 70.6, 48.2, 71.6, 49.2, 72, 1.2, LINE)
+    curve(c, 64.2, 70, 64, 70.9, 62.9, 71.3, 1.2, LINE)
     ell(c, 58.4, 77.9, 1.7, 0.6, 'rgba(255,255,255,0.6)', -0.35)
     curve(c, 53.6, 80.4, 56.6, 81.6, 59.8, 79.8, 0.9, s.skinS)
     return
@@ -853,6 +869,9 @@ function mustache(c: Ctx, s: Skin) {
     { color: s.hairS, dx: -1.6, dy: -1.6 },
   )
   curve(c, 56.6, 69, 56.4, 70.6, 56.6, 72.2, 0.9, s.hairS)
+  // bakımlı bıyık: iki kanadın sırtında yumuşak parlaklık
+  curve(c, 46.6, 72, 50, 69.4, 54.4, 69.6, 1, clear(s.hairL, 0.55))
+  curve(c, 59, 69.8, 62.6, 69.6, 65.6, 71.8, 0.8, clear(s.hairL, 0.45))
 }
 
 /**
@@ -885,37 +904,46 @@ function trimmedBeard(c: Ctx, s: Skin) {
   c.beginPath()
   headPath(c, false)
   c.clip()
+  // yanakta tene yumuşakça karışan (fade), çenede dolgun ton: berberden çıkmış kısa sakal
+  const fill = c.createLinearGradient(0, 56, 0, 84)
+  fill.addColorStop(0, clear(s.trim!, 0.35))
+  fill.addColorStop(0.35, clear(s.trim!, 0.82))
+  fill.addColorStop(1, s.trim!)
   c.beginPath()
   shape()
-  c.fillStyle = s.trim!
+  c.fillStyle = fill
   c.fill('evenodd')
-  // tek kademe gölge: sağ alt yanda
+  // tek kademe gölge: sağ alt yanda, yumuşak
   c.save()
   c.beginPath()
   shape()
   c.clip('evenodd')
+  const sh = c.createLinearGradient(58, 70, 76, 84)
+  sh.addColorStop(0, clear(s.trimS!, 0))
+  sh.addColorStop(1, clear(s.trimS!, 0.8))
+  c.fillStyle = sh
+  c.fillRect(40, 60, 42, 32)
+  // ince kıl dokusu: düzenli, aşağı yatan kısa teller
   c.beginPath()
-  c.moveTo(80, 60)
-  c.quadraticCurveTo(70, 80, 50, 83.4)
-  c.lineTo(50, 92)
-  c.lineTo(80, 92)
-  c.closePath()
-  c.fillStyle = s.trimS!
-  c.fill()
+  for (let i = 0; i < 40; i++) {
+    const x = 34 + ((i * 7.3) % 40)
+    const y = 66 + ((i * 5.1) % 17)
+    c.moveTo(x, y)
+    c.lineTo(x + 0.4, y + 1.3)
+  }
+  c.strokeStyle = clear(s.hairL, 0.5)
+  c.lineWidth = 0.45 * boost
+  c.lineCap = 'round'
+  c.stroke()
   c.restore()
-  // kenarlar: ince koyu hat; çene hattında ince ışık
+  // ağız çevresi: ince hat; çene hattında ince ışık
   c.beginPath()
-  c.moveTo(33.6, 57)
-  c.quadraticCurveTo(34.8, 70.4, 46.4, 73)
-  c.quadraticCurveTo(51.4, 68.8, 56.8, 69.9)
-  c.quadraticCurveTo(61.8, 68.8, 66, 71.2)
-  c.quadraticCurveTo(71.6, 70, 73.6, 62)
   c.moveTo(48.4, 73.6)
   c.quadraticCurveTo(47.6, 76.6, 51.6, 79.2)
   c.quadraticCurveTo(57, 81.2, 62.4, 79)
   c.quadraticCurveTo(65.8, 76, 64.8, 72.3)
-  c.strokeStyle = s.trimS!
-  c.lineWidth = 0.7 * boost
+  c.strokeStyle = clear(s.trimS!, 0.6)
+  c.lineWidth = 0.6 * boost
   c.lineJoin = 'round'
   c.lineCap = 'round'
   c.stroke()
@@ -925,7 +953,7 @@ function trimmedBeard(c: Ctx, s: Skin) {
   c.beginPath()
   headPath(c, false)
   c.closePath()
-  c.strokeStyle = inkLine()
+  c.strokeStyle = EDGE
   c.lineWidth = FACE_INKW * boost
   c.stroke()
 }
@@ -985,19 +1013,135 @@ function longHairBack(c: Ctx, s: Skin, sw: number) {
     { color: s.hairS, dx: -3, dy: -1.6 },
   )
   // tutam ayrımları (mürekkep) ve ışık
-  curve(c, 25.5, 66, 26, 77, 20.5 + sw * 0.6, 85.5, 1, inkLine())
-  curve(c, 29, 80, 30, 88, 27 + sw * 0.6, 95, 1, inkLine())
-  curve(c, 79, 72, 80, 81, 82 + sw * 0.6, 87.5, 1, inkLine())
+  curve(c, 25.5, 66, 26, 77, 20.5 + sw * 0.6, 85.5, 1, s.hairS)
+  curve(c, 29, 80, 30, 88, 27 + sw * 0.6, 95, 1, s.hairS)
+  curve(c, 79, 72, 80, 81, 82 + sw * 0.6, 87.5, 1, s.hairS)
   curve(c, 19.6, 46, 18.6, 55, 21.6, 63, 1.7, s.hairL)
   curve(c, 21, 76, 18.5, 81, 15.5 + sw * 0.8, 85, 1.4, s.hairL)
   curve(c, 24.4, 88, 24.6, 93, 22.6 + sw, 98, 1.2, s.hairL)
   // uzak yanda saçın dış hattını izleyen kenar ışığı ve tel
   hairRim(c, s, 80.6, 42, 82.4, 55, 79.6, 66)
   hairRim(c, s, 79.6, 68, 80.6, 79.6, 86.6 + sw, 87.4)
-  curve(c, 78, 60, 77.6, 70, 78.4, 80, 0.8, inkLine())
+  curve(c, 78, 60, 77.6, 70, 78.4, 80, 0.8, s.hairS)
   // ensede ayrı düşen ince teller
   curve(c, 35.5, 78, 36.4, 86, 35 + sw * 0.5, 93, 0.9, s.hair)
   curve(c, 71.6, 80, 71, 87, 72.4 + sw * 0.5, 93, 0.9, s.hair)
+}
+
+/** dalgalı uzun saç: uzun saçla aynı kütle, dış hatları ve uçları dalga dalga; tutam araları S kıvrımlı */
+function wavyHairBack(c: Ctx, s: Skin, sw: number) {
+  blob(
+    c,
+    () => {
+      c.moveTo(31, 40)
+      c.bezierCurveTo(26, 56, 29, 74, 28 + sw * 0.3, 92)
+      c.lineTo(27, 110)
+      c.lineTo(78, 110)
+      c.lineTo(77.5 + sw * 0.3, 92)
+      c.bezierCurveTo(78, 74, 80, 56, 75, 40)
+    },
+    s.hairS,
+  )
+  // yakın yan: kulağın arkasından dalga dalga inen kütle, üç kıvrık uç
+  blob(
+    c,
+    () => {
+      c.moveTo(30, 28)
+      c.bezierCurveTo(17, 34, 14, 46, 19, 54)
+      c.quadraticCurveTo(24, 61, 17, 69)
+      c.quadraticCurveTo(11 + sw * 0.5, 77, 17 + sw * 0.6, 85)
+      c.quadraticCurveTo(22 + sw, 92, 14 + sw, 100)
+      c.quadraticCurveTo(10 + sw, 106, 16 + sw, 109)
+      c.quadraticCurveTo(20 + sw, 104, 24 + sw * 0.8, 101)
+      c.quadraticCurveTo(24 + sw, 107, 30 + sw, 109)
+      c.quadraticCurveTo(32 + sw * 0.6, 104, 36 + sw * 0.5, 104)
+      c.quadraticCurveTo(36, 96, 33, 88)
+      c.quadraticCurveTo(29.5, 80, 32, 72)
+      c.quadraticCurveTo(34, 64, 31, 56)
+      c.lineTo(33, 34)
+    },
+    s.hair,
+    { color: s.hairS, dx: -3.2, dy: -1.6 },
+  )
+  // uzak yan: daha ince, iki kıvrık uç
+  blob(
+    c,
+    () => {
+      c.moveTo(74, 30)
+      c.bezierCurveTo(84, 38, 86, 50, 81, 58)
+      c.quadraticCurveTo(77, 65, 83, 72)
+      c.quadraticCurveTo(89 + sw * 0.5, 80, 83 + sw * 0.6, 88)
+      c.quadraticCurveTo(78 + sw, 95, 86 + sw, 102)
+      c.quadraticCurveTo(88 + sw, 107, 82 + sw, 108)
+      c.quadraticCurveTo(76 + sw * 0.6, 104, 74 + sw * 0.4, 98)
+      c.quadraticCurveTo(76, 90, 75, 84)
+      c.quadraticCurveTo(73, 76, 76, 68)
+      c.quadraticCurveTo(78, 62, 75, 56)
+      c.lineTo(72, 34)
+    },
+    s.hair,
+    { color: s.hairS, dx: -3, dy: -1.6 },
+  )
+  // dalgayı izleyen S kıvrımları ve dalga sırtlarında ışık
+  curve(c, 24, 58, 18, 66, 21 + sw * 0.4, 76, 1, s.hairS)
+  curve(c, 21 + sw * 0.4, 76, 26 + sw * 0.6, 86, 21 + sw, 98, 1, s.hairS)
+  curve(c, 29, 74, 26 + sw * 0.3, 84, 29 + sw * 0.6, 94, 0.9, s.hairS)
+  curve(c, 80, 62, 84, 70, 81 + sw * 0.4, 80, 0.9, s.hairS)
+  curve(c, 81 + sw * 0.4, 80, 78 + sw * 0.6, 88, 81 + sw, 98, 0.9, s.hairS)
+  curve(c, 17.6, 42, 16.6, 49, 19.4, 54, 1.8, s.hairL)
+  curve(c, 15 + sw * 0.5, 73, 13.6 + sw * 0.5, 78, 16 + sw * 0.6, 83, 1.5, s.hairL)
+  curve(c, 18 + sw, 96, 14 + sw, 100, 13 + sw, 104, 1.2, s.hairL)
+  hairRim(c, s, 81, 40, 85, 50, 81.4, 58)
+  hairRim(c, s, 82, 70, 88, 78, 84 + sw * 0.6, 87)
+  curve(c, 36, 80, 37, 88, 35.6 + sw * 0.5, 96, 0.9, s.hair)
+  curve(c, 71, 82, 70.4, 89, 71.8 + sw * 0.5, 96, 0.9, s.hair)
+}
+
+/**
+ * Saçın parlak ışık bandı: tepede, başın yuvarlağını izleyen geniş yumuşak bir hale ve üstünde kısa, sivri parıltı
+ * tutamları (bakımlı, parlak saç). Saçın şekline kırpılır; ışık sol üstten.
+ */
+function hairGloss(c: Ctx, s: Skin, path: () => void, cy = 44, r = 24) {
+  c.save()
+  c.beginPath()
+  path()
+  c.closePath()
+  c.clip()
+  const a0 = -Math.PI * 0.95
+  const a1 = -Math.PI * 0.28
+  // geniş yumuşak hale
+  c.lineCap = 'round'
+  c.beginPath()
+  c.arc(51, cy, r, a0, a1)
+  c.strokeStyle = clear(s.hairL, 0.35)
+  c.lineWidth = 6 * boost
+  c.stroke()
+  // parlak bant: dışı düzgün yay, içi tel tel tırtıklı (saç tellerinin ucu); uçlara doğru incelir
+  const n = 14
+  c.beginPath()
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + ((a1 - a0) * i) / n
+    const w = Math.sin((Math.PI * i) / n)
+    const rr = r + 1.3 * w
+    if (i === 0) c.moveTo(51 + Math.cos(a) * rr, cy + Math.sin(a) * rr)
+    else c.lineTo(51 + Math.cos(a) * rr, cy + Math.sin(a) * rr)
+  }
+  for (let i = n; i >= 0; i--) {
+    const a = a0 + ((a1 - a0) * i) / n
+    const w = Math.sin((Math.PI * i) / n)
+    const rr = r - (i % 2 ? 2.6 : 0.9) * w
+    c.lineTo(51 + Math.cos(a) * rr, cy + Math.sin(a) * rr)
+  }
+  c.closePath()
+  c.fillStyle = clear(mix(s.hairL, '#ffffff', 0.35), 0.75)
+  c.fill()
+  // en parlak çekirdek: kısa ince yay
+  c.beginPath()
+  c.arc(51, cy, r + 0.3, a0 + 0.35, a0 + 0.95)
+  c.strokeStyle = 'rgba(255,255,255,0.55)'
+  c.lineWidth = 0.9 * boost
+  c.stroke()
+  c.restore()
 }
 
 /**
@@ -1035,18 +1179,16 @@ function hairRim(c: Ctx, s: Skin, x0: number, y0: number, cx: number, cy: number
 function longHairFront(c: Ctx, s: Skin) {
   blob(c, () => fringePath(c), s.hair, { color: s.hairS, dx: -3, dy: -2.4 })
   // ayrım çizgisi ve tutam aralarında ince mürekkep telleri
-  curve(c, 64.4, 33, 63.4, 23, 57, 15.4, 1, inkLine())
-  curve(c, 57.7, 36.6, 55, 28.6, 47, 22.6, 0.75, inkLine())
-  curve(c, 49.1, 37.6, 44.6, 30.6, 36.4, 27.6, 0.75, inkLine())
-  curve(c, 41.1, 38.3, 37.4, 34.6, 31.4, 34.4, 0.75, inkLine())
-  curve(c, 31.2, 51.4, 30.6, 44, 33.6, 38.6, 0.9, s.hairS)
-  curve(c, 69, 24, 74, 29, 75.6, 37, 0.9, s.hairS)
-  // parlak şeritler: tepede bir hale gibi dizilir, perçemde tutamları izler
-  curve(c, 23.6, 40, 26.4, 26.5, 41, 20.4, 2.2, s.hairL)
-  curve(c, 33.6, 30.6, 39, 26, 45.6, 25.2, 1.4, s.hairL)
-  curve(c, 49.4, 26.4, 53.6, 28, 56.4, 31.4, 1.3, s.hairL)
-  curve(c, 37.6, 37.6, 40.4, 35.6, 42.6, 35.4, 1, s.hairL)
-  curve(c, 51.4, 37.4, 54, 35.6, 55.4, 34, 1, s.hairL)
+  // ayrım ve tutam araları: saçın kendi koyu tonunda, ince ve düzenli
+  curve(c, 64.4, 33, 63.4, 23, 57, 15.4, 0.9, s.hairS)
+  curve(c, 57.7, 36.6, 55, 28.6, 47, 22.6, 0.7, clear(s.hairS, 0.7))
+  curve(c, 49.1, 37.6, 44.6, 30.6, 36.4, 27.6, 0.7, clear(s.hairS, 0.7))
+  curve(c, 41.1, 38.3, 37.4, 34.6, 31.4, 34.4, 0.7, clear(s.hairS, 0.7))
+  curve(c, 69, 24, 74, 29, 75.6, 37, 0.8, clear(s.hairS, 0.7))
+  // tutamların sırtında yumuşak ışık
+  curve(c, 23.6, 40, 26.4, 26.5, 41, 20.4, 1.8, clear(s.hairL, 0.7))
+  curve(c, 51.4, 37.4, 54, 35.6, 55.4, 34, 0.9, clear(s.hairL, 0.7))
+  curve(c, 43, 38, 45.6, 36.4, 47, 34.6, 0.9, clear(s.hairL, 0.7))
   hairRim(c, s, 65.6, 18.6, 79.6, 21.6, 78.3, 43.6)
 }
 
@@ -1103,10 +1245,10 @@ function messyHairPath(c: Ctx) {
 function messyHair(c: Ctx, s: Skin) {
   blob(c, () => messyHairPath(c), s.hair, { color: s.hairS, dx: -3.2, dy: -2.8 })
   // tutam dipleri: uçlardan içeri inen ince mürekkep
-  curve(c, 30.4, 10.6, 32, 18, 36, 22.6, 0.85, inkLine())
-  curve(c, 46.2, 6.4, 46.4, 14, 48.6, 20, 0.85, inkLine())
-  curve(c, 61.6, 6.8, 60, 14.6, 60.4, 21, 0.85, inkLine())
-  curve(c, 75.6, 11.6, 72, 18, 70.4, 24, 0.85, inkLine())
+  curve(c, 30.4, 10.6, 32, 18, 36, 22.6, 0.85, s.hairS)
+  curve(c, 46.2, 6.4, 46.4, 14, 48.6, 20, 0.85, s.hairS)
+  curve(c, 61.6, 6.8, 60, 14.6, 60.4, 21, 0.85, s.hairS)
+  curve(c, 75.6, 11.6, 72, 18, 70.4, 24, 0.85, s.hairS)
   curve(c, 58.8, 41, 57.6, 36, 54.6, 31.6, 0.85, s.hairS)
   curve(c, 45.4, 40.6, 45.4, 36, 43, 32, 0.85, s.hairS)
   // ışık: sol üstteki tutamların sırtında
@@ -1137,7 +1279,7 @@ function sideHairPath(c: Ctx) {
 function sideHair(c: Ctx, s: Skin) {
   blob(c, () => sideHairPath(c), s.hair, { color: s.hairS, dx: -3.2, dy: -2.8 })
   // ayrım ve taranan teller
-  curve(c, 41.6, 33.8, 40.8, 24, 43.4, 16, 1, inkLine())
+  curve(c, 41.6, 33.8, 40.8, 24, 43.4, 16, 1, s.hairS)
   curve(c, 45, 30.6, 58, 23.6, 74, 28, 0.9, s.hairS)
   curve(c, 47.4, 35.6, 60, 31, 73.4, 36, 0.9, s.hairS)
   curve(c, 34.4, 40, 33.6, 33, 36.6, 26, 0.9, s.hairS)
@@ -1146,6 +1288,45 @@ function sideHair(c: Ctx, s: Skin) {
   curve(c, 48, 18.4, 58, 15, 67.6, 19.6, 1.8, s.hairL)
   curve(c, 50, 27, 58, 24, 64, 25.6, 1.2, s.hairL)
   hairRim(c, s, 74.4, 19.6, 82, 27, 79.6, 40)
+}
+
+/** kısa dalgalı: tepede yuvarlak dalgalar, alnın üstüne kıvrılan kısa bukleler (kaşın üstünde biter), kısa favori */
+function waveHairPath(c: Ctx) {
+  c.moveTo(25.6, 58.5)
+  c.bezierCurveTo(19.5, 40, 22, 24, 30, 20)
+  c.quadraticCurveTo(33, 12, 42, 14)
+  c.quadraticCurveTo(48, 8, 55, 12.4)
+  c.quadraticCurveTo(63, 9.6, 68, 15.4)
+  c.quadraticCurveTo(77, 15.6, 79, 24)
+  c.quadraticCurveTo(84, 31, 80, 39)
+  c.quadraticCurveTo(81, 45, 77.4, 49.5)
+  // alın çizgisi: dalga dalga, uçlar içe kıvrılır
+  c.quadraticCurveTo(76, 42, 71.6, 38.6)
+  c.quadraticCurveTo(68.6, 40.6, 65, 38.2)
+  c.quadraticCurveTo(60.4, 35.4, 55, 37.6)
+  c.quadraticCurveTo(50, 39.6, 46.4, 36.4)
+  c.quadraticCurveTo(41.6, 35, 38.6, 38.4)
+  c.quadraticCurveTo(34.2, 40.4, 33, 47.6)
+  c.lineTo(33, 61.5)
+  c.quadraticCurveTo(29.6, 61.4, 25.6, 59)
+}
+
+function waveHair(c: Ctx, s: Skin) {
+  blob(c, () => waveHairPath(c), s.hair, { color: s.hairS, dx: -3.2, dy: -2.8 })
+  // dalga araları: S kıvrımlı koyu teller
+  curve(c, 42, 14, 40, 20, 43.4, 25, 0.9, s.hairS)
+  curve(c, 43.4, 25, 46.6, 30, 44.4, 35.4, 0.9, s.hairS)
+  curve(c, 55, 12.4, 53.4, 18, 56.6, 23, 0.9, s.hairS)
+  curve(c, 56.6, 23, 59.4, 28.6, 56.4, 36.6, 0.9, s.hairS)
+  curve(c, 68, 15.4, 66.4, 21, 69.4, 26, 0.9, s.hairS)
+  curve(c, 69.4, 26, 72, 31, 70.4, 38, 0.9, s.hairS)
+  curve(c, 30, 20, 30.6, 27, 34.4, 31, 0.9, s.hairS)
+  // dalga sırtlarında ışık
+  curve(c, 23.4, 42, 23.6, 30, 29.6, 22.6, 2.2, s.hairL)
+  curve(c, 35, 15.6, 38.6, 13.4, 42, 14.6, 1.5, s.hairL)
+  curve(c, 48.4, 11, 51.6, 10.6, 54.4, 12.6, 1.4, s.hairL)
+  curve(c, 45.6, 22, 48.4, 20, 50.6, 21.4, 1.1, s.hairL)
+  hairRim(c, s, 73, 16.6, 81.6, 24, 80.6, 37)
 }
 
 /** kısa saç: dalgalı tepe, alın çizgisi, favori; başlık altında yalnız yanlar görünür */
@@ -1235,32 +1416,16 @@ function memoHair(c: Ctx, s: Skin) {
   c.fillStyle = s.hair
   c.fill()
   curve(c, 33.9, 43.6, 34, 48, 33.6, 53, 0.8, s.hairS)
-  curve(c, 26.2, 43, 25.6, 45.6, 26.4, 47.6, 1.1, inkLine())
-  // kısa kesimin dokusu
-  c.beginPath()
-  for (const [x, y] of [[28, 46.6], [30, 45.4], [32, 44.4], [28.6, 50], [30.4, 48.8], [32.2, 48], [31, 52.6], [32.4, 51.6], [31.6, 56]]) {
-    c.moveTo(x, y)
-    c.lineTo(x - 0.3, y + 1.5)
-  }
-  c.strokeStyle = s.hairL
-  c.lineWidth = 0.5
-  c.lineCap = 'round'
-  c.stroke()
   const top = () => memoTopPath(c)
   blob(c, top, s.hair, { color: s.hairS, dx: -3.2, dy: -2.8 })
   hairRim(c, s, 75.8, 19.8, 84.4, 27, 78.3, 40.6)
   // tutam aralarında mürekkep çizgileri
-  curve(c, 59.6, 35.8, 58.4, 29, 52, 24.4, 0.9, inkLine())
-  curve(c, 71.6, 35.4, 71.6, 29, 67, 23.6, 0.9, inkLine())
-  curve(c, 44, 36.6, 43, 31, 37.6, 27.6, 0.9, inkLine())
-  curve(c, 56, 14, 55.2, 19, 51, 22, 0.9, inkLine())
-  curve(c, 66.5, 14.6, 66, 19.6, 62.4, 23, 0.9, inkLine())
-  // parlak şeritler: tepede ve tutamların sırtında
-  curve(c, 24.8, 37, 27, 25, 40, 20, 2.3, s.hairL)
-  curve(c, 46.6, 18.4, 50.6, 14.8, 54, 16.6, 1.6, s.hairL)
-  curve(c, 58.6, 16.8, 62, 13.4, 65, 16.8, 1.6, s.hairL)
-  curve(c, 36, 31, 41, 26.6, 47.4, 27, 1.2, s.hairL)
-  curve(c, 55, 29, 60, 26.4, 65.4, 28.4, 1.2, s.hairL)
+  curve(c, 59.6, 35.8, 58.4, 29, 52, 24.4, 0.8, s.hairS)
+  curve(c, 71.6, 35.4, 71.6, 29, 67, 23.6, 0.8, s.hairS)
+  curve(c, 44, 36.6, 43, 31, 37.6, 27.6, 0.8, s.hairS)
+  // tutamların sırtında yumuşak ışık
+  curve(c, 24.8, 37, 27, 25, 40, 20, 1.8, clear(s.hairL, 0.8))
+  curve(c, 55, 29, 60, 26.4, 65.4, 28.4, 1, clear(s.hairL, 0.7))
 }
 
 function partedHairPath(c: Ctx) {
@@ -1962,7 +2127,7 @@ function capeClasp(c: Ctx) {
 
 /** Kadraj: [ölçek, başın orta x'i, en üst nokta]. Baş tam sığar, yüz kadrajı doldurur. */
 /** omuzların ve saçın arkasına, her şeyden önce çizilen sırt parçaları (öbürleri omuzlarla birlikte) */
-const BEHIND_ALL: ReadonlySet<AccessoryId> = new Set(['sal', 'okluk', 'kalkan'])
+const BEHIND_ALL: ReadonlySet<AccessoryId> = new Set(['sal', 'okluk', 'kalkan', 'gitar', 'kaykay', 'balon'])
 
 function frame(s: Skin, acc: AccessoryId): [number, number, number] {
   if (acc === 'kovboy') return [0.9, 53, 0]
@@ -1973,9 +2138,9 @@ function frame(s: Skin, acc: AccessoryId): [number, number, number] {
   if (acc === 'bere') return [1.0, 52, -6]
   if (acc === 'hasir') return [0.94, 53, 0]
   if (acc === 'kulaklik') return [1.04, 52, 6]
-  if (s.back === 'bun') return [1.0, 52, 1]
-  if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob' || s.back === 'pigtails') return [1.05, 51.5, 9]
-  if (s.front === 'messy') return [1.05, 52, 4]
+  if (s.back === 'bun' || s.back === 'buns') return [1.0, 52, 1]
+  if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob' || s.back === 'pigtails' || s.back === 'sidebraid') return [1.05, 51.5, 9]
+  if (s.front === 'messy' || s.front === 'wave') return [1.05, 52, 4]
   if (s.fringe) return [1.07, 50.5, 11.5]
   if (s.hat === 'toque') return [0.98, 52, -5.5]
   if (s.hat === 'kalpak') return [1.04, 52, 5]
@@ -2031,9 +2196,21 @@ function buzzHair(c: Ctx, s: Skin, skull: () => void) {
   c.beginPath()
   skull()
   c.closePath()
-  c.strokeStyle = inkLine()
+  c.strokeStyle = EDGE
   c.lineWidth = FACE_INKW * boost
   c.stroke()
+}
+
+/** ön saçın dış yolu (alna düşen gölge ve parlak bant için) */
+function frontPath(c: Ctx, front: Front | 'parted') {
+  if (front === 'fringe') fringePath(c)
+  else if (front === 'quiff') memoTopPath(c)
+  else if (front === 'parted') partedHairPath(c)
+  else if (front === 'curly') curlyHairPath(c)
+  else if (front === 'messy') messyHairPath(c)
+  else if (front === 'side') sideHairPath(c)
+  else if (front === 'wave') waveHairPath(c)
+  else shortHairPath(c)
 }
 
 /**
@@ -2054,6 +2231,8 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
 
   // yumuşak boya kipi: oyundaki karakterle aynı fırça (koyu-sıcak ince hat, ılık ışık, serin gölge)
   const wasSoft = setSoft(true)
+  // gölge bandı portrenin birimine göre: kökeni sol üstte (karakterin kutusu tabana göredir, alt yarı ters gölgelenirdi)
+  setShadeBox([-60, -80, 220, 280])
   c.save()
   c.beginPath()
   c.rect(0, 0, w, h)
@@ -2062,14 +2241,16 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   c.translate(w / 2, h)
   c.scale(k, k)
   c.translate(-PORTRAIT_W / 2, -PORTRAIT_H)
-  background(c, look)
+  background(c, look, s)
   if (opts.face) {
     // yalnız baş: saçın tepesinden çeneye kare kırpım (küçük gösterge pulu). 26 Kasım 2026: kırpım genişledi, alın,
     // saç ve baş aksesuarı (fiyonk, şapka) kesilmiyordu, yüz kutuyu dolduruyordu
-    const f = PORTRAIT_W / 78
-    c.translate(PORTRAIT_W / 2, PORTRAIT_H / 2)
+    // görünen alanın ortasına (kare kutuda kadrajın alt 100 birimi) saçın tepesinden çeneye ~86 birim (başlıkta 96) sığar
+    const tall = (!!s.hat && s.hat !== 'yazma') || ON_HEAD.has(acc)
+    const f = PORTRAIT_W / (tall ? 96 : 86)
+    c.translate(PORTRAIT_W / 2, PORTRAIT_H - h / k / 2)
     c.scale(f, f)
-    c.translate(-53, -(s.hat && s.hat !== 'yazma' ? 49 : 51))
+    c.translate(-53, -(tall ? 42 : 47))
     boost = Math.max(1, 0.62 / (k * f))
   } else {
     const [f, cx, top] = frame(s, acc)
@@ -2083,7 +2264,7 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   const fem = !!s.fem || s.hat === 'yazma'
   // dağınık saçın sivri tutamları başlığın altından taşmasın: başlıkla kısa saç görünür
   const front0 = frontOfPortrait(look, s)
-  const front = front0 === 'messy' && (COVERS_HEAD.has(acc) || (!!s.hat && s.hat !== 'yazma')) ? 'short' : front0
+  const front = (front0 === 'messy' || front0 === 'wave') && (COVERS_HEAD.has(acc) || (!!s.hat && s.hat !== 'yazma')) ? 'short' : front0
   const ex: Expr = s.expr ?? 'ozgun'
   const hairAn = { t, moving: false, hair: sway * 0.3, lift: 0 }
   // baş ve boyun: omuzların yarısı kadar oynar, çok hafif yana eğilir
@@ -2104,10 +2285,11 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
     c.restore()
   }
   // uzun saç omuzların arkasına düşer; Mağaza saçları (at kuyruğu, örgü, küt kesim) da başın arkasında
-  if (s.back === 'long') {
+  if (s.back === 'long' || s.back === 'wavy') {
     c.save()
     head()
-    longHairBack(c, s, sway)
+    if (s.back === 'wavy') wavyHairBack(c, s, sway)
+    else longHairBack(c, s, sway)
     c.restore()
   } else if (s.back === 'tail' || s.back === 'braid' || s.back === 'bob') {
     c.save()
@@ -2151,31 +2333,26 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   head()
   const skull = () => headPath(c, fem, look === 'genc')
   ink(FACE_INKW)
-  blob(c, skull, s.skin, { color: s.skinS, dx: -2.6, dy: -2.2 })
+  blob(c, skull, s.skin)
   ink(MID_INKW)
   // hacim: ışık sol üstte, sağ alt kenara doğru yumuşak ikinci ton; saçın alna düşen gölgesi iki kademede erir
   c.save()
   c.beginPath()
   skull()
   c.clip()
-  const vol = c.createRadialGradient(44, 48, 16, 49, 55, 40)
+  const vol = c.createRadialGradient(43, 50, 12, 50, 55, 38)
   vol.addColorStop(0, fade(s.skinS, 0))
-  vol.addColorStop(1, fade(s.skinS, 0.45))
+  vol.addColorStop(0.55, fade(s.skinS, 0.12))
+  vol.addColorStop(1, fade(s.skinS, 0.62))
   c.fillStyle = vol
   c.fillRect(24, 22, 56, 66)
   // saçın alna düşen gölgesi: bütün kılıklarda (başlıklıda başlığın altından görünen saçın gölgesi)
-  c.fillStyle = fade(s.skinS, 0.42)
-  for (const d of [1.7, 3.4]) {
+  c.fillStyle = fade(s.skinS, 0.2)
+  for (const d of [0.9, 1.8, 2.7, 3.6]) {
     c.save()
     c.translate(d * 0.3, d)
     c.beginPath()
-    if (front === 'fringe') fringePath(c)
-    else if (front === 'quiff') memoTopPath(c)
-    else if (front === 'parted') partedHairPath(c)
-    else if (front === 'curly') curlyHairPath(c)
-    else if (front === 'messy') messyHairPath(c)
-    else if (front === 'side') sideHairPath(c)
-    else shortHairPath(c)
+    frontPath(c, front)
     c.fill()
     c.restore()
   }
@@ -2197,7 +2374,9 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   else if (front === 'buzz') buzzHair(c, s, skull)
   else if (front === 'messy') messyHair(c, s)
   else if (front === 'side') sideHair(c, s)
+  else if (front === 'wave') waveHair(c, s)
   else shortHair(c, s)
+  if (front !== 'buzz' && front !== 'parted') hairGloss(c, s, () => frontPath(c, front), front === 'curly' ? 42 : 44, front === 'messy' ? 25 : 24)
   if (s.hat === 'yazma') {
     if (kit.face === 'gozluk') glasses(c)
     if (kit.face === 'gunes') shades(c)
@@ -2232,5 +2411,6 @@ export function drawPortrait(c: Ctx, look: Look, w: number, h: number, t: number
   boost = 1
   setInkWidth(HERO_INKW)
   setSoft(wasSoft)
+  setShadeBox(null)
   c.restore()
 }

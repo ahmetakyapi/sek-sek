@@ -8,7 +8,7 @@ import { useTilt } from '@/components/useTilt'
 import { medalFor } from '@/components/medal'
 import { Board } from '@/components/ScoreBoard'
 import { MedalBadge, Overlay, SectionTitle, displayName, ic } from '@/components/ui'
-import { ALL_CHALLENGES, CHALLENGES, MASTER_COURSES, RAGE_COURSES, challengeLevel, type Challenge } from '@/game/challenges'
+import { ALL_CHALLENGES, CHALLENGES, LEGEND_UNLOCK, MASTER_COURSES, RAGE_COURSES, challengeLevel, courseOpen, type Challenge } from '@/game/challenges'
 import { LEVELS } from '@/game/levels'
 import { localize, useLang, useT } from '@/lib/i18n'
 import { useListRanks } from '@/lib/listRanks'
@@ -23,7 +23,9 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
   const lng = useLang()
   // Mücadeleler: önce şehir kesitleri, sonra elle çizilmiş Usta Parkurları (kendi başlığıyla)
   const list = rage ? RAGE_COURSES : [...CHALLENGES, ...MASTER_COURSES]
-  const [pick, setPick] = useState(() => list.find((c) => finished.has(c.level)) ?? list[0])
+  const isOpen = (c: Challenge) => courseOpen(c, finished, best)
+  const firstLegend = list.findIndex((c) => c.tier === 'efsane')
+  const [pick, setPick] = useState(() => list.find(isOpen) ?? list[0])
   const done = list.filter((c) => best[c.id]).length
   const tone = rage ? 'var(--color-coral)' : 'var(--color-accent-2)'
   // her mücadelenin lideri ve oyuncunun sırası: satırda, tıklamadan
@@ -60,8 +62,15 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
                     <span className="text-[12px] text-muted">{t('Zamanlama ve bulmaca: kısa ama kafa yoran')}</span>
                     <span className="h-px flex-1 bg-gradient-to-r from-gold/60 to-transparent" />
                   </li>
+                ) : !rage && i === firstLegend ? (
+                  <li key="efsane-baslik" className="mt-2 flex items-center gap-2 wide:col-span-2" aria-hidden>
+                    <span className="font-display text-[15px] text-[var(--color-coral)]">{t('Efsane Parkurları')}</span>
+                    <span className="text-[12px] text-muted">{t('Uzun, iki üç mekanik birden')}</span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-[var(--color-coral)]/60 to-transparent" />
+                  </li>
                 ) : null
-              const open = finished.has(c.level)
+              const open = isOpen(c)
+              const lock = !finished.has(c.level) ? t('🔒 {city} bitince açılır', { city: lv.name }) : t('🔒 {n} Usta Parkuru bitince açılır', { n: LEGEND_UNLOCK })
               const ms = best[c.id]
               const medal = ms ? medalFor(challengeLevel(c), ms) : null
               const on = pick.id === c.id
@@ -82,7 +91,7 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
                         {open && <RankTag rank={ranks[c.id]} className="shrink-0" />}
                       </span>
                       <span className="flex items-center justify-between gap-2">
-                        <span className="min-w-0 truncate text-[12px] text-muted">{open ? `${lv.name} · ${rage ? t('Öfke Parkuru') : c.map ? t('Usta') : t(lv.difficulty)}` : t('🔒 {city} bitince açılır', { city: lv.name })}</span>
+                        <span className="min-w-0 truncate text-[12px] text-muted">{open ? `${lv.name} · ${rage ? t('Öfke Parkuru') : c.tier === 'efsane' ? t('Efsane') : c.map ? t('Usta') : t(lv.difficulty)}` : lock}</span>
                         {open && (
                           <span className="flex shrink-0 items-center gap-1.5 font-display text-[14px] leading-none tabular-nums text-cream">
                             {medal && <MedalBadge medal={medal} />}
@@ -97,7 +106,7 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
             })}
           </ol>
           <div className="flex min-h-0 flex-col">
-            <ChallengeCard c={pick} open={finished.has(pick.level)} best={best[pick.id]} onStart={() => onStart(pick)} />
+            <ChallengeCard c={pick} open={isOpen(pick)} cityDone={finished.has(pick.level)} best={best[pick.id]} onStart={() => onStart(pick)} />
             {/* sıralama sağ sütunun kalanını doldurur; içeriği paneli uzatmaz (kendi alanında kayar) */}
             <div className="mt-3 flex min-h-[150px] flex-1 flex-col max-sm:hidden short:hidden">
               <SectionTitle title={t('Sıralama')} note={t(pick.name)} tone={tone} />
@@ -116,7 +125,7 @@ export function ChallengeList({ rage, best, finished, player, onStart, onBack }:
   )
 }
 
-function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean; best?: number; onStart: () => void }) {
+function ChallengeCard({ c, open, cityDone, best, onStart }: { c: Challenge; open: boolean; cityDone: boolean; best?: number; onStart: () => void }) {
   const t = useT()
   const lng = useLang()
   const lv = localize(LEVELS.find((l) => l.id === c.level)!, lng)
@@ -167,7 +176,7 @@ function ChallengeCard({ c, open, best, onStart }: { c: Challenge; open: boolean
       </div>
       <div className="mt-2.5 grid grid-cols-[1fr_auto] items-center gap-3">
         <button className="pixel-btn primary justify-center" disabled={!open} onClick={onStart} autoFocus>
-          {ic(open ? (best ? t('▶ Yeniden Oyna') : t('▶ Oyna')) : t('{city} bitince açılır', { city: lv.name }))}
+          {ic(open ? (best ? t('▶ Yeniden Oyna') : t('▶ Oyna')) : cityDone ? t('{n} Usta Parkuru bitince açılır', { n: LEGEND_UNLOCK }) : t('{city} bitince açılır', { city: lv.name }))}
         </button>
         {best ? (
           <span className="text-right leading-none">

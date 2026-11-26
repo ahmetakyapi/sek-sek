@@ -5,7 +5,7 @@
  * kare hızından bağımsızdır, rastgelelik yok.
  *
  * Bekleme duruşları (game/looks.ts STANCES): rahat, eller belde, kollar bağlı, eller cepte, etrafa bakınır, esneyip durur,
- * düşünceli (el çenede), sek sek (yerinde seker). Birkaç saniye hareketsiz kalınca duruşa göre sırayla küçük hareketler
+ * düşünceli (el çenede), sek sek (yerinde seker), eller arkada (topuk-parmak sallanır). Birkaç saniye hareketsiz kalınca duruşa göre sırayla küçük hareketler
  * başlar: etrafa bakınma, ayak oynatma, esneme, el sallama, tek ayak sekme. Sürekli olanlar: nefes (heroDraw), göz kırpma, saç ve atkının hafif salınımı.
  */
 import { STANCES, type IdleMove } from './looks'
@@ -27,14 +27,16 @@ const BASE: Record<string, { legs: [[number, number], [number, number]]; arms: [
   cep: { legs: [[-6, 2], [5, 12]], arms: [[-10, 34], [-14, 40]] },
   // düşünceli: yakın elin üstünde çene, uzak kol karnın önünden yakın dirseği tutar
   cene: { legs: [[-4, 3], [8, 5]], arms: [[24, -88], [80, 205]] },
+  // eller arkada: kollar geriye, eller belin arkasında birleşir; göğüs hafif önde, ayaklar bitişik
+  arka: { legs: [[-3, 2], [5, 4]], arms: [[-16, -22], [-18, -20]] },
 }
 
 /** taban duruşun üst gövde eğimi (- geriye: kalça önde, omuz geride) ve başın öne eğilmesi */
-const TILT: Record<string, number> = { rahat: -0.05, bel: -0.03, cep: -0.03, bagli: 0.015, cene: 0.03 }
-const HEAD: Record<string, number> = { rahat: 0.05, bel: 0.03, cep: 0.045, bagli: 0.02, cene: -0.05 }
+const TILT: Record<string, number> = { rahat: -0.05, bel: -0.03, cep: -0.03, bagli: 0.015, cene: 0.03, arka: -0.04 }
+const HEAD: Record<string, number> = { rahat: 0.05, bel: 0.03, cep: 0.045, bagli: 0.02, cene: -0.05, arka: -0.02 }
 
 /** hareketlerin süresi (sn) ve ardışık hareketler arasındaki boşluk */
-const DUR: Record<IdleMove, number> = { bak: 3.4, tik: 3.2, esne: 3.4, sal: 1.9, sek: 2.4 }
+const DUR: Record<IdleMove, number> = { bak: 3.4, tik: 3.2, esne: 3.4, sal: 1.9, sek: 2.4, sallan: 3.2 }
 const SLOT = 6.6
 /** hareketsiz kaldıktan bu kadar sonra ilk hareket */
 const FIRST = 3
@@ -139,6 +141,20 @@ export function idlePose(out: Pose, stance: string | undefined, idleT: number, t
       out.arms[1][1] = lerp(out.arms[1][1], 70, env)
       out.hair = 0.1 + 0.5 * hop * env
       out.lift = -0.4 * hop * env
+      if (env > 0.3) out.mood = 'happy'
+      break
+    }
+    case 'sallan': {
+      // topuk-parmak sallanma: üç kez parmak ucuna kalkar, topuğa döner; gövde ileri geri salınır, yüz güler
+      const rock = Math.sin(PI2 * 3 * u) * env
+      const toe = Math.max(0, rock)
+      feet[0] = 26 * toe
+      feet[1] = 26 * toe
+      out.bob = -2.4 * toe
+      out.tilt += 0.035 * rock
+      out.lean = 0.5 * rock
+      out.head = HEAD.arka - 0.03 * rock
+      out.hair = 0.1 + 0.25 * toe
       if (env > 0.3) out.mood = 'happy'
       break
     }
