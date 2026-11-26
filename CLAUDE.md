@@ -600,6 +600,10 @@ Oyun her tazeleme hızında (60, 90, 120, 144, 240 Hz) ve her çözünürlükte 
   yay `spring()` (kapalı biçim: inişte, basamakta kadraj hızı sıçramaz, hedefi aşmaz; 25 Kasım 2026), sarsıntı `shakeOffset(t)`
   (zamanla dalgalanır, üstel söner, olaylarda `CAM.shakeGain` ile kısık: düşük kortizol). Kare başına `Math.random()` ile titreme ya da `Math.random() < p` ile olasılık yazma: yüksek Hz'de
   daha çok titrer, daha çok parçacık yağar. Olasılık için `this.chance(p)` (60 Hz karşılığı, saniyede aynı sıklık).
+- **Kare temposu ve göz yorgunluğu (26 Kasım 2026).** Yüksek Hz ekranda (≥90 Hz) kareler düzensizse çizim sabit yarı hıza iner
+  (`Game.tsx` kare temposu kilidi; fizik etkilenmez). Tam ekran beyaz parıltı en çok %4, sarsıntı varsayılan kapalı, ön plan dünyadan
+  hızlı kaymaz (`atmosphere.ts` `FORE_PAR`), koşu sekmesi boyun ~%6'sı (`heroDraw.ts` `RUN`), dash izi atkı renginde siluet.
+  Kalite kademesi yazılımla boyayan tarayıcıyı WebGL'den tanır (`probeTier`), GPU'lu cihaz zengin kademede başlar.
 - **Kare içinde ağır iş yok.** 120 Hz'de bütün kare 8 ms'dir. Pahalı çizim (zemin) önceden, küçük parçalar hâlinde ve
   süre bütçesiyle yapılır (`terrainDraw.ts` WARM_MS). Yeni önbellekli çizim eklersen aynı yolu izle.
 - **Hareketli her şey ara değerlenir** (`capture()` / `blend()`), yoksa yüksek Hz'de titrer.

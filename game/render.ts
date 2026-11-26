@@ -794,7 +794,8 @@ export class Renderer {
 
     if (this.flash > 0) {
       // parıltı birden sönmez, kısa sürede solar (art arda dash'te göz kırpması gibi yanıp sönmesin)
-      f.fillStyle = `rgba(255,255,255,${Math.min(0.12, this.flash * 1.2).toFixed(3)})`
+      // 26 Kasım 2026: çok kısık (en çok %4): yanıp sönen tam ekran ışık göz yoruyordu
+      f.fillStyle = `rgba(255,255,255,${Math.min(0.04, this.flash * 0.4).toFixed(3)})`
       this.flash -= dt
       f.fillRect(0, 0, this.viewW, this.viewH)
     }
@@ -4928,6 +4929,14 @@ export class Renderer {
     const snap = !!h.snap
     drawHero(g, h.look, h.pose, W / 2, oy, px, h.flip, this.t, { moving: h.moving, sx: (snap ? 1 : h.sx) * HERO_WIDE, sy: snap ? 1 : h.sy, scarf: h.scarf, scarfS: h.scarfS, acc: h.acc, flow: h.flow })
     g.restore()
+    if (snap) {
+      // dash izi: karakterin tam kopyası değil, atkı renginde yarı saydam siluet (oyunlardaki gibi; tam kopyalar art arda
+      // titreşen çift görüntü gibi duruyordu). Bir kez, iz doğarken boyanır
+      g.globalCompositeOperation = 'source-atop'
+      g.fillStyle = hexA(this.scarf?.color ?? LOOKS[this.character.id].scarf, 0.72)
+      g.fillRect(0, 0, W, H)
+      g.globalCompositeOperation = 'source-over'
+    }
     return oy
   }
 
@@ -5352,7 +5361,7 @@ export class Renderer {
       if (Math.hypot(p.x - g.x, p.y - g.y) < GHOST_GAP * 0.6) continue
       // iz eskidikçe hem solar hem incelir: hız hissi kuyruğa doğru sivrilir
       const k = g.life / GHOST_LIFE
-      this.heroes.push({ look, pose: g.pose, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.42 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory, rot: g.rot, pivot: DASH_PIVOT, flow: 1.4, snap: g })
+      this.heroes.push({ look, pose: g.pose, x: g.x + p.w / 2, y: g.y + p.h, flip: g.flip, alpha: 0.38 * k * k, ghost: false, moving: true, sx: 0.9 + 0.2 * k, sy: 0.82 + 0.14 * k, acc: this.accessory, rot: g.rot, pivot: DASH_PIVOT, flow: 1.4, snap: g })
     }
     // hız çizgileri: dash boyunca gövdenin arkasında kısa, parlak çizgiler (mesafeye göre; kare hızından bağımsız)
     if (p.dashTime > 0 && !p.dead) {

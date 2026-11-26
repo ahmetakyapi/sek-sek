@@ -2645,11 +2645,11 @@ const WALK: Cycle = {
   front: 0.46,
   step: [
     // topuk önde yere değer, iki ayak da yerde: bacaklar açık olduğu için kalça biraz alçak
-    { name: 'contact', t: 0, d: -2.4, tilt: 0.03 },
+    { name: 'contact', t: 0, d: -2, tilt: 0.03 },
     // yükü alır: diz yumuşar, gövde çöker (kısa ve sert gelir)
-    { name: 'down', t: 0.16, d: -3.8, tilt: 0.05 },
+    { name: 'down', t: 0.16, d: -3, tilt: 0.05 },
     // yerdeki bacak dikey, öbürü dizden bükük geçer
-    { name: 'passing', t: 0.44, d: -0.9, tilt: 0.03 },
+    { name: 'passing', t: 0.44, d: -0.8, tilt: 0.03 },
     // arka ayak parmak ucunda iter, gövde en yüksekte
     { name: 'up', t: 0.72, d: -0.2, tilt: 0.022 },
   ],
@@ -2679,18 +2679,20 @@ const WALK: Cycle = {
   ],
 }
 
+// kalça iniş çıkışı boyun ~%6'sı, yürümede ~%4'ü (26 Kasım 2026; ~%9 iken koşarken karakter zıplıyor, ekran sallanıyor
+// gibi görünüyordu: oyunlarda koşu sekmesi küçüktür)
 const RUN: Cycle = {
   stance: 0.34,
   front: 0.42,
   step: [
     // ayak gövdenin biraz önünde, tabana yakın basar
-    { name: 'contact', t: 0, d: -5.2, tilt: 0.15 },
+    { name: 'contact', t: 0, d: -4, tilt: 0.15 },
     // yük: diz derin bükülür, gövde en alçakta ve biraz daha eğik (kısa, ağır)
-    { name: 'down', t: 0.14, d: -8, tilt: 0.19 },
+    { name: 'down', t: 0.14, d: -5.6, tilt: 0.18 },
     // arka bacak dümdüz uzanır, parmak ucu iter, gövde yükselir
-    { name: 'push-off', t: 0.62, d: -2.4, tilt: 0.15 },
+    { name: 'push-off', t: 0.62, d: -2, tilt: 0.15 },
     // iki ayak havada, en yüksek an; ön diz yukarı sürülür
-    { name: 'flight', t: 0.84, d: 0.8, tilt: 0.13 },
+    { name: 'flight', t: 0.84, d: 0.3, tilt: 0.14 },
   ],
   foot: [
     { name: 'strike', v: 0, a: -7 },

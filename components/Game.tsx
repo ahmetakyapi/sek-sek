@@ -488,8 +488,27 @@ export default function Game() {
     let acc = 0
     let hudTimer = 0
     let respawned = false
+    // kare temposu kilidi (26 Kasım 2026): yüksek tazeleme hızlı ekranda (≥90 Hz) çizim her kareye yetişemiyorsa
+    // kareler 8 ve 16 ms arasında gidip gelir, hareket doğru hesaplansa da göz takılma görür. İki saniyede bir bakılır:
+    // kare aralığının ortancası 11 ms'den kısa ve karelerin %8'inden fazlası ortancanın 1,5 katını aşıyorsa çizim
+    // sabit yarı hıza (120 Hz'de 60) iner; fizik etkilenmez (dt toplanır). Sayfa boyunca kalır
+    const gaps: number[] = []
+    let lastRaf = 0
+    let half = false
+    let flip = 0
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
+      if (!half && lastRaf) {
+        gaps.push(now - lastRaf)
+        if (gaps.length >= 240) {
+          const med = [...gaps].sort((a, b) => a - b)[gaps.length >> 1]
+          const late = gaps.filter((g) => g > med * 1.5).length / gaps.length
+          if (med < 11 && late > 0.08) half = true
+          gaps.length = 0
+        }
+      }
+      lastRaf = now
+      if (half && ++flip % 2) return
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000))
       last = now
       const w = worldRef.current
