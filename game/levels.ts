@@ -32,6 +32,8 @@ import { road as bingolRoad } from './cities/bingol'
 import { road as adiyamanRoad } from './cities/adiyaman'
 import { road as kastamonuRoad } from './cities/kastamonu'
 import { road as karabukRoad } from './cities/karabuk'
+import { road as kutahyaRoad } from './cities/kutahya'
+import { road as samsunRoad } from './cities/samsun'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { medalsFor } from './medals'
@@ -1132,6 +1134,8 @@ const DECOR_CYCLE: Record<string, string> = {
   bingol: 'ztl',
   adiyaman: 'tzl',
   kastamonu: 'lzt',
+  kutahya: 'tzl',
+  samsun: 'lzt',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2644,6 +2648,74 @@ export const LEVELS: LevelDef[] = [
       'Horma Kanyonu: ahşap yol şelalelerin arasından geçer. Şelaleye girmeden tahtadan tahtaya atla.',
     ],
     map: roadMap(kastamonuRoad),
+  },
+  {
+    id: 'kutahya',
+    city: 'kutahya',
+    name: 'Kütahya',
+    nickname: 'Kotyaion',
+    plate: 43,
+    subtitle: 'Çini, Kale ve Zeus’un Sütunları',
+    difficulty: 'Orta',
+    note: 'Defterin bu sayfasına bir damla kobalt mavisi sır damlamış, kurumuş, parlıyor. Kütahya’da çini fırınları yüzyıllardır yanar; sıcak havası insanı yukarı iter. Bu yolda fırının nefesine güven: içine gir, seni taşır, tepede yana atla.',
+    npcs: [
+      { name: 'Çinici Hikmet Usta', look: 'usta', text: 'Çiniyi önce fırçayla boyarım, sonra fırın pişirir; lale de karanfil de ateşten sonra açar! Üç tabağım kayboldu: biri kalenin büyük burcunun tepesinde, biri çini fırınlarının en büyük bacasının üstünde, biri de Aizanoi’nin en uzun sütununun başında kaldı.' },
+      { name: 'Çaycı Bedia Teyze', look: 'teyze', text: 'Kaleye çıkan yokuşta çay demlerim, Germiyan beyleri de bu yokuştan çıkarmış! Kalenin burçları diktir: duvara atla, öbür duvara sek, yukarı tırman. Dikenli hendekte mazgal ile burç arasında bir kez sekmen yeter.' },
+      { name: 'Seramik Öğrencisi Ilgın', look: 'genc', text: 'Fırının sıcak havası seni yukarı taşır, tepesinde asılı kalırsın; yana atlayınca inersin. Büyük bacadan inince ben hep arkama dönerim: fırın odasının yüzünde karanlık bir ağız var, biri içine bir pul bırakmış.' },
+      { name: 'Kazı Bekçisi Fevzi Amca', look: 'amca', text: 'Aizanoi’nin Zeus Tapınağı iki bin yıla yakın ayakta, altında tonozlu bir mahzen var! Avlunun dikenleri arasında devrik sütunların başından atla. Mahzenin ağzını bir sütun parçası tıkamış: it, çukura düşür, üstünden geç. Meydan kapısı tapınağın öbür yanında.' },
+    ],
+    medals: [150, 210, 290],
+    quips: ['Fırın seni pişirdi.', 'Burçtan hendeğe indin.', 'Çini çatladı.', 'Zeus kaşlarını çattı.'],
+    item: 'Çini Tabak',
+    intro: 'Germiyan Sokağı’nın konaklarından Kütahya Kalesi’nin burçlarına, çini fırınlarının sıcak havasından Aizanoi’deki Zeus Tapınağı’na. Fırının nefesine gir, seni yukarı taşır; tepede yana atla.',
+    facts: [
+      { title: 'Kütahya Çinisi', text: 'Kütahya, İznik ile birlikte Osmanlı çiniciliğinin iki büyük merkezinden biridir. Çini atölyeleri bugün de çalışır; lale, karanfil ve hatayi desenleri kobalt mavisi ve turkuazla boyanıp fırında pişirilir.' },
+      { title: 'Aizanoi', text: 'Çavdarhisar’daki Aizanoi antik kentinin Zeus Tapınağı, MS 2. yüzyılda yapıldı ve Anadolu’nun en iyi korunmuş tapınaklarından biridir. Tapınağın altında tonozlu bir mahzen bulunur.' },
+      { title: 'Germiyanoğulları', text: 'Kütahya, 14. yüzyılda Germiyanoğulları Beyliği’nin başkentiydi. Şehrin üstündeki kale Bizans döneminde kuruldu, Germiyan ve Osmanlı döneminde onarıldı; Germiyan Sokağı’nda eski Kütahya konakları sıralanır.' },
+    ],
+    secret: { title: 'Taştaki Fiyat Listesi', text: 'Aizanoi’deki yuvarlak çarşı binasının duvarına, İmparator Diocletianus’un MS 301’de çıkardığı azami fiyat fermanı kazınmıştır. Bu yüzden bina “dünyanın ilk borsası” diye anılır.' },
+    hints: [
+      'Kütahya’ya hoş geldin! Germiyan Sokağı’ndan geç; tezgâhların üstünden atla, konağın avlusuna basamak basamak çık.',
+      'Kütahya Kalesi: burçlar dik. Duvardan duvara sekerek yukarı tırman; dikenli hendekte mazgaldan burca bir kez sek.',
+      'Çini fırınları: sıcak hava seni yukarı taşır, tepesinde asılı kalırsın. Yana atla, bacadan sıcak havaya geç.',
+      'Aizanoi, Zeus Tapınağı: avluda dikenler var. Devrik sütunların başından başına atla, en uzun sütuna basamaktan çık.',
+      'Tapınağın mahzeni: devrik sütun parçasını yürüyerek it, çukura düşür, üstünden geç. Mahzenin ağzındaki de aynı.',
+    ],
+    map: roadMap(kutahyaRoad),
+  },
+  {
+    id: 'samsun',
+    city: 'samsun',
+    name: 'Samsun',
+    nickname: 'Amisos',
+    plate: 55,
+    subtitle: 'Vapur, Teleferik ve Delta',
+    difficulty: 'Zor',
+    note: 'Defterin bu sayfasında tuzlu bir lekenin yanında eski bir vapur bileti duruyor. Samsun’da yol 19 Mayıs’ın vapurundan başlar, Karadeniz’e iner, teleferikle tepeye çıkar, Bafra’nın sazlıklarında biter. Bu yolda su seni korkutmasın: deniz yüzdürür, yeter ki dalınca nefesini say.',
+    npcs: [
+      { name: 'Pideci Recai Usta', look: 'usta', text: 'Bafra pidesini taş fırında ince ve kayık gibi uzun açarım, içine kıyma, üstüne tereyağı! Üç pide kayboldu: biri Bandırma Vapuru’nun gözcü yerinde, biri Amisos Tepesi’ndeki tümülüsün başında, biri de deltadaki kuş gözetleme kulesinin tepesinde.' },
+      { name: 'Çaycı Nebahat Teyze', look: 'teyze', text: 'Atakum’da sahilde çay demlerim, karşımda koca Karadeniz! Denize düşen boğulmaz, yüzer: zıpla, kulaç at, taşa çık. Mendirekte fenerle duvarın arası dardır; duvardan duvara sekerek tepesine varırsın.' },
+      { name: 'Teleferikçi Duru', look: 'genc', text: 'Teleferik sahilden Amisos Tepesi’ne çıkar, bütün şehir ayağının altında kalır. Tümülüsün üstünden geçince dönüp arkasına bak: toprağın içinde karanlık bir ağız var, biri oraya bir pul bırakmış.' },
+      { name: 'Kuşçu Tevfik Amca', look: 'amca', text: 'Deltada üç yüzden fazla kuş türü sayılır, ben her sabah dürbünümle sayarım! Taş setin ve sazlığın altından dalarak geçilir, uzun dalışta oyalanma. Kulenin tepesinden ovaya atla; meydan kapısı ovanın ucunda.' },
+    ],
+    medals: [180, 245, 330],
+    quips: ['Liman suyu seni yuttu.', 'Midye kayalığı battı.', 'Teleferikten erken bıraktın.', 'Bafra pidesi bekler, acele etme.'],
+    item: 'Bafra Pidesi',
+    intro: 'Bandırma Vapuru’nun güvertesinden Atakum’un mendireğine, Amisos Tepesi’nin teleferiğinden Kızılırmak Deltası’nın sazlıklarına. Halata tutun, yüzerek geç, dalınca nefesini say.',
+    facts: [
+      { title: 'Bandırma Vapuru', text: 'Mustafa Kemal ve arkadaşları 19 Mayıs 1919’da Bandırma Vapuru’yla Samsun’a çıktı; bu gün Kurtuluş Savaşı’nın başlangıcı sayılır. Vapurun bir benzeri bugün Doğu Park’ta müze gemi olarak durur.' },
+      { title: 'Amisos Tepesi', text: 'Samsun’un antik adı Amisos’tur. Sahilden teleferikle çıkılan Amisos Tepesi’nde Helenistik dönemden kalma tümülüsler, yani toprakla örtülü mezar tepeleri vardır.' },
+      { title: 'Kızılırmak Deltası', text: 'Bafra’daki Kızılırmak Deltası, Karadeniz kıyısının en büyük sulak alanlarından biridir. Yüzlerce kuş türü sazlıklarında konaklar, manda sürüleri lagünlerin kıyısında otlar.' },
+    ],
+    secret: { title: 'Amisos Hazinesi', text: '1990’larda Samsun’da bir tümülüsün içinde altın takılar bulundu. “Amisos Hazinesi” adıyla bilinen bu takılar bugün Samsun Müzesi’nde sergilenir.' },
+    hints: [
+      'Samsun’a hoş geldin! İskeleden Bandırma Vapuru’na çık. Direkten sarkan halata zıpla, tırman, gözcü yerine atla.',
+      'Atakum sahili: denize düşen yüzer, zıplayınca kulaç atar. Mendirekte fenerle duvar arasında duvardan duvara sek; dikenli kayalığın üstünden dash at.',
+      'Amisos teleferiği: telin altından zıpla, asıl, ileri git. Ara direğin üstünde bırak, yüksek tele yeniden zıpla.',
+      'Kızılırmak Deltası: taş setin ve sazlığın altından dalarak geç. Su altında nefesin azalır; uzun dalıştan önce yüzeyde soluklan.',
+      'Kuş gözetleme kulesi: tahtadan tahtaya çık. Tepeden ovaya uzun atlayış: koşarak zıpla, havada dash at; altta diken var.',
+    ],
+    map: roadMap(samsunRoad),
   },
 ]
 

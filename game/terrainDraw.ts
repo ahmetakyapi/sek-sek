@@ -28,8 +28,8 @@ const VAHEAD = 2
 const BELOW = 16
 
 type Material = 'brick' | 'ashlar' | 'cyclop' | 'strata' | 'earth' | 'rock' | 'coal' | 'quadratum'
-/** merlon: taş silmenin altında mazgallı burç dişleri (yürünen yüz düz kalır, salt görünüş) */
-type Cap = 'stone' | 'grass' | 'snow' | 'merlon'
+/** merlon: taş silmenin altında mazgallı burç dişleri; cini: taş silmenin altında çini şerit (yürünen yüz düz kalır, salt görünüş) */
+type Cap = 'stone' | 'grass' | 'snow' | 'merlon' | 'cini'
 /** zeminin renkleri (şehir paletinin zemin alanları; bölgesel görünüş kendi paletini taşır) */
 type Pal = { tile: string; tileLight: string; tileDark: string; tileTop: string }
 type Look = { mat: Material; cap: Cap }
@@ -90,6 +90,10 @@ const LOOK: Record<CityKey, Look> = {
   // Kastamonu Kalesi: iri, düzensiz kale taşı örgüsü, üstü Ilgaz ormanının çimeni
   kastamonu: { mat: 'cyclop', cap: 'grass' },
   bayburt: { mat: 'rock', cap: 'snow' },
+  // Kütahya: bal beji kesme taş, taş silmenin altında firuze-kobalt çini şerit (lale benekli)
+  kutahya: { mat: 'ashlar', cap: 'cini' },
+  // Samsun limanı: ıslak, serin gri kesme liman taşı, üstü taş silme
+  samsun: { mat: 'ashlar', cap: 'stone' },
 }
 
 /**
@@ -762,7 +766,7 @@ export class TerrainHD {
       // yüzeyin yaşanmışlığı: örtünün altından sarkan yosun, kök, akıntı izi, liken, çatlağa dolmuş kar
       for (const inside of this.zone ? [false, true] : [false]) {
       const lk = this.lookAt(inside)
-      const cap = lk.cap === 'merlon' ? 'stone' : lk.cap
+      const cap = lk.cap === 'merlon' || lk.cap === 'cini' ? 'stone' : lk.cap
       const patch = new Path2D()
       const fleck = new Path2D()
       const line = new Path2D()
@@ -1409,6 +1413,10 @@ export class TerrainHD {
       this.merlons(c, x0, x1, y, s)
       cap = 'stone'
     }
+    if (cap === 'cini') {
+      this.cini(c, x0, x1, y)
+      cap = 'stone'
+    }
     const color = cap === 'snow' ? '#eef5fc' : s.tileTop
     // örtünün kalınlığı (x'e göre): taşta düz; çimende yuvarlak öbekler, yer yer sarkan tutam; karda yumuşak, iri sarkmalar
     const thick = (x: number): number => {
@@ -1639,6 +1647,51 @@ export class TerrainHD {
    * Burç dişleri: taş silmenin hemen altında, mutlak kafese oturan sıra; dişler (açık, sol kenarı ışıklı) ve aralarındaki
    * mazgallar (koyu oyuk, içinde sağ yanı ışık alan tek kademe). Yürünen yüz düzdür: çizim örtünün altında kalır.
    */
+  /**
+   * Kütahya çinisi: taş silmenin hemen altında kare çini şeridi. Beyaz sır zemin, kobalt ve firuze sırayla, ortada kırmızı
+   * lale beneği; sol üst köşede sır parıltısı. Kareler mutlak kafeste: koşu hangi hücrede kesilirse kesilsin aynı.
+   */
+  private cini(c: Ctx, x0: number, x1: number, y: number) {
+    const P = 6
+    const top = y + 3.2
+    const h = 5.6
+    const a = x0 + 1.5
+    const b = x1 - 1.5
+    if (b - a < 3) return
+    c.fillStyle = '#f2ede0'
+    c.fillRect(a, top, b - a, h)
+    const cob = new Path2D()
+    const tur = new Path2D()
+    const dot = new Path2D()
+    const glint = new Path2D()
+    for (let k = Math.floor(a / P); k * P < b; k++) {
+      const ka = Math.max(a, k * P + 0.7)
+      const kb = Math.min(b, k * P + P - 0.7)
+      if (kb - ka < 1.2) continue
+      ;(k % 2 ? cob : tur).rect(ka, top + 0.7, kb - ka, h - 1.4)
+      const cx = k * P + P / 2
+      if (cx > a + 1 && cx < b - 1) {
+        dot.ellipse(cx, top + h / 2, 1, 1.25, 0, 0, Math.PI * 2)
+        glint.rect(ka + 0.4, top + 1, 1, 0.7)
+      }
+    }
+    c.fillStyle = '#2f6fb4'
+    c.fill(cob)
+    c.fillStyle = '#3aa6b4'
+    c.fill(tur)
+    c.fillStyle = '#d4462e'
+    c.fill(dot)
+    c.fillStyle = 'rgba(255,255,255,0.7)'
+    c.fill(glint)
+    // şeridin altında ince koyu derz: taşa oturmuş dursun
+    c.strokeStyle = 'rgba(40,26,30,0.35)'
+    c.lineWidth = 0.6
+    c.beginPath()
+    c.moveTo(a, top + h + 0.3)
+    c.lineTo(b, top + h + 0.3)
+    c.stroke()
+  }
+
   private merlons(c: Ctx, x0: number, x1: number, y: number, s: Pal) {
     const P = 16
     const hole = new Path2D()

@@ -1535,7 +1535,10 @@ export class World {
     } else {
       // yatay kontrol. Rüzgâr hedef hızı kaydırır (hıza eklenen ivme, hedefe kırpılınca siliniyordu): havada her zaman,
       // yerde yalnız yürürken; dururken itmez ki dar taşta kaydırmasın. Esinti güçlüyken atlayış belirgin uzar ya da kısalır
+      const wasSwim = p.swim
       p.swim = this.tile(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === SWIM
+      // suya dalış: yalnız çizim ve ses için (yüzeyde halka, yumuşak "blop"); fiziği değiştirmez
+      if (p.swim && !wasSwim && p.vy > 30) this.events.push({ type: 'dip', x: p.x + p.w / 2, y: p.y + p.h / 2 })
       // yükselen hava: gövdenin ortası termalde ve aşağı basılmıyorsa (aşağı basan termalden süzülüp iner)
       p.lift = this.hasLift && !p.swim && iy <= 0 && this.raw(Math.floor((p.x + p.w / 2) / T), Math.floor((p.y + p.h / 2) / T)) === LIFT
       // şelale: gövdenin ortası şelalede (suda değilken); girişte bir kez su sıçrar

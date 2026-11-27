@@ -13,6 +13,8 @@ import { FAMILIES, FAMILY_ORDER, Heat, RULE_ART, RuleIcon, byHeat, rulePerks } f
 import { type CharacterId } from '@/game/characters'
 import { ALL_CHALLENGES, CHALLENGES, MASTER_COURSES, RAGE_COURSES, challengeLevel } from '@/game/challenges'
 import { useLastWinner } from '@/components/Tournament'
+import { CarkGlyph } from '@/components/Cark'
+import { QuizGlyph } from '@/components/Quiz'
 import { BOSSES } from '@/game/boss'
 import { LEVELS } from '@/game/levels'
 import type { LevelDef } from '@/game/types'
@@ -95,6 +97,10 @@ export function ModesHub({
   tourBest,
   aynaTourBest,
   citiesDone,
+  onCark,
+  cark,
+  onQuiz,
+  quiz,
   onBack,
 }: {
   daily: DailyRun
@@ -158,6 +164,12 @@ export function ModesHub({
   aynaTourBest: { timeMs: number } | null
   /** rekoru olan şehir sayısı (Sana Önerilen için) */
   citiesDone: number
+  onCark: () => void
+  /** Çarkıfelek: bugün kalan ödüllü çevirme ve seri */
+  cark: { left: number; streak: number }
+  onQuiz: () => void
+  /** Defter Bilmecesi: açık mı (en az dört şehir), bitirilen şehir sayısı, en iyi skor */
+  quiz: { open: boolean; cities: number; need: number; best: number | null }
   onBack: () => void
 }) {
   const winner = useLastWinner(today)
@@ -224,11 +236,13 @@ export function ModesHub({
     marathon: marathonOpen,
     chase: chaseCities > 0,
     rage: rulesOpen,
+    cark: rulesOpen,
     duel: true,
     coop: true,
     gezgin: true,
     calm: true,
     story: true,
+    quiz: quiz.open,
     editor: true,
     community: true,
   }
@@ -252,11 +266,13 @@ export function ModesHub({
     marathon: go('marathon', onMarathon),
     chase: go('chase', onChase),
     rage: go('rage', onRage),
+    cark: onCark,
     duel: go('duel', onDuel),
     coop: go('coop', onCoop),
     gezgin: onGezgin,
     calm: onCalm,
     story: onStory,
+    quiz: onQuiz,
     editor: () => (window.location.href = '/duzenle'),
     community: () => (window.location.href = '/haritalar'),
   }
@@ -320,11 +336,13 @@ export function ModesHub({
     marathon: t('Rastgele üç şehri tek nefeste koş.'),
     chase: t('Kangal izini sürer: yakalanmadan bitir.'),
     rage: t('Kaygan, karanlık, ters tuşlar: zorlu kurallar.'),
+    cark: t('Çark şehri ve kuralı seçer; bitir, parça kazan.'),
     duel: t('İki oyuncu aynı yolda yarışır, yan yana ya da sırayla.'),
     coop: t('İki yolcu tek klavyede birlikte ilerler.'),
     gezgin: t('Tohumdan çıkan kesitleri koş, toplamını yaz.'),
     calm: t('Süresiz, düşüşsüz gez; fotoğraf çek.'),
     story: t('Şehir insanlarıyla konuş, cevap ver, tanış.'),
+    quiz: t('Gezdiğin şehirlerden on soruluk bilgi yarışması.'),
     editor: t('Kendi bölümünü ve boss’unu çiz, paylaş.'),
     community: t('Başka yolcuların çizdiği yolları oyna ve beğen.'),
   }
@@ -600,7 +618,7 @@ export function ModesHub({
                 )}
               </TileGroup>
             ) : null}
-            {vis('rush') || vis('marathon') || vis('chase') || vis('rage') ? (
+            {vis('rush') || vis('marathon') || vis('chase') || vis('rage') || vis('cark') ? (
               <TileGroup label={t('Meydan Okuma')} glyph="▲" tone="var(--color-coral)" className="wide:col-span-2 lg:wide:col-span-4" cols="wide:grid-cols-2 lg:wide:grid-cols-4">
                 {vis('rush') && (
                   <ModeTile
@@ -689,6 +707,18 @@ export function ModesHub({
                     }
                   />
                 )}
+                {vis('cark') && (
+                  <ModeTile
+                    id="cark"
+                    tone="var(--color-coral)"
+                    title={t('Çarkıfelek')}
+                    desc={tileDesc.cark}
+                    status={!rulesOpen ? t('Bir şehri bitirince açılır') : cark.left ? `${t('{n} ödüllü çevirme', { n: cark.left })}${cark.streak ? ` · 🔥 ${cark.streak}` : ''}` : `${t('Bugün serbest')}${cark.streak ? ` · 🔥 ${cark.streak}` : ''}`}
+                    locked={!rulesOpen}
+                    onClick={() => activate('cark')}
+                    art={<CarkGlyph className={`h-[44px] w-[44px] ${rulesOpen ? '' : 'opacity-40 grayscale'}`} />}
+                  />
+                )}
               </TileGroup>
             ) : null}
             {vis('duel') || vis('coop') ? (
@@ -754,7 +784,7 @@ export function ModesHub({
                 )}
               </TileGroup>
             ) : null}
-            {vis('gezgin') || vis('calm') || vis('story') ? (
+            {vis('gezgin') || vis('calm') || vis('story') || vis('quiz') ? (
               <TileGroup label={t('Keşfet ve Dinlen')} glyph="☾" tone="var(--color-accent-2)" className="wide:col-span-2 lg:wide:col-span-4" cols="wide:grid-cols-2 lg:wide:grid-cols-4">
                 {vis('gezgin') && (
                   <ModeTile
@@ -787,6 +817,18 @@ export function ModesHub({
                     status={storyMet > 0 ? t('{n} kişiyle tanıştın', { n: storyMet }) : t('Süre yok, tanış')}
                     onClick={() => activate('story')}
                     art={<span className="font-display text-[30px] leading-none text-teal">❝</span>}
+                  />
+                )}
+                {vis('quiz') && (
+                  <ModeTile
+                    id="quiz"
+                    tone="var(--color-accent-2)"
+                    title={t('Defter Bilmecesi')}
+                    desc={tileDesc.quiz}
+                    status={!quiz.open ? t('{k}/{n} şehir bitir, açılsın', { k: quiz.cities, n: quiz.need }) : quiz.best !== null ? t('En iyi {n} puan', { n: quiz.best }) : t('On soru, dört şık')}
+                    locked={!quiz.open}
+                    onClick={() => activate('quiz')}
+                    art={<QuizGlyph className={`h-[40px] w-[48px] ${quiz.open ? '' : 'opacity-40 grayscale'}`} />}
                   />
                 )}
               </TileGroup>
@@ -967,10 +1009,12 @@ export interface DailyResult {
   free?: boolean
   /** kaçıncı denemede bitti (Tek Can, Zamana Karşı) */
   tries?: number
+  /** Çarkıfelek'in koşusu: kazanılan parça (ödülsüz çevirmede 0) ve seri */
+  cark?: { coins: number; streak: number }
 }
 
 /** Günlük bitiş: skorun nasıl hesaplandığı satır satır, günlük sıralama ve yeniden deneme */
-export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLogin }: { result: DailyResult; player: string; status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null; /** yalnız serbest Kurallı Koşu'da: günlükte tek hak */ onRetry?: () => void; onModes: () => void; onLogin: () => void }) {
+export function DailyEnd({ result, player, status, rank, onRetry, retryLabel, onModes, onLogin }: { result: DailyResult; player: string; status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null; /** yalnız serbest Kurallı Koşu'da: günlükte tek hak */ onRetry?: () => void; /** yeniden deneme düğmesinin yazısı (Çarkıfelek: çarka dön) */ retryLabel?: string; onModes: () => void; onLogin: () => void }) {
   const t = useT()
   const lng = useLang()
   const rule = DAILY_RULES[result.run.rule]
@@ -1002,8 +1046,13 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
             <span style={{ color: fam.color }}>
               <RuleIcon rule={result.run.rule} size={16} />
             </span>
-            {result.free ? t('Kurallı Koşu') : t('Günlük Meydan Okuma')} · <span className="text-cream">{t(rule.name)}</span>
+            {result.cark ? t('Çarkıfelek') : result.free ? t('Kurallı Koşu') : t('Günlük Meydan Okuma')} · <span className="text-cream">{t(rule.name)}</span>
           </p>
+          {result.cark && (
+            <p className="count-pop mt-2 inline-block border-2 border-gold/60 bg-gold/10 px-2.5 py-1 text-[14px] font-bold text-gold">
+              {result.cark.coins ? t('Çark: +{n} parça', { n: result.cark.coins }) : t('Ödülsüz çevirme')} · 🔥 {result.cark.streak}
+            </p>
+          )}
           {/* skor: büyük; altında nasıl hesaplandığı satır satır */}
           <div className="mt-4 border-2 border-line bg-ink/40 px-4 py-3 tabular-nums short:mt-2 short:py-2">
             <p className="flex items-baseline justify-between gap-3">
@@ -1047,7 +1096,7 @@ export function DailyEnd({ result, player, status, rank, onRetry, onModes, onLog
           <div className={`mt-4 grid gap-2.5 short:mt-2 ${onRetry ? 'grid-cols-2' : 'grid-cols-[minmax(0,1fr)_auto]'}`}>
             {onRetry ? (
               <button className="pixel-btn primary justify-center whitespace-nowrap short:py-2" onClick={onRetry} autoFocus>
-                {ic(t('↺ Yeniden Dene'))}
+                {ic(retryLabel ?? t('↺ Yeniden Dene'))}
               </button>
             ) : (
               <p className="flex items-center text-[13px] leading-snug text-muted">{t('Bugünkü hakkın bu. Yarın yeni bir şehir.')}</p>

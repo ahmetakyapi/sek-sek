@@ -35,6 +35,11 @@ paths:
   önce `node scripts/verify-perf.cjs` ile ölç (üretim derlemesinde).
 - Yeni piksel sprite ekleme: karakter, insan, boss, zemin, düşman, dost hayvan ve toplananlar vektördür
   (`heroDraw`, `bossDraw`, `terrainDraw`, `enemyDraw`). Piksel kalan yalnız arka plan katmanları ve sokak süsleridir.
+- Kısa ömürlü his efektleri `render.ts` `Fx` listesindedir (27 Kasım 2026): sert inişte yana açılan toz bulutu, bayrak
+  göndere çekilince ılık ışık halkası, suya dalışta yüzeyde halka (sim'in `dip` olayı, yalnız çizim + ses), karlı şehirde ayak
+  izi, hatıra / pul / nazar alınınca HUD'a (hatıra simgesi `data-hud-items`) ya da "bulundu" kartına uçan pırıltı. Hepsi
+  renderer saatine bağlı (`at` + `life`), ana tuvalde vektör, en çok `FX_MAX`; "hareketi azalt" açıkken pırıltı uçmaz.
+  Yeni kısa efekt eklerken `particles` yerine buraya ekle.
 - Düşman kırmızı haleyle çizilir (iki geçiş: önce kalın kırmızı hat), dost hayvanda hale yoktur; ikisi karışmasın.
 
 - Portreler vesikalık kadrajındadır: yakın yüz çekimi, baş tam, omuzların yalnız üstü, sade fon; oyundaki karakterle aynı kişi,

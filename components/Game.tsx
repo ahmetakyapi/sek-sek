@@ -22,6 +22,11 @@ import { DNF, DailyEnd, DuelEnd, DuelSetup, DuelTurn, ModesHub, RuleSetup, duelL
 import { ChallengeEnd, ChallengeList, type ChallengeResult } from '@/components/Challenges'
 import { TournamentHub } from '@/components/Tournament'
 import { CalmSetup, GezginHub } from '@/components/FunModes'
+import { CarkScreen } from '@/components/Cark'
+import { QuizScreen } from '@/components/Quiz'
+import { RULE_ART } from '@/components/RuleArt'
+import { carkCities, carkCoins, carkLeft, spinMark, winMark } from '@/lib/cark'
+import { QUIZ_MIN, draftCity, markQuiz, quizCoins } from '@/lib/quiz'
 import { StorySetup, StoryTalk, TalkPrompt, npcKey } from '@/components/StoryMode'
 import { talkOf } from '@/game/stories'
 import { ASK_BIT, GIFT_BIT, MET_BIT, mark as markStory } from '@/lib/storyRules'
@@ -93,11 +98,11 @@ interface Tutorial {
 }
 const freshTutorial = (startX: number): Tutorial => ({ startX, walked: false, jumped: false, got: false, flag: false, dashed: false })
 
-type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'gezgin' | 'calmSetup' | 'storySetup' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd'
+type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | 'character' | 'name' | 'story' | 'map' | 'intro' | 'play' | 'pause' | 'complete' | 'scores' | 'controls' | 'end' | 'notebook' | 'rushEnd' | 'modes' | 'dailyEnd' | 'duelSetup' | 'duelTurn' | 'duelEnd' | 'race' | 'ruleSetup' | 'rageSetup' | 'rageCourses' | 'challenges' | 'challengeEnd' | 'tournament' | 'gezgin' | 'calmSetup' | 'storySetup' | 'invite' | 'shop' | 'mirror' | 'mirrorEnd' | 'custom' | 'customEnd' | 'cark' | 'quiz'
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
-type Mode = { kind: 'daily'; run: DailyRun; free?: boolean } | { kind: 'duel' }
+type Mode = { kind: 'daily'; run: DailyRun; free?: boolean; /** Çarkıfelek'in çevirdiği koşu (serbest Kurallı Koşu + çark ödülü) */ cark?: boolean } | { kind: 'duel' }
 
 interface Duel {
   setup: DuelSetupValue
@@ -134,6 +139,12 @@ const STEP = 1 / 120
 
 /** Yeni şehirle gelen yenilikler: "Yolda Neler Değişti" notunda o şehir yeni görünürken anlatılır (başlık, bir cümle) */
 const RELEASE_NOTES: Record<string, [string, string][]> = {
+  kutahya: [
+    ['İki Yeni Şehir', 'Kütahya ve Samsun: çini fırınlarının seni yukarı taşıyan sıcak havası, Aizanoi’nin Zeus Tapınağı, Bandırma Vapuru, Amisos’un teleferiği ve Kızılırmak Deltası.'],
+    ['Çarkıfelek', 'Çarkı çevir: bir şehir ve bir kural çıkar. Bitir, Mağaza parçası kazan; günde üç ödüllü çevirme.'],
+    ['Defter Bilmecesi', 'Gezdiğin şehirleri ne kadar hatırlıyorsun? Hatıralar, boss’lar ve bilgilerden on soru.'],
+    ['Daha Canlı Yol', 'Yüksekten inince toz, bayrakta ışık halkası, suya dalınca dalga, karda ayak izi; hatıralar pırıldayarak toplanır.'],
+  ],
   adiyaman: [
     ['İki Yeni Şehir', 'Adıyaman ve Kastamonu: Nemrut’un taş başları, Cendere Köprüsü, kale burcu ve içine gireni aşağı çeken şelaleler.'],
     ['Efsane Parkurları', 'Mücadelelere yeni kademe ve dört yeni Usta Parkuru: termal, donan buz, yüzen ada ve havuz teyzesi.'],
@@ -353,7 +364,11 @@ export default function Game() {
   const ustaCount = Object.values(save.ustalar ?? {}).filter(Boolean).length
   const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
   const bossCount = LEVELS.filter((l) => save.bosses[l.id]).length
-  const wallet = walletOf(earned(foundTotal, bossCount, ustaCount), save.owned, hero.id)
+  /** Çarkıfelek ve Defter Bilmecesi'nin Mağaza parçası (kazanca eklenir, iki yolcuya da tam) */
+  const modeCoins = carkCoins(save.cark) + quizCoins(save.quiz)
+  /** Defter Bilmecesi'nin şehirleri: bitirilmiş ve metni yazılmış (TASLAK olmayan) */
+  const quizPool = LEVELS.filter((l) => save.best[l.id] && !draftCity(l))
+  const wallet = walletOf(earned(foundTotal, bossCount, ustaCount) + modeCoins, save.owned, hero.id)
   const heroAcc = kitOf(save, hero.id)
   // Şehirler listesinde her şehrin lideri ve oyuncunun sırası (tek istek, liste açıkken)
   const cityRanks = useListRanks('sehir', save.player?.name ?? '', screen === 'map')
@@ -761,7 +776,7 @@ export default function Game() {
           setHint(w.nearSign >= 0 ? (localize(w.level, langRef.current).hints[w.nearSign] ?? null) : null)
           setNpc(w.nearNpc)
         }
-      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'gezgin' || sc === 'calmSetup' || sc === 'storySetup' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup') {
+      } else if (sc === 'title' || sc === 'map' || sc === 'scores' || sc === 'controls' || sc === 'character' || sc === 'story' || sc === 'name' || sc === 'notebook' || sc === 'modes' || sc === 'duelSetup' || sc === 'ruleSetup' || sc === 'rageSetup' || sc === 'rageCourses' || sc === 'challenges' || sc === 'tournament' || sc === 'gezgin' || sc === 'calmSetup' || sc === 'storySetup' || sc === 'invite' || sc === 'shop' || sc === 'mirror' || sc === 'coopSetup' || sc === 'cark' || sc === 'quiz') {
         w.step(dt, emptyInput())
         w.events.length = 0
       } else if (sc === 'photo') {
@@ -1475,7 +1490,7 @@ export default function Game() {
   const buyAccessory = (who: Hero, id: AccessoryId) => {
     const item = ACCESSORIES.find((a) => a.id === id)
     const cur = saveRef.current ?? save
-    if (!item || item.seals !== undefined || (item.for && item.for !== who) || walletOf(earned(foundTotal, bossCount, ustaCount), cur.owned, who) < item.price) return
+    if (!item || item.seals !== undefined || (item.for && item.for !== who) || walletOf(earned(foundTotal, bossCount, ustaCount) + carkCoins(cur.cark) + quizCoins(cur.quiz), cur.owned, who) < item.price) return
     ui()
     persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [ownedKey(who, id)]: true }, kits: { ...s.kits, [who]: { ...kitOf(s, who), [item.slot]: id } } }))
   }
@@ -1488,7 +1503,7 @@ export default function Game() {
   const buyLook = (who: Hero, axis: Axis, id: string) => {
     const o = optionsFor(who, axis).find((x) => x.id === id)
     const cur = saveRef.current ?? save
-    if (!o || o.price <= 0 || walletOf(earned(foundTotal, bossCount, ustaCount), cur.owned, who) < o.price) return
+    if (!o || o.price <= 0 || walletOf(earned(foundTotal, bossCount, ustaCount) + carkCoins(cur.cark) + quizCoins(cur.quiz), cur.owned, who) < o.price) return
     ui()
     persist((s) => ({ ...s, owned: { ...(s.owned ?? {}), [lookKey(who, axis, id)]: true }, looks: { ...s.looks, [who]: normalizeLook(who, { ...s.looks?.[who], [axis]: id }) } }))
   }
@@ -1531,6 +1546,14 @@ export default function Game() {
     loadLevel(levelIdx2, 'play')
     beginPlay()
     setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[rule].name)}: ${t(DAILY_RULES[rule].text)}` })
+  }
+
+  /** Çarkıfelek: çarkın seçtiği şehir ve kural, serbest Kurallı Koşu olarak; bitince çarkın ödülü (finish) */
+  const startCark = (levelId: string, rule: DailyRule) => {
+    const idx = LEVELS.findIndex((l) => l.id === levelId)
+    if (idx < 0) return
+    startRule(idx, rule)
+    if (modeRef.current?.kind === 'daily') modeRef.current.cark = true
   }
 
   // zor modun görüntüsü (karanlık, ters ekran) yalnız oyunda: menülere ve bitiş ekranına taşınmasın
@@ -1686,7 +1709,7 @@ export default function Game() {
   // menüye dönünce koşu ve mod biter; oyundaki karakter yine kayıttaki olur
   useEffect(() => {
     // menü ekranlarının hepsi: yarım kalan mod bir sonraki normal koşuya taşınmasın
-    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'gezgin', 'calmSetup', 'storySetup', 'invite', 'shop', 'mirror'].includes(screen)) return
+    if (!['map', 'title', 'modes', 'name', 'story', 'intro', 'character', 'notebook', 'scores', 'controls', 'ruleSetup', 'rageSetup', 'rageCourses', 'challenges', 'tournament', 'gezgin', 'calmSetup', 'storySetup', 'invite', 'shop', 'mirror', 'cark', 'quiz'].includes(screen)) return
     flushStats()
     rushRef.current = null
     rivalRef.current = null
@@ -1975,9 +1998,13 @@ export default function Game() {
           const old = prev.rules?.[key]
           const best = old === undefined || scoreMs < old
           const next = best ? { ...prev, rules: { ...(prev.rules ?? {}), [key]: scoreMs } } : prev
-          if (best) writeSave(next)
-          setDailyResult({ run: mode.run, timeMs, deaths, found, scoreMs, best, mark: { day: mode.run.day, bestMs: best ? scoreMs : old!, streak: 0 }, free: true, tries: triesRef.current + 1 })
-          return next
+          // çarkın koşusu: açık çevirme buysa seri büyür, ödüllüyse parça yazılır (Kurallı Koşu rekoru yine işler)
+          const won = mode.cark ? winMark(next.cark, istanbulDay(new Date()), mode.run.levelId, mode.run.rule, RULE_ART[mode.run.rule].heat) : null
+          const out = won ? { ...next, cark: won.mark } : next
+          if (won) writeSave(out)
+          else if (best) writeSave(next)
+          setDailyResult({ run: mode.run, timeMs, deaths, found, scoreMs, best, mark: { day: mode.run.day, bestMs: best ? scoreMs : old!, streak: 0 }, free: true, tries: triesRef.current + 1, cark: won ? { coins: won.coins, streak: won.mark.streak } : undefined })
+          return out
         })
         setDailySend({ status: 'idle', rank: null })
         setScreen('dailyEnd')
@@ -2387,7 +2414,7 @@ export default function Game() {
 
 
   /** HUD ve Mola'daki mod başlığı */
-  const modeLabel = modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('Düello')} · ${duel.setup.names[duel.turn]}` : customRef.current ? (customRef.current.story ? t('Hikâye Gezisi') : customRef.current.calm ? t('Sakin Gezi') : t('Özel Harita')) : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined
+  const modeLabel = modeRef.current?.kind === 'daily' ? `${RAGE_RULES.includes(modeRef.current.run.rule as RageRule) ? t('Sinir Bozucu') : modeRef.current.cark ? t('Çark') : modeRef.current.free ? t('Kurallı') : t('Günlük')} · ${t(DAILY_RULES[modeRef.current.run.rule].name)}${DAILY_RULES[modeRef.current.run.rule].swapKeys && worldRef.current && swapPhase(worldRef.current.time).flipped ? ` · ⇄ ${t('Ters')}` : ''}${ruleLimit(modeRef.current.run.rule, level) ? ` · ${formatTime(ruleLimit(modeRef.current.run.rule, level)! * 1000).slice(0, -2)}` : ''}` : modeRef.current?.kind === 'duel' && duel ? `${t('Düello')} · ${duel.setup.names[duel.turn]}` : customRef.current ? (customRef.current.story ? t('Hikâye Gezisi') : customRef.current.calm ? t('Sakin Gezi') : t('Özel Harita')) : aynaRef.current ? `◐ ${t('Ayna Yolu')}` : challengeRef.current ? `${tournamentRef.current ? `${t('Turnuva')} · ` : '▲ '}${t(challengeRef.current.name)}` : rivalRef.current?.level === level.id ? `◌ ${rivalRef.current.name} · ${formatTime(rivalRef.current.timeMs).slice(0, -2)}` : rushRef.current ? (rushRef.current.kind === 'boss' ? t('Boss Rush') : `${t(rushRef.current.kind === 'tur' ? 'Tam Tur' : rushRef.current.kind === 'aynaTur' ? 'Ayna Tam Tur' : 'Maraton')} ${rushRef.current.i + 1}/${rushRef.current.order.length}`) : undefined
 
   /** Mola eylemleri */
   const pauseRetry = () => {
@@ -3609,7 +3636,24 @@ export default function Game() {
           citiesDone={Object.keys(save.best).length}
           tournament={save.turnuva ?? null}
           challengeDone={[...CHALLENGES, ...MASTER_COURSES].filter((c) => save.challenges?.[c.id]).length}
+          onCark={() => (ui(), setScreen('cark'))}
+          cark={{ left: carkLeft(save.cark, today), streak: save.cark?.streak ?? 0 }}
+          onQuiz={() => (ui(), setScreen('quiz'))}
+          quiz={{ open: quizPool.length >= QUIZ_MIN, cities: quizPool.length, need: QUIZ_MIN, best: save.quiz?.best ?? null }}
           onBack={() => setScreen('title')}
+        />
+      )}
+      {screen === 'cark' && <CarkScreen mark={save.cark} today={today} cities={carkCities(LEVELS, (id) => !!save.best[id])} rules={save.rules} onSpin={(sp) => persist((s) => ({ ...s, cark: spinMark(s.cark, today, sp) }))} onStart={startCark} onBack={() => setScreen('modes')} />}
+      {screen === 'quiz' && (
+        <QuizScreen
+          mark={save.quiz}
+          pool={quizPool}
+          onFinish={(points, correct, size) => {
+            const r = markQuiz(saveRef.current?.quiz ?? save.quiz, points, correct, size)
+            persist((s) => ({ ...s, quiz: markQuiz(s.quiz, points, correct, size).mark }))
+            return { best: r.best, prize: r.prize }
+          }}
+          onBack={() => setScreen('modes')}
         />
       )}
       {screen === 'challenges' && <ChallengeList best={save.challenges ?? {}} finished={new Set(Object.keys(save.best))} player={save.player?.name ?? ''} onStart={startChallenge} onBack={() => setScreen('modes')} />}
@@ -3665,7 +3709,7 @@ export default function Game() {
       {screen === 'rageSetup' && <RuleSetup rage startLevel={levelIdx} startRule={rageStartRef.current} finished={LEVELS.map((l, i) => (save.best[l.id] ? i : -1)).filter((i) => i >= 0)} records={save.rules ?? {}} onStart={startRule} onBack={() => setScreen('modes')} />}
 
       {screen === 'dailyEnd' && dailyResult && (
-        <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={dailyResult.free ? () => startRule(LEVELS.findIndex((l) => l.id === dailyResult.run.levelId), dailyResult.run.rule) : undefined} onModes={() => setScreen('modes')} onLogin={() => ((returnRef.current = 'dailyEnd'), setScreen('name'))} />
+        <DailyEnd result={dailyResult} player={save.player?.name ?? ''} status={dailySend.status} rank={dailySend.rank} onRetry={dailyResult.cark ? () => setScreen('cark') : dailyResult.free ? () => startRule(LEVELS.findIndex((l) => l.id === dailyResult.run.levelId), dailyResult.run.rule) : undefined} retryLabel={dailyResult.cark ? t('↻ Çarka Dön') : undefined} onModes={() => setScreen('modes')} onLogin={() => ((returnRef.current = 'dailyEnd'), setScreen('name'))} />
       )}
 
       {screen === 'duelSetup' && (
@@ -3821,7 +3865,7 @@ export default function Game() {
           owned={save.owned ?? {}}
           seals={ustaCount}
           kits={{ uktun: kitOf(save, 'uktun'), memo: kitOf(save, 'memo') }}
-          earnedTotal={earned(foundTotal, bossCount, ustaCount)}
+          earnedTotal={earned(foundTotal, bossCount, ustaCount) + modeCoins}
           parts={{ found: foundTotal, bosses: bossCount, seals: ustaCount }}
           onBuy={buyAccessory}
           onBuyLook={buyLook}
@@ -3963,7 +4007,7 @@ function Hud({ level, hud, hero, scarf, kit, showGoal, penaltyFor, label, onPaus
               {t(GOAL_TEXT[hud.goal])}
             </span>
           )}
-          <span className="flex gap-1" aria-label={t('{n} / 3 hatıra', { n: hud.items.filter(Boolean).length })}>
+          <span className="flex gap-1" data-hud-items aria-label={t('{n} / 3 hatıra', { n: hud.items.filter(Boolean).length })}>
             {hud.items.map((v, i) => (
               <ItemIcon key={i} city={level.city} taken={v} />
             ))}

@@ -54,4 +54,6 @@ export const BOSS_LINES: Record<CityKey, { wake: [string, string]; tired: [strin
   zonguldak: { wake: ['Damarımdan uzak dur!', 'Keep away from my seam!'], tired: ['Kömür tozu… boğuldum…', 'Coal dust… choking…'], ouch: ['Elmasım çatladı!', 'My diamond cracked!'] },
   agri: { wake: ['Çığ geliyor!', 'Avalanche!'], tired: ['Eriyorum…', 'I am melting…'], ouch: ['Buzum çatladı!', 'My ice cracked!'] },
   bayburt: { wake: ['Gözüm üstünde!', 'I have my eye on you!'], tired: ['Gözüm döndü…', 'My eye is spinning…'], ouch: ['Gözüme basma!', 'Not the eye!'] },
+  kutahya: { wake: ['Fırından yeni çıktım, hâlâ sıcağım!', 'Fresh out of the kiln, still hot!'], tired: ['Sırım çatladı…', 'My glaze is cracking…'], ouch: ['Aman, lalem kırılmasın!', 'Careful, not my tulips!'] },
+  samsun: { wake: ['Deltanın çamuru benden sorulur!', 'The delta mud answers to me!'], tired: ['Bir çamur banyosu molası…', 'Time for a mud bath break…'], ouch: ['Möö! Boynuzum değil, sırtım!', 'Moo! Not the horns, the back!'] },
 }

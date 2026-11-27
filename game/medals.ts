@@ -19,6 +19,8 @@ export const SOLVER_TIME: Record<string, number> = {
   bingol: 53.0,
   adiyaman: 64.9,
   kastamonu: 65.2,
+  kutahya: 58.1,
+  samsun: 73,
 }
 
 /** insan paylı boss botunun boss'u yendiği süre (sn) */
@@ -39,6 +41,8 @@ export const BOSS_TIME: Record<string, number> = {
   bingol: 89,
   adiyaman: 21,
   kastamonu: 50,
+  kutahya: 30,
+  samsun: 65,
 }
 
 const up5 = (s: number) => Math.ceil(s / 5) * 5

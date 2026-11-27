@@ -27,11 +27,11 @@ jobs:
     # çözücüsü uzun süren şehirlere daha geniş süre. Yerelde (4 çekirdek, paralel) verify-levels: Nevşehir ~17 dk;
     # İzmir, Konya, Gaziantep, Trabzon, Kayseri, Amasya, Ordu, Hatay, Çorum, Mersin 3-9 dk; gerisi 1 dk altı. verify-respawn
     # her bayraktan yeniden çözdüğü için bunun birkaç katını sürebilir.
-    timeout-minutes: ${{ matrix.level == 'nevsehir' && 120 || contains(fromJSON('["izmir","konya","gaziantep","trabzon","kayseri","amasya","ordu","hatay","corum","mersin","karabuk","aydin","balikesir","elazig","afyon","bingol","kastamonu"]'), matrix.level) && 75 || 30 }}
+    timeout-minutes: ${{ matrix.level == 'nevsehir' && 120 || contains(fromJSON('["izmir","konya","gaziantep","trabzon","kayseri","amasya","ordu","hatay","corum","mersin","karabuk","aydin","balikesir","elazig","afyon","bingol","kastamonu","samsun"]'), matrix.level) && 75 || 30 }}
     strategy:
       fail-fast: false
       matrix:
-        level: [istanbul, edirne, kocaeli, bursa, eskisehir, canakkale, izmir, antalya, ankara, konya, nevsehir, kayseri, adana, hatay, gaziantep, sanliurfa, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, van, erzurum, ardahan, amasya, mugla, bayburt, rize, artvin, kars, bitlis, agri, giresun, tokat, denizli, zonguldak, mersin, karabuk, aydin, balikesir, elazig, afyon, bingol, adiyaman, kastamonu]
+        level: [istanbul, edirne, kocaeli, bursa, eskisehir, canakkale, izmir, antalya, ankara, konya, nevsehir, kayseri, adana, hatay, gaziantep, sanliurfa, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, van, erzurum, ardahan, amasya, mugla, bayburt, rize, artvin, kars, bitlis, agri, giresun, tokat, denizli, zonguldak, mersin, karabuk, aydin, balikesir, elazig, afyon, bingol, adiyaman, kastamonu, kutahya, samsun]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -4059,6 +4059,249 @@ const PAINT: Record<CityKey, Painter> = {
     c.restore()
     aura(c, mood, t, -8.4, -17.4, fx + 6.2, fy + 0.4)
   },
+  // Lale Desenli Vazo: çini fırınından çıkmış dev vazo; beyaz sır, kobalt ve firuze şeritler, gövdede kırmızı lale,
+  // iki kulp. Saldırıda yan yatıp yuvarlanır, atışta ağzından çini kırığı yükselir, yorulunca sırrı çatlar
+  kutahya: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const roll = b.move === 'charge' && b.state === 'attack' && !air
+    const toss = b.move === 'throw' && b.state === 'warn'
+    const GLAZE = out ? '#ece6dc' : '#f6f2e8'
+    const GLAZE_SH = '#b8b6c4'
+    const COB = '#2f62b0'
+    const COB_D = '#1e4486'
+    const TUR = '#3aa6b4'
+    const RED = '#d8402e'
+    const LEAF = '#3e8a4a'
+    // fırından çıkmış sıcaklık: arkada titreyen ılık hava; yorgunken söner
+    if (!out && mood !== 'sleep') {
+      c.save()
+      for (let i = 0; i < 3; i++) {
+        const k = frac(t * 0.7 + i / 3)
+        c.globalAlpha = 0.4 * Math.sin(k * Math.PI) * (mad(mood) ? 1.4 : 1)
+        const x0 = -7 + i * 7
+        c.strokeStyle = '#ffc890'
+        c.lineWidth = 0.9
+        c.lineCap = 'round'
+        c.beginPath()
+        c.moveTo(x0, -27 - k * 9)
+        c.quadraticCurveTo(x0 + 2, -30 - k * 9, x0, -33 - k * 9)
+        c.stroke()
+      }
+      c.restore()
+    }
+    c.save()
+    if (roll) {
+      // yan yatar ve gövdesinin üstünde döner
+      c.translate(0, -11)
+      c.rotate(t * 13)
+      c.scale(0.86, 0.86)
+      c.translate(0, 11)
+    }
+    // kulplar: boyundan omuza kıvrılan iki kulp (arkadaki önce)
+    stroke(c, [-3.6, -24, -8.6, -24.4, -9.4, -19.4, -7.4, -16.6], 1.5, GLAZE)
+    // ayak: kısa, kobalt bilezikli
+    poly(c, [-5, -2.8, 5, -2.8, 6.2, 0, -6.2, 0], GLAZE, GLAZE_SH)
+    stroke(c, [-5.6, -1.2, 5.6, -1.2], 0.8, COB, false)
+    // gövde: şişkin karın, daralan omuz, ince boyun, açık ağız
+    blob(
+      c,
+      () => {
+        c.moveTo(-3.4, -26)
+        c.quadraticCurveTo(-3, -21.4, -7, -19.6)
+        c.bezierCurveTo(-12.6, -16.6, -12.4, -6, -5.4, -2.6)
+        c.lineTo(5.4, -2.6)
+        c.bezierCurveTo(12.4, -6, 12.6, -16.6, 7, -19.6)
+        c.quadraticCurveTo(3, -21.4, 3.4, -26)
+        c.closePath()
+      },
+      GLAZE,
+      shade(GLAZE_SH),
+    )
+    // ağız kenarı: dışa açılan dudak, içi koyu
+    ell(c, 0, -26.4, 5.6, 1.7, GLAZE, GLAZE_SH)
+    ell(c, 0, -26.6, 3.9, 0.9, COB_D)
+    // omuz ve karın şeritleri: kobalt, aralarında firuze ince çizgi
+    stroke(c, [-7.4, -19.2, 0, -20.6, 7.4, -19.2], 1.5, COB, false)
+    stroke(c, [-9, -17.4, 0, -18.6, 9, -17.4], 0.5, TUR, false)
+    stroke(c, [-8.6, -5.4, 0, -4.2, 8.6, -5.4], 1.4, COB, false)
+    for (let k = -3; k <= 3; k++) dab(c, k * 2.4, -4.4 - Math.abs(k) * 0.18, 0.4, 0.4, GLAZE)
+    stroke(c, [-2.4, -24, 2.4, -24], 0.7, TUR, false)
+    // gövdede lale: arka yanda (yüzün solunda) sap, iki yaprak, üç taçlı kırmızı çiçek
+    const lx = -6.4
+    stroke(c, [lx, -6.4, lx + 0.4, -9.6, lx - 0.2, -12.4], 0.5, LEAF, false)
+    fine(() => {
+      blob(c, () => {
+        c.moveTo(lx, -6.6)
+        c.quadraticCurveTo(lx - 3.2, -8.2, lx - 2.6, -11)
+        c.quadraticCurveTo(lx - 1, -8.8, lx, -6.6)
+      }, '#4a9a52')
+      blob(c, () => {
+        c.moveTo(lx + 0.3, -6.8)
+        c.quadraticCurveTo(lx + 2.8, -8, lx + 2.4, -10.4)
+        c.quadraticCurveTo(lx + 1.2, -8.6, lx + 0.3, -6.8)
+      }, LEAF)
+      blob(c, () => {
+        c.moveTo(lx - 1.7, -12.4)
+        c.quadraticCurveTo(lx - 2.1, -14.6, lx - 1.2, -15.4)
+        c.lineTo(lx - 0.5, -14)
+        c.lineTo(lx, -15.9)
+        c.lineTo(lx + 0.5, -14)
+        c.lineTo(lx + 1.2, -15.4)
+        c.quadraticCurveTo(lx + 2.1, -14.6, lx + 1.7, -12.4)
+        c.quadraticCurveTo(lx, -11.4, lx - 1.7, -12.4)
+      }, RED, shade('#9a2a1e', 0.6, -0.5))
+    })
+    // öndeki kulp
+    stroke(c, [3.6, -24, 8.6, -24.4, 9.4, -19.4, 7.4, -16.6], 1.5, GLAZE)
+    stroke(c, [4.2, -24.4, 8, -24.6], 0.4, COB, false)
+    // sır parıltısı: sol üstte uzun ışık, kenarda ince kenar ışığı
+    dab(c, -6.8, -14.6, 1.5, 3.6, 'rgba(255,255,255,0.8)')
+    dab(c, -2.8, -21.2, 1.6, 0.6, 'rgba(255,255,255,0.7)')
+    stroke(c, [-10.6, -9, -10.8, -13, -9.4, -16.4], 0.5, 'rgba(255,246,226,0.8)', false)
+    // yorgunken sır çatlar: gövdede ince çatlak çizgileri
+    if (out) {
+      stroke(c, [2, -19.6, 3.4, -16.4, 2.2, -14, 4.4, -11.6], 0.45, '#7a7484', false)
+      stroke(c, [-9.4, -12, -7.6, -10.2, -8.4, -8.2], 0.4, '#7a7484', false)
+    }
+    // atış işareti: ağızdan yükselen firuze çini kırığı, titrer
+    if (toss) {
+      const lift = 3 + Math.abs(Math.sin(t * 10)) * 1.4
+      fine(() => {
+        poly(c, [-1.6, -27 - lift, 2.4, -28.4 - lift, 1.4, -32 - lift, -2.2, -30.6 - lift], TUR, '#24808c')
+        stroke(c, [-0.6, -28.4 - lift, 1, -30.6 - lift], 0.45, '#f6f2e8', false)
+      })
+    }
+    // yüz: karnın ön yanında; iri gözler, pembe yanak
+    const fx = 3.2
+    const fy = out ? -11.4 : -12.4
+    eye(c, fx - 1.8, fy - 1.4, 1.9, mood, t)
+    eye(c, fx + 3.4, fy - 1.6, 1.7, mood, t)
+    dab(c, fx - 3.4, fy + 1.8, 1.3, 0.8, BLUSH)
+    dab(c, fx + 5.6, fy + 1.6, 1.1, 0.7, BLUSH)
+    mouth(c, fx + 1, fy + 3, 1.7, mood, t)
+    c.restore()
+    aura(c, mood, t, -8, -20, fx + 6.4, fy + 0.4)
+  },
+  // Delta Mandası: Kızılırmak deltasının iri kara mandası; geriye kıvrık yassı boynuzlar, bacaklarında ve karnında kuruyan
+  // çamur, sırtında çamur topağı. Saldırıda başını indirir, atışta çamur topu ağzında titrer, yorulunca çamura çöker
+  samsun: (c, b, mood, t) => {
+    const air = b.y < b.floor - b.h - 2
+    const out = beat(mood)
+    const run = b.state === 'attack' && !air ? Math.sin(t * 22) * 1.6 : 0
+    const paw = mood === 'warn' ? Math.max(0, Math.sin(t * 14)) * 2 : 0
+    const toss = b.move === 'throw' && b.state === 'warn'
+    const HIDE = '#4e4448'
+    const HIDE_SH = '#2e262c'
+    const HIDE_L = '#6a5e60'
+    const MUD = '#8a6a44'
+    const MUD_D = '#5e4630'
+    const HORN = '#8a7c6e'
+    // başın yeri: saldırıda öne eğik, yorgunken yere yakın
+    const hx = out ? 13 : 12.4
+    const hy = out ? -6 : mood === 'angry' ? -9 : -12
+    // arka bacaklar ve kuyruk (ucu püsküllü)
+    stroke(c, [-10, -6, -10.6 - run * 0.5, -1.4], 2.8, HIDE_SH)
+    stroke(c, [4.6, -6, 5.2 + run * 0.5, -1.4], 2.8, HIDE_SH)
+    stroke(c, [-14, -13, -16.8, -9 + Math.sin(t * 4) * 0.8, -16.2, -5.4], 0.9, HIDE_SH)
+    ell(c, -16.2, -5, 1, 1.5, '#2a2226')
+    // gövde: geniş, alçak, sırt düz
+    blob(
+      c,
+      () => {
+        c.moveTo(-14, -9)
+        c.bezierCurveTo(-15, -16.6, -8, -18, 0, -17.6)
+        c.bezierCurveTo(6, -17.4, 9, -16, 10, -13)
+        c.lineTo(10, -6)
+        c.bezierCurveTo(4, -4.4, -6, -4.4, -12, -5.6)
+        c.closePath()
+      },
+      HIDE,
+      shade(HIDE_SH),
+    )
+    // karında kuruyan çamur
+    blob(
+      c,
+      () => {
+        c.moveTo(-12.4, -6.4)
+        c.quadraticCurveTo(-11, -8.6, -8, -7.6)
+        c.quadraticCurveTo(-5, -9.4, -2, -7.8)
+        c.quadraticCurveTo(2, -9.2, 5, -7.6)
+        c.quadraticCurveTo(8, -8.8, 10, -7)
+        c.lineTo(10, -5.8)
+        c.bezierCurveTo(4, -4.4, -6, -4.4, -12, -5.6)
+        c.closePath()
+      },
+      MUD,
+    )
+    for (const x of [-9, -3.4, 2.6, 7.4]) stroke(c, [x, -7.6, x + 0.2, -6.2], 0.6, MUD, false)
+    // sırtta çamur topağı ve kenar ışığı
+    ell(c, -4.6, -17.4, 3.4, 1.4, MUD, MUD_D)
+    stroke(c, [-13.4, -12, -12, -16, -6, -17.6], 0.6, HIDE_L, false)
+    dab(c, -6.4, -15, 3.6, 1.2, 'rgba(255,236,210,0.18)')
+    // ön bacaklar: işarette toynağını yere vurur; dizlere dek çamur
+    stroke(c, [-6.4, -6, -7 + run * 0.5, -1.4], 2.8, HIDE)
+    stroke(c, [7, -6, 7.6 - run * 0.5, -1.4 - paw], 2.8, HIDE)
+    for (const [x, y] of [[-7 + run * 0.5, -0.8], [7.6 - run * 0.5, -0.8 - paw], [-10.6 - run * 0.5, -0.8], [5.2 + run * 0.5, -0.8]] as const) {
+      stroke(c, [x, y - 2.4, x, y - 0.6], 2.9, MUD, false)
+      fine(() => ell(c, x, y, 1.6, 0.9, '#2a2024'))
+    }
+    // boyun: kalın, başa iner
+    blob(
+      c,
+      () => {
+        c.moveTo(4, -17)
+        c.bezierCurveTo(8, -18, hx - 1, hy - 5, hx, hy - 2.4)
+        c.lineTo(hx - 0.6, hy + 4)
+        c.bezierCurveTo(9, -6, 6, -6, 4, -7)
+        c.closePath()
+      },
+      HIDE,
+      shade(HIDE_SH),
+    )
+    // yorgunken önünde çamur birikintisi
+    if (out) {
+      ell(c, hx + 3, -0.6, 7, 1.4, MUD, MUD_D)
+      dab(c, hx + 1, -1, 2, 0.4, 'rgba(255,240,210,0.35)')
+    }
+    // geriye kıvrık yassı boynuzlar: arkadaki önce
+    const horn = (k: number, col: string, dark: string) => {
+      const dip = out ? 2.4 : 0
+      blob(
+        c,
+        () => {
+          c.moveTo(hx - 1.6 + k, hy - 4.4)
+          c.bezierCurveTo(hx - 4.4 + k, hy - 9 + dip, hx - 10.4 + k, hy - 9.2 + dip, hx - 11.8 + k, hy - 4.6 + dip)
+          c.quadraticCurveTo(hx - 9.8 + k, hy - 6.6 + dip, hx - 5.4 + k, hy - 6 + dip * 0.5)
+          c.quadraticCurveTo(hx - 2.8 + k, hy - 5.2, hx + 0.4 + k, hy - 3.6)
+          c.closePath()
+        },
+        col,
+        shade(dark, 0.6, -0.4),
+      )
+    }
+    horn(2.2, '#6e6258', '#4a4038')
+    // baş: uzun yüz, açık renk burun
+    ell(c, hx, hy, 5.4, 4.6, HIDE, HIDE_SH)
+    ell(c, hx + 4, hy + 2, 2.9, 2.3, '#7a6c68', '#4e4240')
+    dab(c, hx + 5.4, hy + 1.4, 0.5, 0.7, '#1e1618')
+    dab(c, hx - 1.6, hy - 2.2, 1.8, 0.8, 'rgba(255,236,210,0.22)')
+    // kulak
+    poly(c, [hx - 2.6, hy - 1.6, hx - 6.6, hy - 0.4, hx - 3, hy + 1], HIDE, HIDE_SH)
+    horn(0, HORN, '#5e5248')
+    stroke(c, [hx - 3.4, hy - 6.2, hx - 8.4, hy - 7.2], 0.4, '#b4a898', false)
+    // atış işareti: burnunun ucunda titreyen çamur topu
+    if (toss) {
+      const s = 1 + Math.abs(Math.sin(t * 10)) * 0.15
+      fine(() => {
+        ell(c, hx + 7.4, hy - 1 - Math.abs(Math.sin(t * 10)) * 1.2, 2.2 * s, 2 * s, MUD, MUD_D)
+        dab(c, hx + 6.8, hy - 1.8, 0.7, 0.4, 'rgba(255,236,200,0.5)')
+      })
+    }
+    eye(c, hx + 1, hy - 1, 2, mood, t, CREAM)
+    mouth(c, hx + 3.6, hy + 3.8, 1.1, mood, t, CREAM)
+    aura(c, mood, t, hx - 4, hy - 6, hx + 6.2, hy + 1.4)
+  },
 }
 
 /** Yerden çıkan boss'un işareti: kabaran toprak, sıçrayan çakıllar. */
