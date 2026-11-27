@@ -245,7 +245,7 @@ export const NO_DASH_OK = ['edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale
 /** kaygan, çöken, ay ve fırtına fiziğiyle kanıtlanmış şehirler (16 Kasım 2026); yeni şehri betikle kanıtlayıp buraya yaz */
 export const RAGE_PROVEN = [
   'istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri',
-  'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin',
+  'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin', 'kutahya', 'samsun',
 ]
 /** Fırtına'nın rüzgâr ivmesi (px/s²): Bayburt'un karşı rüzgârından güçlü, yön değiştirir */
 export const STORM_WIND = 230
@@ -256,9 +256,9 @@ export const CRUMBLE_OK: string[] = RAGE_PROVEN
 export const MOON_OK: string[] = RAGE_PROVEN.filter((id) => id !== 'ordu')
 export const STORM_OK: string[] = RAGE_PROVEN
 /** Ağır Yerçekimi, Kısa Dash ve Af Yok fiziğiyle çıkışa varılabildiği çözücüyle kanıtlanmış şehirler (`verify-rage.ts <agir|kisadash|afyok> --hepsi`) */
-export const HEAVY_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'konya', 'nevsehir', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'malatya', 'trabzon', 'sivas', 'ardahan', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'giresun', 'denizli', 'zonguldak']
-export const SHORT_DASH_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin']
-export const NO_MERCY_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin']
+export const HEAVY_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'konya', 'nevsehir', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'malatya', 'trabzon', 'sivas', 'ardahan', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'giresun', 'denizli', 'zonguldak', 'kutahya', 'samsun']
+export const SHORT_DASH_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin', 'kutahya', 'samsun']
+export const NO_MERCY_OK: string[] = ['istanbul', 'edirne', 'kocaeli', 'bursa', 'eskisehir', 'canakkale', 'izmir', 'antalya', 'ankara', 'konya', 'nevsehir', 'kayseri', 'adana', 'hatay', 'gaziantep', 'sanliurfa', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'van', 'erzurum', 'ardahan', 'amasya', 'mugla', 'bayburt', 'rize', 'artvin', 'kars', 'bitlis', 'agri', 'giresun', 'tokat', 'denizli', 'zonguldak', 'mersin', 'kutahya', 'samsun']
 
 /** Kural bu şehirde oynanabilir mi: Dash’siz, kaygan ve çöken fizik yalnız kanıtlanmış şehirlerde */
 export const ruleFits = (rule: DailyRule, level: LevelDef) => {

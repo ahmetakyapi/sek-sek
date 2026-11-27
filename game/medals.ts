@@ -20,7 +20,7 @@ export const SOLVER_TIME: Record<string, number> = {
   adiyaman: 64.9,
   kastamonu: 65.2,
   kutahya: 58.1,
-  samsun: 60, // TASLAK: npx tsx scripts/solver-time.ts samsun
+  samsun: 73,
 }
 
 /** insan paylı boss botunun boss'u yendiği süre (sn) */
