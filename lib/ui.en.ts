@@ -1,6 +1,10 @@
 /** Arayüz metinlerinin İngilizcesi. Anahtar: Türkçe metnin kendisi (sözlükte yoksa Türkçesi görünür). */
 export const UI_EN: Record<string, string> = {
   'Kütahya ve Samsun: çini fırınlarının seni yukarı taşıyan sıcak havası, Aizanoi’nin Zeus Tapınağı, Bandırma Vapuru, Amisos’un teleferiği ve Kızılırmak Deltası.': 'Kütahya and Samsun: the hot air of the tile kilns that lifts you up, the Temple of Zeus at Aizanoi, the Bandırma steamship, the cable car of Amisos and the Kızılırmak Delta.',
+  'Çarkı çevir: bir şehir ve bir kural çıkar. Bitir, Mağaza parçası kazan; günde üç ödüllü çevirme.': 'Spin the wheel: it picks a city and a rule. Finish it to earn Shop coins; three rewarded spins a day.',
+  'Gezdiğin şehirleri ne kadar hatırlıyorsun? Hatıralar, boss’lar ve bilgilerden on soru.': 'How well do you remember the cities you visited? Ten questions on keepsakes, bosses and facts.',
+  'Daha Canlı Yol': 'A Livelier Road',
+  'Yüksekten inince toz, bayrakta ışık halkası, suya dalınca dalga, karda ayak izi; hatıralar pırıldayarak toplanır.': 'Dust when you land from high up, a ring of light at flags, ripples when you dive, footprints in snow; keepsakes sparkle as you collect them.',
   // Defter, Albüm, Müzik Kutusu, Skor, Dükkân, Mücadeleler, Turnuva, Ayna Yolu (menü sadeleşmesi)
   'Ayna Toplamın': 'Your Mirror Total',
   'Bu Haftanın Sıralaması': 'This Week’s Rankings',

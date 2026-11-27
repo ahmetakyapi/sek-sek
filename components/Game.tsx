@@ -141,6 +141,9 @@ const STEP = 1 / 120
 const RELEASE_NOTES: Record<string, [string, string][]> = {
   kutahya: [
     ['İki Yeni Şehir', 'Kütahya ve Samsun: çini fırınlarının seni yukarı taşıyan sıcak havası, Aizanoi’nin Zeus Tapınağı, Bandırma Vapuru, Amisos’un teleferiği ve Kızılırmak Deltası.'],
+    ['Çark-ı Felek', 'Çarkı çevir: bir şehir ve bir kural çıkar. Bitir, Mağaza parçası kazan; günde üç ödüllü çevirme.'],
+    ['Defter Bilmecesi', 'Gezdiğin şehirleri ne kadar hatırlıyorsun? Hatıralar, boss’lar ve bilgilerden on soru.'],
+    ['Daha Canlı Yol', 'Yüksekten inince toz, bayrakta ışık halkası, suya dalınca dalga, karda ayak izi; hatıralar pırıldayarak toplanır.'],
   ],
   adiyaman: [
     ['İki Yeni Şehir', 'Adıyaman ve Kastamonu: Nemrut’un taş başları, Cendere Köprüsü, kale burcu ve içine gireni aşağı çeken şelaleler.'],
