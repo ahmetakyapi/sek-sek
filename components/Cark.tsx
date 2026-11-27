@@ -186,11 +186,11 @@ export function CarkScreen({ mark, today, cities, rules, onSpin, onStart, onBack
               )}
               <div className="flex flex-wrap gap-2">
                 {res && (
-                  <button ref={startRef} className="pixel-btn primary cta flex-1 justify-center px-5" onClick={() => onStart(res.levelId, res.rule)}>
+                  <button ref={startRef} className="pixel-btn primary cta flex-1 justify-center whitespace-nowrap px-3 max-sm:text-[14px]" onClick={() => onStart(res.levelId, res.rule)}>
                     {ic(t('▶ Koşuya Başla'))}
                   </button>
                 )}
-                <button className={`pixel-btn flex-1 justify-center px-5 ${res ? '' : 'primary cta'}`} onClick={doSpin} disabled={phase === 'spinning' || !cities.length} autoFocus={!res} title={pending ? t('Bitirmeden yeniden çevirirsen serin sıfırlanır.') : undefined}>
+                <button className={`pixel-btn flex-1 justify-center whitespace-nowrap px-3 max-sm:text-[14px] ${res ? '' : 'primary cta'}`} onClick={doSpin} disabled={phase === 'spinning' || !cities.length} autoFocus={!res} title={pending ? t('Bitirmeden yeniden çevirirsen serin sıfırlanır.') : undefined}>
                   {ic(t(res ? '↻ Yeniden Çevir' : '↻ Çarkı Çevir'))}
                 </button>
               </div>
