@@ -19,7 +19,7 @@ export const SOLVER_TIME: Record<string, number> = {
   bingol: 53.0,
   adiyaman: 64.9,
   kastamonu: 65.2,
-  kutahya: 60, // TASLAK: npx tsx scripts/solver-time.ts kutahya
+  kutahya: 58.1,
   samsun: 60, // TASLAK: npx tsx scripts/solver-time.ts samsun
 }
 
@@ -41,8 +41,8 @@ export const BOSS_TIME: Record<string, number> = {
   bingol: 89,
   adiyaman: 21,
   kastamonu: 50,
-  kutahya: 40, // TASLAK: npx tsx scripts/bossbot.ts kutahya ("insan paylı")
-  samsun: 40, // TASLAK: npx tsx scripts/bossbot.ts samsun ("insan paylı")
+  kutahya: 30,
+  samsun: 65,
 }
 
 const up5 = (s: number) => Math.ceil(s / 5) * 5

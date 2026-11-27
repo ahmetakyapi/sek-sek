@@ -130,6 +130,8 @@ export type GameEvent =
   | { type: 'sink'; x: number; y: number }
   /** şelaleye girildi: su sıçrar */
   | { type: 'splash'; x: number; y: number }
+  /** yüzülen suya dalındı (yalnız çizim ve ses): yüzeyde halka dalga */
+  | { type: 'dip'; x: number; y: number }
   | { type: 'perfect' }
   | { type: 'key' }
   | { type: 'stamp' }

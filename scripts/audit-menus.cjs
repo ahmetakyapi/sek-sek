@@ -75,6 +75,14 @@ const SCREENS = {
   'hikaye-defter': [STORY, ['Defter', 'tab:Tanıştık']],
   'hikaye-defter-bos': [null, ['Defter', 'tab:Tanıştık']],
   'sinir-bozucu': [SAVE, ['Modlar', 'Sinir Bozucu']],
+  // Çark-ı Felek: çark, çevrilmiş sonuç (dönüş biter), çarkın koşusu bitince bölüm sonu
+  cark: [SAVE, ['Modlar', 'Çark-ı Felek']],
+  'cark-sonuc': [SAVE, ['Modlar', 'Çark-ı Felek', '↻ Çarkı Çevir', 'wait:3000']],
+  'cark-bitis': [SAVE, ['Modlar', 'Çark-ı Felek', '↻ Çarkı Çevir', 'wait:3000', '▶ Koşuya Başla', 'wait:600', FINISH, 'wait:900']],
+  // Defter Bilmecesi: giriş, yanıtlanmış soru (bilgi kartı açık), kilitli (üç şehir)
+  bilmece: [SAVE, ['Modlar', 'Defter Bilmecesi']],
+  'bilmece-soru': [SAVE, ['Modlar', 'Defter Bilmecesi', '▶ Başla', 'wait:300', 'key:1', 'wait:500']],
+  'bilmece-en': [{ ...SAVE, lang: 'en' }, ['Modes', 'Notebook Quiz', '▶ Start', 'wait:300', 'key:2', 'wait:500']],
   ayarlar: [SAVE, ['Ayarlar']],
   'ayarlar-renk-korlugu': [{ ...SAVE, colorBlind: 'kirmizi-yesil' }, ['Ayarlar']],
   'ayarlar-tuslar': [SAVE, ['Ayarlar', 'opt:tab:Kontroller']],
@@ -127,7 +135,7 @@ const rows = () => ['uzan', 'GökçeKuş', 'ahmet', 'esra', 'Deniz', 'Kaan', 'El
     for (const [name, [save, steps, query]] of Object.entries(SCREENS).filter(([n]) => !process.env.ONLY || n.includes(process.env.ONLY))) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: w < 800 })
       // her modun "nasıl oynanır" kartı görülmüş sayılır (yalnız kartın kendi ekranı hariç): menü adımları kartta takılmasın
-      if (name !== 'modlar-nasil') await ctx.addInitScript(() => localStorage.setItem('seksek:modeIntro', JSON.stringify(['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'story'])))
+      if (name !== 'modlar-nasil') await ctx.addInitScript(() => localStorage.setItem('seksek:modeIntro', JSON.stringify(['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'story', 'cark', 'quiz'])))
       if (save) await ctx.addInitScript((s) => localStorage.setItem('seksek:v1', JSON.stringify(s)), save)
       const page = await ctx.newPage()
       await page.route('**/api/scores**', (r) => (r.request().method() === 'POST' ? r.fulfill({ json: { ok: true, first: true, improved: true, better: { time: true, deaths: true, items: true }, bestMs: 73400, rank: 3, total: 11 } }) : r.fulfill({ json: { scores: rows(), total: 11 } })))

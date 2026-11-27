@@ -107,8 +107,8 @@ Telefonda ve tarayıcıda oynanır; Türkçe ve İngilizce.
 | 46 | Bingöl · Bin Göl ve Yüzen Adalar | 12 | Zor | Üstüne basınca batan yüzen adalar, Çır Şelalesi, arılı yayla | Bingöl Balı |
 | 47 | Adıyaman · Nemrut’un Taş Başları | 2 | Orta | Cendere Köprüsü, Perre’nin kaya mezarları, Nemrut’un yarığı ve devrik taş başlar | Çiğ Köfte |
 | 48 | Kastamonu · Kale, Hasır ve Şelaleler | 37 | Zor | İçine gireni aşağı çeken şelaleler, kale burcu, Ilgaz’ın karlı ormanı, Horma Kanyonu | Etli Ekmek |
-| 49 | Kütahya · TASLAK alt başlık | 43 | Orta | TASLAK: öne çıkanlar | TASLAK hatıra |
-| 50 | Samsun · TASLAK alt başlık | 55 | Zor | TASLAK: öne çıkanlar | TASLAK hatıra |
+| 49 | Kütahya · Çini, Kale ve Zeus’un Sütunları | 43 | Orta | Yukarı taşıyan çini fırını sıcak havası, kale burçları, Aizanoi’nin sütunları, desen atölyesinde renk plakaları | Çini Tabak |
+| 50 | Samsun · Vapur, Teleferik ve Delta | 55 | Zor | Bandırma Vapuru’nun halatları, Atakum mendireği, Amisos teleferiği, Kızılırmak Deltası’nda dalış, makine dairesinde vanalar | Bafra Pidesi |
 
 ## Yolcular ve Şehir İnsanları
 

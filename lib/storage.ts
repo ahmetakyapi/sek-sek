@@ -4,6 +4,8 @@ import { LEVELS } from '@/game/levels'
 import { emptyStats, liveStreak, mergeDaily, mergeStats, mergeTournament, mergeTrio, cleanTrio, type DailyMark, type TitleFacts, type TournamentMark, type TrioMark, type TravelStats } from './extras'
 import { cityVersion, legacyVersion } from './mapVersion'
 import { cleanStory, mergeStory, type StoryLog } from './storyRules'
+import { cleanCark, mergeCark, type CarkMark } from './cark'
+import { cleanQuiz, mergeQuiz, type QuizMark } from './quiz'
 
 /**
  * Şehir sırası değişince (araya yeni şehir girince) artar; eski sıra ORDERS'a yazılır ki açılan şehir kimliğiyle
@@ -185,6 +187,10 @@ export interface Save {
   gezgin?: Record<string, number>
   /** Hikâye Gezisi: şehir insanının adı → bit alanı (lib/storyRules.ts: sorulan sorular, defter sayfası, tanışıldı) */
   story?: StoryLog
+  /** Çark-ı Felek: bugünkü ödüllü çevirmeler, seri, açık koşu, gün gün kazanılan parça (lib/cark.ts) */
+  cark?: CarkMark | null
+  /** Defter Bilmecesi: en iyi skor, oynama, ilk tam puan (lib/quiz.ts) */
+  quiz?: QuizMark | null
   /** mağazada alınan aksesuarlar: "uktun:fiyonk" (yolcuya özgü); düz kimlik ("fes") karakter ayrımından önce alınmış, iki yolcuya da açık */
   owned?: Record<string, boolean>
   /** eski kayıtta takılı tek aksesuar (yeni kayıtta `kit`; kitFor ikisini de okur) */
@@ -350,7 +356,7 @@ const mergeLooks = (local: Save['looks'], cloud: Save['looks']): Save['looks'] =
 }
 
 /** Buluta giden kısım: ilerleme ve kimlik seçimleri. Cihaza ait ayarlar (ses, tuşlar, dil, oturum) yerelde kalır. */
-const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'pins', 'friends', 'turnuva', 'ayna', 'gezgin', 'owned', 'accessory', 'kit', 'kits', 'looks', 'scarfs', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus', 'trio', 'story'] as const
+const CLOUD_KEYS = ['unlocked', 'best', 'stamps', 'charms', 'bosses', 'scarf', 'daily', 'weekly', 'rush', 'character', 'seenStory', 'tutorial', 'mapVersion', 'migrated', 'timesReset', 'accountVersion', 'seen', 'meydan', 'stats', 'maraton', 'rules', 'challenges', 'feats', 'ach', 'pins', 'friends', 'turnuva', 'ayna', 'gezgin', 'owned', 'accessory', 'kit', 'kits', 'looks', 'scarfs', 'sawEnding', 'full', 'tur', 'aynaTur', 'ustalar', 'coop', 'rushPlus', 'trio', 'story', 'cark', 'quiz'] as const
 export const cloudPart = (s: Save) => Object.fromEntries(CLOUD_KEYS.map((k) => [k, s[k]])) as Partial<Save>
 
 /**
@@ -392,6 +398,8 @@ export function mergeSaves(local: Save, cloud: Save): Save {
     meydan: mergeDaily(local.meydan, cloud.meydan),
     trio: mergeTrio(local.trio, cloud.trio),
     story: mergeStory(local.story, cloud.story),
+    cark: mergeCark(local.cark, cloud.cark),
+    quiz: mergeQuiz(local.quiz, cloud.quiz),
     // günlük hak cihazlar arasında da tek: en son başlanan gün kalır
     dailyTry: (local.dailyTry ?? '') > (cloud.dailyTry ?? '') ? local.dailyTry : cloud.dailyTry,
     stats: mergeStats(local.stats, cloud.stats),
@@ -473,7 +481,7 @@ export function resumeFor(s: Save): number {
 }
 
 /** Bu tarayıcıdaki ilerlemeyi siler (ayarlar kalır): çıkışta ve başka bir hesaba ait ilerleme yerine */
-export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, trio: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, pins: undefined, turnuva: null, ayna: {}, gezgin: {}, story: undefined, sawEnding: false, owned: {}, accessory: undefined, kit: undefined, kits: undefined, looks: undefined, scarfs: undefined })
+export const clearProgress = (s: Save): Save => ({ ...restartJourney(s), daily: { last: '', count: 0 }, weekly: { last: '', count: 0 }, scarf: 'al', migrated: true, owner: null, meydan: null, trio: null, stats: undefined, maraton: null, rules: {}, challenges: {}, coop: {}, rushPlus: {}, feats: {}, ach: {}, pins: undefined, turnuva: null, ayna: {}, gezgin: {}, story: undefined, cark: null, quiz: null, sawEnding: false, owned: {}, accessory: undefined, kit: undefined, kits: undefined, looks: undefined, scarfs: undefined })
 
 /** Giriş yapan hesaba katılabilecek yerel ilerleme: misafirinki ya da zaten o hesabınki; başka hesabınki boşaltılır */
 export function adoptable(local: Save, playerId: string): Save {
@@ -576,5 +584,5 @@ export function cleanIncoming(raw: Record<string, unknown>): Partial<Save> {
       const items = b.items as unknown[]
       best[id] = { ...(b as unknown as Best), items: [0, 1, 2].map((i) => items[i] === true) }
     }
-  return { ...(raw as Partial<Save>), looks: cleanLooks(raw.looks), trio: cleanTrio(raw.trio), story: cleanStory(raw.story), best, stamps: flags(raw.stamps), charms: flags(raw.charms), bosses: flags(raw.bosses), unlocked: Number.isInteger(raw.unlocked) ? Math.max(0, Math.min(LEVELS.length - 1, raw.unlocked as number)) : 0 }
+  return { ...(raw as Partial<Save>), looks: cleanLooks(raw.looks), trio: cleanTrio(raw.trio), story: cleanStory(raw.story), cark: cleanCark(raw.cark), quiz: cleanQuiz(raw.quiz), best, stamps: flags(raw.stamps), charms: flags(raw.charms), bosses: flags(raw.bosses), unlocked: Number.isInteger(raw.unlocked) ? Math.max(0, Math.min(LEVELS.length - 1, raw.unlocked as number)) : 0 }
 }

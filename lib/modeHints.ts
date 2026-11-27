@@ -3,7 +3,7 @@
  * oklarla gezinti. Metinler Türkçe anahtardır; arayüz `t()` ile çevirir.
  */
 
-export type ModeId = 'daily' | 'trio' | 'tournament' | 'rules' | 'challenges' | 'mirror' | 'tour' | 'rush' | 'marathon' | 'chase' | 'rage' | 'duel' | 'coop' | 'gezgin' | 'calm' | 'story' | 'editor' | 'community'
+export type ModeId = 'daily' | 'trio' | 'tournament' | 'rules' | 'challenges' | 'mirror' | 'tour' | 'rush' | 'marathon' | 'chase' | 'rage' | 'cark' | 'duel' | 'coop' | 'gezgin' | 'calm' | 'story' | 'quiz' | 'editor' | 'community'
 
 export interface ModeMeta {
   id: ModeId
@@ -23,7 +23,7 @@ export interface ModeMeta {
 
 /** Kutucuk sırası (ızgaradaki sıra): ilk dokuzu sayı tuşlarıyla açılır */
 export type TileId = Exclude<ModeId, 'daily' | 'trio' | 'tournament'>
-export const TILE_ORDER: TileId[] = ['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'story', 'editor', 'community']
+export const TILE_ORDER: TileId[] = ['rules', 'challenges', 'mirror', 'tour', 'rush', 'marathon', 'chase', 'rage', 'duel', 'coop', 'gezgin', 'calm', 'story', 'cark', 'quiz', 'editor', 'community']
 
 /** Modun görünen adı (Türkçe anahtar; arayüz t() ile çevirir) */
 export const NAME: Record<ModeId, string> = {
@@ -38,11 +38,13 @@ export const NAME: Record<ModeId, string> = {
   marathon: 'Maraton',
   chase: 'Kovalamaca',
   rage: 'Sinir Bozucu',
+  cark: 'Çark-ı Felek',
   duel: 'Düello',
   coop: 'Co-op',
   gezgin: 'Gezgin Turu',
   calm: 'Sakin Gezi',
   story: 'Hikâye Gezisi',
+  quiz: 'Defter Bilmecesi',
   editor: 'Bölüm Düzenleyici',
   community: 'Topluluk Haritaları',
 }
@@ -123,6 +125,15 @@ export const MODES: Record<ModeId, ModeMeta> = {
     tags: 'sinir bozucu öfke parkur kaygan karanlık ters tuş rage cehennem',
     howto: ['Her kural dünyayı bir yerinden bozar: kaygan, karanlık, ters tuşlar…', 'Kolaydan zora sıralıdır; sevdiğini seç.', 'Parkurlar: elle çizilmiş uzun ve çok zor yollar.'],
   },
+  cark: {
+    id: 'cark',
+    heat: 2,
+    players: 1,
+    ranked: false,
+    isNew: true,
+    tags: 'çark felek şans rastgele kural para parça ödül wheel fortune spin random',
+    howto: ['Çarkı çevir: bitirdiğin bir şehir ve o şehre uyan bir kural çıkar.', 'Koşuyu bitir; günün ilk üç çevirmesi kuralın zorluğuna göre Mağaza parçası verir.', 'Bitirmeden yeniden çevirirsen serin sıfırlanır.'],
+  },
   duel: {
     id: 'duel',
     heat: 1,
@@ -167,6 +178,15 @@ export const MODES: Record<ModeId, ModeMeta> = {
     isNew: true,
     tags: 'hikaye hikâye gezi tanış konuş diyalog karakter sohbet şehir insanı story talk dialogue meet characters',
     howto: ['Bir şehir seç; süre yok, düşüşün sayılmaz.', 'Bir şehir insanına yaklaşınca E ya da Enter’a bas (dokunmatikte “Konuş”), cevabını seç.', 'Üç soruyla üç yıldız topla; yıldızlar Defter → Tanıştıklarım’da durur.'],
+  },
+  quiz: {
+    id: 'quiz',
+    heat: 1,
+    players: 1,
+    ranked: false,
+    isNew: true,
+    tags: 'bilmece bilgi yarışma soru test defter şehir quiz trivia',
+    howto: ['Bitirdiğin şehirlerden on soru: hatıra, boss, takma ad, defter sayfası.', 'Dört şehirden doğrusunu seç; hızlı yanıt bonus puan getirir.', 'İlk tam puan Mağaza parçası kazandırır.'],
   },
   editor: { id: 'editor', heat: 1, players: 1, ranked: false, isNew: false, tags: 'düzenleyici harita yap çiz editor', howto: [] },
   community: { id: 'community', heat: 1, players: 1, ranked: false, isNew: false, tags: 'topluluk harita galeri community', howto: [] },

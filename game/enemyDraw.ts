@@ -2867,10 +2867,87 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     for (const x of [-5.6, -1.6, 3.4, 6.2]) dab(c, x, 2.5, 0.55, 0.26, '#8a4a1e')
     c.restore()
   },
-  // TASLAK: artist ajanı Kütahya hatırasını çizer
-  kutahya: (c) => KEEPSAKES.kastamonu(c),
-  // TASLAK: artist ajanı Samsun hatırasını çizer
-  samsun: (c) => KEEPSAKES.kutahya(c),
+  // Çini Tabak: beyaz sırlı yuvarlak tabak, kobalt kenar şeridi, firuze iç halka; ortada kırmızı lale, iki yaprak
+  kutahya: (c) => {
+    ell(c, 0, 0, 7.4, 7, '#f6f2e8', '#c8c4c8')
+    if (halo) return
+    // kenar şeridi: kobalt halka, üstünde beyaz benekler
+    c.lineWidth = 1.5
+    c.strokeStyle = '#2f62b0'
+    c.beginPath()
+    c.ellipse(0, 0, 6.1, 5.75, 0, 0, TAU)
+    c.stroke()
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * TAU
+      dab(c, Math.cos(a) * 6.1, Math.sin(a) * 5.75, 0.38, 0.38, '#f6f2e8')
+    }
+    c.lineWidth = 0.55
+    c.strokeStyle = '#3aa6b4'
+    c.beginPath()
+    c.ellipse(0, 0.1, 4.3, 4, 0, 0, TAU)
+    c.stroke()
+    // lale: ince eğri sap, iki uzun yaprak, üç taç yapraklı kırmızı çiçek
+    line(c, [0, 3.4, 0.2, 1, -0.2, -1.2], 0.45, '#3e8a4a', false)
+    shape(c, () => {
+      c.moveTo(0, 3.2)
+      c.quadraticCurveTo(-3.2, 1.8, -2.6, -0.6)
+      c.quadraticCurveTo(-1.2, 1.2, 0, 3.2)
+    }, '#4a9a52')
+    shape(c, () => {
+      c.moveTo(0.2, 3.2)
+      c.quadraticCurveTo(3, 2.2, 2.8, 0.2)
+      c.quadraticCurveTo(1.4, 1.6, 0.2, 3.2)
+    }, '#3e8a4a')
+    shape(c, () => {
+      c.moveTo(-1.6, -1.6)
+      c.quadraticCurveTo(-2, -3.6, -1.1, -4.4)
+      c.lineTo(-0.5, -3)
+      c.lineTo(0, -4.8)
+      c.lineTo(0.5, -3)
+      c.lineTo(1.1, -4.4)
+      c.quadraticCurveTo(2, -3.6, 1.6, -1.6)
+      c.quadraticCurveTo(0, -0.6, -1.6, -1.6)
+    }, '#d8402e', '#9a2a1e')
+    dab(c, -0.8, -2.8, 0.4, 0.9, 'rgba(255,220,200,0.7)')
+    // sır parıltısı: sol üstte
+    dab(c, -4.2, -3.8, 1.6, 0.7, 'rgba(255,255,255,0.85)', -0.7)
+    dab(c, -5.4, -1.6, 0.4, 0.9, 'rgba(255,255,255,0.6)', -0.3)
+  },
+  // Bafra Pidesi: uzun, ince, kapalı pide; kızarmış kabuk, üstünde boydan boya yarık ve içinden görünen kıymalı iç, uçlar burgulu
+  samsun: (c) => {
+    c.save()
+    c.rotate(-0.34)
+    shape(
+      c,
+      () => {
+        c.moveTo(-9.4, 0)
+        c.quadraticCurveTo(-7, -3, 0, -3.1)
+        c.quadraticCurveTo(7, -3, 9.4, 0)
+        c.quadraticCurveTo(7, 2.9, 0, 3)
+        c.quadraticCurveTo(-7, 2.9, -9.4, 0)
+      },
+      '#e2a858',
+      '#a8662a',
+    )
+    if (!halo) {
+      // üst yarık: içten koyu kızıl kıyma görünür
+      shape(c, () => {
+        c.moveTo(-5.6, -0.4)
+        c.quadraticCurveTo(0, -1.6, 5.6, -0.4)
+        c.quadraticCurveTo(0, 0.6, -5.6, -0.4)
+      }, '#9a3e24')
+      for (const x of [-3.4, -0.6, 2.2, 4.4]) dab(c, x, -0.55 - Math.cos(x / 4) * 0.25, 0.5, 0.32, '#c8603a')
+      // kabuk: ışıkta tereyağı parıltısı, uçlarda burgu izleri, susamsız kızarık benekler
+      dab(c, -3.8, -2, 3.4, 0.55, 'rgba(255,232,176,0.85)')
+      dab(c, 3, -1.9, 1.6, 0.4, 'rgba(255,232,176,0.6)')
+      for (const k of [-1, 1]) {
+        line(c, [k * 7.4, -1.4, k * 8.2, 0.2, k * 7.6, 1.6], 0.4, '#a8662a', false)
+        line(c, [k * 6.4, -2, k * 7, 0, k * 6.6, 2], 0.35, '#b8763a', false)
+      }
+      for (const [x, y] of [[-6, 1.8], [-1.6, 2.2], [3.6, 2], [6.6, 1.2]] as const) dab(c, x, y, 0.6, 0.28, '#9a5420')
+    }
+    c.restore()
+  },
 }
 
 /** bilinmeyen şehir: altın yıldız */

@@ -580,6 +580,11 @@ export class Sound {
         this.noise(0.42, 0.035, 1500 * vary, now, 0.5, 'lowpass')
         this.chime(this.scaleNote(4, 1), 0.035, now + 0.04, 0.35)
         return this.chime(this.scaleNote(2, 1), 0.03, now + 0.13, 0.45)
+      case 'dip':
+        // suya dalış: pes, yumuşak bir "blop", süzülmüş su hışırtısı ve makamdan kısık tek damla (sık çalabilir: çok kısık)
+        this.tone(190 * vary, 0.16, 'sine', 0.045, -80, now)
+        this.noise(0.28, 0.025, 900 * vary, now, 0.5, 'lowpass')
+        return this.chime(this.scaleNote(2, 1), 0.025, now + 0.06, 0.3)
       case 'freeze':
         // su donuyor: tiz, çıtırdayan kısa buz sesi ve makamdan tiz bir çan
         this.noise(0.25, 0.03, 3200, now, 0.4, 'lowpass')

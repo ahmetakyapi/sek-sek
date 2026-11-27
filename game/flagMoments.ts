@@ -291,15 +291,15 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Zirvede bulutlar dağılıyor.', 'The clouds part at the summit.'],
   ],
   kutahya: [
-    ['TASLAK: Kütahya bayrak sözü 1.', 'TASLAK: Kütahya flag line 1.'],
-    ['TASLAK: Kütahya bayrak sözü 2.', 'TASLAK: Kütahya flag line 2.'],
-    ['TASLAK: Kütahya bayrak sözü 3.', 'TASLAK: Kütahya flag line 3.'],
-    ['TASLAK: Kütahya bayrak sözü 4.', 'TASLAK: Kütahya flag line 4.'],
+    ['Kale yokuşunda çay demlendi, bardaklar şıngırdıyor.', 'Tea is brewed on the castle slope; the glasses clink.'],
+    ['Burçtan bakınca şehrin damları çini gibi dizilmiş.', 'From the tower the city’s roofs lie in rows like tiles.'],
+    ['Fırından yeni çıkan çiniler tıkır tıkır soğuyor.', 'Tiles fresh from the kiln tick softly as they cool.'],
+    ['Zeus’un sütunları ovada gölge düşürüyor.', 'The columns of Zeus cast long shadows on the plain.'],
   ],
   samsun: [
-    ['TASLAK: Samsun bayrak sözü 1.', 'TASLAK: Samsun flag line 1.'],
-    ['TASLAK: Samsun bayrak sözü 2.', 'TASLAK: Samsun flag line 2.'],
-    ['TASLAK: Samsun bayrak sözü 3.', 'TASLAK: Samsun flag line 3.'],
-    ['TASLAK: Samsun bayrak sözü 4.', 'TASLAK: Samsun flag line 4.'],
+    ['Vapurun düdüğü limanda yankılanıyor.', 'The steamer’s whistle echoes across the harbour.'],
+    ['Atakum’da dalgalar mendireğe vuruyor.', 'At Atakum the waves break against the jetty.'],
+    ['Teleferik kabini tepeye süzülüyor.', 'A cable car cabin glides up the hill.'],
+    ['Sazlıktan bir balıkçıl havalanıyor.', 'A heron lifts off from the reeds.'],
   ],
 }
