@@ -1,7 +1,6 @@
 /** Arayüz metinlerinin İngilizcesi. Anahtar: Türkçe metnin kendisi (sözlükte yoksa Türkçesi görünür). */
 export const UI_EN: Record<string, string> = {
-  "Yeni Şehir: Kütahya": "New City: Kütahya",
-  "TASLAK: Kütahya ile gelenler tek cümlede (şehrin mekaniği ve gerçek yerleri).": "TASLAK: what comes with Kütahya, in one sentence.",
+  'Kütahya ve Samsun: çini fırınlarının seni yukarı taşıyan sıcak havası, Aizanoi’nin Zeus Tapınağı, Bandırma Vapuru, Amisos’un teleferiği ve Kızılırmak Deltası.': 'Kütahya and Samsun: the hot air of the tile kilns that lifts you up, the Temple of Zeus at Aizanoi, the Bandırma steamship, the cable car of Amisos and the Kızılırmak Delta.',
   // Defter, Albüm, Müzik Kutusu, Skor, Dükkân, Mücadeleler, Turnuva, Ayna Yolu (menü sadeleşmesi)
   'Ayna Toplamın': 'Your Mirror Total',
   'Bu Haftanın Sıralaması': 'This Week’s Rankings',

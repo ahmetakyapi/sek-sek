@@ -194,7 +194,7 @@ export function CarkScreen({ mark, today, cities, rules, onSpin, onStart, onBack
                   {ic(t(res ? '↻ Yeniden Çevir' : '↻ Çarkı Çevir'))}
                 </button>
               </div>
-              {pending && <p className="text-[12px] leading-snug text-muted">{t('Bitirmeden yeniden çevirirsen serin sıfırlanır.')}</p>}
+              {pending && <p className="text-[12px] leading-snug text-muted short:hidden">{t('Bitirmeden yeniden çevirirsen serin sıfırlanır.')}</p>}
             </div>
           </div>
         </div>
