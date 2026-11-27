@@ -75,7 +75,7 @@ function Wheel({ wheel, angle, animate, winner }: { wheel: DailyRule[]; angle: n
 }
 
 /**
- * Çark-ı Felek: çark bitirilmiş bir şehir ve o şehirde kanıtlı bir kural seçer; koşu Kurallı Koşu altyapısında oynanır.
+ * Çarkıfelek: çark bitirilmiş bir şehir ve o şehirde kanıtlı bir kural seçer; koşu Kurallı Koşu altyapısında oynanır.
  * Günün ilk üç çevirmesi bitince Mağaza parçası verir (kuralın zorluğuna göre), seri art arda bitirilen çevirmelerdir.
  */
 export function CarkScreen({ mark, today, cities, rules, onSpin, onStart, onBack }: { mark: CarkMark | null | undefined; today: string; cities: LevelDef[]; /** Kurallı Koşu rekorları (şehir:kural) */ rules: Record<string, number> | undefined; onSpin: (spin: CarkSpin) => void; onStart: (levelId: string, rule: DailyRule) => void; onBack: () => void }) {
@@ -131,7 +131,7 @@ export function CarkScreen({ mark, today, cities, rules, onSpin, onStart, onBack
       <div className="rise pixel-panel flex max-h-[calc(100dvh-32px)] w-full max-w-3xl flex-col p-4 sm:p-6 short:max-w-[min(860px,100%)] short:py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-3xl leading-none text-cream short:text-2xl">{t('Çark-ı Felek')}</h2>
+            <h2 className="font-display text-3xl leading-none text-cream short:text-2xl">{t('Çarkıfelek')}</h2>
             <p className="mt-1.5 text-[14px] text-muted max-sm:hidden short:hidden">{t('Çark bir şehir ve bir kural seçer. Bitir, parçayı kap.')}</p>
           </div>
           <button data-back className="pixel-btn back-btn shrink-0 whitespace-nowrap" onClick={onBack}>

@@ -3,7 +3,7 @@ import { RAGE_RULES, RULES, ruleFits, type DailyRule } from './extras'
 import { draftCity } from './quiz'
 
 /**
- * Çark-ı Felek: çark bitirilmiş bir şehir ve o şehirde kanıtlı bir kural seçer (Günlük kurallar + Sinir Bozucu, `ruleFits`:
+ * Çarkıfelek: çark bitirilmiş bir şehir ve o şehirde kanıtlı bir kural seçer (Günlük kurallar + Sinir Bozucu, `ruleFits`:
  * NO_DASH_OK, SLIPPERY_OK… listeleri), koşu Kurallı Koşu altyapısında oynanır. Günde CARK_PAID ödüllü çevirme: biten
  * koşu kuralın zorluğuna göre Mağaza parçası verir; sonrası serbest. Seçim saf ve tohumludur (tests/carkQuiz.test.ts).
  */

@@ -165,7 +165,7 @@ export function ModesHub({
   /** rekoru olan şehir sayısı (Sana Önerilen için) */
   citiesDone: number
   onCark: () => void
-  /** Çark-ı Felek: bugün kalan ödüllü çevirme ve seri */
+  /** Çarkıfelek: bugün kalan ödüllü çevirme ve seri */
   cark: { left: number; streak: number }
   onQuiz: () => void
   /** Defter Bilmecesi: açık mı (en az dört şehir), bitirilen şehir sayısı, en iyi skor */
@@ -711,7 +711,7 @@ export function ModesHub({
                   <ModeTile
                     id="cark"
                     tone="var(--color-coral)"
-                    title={t('Çark-ı Felek')}
+                    title={t('Çarkıfelek')}
                     desc={tileDesc.cark}
                     status={!rulesOpen ? t('Bir şehri bitirince açılır') : cark.left ? `${t('{n} ödüllü çevirme', { n: cark.left })}${cark.streak ? ` · 🔥 ${cark.streak}` : ''}` : `${t('Bugün serbest')}${cark.streak ? ` · 🔥 ${cark.streak}` : ''}`}
                     locked={!rulesOpen}
@@ -1009,12 +1009,12 @@ export interface DailyResult {
   free?: boolean
   /** kaçıncı denemede bitti (Tek Can, Zamana Karşı) */
   tries?: number
-  /** Çark-ı Felek'in koşusu: kazanılan parça (ödülsüz çevirmede 0) ve seri */
+  /** Çarkıfelek'in koşusu: kazanılan parça (ödülsüz çevirmede 0) ve seri */
   cark?: { coins: number; streak: number }
 }
 
 /** Günlük bitiş: skorun nasıl hesaplandığı satır satır, günlük sıralama ve yeniden deneme */
-export function DailyEnd({ result, player, status, rank, onRetry, retryLabel, onModes, onLogin }: { result: DailyResult; player: string; status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null; /** yalnız serbest Kurallı Koşu'da: günlükte tek hak */ onRetry?: () => void; /** yeniden deneme düğmesinin yazısı (Çark-ı Felek: çarka dön) */ retryLabel?: string; onModes: () => void; onLogin: () => void }) {
+export function DailyEnd({ result, player, status, rank, onRetry, retryLabel, onModes, onLogin }: { result: DailyResult; player: string; status: 'idle' | 'sending' | 'sent' | 'error'; rank: number | null; /** yalnız serbest Kurallı Koşu'da: günlükte tek hak */ onRetry?: () => void; /** yeniden deneme düğmesinin yazısı (Çarkıfelek: çarka dön) */ retryLabel?: string; onModes: () => void; onLogin: () => void }) {
   const t = useT()
   const lng = useLang()
   const rule = DAILY_RULES[result.run.rule]
@@ -1046,7 +1046,7 @@ export function DailyEnd({ result, player, status, rank, onRetry, retryLabel, on
             <span style={{ color: fam.color }}>
               <RuleIcon rule={result.run.rule} size={16} />
             </span>
-            {result.cark ? t('Çark-ı Felek') : result.free ? t('Kurallı Koşu') : t('Günlük Meydan Okuma')} · <span className="text-cream">{t(rule.name)}</span>
+            {result.cark ? t('Çarkıfelek') : result.free ? t('Kurallı Koşu') : t('Günlük Meydan Okuma')} · <span className="text-cream">{t(rule.name)}</span>
           </p>
           {result.cark && (
             <p className="count-pop mt-2 inline-block border-2 border-gold/60 bg-gold/10 px-2.5 py-1 text-[14px] font-bold text-gold">

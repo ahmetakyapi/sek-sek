@@ -86,7 +86,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ghost', name: 'Hayalet Avcısı', text: 'Skor tablosundan bir yolcunun hayaletini geç.', icon: '◌', progress: feat('ghostBeaten') },
   { id: 'challenge3', name: 'Mücadeleci', text: 'Üç mücadele haritasını bitir.', icon: '▲', progress: (s) => [Math.min(3, chals(s)), 3] },
   { id: 'challengeAll', name: 'Hepsi Bitti', text: 'Bütün mücadele haritalarını bitir.', icon: '▲', progress: (s) => [chals(s), CHALLENGES.length] },
-  { id: 'cark10', name: 'Felek Dostu', text: 'Çark-ı Felek’in on çevirmesini bitir.', icon: '✺', progress: (s) => [Math.min(10, s.cark?.wins ?? 0), 10] },
+  { id: 'cark10', name: 'Felek Dostu', text: 'Çarkıfelek’in on çevirmesini bitir.', icon: '✺', progress: (s) => [Math.min(10, s.cark?.wins ?? 0), 10] },
   { id: 'quizPerfect', name: 'Defter Kurdu', text: 'Defter Bilmecesi’nde on soruda on yap.', icon: '?', progress: (s) => [s.quiz?.perfect ? 1 : 0, 1] },
   // Hikâye Gezisi
   { id: 'storyFirst', name: 'Selam Verdim', text: 'Hikâye Gezisi’nde bir şehir insanıyla tanış.', icon: '❝', progress: (s) => [Math.min(1, story(s).met), 1] },

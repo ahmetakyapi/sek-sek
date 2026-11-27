@@ -102,7 +102,7 @@ type Screen = 'title' | 'photo' | 'coopSetup' | 'coop' | 'coopEnd' | 'about' | '
 
 /** Yolun dışındaki koşu: ilerlemeye ve şehir rekoruna dokunmaz */
 /** daily: kurallı koşu (günün meydan okuması ya da free: oyuncunun seçtiği şehir ve kural) */
-type Mode = { kind: 'daily'; run: DailyRun; free?: boolean; /** Çark-ı Felek'in çevirdiği koşu (serbest Kurallı Koşu + çark ödülü) */ cark?: boolean } | { kind: 'duel' }
+type Mode = { kind: 'daily'; run: DailyRun; free?: boolean; /** Çarkıfelek'in çevirdiği koşu (serbest Kurallı Koşu + çark ödülü) */ cark?: boolean } | { kind: 'duel' }
 
 interface Duel {
   setup: DuelSetupValue
@@ -141,7 +141,7 @@ const STEP = 1 / 120
 const RELEASE_NOTES: Record<string, [string, string][]> = {
   kutahya: [
     ['İki Yeni Şehir', 'Kütahya ve Samsun: çini fırınlarının seni yukarı taşıyan sıcak havası, Aizanoi’nin Zeus Tapınağı, Bandırma Vapuru, Amisos’un teleferiği ve Kızılırmak Deltası.'],
-    ['Çark-ı Felek', 'Çarkı çevir: bir şehir ve bir kural çıkar. Bitir, Mağaza parçası kazan; günde üç ödüllü çevirme.'],
+    ['Çarkıfelek', 'Çarkı çevir: bir şehir ve bir kural çıkar. Bitir, Mağaza parçası kazan; günde üç ödüllü çevirme.'],
     ['Defter Bilmecesi', 'Gezdiğin şehirleri ne kadar hatırlıyorsun? Hatıralar, boss’lar ve bilgilerden on soru.'],
     ['Daha Canlı Yol', 'Yüksekten inince toz, bayrakta ışık halkası, suya dalınca dalga, karda ayak izi; hatıralar pırıldayarak toplanır.'],
   ],
@@ -364,7 +364,7 @@ export default function Game() {
   const ustaCount = Object.values(save.ustalar ?? {}).filter(Boolean).length
   const foundTotal = LEVELS.reduce((a, l) => a + (save.best[l.id]?.items.filter(Boolean).length ?? 0) + (save.stamps[l.id] ? 1 : 0) + (save.charms[l.id] ? 1 : 0), 0)
   const bossCount = LEVELS.filter((l) => save.bosses[l.id]).length
-  /** Çark-ı Felek ve Defter Bilmecesi'nin Mağaza parçası (kazanca eklenir, iki yolcuya da tam) */
+  /** Çarkıfelek ve Defter Bilmecesi'nin Mağaza parçası (kazanca eklenir, iki yolcuya da tam) */
   const modeCoins = carkCoins(save.cark) + quizCoins(save.quiz)
   /** Defter Bilmecesi'nin şehirleri: bitirilmiş ve metni yazılmış (TASLAK olmayan) */
   const quizPool = LEVELS.filter((l) => save.best[l.id] && !draftCity(l))
@@ -1548,7 +1548,7 @@ export default function Game() {
     setCpToast({ at: Date.now() + 1, text: `${t(DAILY_RULES[rule].name)}: ${t(DAILY_RULES[rule].text)}` })
   }
 
-  /** Çark-ı Felek: çarkın seçtiği şehir ve kural, serbest Kurallı Koşu olarak; bitince çarkın ödülü (finish) */
+  /** Çarkıfelek: çarkın seçtiği şehir ve kural, serbest Kurallı Koşu olarak; bitince çarkın ödülü (finish) */
   const startCark = (levelId: string, rule: DailyRule) => {
     const idx = LEVELS.findIndex((l) => l.id === levelId)
     if (idx < 0) return

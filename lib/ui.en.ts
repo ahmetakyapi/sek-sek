@@ -2393,8 +2393,8 @@ export const UI_EN: Record<string, string> = {
   'Denemeyi Bırak': 'Drop the Try-On',
   'Denediklerini bırakır, takılı kombine döner': 'Drops what you are trying on and goes back to the outfit you wear',
   '{a}/{b} Senin': '{a}/{b} Yours',
-  // Çark-ı Felek ve Defter Bilmecesi (27 Kasım 2026)
-  'Çark-ı Felek': 'Wheel of Fortune',
+  // Çarkıfelek ve Defter Bilmecesi (27 Kasım 2026)
+  'Çarkıfelek': 'Wheel of Fortune',
   Çark: 'Wheel',
   'Çark şehri ve kuralı seçer; bitir, parça kazan.': 'The wheel picks the city and the rule; finish to earn pieces.',
   'Çarkı çevir: bitirdiğin bir şehir ve o şehre uyan bir kural çıkar.': 'Spin the wheel: you get a city you finished and a rule that fits it.',
@@ -2418,7 +2418,7 @@ export const UI_EN: Record<string, string> = {
   '↻ Çarka Dön': '↻ Back to the Wheel',
   'Çark: +{n} parça': 'Wheel: +{n} pieces',
   'Felek Dostu': 'Fortune’s Friend',
-  'Çark-ı Felek’in on çevirmesini bitir.': 'Finish ten Wheel of Fortune spins.',
+  'Çarkıfelek’in on çevirmesini bitir.': 'Finish ten Wheel of Fortune spins.',
   'Defter Bilmecesi': 'Notebook Quiz',
   'Gezdiğin şehirlerden on soruluk bilgi yarışması.': 'A ten-question quiz on the cities you have travelled.',
   'Bitirdiğin şehirlerden on soru: hatıra, boss, takma ad, defter sayfası.': 'Ten questions from the cities you finished: keepsakes, bosses, nicknames, notebook pages.',

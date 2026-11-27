@@ -75,10 +75,10 @@ const SCREENS = {
   'hikaye-defter': [STORY, ['Defter', 'tab:Tanıştık']],
   'hikaye-defter-bos': [null, ['Defter', 'tab:Tanıştık']],
   'sinir-bozucu': [SAVE, ['Modlar', 'Sinir Bozucu']],
-  // Çark-ı Felek: çark, çevrilmiş sonuç (dönüş biter), çarkın koşusu bitince bölüm sonu
-  cark: [SAVE, ['Modlar', 'Çark-ı Felek']],
-  'cark-sonuc': [SAVE, ['Modlar', 'Çark-ı Felek', '↻ Çarkı Çevir', 'wait:3000']],
-  'cark-bitis': [SAVE, ['Modlar', 'Çark-ı Felek', '↻ Çarkı Çevir', 'wait:3000', '▶ Koşuya Başla', 'wait:600', FINISH, 'wait:900']],
+  // Çarkıfelek: çark, çevrilmiş sonuç (dönüş biter), çarkın koşusu bitince bölüm sonu
+  cark: [SAVE, ['Modlar', 'Çarkıfelek']],
+  'cark-sonuc': [SAVE, ['Modlar', 'Çarkıfelek', '↻ Çarkı Çevir', 'wait:3000']],
+  'cark-bitis': [SAVE, ['Modlar', 'Çarkıfelek', '↻ Çarkı Çevir', 'wait:3000', '▶ Koşuya Başla', 'wait:600', FINISH, 'wait:900']],
   // Defter Bilmecesi: giriş, yanıtlanmış soru (bilgi kartı açık), kilitli (üç şehir)
   bilmece: [SAVE, ['Modlar', 'Defter Bilmecesi']],
   'bilmece-soru': [SAVE, ['Modlar', 'Defter Bilmecesi', '▶ Başla', 'wait:300', 'key:1', 'wait:500']],

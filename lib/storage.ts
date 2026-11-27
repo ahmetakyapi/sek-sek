@@ -187,7 +187,7 @@ export interface Save {
   gezgin?: Record<string, number>
   /** Hikâye Gezisi: şehir insanının adı → bit alanı (lib/storyRules.ts: sorulan sorular, defter sayfası, tanışıldı) */
   story?: StoryLog
-  /** Çark-ı Felek: bugünkü ödüllü çevirmeler, seri, açık koşu, gün gün kazanılan parça (lib/cark.ts) */
+  /** Çarkıfelek: bugünkü ödüllü çevirmeler, seri, açık koşu, gün gün kazanılan parça (lib/cark.ts) */
   cark?: CarkMark | null
   /** Defter Bilmecesi: en iyi skor, oynama, ilk tam puan (lib/quiz.ts) */
   quiz?: QuizMark | null

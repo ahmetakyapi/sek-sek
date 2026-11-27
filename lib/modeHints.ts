@@ -38,7 +38,7 @@ export const NAME: Record<ModeId, string> = {
   marathon: 'Maraton',
   chase: 'Kovalamaca',
   rage: 'Sinir Bozucu',
-  cark: 'Çark-ı Felek',
+  cark: 'Çarkıfelek',
   duel: 'Düello',
   coop: 'Co-op',
   gezgin: 'Gezgin Turu',

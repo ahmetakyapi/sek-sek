@@ -11,7 +11,7 @@ const fold = (s: string) => s.toLocaleLowerCase('tr').normalize('NFD').replace(/
 const rw = (r: DailyRule) => carkReward(RULE_ART[r].heat)
 const ready = LEVELS.filter((l) => !draftCity(l))
 
-describe('Çark-ı Felek', () => {
+describe('Çarkıfelek', () => {
   it('aynı tohum aynı çevirme; şehir havuzdan, kural o şehirde kanıtlı (ruleFits)', () => {
     for (let i = 0; i < 400; i++) {
       const seed = `2026-11-${10 + (i % 20)}:${i}`
