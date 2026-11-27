@@ -4059,6 +4059,10 @@ const PAINT: Record<CityKey, Painter> = {
     c.restore()
     aura(c, mood, t, -8.4, -17.4, fx + 6.2, fy + 0.4)
   },
+  // TASLAK: artist ajanı Kütahya boss çizimini yazar
+  kutahya: (c, b, mood, t) => PAINT.kastamonu(c, b, mood, t),
+  // TASLAK: artist ajanı Samsun boss çizimini yazar
+  samsun: (c, b, mood, t) => PAINT.kutahya(c, b, mood, t),
 }
 
 /** Yerden çıkan boss'un işareti: kabaran toprak, sıçrayan çakıllar. */

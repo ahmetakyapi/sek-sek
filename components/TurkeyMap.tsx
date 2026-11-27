@@ -143,6 +143,8 @@ const COORDS: Record<string, [number, number]> = {
   bingol: [40.5, 38.88],
   adiyaman: [38.28, 37.76],
   kastamonu: [33.78, 41.38],
+  kutahya: [29.98, 39.42],
+  samsun: [36.33, 41.29],
 }
 
 const W = 640

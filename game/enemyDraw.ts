@@ -2867,6 +2867,10 @@ const KEEPSAKES: Record<CityKey, ItemPainter> = {
     for (const x of [-5.6, -1.6, 3.4, 6.2]) dab(c, x, 2.5, 0.55, 0.26, '#8a4a1e')
     c.restore()
   },
+  // TASLAK: artist ajanı Kütahya hatırasını çizer
+  kutahya: (c) => KEEPSAKES.kastamonu(c),
+  // TASLAK: artist ajanı Samsun hatırasını çizer
+  samsun: (c) => KEEPSAKES.kutahya(c),
 }
 
 /** bilinmeyen şehir: altın yıldız */

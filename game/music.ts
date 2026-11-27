@@ -154,6 +154,10 @@ export const SCALES: Record<CityKey, Makam> = {
   afyon: { root: 53, steps: [0, 1, 4, 5, 7, 8, 11, 12] },
   // Kürdi, Harput havası 7/8 (Elazığ)
   elazig: { root: 50, steps: [0, 1, 3, 5, 7, 8, 10, 12] },
+  // Hüseyni (Sol), Kütahya türküsü ağırlığı, çini atölyesinin sakin ezgisi
+  kutahya: { root: 55, steps: [0, 2, 3, 5, 7, 9, 10, 12] },
+  // TASLAK: Samsun makamı (yalnız efektler; .claude/rules/ses.md)
+  samsun: { root: 57, steps: [0, 2, 3, 5, 7, 8, 10, 12] },
 }
 
 // ── ortak araçlar ─────────────────────────────────────────────────────────

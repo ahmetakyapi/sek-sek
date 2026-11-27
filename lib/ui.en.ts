@@ -1,5 +1,7 @@
 /** Arayüz metinlerinin İngilizcesi. Anahtar: Türkçe metnin kendisi (sözlükte yoksa Türkçesi görünür). */
 export const UI_EN: Record<string, string> = {
+  "Yeni Şehir: Kütahya": "New City: Kütahya",
+  "TASLAK: Kütahya ile gelenler tek cümlede (şehrin mekaniği ve gerçek yerleri).": "TASLAK: what comes with Kütahya, in one sentence.",
   // Defter, Albüm, Müzik Kutusu, Skor, Dükkân, Mücadeleler, Turnuva, Ayna Yolu (menü sadeleşmesi)
   'Ayna Toplamın': 'Your Mirror Total',
   'Bu Haftanın Sıralaması': 'This Week’s Rankings',

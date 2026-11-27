@@ -48,4 +48,6 @@ export const FEATURES: Record<string, { tr: string; en: string }> = {
   afyon: { tr: 'Havlu fırlatan havuz teyzeleri (görünmeden geç ya da dal), termal otelin döner kapısı, açık büfede servis arabası, buhar odasında yükselen buhar, kara kayanın tepesindeki kale, Frig Vadisi', en: 'Towel-throwing pool aunties (pass unseen or dive), the thermal hotel’s revolving door, the service trolley at the open buffet, rising steam in the steam room, the castle on the black rock, the Phrygian Valley' },
   elazig: { tr: 'Saat gibi donup eriyen su, Harput’un Süt Kalesi, eğri minareye tahtayla çıkış, yeraltında Buzluk Mağarası, Hazar Gölü’nün donan yüzü ve batık şehri', en: 'Water that freezes and thaws like clockwork, the Milk Castle of Harput, a ride up to the leaning minaret, the Buzluk Cave underground, the freezing face of Lake Hazar and its sunken city' },
   agri: { tr: 'Halatlı saray avluları, Meteor Çukuru üstünde teleferik, buzlu yamaç, karşı rüzgâr', en: 'Palace courtyards with ropes, a cable line over the Meteor Crater, an icy slope, a headwind' },
+  kutahya: { tr: 'TASLAK: Kütahya mekaniği ve gerçek yerleri', en: 'TASLAK: Kütahya mechanic and real places' },
+  samsun: { tr: 'TASLAK: Samsun mekaniği ve gerçek yerleri', en: 'TASLAK: Samsun mechanic and real places' },
 }

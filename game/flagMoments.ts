@@ -290,4 +290,16 @@ export const FLAG_MOMENTS: Record<CityKey, [string, string][]> = {
     ['Meteor Çukuru’na bir taş düştü.', 'A pebble falls into the Meteor Crater.'],
     ['Zirvede bulutlar dağılıyor.', 'The clouds part at the summit.'],
   ],
+  kutahya: [
+    ['TASLAK: Kütahya bayrak sözü 1.', 'TASLAK: Kütahya flag line 1.'],
+    ['TASLAK: Kütahya bayrak sözü 2.', 'TASLAK: Kütahya flag line 2.'],
+    ['TASLAK: Kütahya bayrak sözü 3.', 'TASLAK: Kütahya flag line 3.'],
+    ['TASLAK: Kütahya bayrak sözü 4.', 'TASLAK: Kütahya flag line 4.'],
+  ],
+  samsun: [
+    ['TASLAK: Samsun bayrak sözü 1.', 'TASLAK: Samsun flag line 1.'],
+    ['TASLAK: Samsun bayrak sözü 2.', 'TASLAK: Samsun flag line 2.'],
+    ['TASLAK: Samsun bayrak sözü 3.', 'TASLAK: Samsun flag line 3.'],
+    ['TASLAK: Samsun bayrak sözü 4.', 'TASLAK: Samsun flag line 4.'],
+  ],
 }

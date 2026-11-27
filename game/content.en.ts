@@ -1543,6 +1543,62 @@ export const LEVELS_EN: Record<string, LevelEn> = {
     ],
     quips: ['Covered in coal dust.', 'Esoli winked at you.', 'You ran out of breath.', 'The cart left, you stayed.'],
   },
+  kutahya: {
+    // TASLAK: Kütahya İngilizcesi (levels.ts ile aynı sayıda)
+    subtitle: 'TASLAK: Kütahya subtitle',
+    item: 'TASLAK keepsake',
+    nickname: 'TASLAK nickname',
+    intro: 'TASLAK: Kütahya intro.',
+    note: 'TASLAK: the Wanderer’s note on Kütahya.',
+    facts: [
+      { title: 'TASLAK fact 1', text: 'TASLAK: verified fact 1 about Kütahya.' },
+      { title: 'TASLAK fact 2', text: 'TASLAK: verified fact 2 about Kütahya.' },
+      { title: 'TASLAK fact 3', text: 'TASLAK: verified fact 3 about Kütahya.' },
+    ],
+    secret: { title: 'TASLAK secret', text: 'TASLAK: secret fact about Kütahya.' },
+    hints: [
+      'TASLAK: Kütahya sign 1.',
+      'TASLAK: Kütahya sign 2.',
+      'TASLAK: Kütahya sign 3.',
+      'TASLAK: Kütahya sign 4.',
+      'TASLAK: Kütahya sign 5.',
+    ],
+    npcs: [
+      { name: 'The Master of Kütahya (TASLAK)', text: 'TASLAK: person 1 of Kütahya.' },
+      { name: 'The Auntie of Kütahya (TASLAK)', text: 'TASLAK: person 2 of Kütahya.' },
+      { name: 'The Guide of Kütahya (TASLAK)', text: 'TASLAK: person 3 of Kütahya.' },
+      { name: 'The Watchman of Kütahya (TASLAK)', text: 'TASLAK: person 4 of Kütahya.' },
+    ],
+    quips: ['TASLAK: Kütahya quip 1.', 'TASLAK: Kütahya quip 2.', 'TASLAK: Kütahya quip 3.', 'TASLAK: Kütahya quip 4.'],
+  },
+  samsun: {
+    // TASLAK: Samsun İngilizcesi (levels.ts ile aynı sayıda)
+    subtitle: 'TASLAK: Samsun subtitle',
+    item: 'TASLAK keepsake',
+    nickname: 'TASLAK nickname',
+    intro: 'TASLAK: Samsun intro.',
+    note: 'TASLAK: the Wanderer’s note on Samsun.',
+    facts: [
+      { title: 'TASLAK fact 1', text: 'TASLAK: verified fact 1 about Samsun.' },
+      { title: 'TASLAK fact 2', text: 'TASLAK: verified fact 2 about Samsun.' },
+      { title: 'TASLAK fact 3', text: 'TASLAK: verified fact 3 about Samsun.' },
+    ],
+    secret: { title: 'TASLAK secret', text: 'TASLAK: secret fact about Samsun.' },
+    hints: [
+      'TASLAK: Samsun sign 1.',
+      'TASLAK: Samsun sign 2.',
+      'TASLAK: Samsun sign 3.',
+      'TASLAK: Samsun sign 4.',
+      'TASLAK: Samsun sign 5.',
+    ],
+    npcs: [
+      { name: 'The Master of Samsun (TASLAK)', text: 'TASLAK: person 1 of Samsun.' },
+      { name: 'The Auntie of Samsun (TASLAK)', text: 'TASLAK: person 2 of Samsun.' },
+      { name: 'The Guide of Samsun (TASLAK)', text: 'TASLAK: person 3 of Samsun.' },
+      { name: 'The Watchman of Samsun (TASLAK)', text: 'TASLAK: person 4 of Samsun.' },
+    ],
+    quips: ['TASLAK: Samsun quip 1.', 'TASLAK: Samsun quip 2.', 'TASLAK: Samsun quip 3.', 'TASLAK: Samsun quip 4.'],
+  },
 }
 
 export const STORY_EN: { title: string; text: string }[] = [

@@ -6191,7 +6191,9 @@ const NEXT_CITY: Record<CityKey, string | null> = {
   afyon: 'BİNGÖL',
   bingol: 'ADIYAMAN',
   adiyaman: 'KASTAMONU',
-  kastamonu: null,
+  kastamonu: 'KÜTAHYA',
+  kutahya: 'SAMSUN',
+  samsun: null,
 }
 
 function hexA(hex: string, a: number) {

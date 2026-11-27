@@ -53,9 +53,11 @@ import { prelude as bingol } from './bingol'
 import { prelude as adiyaman } from './adiyaman'
 import { prelude as kastamonu } from './kastamonu'
 import { prelude as karabuk } from './karabuk'
+import { prelude as kutahya } from './kutahya'
+import { prelude as samsun } from './samsun'
 import type { Prelude } from './types'
 
-export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt, kayseri, hatay, eskisehir, edirne, bursa, antalya, sanliurfa, van, erzurum, amasya, mugla, rize, artvin, kars, bitlis, agri, giresun, tokat, denizli, zonguldak, mersin, karabuk, aydin, balikesir, elazig, afyon, bingol, adiyaman, kastamonu }
+export const PRELUDES: Record<CityKey, Prelude> = { istanbul, kocaeli, canakkale, izmir, ankara, konya, nevsehir, adana, gaziantep, diyarbakir, mardin, malatya, corum, sinop, ordu, trabzon, sivas, ardahan, bayburt, kayseri, hatay, eskisehir, edirne, bursa, antalya, sanliurfa, van, erzurum, amasya, mugla, rize, artvin, kars, bitlis, agri, giresun, tokat, denizli, zonguldak, mersin, karabuk, aydin, balikesir, elazig, afyon, bingol, adiyaman, kastamonu, kutahya, samsun }
 
 const H = 24
 const ICE: CityKey[] = ['sivas', 'ardahan', 'erzurum']

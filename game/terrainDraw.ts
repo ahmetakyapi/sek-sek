@@ -90,6 +90,10 @@ const LOOK: Record<CityKey, Look> = {
   // Kastamonu Kalesi: iri, düzensiz kale taşı örgüsü, üstü Ilgaz ormanının çimeni
   kastamonu: { mat: 'cyclop', cap: 'grass' },
   bayburt: { mat: 'rock', cap: 'snow' },
+  // TASLAK: Kütahya zemin malzemesi ve örtüsü
+  kutahya: { mat: 'rock', cap: 'grass' },
+  // TASLAK: Samsun zemin malzemesi ve örtüsü
+  samsun: { mat: 'rock', cap: 'grass' },
 }
 
 /**

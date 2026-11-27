@@ -1031,6 +1031,46 @@ export const CITY: Record<CityKey, CityStyle> = {
     enemyFly: 'raven',
     animal: 'horse',
   },
+  kutahya: {
+    // TASLAK: Kütahya paleti (artist ajanı şehre göre ayarlar; weather süzülenleri ve doğa sesini, sky + sun ışığı seçer)
+    sky: ['#3e78b8', '#94c4e8', '#f4ecd4'],
+    sun: { x: 0.3, y: 0.22, r: 14, color: '#fff4cc', glow: 'rgba(255,240,190,0.22)' },
+    far: '#8aa4c0',
+    mid: '#5a8a5e',
+    near: '#345a3e',
+    tileTop: '#9a8a6a',
+    tile: '#7a6a4e',
+    tileDark: '#4a3e2c',
+    tileLight: '#bcae8a',
+    plank: '#8a6a40',
+    accent: '#e8a43a',
+    water: ['#2a6a9a', '#18466e', '#cfe6f2'],
+    spike: ['#3e3a34', '#1e1c18'],
+    weather: 'leaves',
+    enemyGround: 'boar',
+    enemyFly: 'bee',
+    animal: 'horse',
+  },
+  samsun: {
+    // TASLAK: Samsun paleti (artist ajanı şehre göre ayarlar; weather süzülenleri ve doğa sesini, sky + sun ışığı seçer)
+    sky: ['#3e78b8', '#94c4e8', '#f4ecd4'],
+    sun: { x: 0.3, y: 0.22, r: 14, color: '#fff4cc', glow: 'rgba(255,240,190,0.22)' },
+    far: '#8aa4c0',
+    mid: '#5a8a5e',
+    near: '#345a3e',
+    tileTop: '#9a8a6a',
+    tile: '#7a6a4e',
+    tileDark: '#4a3e2c',
+    tileLight: '#bcae8a',
+    plank: '#8a6a40',
+    accent: '#e8a43a',
+    water: ['#2a6a9a', '#18466e', '#cfe6f2'],
+    spike: ['#3e3a34', '#1e1c18'],
+    weather: 'leaves',
+    enemyGround: 'boar',
+    enemyFly: 'bee',
+    animal: 'horse',
+  },
 }
 
 /* ── Arka plan katmanları (bir kez çizilir, yatayda tekrarlanır) ── */
@@ -1336,6 +1376,8 @@ export function buildLayers(city: CityKey): Layers {
       return bingolLayers(s, B)
     case 'adiyaman':
       return adiyamanLayers(s, B)
+    case 'samsun': // TASLAK: artist ajanı kendi katmanını yazar
+    case 'kutahya': // TASLAK: artist ajanı kendi katmanını yazar
     case 'kastamonu':
       return kastamonuLayers(s, B)
     case 'afyon':

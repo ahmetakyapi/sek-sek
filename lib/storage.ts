@@ -10,7 +10,7 @@ import { cleanStory, mergeStory, type StoryLog } from './storyRules'
  * taşınsın. Haritanın kendisi değişince artırılmaz: o iş şehir başına sürümün (lib/mapVersion.ts), yalnız değişen
  * şehrin rekoru yenilenir.
  */
-export const MAP_VERSION = 18
+export const MAP_VERSION = 19
 /** bu sürümden önceki süreler geçersiz: bölümlere final eklendi */
 const TIMES_SINCE = 4
 
@@ -42,6 +42,9 @@ const FORTY_FIVE = [...FORTY_FOUR, 'afyon']
 const FORTY_SIX = [...FORTY_FIVE, 'bingol']
 const NINETEEN = ['istanbul', 'kocaeli', 'canakkale', 'izmir', 'ankara', 'konya', 'nevsehir', 'adana', 'gaziantep', 'diyarbakir', 'mardin', 'malatya', 'corum', 'sinop', 'ordu', 'trabzon', 'sivas', 'ardahan', 'bayburt']
 
+/** Kütahya eklenmeden önceki 48 şehir (harita sürümü 18) */
+const FORTY_EIGHT = [...FORTY_SIX, 'adiyaman', 'kastamonu']
+
 /** Eski sürümlerin şehir sırası: açılan şehir dizinini kimliğiyle yeni sıraya taşımak için (scripts/new-city.ts de okur ve yazar) */
 export const ORDERS: Record<number, string[]> = {
   1: ['istanbul', 'kocaeli', 'izmir', 'ankara', 'adana', 'mardin', 'malatya', 'corum', 'ordu', 'sivas', 'ardahan', 'bayburt'],
@@ -61,6 +64,7 @@ export const ORDERS: Record<number, string[]> = {
   15: FORTY_FOUR,
   16: FORTY_FIVE,
   17: FORTY_SIX,
+  18: FORTY_EIGHT,
 }
 
 export interface Best {

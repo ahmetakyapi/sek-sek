@@ -32,6 +32,8 @@ import { road as bingolRoad } from './cities/bingol'
 import { road as adiyamanRoad } from './cities/adiyaman'
 import { road as kastamonuRoad } from './cities/kastamonu'
 import { road as karabukRoad } from './cities/karabuk'
+import { road as kutahyaRoad } from './cities/kutahya'
+import { road as samsunRoad } from './cities/samsun'
 import type { CityRoad } from './cities/types'
 import { EXTENSIONS } from './extensions'
 import { medalsFor } from './medals'
@@ -1132,6 +1134,8 @@ const DECOR_CYCLE: Record<string, string> = {
   bingol: 'ztl',
   adiyaman: 'tzl',
   kastamonu: 'lzt',
+  kutahya: 'tzl',
+  samsun: 'lzt',
 }
 
 /** Zemin üstündeki boş noktalara aralıklı süs yerleştirir: yürüme yolunu, tehlikeyi ve diğer nesneleri kapatmaz. */
@@ -2644,6 +2648,76 @@ export const LEVELS: LevelDef[] = [
       'Horma Kanyonu: ahşap yol şelalelerin arasından geçer. Şelaleye girmeden tahtadan tahtaya atla.',
     ],
     map: roadMap(kastamonuRoad),
+  },
+  {
+    // TASLAK: Kütahya iskeleti (scripts/new-city.ts). Metinleri harita bittikten sonra haritaya göre yaz.
+    id: 'kutahya',
+    city: 'kutahya',
+    name: 'Kütahya',
+    nickname: 'TASLAK takma ad',
+    plate: 43,
+    subtitle: 'TASLAK: Kütahya alt başlığı',
+    difficulty: 'Orta',
+    note: 'TASLAK: Gezgin’in defter notu (Kütahya): sayfanın görünüşü, şehrin bir sırrı, bu yolun öğüdü.',
+    npcs: [
+      { name: 'Kütahya Ustası (TASLAK)', look: 'usta', text: 'TASLAK: 1. kişi (esnaf ve şehrin ustası: hatıranın üç yerini söyler).' },
+      { name: 'Kütahya Teyzesi (TASLAK)', look: 'teyze', text: 'TASLAK: 2. kişi (şehri anlatır, ikinci parçanın nasıl geçileceğini söyler).' },
+      { name: 'Kütahya Rehberi (TASLAK)', look: 'genc', text: 'TASLAK: 3. kişi (gizli pulun yerini üstü kapalı söyler).' },
+      { name: 'Kütahya Bekçisi (TASLAK)', look: 'amca', text: 'TASLAK: 4. kişi (son parçayı ve meydan kapısını anlatır).' },
+    ],
+    medals: [150, 210, 290],
+    quips: ['TASLAK: Kütahya düşüş lafı 1.', 'TASLAK: Kütahya düşüş lafı 2.', 'TASLAK: Kütahya düşüş lafı 3.', 'TASLAK: Kütahya düşüş lafı 4.'],
+    item: 'TASLAK hatıra',
+    intro: 'TASLAK: Kütahya girişi: dört gerçek yer ve şehrin mekaniği.',
+    facts: [
+      { title: 'TASLAK bilgi 1', text: 'TASLAK: Kütahya hakkında doğrulanmış bilgi 1.' },
+      { title: 'TASLAK bilgi 2', text: 'TASLAK: Kütahya hakkında doğrulanmış bilgi 2.' },
+      { title: 'TASLAK bilgi 3', text: 'TASLAK: Kütahya hakkında doğrulanmış bilgi 3.' },
+    ],
+    secret: { title: 'TASLAK gizli bilgi', text: 'TASLAK: Kütahya gizli bilgisi (pul alınınca açılır).' },
+    hints: [
+      'TASLAK: Kütahya 1. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Kütahya 2. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Kütahya 3. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Kütahya 4. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Kütahya 5. tabela: parçanın adı ve ne yapılacağı.',
+    ],
+    map: roadMap(kutahyaRoad),
+  },
+  {
+    // TASLAK: Samsun iskeleti (scripts/new-city.ts). Metinleri harita bittikten sonra haritaya göre yaz.
+    id: 'samsun',
+    city: 'samsun',
+    name: 'Samsun',
+    nickname: 'TASLAK takma ad',
+    plate: 55,
+    subtitle: 'TASLAK: Samsun alt başlığı',
+    difficulty: 'Zor',
+    note: 'TASLAK: Gezgin’in defter notu (Samsun): sayfanın görünüşü, şehrin bir sırrı, bu yolun öğüdü.',
+    npcs: [
+      { name: 'Samsun Ustası (TASLAK)', look: 'usta', text: 'TASLAK: 1. kişi (esnaf ve şehrin ustası: hatıranın üç yerini söyler).' },
+      { name: 'Samsun Teyzesi (TASLAK)', look: 'teyze', text: 'TASLAK: 2. kişi (şehri anlatır, ikinci parçanın nasıl geçileceğini söyler).' },
+      { name: 'Samsun Rehberi (TASLAK)', look: 'genc', text: 'TASLAK: 3. kişi (gizli pulun yerini üstü kapalı söyler).' },
+      { name: 'Samsun Bekçisi (TASLAK)', look: 'amca', text: 'TASLAK: 4. kişi (son parçayı ve meydan kapısını anlatır).' },
+    ],
+    medals: [180, 245, 330],
+    quips: ['TASLAK: Samsun düşüş lafı 1.', 'TASLAK: Samsun düşüş lafı 2.', 'TASLAK: Samsun düşüş lafı 3.', 'TASLAK: Samsun düşüş lafı 4.'],
+    item: 'TASLAK hatıra',
+    intro: 'TASLAK: Samsun girişi: dört gerçek yer ve şehrin mekaniği.',
+    facts: [
+      { title: 'TASLAK bilgi 1', text: 'TASLAK: Samsun hakkında doğrulanmış bilgi 1.' },
+      { title: 'TASLAK bilgi 2', text: 'TASLAK: Samsun hakkında doğrulanmış bilgi 2.' },
+      { title: 'TASLAK bilgi 3', text: 'TASLAK: Samsun hakkında doğrulanmış bilgi 3.' },
+    ],
+    secret: { title: 'TASLAK gizli bilgi', text: 'TASLAK: Samsun gizli bilgisi (pul alınınca açılır).' },
+    hints: [
+      'TASLAK: Samsun 1. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Samsun 2. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Samsun 3. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Samsun 4. tabela: parçanın adı ve ne yapılacağı.',
+      'TASLAK: Samsun 5. tabela: parçanın adı ve ne yapılacağı.',
+    ],
+    map: roadMap(samsunRoad),
   },
 ]
 
